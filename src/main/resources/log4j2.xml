@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration monitorInterval="30">
+	<Properties>
+		<Property name="APP_NAME">NHIWidget</Property>
+		<!--路徑依日期分類 -->
+		<Property name="LOG_FILE_PATH">logs
+		</Property>
+		<!--設置 Log 輸出格式 -->
+		<Property name="PATTERN_FORMAT">[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} %class{36}.%M(%L) - %msg%xEx%n</Property>
+	</Properties>
+
+	<Appenders>
+		<!--輸出到 Console -->
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout>
+				<pattern>${PATTERN_FORMAT}</pattern>
+			</PatternLayout>
+		</Console>
+		<!--輸出 log 到檔案 -->
+		<RollingFile name="RollingInfoFile"
+			fileName="${LOG_FILE_PATH}/nhiwidget-info.log"
+			filePattern="${LOG_FILE_PATH}/nhiwidget-info-%d{yyyyMMdd}.log">
+			<PatternLayout>
+				<pattern>${PATTERN_FORMAT}</pattern>
+			</PatternLayout>
+			<Policies>
+				<!-- <OnStartupTriggeringPolicy /> -->
+				<TimeBasedTriggeringPolicy />
+			</Policies>
+		</RollingFile>
+		<Async name="Async" includeLocation="true">
+			<AppenderRef ref="RollingInfoFile" />
+		</Async>
+	</Appenders>
+	<Loggers>
+		<!--過濾掉 spring 和 mybatis 的一些無用的 log -->
+		<Logger name="org.springframework" level="DEBUG" />
+		<Logger name="org.mybatis" level="DEBUG" />
+		<Logger name="org.mongodb.driver" level="INFO" />
+		<Root level="INFO">
+			<!-- <AppenderRef ref="Console" /> -->
+			<AppenderRef ref="Async" />
+		</Root>
+	</Loggers>
+</Configuration>

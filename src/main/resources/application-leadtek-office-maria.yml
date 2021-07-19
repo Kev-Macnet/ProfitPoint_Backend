@@ -1,0 +1,54 @@
+server:
+  port: ${port:8081}
+  tomcat:
+    uri-encoding: UTF-8
+    max-connections: 3000
+    max-http-post-size: 124857600
+    max-threads: 1000
+  max-http-header-size: 124857600
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+spring:
+  servlet:
+    multipart:
+      max-file-size: 256MB
+      max-request-size: 256MB
+      enabled: true
+  jackson:
+    default-property-inclusion: non_null
+  http:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+  redis:
+    host: 10.10.5.30
+    port: 6379
+    database: 0
+    password: Leadtek
+    jedis:
+      pool:
+        max-active: 8
+        max-wait: -1
+        max-idle: 4
+        min-wait: 1
+  datasource:
+    url: jdbc:mariadb://${dbip:10.10.5.51}:${dbport:3306}/nwuser
+    username: leadtek
+    password: leadtek
+#  datasource:
+#    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+#    url: jdbc:sqlserver://${dbip:140.127.232.81}:${dbport:1433}; databaseName=ProjectData
+#    username: sa
+#    password: "!si7966"
+#    connection-test-query: SELECT '1' FROM DUMMY
+jwt:
+  secret: leadtek_NHIWidget
+  expiration: 360000000
+swagger:
+  enable: true
+  application-name: 健保申保最佳化系統 API
+  application-version: 2.0
+  application-description: 健保申保最佳化系統 API
+  try-host: http://localhost:${server.port}
