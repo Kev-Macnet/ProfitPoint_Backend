@@ -1,0 +1,197 @@
+package tw.com.leadtek.nhiwidget.sql;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.ColumnMapRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Repository;
+
+
+@Repository
+public class LogDataDao {
+
+    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
+    
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
+
+    public java.util.List<Map<String, Object>> find_IP_D(String idCard, String in_date) {
+        String sql;
+        sql = "SELECT ROC_ID,ID_BIRTH_YMD,IN_DATE,OUT_DATE,TRAN_CODE,ICD_CM_1,ICD_CM_2,ICD_CM_3,ICD_CM_4,ICD_CM_5,ICD_OP_CODE1,\r\n"
+                + "   a.ID+900000 AS SN, 1 as QWEIGHT, b.HOSP_ID,b.FEE_YM,b.APPL_DOT\r\n"  // QWEIGHT = 權重
+                + "From IP_D a left Join IP_T b on (b.ID= a.IPT_ID)\r\n"
+                + "WHERE (a.ROC_ID='%s')\r\n"
+                + "  AND (a.IN_DATE='%s')";
+        sql = String.format(sql, idCard, in_date);
+        logger.info(sql);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        return lst;
+    }
+
+    public java.util.Map<String, Object> findOne(String tb, Map<String, Object> condition) {
+        int whereCnt = 0;
+        String sql;
+        sql = "Select * \nFrom "+tb+" \nWhere (1=1)\n";
+        for (java.util.Map.Entry<String, Object> entry : condition.entrySet()) {
+            if (entry.getValue()!=null) {
+                sql += String.format("and (%s = '%s')\n", entry.getKey(), entry.getValue());
+                whereCnt++;
+            }
+        }
+        
+        java.util.Map<String, Object> retMap = null;
+        if (whereCnt>0) {
+            logger.info(sql);
+            java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+            if (lst.size()>0) {
+                retMap = lst.get(0);
+            }
+        }
+        if (retMap == null) {
+            retMap = new java.util.HashMap<String, Object>();
+        }
+
+        return retMap;
+    }
+
+    //------
+    private String quotedNotNull(String str) {
+        if (str==null) {
+            return "NULL";
+        } else {
+            return "\'"+str+"\'";
+        }
+    }
+    
+    public String getMapStr(java.util.Map<String, Object> map, String key) {
+        String ret = null;
+        if (map.get(key)!=null) {
+            ret =  map.get(key).toString();
+        }
+        return (ret);
+    }
+    
+    public void sleep(int msec) {
+        try   {
+            Thread.sleep(msec);
+        }
+        catch(InterruptedException ex)  {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    
+    public long newTableId_l(String tbName, String fdName) {
+        long lastID = 0;
+        String s1;
+        s1 = "Select Max(" + fdName + ") as lastid \n" +
+             "From " + tbName;
+        try {
+            lastID = jdbcTemplate.queryForObject(s1, Long.class);
+        } catch (java.lang.NullPointerException e) {
+            lastID = 0;
+        }
+        return (lastID + 1);
+    }
+    
+    public long addLogData(String tableName, String fields, String values, String user, int mode) {
+        long newId=0;
+        String sql, s1;
+        sql = "Insert Into LOG_DATA1\r\n"
+                + "(ID, TABLE_NAME, FIELD, VALUE, USERNAME, MODE, UPDATE_TM)\r\n"
+                + "Values(%d, '%s', '%s', '%s', '%s', %d, CURRENT_TIMESTAMP)";
+        for (int a=0; a<50; a++) {
+            newId = newTableId_l("LOG_DATA1", "ID");
+            s1 = String.format(sql, newId, tableName, fields, values, user, mode);
+            try {
+                int ret = jdbcTemplate.update(s1);
+                if (ret > 0) {
+                    break;
+                }
+                sleep(10);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return newId;
+    }
+
+    /*
+    public long addLogData2(String tableName, String fields, String values, String user, int mode) {
+        String sql;
+        sql = "Insert Into LOG_DATA1\r\n"
+                + "(TABLE_NAME, FIELD, VALUE, USERNAME, MODE, UPDATE_TM)\r\n"
+                + "Values('%s', '%s', '%s', '%s', %d, CURRENT_TIMESTAMP)";
+        sql = String.format(sql, tableName, fields, values, user, mode);
+        long ret = jdbcTemplate.update(sql);
+        if (ret>0) {
+            sql = "Select ID\r\n"
+                    + "From LOG_DATA1\r\n"
+                    + "Where (TABLE_NAME='%s')and(USERNAME='%s')\r\n"
+                    + "Order By UPDATE_TM DESC\r\n"
+                    + "Limit 1";
+            sql = String.format(sql, tableName, user);
+            java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+            if (lst.size()>0) {
+                java.util.Map<String, Object> map = lst.get(0);
+                ret = (long)map.get("ID");
+            }
+        }
+        return ret;
+    }
+    */
+    
+    public int addLogDataDetail(long mid, String field, String original, String correct, int equal) {
+        String sql;
+        sql = "Insert into \r\n"
+                + "LOG_DATA2(M_ID, FIELD, ORIGINAL, CORRECT, EQUAL)\r\n"
+                + "Values(%d, %s, %s, %s, %d)";
+        sql = String.format(sql, mid, quotedNotNull(field), quotedNotNull(original), quotedNotNull(correct), equal);
+        try {
+            int ret = jdbcTemplate.update(sql);
+            return ret;
+        } catch(DataAccessException ex) {
+            return 0;
+        }
+    }
+    
+    /* HANA 不支援一次寫多筆 ---------*/
+    /*
+    public int addLogDataDetailAll(long mid, java.util.Set<Map<String, Object>> lstData) {
+        String field, original, correct, str;
+        int idx=0;
+        int equal;
+        StringBuffer strBuf = new StringBuffer(); 
+        strBuf.append("Insert into\n");
+        strBuf.append("LOG_DATA2(M_ID, FIELD, ORIGINAL, CORRECT, EQUAL)\n");
+        strBuf.append("Values ");
+        for (Map<String, Object> item : lstData) {
+            field = getMapStr(item, "field");
+            original = getMapStr(item, "source"); 
+            correct = getMapStr(item, "modify");
+            equal = (int)item.get("equal");
+            str = String.format("(%d, %s, %s, %s, %d)\n", mid, quotedNotNull(field), quotedNotNull(original), quotedNotNull(correct), equal);
+            if (idx==0) {
+                strBuf.append(str);
+            } else {
+                strBuf.append(","+str);
+            }
+            idx++;
+        }
+        System.out.println("--------------------------");
+        System.out.println(strBuf.toString());
+        try {
+          int ret = jdbcTemplate.update(strBuf.toString());
+          return ret;
+        } catch(DataAccessException ex) {
+            return 0;
+        }
+    }
+    */
+
+}
