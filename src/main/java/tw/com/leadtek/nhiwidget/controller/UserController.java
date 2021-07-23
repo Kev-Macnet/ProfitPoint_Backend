@@ -5,10 +5,9 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.security.Principal;
 import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import org.apache.http.HttpRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,11 +21,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.HtmlUtils;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,6 +42,7 @@ import tw.com.leadtek.nhiwidget.security.jwt.JwtResponse;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.security.jwt.LoginRequest;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
+import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.UserService;
 
 @Api(tags = "帳號、權限相關API", value = "帳號、權限相關API")
@@ -57,6 +60,9 @@ public class UserController extends BaseController {
 
   @Autowired
   private JwtUtils jwtUtils;
+  
+  @Autowired
+  private LogDataService logService;
 
   @ApiOperation(value = "新增一組帳號", notes = "新增一組帳號")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),
@@ -163,15 +169,21 @@ public class UserController extends BaseController {
       return returnAPIResult("更換密碼出錯");
     }
   }
-  
+
   @ApiOperation(value = "登出", notes = "登出，將 session 清空")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "登出成功")})
+  @ApiImplicitParams({
+      @ApiImplicitParam(name="Authorization", dataType="String", paramType="header", required=true)
+  })
   @PostMapping("/user/logout")
-  public ResponseEntity<BaseResponse> logout(HttpServletRequest request) {
+  public ResponseEntity<BaseResponse> logout(HttpServletRequest request, @RequestHeader("Authorization") String jwt) {
     request.getSession().invalidate();
+    if (jwt!=null && jwt.length()>20) {
+        int status = logService.setLogout(jwt);
+    }
     return returnAPIResult(null);
   }
-
+  
   @ApiOperation(value = "登入", notes = "輸入帳號密碼，取得 JWT")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "登入成功"),
       @ApiResponse(responseCode = "401", description = "Unauthorized 帳密有誤")})
@@ -185,7 +197,7 @@ public class UserController extends BaseController {
 
     SecurityContextHolder.getContext().setAuthentication(authentication);
     String jwt = jwtUtils.generateJwtToken(authentication);
-
+    logService.setLogin(jwt);
     UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
     // List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())
     // .collect(Collectors.toList());
@@ -193,6 +205,7 @@ public class UserController extends BaseController {
     return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getId(), userDetails.getUsername(),
         userDetails.getDisplayName()));
   }
+  
 
   /**
    * 取得同義詞/代碼表資料

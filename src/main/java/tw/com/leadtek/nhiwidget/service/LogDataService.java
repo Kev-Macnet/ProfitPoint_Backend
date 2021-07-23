@@ -3,6 +3,7 @@ package tw.com.leadtek.nhiwidget.service;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
@@ -505,6 +506,34 @@ public class LogDataService {
         return newId;
     }
     
+    public int setLogin(String jwt) {
+        int ret = -1;
+        if (jwt.length()>20) {
+            jwt = jwt.replace("Bearer", "");
+            String arrJwt[] = jwt.split("\\.");
+            String jwtBody = "";
+            byte[] jwtBytes = java.util.Base64.getDecoder().decode(arrJwt[1]);
+            try {
+                jwtBody = new String(jwtBytes, "UTF-8");
+            } catch (java.io.UnsupportedEncodingException ex) {
+                jwtBody = new String(jwtBytes);
+            }
+            BasicJsonParser linkJsonParser = new BasicJsonParser();
+            Map<String, Object> jwtMap = linkJsonParser.parseMap(jwtBody);
+            logDataDao.addSignin(jwtMap.get("sub").toString(), jwt);
+            //{ "sub": "test", "uid": 2, "exp": 1627378586 }
+            ret = 0;
+        }
+        return ret;
+    }
+    
+    public int setLogout(String jwt) {
+        int ret = -1;
+        if (jwt.length()>20) {
+            ret = logDataDao.updateSignout(jwt);
+        }
+        return ret;
+    }
     //====================================
     /*
     public java.util.Set<Map<String, Object>> testModifyData(String user, String table, java.util.List<LogDataPl> params) {
