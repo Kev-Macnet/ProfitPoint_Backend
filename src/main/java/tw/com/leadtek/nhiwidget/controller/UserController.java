@@ -5,7 +5,10 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.security.Principal;
 import java.util.List;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import org.apache.http.HttpRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -159,6 +162,14 @@ public class UserController extends BaseController {
     } else {
       return returnAPIResult("更換密碼出錯");
     }
+  }
+  
+  @ApiOperation(value = "登出", notes = "登出，將 session 清空")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "登出成功")})
+  @PostMapping("/user/logout")
+  public ResponseEntity<BaseResponse> logout(HttpServletRequest request) {
+    request.getSession().invalidate();
+    return returnAPIResult(null);
   }
 
   @ApiOperation(value = "登入", notes = "輸入帳號密碼，取得 JWT")
