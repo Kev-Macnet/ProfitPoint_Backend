@@ -48,6 +48,7 @@ import tw.com.leadtek.nhiwidget.payload.MRCountResponse;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.QuickSearchResponse;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
+import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 
@@ -63,6 +64,9 @@ public class NHIWidgetXMLController extends BaseController {
 
   @Autowired
   private ParametersService parameters;
+  
+  @Autowired
+  private LogDataService logService;
 
   @ApiOperation(value = "上傳申報檔XML檔案", notes = "上傳申報檔XML檔案")
   @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "申報檔XML檔案",
@@ -310,7 +314,11 @@ public class NHIWidgetXMLController extends BaseController {
     int iPerPage = (perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
         : perPage.intValue();
     int iPage = (page == null) ? 0 : page.intValue();
-
+    
+    logService.updateLogSearch("system", allMatch, sdate, edate, minPoints, maxPoints, dataFormat, funcType, prsnId,
+            prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, orderCode, inhCode,
+            drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSecondary, icdPCS, qrObject, qrSdate,
+            qrEdate, status, deductedCode, deductedOrder);
     Map<String, Object> list =
         xmlService.getMR(allMatch, sdate, edate, minPoints, maxPoints, dataFormat, funcType, prsnId,
             prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, orderCode, inhCode,

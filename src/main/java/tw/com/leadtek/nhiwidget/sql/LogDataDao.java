@@ -189,6 +189,46 @@ public class LogDataDao {
         }
     }
     
+    //===
+    public long addLogSearch(String user) {
+        long newId=0;
+        String sql, s1;
+        sql = "Insert into \r\n"
+                + "LOG_SEARCH1(USERNAME, UPDATE_TM)\r\n"
+                + "Values('%s', CURRENT_TIMESTAMP)";
+        for (int a=0; a<50; a++) {
+            newId = newTableId_l("LOG_SEARCH1", "ID");
+            s1 = String.format(sql, newId, user);
+            try {
+                int ret = jdbcTemplate.update(s1);
+                if (ret > 0) {
+                    break;
+                }
+                sleep(10);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return newId;
+    }
+    
+    public int addLogSearchDetail(long mid, String field, String keyword) {
+        int ret = -1;
+        String sql;
+        if (keyword!=null && keyword.length()>0) {
+            sql = "Insert into \r\n"
+                    + "LOG_SEARCH2(M_ID, FIELD, KEYWORD)\r\n"
+                    + "Values(%d, '%s', '%s')";
+            sql = String.format(sql, mid, field, keyword);
+            try {
+                ret = jdbcTemplate.update(sql);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return ret;
+    }
+    
     /* HANA 不支援一次寫多筆 ---------*/
     /*
     public int addLogDataDetailAll(long mid, java.util.Set<Map<String, Object>> lstData) {

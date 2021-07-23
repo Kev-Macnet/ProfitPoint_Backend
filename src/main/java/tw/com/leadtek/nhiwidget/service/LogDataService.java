@@ -534,6 +534,53 @@ public class LogDataService {
         }
         return ret;
     }
+    
+    // http://127.0.0.1:8081/nhixml/mr?allMatch=Y&sdate=2021%2F07%2F23&edate=2021%2F07%2F23&minPoints=68&maxPoints=90&dataFormat=10,20&funcType=AC&prsnName=&drg=&drgSection=B1&icdAll=&status=3&page=0&perPage=20
+    public long updateLogSearch(String user, String allMatch, String startDate, String endDate,
+            Integer minPoints, Integer maxPoints, String dataFormat, String funcType, String prsnId,
+            String prsnName, String applId, String applName, String inhMrId, String inhClinicId,
+            String drg, String drgSection, String orderCode, String inhCode, String drugUse,
+            String inhCodeDrugUse, String icdAll, String icdCMMajor, String icdCMSecondary, String icdPCS,
+            String qrObject, String qrSdate, String qrEdate, String status, String deductedCode,
+            String deductedOrder) {
+        long m_id = logDataDao.addLogSearch(user);
+        if (m_id>0) {
+            logDataDao.addLogSearchDetail(m_id, "allMatch", allMatch);
+            logDataDao.addLogSearchDetail(m_id, "startDate", startDate);
+            logDataDao.addLogSearchDetail(m_id, "endDate", endDate);
+            if (minPoints>0) {
+                logDataDao.addLogSearchDetail(m_id, "minPoints", Integer.toString(minPoints));
+            }
+            if (maxPoints>minPoints) {
+                logDataDao.addLogSearchDetail(m_id, "maxPoints", Integer.toString(maxPoints));
+            }
+            logDataDao.addLogSearchDetail(m_id, "dataFormat", dataFormat);
+            logDataDao.addLogSearchDetail(m_id, "funcType", funcType);
+            logDataDao.addLogSearchDetail(m_id, "prsnId", prsnId);
+            logDataDao.addLogSearchDetail(m_id, "prsnName", prsnName);
+            logDataDao.addLogSearchDetail(m_id, "applId", applId);
+            logDataDao.addLogSearchDetail(m_id, "applName", applName);
+            logDataDao.addLogSearchDetail(m_id, "inhMrId", inhMrId);
+            logDataDao.addLogSearchDetail(m_id, "inhClinicId", inhClinicId);
+            logDataDao.addLogSearchDetail(m_id, "drg", drg);
+            logDataDao.addLogSearchDetail(m_id, "drgSection", drgSection);
+            logDataDao.addLogSearchDetail(m_id, "orderCode", orderCode);
+            logDataDao.addLogSearchDetail(m_id, "inhCode", inhCode);
+            logDataDao.addLogSearchDetail(m_id, "drugUse", drugUse);
+            logDataDao.addLogSearchDetail(m_id, "inhCodeDrugUse", inhCodeDrugUse);
+            logDataDao.addLogSearchDetail(m_id, "icdAll", icdAll);
+            logDataDao.addLogSearchDetail(m_id, "icdCMMajor", icdCMMajor);
+            logDataDao.addLogSearchDetail(m_id, "icdCMSecondary", icdCMSecondary);
+            logDataDao.addLogSearchDetail(m_id, "icdPCS", icdPCS);
+            logDataDao.addLogSearchDetail(m_id, "qrObject", qrObject);
+            logDataDao.addLogSearchDetail(m_id, "qrSdate", qrSdate);
+            logDataDao.addLogSearchDetail(m_id, "qrEdate", qrEdate);
+            logDataDao.addLogSearchDetail(m_id, "status", status);
+            logDataDao.addLogSearchDetail(m_id, "deductedCode", deductedCode);
+            logDataDao.addLogSearchDetail(m_id, "deductedOrder", deductedOrder);
+        }
+        return (m_id);
+    }
     //====================================
     /*
     public java.util.Set<Map<String, Object>> testModifyData(String user, String table, java.util.List<LogDataPl> params) {
