@@ -148,6 +148,42 @@ public class Utility {
       } 
       return (retMap);
   }
+  
+  public static String getMapStr(java.util.Map<String, Object> map, String key) {
+      String ret = null;
+      if (map.get(key)!=null) {
+          ret =  map.get(key).toString();
+      }
+      return (ret);
+  }
+  
+  public static int getMapInt(java.util.Map<String, Object> map, String key) {
+      int ret = 0;
+      if (map.get(key)!=null) {
+          try {
+              ret = Integer.parseInt(map.get(key).toString());
+          } catch (Exception e) {
+              //
+          }
+      }
+      return (ret);
+  }
+  
+  public static void sleep(int msec) {
+      try   {
+          Thread.sleep(msec);
+      }
+      catch(InterruptedException ex)  {
+          Thread.currentThread().interrupt();
+      }
+  }
 
+  public static String quotedNotNull(String str) {
+      if (str==null) {
+          return "NULL";
+      } else {
+          return "\'"+str+"\'";
+      }
+  }
 
 }

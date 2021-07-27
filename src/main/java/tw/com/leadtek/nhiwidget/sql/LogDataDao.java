@@ -11,6 +11,8 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import tw.com.leadtek.tools.Utility;
+
 
 @Repository
 public class LogDataDao {
@@ -60,32 +62,6 @@ public class LogDataDao {
     }
 
     //------
-    private String quotedNotNull(String str) {
-        if (str==null) {
-            return "NULL";
-        } else {
-            return "\'"+str+"\'";
-        }
-    }
-    
-    public String getMapStr(java.util.Map<String, Object> map, String key) {
-        String ret = null;
-        if (map.get(key)!=null) {
-            ret =  map.get(key).toString();
-        }
-        return (ret);
-    }
-    
-    public void sleep(int msec) {
-        try   {
-            Thread.sleep(msec);
-        }
-        catch(InterruptedException ex)  {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    
     public long newTableId_l(String tbName, String fdName) {
         long lastID = 0;
         String s1;
@@ -113,10 +89,10 @@ public class LogDataDao {
                 if (ret > 0) {
                     break;
                 }
-                sleep(10);
             } catch(DataAccessException ex) {
                 //
             }
+            Utility.sleep(10);
         }
         return newId;
     }
@@ -151,7 +127,7 @@ public class LogDataDao {
         sql = "Insert into \r\n"
                 + "LOG_DATA2(M_ID, FIELD, ORIGINAL, CORRECT, EQUAL)\r\n"
                 + "Values(%d, %s, %s, %s, %d)";
-        sql = String.format(sql, mid, quotedNotNull(field), quotedNotNull(original), quotedNotNull(correct), equal);
+        sql = String.format(sql, mid, Utility.quotedNotNull(field), Utility.quotedNotNull(original), Utility.quotedNotNull(correct), equal);
         try {
             int ret = jdbcTemplate.update(sql);
             return ret;
@@ -204,7 +180,7 @@ public class LogDataDao {
                 if (ret > 0) {
                     break;
                 }
-                sleep(10);
+                Utility.sleep(10);
             } catch(DataAccessException ex) {
                 //
             }

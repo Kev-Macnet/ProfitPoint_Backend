@@ -4,8 +4,8 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 
-@ApiModel(description = "支付條件設定搜尋 DTO")
-public class PaymentTermsSearchDto extends PaymentTermsPl {
+@ApiModel(description = "門診診察費設定 DTO")
+public class PtOutpatientFeeDto extends PtOutpatientFeePl {
     @ApiModelProperty(value="代碼", example="000001", required=true)
     private long id;
 

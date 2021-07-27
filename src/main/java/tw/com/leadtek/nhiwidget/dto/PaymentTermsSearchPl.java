@@ -1,4 +1,4 @@
-package tw.com.leadtek.nhiwidget.payload;
+package tw.com.leadtek.nhiwidget.dto;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
