@@ -66,6 +66,34 @@ public class PtOutpatientFeeService {
         
         return ptId;
     }
+    
+    public int updateOutpatientFee(long ptId, PtOutpatientFeePl params) {
+        int ret = 0;
+        java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
+        java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
+        if (ptId>0) {
+            ret += paymentTermsDao.updatePaymentTerms(ptId, params.getFee_no(), params.getFee_name(), params.getNhi_no(), params.getNhi_name(), 
+                                                  start_date, end_data, params.getCategory(), 
+                                                  params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
+        
+            if (params.getLst_division() != null) {
+                paymentTermsDao.deleteLimDivision(ptId);
+                paymentTermsDao.addLimDivision(ptId, params.getLst_division());
+            }
+            if (params.getLst_nhi_no() != null) {
+                paymentTermsDao.deleteExcludeNhiNo(ptId);
+                paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
+            }
+            ptOutpatientFeeDao.update(ptId, params.getNo_dentisit(), params.getNo_chi_medicine(), params.getNo_service_charge()|0, 
+                    params.getLim_out_islands()|0, params.getLim_holiday()|0, params.getLim_max()|0, 
+                    params.getLim_age()|0, params.getLim_age_type()|0,
+                    params.getLim_division()|0, params.getLim_holiday()|0);
+        }
+//        add(long ptId, int no_dentisit, int no_chi_medicine, int no_service_charge, int lim_out_islands, int lim_holiday, 
+//                int lim_max, int lim_age, int lim_age_type, int lim_division, int exclude_nhi_no)
+        
+        return ret;
+    }
 
     public int deleteOutpatientFee(long ptId) {
         int ret = 0;

@@ -21,6 +21,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+//import io.swagger.v3.oas.annotations.responses.ApiResponse;
+//import io.swagger.v3.oas.annotations.responses.ApiResponses;
+//import io.swagger.v3.oas.annotations.media.Schema;
+//import io.swagger.v3.oas.annotations.media.Content;
+
 import tw.com.leadtek.nhiwidget.dto.PaymentTermsSearchDto;
 import tw.com.leadtek.nhiwidget.dto.PaymentTermsSearchPl;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeeDto;
@@ -65,10 +70,11 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.2 get 門診診察費設定", notes="Result: PtOutpatientFeeDto")
-    @ApiResponses(value={
+    @ApiOperation(value="10.2 門診診察費設定(get)", notes="")
+    @ApiResponses({
         @ApiResponse(code = 200, message="{ PtOutpatientFeeDto }", response=PtOutpatientFeeDto.class)
-//        @ApiResponse(responseCode = "200", description = "登入成功"),
+//        @ApiResponse(responseCode = "200", description="{ PtOutpatientFeeDto }",
+//                     content = @Content(schema = @Schema(implementation = PtOutpatientFeeDto.class)))
     })
     @RequestMapping(value = "/payment/outpatientfee/{pt_id}", method = RequestMethod.POST)
     public ResponseEntity<?> getPaymentOutpatientfee(HttpServletRequest request,
@@ -85,10 +91,9 @@ public class E2101Controll {
     }
 
     
-    @ApiOperation(value="10.3 add 門診診察費設定", notes="")
+    @ApiOperation(value="10.3 門診診察費設定(add)", notes="")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
-//        @ApiResponse(responseCode = "200", description = "登入成功"),
     })
     @RequestMapping(value = "/payment/outpatientfee/add", method = RequestMethod.POST)
     public ResponseEntity<?> addPaymentOutpatientfee(HttpServletRequest request,
@@ -110,6 +115,59 @@ public class E2101Controll {
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10.4 門診診察費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/outpatientfee/{pt_id}", method = RequestMethod.PUT)
+    public ResponseEntity<?> updatePaymentOutpatientfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id,
+        @RequestBody PtOutpatientFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = Utility.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptOutpatientFeeService.updateOutpatientFee(pt_id, params);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>0) {
+                retMap.put("message", "修改成功。/id="+pt_id);
+                retMap.put("notify", "修改時 category 無法變更");
+            } else {
+                retMap.put("message", "修改失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    
+    @ApiOperation(value="10.5 門診診察費設定(delete)", notes="")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/outpatientfee/{pt_id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deletePaymentOutpatientfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = Utility.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptOutpatientFeeService.deleteOutpatientFee(pt_id);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>=0) {
+                retMap.put("message", "刪除成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "刪除失敗!");
             }
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }

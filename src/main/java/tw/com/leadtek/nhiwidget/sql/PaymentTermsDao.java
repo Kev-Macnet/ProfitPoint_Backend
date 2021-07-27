@@ -21,8 +21,7 @@ public class PaymentTermsDao {
     
     @Autowired
     protected JdbcTemplate jdbcTemplate;
-    
-    
+
 
     public java.util.List<Map<String, Object>> searchPaymentTerms(String feeNo, String nhiNo, String category, 
             java.util.Date startDate, java.util.Date endDate) {
@@ -90,7 +89,6 @@ public class PaymentTermsDao {
             s1 = String.format(sql, newId, Utility.quotedNotNull(fee_no), Utility.quotedNotNull(fee_name), 
                     Utility.quotedNotNull(nhi_no), Utility.quotedNotNull(nhi_name), strStart, strEnd, 
                     category, hospital_type, outpatient_type, hospitalized_type);
-            System.out.println("sql-88=\n"+s1);
             try {
                 int ret = jdbcTemplate.update(s1);
                 if (ret > 0) {
@@ -106,7 +104,7 @@ public class PaymentTermsDao {
     
     public int updatePaymentTerms(long id, String fee_no, String fee_name, String nhi_no, String nhi_name, 
             java.util.Date start_date, java.util.Date end_date, 
-            String category, String hospital_type, int outpatient_type, int hospitalized_type) {
+            String category, int hospital_type, int outpatient_type, int hospitalized_type) {
         String strStart = Utility.dateFormat(start_date, "yyyy/MM/dd");
         String strEnd = Utility.dateFormat(end_date, "yyyy/MM/dd");
         String sql;
@@ -117,11 +115,11 @@ public class PaymentTermsDao {
                 + "    NHI_NAME=%s, \r\n"
                 + "    START_DATE='%s', \r\n"
                 + "    END_DATE='%s', \r\n"
-                + "    CATEGORY='%s', \r\n"
+                + " --   CATEGORY='%s', \r\n"
                 + "    HOSPITAL_TYPE=%d, \r\n"
                 + "    OUTPATIENT_TYPE=%d, \r\n"
                 + "    HOSPITALIZED_TYPE=%d\r\n"
-                + "Where (ID=0)";
+                + "Where (ID=%d)";
         sql = String.format(sql, Utility.quotedNotNull(fee_no), Utility.quotedNotNull(fee_name), 
                 Utility.quotedNotNull(nhi_no), Utility.quotedNotNull(nhi_name), strStart, strEnd, 
                 category, hospital_type, outpatient_type, hospitalized_type, id);
