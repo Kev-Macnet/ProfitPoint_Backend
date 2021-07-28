@@ -7,6 +7,8 @@ import io.swagger.annotations.ApiModelProperty;
 //參數說明: https://iter01.com/378925.html
 @ApiModel(description = "門診診察費設定參數")
 public class PtOutpatientFeePl extends PaymentTermsPl {
+    @ApiModelProperty(value="分類", example="門診診察費", required=true)
+    private String category;
 
     @ApiModelProperty(value="不含牙醫(0|1)", position=1, example="1", required=true)
     private int no_dentisit;
@@ -39,6 +41,12 @@ public class PtOutpatientFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", position=12, required=false)
     private java.util.List<String> lst_nhi_no;
     
+    public String getCategory() {
+        return category;
+    }
+    public void setCategory(String category) {
+        this.category = category;
+    }
     public int getNo_dentisit() {
         return no_dentisit;
     }

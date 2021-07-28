@@ -108,15 +108,9 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private ParametersService parameters;
-  
-  @Autowired
-  private LogDataService logService;
 
   public void saveOP(OP op) {
     OP_T opt = optDao.save(op.getTdata());
-    Map<String, Object> condition1 = logService.makeCondition(new String[][] {{"ID",Long.toString(opt.getId())}});
-    Map<String, Object> row1 = logService.findOne("OP_T", condition1);
-    logService.updateModification("system", "OP_T", condition1, new HashMap<String, Object>(), row1);
     List<OP_DData> dDataList = op.getDdata();
     for (OP_DData op_dData : dDataList) {
       OP_D opd = op_dData.getDbody();
@@ -130,25 +124,16 @@ public class NHIWidgetXMLService {
       mr.setInfectious((ct == null) ? 0 : 1);
       opd.setMrId(mr.getId());
       opd = opdDao.save(opd);
-      Map<String, Object> condition2 = logService.makeCondition(new String[][] {{"ID",Long.toString(opd.getId())}});
-      Map<String, Object> row2 = logService.findOne("OP_D", condition2);
-      logService.updateModification("system", "OP_D", condition2, new HashMap<String, Object>(), row2);
       List<OP_P> oppList = opd.getPdataList();
       for (OP_P opp : oppList) {
         opp.setOpdId(opd.getId());
         oppDao.save(opp);
-        Map<String, Object> condition3 = logService.makeCondition(new String[][] {{"ID",Long.toString(opp.getId())}});
-        Map<String, Object> row3 = logService.findOne("OP_P", condition3);
-        logService.updateModification("system", "OP_P", condition3, new HashMap<String, Object>(), row3);
       }
     }
-  }  
+  }
 
   public void saveIP(IP ip) {
     IP_T ipt = iptDao.save(ip.getTdata());
-    Map<String, Object> condition1 = logService.makeCondition(new String[][] {{"ID",Long.toString(ipt.getId())}});
-    Map<String, Object> row1 = logService.findOne("IP_T", condition1);
-    logService.updateModification("system", "IP_T", condition1, new HashMap<String, Object>(), row1);
     List<IP_DData> dDataList = ip.getDdata();
     for (IP_DData ip_dData : dDataList) {
       IP_D ipd = ip_dData.getDbody();
@@ -161,18 +146,12 @@ public class NHIWidgetXMLService {
       mr.setInfectious((ct == null) ? 0 : 1);
       ipd.setMrId(mr.getId());
       ipd = ipdDao.save(ipd);
-      Map<String, Object> condition2 = logService.makeCondition(new String[][] {{"ID",Long.toString(ipd.getId())}});
-      Map<String, Object> row2 = logService.findOne("IP_D", condition2);
-      logService.updateModification("system", "IP_D", condition2, new HashMap<String, Object>(), row2);
       mr.setdId(ipd.getId());
       List<IP_P> ippList = ipd.getPdataList();
       for (IP_P ipp : ippList) {
         ipp.setIpdId(ipd.getId());
         ipp.setMrId(mr.getId());
         ippDao.save(ipp);
-        Map<String, Object> condition3 = logService.makeCondition(new String[][] {{"ID",Long.toString(ipp.getId())}});
-        Map<String, Object> row3 = logService.findOne("IP_P", condition3);
-        logService.updateModification("system", "IP_P", condition3, new HashMap<String, Object>(), row3);
       }
       mrDao.save(mr);
     }
@@ -949,19 +928,9 @@ public class NHIWidgetXMLService {
     mr.updateMR(mrDetail);
     if (XMLConstant.DATA_FORMAT_OP.equals(mrDetail.getDataFormat())) {
       OP_D opD = opdDao.getOne(mr.getdId());
-      Map<String, Object> row1;
-      if (opD.getId()==null) {
-          row1 = new HashMap<String, Object>();
-      } else {
-          Map<String, Object> condition1 = logService.makeCondition(new String[][] {{"ID",Long.toString(opD.getId())}});
-          row1 = logService.findOne("OP_D", condition1);
-      }
       opD.setFuncType(mr.getFuncType());
       updateOPDByMrDetail(opD, mrDetail);
       opdDao.save(opD);
-      Map<String, Object> condition2 = logService.makeCondition(new String[][] {{"ID",Long.toString(opD.getId())}});
-      Map<String, Object> row2 = logService.findOne("OP_D", condition2);
-      logService.updateModification("system", "OP_D", condition2, row1, row2);
 //      List<OP_P> oppList = oppDao.findByOpdId(opD.getId());
 //      List<MO> moList = new ArrayList<MO>();
 //      for (OP_P op_P : oppList) {
@@ -972,13 +941,6 @@ public class NHIWidgetXMLService {
 //      result.setMos(moList);
     } else if (XMLConstant.DATA_FORMAT_IP.equals(mrDetail.getDataFormat())) {
       IP_D ipD = ipdDao.getOne(mr.getdId());
-      Map<String, Object> row1;
-      if (ipD.getId()==null) {
-          row1 = new HashMap<String, Object>();
-      } else {
-          Map<String, Object> condition1 = logService.makeCondition(new String[][] {{"ID",Long.toString(ipD.getId())}});
-          row1 = logService.findOne("IP_D", condition1);
-      }
       ipD.setFuncType(mr.getFuncType());
       ipD.setRocId(mrDetail.getRocId());
       ipD.setName(mrDetail.getName());
@@ -988,9 +950,6 @@ public class NHIWidgetXMLService {
       ipD.setApplDot(mrDetail.getApplDot());
       ipD.setNonApplDot(mrDetail.getOwnExpense());
       ipdDao.save(ipD);
-      Map<String, Object> condition2 = logService.makeCondition(new String[][] {{"ID",Long.toString(ipD.getId())}});
-      Map<String, Object> row2 = logService.findOne("IP_D", condition2);
-      logService.updateModification("system", "IP_D", condition2, row1, row2);
     }
     System.out.println("new FuncType:" + mr.getFuncType());
     mr = mrDao.save(mr);

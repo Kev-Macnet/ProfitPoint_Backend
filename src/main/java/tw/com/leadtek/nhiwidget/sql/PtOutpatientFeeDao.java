@@ -23,7 +23,6 @@ public class PtOutpatientFeeDao {
     protected JdbcTemplate jdbcTemplate;
 
     public java.util.Map<String, Object> findOne(long ptId) {
-        
         String sql;
         sql = "Select PT_ID, NO_DENTISIT, NO_CHI_MEDICINE, NO_SERVICE_CHARGE, LIM_OUT_ISLANDS, LIM_HOLIDAY, LIM_MAX, LIM_AGE, LIM_AGE_TYPE, LIM_DIVISION, EXCLUDE_NHI_NO\r\n"
                 + "From PT_OUTPATIENT_FEE\r\n"
@@ -36,12 +35,9 @@ public class PtOutpatientFeeDao {
         } else {
             return new java.util.HashMap<String, Object>();
         }
-        
-        
     }
     
     public int delete(long ptId) {
-        
         String sql;
         sql = "Delete from PT_OUTPATIENT_FEE\r\n"
                 + "Where (PT_ID=%d)";

@@ -32,10 +32,18 @@ public class PaymentTermsService {
         return lst;
     }
     
+    public java.util.Map<String, Object> jwtValidate(String jwt) {
+        java.util.Map<String, Object> validationMap = Utility.jwtValidate(jwt);
+        if ((int)validationMap.get("status") == 200) {
+            if (findUserRole(validationMap.get("userName").toString())<4) {
+                validationMap.put("status", 401);
+                validationMap.put("message", "權限不足!");
+            }
+        }
+        return validationMap;
+    }
     
-    public int findUserRole(String userName) {
+    private int findUserRole(String userName) {
         return paymentTermsDao.findUserRole(userName);
     }
-
-    
 }

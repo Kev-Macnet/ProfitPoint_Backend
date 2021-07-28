@@ -59,12 +59,13 @@ public class PaymentTermsDao {
         return Utility.listLowerCase(lst);
     }
     
-    public java.util.Map<String, Object> findPaymentTerms(long id) {
+    public java.util.Map<String, Object> findPaymentTerms(long id, String category) {
         String sql;
         sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
                 + "From PT_PAYMENT_TERMS\r\n"
-                + "Where (ID=%d)";
-        sql = String.format(sql, id);
+                + "Where (ID=%d)\n"
+                + "  and (CATEGORY='%s')";
+        sql = String.format(sql, id, category);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -119,19 +120,19 @@ public class PaymentTermsDao {
                 + "    HOSPITAL_TYPE=%d, \r\n"
                 + "    OUTPATIENT_TYPE=%d, \r\n"
                 + "    HOSPITALIZED_TYPE=%d\r\n"
-                + "Where (ID=%d)";
+                + "Where (ID=%d)and(CATEGORY='%s')";
         sql = String.format(sql, Utility.quotedNotNull(fee_no), Utility.quotedNotNull(fee_name), 
                 Utility.quotedNotNull(nhi_no), Utility.quotedNotNull(nhi_name), strStart, strEnd, 
-                category, hospital_type, outpatient_type, hospitalized_type, id);
+                category, hospital_type, outpatient_type, hospitalized_type, id, category);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
     
-    public int deletePaymentTerms(long id) {
+    public int deletePaymentTerms(long id, String category) {
         String sql;
         sql = "Delete from PT_PAYMENT_TERMS\r\n"
-                + "Where (ID=%d)";
-        sql = String.format(sql, id);
+                + "Where (ID=%d)and(CATEGORY='%s')";
+        sql = String.format(sql, id, category);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -238,7 +239,6 @@ public class PaymentTermsDao {
         if (user != null) {
             ret = (int)user.get("role");
         }
-        System.out.println("role="+ret);
         return ret;
     }
 

@@ -1,36 +1,31 @@
 package tw.com.leadtek.nhiwidget.service;
 
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.stereotype.Service;
 
-import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
-import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
-import tw.com.leadtek.nhiwidget.sql.PtOutpatientFeeDao;
+import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeePl;
+import tw.com.leadtek.nhiwidget.sql.PtSurgeryFeeDao;
 import tw.com.leadtek.tools.Utility;
 
 // swagger: http://127.0.0.1:8081/swagger-ui/index.html
 @Service
-public class PtOutpatientFeeService {
+public class PtSurgeryFeeService {
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private PaymentTermsDao paymentTermsDao;
     @Autowired
-    private PtOutpatientFeeDao ptOutpatientFeeDao;
+    private PtSurgeryFeeDao ptSurgeryFeeDao;
     
-    private String Category = "門診診察費";
+    private String Category = "手術費"; 
     
-    public java.util.Map<String, Object> findOutpatientFee(long ptId) {
+    public java.util.Map<String, Object> findSurgeryFee(long ptId) {
         java.util.Map<String, Object> retMap;
         if (ptId > 0) {
             java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, this.Category);
             if (!master.isEmpty()) {
-                java.util.Map<String, Object> detail = ptOutpatientFeeDao.findOne(ptId);
+                java.util.Map<String, Object> detail = ptSurgeryFeeDao.findOne(ptId);
                 for (java.util.Map.Entry<String, Object> entry : detail.entrySet()) {
                     if (!entry.getKey().equals("pt_id")) {
                         master.put(entry.getKey(), entry.getValue());
@@ -46,7 +41,7 @@ public class PtOutpatientFeeService {
         return retMap;
     }
 
-    public long addOutpatientFee(PtOutpatientFeePl params) {
+    public long addSurgeryFee(PtSurgeryFeePl params) {
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
         params.setCategory(this.Category);
@@ -60,18 +55,12 @@ public class PtOutpatientFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptOutpatientFeeDao.add(ptId, params.getNo_dentisit(), params.getNo_chi_medicine(), params.getNo_service_charge()|0, 
-                    params.getLim_out_islands()|0, params.getLim_holiday()|0, params.getLim_max()|0, 
-                    params.getLim_age()|0, params.getLim_age_type()|0,
-                    params.getLim_division()|0, params.getLim_holiday()|0);
+            ptSurgeryFeeDao.add(ptId, params.getLim_division()|0, params.getExclude_nhi_no()|0,  params.getLim_age()|0);
         }
-//        add(long ptId, int no_dentisit, int no_chi_medicine, int no_service_charge, int lim_out_islands, int lim_holiday, 
-//                int lim_max, int lim_age, int lim_age_type, int lim_division, int exclude_nhi_no)
-        
         return ptId;
     }
     
-    public int updateOutpatientFee(long ptId, PtOutpatientFeePl params) {
+    public int updateSurgeryFee(long ptId, PtSurgeryFeePl params) {
         int ret = 0;
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
@@ -88,25 +77,19 @@ public class PtOutpatientFeeService {
                 paymentTermsDao.deleteExcludeNhiNo(ptId);
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptOutpatientFeeDao.update(ptId, params.getNo_dentisit(), params.getNo_chi_medicine(), params.getNo_service_charge()|0, 
-                    params.getLim_out_islands()|0, params.getLim_holiday()|0, params.getLim_max()|0, 
-                    params.getLim_age()|0, params.getLim_age_type()|0,
-                    params.getLim_division()|0, params.getLim_holiday()|0);
+            ptSurgeryFeeDao.update(ptId, params.getLim_division()|0, params.getExclude_nhi_no()|0,  params.getLim_age()|0);
         }
-//        add(long ptId, int no_dentisit, int no_chi_medicine, int no_service_charge, int lim_out_islands, int lim_holiday, 
-//                int lim_max, int lim_age, int lim_age_type, int lim_division, int exclude_nhi_no)
-        
         return ret;
     }
 
-    public int deleteOutpatientFee(long ptId) {
+    public int deleteSurgeryFee(long ptId) {
         int ret = 0;
         if (ptId > 0) {
             ret += paymentTermsDao.deletePaymentTerms(ptId, this.Category);
             if (ret>0) {
                 ret += paymentTermsDao.deleteExcludeNhiNo(ptId);
                 ret += paymentTermsDao.deleteLimDivision(ptId);
-                ret += ptOutpatientFeeDao.delete(ptId);
+                ret += ptSurgeryFeeDao.delete(ptId);
             }
         }
         return ret;
