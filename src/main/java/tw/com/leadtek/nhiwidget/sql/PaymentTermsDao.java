@@ -217,6 +217,30 @@ public class PaymentTermsDao {
         }
         return ret;
     }
+    
+    public java.util.Map<String, Object> findUser(String userName) {
+        String sql;
+        sql = "Select ID, USERNAME, DISPLAY_NAME, EMAIL, STATUS, \"ROLE\"\r\n"
+                + "From USER\r\n"
+                + "Where (USERNAME='%s')";
+        sql = String.format(sql, userName);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        if (lst.size()>0) {
+            return Utility.mapLowerCase(lst.get(0));
+        } else {
+            return null;
+        }
+    }
+    
+    public int findUserRole(String userName) {
+        int ret = 0;
+        java.util.Map<String, Object> user = findUser(userName);
+        if (user != null) {
+            ret = (int)user.get("role");
+        }
+        System.out.println("role="+ret);
+        return ret;
+    }
 
     //===
     public long newTableId_l(String tbName, String fdName) {

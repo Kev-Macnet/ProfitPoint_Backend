@@ -32,6 +32,10 @@ public class PaymentTermsService {
         return lst;
     }
     
+    
+    public int findUserRole(String userName) {
+        return paymentTermsDao.findUserRole(userName);
+    }
 
     
 }

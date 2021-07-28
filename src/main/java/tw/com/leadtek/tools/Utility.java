@@ -59,6 +59,8 @@ public class Utility {
       } else if (status == -2) {
           retMap.put("status", 401);
           retMap.put("message", "token 過期!");
+      } else {
+          //
       }
       return retMap;
     }

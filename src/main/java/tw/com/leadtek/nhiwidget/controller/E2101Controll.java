@@ -57,7 +57,11 @@ public class E2101Controll {
         @RequestBody PaymentTermsSearchPl params) throws Exception {
         System.out.println("useModelV3="+useModelV3);
         java.util.Map<String, Object> jwtValidation = Utility.jwtValidate(jwt);
-        if ((int)jwtValidation.get("status") != 200) {
+        if ((int)jwtValidation.get("status")!=200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else if (paymentTermsService.findUserRole(jwtValidation.get("userName").toString())<4) {
+            jwtValidation.put("status", 401);
+            jwtValidation.put("message", "權限不足!");
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             java.util.Date da1 = Utility.detectDate(params.getStart_date());
@@ -84,6 +88,10 @@ public class E2101Controll {
         java.util.Map<String, Object> jwtValidation = Utility.jwtValidate(jwt);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else if (paymentTermsService.findUserRole(jwtValidation.get("userName").toString())<4) {
+            jwtValidation.put("status", 401);
+            jwtValidation.put("message", "權限不足!");
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             java.util.Map<String, Object> retMap = ptOutpatientFeeService.findOutpatientFee(pt_id);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
@@ -102,6 +110,10 @@ public class E2101Controll {
         
         java.util.Map<String, Object> jwtValidation = Utility.jwtValidate(jwt);
         if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else if (paymentTermsService.findUserRole(jwtValidation.get("userName").toString())<4) {
+            jwtValidation.put("status", 401);
+            jwtValidation.put("message", "權限不足!");
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = 0;
@@ -133,6 +145,10 @@ public class E2101Controll {
         java.util.Map<String, Object> jwtValidation = Utility.jwtValidate(jwt);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else if (paymentTermsService.findUserRole(jwtValidation.get("userName").toString())<4) {
+            jwtValidation.put("status", 401);
+            jwtValidation.put("message", "權限不足!");
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = ptOutpatientFeeService.updateOutpatientFee(pt_id, params);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
@@ -159,6 +175,10 @@ public class E2101Controll {
         
         java.util.Map<String, Object> jwtValidation = Utility.jwtValidate(jwt);
         if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else if (paymentTermsService.findUserRole(jwtValidation.get("userName").toString())<4) {
+            jwtValidation.put("status", 401);
+            jwtValidation.put("message", "權限不足!");
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = ptOutpatientFeeService.deleteOutpatientFee(pt_id);
