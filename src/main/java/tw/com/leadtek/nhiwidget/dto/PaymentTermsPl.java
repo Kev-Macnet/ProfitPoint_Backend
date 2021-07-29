@@ -12,14 +12,14 @@ public class PaymentTermsPl {
     @ApiModelProperty(value="分類", example="門診診察費", position=1, required=true)
     private String category;
     
-    @ApiModelProperty(value="院內碼",example="abc001", position=2, required=false)
+    @ApiModelProperty(value="院內碼",example="zz001", position=2, required=false)
     private String fee_no;
-    @ApiModelProperty(value="院內碼名稱", example="掛號費", position=3, required=false)
+    @ApiModelProperty(value="院內碼名稱", example="雜支", position=3, required=false)
     private String fee_name;
     
-    @ApiModelProperty(value="支付標準代碼", example="abc001", position=4, required=false)
+    @ApiModelProperty(value="支付標準代碼", example="axow-001", position=4, required=false)
     private String nhi_no;
-    @ApiModelProperty(value="支付標準代碼名稱", example="掛號費", position=5, required=false)
+    @ApiModelProperty(value="支付標準代碼名稱", example="雜支", position=5, required=false)
     private String nhi_name;
 
     @ApiModelProperty(value="生效日(timestamp)", example="1625932800000", position=6, required=true)

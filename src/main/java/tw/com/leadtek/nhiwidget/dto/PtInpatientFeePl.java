@@ -19,7 +19,7 @@ public class PtInpatientFeePl extends PaymentTermsPl {
     
     @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", required=false)
     private int exclude_nhi_no;
-    @ApiModelProperty(value="支付代碼 list", required=false)
+    @ApiModelProperty(value="不可支付代碼 list", required=false)
     private java.util.List<String> lst_nhi_no;
     
     @ApiModelProperty(value="參與計畫之病患，不得申報", example="0", required=false)
@@ -29,7 +29,7 @@ public class PtInpatientFeePl extends PaymentTermsPl {
     
     @ApiModelProperty(value="需與以下任一支付標準代碼並存", example="0", required=false)
     private int coexist_nhi_no;
-    @ApiModelProperty(value="計畫 list", required=false)
+    @ApiModelProperty(value="並存支付代碼 list", required=false)
     private java.util.List<String> lst_co_nhi_no;
     
     @ApiModelProperty(value="單一住院就醫紀錄門診診察費或住院診察費支付標準代碼，不可並存", example="0", required=false)
