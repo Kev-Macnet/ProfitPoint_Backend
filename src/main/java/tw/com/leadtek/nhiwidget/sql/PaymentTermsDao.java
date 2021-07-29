@@ -179,6 +179,47 @@ public class PaymentTermsDao {
     }
     
     //===
+    public int deleteCoexistNhiNo(long ptId) {
+        String sql;
+        sql = "Delete from PT_COEXIST_NHI_NO\r\n"
+                + "WHERE (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        int ret =  jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public java.util.List<String> filterCoexistNhiNo(long ptId) {
+        String sql;
+        sql = "Select NHI_NO\r\n"
+                + "From PT_COEXIST_NHI_NO\r\n"
+                + "Where (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        java.util.List<String> retList = new java.util.ArrayList<String>();
+        for (Map<String, Object> item : lst) {
+            retList.add(item.get("NHI_NO").toString());
+        }
+        return retList;
+    }
+    
+    public int addCoexistNhiNo(long ptId, java.util.List<String> lstNhiNo) {
+        int ret = 0;
+        String sql;
+        sql = "Insert into \r\n"
+                + "PT_COEXIST_NHI_NO (PT_ID, NHI_NO)\r\n"
+                + "Values(%d, '%s')";
+        for (String nhiNo : lstNhiNo) {
+            String s1=String.format(sql, ptId, nhiNo);
+            try {
+                ret += jdbcTemplate.update(s1);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return ret;
+    }
+    
+    //===
     public int deleteLimDivision(long ptId) {
         String sql;
         sql = "Delete from PT_LIM_DIVISION\r\n"
@@ -219,6 +260,49 @@ public class PaymentTermsDao {
         return ret;
     }
     
+    
+  //=== PT_NOT_ALLOW_PLAN  
+    public int deleteNotAllowPlan(long ptId) {
+        String sql;
+        sql = "Delete from PT_NOT_ALLOW_PLAN\r\n"
+                + "WHERE (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        int ret =  jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public java.util.List<String> filterNotAllowPlan(long ptId) {
+        String sql;
+        sql = "Select PLAN\r\n"
+                + "From PT_NOT_ALLOW_PLAN\r\n"
+                + "Where (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        java.util.List<String> retList = new java.util.ArrayList<String>();
+        for (Map<String, Object> item : lst) {
+            retList.add(item.get("PLAN").toString());
+        }
+        return retList;
+    }
+    
+    public int addNotAllowPlan(long ptId, java.util.List<String> lstPlan) {
+        int ret = 0;
+        String sql;
+        sql = "Insert into \r\n"
+                + "PT_NOT_ALLOW_PLAN (PT_ID, PLAN)\r\n"
+                + "Values(%d, '%s')";
+        for (String plan : lstPlan) {
+            String s1=String.format(sql, ptId, plan);
+            try {
+                ret += jdbcTemplate.update(s1);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return ret;
+    }
+    
+    //===
     public java.util.Map<String, Object> findUser(String userName) {
         String sql;
         sql = "Select ID, USERNAME, DISPLAY_NAME, EMAIL, STATUS, \"ROLE\"\r\n"

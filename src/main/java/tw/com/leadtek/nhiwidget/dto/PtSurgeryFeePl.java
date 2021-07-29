@@ -8,17 +8,17 @@ public class PtSurgeryFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="手術費", required=true)
     private String category;
     
-    @ApiModelProperty(value="限定幾歲病患(年齡)開立", position=7, example="65", required=false)
+    @ApiModelProperty(value="限定幾歲病患(年齡)開立", example="65", position=20, required=false)
     private int lim_age;
 
-    @ApiModelProperty(value="限定特定科別應用", position=9, example="0", required=false)
+    @ApiModelProperty(value="限定特定科別應用", example="0", position=21, required=false)
     private int lim_division;
-    @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", position=10, example="0", required=false)
+    @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", position=23, required=false)
     private int exclude_nhi_no;
     
-    @ApiModelProperty(value="限定特定科別應用清單", position=11, required=false)
+    @ApiModelProperty(value="限定特定科別應用清單", position=24, required=false)
     private java.util.List<String> lst_division;
-    @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", position=12, required=false)
+    @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", position=25, required=false)
     private java.util.List<String> lst_nhi_no;
 
 //    @Override
