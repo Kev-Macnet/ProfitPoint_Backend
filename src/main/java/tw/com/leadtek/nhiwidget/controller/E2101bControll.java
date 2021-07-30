@@ -17,11 +17,14 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import tw.com.leadtek.nhiwidget.dto.PtNutritionalFeeDto;
+import tw.com.leadtek.nhiwidget.dto.PtNutritionalFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtTubeFeedingFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtTubeFeedingFeePl;
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.PtNutritionalFeeService;
 import tw.com.leadtek.nhiwidget.service.PtTreatmentFeeService;
 import tw.com.leadtek.nhiwidget.service.PtTubeFeedingFeeService;
 
@@ -37,6 +40,8 @@ public class E2101bControll {
     private PtTreatmentFeeService ptTreatmentFeeService;
     @Autowired
     private PtTubeFeedingFeeService ptTubeFeedingFeeService;
+    @Autowired
+    private PtNutritionalFeeService ptNutritionalFeeService;
     
 
     //==== 治療處置費設定 Treatment Fee
@@ -138,7 +143,7 @@ public class E2101bControll {
         }
     }
 
-  //==== 管灌飲食費設定 Tube Feeding Fee
+    //==== 管灌飲食費設定 Tube Feeding Fee
     @ApiOperation(value="10-2.05 管灌飲食費設定(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtTubeFeedingFeeDto.class)
@@ -237,5 +242,105 @@ public class E2101bControll {
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
+    
+    //=== 營養照護費 Nutritional Fee
+    @ApiOperation(value="10-2.09 營養照護費設定(get)", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }", response=PtNutritionalFeeDto.class)
+    })
+    @RequestMapping(value = "/payment/nutritionalfee/{pt_id}", method = RequestMethod.POST)
+    public ResponseEntity<?> getPaymentNutritionalfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            java.util.Map<String, Object> retMap = ptNutritionalFeeService.findNutritionalFee(pt_id);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-2.10 營養照護費設定(add)", notes="category = \"病房費\"")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/nutritionalfee/add", method = RequestMethod.POST)
+    public ResponseEntity<?> addPaymentNutritionalfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @RequestBody PtNutritionalFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = 0;
+            long ptId = ptNutritionalFeeService.addNutritionalFee(params);
+            if (ptId<=0) {
+                status = -1;
+            }
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status==0) {
+                retMap.put("message", "新增成功。/id="+ptId);
+            } else {
+                retMap.put("message", "新增失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-2.11 營養照護費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/nutritionalfee/{pt_id}", method = RequestMethod.PUT)
+    public ResponseEntity<?> updatePaymentNutritionalfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id,
+        @RequestBody PtNutritionalFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptNutritionalFeeService.updateNutritionalFee(pt_id, params);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>0) {
+                retMap.put("message", "修改成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "修改失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-2.12 營養照護費設定(delete)", notes="")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/nutritionalfee/{pt_id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deletePaymentNutritionalfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptNutritionalFeeService.deleteNutritionalFee(pt_id);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>=0) {
+                retMap.put("message", "刪除成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "刪除失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
 
 }
