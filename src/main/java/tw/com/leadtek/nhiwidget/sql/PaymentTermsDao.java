@@ -260,6 +260,48 @@ public class PaymentTermsDao {
         return ret;
     }
     
+  //===
+    public int deleteIncludeIcdNo(long ptId) {
+        String sql;
+        sql = "Delete from PT_INCLUDE_ICD_NO\r\n"
+                + "WHERE (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        int ret =  jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public java.util.List<String> filterIncludeIcdNo(long ptId) {
+        String sql;
+        sql = "Select ICD_NO\r\n"
+                + "From PT_INCLUDE_ICD_NO\r\n"
+                + "Where (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        java.util.List<String> retList = new java.util.ArrayList<String>();
+        for (Map<String, Object> item : lst) {
+            retList.add(item.get("ICD_NO").toString());
+        }
+        return retList;
+    }
+    
+    public int addIncludeIcdNo(long ptId, java.util.List<String> lstIcdNo) {
+        int ret = 0;
+        String sql;
+        sql = "Insert into \r\n"
+                + "PT_INCLUDE_ICD_NO (PT_ID, ICD_NO)\r\n"
+                + "Values(%d, '%s')";
+        for (String icdNo : lstIcdNo) {
+            String s1=String.format(sql, ptId, icdNo);
+            try {
+                ret += jdbcTemplate.update(s1);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return ret;
+    }
+    
+    
     
   //=== PT_NOT_ALLOW_PLAN  
     public int deleteNotAllowPlan(long ptId) {

@@ -18,10 +18,10 @@ public class PtWardFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="入住時間超過n小時，不可申報此支付標準代碼", example="168", required=false)
     private int max_stay;
 
-    @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", position=23, required=false)
+    @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", required=false)
     private int exclude_nhi_no;
     
-    @ApiModelProperty(value="不可與此支付標準代碼清單", position=25, required=false)
+    @ApiModelProperty(value="不可與此支付標準代碼清單", required=false)
     private java.util.List<String> lst_nhi_no;
 
     public String getCategory() {

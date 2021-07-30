@@ -34,12 +34,15 @@ import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricWardFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricWardFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeeDto;
+import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.service.PtInpatientFeeService;
 import tw.com.leadtek.nhiwidget.service.PtOutpatientFeeService;
 import tw.com.leadtek.nhiwidget.service.PtPsychiatricWardFeeService;
+import tw.com.leadtek.nhiwidget.service.PtSurgeryFeeService;
 import tw.com.leadtek.nhiwidget.service.PtWardFeeService;
 import tw.com.leadtek.tools.Utility;
 
@@ -61,6 +64,8 @@ public class E2101Controll {
     private PtInpatientFeeService ptInpatientFeeService;
     @Autowired
     private PtPsychiatricWardFeeService ptPsychiatricWardFeeService;
+    @Autowired
+    private PtSurgeryFeeService ptSurgeryFeeService;
     
     @ApiOperation(value="10.01 支付條件設定搜尋", notes="Result: PaymentTermsSearchDto")
     @ApiResponses(value={
@@ -475,6 +480,106 @@ public class E2101Controll {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = ptPsychiatricWardFeeService.deletePsychiatricWardFee(pt_id);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>=0) {
+                retMap.put("message", "刪除成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "刪除失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+  //==== 手術費設定 surgery fee
+    @ApiOperation(value="10.18 手術費設定(get)", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }", response=PtSurgeryFeeDto.class)
+    })
+    @RequestMapping(value = "/payment/surgeryfee/{pt_id}", method = RequestMethod.POST)
+    public ResponseEntity<?> getPaymentSurgeryfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            java.util.Map<String, Object> retMap = ptSurgeryFeeService.findSurgeryFee(pt_id);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10.19 手術費設定(add)", notes="category = \"手術費\"")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/surgeryfee/add", method = RequestMethod.POST)
+    public ResponseEntity<?> addPaymentSurgeryfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @RequestBody PtSurgeryFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = 0;
+            long ptId = ptSurgeryFeeService.addSurgeryFee(params);
+            if (ptId<=0) {
+                status = -1;
+            }
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status==0) {
+                retMap.put("message", "新增成功。/id="+ptId);
+            } else {
+                retMap.put("message", "新增失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10.20 手術費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/surgeryfee/{pt_id}", method = RequestMethod.PUT)
+    public ResponseEntity<?> updatePaymentSurgeryfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id,
+        @RequestBody PtSurgeryFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptSurgeryFeeService.updateSurgeryFee(pt_id, params);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>0) {
+                retMap.put("message", "修改成功。/id="+pt_id);
+                retMap.put("notify", "修改時 category 無法變更");
+            } else {
+                retMap.put("message", "修改失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10.21 手術費設定(delete)", notes="")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/surgeryfee/{pt_id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deletePaymentSurgeryfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptSurgeryFeeService.deleteSurgeryFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>=0) {
