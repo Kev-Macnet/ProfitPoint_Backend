@@ -5,7 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 
 
 //參數說明: https://iter01.com/378925.html
-@ApiModel(description = "支付條件設定搜尋")
+@ApiModel(value="pt支付條件設定搜尋", description = "pt支付條件設定搜尋")
 public class PaymentTermsSearchPl {
 
     @ApiModelProperty(value="院內碼", position=1, example="abc001", required=false)

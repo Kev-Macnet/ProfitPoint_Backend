@@ -67,7 +67,7 @@ public class E2101Controll {
     @Autowired
     private PtSurgeryFeeService ptSurgeryFeeService;
     
-    @ApiOperation(value="10.01 支付條件設定搜尋", notes="Result: PaymentTermsSearchDto")
+    @ApiOperation(value="10-1.01 支付條件設定搜尋", notes="Result: PaymentTermsSearchDto")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="[{...}, {...}, ...]", response=PaymentTermsSearchDto.class)
     })
@@ -90,7 +90,42 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.02 門診診察費設定(get)", notes="")
+    @ApiOperation(value="10-1.02 支付條件分類清單", notes="")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="[{...}, {...}, ...]") //, response=PaymentTermsSearchDto.class)
+    })
+    @RequestMapping(value = "/payment/terms/category", method = RequestMethod.POST)
+    public ResponseEntity<?> paymentTermsCategory(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt) throws Exception {
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            String[][] arrCategory = {
+                {"門診診察費","/payment/outpatientfee/"},
+                {"住院診察費","/payment/inpatientfee/"},
+                {"病房費","/payment/wardfee/"},
+                {"精神慢性病房費","/payment/psychiatricWardfee/"},
+                {"手術費","/payment/surgeryfee/"},
+                
+                {"治療處置費","/payment/treatmentfee/"},
+                {"管灌飲食費","/payment/tubefeedingfee/"},
+                {"營養照護費","/payment/nutritionalfee/"},
+                {"調劑費","/payment/adjustmentfee/"}
+            };
+            java.util.List<Map<String, Object>> retList = new java.util.ArrayList<Map<String, Object>>();
+            for (int a=0; a<arrCategory.length; a++) {
+                java.util.Map<String, Object> map = new java.util.HashMap<String, Object>();
+                map.put("category", arrCategory[a][0]);
+                map.put("Prefix", arrCategory[a][1]);
+                retList.add(map);
+            }
+            return new ResponseEntity<>(retList, HttpStatus.OK);
+        }
+    }
+    
+    
+    @ApiOperation(value="10-1.03 門診診察費設定(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtOutpatientFeeDto.class)
 //        @ApiResponse(responseCode = "200", description="{ PtOutpatientFeeDto }",
@@ -111,7 +146,7 @@ public class E2101Controll {
     }
 
     
-    @ApiOperation(value="10.03 門診診察費設定(add)", notes="ategory = \"門診診察費\"")
+    @ApiOperation(value="10-1.04 門診診察費設定(add)", notes="ategory = \"門診診察費\"")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -140,7 +175,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.04 門診診察費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-1.05 門診診察費設定(update)", notes="<b>category 無法變更</b>")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -166,7 +201,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.05 門診診察費設定(delete)", notes="")
+    @ApiOperation(value="10-1.06 門診診察費設定(delete)", notes="")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -192,7 +227,7 @@ public class E2101Controll {
     }
     
     //==== 住院診察費 inpatient fee
-    @ApiOperation(value="10.06 住院診察費設定(get)", notes="")
+    @ApiOperation(value="10-1.07 住院診察費設定(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtInpatientFeeDto.class)
     })
@@ -210,7 +245,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.07 住院診察費設定(add)", notes="category = \"手術費\"")
+    @ApiOperation(value="10-1.08 住院診察費設定(add)", notes="category = \"手術費\"")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -240,7 +275,7 @@ public class E2101Controll {
     }
     
     
-    @ApiOperation(value="10.08 住院診察費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-1.09 住院診察費設定(update)", notes="<b>category 無法變更</b>")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -267,7 +302,7 @@ public class E2101Controll {
     }
     
     
-    @ApiOperation(value="10.09 住院診察費設定(delete)", notes="")
+    @ApiOperation(value="10-1.10 住院診察費設定(delete)", notes="")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -291,8 +326,9 @@ public class E2101Controll {
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
+    
     //==== 病房費設定 Ward fee
-    @ApiOperation(value="10.10 病房費設定(get)", notes="")
+    @ApiOperation(value="10-1.11 病房費設定(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtWardFeeDto.class)
     })
@@ -310,7 +346,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.11 病房費設定(add)", notes="category = \"病房費\"")
+    @ApiOperation(value="10-1.12 病房費設定(add)", notes="category = \"病房費\"")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -339,7 +375,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.12 病房費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-1.13 病房費設定(update)", notes="<b>category 無法變更</b>")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -365,7 +401,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.13 病房費設定(delete)", notes="")
+    @ApiOperation(value="10-1.14 病房費設定(delete)", notes="")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -391,7 +427,7 @@ public class E2101Controll {
     }
     
     //==== 精神慢性病房費 Psychiatric Ward Fee
-    @ApiOperation(value="10.14 精神慢性病房費(get)", notes="")
+    @ApiOperation(value="10-1.15 精神慢性病房費(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtPsychiatricWardFeeDto.class)
     })
@@ -410,7 +446,7 @@ public class E2101Controll {
     }
     
     
-    @ApiOperation(value="10.15 精神慢性病房費(add)", notes="category = \"精神慢性病房費\"")
+    @ApiOperation(value="10-1.16 精神慢性病房費(add)", notes="category = \"精神慢性病房費\"")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -439,7 +475,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.16 精神慢性病房費(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-1.17 精神慢性病房費(update)", notes="<b>category 無法變更</b>")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -466,7 +502,7 @@ public class E2101Controll {
     }
     
     
-    @ApiOperation(value="10.17 精神慢性病房費(delete)", notes="")
+    @ApiOperation(value="10-1.18 精神慢性病房費(delete)", notes="")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -492,7 +528,7 @@ public class E2101Controll {
     }
     
   //==== 手術費設定 surgery fee
-    @ApiOperation(value="10.18 手術費設定(get)", notes="")
+    @ApiOperation(value="10-1.19 手術費設定(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtSurgeryFeeDto.class)
     })
@@ -510,7 +546,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.19 手術費設定(add)", notes="category = \"手術費\"")
+    @ApiOperation(value="10-1.20 手術費設定(add)", notes="category = \"手術費\"")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -539,7 +575,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.20 手術費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-1.21 手術費設定(update)", notes="<b>category 無法變更</b>")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -566,7 +602,7 @@ public class E2101Controll {
         }
     }
     
-    @ApiOperation(value="10.21 手術費設定(delete)", notes="")
+    @ApiOperation(value="10-1.22 手術費設定(delete)", notes="")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })

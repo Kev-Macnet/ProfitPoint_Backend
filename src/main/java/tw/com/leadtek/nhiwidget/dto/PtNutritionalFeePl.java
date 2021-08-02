@@ -3,7 +3,7 @@ package tw.com.leadtek.nhiwidget.dto;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-@ApiModel(description = "營養照護費設定參數")
+@ApiModel(value = "pt營養照護費設定參數")
 public class PtNutritionalFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="營養照護費", required=true)
     private String category;

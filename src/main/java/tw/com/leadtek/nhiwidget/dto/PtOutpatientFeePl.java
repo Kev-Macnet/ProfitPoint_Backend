@@ -5,7 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 
 
 //參數說明: https://iter01.com/378925.html
-@ApiModel(description = "門診診察費設定參數")
+@ApiModel(value = "pt門診診察費設定參數")
 public class PtOutpatientFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="門診診察費", required=true)
     private String category;

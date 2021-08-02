@@ -3,7 +3,7 @@ package tw.com.leadtek.nhiwidget.dto;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-@ApiModel(description = "精神慢性病房費設定參數")
+@ApiModel(value = "pt精神慢性病房費設定參數")
 public class PtPsychiatricWardFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="精神慢性病房費", required=true)
     private String category;

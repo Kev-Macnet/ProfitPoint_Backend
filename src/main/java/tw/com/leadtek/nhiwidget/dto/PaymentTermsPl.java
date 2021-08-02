@@ -6,7 +6,7 @@ import javax.validation.constraints.Min;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-@ApiModel(description = "支付條件設定Master")
+@ApiModel(value= "pt支付條件設定Master", description = "pt支付條件設定Master")
 public class PaymentTermsPl {
     
     @ApiModelProperty(value="分類", example="門診診察費", position=1, required=true)
