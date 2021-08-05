@@ -15,7 +15,7 @@ import tw.com.leadtek.tools.Utility;
 
 
 @Repository
-public class PtWardFeeDao {
+public class PtMedicineFeeDao {
 
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
     
@@ -24,8 +24,8 @@ public class PtWardFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, MIN_STAY, MAX_STAY, EXCLUDE_NHI_NO\r\n"
-                + "From PT_WARD_FEE\r\n"
+        sql = "Select PT_ID, MAX_NDAY\r\n"
+                + "From PT_MEDICINE_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         logger.info(sql);
@@ -39,7 +39,7 @@ public class PtWardFeeDao {
     
     public int delete(long ptId) {
         String sql;
-        sql = "Delete from PT_WARD_FEE\r\n"
+        sql = "Delete from PT_MEDICINE_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         logger.info(sql);
@@ -47,12 +47,12 @@ public class PtWardFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int min_stay, int max_stay, int exclude_nhi_no) {
+    public int add(long ptId, int max_nday) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_WARD_FEE(PT_ID, MIN_STAY, MAX_STAY, EXCLUDE_NHI_NO)\r\n"
-                + "Values(%d, %d, %d, %d)";
-        sql = String.format(sql, ptId, min_stay, max_stay, exclude_nhi_no);
+                + "PT_MEDICINE_FEE(PT_ID, MAX_NDAY)\r\n"
+                + "Values(%d, %d)";
+        sql = String.format(sql, ptId, max_nday);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -62,14 +62,12 @@ public class PtWardFeeDao {
         }
     }
     
-    public int update(long ptId, int min_stay, int max_stay, int exclude_nhi_no) {
+    public int update(long ptId, int max_nday) {
         String sql;
-        sql = "Update PT_WARD_FEE\r\n"
-                + "Set MIN_STAY=%d, \r\n"
-                + "    MAX_STAY=%d, \r\n"
-                + "    EXCLUDE_NHI_NO=%d\r\n"
+        sql = "Update PT_MEDICINE_FEE\r\n"
+                + "Set MAX_NDAY=%d\r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, min_stay, max_stay, exclude_nhi_no, ptId);
+        sql = String.format(sql, max_nday, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

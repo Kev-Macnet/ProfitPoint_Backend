@@ -68,16 +68,17 @@ public class PtSurgeryFeeService {
             ret += paymentTermsDao.updatePaymentTerms(ptId, params.getFee_no(), params.getFee_name(), params.getNhi_no(), params.getNhi_name(), 
                                                   start_date, end_data, this.Category, 
                                                   params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
-        
-            if (params.getLst_division() != null) {
-                paymentTermsDao.deleteLimDivision(ptId);
-                paymentTermsDao.addLimDivision(ptId, params.getLst_division());
+            if (ret>0) {
+                if (params.getLst_division() != null) {
+                    paymentTermsDao.deleteLimDivision(ptId);
+                    paymentTermsDao.addLimDivision(ptId, params.getLst_division());
+                }
+                if (params.getLst_nhi_no() != null) {
+                    paymentTermsDao.deleteExcludeNhiNo(ptId);
+                    paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
+                }
+                ptSurgeryFeeDao.update(ptId, params.getLim_division()|0, params.getExclude_nhi_no()|0,  params.getLim_age()|0);
             }
-            if (params.getLst_nhi_no() != null) {
-                paymentTermsDao.deleteExcludeNhiNo(ptId);
-                paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
-            }
-            ptSurgeryFeeDao.update(ptId, params.getLim_division()|0, params.getExclude_nhi_no()|0,  params.getLim_age()|0);
         }
         return ret;
     }

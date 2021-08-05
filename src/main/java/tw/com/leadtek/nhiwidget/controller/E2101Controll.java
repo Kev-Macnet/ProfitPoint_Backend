@@ -117,7 +117,7 @@ public class E2101Controll {
             for (int a=0; a<arrCategory.length; a++) {
                 java.util.Map<String, Object> map = new java.util.HashMap<String, Object>();
                 map.put("category", arrCategory[a][0]);
-                map.put("Prefix", arrCategory[a][1]);
+                map.put("url_prefix", arrCategory[a][1]);
                 retList.add(map);
             }
             return new ResponseEntity<>(retList, HttpStatus.OK);
@@ -217,7 +217,7 @@ public class E2101Controll {
             int status = ptOutpatientFeeService.deleteOutpatientFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
-            if (status>=0) {
+            if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
             } else {
                 retMap.put("message", "刪除失敗!");
@@ -318,7 +318,7 @@ public class E2101Controll {
             int status = ptInpatientFeeService.deleteInpatientFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
-            if (status>=0) {
+            if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
             } else {
                 retMap.put("message", "刪除失敗!");
@@ -417,7 +417,7 @@ public class E2101Controll {
             int status = ptWardFeeService.deleteWardFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
-            if (status>=0) {
+            if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
             } else {
                 retMap.put("message", "刪除失敗!");
@@ -518,7 +518,7 @@ public class E2101Controll {
             int status = ptPsychiatricWardFeeService.deletePsychiatricWardFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
-            if (status>=0) {
+            if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
             } else {
                 retMap.put("message", "刪除失敗!");
@@ -618,7 +618,7 @@ public class E2101Controll {
             int status = ptSurgeryFeeService.deleteSurgeryFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
-            if (status>=0) {
+            if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
             } else {
                 retMap.put("message", "刪除失敗!");
