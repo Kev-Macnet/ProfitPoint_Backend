@@ -50,7 +50,7 @@ import tw.com.leadtek.tools.Utility;
 @Api(value = "健保標準給付額 支付條件設定 API", tags = {"10-1 健保標準給付額 支付條件設定"})
 @RestController
 @CrossOrigin(origins = "*", allowedHeaders = "*")
-public class E2101Controll {
+public class E2101aControll {
     @Value("${springfox.documentation.swagger.use-model-v3:true}")
     boolean useModelV3;
     
@@ -111,7 +111,8 @@ public class E2101Controll {
                 {"治療處置費","/payment/treatmentfee/"},
                 {"管灌飲食費","/payment/tubefeedingfee/"},
                 {"營養照護費","/payment/nutritionalfee/"},
-                {"調劑費","/payment/adjustmentfee/"}
+                {"調劑費","/payment/adjustmentfee/"},
+                {"藥費","/payment/medicinefee/"}
             };
             java.util.List<Map<String, Object>> retList = new java.util.ArrayList<Map<String, Object>>();
             for (int a=0; a<arrCategory.length; a++) {

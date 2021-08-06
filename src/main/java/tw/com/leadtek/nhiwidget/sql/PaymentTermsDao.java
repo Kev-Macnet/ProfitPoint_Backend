@@ -136,8 +136,8 @@ public class PaymentTermsDao {
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
-    //===
     
+    //=== ExcludeNhiNo
     public int deleteExcludeNhiNo(long ptId) {
         String sql;
         sql = "Delete from PT_EXCLUDE_NHI_NO\r\n"
@@ -178,7 +178,7 @@ public class PaymentTermsDao {
         return ret;
     }
     
-    //===
+    //=== CoexistNhiNo
     public int deleteCoexistNhiNo(long ptId) {
         String sql;
         sql = "Delete from PT_COEXIST_NHI_NO\r\n"
@@ -218,6 +218,48 @@ public class PaymentTermsDao {
         }
         return ret;
     }
+    
+  //=== NotifyNhiNo
+    public int deleteNotifyNhiNo(long ptId) {
+        String sql;
+        sql = "Delete from PT_NOTIFY_NHI_NO\r\n"
+                + "WHERE (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        int ret =  jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public java.util.List<String> filterNotifyNhiNo(long ptId) {
+        String sql;
+        sql = "Select NHI_NO\r\n"
+                + "From PT_NOTIFY_NHI_NO\r\n"
+                + "Where (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        java.util.List<String> retList = new java.util.ArrayList<String>();
+        for (Map<String, Object> item : lst) {
+            retList.add(item.get("NHI_NO").toString());
+        }
+        return retList;
+    }
+    
+    public int addNotifyNhiNo(long ptId, java.util.List<String> lstNhiNo) {
+        int ret = 0;
+        String sql;
+        sql = "Insert into \r\n"
+                + "PT_NOTIFY_NHI_NO (PT_ID, NHI_NO)\r\n"
+                + "Values(%d, '%s')";
+        for (String nhiNo : lstNhiNo) {
+            String s1=String.format(sql, ptId, nhiNo);
+            try {
+                ret += jdbcTemplate.update(s1);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return ret;
+    }
+    
     
     //===
     public int deleteLimDivision(long ptId) {
