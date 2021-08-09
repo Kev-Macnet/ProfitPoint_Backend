@@ -115,7 +115,9 @@ public class E2101aControll {
                 {"藥費","/payment/medicinefee/"},
                 
                 {"放射線診療費","/payment/radiationfee/"},
-                {"注射","/payment/injectionfee/"}
+                {"注射","/payment/injectionfee/"},
+                {"品質支付服務","/payment/qualityservice/"},
+                {"住院安寧療護","/payment/inpatientcare/"}
             };
             java.util.List<Map<String, Object>> retList = new java.util.ArrayList<Map<String, Object>>();
             for (int a=0; a<arrCategory.length; a++) {
