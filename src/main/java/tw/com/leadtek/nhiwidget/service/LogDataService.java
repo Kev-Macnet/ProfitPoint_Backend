@@ -492,7 +492,7 @@ public class LogDataService {
             }
             
             newId = logDataDao.addLogData(table, condiMap.get("fields").toString(), condiMap.get("values").toString(), user, mode);
-            System.out.println("newId="+newId+"/"+table);
+//            System.out.println("newId="+newId+"/"+table);
             if (mode!=3 && newId>0) {
                 for (Map<String, Object> item : diffSet) {
                     String field, source, modify;

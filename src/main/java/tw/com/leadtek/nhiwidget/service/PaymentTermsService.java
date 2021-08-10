@@ -15,8 +15,6 @@ public class PaymentTermsService {
 
     @Autowired
     private PaymentTermsDao paymentTermsDao;
-//    @Autowired
-//    private  PtOutpatientFeeDao ptOutpatientFeeDao;
 
     public java.util.List<Map<String, Object>> searchPaymentTerms(String feeNo, String nhiNo, String category, 
             java.util.Date startDate, java.util.Date endDate) {

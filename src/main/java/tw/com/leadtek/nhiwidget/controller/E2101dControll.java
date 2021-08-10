@@ -17,27 +17,13 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import tw.com.leadtek.nhiwidget.dto.PtInjectionFeeDto;
-import tw.com.leadtek.nhiwidget.dto.PtInjectionFeePl;
-import tw.com.leadtek.nhiwidget.dto.PtInpatientCareDto;
-import tw.com.leadtek.nhiwidget.dto.PtInpatientCarePl;
+import tw.com.leadtek.nhiwidget.dto.PtBoneMarrowTransFeeDto;
+import tw.com.leadtek.nhiwidget.dto.PtBoneMarrowTransFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeePl;
-import tw.com.leadtek.nhiwidget.dto.PtQualityServiceDto;
-import tw.com.leadtek.nhiwidget.dto.PtQualityServicePl;
-import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
-import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeeDto;
-import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeePl;
-import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeeDto;
-import tw.com.leadtek.nhiwidget.dto.PtWardFeeDto;
-import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
-import tw.com.leadtek.nhiwidget.service.PtInjectionFeeService;
-import tw.com.leadtek.nhiwidget.service.PtInpatientCareService;
+import tw.com.leadtek.nhiwidget.service.PtBoneMarrowTransFeeService;
 import tw.com.leadtek.nhiwidget.service.PtPsychiatricFeeService;
-import tw.com.leadtek.nhiwidget.service.PtQualityServiceService;
-import tw.com.leadtek.nhiwidget.service.PtRadiationFeeService;
-import tw.com.leadtek.nhiwidget.service.PtRehabilitationFeeService;
 
 
 @Api(value = "健保標準給付額 支付條件設定 API", tags = {"10-4 健保標準給付額 支付條件設定"})
@@ -49,8 +35,9 @@ public class E2101dControll {
     private PaymentTermsService paymentTermsService;
     @Autowired
     private PtPsychiatricFeeService ptPsychiatricFeeService;
+    @Autowired
+    private PtBoneMarrowTransFeeService ptBoneMarrowTransFeeService;
 
-     
     //==== 精神醫療治療費 (Psychiatric Fee)
     @ApiOperation(value="10-4.01 精神醫療治療費設定(get)", notes="")
     @ApiResponses({
@@ -69,6 +56,7 @@ public class E2101dControll {
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
+    
     
     @ApiOperation(value="10-4.02 精神醫療治療費設定(add)", notes="category = \"放射線診療費\"")
     @ApiResponses(value={
@@ -98,6 +86,7 @@ public class E2101dControll {
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
+    
     
     @ApiOperation(value="10-4.03 精神醫療治療費設定(update)", notes="<b>category 無法變更</b>")
     @ApiResponses(value={
@@ -133,7 +122,6 @@ public class E2101dControll {
     public ResponseEntity<?> deletePaymentPsychiatricfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
-        
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
@@ -150,6 +138,104 @@ public class E2101dControll {
         }
     }
     
+    //==== 輸血及骨髓移植費 Bone Marrow Trans Fee
+    @ApiOperation(value="10-4.05 輸血及骨髓移植費設定(get)", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }", response=PtBoneMarrowTransFeeDto.class)
+    })
+    @RequestMapping(value = "/payment/bonemarrowtransfee/{pt_id}", method = RequestMethod.POST)
+    public ResponseEntity<?> getPaymentBoneMarrowTransFee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            java.util.Map<String, Object> retMap = ptBoneMarrowTransFeeService.findBoneMarrowTransFee(pt_id);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-4.06 輸血及骨髓移植費設定(add)", notes="category = \"輸血及骨髓移植費\"")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/bonemarrowtransfee/add", method = RequestMethod.POST)
+    public ResponseEntity<?> addPaymentBoneMarrowTransFee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @RequestBody PtBoneMarrowTransFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = 0;
+            long ptId = ptBoneMarrowTransFeeService.addBoneMarrowTransFee(params);
+            if (ptId<=0) {
+                status = -1;
+            }
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status==0) {
+                retMap.put("message", "新增成功。/id="+ptId);
+            } else {
+                retMap.put("message", "新增失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-4.07 輸血及骨髓移植費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/bonemarrowtransfee/{pt_id}", method = RequestMethod.PUT)
+    public ResponseEntity<?> updatePaymentBoneMarrowTransFee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id,
+        @RequestBody PtBoneMarrowTransFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptBoneMarrowTransFeeService.updateBoneMarrowTransFee(pt_id, params);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>0) {
+                retMap.put("message", "修改成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "修改失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-4.08 輸血及骨髓移植費設定(delete)", notes="")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/bonemarrowtransfee/{pt_id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deletePaymentBoneMarrowTransFee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptBoneMarrowTransFeeService.deleteBoneMarrowTransFee(pt_id);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>0) {
+                retMap.put("message", "刪除成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "刪除失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
 
 
 }
