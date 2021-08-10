@@ -449,7 +449,7 @@ public class E2101cControll {
         }
     }
 
-  //==== 復健治療費 (Rehabilitation fee)
+    //==== 復健治療費 (Rehabilitation fee)
     @ApiOperation(value="10-3.17 復健治療費設定(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtRehabilitationFeeDto.class)

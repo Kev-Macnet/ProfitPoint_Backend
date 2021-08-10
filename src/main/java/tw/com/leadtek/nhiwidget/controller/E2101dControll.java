@@ -19,10 +19,14 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.dto.PtBoneMarrowTransFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtBoneMarrowTransFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtInpatientCareDto;
+import tw.com.leadtek.nhiwidget.dto.PtInpatientCarePl;
+import tw.com.leadtek.nhiwidget.dto.PtPlasterBandageFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeePl;
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.service.PtBoneMarrowTransFeeService;
+import tw.com.leadtek.nhiwidget.service.PtPlasterBandageFeeService;
 import tw.com.leadtek.nhiwidget.service.PtPsychiatricFeeService;
 
 
@@ -37,6 +41,8 @@ public class E2101dControll {
     private PtPsychiatricFeeService ptPsychiatricFeeService;
     @Autowired
     private PtBoneMarrowTransFeeService ptBoneMarrowTransFeeService;
+    @Autowired
+    private PtPlasterBandageFeeService ptPlasterBandageFeeService;
 
     //==== 精神醫療治療費 (Psychiatric Fee)
     @ApiOperation(value="10-4.01 精神醫療治療費設定(get)", notes="")
@@ -237,5 +243,104 @@ public class E2101dControll {
         }
     }
 
+    
+  //==== 石膏繃帶費 (Plaster bandage fee)
+    @ApiOperation(value="10-4.09 石膏繃帶費設定(get)", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }", response=PtInpatientCareDto.class)
+    })
+    @RequestMapping(value = "/payment/plasterbandagefee/{pt_id}", method = RequestMethod.POST)
+    public ResponseEntity<?> getPaymentPlasterBandageFee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            java.util.Map<String, Object> retMap = ptPlasterBandageFeeService.findPlasterBandageFee(pt_id);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-4.10 石膏繃帶費設定(add)", notes="category = \"病房費\"")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/plasterbandagefee/add", method = RequestMethod.POST)
+    public ResponseEntity<?> addPaymentPlasterBandageFee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @RequestBody PtPlasterBandageFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = 0;
+            long ptId = ptPlasterBandageFeeService.addPlasterBandageFee(params);
+            if (ptId<=0) {
+                status = -1;
+            }
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status==0) {
+                retMap.put("message", "新增成功。/id="+ptId);
+            } else {
+                retMap.put("message", "新增失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-4.11 石膏繃帶費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/plasterbandagefee/{pt_id}", method = RequestMethod.PUT)
+    public ResponseEntity<?> updatePaymentPlasterBandageFee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id,
+        @RequestBody PtPlasterBandageFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptPlasterBandageFeeService.updatePlasterBandageFee(pt_id, params);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>0) {
+                retMap.put("message", "修改成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "修改失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-4.12 石膏繃帶費設定(delete)", notes="")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/plasterbandagefee/{pt_id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deletePaymentPlasterBandageFee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptPlasterBandageFeeService.deletePlasterBandageFee(pt_id);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>0) {
+                retMap.put("message", "刪除成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "刪除失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
 
 }
