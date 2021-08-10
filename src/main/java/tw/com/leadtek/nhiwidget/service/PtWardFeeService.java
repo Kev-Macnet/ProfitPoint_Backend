@@ -11,7 +11,6 @@ import tw.com.leadtek.tools.Utility;
 // swagger: http://127.0.0.1:8081/swagger-ui/index.html
 @Service
 public class PtWardFeeService {
-    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private PaymentTermsDao paymentTermsDao;

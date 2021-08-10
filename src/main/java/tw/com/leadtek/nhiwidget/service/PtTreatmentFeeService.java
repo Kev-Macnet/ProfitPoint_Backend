@@ -10,8 +10,7 @@ import tw.com.leadtek.tools.Utility;
 
 @Service
 public class PtTreatmentFeeService {
-    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
-
+    
     @Autowired
     private PaymentTermsDao paymentTermsDao;
     @Autowired

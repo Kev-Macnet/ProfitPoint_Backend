@@ -23,6 +23,7 @@ import tw.com.leadtek.nhiwidget.dto.PtInpatientCareDto;
 import tw.com.leadtek.nhiwidget.dto.PtInpatientCarePl;
 import tw.com.leadtek.nhiwidget.dto.PtQualityServiceDto;
 import tw.com.leadtek.nhiwidget.dto.PtQualityServicePl;
+import tw.com.leadtek.nhiwidget.dto.PtRadiationFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeePl;
@@ -58,7 +59,7 @@ public class E2101cControll {
     //==== 放射線診療費 Radiation Fee
     @ApiOperation(value="10-3.01 放射線診療費設定(get)", notes="")
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }", response=PtRadiationFeeDto.class)
     })
     @RequestMapping(value = "/payment/radiationfee/{pt_id}", method = RequestMethod.POST)
     public ResponseEntity<?> getPaymentRadiationfee(HttpServletRequest request,
