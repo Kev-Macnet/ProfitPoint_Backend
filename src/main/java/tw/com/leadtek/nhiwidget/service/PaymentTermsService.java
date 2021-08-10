@@ -1,16 +1,11 @@
 package tw.com.leadtek.nhiwidget.service;
 
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.stereotype.Service;
 
-import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
-import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
-import tw.com.leadtek.nhiwidget.sql.PtOutpatientFeeDao;
 import tw.com.leadtek.tools.Utility;
 
 // swagger: http://127.0.0.1:8081/swagger-ui/index.html

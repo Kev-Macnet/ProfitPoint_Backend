@@ -4,10 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
-import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtRadiationFeeDao;
-import tw.com.leadtek.nhiwidget.sql.PtWardFeeDao;
 import tw.com.leadtek.tools.Utility;
 
 @Service

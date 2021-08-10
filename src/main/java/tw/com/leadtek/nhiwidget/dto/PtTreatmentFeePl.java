@@ -25,7 +25,7 @@ public class PtTreatmentFeePl extends PaymentTermsPl {
     
     @ApiModelProperty(value="限定特定科別應用", example="0", required=false)
     private int lim_division;
-    @ApiModelProperty(value="科別清單", position=25, required=false)
+    @ApiModelProperty(value="lim_division 清單", position=25, required=false)
     private java.util.List<String> lst_division;
 
     @ApiModelProperty(value="單一住院就醫紀錄應用數量<=", example="20",required=false)

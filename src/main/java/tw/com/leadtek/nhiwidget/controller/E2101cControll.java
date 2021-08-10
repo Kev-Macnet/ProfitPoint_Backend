@@ -17,10 +17,15 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import tw.com.leadtek.nhiwidget.dto.PtInjectionFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtInjectionFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtInpatientCareDto;
 import tw.com.leadtek.nhiwidget.dto.PtInpatientCarePl;
+import tw.com.leadtek.nhiwidget.dto.PtQualityServiceDto;
 import tw.com.leadtek.nhiwidget.dto.PtQualityServicePl;
 import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeeDto;
+import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
@@ -29,6 +34,7 @@ import tw.com.leadtek.nhiwidget.service.PtInjectionFeeService;
 import tw.com.leadtek.nhiwidget.service.PtInpatientCareService;
 import tw.com.leadtek.nhiwidget.service.PtQualityServiceService;
 import tw.com.leadtek.nhiwidget.service.PtRadiationFeeService;
+import tw.com.leadtek.nhiwidget.service.PtRehabilitationFeeService;
 
 
 @Api(value = "健保標準給付額 支付條件設定 API", tags = {"10-3 健保標準給付額 支付條件設定"})
@@ -46,7 +52,9 @@ public class E2101cControll {
     private PtQualityServiceService ptQualityServiceService;
     @Autowired
     private PtInpatientCareService ptInpatientCareService;
-    
+    @Autowired
+    private PtRehabilitationFeeService ptRehabilitationFeeService;
+     
     //==== 放射線診療費 Radiation Fee
     @ApiOperation(value="10-3.01 放射線診療費設定(get)", notes="")
     @ApiResponses({
@@ -149,7 +157,7 @@ public class E2101cControll {
   //==== 注射 (injection Fee, P75)
     @ApiOperation(value="10-3.05 注射費設定(get)", notes="")
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=PtWardFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }", response=PtInjectionFeeDto.class)
     })
     @RequestMapping(value = "/payment/injectionfee/{pt_id}", method = RequestMethod.POST)
     public ResponseEntity<?> getPaymentInjectionfee(HttpServletRequest request,
@@ -248,7 +256,7 @@ public class E2101cControll {
     //==== 品質支付服務 Quality Service  ptQualityServiceService
     @ApiOperation(value="10-3.09 品質支付服務設定(get)", notes="")
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=PtWardFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }", response=PtQualityServiceDto.class)
     })
     @RequestMapping(value = "/payment/qualityservice/{pt_id}", method = RequestMethod.POST)
     public ResponseEntity<?> getPaymentQualityService(HttpServletRequest request,
@@ -347,7 +355,7 @@ public class E2101cControll {
     //==== 住院安寧療護 (Inpatient Care, P77)
     @ApiOperation(value="10-3.13 住院安寧療護(get)", notes="")
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=PtWardFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }", response=PtInpatientCareDto.class)
     })
     @RequestMapping(value = "/payment/inpatientcare/{pt_id}", method = RequestMethod.POST)
     public ResponseEntity<?> getPaymentInpatientCare(HttpServletRequest request,
@@ -443,5 +451,103 @@ public class E2101cControll {
         }
     }
 
+  //==== 復健治療費 (Rehabilitation fee)
+    @ApiOperation(value="10-3.17 復健治療費設定(get)", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }", response=PtRehabilitationFeeDto.class)
+    })
+    @RequestMapping(value = "/payment/rehabilitationfee/{pt_id}", method = RequestMethod.POST)
+    public ResponseEntity<?> getPaymentRehabilitationfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            java.util.Map<String, Object> retMap = ptRehabilitationFeeService.findRehabilitationFee(pt_id);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-3.18 復健治療費設定(add)", notes="category = \"復健治療費\"")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/rehabilitationfee/add", method = RequestMethod.POST)
+    public ResponseEntity<?> addPaymentRehabilitationfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @RequestBody PtRehabilitationFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = 0;
+            long ptId = ptRehabilitationFeeService.addRehabilitationFee(params);
+            if (ptId<=0) {
+                status = -1;
+            }
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status==0) {
+                retMap.put("message", "新增成功。/id="+ptId);
+            } else {
+                retMap.put("message", "新增失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-3.19 復健治療費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/rehabilitationfee/{pt_id}", method = RequestMethod.PUT)
+    public ResponseEntity<?> updatePaymentRehabilitationfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id,
+        @RequestBody PtRehabilitationFeePl params) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptRehabilitationFeeService.updateRehabilitationFee(pt_id, params);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>0) {
+                retMap.put("message", "修改成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "修改失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="10-3.20 復健治療費設定(delete)", notes="")
+    @ApiResponses(value={
+        @ApiResponse(code = 200, message="{ status:0 }")
+    })
+    @RequestMapping(value = "/payment/rehabilitationfee/{pt_id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deletePaymentRehabilitationfee(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable long pt_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = ptRehabilitationFeeService.deleteRehabilitationFee(pt_id);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>0) {
+                retMap.put("message", "刪除成功。/id="+pt_id);
+            } else {
+                retMap.put("message", "刪除失敗!");
+            }
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
 
 }

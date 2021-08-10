@@ -4,10 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.dto.PtQualityServicePl;
-import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtQualityServiceDao;
-import tw.com.leadtek.nhiwidget.sql.PtWardFeeDao;
 import tw.com.leadtek.tools.Utility;
 
 // swagger: http://127.0.0.1:8081/swagger-ui/index.html
