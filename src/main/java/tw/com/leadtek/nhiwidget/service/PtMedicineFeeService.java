@@ -71,7 +71,6 @@ public class PtMedicineFeeService {
         if (ptId > 0) {
             ret += paymentTermsDao.deletePaymentTerms(ptId, this.Category);
             if (ret>0) {
-                ret += paymentTermsDao.deleteExcludeNhiNo(ptId);
                 ret += ptMedicineFeeDao.delete(ptId);
             }
         }

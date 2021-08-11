@@ -23,6 +23,14 @@ public class PaymentTermsService {
         return lst;
     }
     
+    public java.util.List<Map<String, Object>> searchPaymentTermsByDateRange(String feeNo, String nhiNo, String category, 
+            java.util.Date startDate, java.util.Date endDate) {
+
+        java.util.List<Map<String, Object>> lst = paymentTermsDao.searchPaymentTermsByDateRange(category, feeNo, nhiNo, startDate, endDate);
+        return lst;
+    }
+    
+    
     public java.util.Map<String, Object> jwtValidate(String jwt) {
         java.util.Map<String, Object> validationMap = Utility.jwtValidate(jwt);
         if ((int)validationMap.get("status") == 200) {

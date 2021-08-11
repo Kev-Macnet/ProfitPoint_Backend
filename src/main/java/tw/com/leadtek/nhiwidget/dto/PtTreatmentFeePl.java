@@ -10,12 +10,12 @@ public class PtTreatmentFeePl extends PaymentTermsPl {
     
     @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", required=false)
     private int exclude_nhi_no;
-    @ApiModelProperty(value="不可與此支付標準代碼清單", required=false)
+    @ApiModelProperty(value="exclude_nhi_no 清單", required=false)
     private java.util.List<String> lst_nhi_no;
     
     @ApiModelProperty(value="需與以下任一支付標準代碼並存", example="0", required=false)
     private int coexist_nhi_no;
-    @ApiModelProperty(value="需與以下任一支付標準代碼並存清單", required=false)
+    @ApiModelProperty(value="coexist_nhi_no 清單", required=false)
     private java.util.List<String> lst_co_nhi_no;
     
     @ApiModelProperty(value="單一就醫紀錄上，須包含以下任一ICD診斷碼", example="0", required=false)

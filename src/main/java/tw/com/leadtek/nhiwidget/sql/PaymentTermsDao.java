@@ -57,6 +57,43 @@ public class PaymentTermsDao {
         return Utility.listLowerCase(lst);
     }
     
+
+    public java.util.List<Map<String, Object>> searchPaymentTermsByDateRange(String category, String feeNo, String nhiNo, 
+            java.util.Date startDate, java.util.Date endDate) {
+        String strStart, strEnd;
+        if (startDate!=null) {
+            strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
+        } else {
+            strStart = "2000/01/01";
+        }
+        if (endDate==null) {
+            endDate = new java.util.Date();
+        }
+        strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
+        String sql;
+        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
+                + "From PT_PAYMENT_TERMS\r\n"
+                + "Where (1=1)\n"
+                + " -- and (CATEGORY='%s')\n"
+                + " -- and (FEE_NO='%s')\n"
+                + " -- and (NHI_NO='%s')\n"
+                + " and (START_DATE BETWEEN '%s' and '%s')\n"
+                + " and (END_DATE BETWEEN '%s' and '%s')\n";
+        
+        sql = String.format(sql, category, feeNo, nhiNo, strStart, strEnd, strStart, strEnd);
+        if (category.length()>0) {
+            sql = sql.replace("-- and (CATEGORY", " and (CATEGORY");
+        }
+        if (feeNo.length()>0) {
+            sql = sql.replace("-- and (FEE_NO", " and (FEE_NO");
+        }
+        if (nhiNo.length()>0) {
+            sql = sql.replace("-- and (NHI_NO", " and (NHI_NO");
+        }
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        return Utility.listLowerCase(lst);
+    }
+    
     public java.util.Map<String, Object> findPaymentTerms(long id, String category) {
         String sql;
         sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
@@ -70,7 +107,6 @@ public class PaymentTermsDao {
         } else {
             return new java.util.HashMap<String, Object>();
         }
-        
     }
     
     public long addPaymentTerms(String fee_no, String fee_name, String nhi_no, String nhi_name, 
@@ -217,7 +253,7 @@ public class PaymentTermsDao {
         return ret;
     }
     
-  //=== NotifyNhiNo
+    //=== NotifyNhiNo
     public int deleteNotifyNhiNo(long ptId) {
         String sql;
         sql = "Delete from PT_NOTIFY_NHI_NO\r\n"
@@ -259,6 +295,51 @@ public class PaymentTermsDao {
     }
     
     
+    //=== DrgNo
+    /*
+    SELECT PT_ID, DRG_NO
+    FROM PT_DRG_NO
+    */
+    public int deleteDrgNo(long ptId) {
+        String sql;
+        sql = "Delete from PT_DRG_NO\r\n"
+                + "WHERE (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        int ret =  jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public java.util.List<String> filterDrgNo(long ptId) {
+        String sql;
+        sql = "Select DRG_NO\r\n"
+                + "From PT_DRG_NO\r\n"
+                + "Where (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        java.util.List<String> retList = new java.util.ArrayList<String>();
+        for (Map<String, Object> item : lst) {
+            retList.add(item.get("DRG_NO").toString());
+        }
+        return retList;
+    }
+    
+    public int addDrgNo(long ptId, java.util.List<String> lstDrgNo) {
+        int ret = 0;
+        String sql;
+        sql = "Insert into \r\n"
+                + "PT_DRG_NO (PT_ID, DRG_NO)\r\n"
+                + "Values(%d, '%s')";
+        for (String drgNo : lstDrgNo) {
+            String s1=String.format(sql, ptId, drgNo);
+            try {
+                ret += jdbcTemplate.update(s1);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return ret;
+    }
+
     //===
     public int deleteLimDivision(long ptId) {
         String sql;
