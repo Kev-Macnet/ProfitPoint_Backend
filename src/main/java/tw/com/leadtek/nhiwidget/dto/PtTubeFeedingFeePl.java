@@ -10,8 +10,7 @@ public class PtTubeFeedingFeePl extends PaymentTermsPl {
     
     @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", required=false)
     private int exclude_nhi_no;
-    
-    @ApiModelProperty(value="不可與此支付標準代碼清單", required=false)
+    @ApiModelProperty(value="exclude_nhi_no 清單", required=false)
     private java.util.List<String> lst_nhi_no;
 
     public String getCategory() {

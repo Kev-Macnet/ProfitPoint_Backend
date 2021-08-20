@@ -21,11 +21,12 @@ public class LogDataDao {
 
     public java.util.List<Map<String, Object>> find_IP_D(String idCard, String in_date) {
         String sql;
-        sql = "SELECT ROC_ID,ID_BIRTH_YMD,IN_DATE,OUT_DATE,TRAN_CODE,ICD_CM_1,ICD_CM_2,ICD_CM_3,ICD_CM_4,ICD_CM_5,ICD_OP_CODE1,\r\n"
-                + "   a.ID+900000 AS SN, 1 as QWEIGHT, b.HOSP_ID,b.FEE_YM,b.APPL_DOT\r\n"  // QWEIGHT = 權重
+        sql = "Select CARD_SEQ_NO,ROC_ID,ID_BIRTH_YMD,IN_DATE,OUT_DATE,TRAN_CODE,ICD_CM_1,ICD_CM_2,ICD_CM_3,ICD_CM_4,ICD_CM_5,ICD_OP_CODE1,\r\n"
+                + "   a.MR_ID+900000 AS SN, 1 as QWEIGHT, b.HOSP_ID,b.FEE_YM,b.APPL_DOT\r\n"  // QWEIGHT = 權重
                 + "From IP_D a left Join IP_T b on (b.ID= a.IPT_ID)\r\n"
-                + "WHERE (a.ROC_ID='%s')\r\n"
-                + "  AND (a.IN_DATE='%s')";
+                + "Where (a.ROC_ID='%s')\r\n"
+                + "  and (a.IN_DATE='%s')\r\n"
+                + "Order by OUT_DATE DESC";
         sql = String.format(sql, idCard, in_date);
         logger.info(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -56,6 +57,70 @@ public class LogDataDao {
         }
 
         return retMap;
+    }
+
+    public int add_DRG_CAL(long mr_id, String icd_cm, long med_dot, double rw, String drg, String cc, String mdc, String error, String drg_section, int drg_fix, int drg_dots) {
+        String sql;
+        sql = "Insert into \r\n"
+                + "DRG_CAL(MR_ID, ICD_CM, MED_DOT, RW, DRG, CC, MDC, ERROR, DRG_SECTION, DRG_FIX, DRG_DOTS)\r\n"
+                + "Values(%d, '%s', %d, %f, '%s', '%s', '%s', '%s', '%s', %d, %d)";
+        sql = String.format(sql, mr_id, icd_cm, med_dot, rw, drg, cc, mdc, error, drg_section, drg_fix, drg_dots);
+        logger.info(sql);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public int del_DRG_CAL(long mr_id) {
+        String sql;
+        sql = "Delete from DRG_CAL\r\n"
+                + "Where (MR_ID=%d)";
+        sql = String.format(sql, mr_id);
+        logger.info(sql);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    
+    public double getDrgRw(String drg_code, String in_date, String out_date) {
+        double ret = 1f;
+        if (drg_code.length()>0) {
+            String sql;
+            sql = "Select RW \r\n"
+                    + "From DRG_CODE \r\n"
+                    + "Where (CODE='%s')\r\n"
+                    + "  and ('%s' >= START_DAY)\r\n"
+                    + "  and ('%s' <= END_DAY)";
+            sql = String.format(sql, drg_code, transDateStr(in_date), transDateStr(out_date));
+            logger.info(sql);
+            java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+            if (lst.size() > 0) {
+                java.util.Map<String, Object> map = lst.get(0);
+                ret = strToDouble(map.get("RW").toString(), 1.0); 
+            }
+        }
+        return ret;
+    }
+    
+    public double strToDouble(String paStr, double defval) {
+        if (paStr == null) {
+            return (defval);
+        } else {
+            try {
+                return (Double.parseDouble(paStr));
+            } catch (Exception e) {
+                return (defval);
+            }
+        }
+    }
+    
+    public String transDateStr(String dateStr) {
+        String ret;
+        if (dateStr.length()==8) {
+            ret = String.format("%s-%s-%s", dateStr.substring(0, 4), dateStr.substring(4, 6), dateStr.substring(6, 8));
+        } else {
+            ret = dateStr;
+        }
+        return ret;
     }
 
     //------

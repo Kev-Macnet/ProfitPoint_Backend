@@ -121,9 +121,14 @@ public class E2101aControll {
                 {"復健治療費","/payment/rehabilitationfee/"},
                 
                 {"精神醫療治療費","/payment/psychiatricfee/"},
-                {"輸血及骨髓移植費","/payment/bonemarrowtransfee/"}
+                {"輸血及骨髓移植費","/payment/bonemarrowtransfee/"},
+                {"石膏繃帶費","/payment/plasterbandagefee/"},
+                {"麻醉費","/payment/anesthesiafee/"},
+                {"特定診療檢查費","/payment/specificmedicalfee/"},
+                
+                {"不分類","/payment/othersfee/"}
             };
-            
+
             java.util.List<Map<String, Object>> retList = new java.util.ArrayList<Map<String, Object>>();
             for (int a=0; a<arrCategory.length; a++) {
                 java.util.Map<String, Object> map = new java.util.HashMap<String, Object>();
