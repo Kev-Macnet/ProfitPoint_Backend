@@ -5,9 +5,12 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +24,7 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
+import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 
 
 @Api(value = "DRG-API", tags = {"11 DRG API"})
@@ -32,6 +36,8 @@ public class DrgRestController {
     
     @Autowired
     private LogDataService logDataService;
+    @Autowired
+    private PaymentTermsService paymentTermsService;
 
 
     @ApiOperation(value="11.1 DRG Initiate", notes="")
@@ -43,21 +49,28 @@ public class DrgRestController {
        @ApiImplicitParam(name = "drg_exe", value = "DRG程式", example="DRGICD10.exe" , dataType = "String", paramType = "query", required = true),
     })
     @RequestMapping(value = "/api/drg/initiate", method = RequestMethod.POST)
-    public java.util.Map<String, Object> initiateDrg(HttpServletRequest request) throws Exception {
+    public ResponseEntity<?> initiateDrg(HttpServletRequest request,
+            @RequestHeader("Authorization") String jwt) throws Exception {
 //        java.util.Map<String, Object> retMap = ipdService.drgProcess(id_card, in_date);
-        String drgPath = request.getParameter("drg_path");
-        if (drgPath==null) {
-            drgPath = "c:\\med\\S_DRGService_3412";
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            String drgPath = request.getParameter("drg_path");
+            if (drgPath==null) {
+                drgPath = "c:\\med\\S_DRGService_3412";
+            }
+            String drgExe = request.getParameter("drg_exe");
+            if (drgExe==null) {
+                drgExe = "DRGICD10.exe";
+            }
+            System.out.println("drgPath="+drgPath+";"+drgExe);
+            int status = logDataService.createDrgBatchFile(drgPath, drgExe);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
-        String drgExe = request.getParameter("drg_exe");
-        if (drgExe==null) {
-            drgExe = "DRGICD10.exe";
-        }
-        System.out.println("drgPath="+drgPath+";"+drgExe);
-        int status = logDataService.createDrgBatchFile(drgPath, drgExe);
-        java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
-        retMap.put("status", status);
-        return retMap;
+        
     }
     
     //===
@@ -72,11 +85,17 @@ public class DrgRestController {
 //        @ApiImplicitParam(name="in_date", value="住院日(民國年)", example="1071110", dataType="String", paramType="path", required=true)
     })
     @RequestMapping(value = "/api/drg/{id_card}/{in_date}", method = RequestMethod.POST)
-    public java.util.Map<String, Object> calculateDrg(HttpServletRequest request,
+    public ResponseEntity<?> calculateDrg(HttpServletRequest request,
+        @RequestHeader("Authorization") String jwt,
         @PathVariable String id_card,
         @PathVariable String in_date) throws Exception {
-        java.util.Map<String, Object> retMap = logDataService.drgProcess(id_card, in_date);
-        return retMap;
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            java.util.Map<String, Object> retMap = logDataService.drgProcess(id_card, in_date);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
     }
     
     //===

@@ -394,17 +394,6 @@ public class LogDataService {
                     (double)item.get("rw"), drg_code, 
                     item.get("complication").toString(), 
                     item.get("mdc_code").toString(), error, "",  0,  0);
-            //mr_id, icd_cm, med_dot, rw, drg, cc, mdc, error, drg_section, drg_fix, drg_dots
-            /*
-             "icd_cm_1": "B99.9",
-              "appl_dot": "+91268719",
-              "drg_code": "42303",
-              "complication": "Y",
-              "mdc_code": "18",
-              "error_code": "0000000000000000000000000000000000000000",
-              "error_message": [],
-              "rw": 1968
-             */
         }
         return ret;
     }
