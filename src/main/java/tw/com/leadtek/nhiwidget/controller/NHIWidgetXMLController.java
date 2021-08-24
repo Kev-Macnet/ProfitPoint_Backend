@@ -6,7 +6,9 @@ package tw.com.leadtek.nhiwidget.controller;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,9 +72,9 @@ public class NHIWidgetXMLController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @PostMapping(value = "/nhixml/uploadFile")
   public ResponseEntity<BaseResponse> upload(@RequestPart("file") MultipartFile file) {
-    System.out.println("upload file:" + file.getName());
     ObjectMapper xmlMapper = new XmlMapper();
     try {
+      logger.info("start upload:" + file.getOriginalFilename());
       String xml = new String(file.getBytes(), "BIG5");
       if (xml.indexOf("inpatient") > 0) {
         IP ip = xmlMapper.readValue(xml, IP.class);
@@ -80,6 +82,7 @@ public class NHIWidgetXMLController extends BaseController {
       }
       if (xml.indexOf("outpatient") > 0) {
         OP op = xmlMapper.readValue(xml, OP.class);
+        logger.info("start upload:" + file.getOriginalFilename() + " OP op");
         xmlService.saveOP(op);
       }
       return returnAPIResult(null);
@@ -239,9 +242,13 @@ public class NHIWidgetXMLController extends BaseController {
       @ApiParam(name = "allMatch", value = "單一分項內容如有逗號，須/不須完全符合，Y/N",
           example = "N") @RequestParam(required = false) String allMatch,
       @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
-          example = "2021/03/15") @RequestParam(required = true) String sdate,
+          example = "2021/03/15") @RequestParam(required = false) String sdate,
       @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
-          example = "2021/03/18") @RequestParam(required = true) String edate,
+          example = "2021/03/18") @RequestParam(required = false) String edate,
+      @ApiParam(name = "applY", value = "申報年，格式西元年 yyyy",
+      example = "2021") @RequestParam(required = false) String applY,
+      @ApiParam(name = "applM", value = "申報月，格式 M",
+      example = "8") @RequestParam(required = false) String applM,
       @ApiParam(name = "minPoints", value = "最小申報點數",
           example = "175") @RequestParam(required = false) Integer minPoints,
       @ApiParam(name = "maxPoints", value = "最大申報點數",
@@ -311,8 +318,23 @@ public class NHIWidgetXMLController extends BaseController {
         : perPage.intValue();
     int iPage = (page == null) ? 0 : page.intValue();
 
+    String startDate = (sdate == null) ? "2010/01/01" : sdate;
+    String endDate = edate;
+    if (endDate == null) {
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+      endDate = sdf.format(new Date());
+    }
+    String applYM = null;
+    if (applY != null && applY.length() == 4) {
+      int applYMInteger = 0;
+      int year = Integer.parseInt(applY) - 1911;
+      if (applM != null) {
+        applYMInteger = year * 100 + Integer.parseInt(applM);
+        applYM = String.valueOf(applYMInteger);
+      }
+    }
     Map<String, Object> list =
-        xmlService.getMR(allMatch, sdate, edate, minPoints, maxPoints, dataFormat, funcType, prsnId,
+        xmlService.getMR(allMatch, startDate, endDate, applYM, minPoints, maxPoints, dataFormat, funcType, prsnId,
             prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, orderCode, inhCode,
             drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSecondary, icdPCS, qrObject, qrSdate,
             qrEdate, status, deductedCode, deductedOrder, all, iPerPage, iPage);

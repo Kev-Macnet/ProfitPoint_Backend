@@ -58,6 +58,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
       filterChain.doFilter(request, response);
     } catch (AccessDeniedException e) {
       // token 有誤
+      e.printStackTrace();
     }
   }
 

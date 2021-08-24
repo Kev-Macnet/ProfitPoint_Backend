@@ -3,12 +3,18 @@ server:
   tomcat:
     uri-encoding: UTF-8
     max-connections: 3000
-    max-http-post-size: 124857600
-    max-threads: 1000
+    max-http-form-post-size: 124857600
+    threads:
+      max: 1000
   max-http-header-size: 124857600
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
 spring:
   servlet:
     multipart:
@@ -17,11 +23,6 @@ spring:
       enabled: true
 #  jackson:
 #    default-property-inclusion: non_null
-  http:
-    encoding:
-      charset: UTF-8
-      force: true
-      enabled: true
   redis:
     host: 10.10.5.30
     port: 6379
@@ -32,7 +33,6 @@ spring:
         max-active: 8
         max-wait: -1
         max-idle: 4
-        min-wait: 1
 #  datasource:
 #    hikari:
 #      data-source-class-name: com.zaxxer.hikari.HikariDataSource
@@ -42,7 +42,7 @@ spring:
 #      password: Leadtek21191
 #      connection-test-query: SELECT '1' FROM DUMMY
   datasource:
-    url: jdbc:sap://10.10.5.55:30041/NHIWIDGET
+    url: jdbc:sap://10.10.5.31:30041/NHIWIDGET
     username: NWUSER
     password: Leadtek2021
   jpa:
@@ -53,12 +53,12 @@ spring:
     properties:
       hibernate:
 #       dialect: org.hibernate.dialect.SAPDBDialect
-       dialect: org.hibernate.dialect.HANAColumnStoreDialect
-       id: 
-        new_generator_mappings: false
-        connection:
-          pool_size: 10
-        format_sql: true
+        dialect: org.hibernate.dialect.HANAColumnStoreDialect
+        id: 
+          new_generator_mappings: false
+          connection:
+          pool_size: 100
+        format_sql: false
         order_inserts: true
         order_updates: true
         jdbc:
@@ -72,9 +72,9 @@ spring:
           non_contextual_creation: true
       default-schema: NHIWIDGET
       connection:
-        pool_size: 5
+        pool_size: 100
       show_sql: false
-      format_sql: true
+      format_sql: false
       bytecode: 
         provider: javassist
         use_reflection_optimizer: true

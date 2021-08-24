@@ -10,6 +10,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -32,7 +33,8 @@ public class IP_P {
    * 序號
    */
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seqGenIP_P")
+  @SequenceGenerator(name = "seqGenIP_P", sequenceName = "SEQ_IP_P", allocationSize = 1000)
   @Basic(optional = false)
   @Column(name = "ID", nullable = false)
   @JsonIgnore
@@ -90,7 +92,7 @@ public class IP_P {
   @Column(name = "DRUG_USE")
   @JsonProperty("DRUG_USE")
   @JacksonXmlProperty(localName = "p5")
-  private String drugUse;
+  private Double drugUse;
 
   /**
    * (藥品)使用頻率
@@ -138,7 +140,7 @@ public class IP_P {
   @Column(name = "TW_DRGS_CALCU")
   @JsonProperty("TW_DRGS_CALCU")
   @JacksonXmlProperty(localName = "p11")
-  private Integer twDrgsCalcu;
+  private Double twDrgsCalcu;
 
   /**
    * 切帳前筆資料
@@ -178,7 +180,7 @@ public class IP_P {
   @Column(name = "TOTAL_Q")
   @JsonProperty("TOTAL_Q")
   @JacksonXmlProperty(localName = "p16")
-  private Integer totalQ;
+  private Double totalQ;
 
   /**
    * 單價
@@ -383,14 +385,14 @@ public class IP_P {
   /**
    * <p5> 藥品用量
    */
-  public String getDrugUse() {
+  public Double getDrugUse() {
     return drugUse;
   }
 
   /**
    * <p5> 藥品用量
    */
-  public void setDrugUse(String DRUG_USE) {
+  public void setDrugUse(Double DRUG_USE) {
     drugUse = DRUG_USE;
   }
 
@@ -467,14 +469,14 @@ public class IP_P {
   /**
    * <p11> TW-DRGS計算
    */
-  public Integer getTwDrgsCalcu() {
+  public Double getTwDrgsCalcu() {
     return twDrgsCalcu;
   }
 
   /**
    * <p11> TW-DRGS計算
    */
-  public void setTwDrgsCalcu(Integer TW_DRGS_CALCU) {
+  public void setTwDrgsCalcu(Double TW_DRGS_CALCU) {
     twDrgsCalcu = TW_DRGS_CALCU;
   }
 
@@ -537,14 +539,14 @@ public class IP_P {
   /**
    * <p16> 總量
    */
-  public Integer getTotalQ() {
+  public Double getTotalQ() {
     return totalQ;
   }
 
   /**
    * <p16> 總量
    */
-  public void setTotalQ(Integer TOTAL_Q) {
+  public void setTotalQ(Double TOTAL_Q) {
     totalQ = TOTAL_Q;
   }
 

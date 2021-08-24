@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- for MySQL (Maria) DB only --> 
+<entity-mappings
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://xmlns.jcp.org/xml/ns/persistence/orm" version="2.2">
+	<entity class="tw.com.leadtek.nhiwidget.model.rdb.MR" name="MR">
+		<attributes>
+			<id name="id">
+				<generated-value strategy="identity" />
+			</id>
+		</attributes>
+	</entity>
+	<entity class="tw.com.leadtek.nhiwidget.model.rdb.IP_D" name="IP_D">
+		<attributes>
+			<id name="id">
+				<generated-value strategy="identity" />
+			</id>
+		</attributes>
+	</entity>
+	<entity class="tw.com.leadtek.nhiwidget.model.rdb.IP_P" name="IP_P">
+		<attributes>
+			<id name="id">
+				<generated-value strategy="identity" />
+			</id>
+		</attributes>
+	</entity>
+	<entity class="tw.com.leadtek.nhiwidget.model.rdb.OP_D" name="OP_D">
+		<attributes>
+			<id name="id">
+				<generated-value strategy="identity" />
+			</id>
+		</attributes>
+	</entity>
+	<entity class="tw.com.leadtek.nhiwidget.model.rdb.OP_P" name="OP_P">
+		<attributes>
+			<id name="id">
+				<generated-value strategy="identity" />
+			</id>
+		</attributes>
+	</entity>
+</entity-mappings>

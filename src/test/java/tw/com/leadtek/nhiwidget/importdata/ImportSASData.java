@@ -338,7 +338,7 @@ public class ImportSASData {
     opP.setOrderType(ss[OPP_ORDER_TYPE]);
     opP.setDrugNo(ss[OPP_DRUG_NO]);
     if (ss[OPP_DRUG_USE] != null) {
-      opP.setDrugUse(ss[OPP_DRUG_USE]);
+      opP.setDrugUse(Double.parseDouble(ss[OPP_DRUG_USE]));
     }
     opP.setDrugFre(ss[OPP_DRUG_FRE]);
     if (ss[OPP_UNIT_P] != null && ss[OPP_UNIT_P].length() > 0) {

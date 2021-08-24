@@ -213,8 +213,8 @@ public class ImportTestExcel {
         opp.setOrderType(values.get("p3"));
         opp.setOrderSeqNo(Integer.parseInt(values.get("p13")));
         opp.setDrugNo(values.get("p4"));
-        opp.setDrugUse(values.get("p5"));
-        opp.setTotalQ(Integer.parseInt(values.get("p10")));
+        opp.setDrugUse(Double.parseDouble(values.get("p5")));
+        opp.setTotalQ(Double.parseDouble(values.get("p10")));
         opp.setUnitP(Float.parseFloat(values.get("p11")));
         opp.setTotalDot(Integer.parseInt(values.get("p12")));
         opp.setStartTime(values.get("p14"));
@@ -479,10 +479,10 @@ public class ImportTestExcel {
         ipp.setEndTime(values.get("p15"));
         ipp.setFuncType(ipD.getFuncType());
         ipp.setPayRate("1");
-        ipp.setDrugUse(values.get("p5"));
+        ipp.setDrugUse(Double.parseDouble(values.get("p5")));
         ipp.setDrugFre(values.get("p6"));
         if (values.get("p16") != null) {
-          ipp.setTotalQ(Integer.parseInt(values.get("p16")));
+          ipp.setTotalQ(Double.parseDouble(values.get("p16")));
         }
         if (values.get("p17") != null) {
           ipp.setUnitP(Float.parseFloat(values.get("p17")));
@@ -492,7 +492,7 @@ public class ImportTestExcel {
         }
         ipp.setConFuncType(values.get("p8"));
         if (values.get("p11") != null) {
-          ipp.setTwDrgsCalcu(Integer.parseInt(values.get("p11")));
+          ipp.setTwDrgsCalcu(Double.parseDouble(values.get("p11")));
         }
         ipp.setPrsnId(values.get("p20"));
         ipPDao.save(ipp);

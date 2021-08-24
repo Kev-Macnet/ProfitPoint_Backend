@@ -25,9 +25,9 @@ import tw.com.leadtek.nhiwidget.security.service.UserDetailsServiceImpl;
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled=true,  securedEnabled = true)
+@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-  
+
   protected Logger logger = LogManager.getLogger();
 
   @Autowired
@@ -38,45 +38,59 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   @Bean
   public AuthTokenFilter authenticationJwtTokenFilter() {
-      return new AuthTokenFilter();
+    return new AuthTokenFilter();
   }
 
   @Override
-  public void configure(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
-      authenticationManagerBuilder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+  public void configure(AuthenticationManagerBuilder authenticationManagerBuilder)
+      throws Exception {
+    authenticationManagerBuilder.userDetailsService(userDetailsService)
+        .passwordEncoder(passwordEncoder());
   }
 
   @Bean
   @Override
   public AuthenticationManager authenticationManagerBean() throws Exception {
-      return super.authenticationManagerBean();
+    return super.authenticationManagerBean();
   }
 
   @Bean
   public PasswordEncoder passwordEncoder() {
-      return new BCryptPasswordEncoder();
+    return new BCryptPasswordEncoder();
   }
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
-    logger.info("configure");
-      http.cors().and().csrf().disable()
-          .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
-          .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-          .authorizeRequests()
-          .antMatchers("/auth/**").permitAll()
-          // 允许对于网站静态资源的无授权访问
-          .antMatchers(HttpMethod.GET, "/", "/*.html", "/favicon.ico", "/**/*.html", "/**/*.css",
-              "/**/*.js", "/**/*.png", "/**/*.jpg", "/**/*.svg", "/fonts/*")
-          .permitAll()
-          .antMatchers("/**").permitAll()
-          .antMatchers("/swagger-ui.html").permitAll()
-          .antMatchers("/resources/**").permitAll()
-          .antMatchers("/webjars/**").permitAll()
-          .antMatchers("/swagger-resources/**").permitAll()
-          .antMatchers("/v3/**").permitAll()
-          .anyRequest().authenticated();
+    // http.cors().and().csrf().disable()
+    // .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
+    // .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+    // .authorizeRequests()
+    // .antMatchers("/auth/**").permitAll()
+    // // 允许对于网站静态资源的无授权访问
+    // .antMatchers(HttpMethod.GET, "/", "/*.html", "/favicon.ico", "/**/*.html", "/**/*.css",
+    // "/**/*.js", "/**/*.png", "/**/*.jpg", "/**/*.svg", "/fonts/*")
+    // .permitAll()
+    // .antMatchers("/**").permitAll()
+    // .antMatchers("/swagger-ui.html").permitAll()
+    // .antMatchers("/resources/**").permitAll()
+    // .antMatchers("/webjars/**").permitAll()
+    // .antMatchers("/swagger-resources/**").permitAll()
+    // .antMatchers("/v3/**").permitAll()
+    // .anyRequest().authenticated();
+    http.csrf().disable().exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
+        .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+        .authorizeRequests().antMatchers("/auth/**").permitAll()
+        .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        // 允许对于网站静态资源的无授权访问
+        .antMatchers(HttpMethod.GET, "/", "/*.html", "/favicon.ico", "/**/*.html", "/**/*.css",
+            "/**/*.js", "/**/*.png", "/**/*.jpg", "/**/*.svg", "/fonts/*")
+        .permitAll().antMatchers("/**")
+        .permitAll().antMatchers("/swagger-ui.html").permitAll()
+        .antMatchers("/resources/**").permitAll().antMatchers("/webjars/**").permitAll()
+        .antMatchers("/swagger-resources/**").permitAll().antMatchers("/v3/**").permitAll()
+        .anyRequest().authenticated();
 
-      http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+    http.addFilterBefore(authenticationJwtTokenFilter(),
+        UsernamePasswordAuthenticationFilter.class);
   }
 }

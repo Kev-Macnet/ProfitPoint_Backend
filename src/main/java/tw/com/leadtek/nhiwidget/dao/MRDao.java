@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 
 public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor<MR> {
@@ -24,7 +26,8 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * 取得指定日期區間的病歷數, 申請病歷數及申請總點數.
    * @return
    */
-  @Query(value = "SELECT b.OP_TOTAL_MR, c.IP_TOTAL_MR, b.OP_DOT, c.IP_DOT FROM " + 
+  @Query(value = "SELECT b.OP_TOTAL_MR AS OP_MR, c.IP_TOTAL_MR AS IP_MR, b.OP_DOT AS OP_DOT, "
+      + "c.IP_DOT AS IP_DOT FROM " + 
       // 1. 門診申請件數 , 申請總點數  
       "(SELECT count(mr.ID) AS OP_TOTAL_MR, COALESCE(SUM(opd.T_APPL_DOT), 0) AS OP_DOT " + 
       "  FROM MR mr, OP_D opd WHERE mr.MR_DATE BETWEEN ?1 AND ?2 " + 
@@ -39,7 +42,8 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * 取得指定日期區間及科別的病歷數, 申請病歷數及申請總點數.
    * @return
    */
-  @Query(value = "SELECT b.OP_TOTAL_MR, c.IP_TOTAL_MR, b.OP_DOT , c.IP_DOT FROM " + 
+  @Query(value = "SELECT b.OP_TOTAL_MR AS OP_MR, c.IP_TOTAL_MR AS IP_MR, b.OP_DOT AS OP_DOT, "
+      + "c.IP_DOT AS IP_DOT FROM " + 
       "(SELECT count(DISTINCT(mr.ID)) AS OP_TOTAL_MR, COALESCE(sum(opp.TOTAL_DOT), 0) AS OP_DOT " + 
       "FROM MR mr, OP_D opd, OP_P opp WHERE mr.MR_DATE BETWEEN ?1 AND ?2 AND mr.FUNC_TYPE =?3 " + 
       "AND mr.DATA_FORMAT  = '10' AND mr.D_ID = opd.id AND opd.id = opp.OPD_ID AND opp.APPL_STATUS = 1) b," + 
@@ -56,9 +60,11 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @return
    */
   @Query(value = "SELECT STATUS, COUNT(STATUS) AS STATUS_SUM FROM MR "
-      + "WHERE DATA_FORMAT IN (:dataFormat) AND MR_DATE BETWEEN :sDate AND :eDate GROUP BY STATUS", nativeQuery = true)
-  public List<Map<String, Object>> queryMRStatusCount(@Param("dataFormat") List<String> dataFormat, 
+      + "WHERE DATA_FORMAT = :dataFormat AND MR_DATE BETWEEN :sDate AND :eDate GROUP BY STATUS", nativeQuery = true)
+  public List<Map<String, Object>> queryMRStatusCount(@Param("dataFormat") String dataFormat, 
       @Param("sDate") Date sDate,  @Param("eDate") Date eDate);
+//  public List<Map<String, Object>> queryMRStatusCount(@Param("dataFormat") List<String> dataFormat, 
+//      @Param("sDate") Date sDate,  @Param("eDate") Date eDate);
   
   /**
    * 依科別取得指定日期區間科別的各個病歷確認狀態總數
@@ -66,9 +72,10 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param eDate
    * @return
    */
-  @Query(value = "SELECT STATUS, COUNT(STATUS) AS STATUS_SUM FROM MR WHERE MR_DATE BETWEEN "
-      + "?1 AND ?2 AND FUNC_TYPE = ?3 GROUP BY STATUS ", nativeQuery = true)
-  public List<Map<String, Object>> queryMRStatusCount(Date sDate, Date eDate, String funcType);
+  @Query(value = "SELECT STATUS, COUNT(STATUS) AS STATUS_SUM FROM MR "
+      + "WHERE DATA_FORMAT = ?1 AND MR_DATE BETWEEN "
+      + "?2 AND ?3 AND FUNC_TYPE = ?4 GROUP BY STATUS ", nativeQuery = true)
+  public List<Map<String, Object>> queryMRStatusCount(String dataFormat, Date sDate, Date eDate, String funcType);
   
   /**
    * 依申報人員id取得指定日期區間的各個病歷確認狀態總數
@@ -80,4 +87,13 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
       + "?1 AND ?2 AND APPL_ID IN (?3) GROUP BY STATUS ", nativeQuery = true)
   public List<Map<String, Object>> queryMRStatusCountByApplId(Date sDate, Date eDate, List<String> applId);
   
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE MR SET D_ID=?1 WHERE ID=?2", nativeQuery = true)
+  public void updateDid(Long did, Long mrId);
+  
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE MR SET DRG_CODE=?1 WHERE ID=?2", nativeQuery = true)
+  public void updateDRG(String drg, Long mrId);
 }

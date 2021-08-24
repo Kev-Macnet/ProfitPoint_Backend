@@ -11,6 +11,7 @@ import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.model.CodeBase;
 import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.tools.StringUtility;
 
 /**
  * 存放 DB CODE_TABLE 裡面的內容，減少query DB loading
@@ -70,7 +71,7 @@ public class CodeTableService {
     }
     for (String string : REDIS_CAT) {
       if (string.equals(cat)) {
-        List<JsonSuggestion> list = redis.query(cat, code);
+        List<JsonSuggestion> list = redis.query(cat, code.toLowerCase());
         if (list.size() > 0) {
           CODE_TABLE result = new CODE_TABLE();
           result.setCat(cat);
@@ -92,19 +93,26 @@ public class CodeTableService {
     if (code == null || code.length() == 0) {
       return;
     }
-    CODE_TABLE ct = cts.getCodeTable(cat, code);
+    String codes = "ICD10-CM".equals(cat) ? StringUtility.formatICD(code) : code;
+    CODE_TABLE ct = cts.getCodeTable(cat, codes);
     if (ct == null) {
       list.add(new CodeBase(code));
     } else {
-      list.add(new CodeBase(ct));
+      CodeBase cb = new CodeBase(ct);
+      cb.setCode(code);
+      list.add(cb);
     }
   }
   
   public static String getDesc(CodeTableService cts, String cat, String code) {
-    if (code == null || code.length() == 0) {
+    if (code == null) { 
       return null;
     }
-    CODE_TABLE ct = cts.getCodeTable(cat, code);
+    String c = code.trim();
+    if (code.length() == 0) {
+      return null;
+    }
+    CODE_TABLE ct = cts.getCodeTable(cat, c);
     if (ct == null) {
       return code;
     }

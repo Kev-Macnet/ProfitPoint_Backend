@@ -11,7 +11,8 @@ public class DateTool {
 
   /**
    * 將西元年月轉成民國年月
-   * @param year ex:20210223 
+   * 
+   * @param year ex:20210223
    * @return ex:1100223
    */
   public static String convertToChineseYear(String date) {
@@ -19,10 +20,11 @@ public class DateTool {
     int chineseYear = Integer.parseInt(year) - 1911;
     return String.valueOf(chineseYear) + date.substring(4);
   }
-  
+
   /**
    * 將民國年月日轉成西元年月日
-   * @param year ex:20210223 
+   * 
+   * @param year ex:20210223
    * @return ex:1100223
    */
   public static Date convertChineseToYear(String date) {
@@ -35,5 +37,28 @@ public class DateTool {
       e.printStackTrace();
     }
     return null;
+  }
+
+  /**
+   * 將民國年10802120000轉為 108/02/12 00:00
+   * @param date
+   * @return
+   */
+  public static String convertChineseTimeToFormatTime(String date) {
+    if (date == null || date.length() == 0) {
+      return "";
+    }
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < date.length(); i++) {
+      sb.append(date.charAt(i));
+      if (i == 2 || i == 4) {
+        sb.append("/");
+      } else if (i == 6) {
+        sb.append(" ");
+      } else if (i == 8 || i == 10) {
+        sb.append(":");
+      }
+    }
+    return sb.toString();
   }
 }

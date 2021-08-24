@@ -1020,6 +1020,7 @@ public class MRDetail extends MR {
     this.funcType = CodeTableService.getDesc(cts, "FUNC_TYPE", opd.getFuncType());
     this.caseType = CodeTableService.getDesc(cts, "OP_CASE_TYPE", opd.getCaseType());
     this.seqNo = opd.getSeqNo().toString();
+    cardSeqNo = opd.getCardSeqNo();
     List<CodeBase> listCureItem = new ArrayList<CodeBase>();
     CodeTableService.addToList(cts, listCureItem, "OP_CURE_ITEM", opd.getCureItemNo1());
     CodeTableService.addToList(cts, listCureItem, "OP_CURE_ITEM", opd.getCureItemNo2());
@@ -1064,7 +1065,6 @@ public class MRDetail extends MR {
     this.tDot = opd.getTotalDot();
     this.partDot = opd.getPartDot();
     this.tApplDot = opd.getTotalApplDot();
-    // @TODO
     this.casePayCode = opd.getCasePayCode();
     this.assistPartDot = opd.getAssistPartDot();
     this.chrDays = opd.getChrDays();

@@ -207,10 +207,9 @@ public class TestXML {
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\outpatient.xlsx", "OP");
 
     // importConstants("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn compare.xlsx");
-    // importConstantsToRDB("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn
-    // compare.xlsx");
-    importCODE_TABLEToRDB(
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Table Schema\\CODE_TABLE.xlsx");
+    importConstantsToRDB("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn compare.xlsx");
+//    importCODE_TABLEToRDB(
+//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Table Schema\\CODE_TABLE.xlsx");
   }
 
   public void importXMLTag(String filename, String dataFormat) {
@@ -287,17 +286,17 @@ public class TestXML {
     try {
       XSSFWorkbook workbook = new XSSFWorkbook(file);
 
-      processCodeSheetForRDB(workbook, "FUNC_TYPE");
-      processCodeSheetForRDB(workbook, "PAY_TYPE");
-      processCodeSheetForRDB(workbook, "OP_CASE_TYPE");
-      processCodeSheetForRDB(workbook, "IP_CASE_TYPE");
-      processCodeSheetForRDB(workbook, "TRAN_CODE");
-      processCodeSheetForRDB(workbook, "IP_TW_DRGS_SUIT_MARK");
-      processCodeSheetForRDB(workbook, "ORDER_TYPE");
-      processCodeSheetForRDB(workbook, "PART_CODE");
-      processCodeSheetForRDB(workbook, "IP_PATIENT_SOURCE");
+//      processCodeSheetForRDB(workbook, "FUNC_TYPE");
+//      processCodeSheetForRDB(workbook, "PAY_TYPE");
+//      processCodeSheetForRDB(workbook, "OP_CASE_TYPE");
+//      processCodeSheetForRDB(workbook, "IP_CASE_TYPE");
+//      processCodeSheetForRDB(workbook, "TRAN_CODE");
+//      processCodeSheetForRDB(workbook, "IP_TW_DRGS_SUIT_MARK");
+//      processCodeSheetForRDB(workbook, "ORDER_TYPE");
+//      processCodeSheetForRDB(workbook, "PART_CODE");
+//      processCodeSheetForRDB(workbook, "IP_PATIENT_SOURCE");
       processCodeSheetForRDB(workbook, "OP_CURE_ITEM");
-      processCodeSheetForRDB(workbook, "OP_MED_TYPE");
+      //processCodeSheetForRDB(workbook, "OP_MED_TYPE");
       workbook.close();
     } catch (InvalidFormatException e) {
       e.printStackTrace();

@@ -11,6 +11,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -41,9 +42,11 @@ public class IP_D {
    * 序號
    */
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seqGenIP_D")
+  @SequenceGenerator(name = "seqGenIP_D", sequenceName = "SEQ_IP_D", allocationSize = 1000)
+  //@SequenceGenerator(name = "seqGenIP_D", allocationSize = 100)
   @Basic(optional = false)
-  @Column(name = "ID", nullable = false)
+  @Column(name = "ID")
   @JsonIgnore
   private Long id;
 

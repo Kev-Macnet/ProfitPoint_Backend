@@ -78,6 +78,7 @@ public class ParametersService {
     List<PARAMETERS> list = parametersDao.findAll();
     for (PARAMETERS p : list) {
       if ("SYSTEM".equals(p.getCat())) {
+        System.out.println("put SYSTEM:" + p.getName() + "," + p.getValue());
         newParameters.put(p.getName(), p.getValue());
       }
     }

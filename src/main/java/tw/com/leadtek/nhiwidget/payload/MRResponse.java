@@ -76,7 +76,7 @@ public class MRResponse extends MR {
     sChangeOther = getChangeICDString(mr.getChangeOther());
     sChangeOrder = getChangeICDString(mr.getChangeOrder());
     sInfectious = getYNString(mr.getInfectious());
-    sStatus = MR_STATUS.toStatusString(mr.getStatus().intValue());
+    sStatus = (mr.getStatus() == null) ? "無需變更" : MR_STATUS.toStatusString(mr.getStatus().intValue());
   }
   
   public String getsStatus() {

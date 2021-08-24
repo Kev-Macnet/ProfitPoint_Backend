@@ -12,6 +12,7 @@ import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.service.CodeTableService;
+import tw.com.leadtek.tools.DateTool;
 
 @ApiModel("醫令，Medical Order")
 public class MO implements Serializable {
@@ -43,10 +44,10 @@ public class MO implements Serializable {
   private String drugNo;
   
   @ApiModelProperty(value = "藥品用量", required = false)
-  private String drugUse;
+  private Double drugUse;
   
   @ApiModelProperty(value = "總量", required = false)
-  private Integer totalQ;
+  private Double totalQ;
   
   @ApiModelProperty(value = "單價", required = false)
   private Float unitP;
@@ -105,14 +106,20 @@ public class MO implements Serializable {
   @ApiModelProperty(value = "病床號", required = false)
   private String bedNo;
   
-  @ApiModelProperty(value = "TW-DRGS計算號", required = false)
-  private Integer twDrgsCalcu;
+  @ApiModelProperty(value = "TW-DRGS計算", required = false)
+  private Double twDrgsCalcu;
   
   @ApiModelProperty(value = "切帳前筆資料", required = false)
   private String partAccoData;
   
   @ApiModelProperty(value = "器官捐贈者資料", required = false)
   private String donater;
+  
+  @ApiModelProperty(value = "執行開始時間", required = false)
+  private String startTime;
+  
+  @ApiModelProperty(value = "執行結束時間", required = false)
+  private String endTime;
   
   public Integer getOrderSeqNo() {
     return orderSeqNo;
@@ -162,19 +169,19 @@ public class MO implements Serializable {
     this.drugNo = drugNo;
   }
 
-  public String getDrugUse() {
+  public Double getDrugUse() {
     return drugUse;
   }
 
-  public void setDrugUse(String drugUse) {
+  public void setDrugUse(Double drugUse) {
     this.drugUse = drugUse;
   }
 
-  public Integer getTotalQ() {
+  public Double getTotalQ() {
     return totalQ;
   }
 
-  public void setTotalQ(Integer totalQ) {
+  public void setTotalQ(Double totalQ) {
     this.totalQ = totalQ;
   }
 
@@ -346,11 +353,11 @@ public class MO implements Serializable {
     this.bedNo = bedNo;
   }
   
-  public Integer getTwDrgsCalcu() {
+  public Double getTwDrgsCalcu() {
     return twDrgsCalcu;
   }
 
-  public void setTwDrgsCalcu(Integer twDrgsCalcu) {
+  public void setTwDrgsCalcu(Double twDrgsCalcu) {
     this.twDrgsCalcu = twDrgsCalcu;
   }
   
@@ -368,6 +375,22 @@ public class MO implements Serializable {
 
   public void setDonater(String donater) {
     this.donater = donater;
+  }
+  
+  public String getStartTime() {
+    return startTime;
+  }
+
+  public void setStartTime(String startTime) {
+    this.startTime = startTime;
+  }
+
+  public String getEndTime() {
+    return endTime;
+  }
+
+  public void setEndTime(String endTime) {
+    this.endTime = endTime;
   }
 
   public void setOPPData(OP_P opp, CodeTableService cts) {
@@ -397,6 +420,12 @@ public class MO implements Serializable {
     this.chrMark = opp.getChrMark();
     this.commHospId = opp.getCommHospId();
     this.ownExpMtrNo = opp.getOwnExpMtrNo();
+    if (opp.getStartTime() != null && opp.getStartTime().length() > 0) {
+      startTime = DateTool.convertChineseTimeToFormatTime(opp.getStartTime());
+    }
+    if (opp.getEndTime() != null && opp.getEndTime().length() > 0) {
+      endTime = DateTool.convertChineseTimeToFormatTime(opp.getEndTime());
+    }
   }
   
   public void setIPPData(IP_P ipp, CodeTableService cts) {
@@ -456,5 +485,11 @@ public class MO implements Serializable {
     this.ownExpMtrNo = ipp.getOwnExpMtrNo();
     // 事前審查受理編號
     this.preNo = ipp.getPreNo();
+    if (ipp.getStartTime() != null && ipp.getStartTime().length() > 0) {
+      startTime = DateTool.convertChineseTimeToFormatTime(ipp.getStartTime());
+    }
+    if (ipp.getEndTime() != null && ipp.getEndTime().length() > 0) {
+      endTime = DateTool.convertChineseTimeToFormatTime(ipp.getEndTime());
+    }
   }
 }

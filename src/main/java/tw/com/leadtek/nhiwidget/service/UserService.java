@@ -267,8 +267,8 @@ public class UserService {
     return null;
   }
 
-  @PreAuthorize("hasAuthority('administrator')")
-  public List<UserRequest> getAllUser() {
+  //@PreAuthorize("hasAuthority('administrator')")
+  public List<UserRequest> getAllUser(String funcType, String funcTypeC) {
     if (departments == null) {
       retrieveData();
     }
@@ -276,13 +276,54 @@ public class UserService {
 
     List<USER> list = userDao.findAll();
     List<USER_DEPARTMENT> udList = userDepartmentDao.findAll();
+    if ((funcTypeC != null && !"不分科".equals(funcTypeC)) || (funcType != null && !"00".equals(funcType))) {
+      Long depId = null;
+      if (funcType != null) {
+        depId = getDepartmentIdByName(funcTypeC);
+      } else if (funcTypeC != null) {
+        depId = getDepartmentIdByCode(funcType);
+      }
+      if (depId < 0) {
+        return result;
+      }
+      List<USER_DEPARTMENT> newUserDepartmentList = new ArrayList<USER_DEPARTMENT>();
+      for (USER_DEPARTMENT ud : udList) {
+        if (ud.getDepartmentId().longValue() == depId) {
+          newUserDepartmentList.add(ud);
+        }
+      }
+      udList = newUserDepartmentList;
+    }
     for (USER user : list) {
+      String departments = getDepartmentsByUserId(user.getId(), udList);
+      if (departments.length() == 0) {
+        continue;
+      }
       UserRequest ur = new UserRequest(user);
       ur.setPassword(null);
-      ur.setDepartments(getDepartmentsByUserId(ur.getId(), udList));
+      ur.setCreateAt(null);
+      ur.setDepartments(departments);
       result.add(ur);
     }
     return result;
+  }
+  
+  private Long getDepartmentIdByName(String name) {
+    for (DEPARTMENT dep : departments.values()) {
+      if (dep.getName().equals(name) || dep.getNhName().equals(name)) {
+        return dep.getId();
+      }
+    }
+    return -1L;
+  }
+  
+  private Long getDepartmentIdByCode(String code) {
+    for (DEPARTMENT dep : departments.values()) {
+      if (dep.getNhCode().equals(code) || dep.getCode().equals(code)) {
+        return dep.getId();
+      }
+    }
+    return -1L;
   }
   
   public List<DEPARTMENT> getAllDepartment() {
@@ -300,7 +341,9 @@ public class UserService {
         sb.append(",");
       }
     }
-    sb.deleteCharAt(sb.length() - 1);
+    if (sb.length() > 1) {
+      sb.deleteCharAt(sb.length() - 1);
+    }
     return sb.toString();
   }
   

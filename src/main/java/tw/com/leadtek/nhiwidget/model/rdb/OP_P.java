@@ -10,6 +10,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -31,7 +32,8 @@ public class OP_P {
    * 序號
    */
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seqGenOP_P")
+  @SequenceGenerator(name = "seqGenOP_P", sequenceName = "SEQ_OP_P", allocationSize = 1000)
   @Basic(optional = false)
   @Column(name = "ID", nullable = false)
   @JsonIgnore
@@ -82,7 +84,7 @@ public class OP_P {
   @Column(name = "DRUG_USE")
   @JsonProperty("DRUG_USE")
   @JacksonXmlProperty(localName = "p5")
-  private String drugUse;
+  private Double drugUse;
 
   /**
    * 診療之部位
@@ -122,7 +124,7 @@ public class OP_P {
   @Column(name = "TOTAL_Q")
   @JsonProperty("TOTAL_Q")
   @JacksonXmlProperty(localName = "p10")
-  private Integer totalQ;
+  private Double totalQ;
 
   /**
    * 單價
@@ -366,14 +368,14 @@ public class OP_P {
   /**
    * <p5> 藥品用量
    */
-  public String getDrugUse() {
+  public Double getDrugUse() {
     return drugUse;
   }
 
   /**
    * <p5> 藥品用量
    */
-  public void setDrugUse(String DRUG_USE) {
+  public void setDrugUse(Double DRUG_USE) {
     drugUse = DRUG_USE;
   }
 
@@ -436,14 +438,14 @@ public class OP_P {
   /**
    * <p10> 總量
    */
-  public Integer getTotalQ() {
+  public Double getTotalQ() {
     return totalQ;
   }
 
   /**
    * <p10> 總量
    */
-  public void setTotalQ(Integer TOTAL_Q) {
+  public void setTotalQ(Double TOTAL_Q) {
     totalQ = TOTAL_Q;
   }
 

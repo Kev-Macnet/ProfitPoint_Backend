@@ -10,4 +10,6 @@ import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
 public interface OP_TDao extends JpaRepository<OP_T, Long> {
 
   public List<OP_T> findByFeeYmOrderById(String feeYM);
+  
+  public List<OP_T> findByFeeYmAndHospIdOrderById(String feeYM, String hospId);
 }

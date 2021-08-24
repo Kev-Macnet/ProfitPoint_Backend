@@ -4,11 +4,10 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import java.security.Principal;
+import java.text.DecimalFormat;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import org.apache.http.HttpRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,6 +33,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
+import tw.com.leadtek.nhiwidget.payload.MemoryStatus;
 import tw.com.leadtek.nhiwidget.payload.UserRequest;
 import tw.com.leadtek.nhiwidget.security.jwt.ChangePassword;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtResponse;
@@ -132,13 +132,15 @@ public class UserController extends BaseController {
   @ApiOperation(value = "取得所有帳號", notes = "取得所有帳號")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/user")
-  public ResponseEntity<List<UserRequest>> getAllUser(Principal principal) {
-    // System.out.println("getAllUser:" + principal.getName());
+  public ResponseEntity<List<UserRequest>> getAllUser(@ApiParam(name = "funcType", value = "科別代碼",
+      example = "00") @RequestParam(required = false) String funcType,
+      @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...",
+      example = "不分科") @RequestParam(required = false) String funcTypeC) {
     // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     // System.out.println("currentPrincipalName:" + authentication.getName());
     // UserDetailsImpl userDetail = (UserDetailsImpl) authentication.getPrincipal();
     // System.out.println(userDetail.getEmail());
-    return ResponseEntity.ok(userService.getAllUser());
+    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeC));
   }
 
   @ApiOperation(value = "更換密碼", notes = "更換密碼")
@@ -254,5 +256,21 @@ public class UserController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id 有誤");
     }
+  }
+  
+  @GetMapping("ms")
+  public MemoryStatus getMemoryStatistics() {
+    MemoryStatus stats = new MemoryStatus();
+    DecimalFormat df = new DecimalFormat(",###.###");
+    stats.setHeapSize(
+        df.format((double) Runtime.getRuntime().totalMemory() / ((double) 1024 * (double) 1024))
+            + "MB");
+    stats.setHeapMaxSize(
+        df.format((double) Runtime.getRuntime().maxMemory() / ((double) 1024 * (double) 1024))
+            + "MB");
+    stats.setHeapFreeSize(
+        df.format((double) Runtime.getRuntime().freeMemory() / ((double) 1024 * (double) 1024))
+            + "MB");
+    return stats;
   }
 }

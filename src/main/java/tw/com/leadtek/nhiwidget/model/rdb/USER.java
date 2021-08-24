@@ -25,6 +25,10 @@ public class USER {
   @Basic(optional = false)
   @Column(name = "ID", nullable = false)
   protected Long id;
+  
+  @ApiModelProperty(value = "證號", required = true)
+  @Column(name = "ROC_ID", length = 20)
+  protected String rocId;
 
   @ApiModelProperty(value = "帳號", required = true)
   @Column(name = "USERNAME", length = 20)
@@ -182,6 +186,14 @@ public class USER {
 
   public void setRole(Integer role) {
     this.role = role;
+  }
+
+  public String getRocId() {
+    return rocId;
+  }
+
+  public void setRocId(String rocId) {
+    this.rocId = rocId;
   }
   
 }

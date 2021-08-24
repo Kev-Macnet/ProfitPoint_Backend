@@ -1,6 +1,6 @@
 # 敏盛醫院設定檔
 server:
-  port: ${port:8081}
+  port: ${port:80}
   tomcat:
     uri-encoding: UTF-8
     max-connections: 3000
@@ -43,7 +43,7 @@ spring:
 #      password: Leadtek21191
 #      connection-test-query: SELECT '1' FROM DUMMY
   datasource:
-    url: jdbc:sap://10.10.5.121:30041/NHIWIDGET
+    url: jdbc:sap://192.168.2.171:30041/LEADTEK_AI
     username: NWUSER
     password: Leadtek2021
   jpa:
@@ -88,6 +88,11 @@ spring:
 jwt:
   secret: leadtek_NHIWidget
   expiration: 360000000
+mail:
+  host: 59.120.139.196
+  port: 25
+  fromEmail: monitor@leadtek.com.tw
+  password: z5z8tah5
 swagger:
   enable: false
   application-name: 健保申保最佳化系統 API

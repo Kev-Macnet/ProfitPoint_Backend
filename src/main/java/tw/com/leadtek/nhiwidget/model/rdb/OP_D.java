@@ -11,6 +11,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -37,7 +38,8 @@ public class OP_D {
    * 序號
    */
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seqGenOP_D")
+  @SequenceGenerator(name = "seqGenOP_D", sequenceName = "SEQ_OP_D", allocationSize = 1000)
   @Basic(optional = false)
   @Column(name = "ID", nullable = false)
   @JsonIgnore
@@ -529,6 +531,9 @@ public class OP_D {
     optId = OPT_ID;
   }
 
+  /**
+   * <d1> 案件分類
+   */
   public String getCaseType() {
     return caseType;
   }
@@ -1063,7 +1068,7 @@ public class OP_D {
   public Integer getPartDot() {
     return partDot;
   }
-
+ 
   /**
    * <d40> 部分負擔點數
    */
