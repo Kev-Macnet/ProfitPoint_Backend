@@ -3,6 +3,8 @@ package tw.com.leadtek.nhiwidget.service;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
@@ -11,12 +13,18 @@ import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 @Service
 public class LogDataService {
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
+    
+    @Value("${server.port}")
+    private String serverPort;
+
 
     @Autowired
     private LogDataDao logDataDao;
 
-    public java.util.List<String> calcDrgSource(String idCard, String in_date) {
+    public java.util.Map<String, Object> calcDrgSource(String idCard, String in_date) {
         int appl_dot;
+        String card_seq_no="";
+        long sn=0;
         String gender =  idCard.substring(1, 2);
         if (gender.equals("1")) {
             gender="M";
@@ -32,10 +40,18 @@ public class LogDataService {
             } else {
                 appl_dot = (int)item.get("APPL_DOT");
             }
+            if (item.get("CARD_SEQ_NO")!=null && card_seq_no.length()==0) {
+                card_seq_no = (String)item.get("CARD_SEQ_NO");
+                sn= (long)item.get("sn")-900000;
+            }
+            
             for (int a=1; a<=5; a++) {
                 if (item.get("ICD_CM_"+a)!=null) {
+                    String icd_cm_original = item.get("ICD_CM_"+a).toString();
+                    String icd_cm_str = icd_cm_original.replaceAll("\\.", "");
                     java.util.Map<String, Object> ele = new java.util.HashMap<String, Object>();
-                    ele.put("icd_cm", item.get("ICD_CM_"+a));
+                    ele.put("icd_cm", icd_cm_str);
+                    ele.put("icd_cm_original", icd_cm_original);
                     ele.put("appl_dot", appl_dot);
                     icdcmSet.add(ele);
                 }
@@ -55,7 +71,7 @@ public class LogDataService {
                  {"icd_cm"},{"ICD_CM_2"},{"ICD_CM_3"},{"ICD_CM_4"},{"ICD_CM_5"},
                  {""},{""},{""},{""},{""},
                  {"TRAN_CODE"},{"OUT_DATE","ROC"},{"appl_dot"},{"QWEIGHT"}};
-        java.util.List<String> retList = new java.util.LinkedList<String>();
+        java.util.List<String> drgList = new java.util.LinkedList<String>();
         java.util.Map<String, Object> rowData;
         for (Map<String, Object> item : icdcmSet) {
             rowData = lstIPD.get(0);
@@ -96,16 +112,25 @@ public class LogDataService {
             for (int a=0; a<33; a++) {
                 strBuffer.append(",");
             }
-            retList.add(strBuffer.toString());
+            drgList.add(strBuffer.toString());
         }
-        return retList;
+        
+        java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+        retMap.put("card_seq_no", card_seq_no);
+        retMap.put("sn", sn);
+        retMap.put("icd_cm", icdcmSet);
+        retMap.put("drg_list", drgList);
+        return retMap;
     }
+    
     
     public String rocDateToDate(String rocDate) {
         String ret;
         String yy, mm, dd;
-//        int yearAdd = 1911;
-        int yearAdd = 1922; //測試資料才可以過
+        int yearAdd = 1911;
+        if (serverPort.equals("8081")) {
+//            yearAdd += 2; //測試資料才可以過
+        }
         if (rocDate.length()==5) {
             yy = rocDate.substring(0, 3);
             mm = rocDate.substring(3, 5);
@@ -246,8 +271,10 @@ public class LogDataService {
     }
     
     
-    public java.util.Map<String, Object> parseDrgResult(java.util.List<String> lstData) {
+    public java.util.Map<String, Object> parseDrgResult(long sn, String card_seq_no, java.util.List<String> lstData, java.util.List<?> lst_icd_cm) {
         java.util.Map<String, Object> retMap = new java.util.LinkedHashMap<String, Object>();
+        retMap.put("mr_id", sn);
+        retMap.put("card_seq_no", card_seq_no);
         String masterField[][]= {{"fee_ym","1","費用年月"},
                 {"roc_id","2","身分證號"},
                 {"in_date","5","入院日期"},
@@ -257,9 +284,11 @@ public class LogDataService {
                 {"icd_cm_2","8","次診斷代碼1"},
                 {"icd_cm_3","9","次診斷代碼2"},
                 {"icd_cm_4","10","次診斷代碼3"},
-                {"icd_cm_5","11","次診斷代碼2"},
+                {"icd_cm_5","11","次診斷代碼4"},
                 {"appl_dot","19","費用"},
                 {"drg_code","21","DRG 碼"},
+                {"complication","22","併發症註記"},
+                {"mdc_code","23","MDC"},
                 {"error_code","24","錯誤碼"}
             };
         if (lstData.size()>1) {
@@ -283,7 +312,18 @@ public class LogDataService {
 //                }
                 java.util.Map<String, Object> map = new java.util.LinkedHashMap<String, Object>();
                 for (int a=0; a<detailField.length; a++) {
-                    map.put(detailField[a][0], ele[Integer.parseInt(detailField[a][1])]);
+                    if (detailField[a][0].indexOf("icd_cm_")>=0) {
+                        String icd = ele[Integer.parseInt(detailField[a][1])];
+                        if (icd.length()>0) {
+                            java.util.Map<String, Object> mapIcd =  findMapData(lst_icd_cm, "icd_cm", icd);
+                            if (mapIcd != null) {
+                                icd = mapIcd.get("icd_cm_original").toString();
+                            }
+                        }
+                        map.put(detailField[a][0], icd);
+                    } else {
+                        map.put(detailField[a][0], ele[Integer.parseInt(detailField[a][1])]);
+                    }
                 }
                 if (ele.length>=56) {//55
                     java.util.List<String> lst = new java.util.ArrayList<String>();
@@ -292,6 +332,7 @@ public class LogDataService {
                 } else {
                     map.put("error_message", parseErrorMessage(map.get("error_code").toString()));
                 }
+                map.put("rw", logDataDao.getDrgRw(map.get("drg_code").toString(), retMap.get("in_date").toString(), retMap.get("out_date").toString()));
                 lstIcd.add(map);
             }
         }
@@ -301,24 +342,60 @@ public class LogDataService {
 
     public java.util.Map<String, Object> drgProcess(String idCard, String in_date) {
         java.util.Map<String, Object> retMap;
-        java.util.List<String> drgSource = calcDrgSource(idCard, in_date);
-        if (drgSource.size()>0) {
+        java.util.Map<String, Object> drgSource = calcDrgSource(idCard, in_date);
+        
+        java.util.List<String> drg_list = (java.util.List<String>)drgSource.get("drg_list");
+        String card_seq_no = (String) drgSource.get("card_seq_no");
+        long sn = (long) drgSource.get("sn");
+        //java.util.Set<Map<String, Object>> icdcmSet = new java.util.HashSet<Map<String, Object>>
+        //java.util.List<Map<String, Object>> icd_cm = (java.util.Set) drgSource.get("icd_cm");
+        java.util.List<Map> lst_icd_cm = setToList((java.util.Set<Map>)drgSource.get("icd_cm"));
+        if (drg_list.size()>0) {
             String path = "drg_data";
             long fname = new java.util.Date().getTime();
             String sourceName = path+"/"+fname+".txt";
             String targetName = path+"/"+fname+"-b.txt";
-            saveToFile(sourceName, drgSource);
+            saveToFile(sourceName, drg_list);
             String pyCommand = path+"/DRG.BAT "+fname+".txt"+" "+fname+"-b.txt";
-//            String pyCommand = path+"/DRG.BAT 20210405030645A.txt"+" "+fname+"-b.txt";   //for Test
+//            String pyCommand = path+"/DRG.BAT 20210405030645A-Test.txt"+" "+fname+"-b.txt";   //for Test
+            System.out.println("exec="+pyCommand);
             execBatch(pyCommand);
             java.util.List<String>lstResult = loadFromFile(targetName);
-            retMap = parseDrgResult(lstResult);
-//            deleteFile(sourceName);
-//            deleteFile(targetName);
+            retMap = parseDrgResult(sn, card_seq_no, lstResult, lst_icd_cm);
+            int wrCnt = writeDrgResult(retMap);
+            deleteFile(sourceName);
+            deleteFile(targetName);
         } else {
             retMap = new java.util.HashMap<String, Object>(); 
         }
         return retMap;
+    }
+    
+    public int writeDrgResult(java.util.Map<String, Object> drgResult) {
+        int ret = 0;
+        String drg_code, error;
+        long mr_id = (long)drgResult.get("mr_id");
+        long appl_dot;
+        logDataDao.del_DRG_CAL(mr_id);
+        java.util.List<Map<String, Object>> lstDrgData = (java.util.List<Map<String, Object>>)drgResult.get("data");
+        for (Map<String, Object> item: lstDrgData) {
+            if (item.get("appl_dot")!=null) {
+                appl_dot = strToLong(item.get("appl_dot").toString());
+            } else {
+                appl_dot = 0;
+            }
+            drg_code = item.get("drg_code").toString();
+            error = item.get("error_code").toString().replaceAll("00", "");
+            if ((drg_code.length()==0)&&(error.length()==0)) {
+                error= "0(AP過期)";
+            }
+
+            ret += logDataDao.add_DRG_CAL(mr_id, item.get("icd_cm_1").toString(), appl_dot, 
+                    (double)item.get("rw"), drg_code, 
+                    item.get("complication").toString(), 
+                    item.get("mdc_code").toString(), error, "",  0,  0);
+        }
+        return ret;
     }
 
     public int createDrgBatchFile(String drgPath, String drgExe) {
@@ -348,6 +425,47 @@ public class LogDataService {
         return ret;
     }
     
+    
+    private java.util.List<Map> setToList(java.util.Set<Map> setData) {
+        java.util.List<Map> lst = new java.util.LinkedList<>();
+        for (Map item: setData) {
+            lst.add(item);
+        }
+        return lst;
+    }
+    
+    private java.util.Map<String, Object> findMapData(java.util.List<?> list, String key, String value) {
+        java.util.Map<String, Object> retMap = null;
+        String v; 
+        for (Map<String, Object> temp: (java.util.List<Map<String, Object>>)list) {
+            if (temp.get(key)!=null) {
+                v=temp.get(key).toString();
+                if (value.equals(v)) {
+                    retMap=temp;
+                    break;
+                }
+            }  else {
+                //System.out.println(temp);
+            }
+        }
+        return (retMap);
+    }
+
+    private long strToLong(String str) {
+        if (str==null)
+            return (0); 
+        else {
+            try {
+                long ret =0;
+                if (str.length()>0) {
+                    ret = Long.parseLong(str);
+                }
+                return (ret);
+            } catch (Exception e) {
+                return (0);
+            }
+        }
+    }
     
     //== log ===
     public String getMapStr(java.util.Map<String, Object> map, String key) {
@@ -491,7 +609,6 @@ public class LogDataService {
             }
             
             newId = logDataDao.addLogData(table, condiMap.get("fields").toString(), condiMap.get("values").toString(), user, mode);
-            //System.out.println("newId="+newId+"/"+table);
             if (mode!=3 && newId>0) {
                 for (Map<String, Object> item : diffSet) {
                     String field, source, modify;
@@ -505,6 +622,81 @@ public class LogDataService {
         return newId;
     }
     
+    public int setLogin(String jwt) {
+        int ret = -1;
+        if (jwt.length()>20) {
+            jwt = jwt.replace("Bearer", "");
+            String arrJwt[] = jwt.split("\\.");
+            String jwtBody = "";
+            byte[] jwtBytes = java.util.Base64.getDecoder().decode(arrJwt[1]);
+            try {
+                jwtBody = new String(jwtBytes, "UTF-8");
+            } catch (java.io.UnsupportedEncodingException ex) {
+                jwtBody = new String(jwtBytes);
+            }
+            BasicJsonParser linkJsonParser = new BasicJsonParser();
+            Map<String, Object> jwtMap = linkJsonParser.parseMap(jwtBody);
+            logDataDao.addSignin(jwtMap.get("sub").toString(), jwt);
+            //{ "sub": "test", "uid": 2, "exp": 1627378586 }
+            ret = 0;
+        }
+        return ret;
+    }
+    
+    public int setLogout(String jwt) {
+        int ret = -1;
+        if (jwt.length()>20) {
+            ret = logDataDao.updateSignout(jwt);
+        }
+        return ret;
+    }
+    
+    // http://127.0.0.1:8081/nhixml/mr?allMatch=Y&sdate=2021%2F07%2F23&edate=2021%2F07%2F23&minPoints=68&maxPoints=90&dataFormat=10,20&funcType=AC&prsnName=&drg=&drgSection=B1&icdAll=&status=3&page=0&perPage=20
+    public long updateLogSearch(String user, String allMatch, String startDate, String endDate,
+            Integer minPoints, Integer maxPoints, String dataFormat, String funcType, String prsnId,
+            String prsnName, String applId, String applName, String inhMrId, String inhClinicId,
+            String drg, String drgSection, String orderCode, String inhCode, String drugUse,
+            String inhCodeDrugUse, String icdAll, String icdCMMajor, String icdCMSecondary, String icdPCS,
+            String qrObject, String qrSdate, String qrEdate, String status, String deductedCode,
+            String deductedOrder) {
+        long m_id = logDataDao.addLogSearch(user);
+        if (m_id>0) {
+            logDataDao.addLogSearchDetail(m_id, "allMatch", allMatch);
+            logDataDao.addLogSearchDetail(m_id, "startDate", startDate);
+            logDataDao.addLogSearchDetail(m_id, "endDate", endDate);
+            if (minPoints>0) {
+                logDataDao.addLogSearchDetail(m_id, "minPoints", Integer.toString(minPoints));
+            }
+            if (maxPoints>minPoints) {
+                logDataDao.addLogSearchDetail(m_id, "maxPoints", Integer.toString(maxPoints));
+            }
+            logDataDao.addLogSearchDetail(m_id, "dataFormat", dataFormat);
+            logDataDao.addLogSearchDetail(m_id, "funcType", funcType);
+            logDataDao.addLogSearchDetail(m_id, "prsnId", prsnId);
+            logDataDao.addLogSearchDetail(m_id, "prsnName", prsnName);
+            logDataDao.addLogSearchDetail(m_id, "applId", applId);
+            logDataDao.addLogSearchDetail(m_id, "applName", applName);
+            logDataDao.addLogSearchDetail(m_id, "inhMrId", inhMrId);
+            logDataDao.addLogSearchDetail(m_id, "inhClinicId", inhClinicId);
+            logDataDao.addLogSearchDetail(m_id, "drg", drg);
+            logDataDao.addLogSearchDetail(m_id, "drgSection", drgSection);
+            logDataDao.addLogSearchDetail(m_id, "orderCode", orderCode);
+            logDataDao.addLogSearchDetail(m_id, "inhCode", inhCode);
+            logDataDao.addLogSearchDetail(m_id, "drugUse", drugUse);
+            logDataDao.addLogSearchDetail(m_id, "inhCodeDrugUse", inhCodeDrugUse);
+            logDataDao.addLogSearchDetail(m_id, "icdAll", icdAll);
+            logDataDao.addLogSearchDetail(m_id, "icdCMMajor", icdCMMajor);
+            logDataDao.addLogSearchDetail(m_id, "icdCMSecondary", icdCMSecondary);
+            logDataDao.addLogSearchDetail(m_id, "icdPCS", icdPCS);
+            logDataDao.addLogSearchDetail(m_id, "qrObject", qrObject);
+            logDataDao.addLogSearchDetail(m_id, "qrSdate", qrSdate);
+            logDataDao.addLogSearchDetail(m_id, "qrEdate", qrEdate);
+            logDataDao.addLogSearchDetail(m_id, "status", status);
+            logDataDao.addLogSearchDetail(m_id, "deductedCode", deductedCode);
+            logDataDao.addLogSearchDetail(m_id, "deductedOrder", deductedOrder);
+        }
+        return (m_id);
+    }
     //====================================
     /*
     public java.util.Set<Map<String, Object>> testModifyData(String user, String table, java.util.List<LogDataPl> params) {

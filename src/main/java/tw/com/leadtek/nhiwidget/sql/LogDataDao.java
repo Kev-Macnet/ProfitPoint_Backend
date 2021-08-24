@@ -6,10 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCreator;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+
+import tw.com.leadtek.tools.Utility;
 
 
 @Repository
@@ -22,11 +21,12 @@ public class LogDataDao {
 
     public java.util.List<Map<String, Object>> find_IP_D(String idCard, String in_date) {
         String sql;
-        sql = "SELECT ROC_ID,ID_BIRTH_YMD,IN_DATE,OUT_DATE,TRAN_CODE,ICD_CM_1,ICD_CM_2,ICD_CM_3,ICD_CM_4,ICD_CM_5,ICD_OP_CODE1,\r\n"
-                + "   a.ID+900000 AS SN, 1 as QWEIGHT, b.HOSP_ID,b.FEE_YM,b.APPL_DOT\r\n"  // QWEIGHT = 權重
+        sql = "Select CARD_SEQ_NO,ROC_ID,ID_BIRTH_YMD,IN_DATE,OUT_DATE,TRAN_CODE,ICD_CM_1,ICD_CM_2,ICD_CM_3,ICD_CM_4,ICD_CM_5,ICD_OP_CODE1,\r\n"
+                + "   a.MR_ID+900000 AS SN, 1 as QWEIGHT, b.HOSP_ID,b.FEE_YM,b.APPL_DOT\r\n"  // QWEIGHT = 權重
                 + "From IP_D a left Join IP_T b on (b.ID= a.IPT_ID)\r\n"
-                + "WHERE (a.ROC_ID='%s')\r\n"
-                + "  AND (a.IN_DATE='%s')";
+                + "Where (a.ROC_ID='%s')\r\n"
+                + "  and (a.IN_DATE='%s')\r\n"
+                + "Order by OUT_DATE DESC";
         sql = String.format(sql, idCard, in_date);
         logger.info(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -59,33 +59,71 @@ public class LogDataDao {
         return retMap;
     }
 
-    //------
-    private String quotedNotNull(String str) {
-        if (str==null) {
-            return "NULL";
+    public int add_DRG_CAL(long mr_id, String icd_cm, long med_dot, double rw, String drg, String cc, String mdc, String error, String drg_section, int drg_fix, int drg_dots) {
+        String sql;
+        sql = "Insert into \r\n"
+                + "DRG_CAL(MR_ID, ICD_CM, MED_DOT, RW, DRG, CC, MDC, ERROR, DRG_SECTION, DRG_FIX, DRG_DOTS)\r\n"
+                + "Values(%d, '%s', %d, %f, '%s', '%s', '%s', '%s', '%s', %d, %d)";
+        sql = String.format(sql, mr_id, icd_cm, med_dot, rw, drg, cc, mdc, error, drg_section, drg_fix, drg_dots);
+        logger.info(sql);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public int del_DRG_CAL(long mr_id) {
+        String sql;
+        sql = "Delete from DRG_CAL\r\n"
+                + "Where (MR_ID=%d)";
+        sql = String.format(sql, mr_id);
+        logger.info(sql);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    
+    public double getDrgRw(String drg_code, String in_date, String out_date) {
+        double ret = 1f;
+        if (drg_code.length()>0) {
+            String sql;
+            sql = "Select RW \r\n"
+                    + "From DRG_CODE \r\n"
+                    + "Where (CODE='%s')\r\n"
+                    + "  and ('%s' >= START_DAY)\r\n"
+                    + "  and ('%s' <= END_DAY)";
+            sql = String.format(sql, drg_code, transDateStr(in_date), transDateStr(out_date));
+            logger.info(sql);
+            java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+            if (lst.size() > 0) {
+                java.util.Map<String, Object> map = lst.get(0);
+                ret = strToDouble(map.get("RW").toString(), 1.0); 
+            }
+        }
+        return ret;
+    }
+    
+    public double strToDouble(String paStr, double defval) {
+        if (paStr == null) {
+            return (defval);
         } else {
-            return "\'"+str+"\'";
+            try {
+                return (Double.parseDouble(paStr));
+            } catch (Exception e) {
+                return (defval);
+            }
         }
     }
     
-    public String getMapStr(java.util.Map<String, Object> map, String key) {
-        String ret = null;
-        if (map.get(key)!=null) {
-            ret =  map.get(key).toString();
+    public String transDateStr(String dateStr) {
+        String ret;
+        if (dateStr.length()==8) {
+            ret = String.format("%s-%s-%s", dateStr.substring(0, 4), dateStr.substring(4, 6), dateStr.substring(6, 8));
+        } else {
+            ret = dateStr;
         }
-        return (ret);
-    }
-    
-    public void sleep(int msec) {
-        try   {
-            Thread.sleep(msec);
-        }
-        catch(InterruptedException ex)  {
-            Thread.currentThread().interrupt();
-        }
+        return ret;
     }
 
-    
+    //------
     public long newTableId_l(String tbName, String fdName) {
         long lastID = 0;
         String s1;
@@ -113,10 +151,10 @@ public class LogDataDao {
                 if (ret > 0) {
                     break;
                 }
-                sleep(10);
             } catch(DataAccessException ex) {
                 //
             }
+            Utility.sleep(10);
         }
         return newId;
     }
@@ -151,13 +189,82 @@ public class LogDataDao {
         sql = "Insert into \r\n"
                 + "LOG_DATA2(M_ID, FIELD, ORIGINAL, CORRECT, EQUAL)\r\n"
                 + "Values(%d, %s, %s, %s, %d)";
-        sql = String.format(sql, mid, quotedNotNull(field), quotedNotNull(original), quotedNotNull(correct), equal);
+        sql = String.format(sql, mid, Utility.quotedNotNull(field), Utility.quotedNotNull(original), Utility.quotedNotNull(correct), equal);
         try {
             int ret = jdbcTemplate.update(sql);
             return ret;
         } catch(DataAccessException ex) {
             return 0;
         }
+    }
+    
+    
+    public int addSignin(String uid, String jwt) {
+        String sql;
+        sql = "Insert into \r\n"
+                + "LOG_SIGNIN(USERNAME, JWT)\r\n"
+                + "Values ('%s', '%s')";
+        sql = String.format(sql, uid, jwt);
+        try {
+            int ret = jdbcTemplate.update(sql);
+            return ret;
+        } catch(DataAccessException ex) {
+            return 0;
+        }
+    }
+    
+    public int updateSignout(String jwt) {
+        String sql;
+        sql = "Update LOG_SIGNIN\r\n"
+                + "Set LOGOUT_TM=CURRENT_TIMESTAMP\r\n"
+                + "Where (JWT='%s')and(LOGOUT_TM is null)";
+        sql = String.format(sql, jwt);
+        try {
+            int ret = jdbcTemplate.update(sql);
+            return ret;
+        } catch(DataAccessException ex) {
+            return 0;
+        }
+    }
+    
+    //===
+    public long addLogSearch(String user) {
+        long newId=0;
+        String sql, s1;
+        sql = "Insert into \r\n"
+                + "LOG_SEARCH1(USERNAME, UPDATE_TM)\r\n"
+                + "Values('%s', CURRENT_TIMESTAMP)";
+        for (int a=0; a<50; a++) {
+            newId = newTableId_l("LOG_SEARCH1", "ID");
+            s1 = String.format(sql, newId, user);
+            try {
+                int ret = jdbcTemplate.update(s1);
+                if (ret > 0) {
+                    break;
+                }
+                Utility.sleep(10);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return newId;
+    }
+    
+    public int addLogSearchDetail(long mid, String field, String keyword) {
+        int ret = -1;
+        String sql;
+        if (keyword!=null && keyword.length()>0) {
+            sql = "Insert into \r\n"
+                    + "LOG_SEARCH2(M_ID, FIELD, KEYWORD)\r\n"
+                    + "Values(%d, '%s', '%s')";
+            sql = String.format(sql, mid, field, keyword);
+            try {
+                ret = jdbcTemplate.update(sql);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return ret;
     }
     
     /* HANA 不支援一次寫多筆 ---------*/
