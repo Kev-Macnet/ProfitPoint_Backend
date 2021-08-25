@@ -52,7 +52,7 @@ public class DrgRestController {
     public ResponseEntity<?> initiateDrg(HttpServletRequest request,
             @RequestHeader("Authorization") String jwt) throws Exception {
 //        java.util.Map<String, Object> retMap = ipdService.drgProcess(id_card, in_date);
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -89,7 +89,7 @@ public class DrgRestController {
         @RequestHeader("Authorization") String jwt,
         @PathVariable String id_card,
         @PathVariable String in_date) throws Exception {
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {

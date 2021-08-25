@@ -31,10 +31,10 @@ public class PaymentTermsService {
     }
     
     
-    public java.util.Map<String, Object> jwtValidate(String jwt) {
+    public java.util.Map<String, Object> jwtValidate(String jwt, int roleNo) { //roleNo default=4
         java.util.Map<String, Object> validationMap = Utility.jwtValidate(jwt);
         if ((int)validationMap.get("status") == 200) {
-            if (findUserRole(validationMap.get("userName").toString())<4) {
+            if (findUserRole(validationMap.get("userName").toString())<roleNo) {
                 validationMap.put("status", 401);
                 validationMap.put("message", "權限不足!");
             }

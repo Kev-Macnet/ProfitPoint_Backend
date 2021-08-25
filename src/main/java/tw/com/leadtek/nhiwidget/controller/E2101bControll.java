@@ -63,7 +63,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -81,7 +81,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @RequestBody PtTreatmentFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -111,7 +111,7 @@ public class E2101bControll {
         @PathVariable long pt_id,
         @RequestBody PtTreatmentFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -136,7 +136,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -162,7 +162,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -180,7 +180,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @RequestBody PtTubeFeedingFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -211,7 +211,7 @@ public class E2101bControll {
         @PathVariable long pt_id,
         @RequestBody PtTubeFeedingFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -236,7 +236,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -262,7 +262,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -271,7 +271,7 @@ public class E2101bControll {
         }
     }
     
-    @ApiOperation(value="10-2.10 營養照護費設定(add)", notes="category = \"病房費\"")
+    @ApiOperation(value="10-2.10 營養照護費設定(add)", notes="category = \"營養照護費\"")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -280,7 +280,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @RequestBody PtNutritionalFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -310,7 +310,7 @@ public class E2101bControll {
         @PathVariable long pt_id,
         @RequestBody PtNutritionalFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -335,7 +335,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -361,7 +361,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -379,7 +379,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @RequestBody PtAdjustmentFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -409,7 +409,7 @@ public class E2101bControll {
         @PathVariable long pt_id,
         @RequestBody PtAdjustmentFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -434,7 +434,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -460,7 +460,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -478,7 +478,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @RequestBody PtMedicineFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -508,7 +508,7 @@ public class E2101bControll {
         @PathVariable long pt_id,
         @RequestBody PtMedicineFeePl params) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
@@ -533,7 +533,7 @@ public class E2101bControll {
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
         
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt);
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
