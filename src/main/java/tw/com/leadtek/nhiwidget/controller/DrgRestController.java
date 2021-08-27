@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 
@@ -49,22 +50,23 @@ public class DrgRestController {
        @ApiImplicitParam(name = "drg_exe", value = "DRG程式", example="DRGICD10.exe" , dataType = "String", paramType = "query", required = true),
     })
     @RequestMapping(value = "/api/drg/initiate", method = RequestMethod.POST)
-    public ResponseEntity<?> initiateDrg(HttpServletRequest request,
-            @RequestHeader("Authorization") String jwt) throws Exception {
+    public ResponseEntity<?> initiateDrg(@RequestHeader("Authorization") String jwt,
+            @RequestParam(required=false, defaultValue="") String drg_path,
+            @RequestParam(required=false, defaultValue="") String drg_exe) throws Exception {
 //        java.util.Map<String, Object> retMap = ipdService.drgProcess(id_card, in_date);
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
-            String drgPath = request.getParameter("drg_path");
+            String drgPath = drg_path;
             if (drgPath==null) {
                 drgPath = "c:\\med\\S_DRGService_3412";
             }
-            String drgExe = request.getParameter("drg_exe");
+            String drgExe = drg_exe;
             if (drgExe==null) {
                 drgExe = "DRGICD10.exe";
             }
-            System.out.println("drgPath="+drgPath+";"+drgExe);
+            System.out.println("drgPath123 = "+drgPath+";"+drgExe);
             int status = logDataService.createDrgBatchFile(drgPath, drgExe);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);

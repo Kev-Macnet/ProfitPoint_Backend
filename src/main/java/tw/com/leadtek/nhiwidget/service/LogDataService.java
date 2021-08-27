@@ -8,6 +8,7 @@ import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
+import tw.com.leadtek.tools.Utility;
 
 // swagger: http://127.0.0.1:8081/swagger-ui/index.html
 @Service
@@ -167,6 +168,7 @@ public class LogDataService {
         }
     }
     
+    /*
     public boolean deleteFile(String fName) {
         java.io.File f = new java.io.File(fName);
         if (f.exists()) {
@@ -177,7 +179,6 @@ public class LogDataService {
         } 
     }
 
-    
     public boolean saveToFile(String fileName, java.util.List<String> lstData) {
         try {
             java.io.File fp = new java.io.File(fileName);
@@ -211,6 +212,7 @@ public class LogDataService {
       }
       return buffer;
     }
+    */
 
     public String execBatch(String pyCommand) {
         String[] arrCommand = pyCommand.split(" ");
@@ -355,16 +357,16 @@ public class LogDataService {
             long fname = new java.util.Date().getTime();
             String sourceName = path+"/"+fname+".txt";
             String targetName = path+"/"+fname+"-b.txt";
-            saveToFile(sourceName, drg_list);
+            Utility.saveToFile(sourceName, drg_list);
             String pyCommand = path+"/DRG.BAT "+fname+".txt"+" "+fname+"-b.txt";
 //            String pyCommand = path+"/DRG.BAT 20210405030645A-Test.txt"+" "+fname+"-b.txt";   //for Test
             System.out.println("exec="+pyCommand);
             execBatch(pyCommand);
-            java.util.List<String>lstResult = loadFromFile(targetName);
+            java.util.List<String>lstResult = Utility.loadFromFile(targetName);
             retMap = parseDrgResult(sn, card_seq_no, lstResult, lst_icd_cm);
             int wrCnt = writeDrgResult(retMap);
-            deleteFile(sourceName);
-            deleteFile(targetName);
+            Utility.deleteFile(sourceName);
+            Utility.deleteFile(targetName);
         } else {
             retMap = new java.util.HashMap<String, Object>(); 
         }
@@ -418,7 +420,7 @@ public class LogDataService {
             String arrWorkPath[]=workPath.split(":");
             lstData.add(arrWorkPath[0]+":");
             lstData.add(String.format("cd \"%s\"", arrWorkPath[1]));
-            saveToFile(workPath+"DRG.BAT", lstData);
+            Utility.saveToFile(workPath+"DRG.BAT", lstData);
             ret = 0;
         }
 
