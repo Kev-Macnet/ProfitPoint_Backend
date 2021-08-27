@@ -78,13 +78,13 @@ public class DbBackupControll {
         } else {
             java.util.List<String> lst = new java.util.ArrayList<String>();
             java.util.List<String> lst2 = new java.util.ArrayList<String>();
-            lst.add("12-AAA\n");
-            lst.add("34-BBB\n");
-            lst2.add("56-婉轉\n");
-            lst2.add("78-天真\n");
+            lst.add("12-AAA");
+            lst.add("34-BBB");
+            lst2.add("56-婉轉");
+            lst2.add("78-天真");
             String fileName = "d:/temp/123.txt";
-            Utility.saveToFile(fileName, lst);
-            Utility.saveToFile(fileName, lst2);
+            Utility.saveToFile(fileName, lst, false);
+            Utility.saveToFile(fileName, lst2, true);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("count", 1234);
             return new ResponseEntity<>(retMap, HttpStatus.OK);

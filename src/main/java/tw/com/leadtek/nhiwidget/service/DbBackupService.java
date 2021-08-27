@@ -34,13 +34,13 @@ public class DbBackupService {
         java.util.Date update = Utility.detectDate("2021-08-16");
         String[][] tbName = {
                 {"MR", "ID", "UPDATE_AT", "1"},
-//                {"MR_CHECKED", "ID", "UPDATE_AT"},
+//                {"MR_CHECKED", "ID", "UPDATE_AT", "1"},
                 {"IP_D", "ID", "UPDATE_AT", "2"},
                 {"IP_P", "ID", "UPDATE_AT", "2"},
                 {"IP_T", "ID", "UPDATE_AT", "2"},
-                {"OP_D", "ID", "UPDATE_AT", "2"},
-                {"OP_P", "ID", "UPDATE_AT", "2"},
-                {"OP_T", "ID", "UPDATE_AT", "2"}
+                {"OP_D", "ID", "UPDATE_AT", "3"},
+                {"OP_P", "ID", "UPDATE_AT", "3"},
+                {"OP_T", "ID", "UPDATE_AT", "3"}
             };
         java.util.List<String> lstFileName = new java.util.ArrayList<String>();
         int ret = 0;
@@ -71,6 +71,7 @@ public class DbBackupService {
         System.out.println(mapRange);
         long start = mapRange.get("min_id");
 //        mapRange.put("max_id", 50000l); //test! test! test!
+        String fileName = path+tableName+".txt";
         while (start<=mapRange.get("max_id")) {
 //            lstData.clear();
             java.util.List<Map<String, Object>> lstRow = dbBackupDao.findData(tableName, idName, start, start+step-1, updateName, update);
@@ -81,6 +82,8 @@ public class DbBackupService {
                         title.append(quotedStr(entry.getKey()) + delimiter);
                     }
                     lstData.add(title.toString());
+                    Utility.saveToFile(fileName, lstData, false);
+                    lstData.clear();
                 }
                 for (Map<String, Object>item : lstRow) {
                     ret++;
@@ -95,12 +98,13 @@ public class DbBackupService {
                     lstData.add(buff.toString());
                 }
                 lstRow.clear();
+                Utility.saveToFile(fileName, lstData, true);
+                lstData.clear();
             }
             start += step;
         }
-        String fileName = path+tableName+".txt";
         System.out.println("lstData="+lstData.size()+", path="+path);
-        Utility.saveToFile(fileName, lstData);
+        Utility.saveToFile(fileName, lstData, true);
         return (fileName);
     }
     

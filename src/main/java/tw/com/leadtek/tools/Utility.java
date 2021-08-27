@@ -216,10 +216,10 @@ public class Utility {
       } 
   }
   
-  public static boolean saveToFile(String fileName, java.util.List<String> lstData) {
+  public static boolean saveToFile(String fileName, java.util.List<String> lstData, boolean append) {
       try {
           java.io.File fp = new java.io.File(fileName);
-           java.io.BufferedWriter bwr = new java.io.BufferedWriter(new java.io.FileWriter(fp));
+           java.io.BufferedWriter bwr = new java.io.BufferedWriter(new java.io.FileWriter(fp, append));
            for (String str : lstData) {
                bwr.write(str+"\r\n");
            }

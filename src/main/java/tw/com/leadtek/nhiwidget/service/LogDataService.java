@@ -357,7 +357,7 @@ public class LogDataService {
             long fname = new java.util.Date().getTime();
             String sourceName = path+"/"+fname+".txt";
             String targetName = path+"/"+fname+"-b.txt";
-            Utility.saveToFile(sourceName, drg_list);
+            Utility.saveToFile(sourceName, drg_list, false);
             String pyCommand = path+"/DRG.BAT "+fname+".txt"+" "+fname+"-b.txt";
 //            String pyCommand = path+"/DRG.BAT 20210405030645A-Test.txt"+" "+fname+"-b.txt";   //for Test
             System.out.println("exec="+pyCommand);
@@ -420,7 +420,7 @@ public class LogDataService {
             String arrWorkPath[]=workPath.split(":");
             lstData.add(arrWorkPath[0]+":");
             lstData.add(String.format("cd \"%s\"", arrWorkPath[1]));
-            Utility.saveToFile(workPath+"DRG.BAT", lstData);
+            Utility.saveToFile(workPath+"DRG.BAT", lstData, false);
             ret = 0;
         }
 
