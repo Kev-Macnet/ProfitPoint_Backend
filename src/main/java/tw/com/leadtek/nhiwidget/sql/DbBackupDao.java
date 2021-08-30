@@ -29,18 +29,22 @@ public class DbBackupDao {
     }
     
     public java.util.List<Map<String, Object>> findData(String tableName, String idName, long minId, long maxId, String updateName, java.util.Date minUpdate) {
-        String strUpdate = Utility.dateFormat(minUpdate, "yyyy-MM-dd");
+        long yesterday = new java.util.Date().getTime()-(86400*1000);
+        String stopUpdate = Utility.dateFormat(new java.util.Date(yesterday), "yyyy-MM-dd");
+        String startUpdate = Utility.dateFormat(minUpdate, "yyyy-MM-dd");
+        System.out.println("stopUpdate="+stopUpdate);
         String sql;
         sql = "Select *\r\n"
                 + "From %s\n"
                 + "Where (%s between %d and %d)\n"
-                + " -- UPDATE_AT and(%s >= '%s')\n"
+                + " -- UPDATE_AT and (%s >= '%s')\n"
+                + "  and (%s <= '%s')\n"
                 + "Order By %s";
-        sql = String.format(sql, tableName, idName, minId, maxId, updateName, strUpdate, idName);
-        if (updateName.length()>0) {
-            sql = sql.replace("-- UPDATE_AT and(", " and(");
+        sql = String.format(sql, tableName, idName, minId, maxId, updateName, startUpdate, updateName, stopUpdate, idName);
+        if (minUpdate.getTime()>0l) {
+            sql = sql.replace("-- UPDATE_AT and (", " and (");
         }
-//        logger.info(sql);
+        logger.info(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
     }

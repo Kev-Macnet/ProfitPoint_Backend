@@ -1,11 +1,14 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -17,8 +20,10 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import tw.com.leadtek.nhiwidget.dto.BackupSettingDto;
 import tw.com.leadtek.nhiwidget.service.DbBackupService; 
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.sql.WebConfigDao;
 import tw.com.leadtek.tools.Utility;
 
 @Api(value = "系統備份與還原 API", tags = {"12 系統備份與還原"})
@@ -30,9 +35,27 @@ public class DbBackupControll {
     private PaymentTermsService paymentTermsService;
     @Autowired
     private DbBackupService dbBackupService;
+    @Autowired
+    private WebConfigDao webConfigDao;
 
     //==== 
-    @ApiOperation(value="12.01 系統備份", notes="")
+    @ApiOperation(value="12.01 系統資料備份紀錄", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+    })
+    @RequestMapping(value = "/dbbackup/log", method = RequestMethod.POST)
+    public ResponseEntity<?> dbBackupLog(@RequestHeader("Authorization") String jwt) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            java.util.List<Map<String, Object>> retMap = dbBackupService.findAll(0, "");
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="12.02 系統資料備份", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -47,44 +70,108 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
-            java.util.Map<String, Object> mapBackup = dbBackupService.dbBackup(mode);
-            java.util.List<String> lstFileName = (java.util.List)mapBackup.get("fileNames");
-            String zipFileName = (String)mapBackup.get("zipName");
-            if (lstFileName.size()>0) {
-                dbBackupService.zipFiles(zipFileName, lstFileName);
-                for (String fname : lstFileName) {
-                    Utility.deleteFile(fname);
-                }
-            }
-            Utility.deleteFile((String)mapBackup.get("backupPath"));
+            java.util.Map<String, Object> mapBackup = dbBackupService.dbBackup(mode, jwtValidation.get("userName").toString());
+            return new ResponseEntity<>(mapBackup, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="12.03 系統資料備份刪除", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+    })
+    @RequestMapping(value = "/dbbackup/{backup_id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> dbBackupDelete(@RequestHeader("Authorization") String jwt,
+        @PathVariable int backup_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = dbBackupService.deleteRow(backup_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
-            retMap.put("count", lstFileName.size());
-            retMap.put("fileNames", lstFileName);
+            retMap.put("status", status);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    
+    @ApiOperation(value="12.04 放棄系統資料備份", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+    })
+    @RequestMapping(value = "/dbbackup/abort", method = RequestMethod.POST)
+    public ResponseEntity<?> dbBackupAbort(@RequestHeader("Authorization") String jwt) throws Exception {
+
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = dbBackupService.abort();
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="12.05 寫入系統資料備份設定", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+    })
+    @RequestMapping(value = "/dbbackup/setting", method = RequestMethod.PUT)
+    public ResponseEntity<?> dbBackupSettingSave(@RequestHeader("Authorization") String jwt,
+            @RequestBody BackupSettingDto params) throws Exception {
+
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = dbBackupService.saveSetting(params);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    
+    @ApiOperation(value="12.06 讀取系統資料備份設定", notes="")
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }", response=BackupSettingDto.class)
+    })
+    @RequestMapping(value = "/dbbackup/setting", method = RequestMethod.POST)
+    public ResponseEntity<?> dbBackupSettingRead(@RequestHeader("Authorization") String jwt) throws Exception {
+
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            java.util.Map<String, Object> retMap = dbBackupService.readSetting();
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
     
     //===
-    @ApiOperation(value="12.99 Test", notes="")
+    @ApiOperation(value="12.99 Backup Initiate", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
-    @RequestMapping(value = "/dbbackup/test", method = RequestMethod.POST)
+    @RequestMapping(value = "/dbbackup/initiate", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupTest(@RequestHeader("Authorization") String jwt) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
-            java.util.List<String> lst = new java.util.ArrayList<String>();
-            java.util.List<String> lst2 = new java.util.ArrayList<String>();
-            lst.add("12-AAA");
-            lst.add("34-BBB");
-            lst2.add("56-婉轉");
-            lst2.add("78-天真");
-            String fileName = "d:/temp/123.txt";
-            Utility.saveToFile(fileName, lst, false);
-            Utility.saveToFile(fileName, lst2, true);
+            webConfigDao.setConfig("backup_busy", "0", "");
+            webConfigDao.setConfig("backup_abort", "0", "");
+//            java.util.List<String> lst = new java.util.ArrayList<String>();
+//            java.util.List<String> lst2 = new java.util.ArrayList<String>();
+//            lst.add("12-AAA");
+//            lst.add("34-BBB");
+//            lst2.add("56-婉轉");
+//            lst2.add("78-天真");
+//            String fileName = "d:/temp/123.txt";
+//            Utility.saveToFile(fileName, lst, false);
+//            Utility.saveToFile(fileName, lst2, true);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("count", 1234);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
