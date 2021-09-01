@@ -216,7 +216,7 @@ public class DbBackupService {
         java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idName);
         System.out.println(mapRange);
         long start = mapRange.get("min_id");
-        mapRange.put("max_id", 30000l); //shunxian test! test! test!
+//        mapRange.put("max_id", 30000l); //shunxian test! test! test!
         String fileName = path+tableName+".txt";
         while (start<=mapRange.get("max_id")) {
 //            lstData.clear();
