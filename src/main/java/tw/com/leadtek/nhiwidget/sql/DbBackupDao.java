@@ -46,7 +46,7 @@ public class DbBackupDao {
         }
         logger.info(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
-        return Utility.listLowerCase(lst);
+        return listFormatDate(lst);
     }
 
     public java.util.Map<String, Long> getTableIdRange(String tableName, String fieldName) {
@@ -67,6 +67,45 @@ public class DbBackupDao {
         }
         return retMap;
    }
+    
+    public java.util.List<Map<String,Object>> listFormatDate(java.util.List<Map<String,Object>> sourceList) {
+        java.util.List<Map<String,Object>> retList = new java.util.LinkedList<Map<String,Object>>();
+        for (Map<String, Object> item : sourceList) {
+            retList.add(mapFormatDate(item));
+        }
+        return retList;
+    }
+    
+    public java.util.Map<String,Object> mapFormatDate(java.util.Map<String,Object> sourceMap) {
+        java.util.Map<String, Object> retMap = new java.util.LinkedHashMap<String, Object>();
+        for (java.util.Map.Entry<String, Object> entry : sourceMap.entrySet()) {
+            String key = entry.getKey();
+            key = key.toLowerCase();
+            if (entry.getValue()!=null) {
+                String sName = "";
+                sName = entry.getValue().getClass().getSimpleName();
+                if (sName.equals("Timestamp")) {
+                    java.sql.Timestamp tm = (java.sql.Timestamp)entry.getValue();
+                    retMap.put(key, Utility.dateFormat(tm, "yyyy-MM-dd HH:mm:ss"));
+                } else if (sName.equals("Date")) {
+                    java.sql.Date tm = (java.sql.Date)entry.getValue();
+                    retMap.put(key, Utility.dateFormat(tm, "yyyy-MM-dd"));
+                }  else {
+                    retMap.put(key, entry.getValue());
+                }
+            } else {
+                retMap.put(key,  null);
+            }
+        } 
+        return (retMap);
+    }
+    
+    public int execSql(String sql) {
+        int ret =  jdbcTemplate.update(sql);
+//        logger.info("execSql------");
+//        logger.info(sql);
+        return ret;
+    }
     
     /*
     public int delete(long ptId) {

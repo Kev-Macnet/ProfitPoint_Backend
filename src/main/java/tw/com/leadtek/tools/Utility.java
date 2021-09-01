@@ -237,7 +237,7 @@ public class Utility {
     java.util.List<String> buffer = new java.util.LinkedList<String>();
     try {
         java.io.FileInputStream fis = new java.io.FileInputStream(fileName);
-        java.io.BufferedReader isReader = new java.io.BufferedReader(new java.io.InputStreamReader(fis, "big5"));
+        java.io.BufferedReader isReader = new java.io.BufferedReader(new java.io.InputStreamReader(fis, "UTF-8"));
         String str;
         while((str = isReader.readLine()) != null) {
             buffer.add(str);
