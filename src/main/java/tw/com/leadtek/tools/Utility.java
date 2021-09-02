@@ -249,5 +249,22 @@ public class Utility {
     }
     return buffer;
   }
+  
+  public static int dayOfMonth(java.util.Date da) {
+      java.util.Calendar calendar=java.util.Calendar.getInstance();
+      calendar.setTime(da);
+      int date=calendar.get(java.util.Calendar.DAY_OF_MONTH);
+      return (date);
+  }
+  
+  public static int dayOfWeek(java.util.Date da) {
+      java.util.Calendar calendar=java.util.Calendar.getInstance();
+      calendar.setTime(da);
+      int week=calendar.get(java.util.Calendar.DAY_OF_WEEK);
+      //System.out.println("week="+MiscLib.dateFormatStr(da, "yyyy/MM/dd")+" @ "+week);
+      return (week);
+  }
+
+
 
 }

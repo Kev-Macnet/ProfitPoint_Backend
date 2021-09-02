@@ -70,60 +70,20 @@ public class DbBackupService {
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         String busy = webConfigDao.getConfigValue("backup_busy");
         if (!busy.equals("1")) {
+
             new Thread(() -> {
                 logger.info("dbBackup...");
                 try {
                     Thread.sleep(100);
-                    String backupPath = getBackupPath();
-                    String zipName = backupPath+"backup_"+Utility.dateFormat(new java.util.Date(), "yyyyMMdd-HHmmss")+".zip";  //yyyy/MM/dd HH:mm:ss
-                    java.io.File fwork = new java.io.File(backupPath);
-                    if (!fwork.exists()) { 
-                        fwork.mkdirs();
-                    }
-                    backupPath = backupPath+Utility.dateFormat(new java.util.Date(), "HHmmss")+"\\";
-                    fwork = new java.io.File(backupPath);
-                    if (!fwork.exists()) { 
-                        fwork.mkdirs();
-                    }
-                    
-                    webConfigDao.setConfig("backup_busy", "1", "");
-                    webConfigDao.setConfig("backup_abort", "0", "");
-                    java.util.Map<String, Object> mapBackup = backupEntry(backupPath, mode, false);
-                    java.util.List<String> lstFileName = (java.util.List)mapBackup.get("fileNames");
-                    String zipFileName = zipName; //(String)mapBackup.get("zipName");
-                    String abort;
-                    if (lstFileName.size()>0) {
-                        abort = webConfigDao.getConfigValue("backup_abort");
-                        if (!abort.equals("1")) {
-                            ZipLib.zipFiles(zipFileName, lstFileName);
-                        }
-                        for (String fname : lstFileName) {
-                            Utility.deleteFile(fname);
-                        }
-                    }
-                    Utility.deleteFile(backupPath); //((String)mapBackup.get("backupPath"));
-                    abort = webConfigDao.getConfigValue("backup_abort");
-                    if (!abort.equals("1")) {
-                        com.google.gson.Gson gson = new com.google.gson.Gson();
-                        dbBakupLogDao.add(username, extractFileName(zipFileName), mode, gson.toJson(mapBackup.get("description")));
-                        webConfigDao.setConfig("backup_progress", "100.0", "備份進度");
-                    }
-                    webConfigDao.setConfig("backup_busy", "0", "");
-//                    webConfigDao.setConfig("backup_abort", "0", "");
-                    
-                    retMap.put("description", mapBackup.get("description"));
-                    retMap.put("fileNames", lstFileName);
-                    if (abort.equals("1")) {
-                        retMap.put("status", "-2"); //busy
-                        retMap.put("message", "備份被中斷。");
-                    } else {
-                        retMap.put("status", "1");
-                    }
+                    dbBackupKernel(mode, username, false);
+//                    retMap.put("description", mapBackup.get("description"));
+//                    retMap.put("fileNames", lstFileName);
                     //-------------
                 } catch (Exception e) {
                     System.out.println(e.toString());
                 }
             }).start();
+
             retMap.put("status", "0"); //busy
             retMap.put("message", "備份資料執行中......");
         } else {
@@ -133,19 +93,63 @@ public class DbBackupService {
         return retMap;
     }
     
+    public Map<String, Object> dbBackupKernel(int mode, String username, boolean newest) {
+        String backupPath = getBackupPath();
+        String zipName = backupPath+"backup_"+Utility.dateFormat(new java.util.Date(), "yyyyMMdd-HHmmss")+".zip";  //yyyy/MM/dd HH:mm:ss
+        java.io.File fwork = new java.io.File(backupPath);
+        if (!fwork.exists()) { 
+            fwork.mkdirs();
+        }
+        backupPath = backupPath+Utility.dateFormat(new java.util.Date(), "HHmmss")+"\\";
+        fwork = new java.io.File(backupPath);
+        if (!fwork.exists()) { 
+            fwork.mkdirs();
+        }
+        
+        java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+        webConfigDao.setConfig("backup_busy", "1", "");
+        webConfigDao.setConfig("backup_abort", "0", "");
+        java.util.Map<String, Object> mapBackup = backupEntry(backupPath, mode, newest);
+        java.util.List<String> lstFileName = (java.util.List)mapBackup.get("fileNames");
+        String zipFileName = zipName; //(String)mapBackup.get("zipName");
+        String abort;
+        if (lstFileName.size()>0) {
+            abort = webConfigDao.getConfigValue("backup_abort");
+            if (!abort.equals("1")) {
+                ZipLib.zipFiles(zipFileName, lstFileName);
+            }
+            for (String fname : lstFileName) {
+                Utility.deleteFile(fname);
+            }
+        }
+        Utility.deleteFile(backupPath); //((String)mapBackup.get("backupPath"));
+        abort = webConfigDao.getConfigValue("backup_abort");
+        if (!abort.equals("1")) {
+            com.google.gson.Gson gson = new com.google.gson.Gson();
+            dbBakupLogDao.add(username, extractFileName(zipFileName), mode, gson.toJson(mapBackup.get("description")));
+            webConfigDao.setConfig("backup_progress", "100.0", "備份進度");
+        }
+        webConfigDao.setConfig("backup_busy", "0", "");
+//        webConfigDao.setConfig("backup_abort", "0", "");
+        
+        retMap.put("description", mapBackup.get("description"));
+        retMap.put("fileNames", lstFileName);
+        return retMap;
+    }
+    
     public Map<String, Object> backupEntry(String backupPath, int mode, boolean newest) {
         //------------
         int abortValue=0;
         java.util.Date update = Utility.detectDate("1990-01-01");
         String[][] tbName = {
-                {"MR", "ID", "UPDATE_AT", "1"},
+                {"MR", "ID", "UPDATE_AT", "2"},
 //                {"MR_CHECKED", "ID", "UPDATE_AT", "1"},
                 {"IP_D", "ID", "UPDATE_AT", "2"},
-                {"IP_P", "ID", "UPDATE_AT", "2"},
+                {"IP_P", "ID", "UPDATE_AT", "1"},
                 {"IP_T", "ID", "UPDATE_AT", "2"},
-                {"OP_D", "ID", "UPDATE_AT", "3"},
-                {"OP_P", "ID", "UPDATE_AT", "3"},
-                {"OP_T", "ID", "UPDATE_AT", "3"}
+                {"OP_D", "ID", "UPDATE_AT", "2"},
+                {"OP_P", "ID", "UPDATE_AT", "1"},
+                {"OP_T", "ID", "UPDATE_AT", "2"}
             };
         if (newest) {
             String lastDate = webConfigDao.getConfigValue("backup_last_date");
@@ -180,7 +184,8 @@ public class DbBackupService {
                     if (!newest) {
                         update = new java.util.Date(0l);
                     } 
-                    java.util.Map<String, Object> backupResult = backupTable(backupPath, tbName[idx][0],tbName[idx][1], tbName[idx][2], update);
+                    java.util.Map<String, Object> backupResult = backupTable(backupPath, tbName[idx][0],tbName[idx][1], tbName[idx][2], update, 
+                            progress, totalProgress);
                     String fileName = backupResult.get("fileName").toString();
                     if (fileName.length()>0) {
                         lstFileName.add(fileName);
@@ -196,9 +201,9 @@ public class DbBackupService {
             }
         }
 
-        if (newest && !abort.equals("1")) {
-            String today = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd");
-            webConfigDao.setConfig("backup_last_date", today, "");
+        if (!abort.equals("1")) {
+            String todayStr = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd");
+            webConfigDao.setConfig("backup_last_date", todayStr, "");
         }
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         retMap.put("fileNames", lstFileName);
@@ -208,22 +213,27 @@ public class DbBackupService {
         return retMap;
     }
     
-    public java.util.Map<String, Object> backupTable(String path, String tableName, String idName, String updateName, java.util.Date update) {
+    public java.util.Map<String, Object> backupTable(String path, String tableName, String idName, String updateName, java.util.Date update, 
+                                                     int indexProgress, int totalProgress) {
         long rowCount = 0;
         long step = 20000;
         String delimiter = ",";
         String abort;
+        double progress1, progress2;
+        progress1 = 100.0*(indexProgress-1)/totalProgress;
         java.util.List<String> lstData = new java.util.LinkedList<String>();
         java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idName);
         System.out.println(mapRange);
-        long start = mapRange.get("min_id");
+        long minId = mapRange.get("min_id");
+        long maxId = mapRange.get("max_id");
+        long start = minId;
 //        mapRange.put("max_id", 30000l); //shunxian test! test! test!
         String fileName = path+tableName+".txt";
-        while (start<=mapRange.get("max_id")) {
+        while (start <= maxId) {
 //            lstData.clear();
             java.util.List<Map<String, Object>> lstRow = dbBackupDao.findData(tableName, idName, start, start+step-1, updateName, update);
             if (lstRow.size() > 0) {
-                if (start == mapRange.get("min_id")) { // 處理 Header
+                if (start == minId) { // 處理 Header
                     StringBuffer title = new StringBuffer(); 
                     for (java.util.Map.Entry<String, Object> entry : lstRow.get(0).entrySet()) {
                         title.append(quotedStr(entry.getKey()) + delimiter);
@@ -249,6 +259,10 @@ public class DbBackupService {
                     Utility.saveToFile(fileName, lstData, true);
                 }
                 lstData.clear();
+                if (totalProgress>0) {
+                    progress2 = progress1 + (100.0*start/(maxId*totalProgress));
+                    webConfigDao.setConfig("backup_progress", String.valueOf(progress2), "備份進度");
+                }
             }
             start += step;
             abort = webConfigDao.getConfigValue("backup_abort");
@@ -274,9 +288,15 @@ public class DbBackupService {
     }
     
     public java.util.Map<String, Object> loadSetting() {
+        java.util.Map<String, Object> retMap;
         String backupSetting = webConfigDao.getConfigValue("backup_setting");
-        BasicJsonParser linkJsonParser = new BasicJsonParser();
-        return (linkJsonParser.parseMap(backupSetting));
+        if (backupSetting.length()>0) {
+            BasicJsonParser linkJsonParser = new BasicJsonParser();
+            retMap = linkJsonParser.parseMap(backupSetting);
+        } else {
+            retMap = new java.util.HashMap<String, Object>();
+        }
+        return (retMap);
     }
     
     public java.util.Map<String, Object> loadBackupProgress() {
@@ -317,11 +337,20 @@ public class DbBackupService {
         return (retMap);
     }
     
+    public java.util.Date getBackupLastDate() {
+        String lastDate = webConfigDao.getConfigValue("backup_last_date");
+        if (lastDate.length()==0) {
+            lastDate = "1990-01-01";
+        }
+        return Utility.detectDate(lastDate);
+    }
+    
     //=== Restore ------
     public java.util.Map<String, Object> restore(long id) {
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         String busy = webConfigDao.getConfigValue("restore_busy");
         if (!busy.equals("1")) {
+
             new Thread(() -> {
                 logger.info("dbRestore...");
                 try {
@@ -377,6 +406,7 @@ public class DbBackupService {
                     System.out.println(e.toString());
                 }
             }).start();
+
             retMap.put("status", "0");  //busy
             retMap.put("message", "資料還原執行中......");
         } else {
@@ -546,33 +576,55 @@ public class DbBackupService {
         return (backupPath);
     }
 
-    /*
-    public static java.util.List<String> readCsvFile(String fileName, String ckStr) {
-        java.util.List<String> rowData = MiscLib.readTextFile(fileName, "UTF-8");
-        if (ckStr.length()>0) {
-            java.util.List<String> buffer2 = null;
-            if (rowData.get(0).indexOf(ckStr)<0) {
-                buffer2 = MiscLib.readTextFile(fileName, "big5");
-                if (buffer2.get(0).indexOf(ckStr)<0) {
-                    buffer2 = MiscLib.readTextFile(fileName, "UTF-16");
+    //===
+    public boolean isDoBackup() {
+        boolean doIt = false;
+        java.util.Map<String, Object> mapSetting = loadSetting();
+//        System.out.println("mapSetting------");
+//        System.out.println(mapSetting);
+        if (!mapSetting.isEmpty()) {
+          //{every=2, week=1, month=1, time=02:23, mode=2, add=0}
+            java.util.Date nextOnTime;
+            String strToday = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd");
+            String strTime = mapSetting.get("time").toString();
+            int every = Integer.valueOf(mapSetting.get("every").toString());
+            if (every==1) { //每日
+                nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
+                if ((nextOnTime.getTime() < new java.util.Date().getTime()) && 
+                    (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime())) {
+                    doIt = true;
+                } 
+            } else if (every==2) { //每周
+                int todayWeek = Utility.dayOfWeek(new java.util.Date());
+                int week = Integer.valueOf(mapSetting.get("week").toString());
+//                System.out.println("todayWeek="+todayWeek+", week="+week);
+                if ((week+1) == todayWeek) {
+                    nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
+//                    System.out.println("nextOnTime="+nextOnTime);
+                    if (nextOnTime.getTime() < new java.util.Date().getTime()) {
+                        if (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime()) {
+                            doIt = true;
+                        }
+                    }
                 }
-            }
-            if (buffer2 != null) {
-                MiscLib.clearList(rowData);
-                for (String item : buffer2) {
-                    rowData.add(item);
+            } else if (every==3) { //每月
+                int todayDay = Utility.dayOfMonth(new java.util.Date());
+                int day = Integer.valueOf(mapSetting.get("month").toString());
+//                System.out.println("todayDay="+todayDay+", day="+day);
+                if (day == todayDay) {
+                    nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
+//                    System.out.println("nextOnTime="+nextOnTime);
+                    if (nextOnTime.getTime() < new java.util.Date().getTime()) {
+                        System.out.println("pass-3.1");
+                        if (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime()) {
+                            System.out.println("pass-3.2");
+                            doIt = true;
+                        }
+                    }
                 }
             }
         }
-        
-        java.util.List<String> retList = java.util.Collections.synchronizedList(new java.util.LinkedList<String>());
-        for (String item : rowData) {
-            item = item.replaceAll("\t", "%08");
-            retList.add(item);
-        }
-        return (retList);
+        return doIt;
     }
-    */
-    
 
 }

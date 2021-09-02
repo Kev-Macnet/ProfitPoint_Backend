@@ -11,7 +11,7 @@ public class BackupSettingDto {
     private int week;
     @ApiModelProperty(value="每月幾號備份: , 1-1號, ..., 30-30號", example="1", required=true, position=3)
     private int month;
-    @ApiModelProperty(value="備份時間", example="02:23", required=true, position=4)
+    @ApiModelProperty(value="備份時間(24小時制)", example="14:23", required=true, position=4)
     private String time;
     @ApiModelProperty(value="備份模式: 0-全部, 1-系統, 2-資料", example="2", required=true, position=5)
     private int mode;

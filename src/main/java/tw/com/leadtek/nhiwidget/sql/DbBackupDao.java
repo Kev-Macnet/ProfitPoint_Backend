@@ -32,7 +32,7 @@ public class DbBackupDao {
         long yesterday = new java.util.Date().getTime()-(86400*1000);
         String stopUpdate = Utility.dateFormat(new java.util.Date(yesterday), "yyyy-MM-dd");
         String startUpdate = Utility.dateFormat(minUpdate, "yyyy-MM-dd");
-        System.out.println("stopUpdate="+stopUpdate);
+//        System.out.println("stopUpdate="+stopUpdate);
         String sql;
         sql = "Select *\r\n"
                 + "From %s\n"
@@ -44,7 +44,7 @@ public class DbBackupDao {
         if (minUpdate.getTime()>0l) {
             sql = sql.replace("-- UPDATE_AT and (", " and (");
         }
-        logger.info(sql);
+//        logger.info(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return listFormatDate(lst);
     }
