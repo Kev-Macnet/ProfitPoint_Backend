@@ -87,6 +87,7 @@ public class DbBackupService {
                     }
                     
                     webConfigDao.setConfig("backup_busy", "1", "");
+                    webConfigDao.setConfig("backup_abort", "0", "");
                     java.util.Map<String, Object> mapBackup = backupEntry(backupPath, mode, false);
                     java.util.List<String> lstFileName = (java.util.List)mapBackup.get("fileNames");
                     String zipFileName = zipName; //(String)mapBackup.get("zipName");
@@ -108,7 +109,7 @@ public class DbBackupService {
                         webConfigDao.setConfig("backup_progress", "100.0", "備份進度");
                     }
                     webConfigDao.setConfig("backup_busy", "0", "");
-                    webConfigDao.setConfig("backup_abort", "0", "");
+//                    webConfigDao.setConfig("backup_abort", "0", "");
                     
                     retMap.put("description", mapBackup.get("description"));
                     retMap.put("fileNames", lstFileName);
@@ -165,7 +166,7 @@ public class DbBackupService {
         java.util.List<Map<String, Object>> lstDescription = new java.util.ArrayList<Map<String, Object>>();
         java.util.List<String> lstFileName = new java.util.ArrayList<String>();
         long rowCount = 0;
-        String abort="";
+        String abort="0";
         webConfigDao.setConfig("backup_progress", "0.0", "備份進度");
         for (int idx=0; idx<tbName.length; idx++) {
             tbMode = Integer.parseInt(tbName[idx][3]);
@@ -286,6 +287,7 @@ public class DbBackupService {
         } else {
             retMap.put("status", -1);
         }
+        retMap.put("abort", webConfigDao.getConfigValue("backup_abort"));
         String progress = webConfigDao.getConfigValue("backup_progress");
         if (progress.length()>0) {
             retMap.put("progress", Double.parseDouble(progress));
@@ -304,6 +306,7 @@ public class DbBackupService {
         } else {
             retMap.put("status", -1);
         }
+        retMap.put("abort", webConfigDao.getConfigValue("restore_abort"));
         String progress = webConfigDao.getConfigValue("restore_progress");
         if (progress.length()>0) {
             retMap.put("progress", Double.parseDouble(progress));
@@ -342,19 +345,19 @@ public class DbBackupService {
                         java.util.List<String> csvFiles = ZipLib.unzipFile(zipFileName, unzipPath);
                         System.out.println("csvFiles-----"+csvFiles.size());
 //                        System.out.println(csvFiles);
-                        String abort;
+                        String abort="0";
                         int progress = 0;
                         webConfigDao.setConfig("restore_busy", "1", "data還原中...");
-                        webConfigDao.setConfig("restore_progress", "0", "");
+                        webConfigDao.setConfig("restore_progress", "0", String.valueOf(csvFiles.size()));
                         webConfigDao.setConfig("restore_abort", "0", "");
                         for (String csvName : csvFiles) {
                             csvFullName = unzipPath+csvName;
                             tableName = csvName.replace(".txt", "");
                             System.out.println("csvFullName = "+csvName);
                             java.util.List<String> lstData = Utility.loadFromFile(csvFullName);
-                            retCnt += restoreProcess(tableName, lstData);
+                            retCnt += restoreProcess(tableName, lstData, progress+1, csvFiles.size());
                             Utility.deleteFile(csvFullName);
-                            webConfigDao.setConfig("restore_progress", String.valueOf((100.0*progress)/csvFiles.size()), "還原進度");
+                            webConfigDao.setConfig("restore_progress", String.valueOf((100.0*progress)/csvFiles.size()), String.valueOf(csvFiles.size()));
                             progress++;
                             abort = webConfigDao.getConfigValue("restore_abort");
                             if (abort.equals("1")) {
@@ -362,9 +365,11 @@ public class DbBackupService {
                             }
                         }
                         Utility.deleteFile(unzipPath);
-                        webConfigDao.setConfig("restore_progress", "100.0", "還原進度");
+                        if (!abort.equals("1")) {
+                            webConfigDao.setConfig("restore_progress", "100.0", "還原進度");
+                        }
                         webConfigDao.setConfig("restore_busy", "0", "");
-                        webConfigDao.setConfig("restore_abort", "0", "");
+//                        webConfigDao.setConfig("restore_abort", "0", "");
                         logger.info("Restore Count = "+retCnt);
                     }
                     //-------------
@@ -381,17 +386,21 @@ public class DbBackupService {
         return retMap;
     }
     
-    public int restoreProcess(String tableName, java.util.List<String> lstData) {
+    public int restoreProcess(String tableName, java.util.List<String> lstData, int index, int total) {
         int retCnt = 0;
         int execResult;
         String sql, abort;
         String strHeader = lstData.get(0);
-        System.out.println("len="+lstData.size());
-        System.out.println("strHeader="+strHeader);
+//        System.out.println("len="+lstData.size());
+//        System.out.println("strHeader="+strHeader);
+        double progress1, progress2;
+        progress1 = 100.0*(index-1)/total;
+        long lstSize = lstData.size();
+        boolean passHeader = true;
         int idx = 0;
         for (String strRow : lstData) {
-            if (idx==0) {
-                idx++;
+            if (passHeader) {
+                passHeader=false;
                 continue; //跳過 Header
             }
             sql = generateUpdateSql(tableName, "ID", strHeader, strRow);
@@ -401,6 +410,13 @@ public class DbBackupService {
                 execResult = dbBackupDao.execSql(sql);
             }
             retCnt += execResult;
+            if (idx++ >= 1000) {
+                idx = 0;
+                progress2 = progress1 + (100.0*retCnt/(lstSize*total));
+                webConfigDao.setConfig("restore_progress", String.valueOf(progress2), 
+                        String.valueOf(retCnt)+","+String.valueOf(lstSize));
+            }
+            
             abort = webConfigDao.getConfigValue("restore_abort");
             if (abort.equals("1")) {
                 break;
