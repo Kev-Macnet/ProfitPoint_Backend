@@ -146,10 +146,10 @@ public class MRDetail extends MR {
   protected String applEDate;
   
   @ApiModelProperty(value = "急性病床天數", required = false)
-  protected String eBedDay;
+  protected Integer eBedDay;
   
   @ApiModelProperty(value = "慢性病床天數", required = false)
-  protected String sBedDay;
+  protected Integer sBedDay;
   
   @ApiModelProperty(value = "病患來源", required = false)
   protected String patientSource;
@@ -631,19 +631,19 @@ public class MRDetail extends MR {
     this.applEDate = applEDate;
   }
   
-  public String geteBedDay() {
+  public Integer geteBedDay() {
     return eBedDay;
   }
 
-  public void seteBedDay(String eBedDay) {
+  public void seteBedDay(Integer eBedDay) {
     this.eBedDay = eBedDay;
   }
 
-  public String getsBedDay() {
+  public Integer getsBedDay() {
     return sBedDay;
   }
 
-  public void setsBedDay(String sBedDay) {
+  public void setsBedDay(Integer sBedDay) {
     this.sBedDay = sBedDay;
   }
   

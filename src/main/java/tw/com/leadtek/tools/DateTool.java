@@ -61,4 +61,15 @@ public class DateTool {
     }
     return sb.toString();
   }
+  
+  /**
+   * 由申報年月取得當月的10號 date，用來查DRG code用.
+   * @param applYM
+   * @return
+   */
+  public static Date getDateByApplYM(String applYM) {
+    int ym = Integer.parseInt(applYM);
+    ym = ym * 100 + 10;
+    return convertChineseToYear(String.valueOf(ym));
+  }
 }

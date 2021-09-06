@@ -10,13 +10,13 @@ import io.swagger.annotations.ApiModelProperty;
 public class ParameterValue extends ParameterPayload {
 
   @ApiModelProperty(value = "參數值", required = true)
-  protected Integer value;
+  protected Object value;
 
-  public Integer getValue() {
+  public Object getValue() {
     return value;
   }
 
-  public void setValue(Integer value) {
+  public void setValue(Object value) {
     this.value = value;
   }
   

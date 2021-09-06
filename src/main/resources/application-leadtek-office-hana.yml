@@ -70,7 +70,7 @@ spring:
         batch_size: 1000
         lob:
           non_contextual_creation: true
-      default-schema: NHIWIDGET
+      default-schema: NWUSER
       connection:
         pool_size: 100
       show_sql: false

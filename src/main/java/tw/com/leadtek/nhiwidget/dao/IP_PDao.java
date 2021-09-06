@@ -25,4 +25,14 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
   @Query(value = "SELECT DISTINCT (PRSN_ID) , CON_FUNC_TYPE "
       + "FROM IP_P WHERE PRSN_ID IS NOT NULL AND CON_FUNC_TYPE IS NOT NULL", nativeQuery = true)
   public List<Object[]> findDepartmentAndDoctor();
+  
+  /**
+   * 找出虛擬醫令 G00001, J00001, H000開頭的點數值
+   * @param mrId
+   * @return
+   */
+  @Query(value = "SELECT ORDER_CODE, TW_DRGS_CALCU, TOTAL_DOT FROM IP_P WHERE " + 
+      "MR_ID=?1 AND ((TW_DRGS_CALCU > 0 AND (ORDER_CODE = 'G00001' OR ORDER_CODE LIKE 'H000%' or ORDER_CODE = 'J00001')) "
+      + "OR ORDER_TYPE = 'X')", nativeQuery = true)
+  public List<Object[]> findVirtualCodeByMrId(Long mrId);
 }

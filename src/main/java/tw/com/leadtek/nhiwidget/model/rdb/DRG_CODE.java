@@ -45,6 +45,10 @@ public class DRG_CODE {
   @Column(name = "AVG_IN_DAY")
   private Integer avgInDay;
   
+  @ApiModelProperty(value = "科別，M內科，P外科", example = "M", required = false)
+  @Column(name = "DEP")
+  private String dep;
+  
   @ApiModelProperty(value = "下限(Lower Limit)臨界點", example = "833974", required = true)
   @Column(name = "LLIMIT")
   private Integer llimit;
@@ -66,6 +70,11 @@ public class DRG_CODE {
   @ApiModelProperty(value = "個案數<20註記", example = "1:個案數<20實報實銷，0:否", required = false)
   @Column(name = "CASE20")
   private Integer case20 = 0;
+  
+  @ApiModelProperty(value = "是否導入，1:有，0:否", example = "1", required = false)
+  @Column(name = "STARTED")
+  private Integer started;
+
 
   public Long getId() {
     return id;
@@ -153,6 +162,22 @@ public class DRG_CODE {
 
   public void setCase20(Integer case20) {
     this.case20 = case20;
+  }
+
+  public String getDep() {
+    return dep;
+  }
+
+  public void setDep(String dep) {
+    this.dep = dep;
+  }
+
+  public Integer getStarted() {
+    return started;
+  }
+
+  public void setStarted(Integer started) {
+    this.started = started;
   }
   
 }

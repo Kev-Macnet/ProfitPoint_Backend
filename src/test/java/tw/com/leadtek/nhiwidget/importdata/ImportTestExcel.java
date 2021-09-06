@@ -379,8 +379,8 @@ public class ImportTestExcel {
           ipD.setOutDate(values.get("d11"));
           ipD.setApplStartDate(values.get("d12"));
           ipD.setApplEndDate(values.get("d13"));
-          ipD.setEBedDay(values.get("d14"));
-          ipD.setSBedDay(values.get("d15"));
+          ipD.setEBedDay(Integer.parseInt(values.get("d14")));
+          ipD.setSBedDay(Integer.parseInt(values.get("d15")));
           ipD.setPatientSource(values.get("d16"));
           ipD.setCardSeqNo(values.get("d17"));
           ipD.setTwDrgCode(values.get("d18"));

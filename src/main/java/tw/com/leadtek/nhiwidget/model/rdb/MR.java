@@ -250,7 +250,10 @@ public class MR {
       this.totalDot = ipd.getApplDot();
     }
     if (ipd.getNonApplDot() != null) {
-      this.totalDot += ipd.getApplDot();
+      this.totalDot += ipd.getNonApplDot();
+    }
+    if (ipd.getPartDot() != null) {
+      this.totalDot += ipd.getPartDot();
     }
     this.drgCode = ipd.getTwDrgCode();
     this.applDot = ipd.getApplDot();

@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.service;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -53,6 +54,9 @@ public class ParametersService {
   @Autowired
   private PARAMETERSDao parametersDao;
 
+  @Autowired
+  private LogDataService logDataService;
+
   private static HashMap<String, String> parameters;
 
   public String getParameter(String name) {
@@ -78,11 +82,17 @@ public class ParametersService {
     List<PARAMETERS> list = parametersDao.findAll();
     for (PARAMETERS p : list) {
       if ("SYSTEM".equals(p.getCat())) {
-        System.out.println("put SYSTEM:" + p.getName() + "," + p.getValue());
         newParameters.put(p.getName(), p.getValue());
       }
     }
     parameters = newParameters;
+    
+    if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+      File drgFile = new File(parameters.get("DRGSERVICE_PATH") + "\\DRG.BAT");
+      if (!drgFile.exists()) {
+        logDataService.createDrgBatchFile(parameters.get("DRGSERVICE_PATH"), parameters.get("DRGSERVICE_NAME"));
+      }
+    }
   }
 
   public Map<String, Object> getPointsStatus(int perPage, int page) {
@@ -366,7 +376,14 @@ public class ParametersService {
         ParameterValue pv = new ParameterValue();
         pv.setEndDate(p.getEndDate());
         pv.setStartDate(p.getStartDate());
-        pv.setValue(Integer.parseInt(p.getValue()));
+        if (p.getDataType().intValue() == 1) {
+          // integer
+          pv.setValue(Integer.parseInt(p.getValue()));
+        } else if (p.getDataType().intValue() == 2) {
+          // integer
+          pv.setValue(Float.parseFloat(p.getValue()));
+        }
+        
         list.add(pv);
       }
     }
@@ -405,10 +422,35 @@ public class ParametersService {
     if (note == null) {
       note = ("SPR".equals(name) ? "標準給付額" : "核刪抽件數");
     }
-    System.out.println("cat=" + cat + ", name=" + name + ",value=" + value + ",start=" + startDate + ", end=" + endDate);
+    System.out.println("cat=" + cat + ", name=" + name + ",value=" + value + ",start=" + startDate
+        + ", end=" + endDate);
     PARAMETERS p = new PARAMETERS(cat, name, value, dataType, note);
     saveParameter(p, startDate, endDate);
     return null;
+  }
+
+  /**
+   * 取得參數名在該時刻的值.
+   * @param key
+   * @param date
+   * @return
+   */
+  public Object getParameterValueBetween(String name, Date date) {
+    List<PARAMETERS> list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan(name, date,
+        date);
+    if (list == null || list.size() == 0) {
+      return null;
+    }
+    PARAMETERS p = list.get(0);
+    if (p.getDataType().intValue() == 1) {
+      // integer
+      return Integer.parseInt(p.getValue());
+    } else if (p.getDataType().intValue() == 2) {
+      // float
+      return Float.parseFloat(p.getValue());
+    }
+    // string
+    return p.getValue();
   }
   
 }

@@ -151,7 +151,7 @@ public class IP_D {
   @Column(name = "E_BED_DAY")
   @JsonProperty("E_BED_DAY")
   @JacksonXmlProperty(localName = "d14")
-  private String eBedDay;
+  private Integer eBedDay;
 
   /**
    * 慢性病床天數
@@ -159,7 +159,7 @@ public class IP_D {
   @Column(name = "S_BED_DAY")
   @JsonProperty("S_BED_DAY")
   @JacksonXmlProperty(localName = "d15")
-  private String sBedDay;
+  private Integer sBedDay;
 
   /**
    * 病患來源 
@@ -1116,28 +1116,28 @@ public class IP_D {
   /**
    * <d14> 急性病床天數
    */
-  public String getEBedDay() {
+  public Integer getEBedDay() {
     return eBedDay;
   }
 
   /**
    * <d14> 急性病床天數
    */
-  public void setEBedDay(String E_BED_DAY) {
+  public void setEBedDay(Integer E_BED_DAY) {
     eBedDay = E_BED_DAY;
   }
 
   /**
    * <d15> 慢性病床天數
    */
-  public String getSBedDay() {
+  public Integer getSBedDay() {
     return sBedDay;
   }
 
   /**
    * <d15> 慢性病床天數
    */
-  public void setSBedDay(String S_BED_DAY) {
+  public void setSBedDay(Integer S_BED_DAY) {
     sBedDay = S_BED_DAY;
   }
 
@@ -1968,14 +1968,14 @@ public class IP_D {
   }
 
   /**
-   * <d77> 特殊材料費點數
+   * <d77> 特殊材料費點數，由醫令類別為 3 的點數合計
    */
   public Integer getMetrDot() {
     return metrDot;
   }
 
   /**
-   * <d77> 特殊材料費點數
+   * <d77> 特殊材料費點數，由醫令類別為 3 的點數合計
    */
   public void setMetrDot(Integer METR_DOT) {
     metrDot = METR_DOT;
