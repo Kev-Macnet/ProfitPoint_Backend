@@ -36,6 +36,7 @@ public class Utility {
               try {
                   Map<String, Object> jwtMap = linkJsonParser.parseMap(jwtBody);
                   long exp = (long) jwtMap.get("exp")*1000;
+                  System.out.println("exp="+exp+" / " + new java.util.Date().getTime());
                   if (new java.util.Date().getTime()<exp) {
                       retMap.put("status", 200);
                       retMap.put("userName", jwtMap.get("sub").toString());
@@ -187,5 +188,83 @@ public class Utility {
           return "\'"+str+"\'";
       }
   }
+  
+  /*
+  public static int saveListString(String fileName, java.util.List<String> lstString) {
+      try {
+          java.io.FileWriter writer = new java.io.FileWriter(fileName);
+          for(String str: lstString) {
+              writer.write(str);
+//              writer.append(str);
+          }
+          writer.flush();
+          writer.close();
+      } catch(java.io.IOException e) {
+          e.printStackTrace();
+      }
+      return lstString.size();
+  }
+  */
+  
+  public static boolean deleteFile(String fName) {
+      java.io.File f = new java.io.File(fName);
+      if (f.exists()) {
+          f.delete();
+          return (true);
+      } else {
+          return (false);
+      } 
+  }
+  
+  public static boolean saveToFile(String fileName, java.util.List<String> lstData, boolean append) {
+      try {
+          java.io.File fp = new java.io.File(fileName);
+           java.io.BufferedWriter bwr = new java.io.BufferedWriter(new java.io.FileWriter(fp, append));
+           for (String str : lstData) {
+               bwr.write(str+"\r\n");
+           }
+           bwr.flush();
+           bwr.close();
+           return true;
+      } catch (java.io.IOException e) {
+          e.printStackTrace();
+          return false;
+      }
+  }
+  
+
+  public static java.util.List<String> loadFromFile(String fileName) {
+    java.util.List<String> buffer = new java.util.LinkedList<String>();
+    try {
+        java.io.FileInputStream fis = new java.io.FileInputStream(fileName);
+        java.io.BufferedReader isReader = new java.io.BufferedReader(new java.io.InputStreamReader(fis, "UTF-8"));
+        String str;
+        while((str = isReader.readLine()) != null) {
+            buffer.add(str);
+        }
+        isReader.close();
+        fis.close();
+    } catch(java.io.IOException e) {
+        e.printStackTrace();
+    }
+    return buffer;
+  }
+  
+  public static int dayOfMonth(java.util.Date da) {
+      java.util.Calendar calendar=java.util.Calendar.getInstance();
+      calendar.setTime(da);
+      int date=calendar.get(java.util.Calendar.DAY_OF_MONTH);
+      return (date);
+  }
+  
+  public static int dayOfWeek(java.util.Date da) {
+      java.util.Calendar calendar=java.util.Calendar.getInstance();
+      calendar.setTime(da);
+      int week=calendar.get(java.util.Calendar.DAY_OF_WEEK);
+      //System.out.println("week="+MiscLib.dateFormatStr(da, "yyyy/MM/dd")+" @ "+week);
+      return (week);
+  }
+
+
 
 }

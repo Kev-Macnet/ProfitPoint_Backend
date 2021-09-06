@@ -33,6 +33,7 @@ public class PaymentTermsService {
     
     public java.util.Map<String, Object> jwtValidate(String jwt, int roleNo) { //roleNo default=4
         java.util.Map<String, Object> validationMap = Utility.jwtValidate(jwt);
+        System.out.println(validationMap);
         if ((int)validationMap.get("status") == 200) {
             if (findUserRole(validationMap.get("userName").toString())<roleNo) {
                 validationMap.put("status", 401);
