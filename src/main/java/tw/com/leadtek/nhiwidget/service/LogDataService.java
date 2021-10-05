@@ -15,7 +15,6 @@ import tw.com.leadtek.nhiwidget.model.DrgCalculate;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 
-// swagger: http://127.0.0.1:8081/swagger-ui/index.html
 @Service
 public class LogDataService {
   private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
@@ -433,8 +432,7 @@ public class LogDataService {
     long appl_dot;
     String feeYM = (String) drgResult.get("fee_ym");
     logDataDao.del_DRG_CAL(mr_id);
-    java.util.List<Map<String, Object>> lstDrgData =
-        (java.util.List<Map<String, Object>>) drgResult.get("data");
+    java.util.List<Map<String, Object>> lstDrgData = (java.util.List<Map<String, Object>>) drgResult.get("data");
     HashMap<String, DrgCalculate> drgCodes = new HashMap<String, DrgCalculate>();
     HashMap<String, Integer> drgApplDot = new HashMap<String, Integer>();
     for (Map<String, Object> item : lstDrgData) {

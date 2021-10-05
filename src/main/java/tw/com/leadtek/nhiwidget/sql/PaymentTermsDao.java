@@ -6,7 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import tw.com.leadtek.tools.Utility;
@@ -35,7 +36,7 @@ public class PaymentTermsDao {
                 + " -- and (CATEGORY='%s')\r\n"
                 + " -- and (START_DATE='%s')\r\n"
                 + " -- and (END_DATE='%s')";
-        sql = String.format(sql, feeNo, nhiNo, category, strStart,strEnd, strStart,strEnd, strStart,strEnd);
+        sql = String.format(sql, feeNo, nhiNo, category, strStart, strEnd);
         if (feeNo.length()>0) {
             sql=sql.replace("-- and (FEE_NO", " and (FEE_NO");
         }
@@ -116,6 +117,7 @@ public class PaymentTermsDao {
         String strEnd = Utility.dateFormat(end_date, "yyyy/MM/dd");
         long newId=0;
         String sql, s1;
+        
         sql = "Insert into \r\n"
                 + "PT_PAYMENT_TERMS (ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE,END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\r\n"
                 + "Values(%d, %s, %s, %s, %s, '%s','%s', '%s', %d, %d, %d)";
