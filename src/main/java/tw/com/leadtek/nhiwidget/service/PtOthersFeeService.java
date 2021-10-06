@@ -50,7 +50,8 @@ public class PtOthersFeeService {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
             ptOthersFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getMax_inpatient()|0, 
-                    params.getMax_times()|0, params.getInterval_nday()|0);
+                    params.getMax_times()|0, params.getInterval_nday()|0,
+                    params.getPatient_nday()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0);
 //            exclude_nhi_no, max_inpatient, max_times, interval_nday
         }
         return ptId;
@@ -70,7 +71,8 @@ public class PtOthersFeeService {
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
                 ptOthersFeeDao.update(ptId, params.getExclude_nhi_no()|0, params.getMax_inpatient()|0, 
-                        params.getMax_times()|0, params.getInterval_nday()|0);
+                        params.getMax_times()|0, params.getInterval_nday()|0,
+                        params.getPatient_nday()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0);
             }
         }
         return ret;

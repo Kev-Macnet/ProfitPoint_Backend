@@ -26,6 +26,13 @@ public class PtOthersFeePl extends PaymentTermsPl {
     
     @ApiModelProperty(value="同患者每次申報間隔大於等於n day", example="10", required=false)
     private int interval_nday;
+    
+    @ApiModelProperty(value="同患者限定每 days 天 <= times 次", example="0", required=false)
+    private int patient_nday;
+    @ApiModelProperty(value="每 days 天", example="3", required=false)
+    private int patient_nday_days;
+    @ApiModelProperty(value="<= times 次", example="10", required=false)
+    private int patient_nday_times;
 
     public String getCategory() {
         return category;
@@ -73,6 +80,30 @@ public class PtOthersFeePl extends PaymentTermsPl {
 
     public void setInterval_nday(int interval_nday) {
         this.interval_nday = interval_nday;
+    }
+
+    public int getPatient_nday() {
+        return patient_nday;
+    }
+
+    public void setPatient_nday(int patient_nday) {
+        this.patient_nday = patient_nday;
+    }
+
+    public int getPatient_nday_days() {
+        return patient_nday_days;
+    }
+
+    public void setPatient_nday_days(int patient_nday_days) {
+        this.patient_nday_days = patient_nday_days;
+    }
+
+    public int getPatient_nday_times() {
+        return patient_nday_times;
+    }
+
+    public void setPatient_nday_times(int patient_nday_times) {
+        this.patient_nday_times = patient_nday_times;
     }
 
 }

@@ -881,7 +881,7 @@ public class AdditionalPointDao {
         String sql;
         sql = "Select *\r\n"
                 + "From AP_OUTPATIENT_%d\r\n"
-                + "Where (AP_ID=%d)\r\n";
+                + "Where (AP_ID=%d)";
         sql = String.format(sql, sn, ap_id);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
@@ -912,7 +912,7 @@ public class AdditionalPointDao {
         String sql;
         sql = "Select *\r\n"
                 + "From AP_INPATIENT_%d\r\n"
-                + "Where (AP_ID=%d)\r\n";
+                + "Where (AP_ID=%d)";
         sql = String.format(sql, sn, ap_id);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
