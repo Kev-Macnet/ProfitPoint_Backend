@@ -21,7 +21,7 @@ public class PtOutpatientFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, NO_DENTISIT, NO_CHI_MEDICINE, NO_SERVICE_CHARGE, LIM_OUT_ISLANDS, LIM_HOLIDAY, LIM_MAX, LIM_AGE, LIM_AGE_TYPE, LIM_DIVISION, EXCLUDE_NHI_NO\r\n"
+        sql = "Select PT_ID, NO_DENTISIT, NO_CHI_MEDICINE, NO_SERVICE_CHARGE, LIM_OUT_ISLANDS, LIM_HOLIDAY, LIM_MAX_ENABLE, LIM_MAX, LIM_AGE_ENABLE, LIM_AGE_TYPE, LIM_AGE, LIM_DIVISION_ENABLE, EXCLUDE_NHI_NO_ENABLE\r\n"
                 + "From PT_OUTPATIENT_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -44,14 +44,18 @@ public class PtOutpatientFeeDao {
         return ret;
     }
     
+    // pt_id, no_dentisit, no_chi_medicine, no_service_charge, lim_out_islands, lim_holiday, lim_max_enable, lim_max, lim_age_enable, lim_age_type, lim_age, lim_division_enable, exclude_nhi_no_enable
     public int add(long ptId, int no_dentisit, int no_chi_medicine, int no_service_charge, int lim_out_islands, int lim_holiday, 
-            int lim_max, int lim_age, int lim_age_type, int lim_division, int exclude_nhi_no) {
+            int lim_max_enable, int lim_max, int lim_age_enable, int lim_age_type, int lim_age, 
+            int lim_division_enable, int exclude_nhi_no_enable) {
 
         String sql;
         sql = "Insert into \r\n"
-                + "PT_OUTPATIENT_FEE(PT_ID, NO_DENTISIT, NO_CHI_MEDICINE, NO_SERVICE_CHARGE, LIM_OUT_ISLANDS, LIM_HOLIDAY, LIM_MAX, LIM_AGE, LIM_AGE_TYPE, LIM_DIVISION, EXCLUDE_NHI_NO)\r\n"
-                + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)";
-        sql = String.format(sql, ptId, no_dentisit, no_chi_medicine, no_service_charge, lim_out_islands, lim_holiday, lim_max, lim_age, lim_age_type, lim_division, exclude_nhi_no);
+                + "PT_OUTPATIENT_FEE(PT_ID, NO_DENTISIT, NO_CHI_MEDICINE, NO_SERVICE_CHARGE, LIM_OUT_ISLANDS, LIM_HOLIDAY, LIM_MAX_ENABLE, LIM_MAX, LIM_AGE_ENABLE, LIM_AGE_TYPE, LIM_AGE, LIM_DIVISION_ENABLE, EXCLUDE_NHI_NO_ENABLE)\r\n"
+                + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)";
+        sql = String.format(sql, ptId, no_dentisit, no_chi_medicine, no_service_charge, lim_out_islands, lim_holiday, 
+                lim_max_enable, lim_max, lim_age_enable, lim_age_type, lim_age, 
+                lim_division_enable, exclude_nhi_no_enable);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -62,7 +66,8 @@ public class PtOutpatientFeeDao {
     }
     
     public int update(long ptId, int no_dentisit, int no_chi_medicine, int no_service_charge, int lim_out_islands, int lim_holiday, 
-            int lim_max, int lim_age, int lim_age_type, int lim_division, int exclude_nhi_no) {
+            int lim_max_enable, int lim_max, int lim_age_enable, int lim_age_type, int lim_age, 
+            int lim_division_enable, int exclude_nhi_no_enable) {
 
         String sql;
         sql = "Update PT_OUTPATIENT_FEE\r\n"
@@ -71,13 +76,17 @@ public class PtOutpatientFeeDao {
                 + "    NO_SERVICE_CHARGE=%d, \r\n"
                 + "    LIM_OUT_ISLANDS=%d, \r\n"
                 + "    LIM_HOLIDAY=%d, \r\n"
+                + "    LIM_MAX_ENABLE=%d, \r\n"
                 + "    LIM_MAX=%d, \r\n"
-                + "    LIM_AGE=%d, \r\n"
+                + "    LIM_AGE_ENABLE=%d, \r\n"
                 + "    LIM_AGE_TYPE=%d, \r\n"
-                + "    LIM_DIVISION=%d, \r\n"
-                + "    EXCLUDE_NHI_NO=%d\r\n"
-                + "WHERE (PT_ID=%d)";
-        sql = String.format(sql, no_dentisit, no_chi_medicine, no_service_charge, lim_out_islands, lim_holiday, lim_max, lim_age, lim_age_type, lim_division, exclude_nhi_no, ptId);
+                + "    LIM_AGE=%d, \r\n"
+                + "    LIM_DIVISION_ENABLE=%d, \r\n"
+                + "    EXCLUDE_NHI_NO_ENABLE=%d \r\n"
+                + "Where (PT_ID=%d)";
+        sql = String.format(sql, no_dentisit, no_chi_medicine, no_service_charge, lim_out_islands, lim_holiday, 
+                lim_max_enable, lim_max, lim_age_enable, lim_age_type, lim_age, 
+                lim_division_enable, exclude_nhi_no_enable, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
