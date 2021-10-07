@@ -60,7 +60,7 @@ public class E2101dControll {
     
 
     //==== 精神醫療治療費 (Psychiatric Fee)
-    @ApiOperation(value="10-4.01 精神醫療治療費設定(get)", notes="")
+    @ApiOperation(value="10-4.01 精神醫療治療費設定(get)", notes="", position=1)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtPsychiatricFeeDto.class)
     })
@@ -79,7 +79,7 @@ public class E2101dControll {
     }
     
     
-    @ApiOperation(value="10-4.02 精神醫療治療費設定(add)", notes="category = \"精神醫療治療費\"")
+    @ApiOperation(value="10-4.02 精神醫療治療費設定(add)", notes="category = \"精神醫療治療費\"" , position=2)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -109,7 +109,7 @@ public class E2101dControll {
     }
     
     
-    @ApiOperation(value="10-4.03 精神醫療治療費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-4.03 精神醫療治療費設定(update)", notes="<b>category 無法變更</b>", position=3)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -135,7 +135,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.04 精神醫療治療費設定(delete)", notes="")
+    @ApiOperation(value="10-4.04 精神醫療治療費設定(delete)", notes="", position=4)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -160,7 +160,7 @@ public class E2101dControll {
     }
     
     //==== 輸血及骨髓移植費 Bone Marrow Trans Fee
-    @ApiOperation(value="10-4.05 輸血及骨髓移植費設定(get)", notes="")
+    @ApiOperation(value="10-4.05 輸血及骨髓移植費設定(get)", notes="", position=5)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtBoneMarrowTransFeeDto.class)
     })
@@ -178,7 +178,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.06 輸血及骨髓移植費設定(add)", notes="category = \"輸血及骨髓移植費\"")
+    @ApiOperation(value="10-4.06 輸血及骨髓移植費設定(add)", notes="category = \"輸血及骨髓移植費\"", position=6)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -207,7 +207,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.07 輸血及骨髓移植費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-4.07 輸血及骨髓移植費設定(update)", notes="<b>category 無法變更</b>", position=7)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -233,7 +233,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.08 輸血及骨髓移植費設定(delete)", notes="")
+    @ApiOperation(value="10-4.08 輸血及骨髓移植費設定(delete)", notes="", position=8)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -260,7 +260,7 @@ public class E2101dControll {
 
     
   //==== 石膏繃帶費 (Plaster bandage fee)
-    @ApiOperation(value="10-4.09 石膏繃帶費設定(get)", notes="")
+    @ApiOperation(value="10-4.09 石膏繃帶費設定(get)", notes="", position=9)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtPlasterBandageFeeDto.class)
     })
@@ -278,7 +278,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.10 石膏繃帶費設定(add)", notes="category = \"石膏繃帶費\"")
+    @ApiOperation(value="10-4.10 石膏繃帶費設定(add)", notes="category = \"石膏繃帶費\"", position=10)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -307,7 +307,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.11 石膏繃帶費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-4.11 石膏繃帶費設定(update)", notes="<b>category 無法變更</b>", position=11)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -333,7 +333,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.12 石膏繃帶費設定(delete)", notes="")
+    @ApiOperation(value="10-4.12 石膏繃帶費設定(delete)", notes="", position=12)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -460,7 +460,7 @@ public class E2101dControll {
     
     
     //==== 特定診療檢查費 Specific Medical fee
-    @ApiOperation(value="10-4.17 特定診療檢查費設定(get)", notes="")
+    @ApiOperation(value="10-4.17 特定診療檢查費設定(get)", notes="", position=17)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtSpecificMedicalFeeDto.class)
     })
@@ -478,7 +478,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.18 特定診療檢查費設定(add)", notes="category = \"特定診療檢查費\"")
+    @ApiOperation(value="10-4.18 特定診療檢查費設定(add)", notes="category = \"特定診療檢查費\"", position=18)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -507,7 +507,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.19 特定診療檢查費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-4.19 特定診療檢查費設定(update)", notes="<b>category 無法變更</b>", position=19)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -533,7 +533,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.20 特定診療檢查費設定(delete)", notes="")
+    @ApiOperation(value="10-4.20 特定診療檢查費設定(delete)", notes="", position=20)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -560,7 +560,7 @@ public class E2101dControll {
     
     
     //==== 其他費用設定 Others fee
-    @ApiOperation(value="10-4.21 不分類設定(get)", notes="")
+    @ApiOperation(value="10-4.21 不分類設定(get)", notes="", position=21)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtOthersFeeDto.class)
     })
@@ -578,7 +578,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.22 不分類設定(add)", notes="category = \"不分類\"")
+    @ApiOperation(value="10-4.22 不分類設定(add)", notes="category = \"不分類\"", position=22)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -607,7 +607,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.23 不分類設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-4.23 不分類設定(update)", notes="<b>category 無法變更</b>", position=23)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -633,7 +633,7 @@ public class E2101dControll {
         }
     }
     
-    @ApiOperation(value="10-4.24 不分類設定(delete)", notes="")
+    @ApiOperation(value="10-4.24 不分類設定(delete)", notes="", position=24)
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })

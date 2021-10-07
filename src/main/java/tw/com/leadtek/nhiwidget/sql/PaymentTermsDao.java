@@ -28,8 +28,8 @@ public class PaymentTermsDao {
         String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         
         String sql;
-        sql = "SELECT ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
-                + "FROM PT_PAYMENT_TERMS\r\n"
+        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
+                + "From PT_PAYMENT_TERMS\r\n"
                 + "Where (1=1)\r\n"
                 + " -- and (FEE_NO like '%s%%')\r\n"
                 + " -- and (NHI_NO  like '%s%%')\r\n"
@@ -430,7 +430,7 @@ public class PaymentTermsDao {
     public int deleteNotAllowPlan(long ptId) {
         String sql;
         sql = "Delete from PT_NOT_ALLOW_PLAN\r\n"
-                + "WHERE (PT_ID=%d)";
+                + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         int ret =  jdbcTemplate.update(sql);
         return ret;
