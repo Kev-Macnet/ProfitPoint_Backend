@@ -1,9 +1,6 @@
 package tw.com.leadtek.nhiwidget.dto;
 
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-
-
 
 public class PlanLessNDayPl {
     @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=true, position=1)

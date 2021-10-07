@@ -19,26 +19,26 @@ public class AdditionalConditionPl {
     @ApiModelProperty(value="門診案件分類", required=false, position=5)
     private AdditionalContent1Pl outpatient_1;
     @ApiModelProperty(value="門診醫令類別", required=false, position=6)
-    private java.util.List<AdditionalContent2Pl> outpatient_2;
+    private AdditionalContent2Pl outpatient_2;
     @ApiModelProperty(value="門診支付代碼項目", required=false, position=7)
-    private java.util.List<AdditionalContent3Pl> outpatient_3;
+    private AdditionalContent3Pl outpatient_3;
     @ApiModelProperty(value="門診醫令數量*醫令單價", required=false, position=8)
-    private java.util.List<AdditionalContent4Pl> outpatient_4;
+    AdditionalContent4Pl outpatient_4;
     @ApiModelProperty(value="門診主診斷", required=false, position=9)
-    private java.util.List<AdditionalContent5Pl> outpatient_5;
+    AdditionalContent5Pl outpatient_5;
     @ApiModelProperty(value="門診照護計畫", required=false, position=10)
-    private java.util.List<AdditionalContent6Pl> outpatient_6;
+    AdditionalContent6Pl outpatient_6;
     @ApiModelProperty(value="門診試辦計畫", required=false, position=11)
-    private java.util.List<AdditionalContent7Pl> outpatient_7;
+    AdditionalContent7Pl outpatient_7;
     //-----住院
     @ApiModelProperty(value="住院案件分類", required=false, position=12)
     private AdditionalContent1Pl inpatient_1;
     @ApiModelProperty(value="住院醫令類別", required=false, position=13)
-    private java.util.List<AdditionalContent2Pl> inpatient_2;
+    private AdditionalContent2Pl inpatient_2;
     @ApiModelProperty(value="住院支付代碼項目", required=false, position=14)
-    private java.util.List<AdditionalContent3Pl> inpatient_3;
+    private AdditionalContent3Pl inpatient_3;
     @ApiModelProperty(value="住院照護計畫", required=false, position=15)
-    private java.util.List<AdditionalContent6Pl> inpatient_6;
+    AdditionalContent6Pl inpatient_6;
     public int getActive() {
         return active;
     }
@@ -69,40 +69,33 @@ public class AdditionalConditionPl {
     public void setOutpatient_1(AdditionalContent1Pl outpatient_1) {
         this.outpatient_1 = outpatient_1;
     }
-    public java.util.List<AdditionalContent2Pl> getOutpatient_2() {
+    
+    public AdditionalContent2Pl getOutpatient_2() {
         return outpatient_2;
     }
-    public void setOutpatient_2(java.util.List<AdditionalContent2Pl> outpatient_2) {
+    public void setOutpatient_2(AdditionalContent2Pl outpatient_2) {
         this.outpatient_2 = outpatient_2;
     }
-    public java.util.List<AdditionalContent3Pl> getOutpatient_3() {
-        return outpatient_3;
-    }
-    public void setOutpatient_3(java.util.List<AdditionalContent3Pl> outpatient_3) {
-        this.outpatient_3 = outpatient_3;
-    }
-    public java.util.List<AdditionalContent4Pl> getOutpatient_4() {
+    
+    public AdditionalContent4Pl getOutpatient_4() {
         return outpatient_4;
     }
-    public void setOutpatient_4(java.util.List<AdditionalContent4Pl> outpatient_4) {
+    public void setOutpatient_4(AdditionalContent4Pl outpatient_4) {
         this.outpatient_4 = outpatient_4;
     }
-    public java.util.List<AdditionalContent5Pl> getOutpatient_5() {
+    
+    public AdditionalContent5Pl getOutpatient_5() {
         return outpatient_5;
     }
-    public void setOutpatient_5(java.util.List<AdditionalContent5Pl> outpatient_5) {
+    public void setOutpatient_5(AdditionalContent5Pl outpatient_5) {
         this.outpatient_5 = outpatient_5;
     }
-    public java.util.List<AdditionalContent6Pl> getOutpatient_6() {
-        return outpatient_6;
-    }
-    public void setOutpatient_6(java.util.List<AdditionalContent6Pl> outpatient_6) {
-        this.outpatient_6 = outpatient_6;
-    }
-    public java.util.List<AdditionalContent7Pl> getOutpatient_7() {
+    
+    
+    public AdditionalContent7Pl getOutpatient_7() {
         return outpatient_7;
     }
-    public void setOutpatient_7(java.util.List<AdditionalContent7Pl> outpatient_7) {
+    public void setOutpatient_7(AdditionalContent7Pl outpatient_7) {
         this.outpatient_7 = outpatient_7;
     }
     public AdditionalContent1Pl getInpatient_1() {
@@ -111,22 +104,36 @@ public class AdditionalConditionPl {
     public void setInpatient_1(AdditionalContent1Pl inpatient_1) {
         this.inpatient_1 = inpatient_1;
     }
-    public java.util.List<AdditionalContent2Pl> getInpatient_2() {
+
+    public AdditionalContent2Pl getInpatient_2() {
         return inpatient_2;
     }
-    public void setInpatient_2(java.util.List<AdditionalContent2Pl> inpatient_2) {
+    public void setInpatient_2(AdditionalContent2Pl inpatient_2) {
         this.inpatient_2 = inpatient_2;
     }
-    public java.util.List<AdditionalContent3Pl> getInpatient_3() {
+    
+    public AdditionalContent3Pl getOutpatient_3() {
+        return outpatient_3;
+    }
+    public void setOutpatient_3(AdditionalContent3Pl outpatient_3) {
+        this.outpatient_3 = outpatient_3;
+    }
+    public AdditionalContent3Pl getInpatient_3() {
         return inpatient_3;
     }
-    public void setInpatient_3(java.util.List<AdditionalContent3Pl> inpatient_3) {
+    public void setInpatient_3(AdditionalContent3Pl inpatient_3) {
         this.inpatient_3 = inpatient_3;
     }
-    public java.util.List<AdditionalContent6Pl> getInpatient_6() {
+    public AdditionalContent6Pl getOutpatient_6() {
+        return outpatient_6;
+    }
+    public void setOutpatient_6(AdditionalContent6Pl outpatient_6) {
+        this.outpatient_6 = outpatient_6;
+    }
+    public AdditionalContent6Pl getInpatient_6() {
         return inpatient_6;
     }
-    public void setInpatient_6(java.util.List<AdditionalContent6Pl> inpatient_6) {
+    public void setInpatient_6(AdditionalContent6Pl inpatient_6) {
         this.inpatient_6 = inpatient_6;
     }
 

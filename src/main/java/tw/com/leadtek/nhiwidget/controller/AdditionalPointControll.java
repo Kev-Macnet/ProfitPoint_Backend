@@ -42,7 +42,7 @@ public class AdditionalPointControll {
     //==== 
     @ApiOperation(value="14.01 總額外點數條件清單", notes="", position=1)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=PlanConditionDto.class)
+        @ApiResponse(code = 200, message="{ ... }", response=AdditionalConditionDto.class)
     })
     @RequestMapping(value = "/additional/list", method = RequestMethod.POST)
     public ResponseEntity<?> additionalConditionList(@RequestHeader("Authorization") String jwt,
@@ -123,6 +123,7 @@ public class AdditionalPointControll {
             int status = additionalPointService.deleteAdditionalCondition(id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
+            retMap.put("id", id);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
