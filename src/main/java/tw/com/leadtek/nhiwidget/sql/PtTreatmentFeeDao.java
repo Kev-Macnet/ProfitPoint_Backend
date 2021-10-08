@@ -21,7 +21,7 @@ public class PtTreatmentFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, EXCLUDE_NHI_NO, COEXIST_NHI_NO, MAX_INPATIENT, MAX_DAILY, EVERY_NDAY, EVERY_NDAY_DAYS, EVERY_NDAY_TIMES, PATIENT_NDAY, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, MAX_PATIENT, INCLUDE_ICD_NO, MAX_MONTH_PERCENTAGE, MAX_AGE, LIM_DIVISION\r\n"
+        sql = "Select PT_ID, EXCLUDE_NHI_NO_ENABLE, COEXIST_NHI_NO_ENABLE, MAX_INPATIENT_ENABLE, MAX_INPATIENT, MAX_DAILY_ENABLE, MAX_DAILY, EVERY_NDAY_ENABLE, EVERY_NDAY_DAYS, EVERY_NDAY_TIMES, PATIENT_NDAY_ENABLE, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, MAX_PATIENT_ENABLE, MAX_PATIENT, INCLUDE_ICD_NO_ENABLE, MAX_MONTH_ENABLE, MAX_MONTH_PERCENTAGE, MAX_AGE_ENABLE, MAX_AGE, LIM_DIVISION_ENABLE\r\n"
                 + "From PT_TREATMENT_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -43,16 +43,18 @@ public class PtTreatmentFeeDao {
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
-    
-    public int add(long ptId, int exclude_nhi_no, int coexist_nhi_no, int max_inpatient, int max_daily, 
-                   int every_nday, int every_nday_days, int every_nday_times, 
-                   int patient_nday, int patient_nday_days, int patient_nday_times, 
-                   int max_patient, int include_icd_no, int max_month_percentage, int max_age, int lim_division) {
+
+    // exclude_nhi_no_enable, coexist_nhi_no_enable, max_inpatient_enable, max_inpatient, max_daily_enable, max_daily, every_nday_enable, every_nday_days, every_nday_times, patient_nday_enable, patient_nday_days, patient_nday_times, max_patient_enable, max_patient, include_icd_no_enable, max_month_enable, max_month_percentage, max_age_enable, max_age, lim_division_enable
+    public int add(long ptId, int exclude_nhi_no_enable, int coexist_nhi_no_enable, int max_inpatient_enable, int max_inpatient, 
+            int max_daily_enable, int max_daily, int every_nday_enable, int every_nday_days, int every_nday_times, 
+            int patient_nday_enable, int patient_nday_days, int patient_nday_times, 
+            int max_patient_enable, int max_patient, int include_icd_no_enable, 
+            int max_month_enable, int max_month_percentage, int max_age_enable, int max_age, int lim_division_enable) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_TREATMENT_FEE(PT_ID, EXCLUDE_NHI_NO, COEXIST_NHI_NO, MAX_INPATIENT, MAX_DAILY, EVERY_NDAY, EVERY_NDAY_DAYS, EVERY_NDAY_TIMES, PATIENT_NDAY, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, MAX_PATIENT, INCLUDE_ICD_NO, MAX_MONTH_PERCENTAGE, MAX_AGE, LIM_DIVISION)\r\n"
-                + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)";
-        sql = String.format(sql, ptId, exclude_nhi_no, coexist_nhi_no, max_inpatient, max_daily, every_nday, every_nday_days, every_nday_times, patient_nday, patient_nday_days, patient_nday_times, max_patient, include_icd_no, max_month_percentage, max_age, lim_division);
+                + "PT_TREATMENT_FEE(PT_ID, EXCLUDE_NHI_NO_ENABLE, COEXIST_NHI_NO_ENABLE, MAX_INPATIENT_ENABLE, MAX_INPATIENT, MAX_DAILY_ENABLE, MAX_DAILY, EVERY_NDAY_ENABLE, EVERY_NDAY_DAYS, EVERY_NDAY_TIMES, PATIENT_NDAY_ENABLE, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, MAX_PATIENT_ENABLE, MAX_PATIENT, INCLUDE_ICD_NO_ENABLE, MAX_MONTH_ENABLE, MAX_MONTH_PERCENTAGE, MAX_AGE_ENABLE, MAX_AGE, LIM_DIVISION_ENABLE)\r\n"
+                + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)";
+        sql = String.format(sql, ptId, exclude_nhi_no_enable, coexist_nhi_no_enable, max_inpatient_enable, max_inpatient, max_daily_enable, max_daily, every_nday_enable, every_nday_days, every_nday_times, patient_nday_enable, patient_nday_days, patient_nday_times, max_patient_enable, max_patient, include_icd_no_enable, max_month_enable, max_month_percentage, max_age_enable, max_age, lim_division_enable);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -62,29 +64,35 @@ public class PtTreatmentFeeDao {
         }
     }
     
-    public int update(long ptId, int exclude_nhi_no, int coexist_nhi_no, int max_inpatient, int max_daily, 
-            int every_nday, int every_nday_days, int every_nday_times, 
-            int patient_nday, int patient_nday_days, int patient_nday_times, 
-            int max_patient, int include_icd_no, int max_month_percentage, int max_age, int lim_division) {
+    public int update(long ptId, int exclude_nhi_no_enable, int coexist_nhi_no_enable, int max_inpatient_enable, int max_inpatient, 
+            int max_daily_enable, int max_daily, int every_nday_enable, int every_nday_days, int every_nday_times, 
+            int patient_nday_enable, int patient_nday_days, int patient_nday_times, 
+            int max_patient_enable, int max_patient, int include_icd_no_enable, 
+            int max_month_enable, int max_month_percentage, int max_age_enable, int max_age, int lim_division_enable) {
         String sql;
-        sql = "UPDATE PT_TREATMENT_FEE\r\n"
-                + "SET EXCLUDE_NHI_NO=%d, \r\n"
-                + "    COEXIST_NHI_NO=%d, \r\n"
+        sql = "Update PT_TREATMENT_FEE\r\n"
+                + "Set EXCLUDE_NHI_NO_ENABLE=%d, \r\n"
+                + "    COEXIST_NHI_NO_ENABLE=%d, \r\n"
+                + "    MAX_INPATIENT_ENABLE=%d, \r\n"
                 + "    MAX_INPATIENT=%d, \r\n"
+                + "    MAX_DAILY_ENABLE=%d, \r\n"
                 + "    MAX_DAILY=%d, \r\n"
-                + "    EVERY_NDAY=%d, \r\n"
+                + "    EVERY_NDAY_ENABLE=%d, \r\n"
                 + "    EVERY_NDAY_DAYS=%d, \r\n"
                 + "    EVERY_NDAY_TIMES=%d, \r\n"
-                + "    PATIENT_NDAY=%d, \r\n"
+                + "    PATIENT_NDAY_ENABLE=%d, \r\n"
                 + "    PATIENT_NDAY_DAYS=%d, \r\n"
                 + "    PATIENT_NDAY_TIMES=%d, \r\n"
+                + "    MAX_PATIENT_ENABLE=%d, \r\n"
                 + "    MAX_PATIENT=%d, \r\n"
-                + "    INCLUDE_ICD_NO=%d, \r\n"
+                + "    INCLUDE_ICD_NO_ENABLE=%d, \r\n"
+                + "    MAX_MONTH_ENABLE=%d, \r\n"
                 + "    MAX_MONTH_PERCENTAGE=%d, \r\n"
+                + "    MAX_AGE_ENABLE=%d, \r\n"
                 + "    MAX_AGE=%d, \r\n"
-                + "    LIM_DIVISION=%d\r\n"
-                + "WHERE (PT_ID=%d)";
-        sql = String.format(sql, exclude_nhi_no, coexist_nhi_no, max_inpatient, max_daily, every_nday, every_nday_days, every_nday_times, patient_nday, patient_nday_days, patient_nday_times, max_patient, include_icd_no, max_month_percentage, max_age, lim_division, ptId);
+                + "    LIM_DIVISION_ENABLE=%d\r\n"
+                + "Where (PT_ID=%d)";
+        sql = String.format(sql, exclude_nhi_no_enable, coexist_nhi_no_enable, max_inpatient_enable, max_inpatient, max_daily_enable, max_daily, every_nday_enable, every_nday_days, every_nday_times, patient_nday_enable, patient_nday_days, patient_nday_times, max_patient_enable, max_patient, include_icd_no_enable, max_month_enable, max_month_percentage, max_age_enable, max_age, lim_division_enable, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

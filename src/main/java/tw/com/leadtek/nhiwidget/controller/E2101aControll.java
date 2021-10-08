@@ -543,7 +543,7 @@ public class E2101aControll {
         }
     }
     
-  //==== 手術費設定 surgery fee
+    //==== 手術費設定 surgery fee
     @ApiOperation(value="10-1.19 手術費設定(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtSurgeryFeeDto.class)
