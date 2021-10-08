@@ -21,7 +21,7 @@ public class PtSurgeryFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, LIM_DIVISION, EXCLUDE_NHI_NO, LIM_AGE, LIM_AGE_TYPE\r\n"
+        sql = "Select PT_ID, LIM_DIVISION_ENABLE, EXCLUDE_NHI_NO_ENABLE, LIM_AGE_ENABLE, LIM_AGE, LIM_AGE_TYPE\r\n"
                 + "From PT_SURGERY_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -44,12 +44,13 @@ public class PtSurgeryFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int lim_division, int exclude_nhi_no, int lim_age) {
+    // lim_division_enable, exclude_nhi_no_enable, lim_age_enable, lim_age
+    public int add(long ptId, int lim_division_enable, int exclude_nhi_no_enable, int lim_age_enable, int lim_age) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_SURGERY_FEE(PT_ID, LIM_DIVISION, EXCLUDE_NHI_NO, LIM_AGE, LIM_AGE_TYPE)\r\n"
-                + "Values(%d, %d, %d, %d, 3)";
-        sql = String.format(sql, ptId, lim_division, exclude_nhi_no, lim_age);
+                + "PT_SURGERY_FEE(PT_ID, LIM_DIVISION_ENABLE, EXCLUDE_NHI_NO_ENABLE, LIM_AGE_ENABLE, LIM_AGE, LIM_AGE_TYPE)\r\n"
+                + "Values(%d, %d, %d, %d, %d, 3)";
+        sql = String.format(sql, ptId, lim_division_enable, exclude_nhi_no_enable, lim_age_enable, lim_age);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,14 +60,15 @@ public class PtSurgeryFeeDao {
         }
     }
     
-    public int update(long ptId, int lim_division, int exclude_nhi_no, int lim_age) {
+    public int update(long ptId, int lim_division_enable, int exclude_nhi_no_enable, int lim_age_enable, int lim_age) {
         String sql;
         sql = "Update PT_SURGERY_FEE\r\n"
-                + "SET LIM_DIVISION=%d, \r\n"
-                + "    EXCLUDE_NHI_NO=%d, \r\n"
+                + "Set LIM_DIVISION_ENABLE=%d, \r\n"
+                + "    EXCLUDE_NHI_NO_ENABLE=%d, \r\n"
+                + "    LIM_AGE_ENABLE=%d, \r\n"
                 + "    LIM_AGE=%d\r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, lim_division, exclude_nhi_no, lim_age, ptId);
+        sql = String.format(sql, lim_division_enable, exclude_nhi_no_enable, lim_age_enable, lim_age, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

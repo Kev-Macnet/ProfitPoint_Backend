@@ -40,6 +40,7 @@ public class PtSurgeryFeeService {
         return retMap;
     }
 
+    // lim_division_enable, exclude_nhi_no_enable, lim_age_enable, lim_age
     public long addSurgeryFee(PtSurgeryFeePl params) {
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
@@ -54,7 +55,9 @@ public class PtSurgeryFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptSurgeryFeeDao.add(ptId, params.getLim_division()|0, params.getExclude_nhi_no()|0,  params.getLim_age()|0);
+            //ptSurgeryFeeDao.add(ptId, params.getLim_division()|0, params.getExclude_nhi_no()|0,  params.getLim_age()|0);
+            ptSurgeryFeeDao.add(ptId, params.getLim_division_enable()|0, params.getExclude_nhi_no_enable()|0, 
+                    params.getLim_age_enable()|0, params.getLim_age()|0);
         }
         return ptId;
     }
@@ -76,7 +79,8 @@ public class PtSurgeryFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptSurgeryFeeDao.update(ptId, params.getLim_division()|0, params.getExclude_nhi_no()|0,  params.getLim_age()|0);
+                ptSurgeryFeeDao.update(ptId, params.getLim_division_enable()|0, params.getExclude_nhi_no_enable()|0, 
+                        params.getLim_age_enable()|0, params.getLim_age()|0);
             }
         }
         return ret;

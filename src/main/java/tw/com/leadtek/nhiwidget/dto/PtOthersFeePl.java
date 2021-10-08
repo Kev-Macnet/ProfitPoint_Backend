@@ -35,6 +35,7 @@ public class PtOthersFeePl extends PaymentTermsPl {
     private int patient_nday_days;
     @ApiModelProperty(value="<= times 次", example="10", required=false, position=32)
     private int patient_nday_times;
+    
     public String getCategory() {
         return category;
     }

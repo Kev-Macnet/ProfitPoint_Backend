@@ -50,8 +50,9 @@ public class PtWardFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptWardFeeDao.add(ptId, params.getMin_stay()|0, params.getMax_stay()|0, params.getExclude_nhi_no()|0);
-//            add(long ptId, int min_stay, int max_stay, int exclude_nhi_no)
+//            ptWardFeeDao.add(ptId, params.getMin_stay()|0, params.getMax_stay()|0, params.getExclude_nhi_no()|0);
+            ptWardFeeDao.add(ptId, params.getMin_stay_enable()|0, params.getMin_stay()|0, 
+                    params.getMax_stay_enable()|0, params.getMax_stay()|0, params.getExclude_nhi_no_enable()|0);
         }
         return ptId;
     }
@@ -69,7 +70,8 @@ public class PtWardFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptWardFeeDao.update(ptId, params.getMin_stay()|0, params.getMax_stay()|0, params.getExclude_nhi_no()|0);
+                ptWardFeeDao.update(ptId, params.getMin_stay_enable()|0, params.getMin_stay()|0, 
+                        params.getMax_stay_enable()|0, params.getMax_stay()|0, params.getExclude_nhi_no_enable()|0);
             }
         }
         return ret;

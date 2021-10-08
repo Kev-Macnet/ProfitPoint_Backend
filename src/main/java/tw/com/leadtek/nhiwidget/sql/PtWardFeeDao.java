@@ -21,7 +21,7 @@ public class PtWardFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, MIN_STAY, MAX_STAY, EXCLUDE_NHI_NO\r\n"
+        sql = "Select PT_ID, MIN_STAY_ENABLE, MIN_STAY, MAX_STAY_ENABLE, MAX_STAY, EXCLUDE_NHI_NO_ENABLE\r\n"
                 + "From PT_WARD_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -44,12 +44,13 @@ public class PtWardFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int min_stay, int max_stay, int exclude_nhi_no) {
+    // pt_id, min_stay_enable, min_stay, max_stay_enable, max_stay, exclude_nhi_no_enable
+    public int add(long ptId, int min_stay_enable, int min_stay, int max_stay_enable, int max_stay, int exclude_nhi_no_enable) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_WARD_FEE(PT_ID, MIN_STAY, MAX_STAY, EXCLUDE_NHI_NO)\r\n"
-                + "Values(%d, %d, %d, %d)";
-        sql = String.format(sql, ptId, min_stay, max_stay, exclude_nhi_no);
+                + "PT_WARD_FEE(PT_ID, MIN_STAY_ENABLE, MIN_STAY, MAX_STAY_ENABLE, MAX_STAY, EXCLUDE_NHI_NO_ENABLE)\r\n"
+                + "Values(%d, %d, %d, %d, %d, %d)";
+        sql = String.format(sql, ptId, min_stay_enable, min_stay, max_stay_enable, max_stay, exclude_nhi_no_enable);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,14 +60,16 @@ public class PtWardFeeDao {
         }
     }
     
-    public int update(long ptId, int min_stay, int max_stay, int exclude_nhi_no) {
+    public int update(long ptId, int min_stay_enable, int min_stay, int max_stay_enable, int max_stay, int exclude_nhi_no_enable) {
         String sql;
         sql = "Update PT_WARD_FEE\r\n"
-                + "Set MIN_STAY=%d, \r\n"
+                + "Set MIN_STAY_ENABLE=%d, \r\n"
+                + "    MIN_STAY=%d, \r\n"
+                + "    MAX_STAY_ENABLE=%d, \r\n"
                 + "    MAX_STAY=%d, \r\n"
-                + "    EXCLUDE_NHI_NO=%d\r\n"
+                + "    EXCLUDE_NHI_NO_ENABLE=%d\r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, min_stay, max_stay, exclude_nhi_no, ptId);
+        sql = String.format(sql, min_stay_enable, min_stay, max_stay_enable, max_stay, exclude_nhi_no_enable, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
