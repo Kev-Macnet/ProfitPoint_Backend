@@ -21,7 +21,7 @@ public class PtAdjustmentFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, COEXIST_NHI_NO, EXCLUDE_NHI_NO\r\n"
+        sql = "Select PT_ID, COEXIST_NHI_NO_ENABLE, EXCLUDE_NHI_NO_ENABLE\r\n"
                 + "From PT_ADJUSTMENT_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -44,12 +44,12 @@ public class PtAdjustmentFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int coexist_nhi_no, int exclude_nhi_no) {
+    public int add(long ptId, int coexist_nhi_no_enable, int exclude_nhi_no_enable) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_ADJUSTMENT_FEE(PT_ID, COEXIST_NHI_NO, EXCLUDE_NHI_NO)\r\n"
+                + "PT_ADJUSTMENT_FEE(PT_ID, COEXIST_NHI_NO_ENABLE, EXCLUDE_NHI_NO_ENABLE)\r\n"
                 + "Values(%d, %d, %d)";
-        sql = String.format(sql, ptId, coexist_nhi_no, exclude_nhi_no);
+        sql = String.format(sql, ptId, coexist_nhi_no_enable, exclude_nhi_no_enable);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,13 +59,13 @@ public class PtAdjustmentFeeDao {
         }
     }
     
-    public int update(long ptId, int coexist_nhi_no, int exclude_nhi_no) {
+    public int update(long ptId, int coexist_nhi_no_enable, int exclude_nhi_no_enable) {
         String sql;
         sql = "Update PT_ADJUSTMENT_FEE\r\n"
-                + "Set COEXIST_NHI_NO=%d, \r\n"
-                + "    EXCLUDE_NHI_NO=%d\r\n"
+                + "Set COEXIST_NHI_NO_ENABLE=%d, \r\n"
+                + "    EXCLUDE_NHI_NO_ENABLE=%d\r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, coexist_nhi_no, exclude_nhi_no, ptId);
+        sql = String.format(sql, coexist_nhi_no_enable, exclude_nhi_no_enable, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

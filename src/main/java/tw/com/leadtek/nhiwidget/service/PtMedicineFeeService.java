@@ -45,7 +45,7 @@ public class PtMedicineFeeService {
                                                     start_date, end_data, params.getCategory(), 
                                                     params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
         if (ptId>0) {
-            ptMedicineFeeDao.add(ptId, params.getMax_nday()|0);
+            ptMedicineFeeDao.add(ptId, params.getMax_nday_enable()|0, params.getMax_nday()|0);
         }
         return ptId;
     }
@@ -60,7 +60,7 @@ public class PtMedicineFeeService {
                                                   params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
             
             if (ret > 0) {
-                ret += ptMedicineFeeDao.update(ptId, params.getMax_nday()|0);
+                ret += ptMedicineFeeDao.update(ptId, params.getMax_nday_enable()|0, params.getMax_nday()|0);
             }
         }
         return ret;

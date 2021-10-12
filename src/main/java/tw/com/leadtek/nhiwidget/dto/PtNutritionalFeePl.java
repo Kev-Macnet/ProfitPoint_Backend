@@ -5,36 +5,36 @@ import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "pt營養照護費設定參數")
 public class PtNutritionalFeePl extends PaymentTermsPl {
-    @ApiModelProperty(value="分類", example="營養照護費", required=true)
+    @ApiModelProperty(value="分類", example="營養照護費", required=true, position=21)
     private String category;
 
-    @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=false, position=26)
+    @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=false, position=22)
     private int max_inpatient_enable;
-    @ApiModelProperty(value="單一住院就醫紀錄應用數量<=", example="20",required=false)
+    @ApiModelProperty(value="單一住院就醫紀錄應用數量<=", example="20",required=false, position=23)
     private int max_inpatient;
     
-    @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=false, position=26)
+    @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=false, position=24)
     private int max_daily_enable;
-    @ApiModelProperty(value="單一就醫紀錄上，每日限定應用小於等於n次", example="1", required=false)
+    @ApiModelProperty(value="單一就醫紀錄上，每日限定應用小於等於n次", example="1", required=false, position=25)
     private int max_daily;
     
-    @ApiModelProperty(value="每 days 天 <= times 次", example="0", required=false)
+    @ApiModelProperty(value="每 days 天 <= times 次", example="0", required=false, position=26)
     private int every_nday_enable;
-    @ApiModelProperty(value="每 days 天", example="3", required=false)
+    @ApiModelProperty(value="每 days 天", example="3", required=false, position=27)
     private int every_nday_days;
-    @ApiModelProperty(value="<= times 次", example="10", required=false)
+    @ApiModelProperty(value="<= times 次", example="10", required=false, position=28)
     private int every_nday_times;
     
-    @ApiModelProperty(value="超過 days 日後，超出天數部份限定應用 <= times 次", example="0", required=false)
+    @ApiModelProperty(value="超過 days 日後，超出天數部份限定應用 <= times 次", example="0", required=false, position=29)
     private int over_nday_enable;
-    @ApiModelProperty(value="超過 days 日後", example="3", required=false)
+    @ApiModelProperty(value="超過 days 日後", example="3", required=false, position=30)
     private int over_nday_days;
-    @ApiModelProperty(value="超出天數部份限定 <= times 次", example="10", required=false)
+    @ApiModelProperty(value="超出天數部份限定 <= times 次", example="10", required=false, position=31)
     private int over_nday_times;
 
-    @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", required=false)
+    @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", required=false, position=32)
     private int exclude_nhi_no_enable;
-    @ApiModelProperty(value="exclude_nhi_no 清單", required=false)
+    @ApiModelProperty(value="exclude_nhi_no 清單", required=false, position=33)
     private java.util.List<String> lst_nhi_no;
     
     public String getCategory() {
