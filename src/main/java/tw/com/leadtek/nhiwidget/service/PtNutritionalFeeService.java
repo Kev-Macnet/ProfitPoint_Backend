@@ -49,10 +49,15 @@ public class PtNutritionalFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptNutritionalFeeDao.add(ptId, params.getMax_inpatient()|0, params.getMax_daily()|0, 
-                    params.getEvery_nday()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
-                    params.getOver_nday()|0, params.getOver_nday_days()|0, params.getOver_nday_times()|0, 
-                    params.getExclude_nhi_no()|0);
+//            ptNutritionalFeeDao.add(ptId, params.getMax_inpatient()|0, params.getMax_daily()|0, 
+//                    params.getEvery_nday()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
+//                    params.getOver_nday()|0, params.getOver_nday_days()|0, params.getOver_nday_times()|0, 
+//                    params.getExclude_nhi_no()|0);
+            ptNutritionalFeeDao.add(ptId, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                    params.getMax_daily_enable()|0, params.getMax_daily()|0, 
+                    params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
+                    params.getOver_nday_enable()|0, params.getOver_nday_days()|0, params.getOver_nday_times()|0, 
+                    params.getExclude_nhi_no_enable()|0);
         }
         return ptId;
     }
@@ -70,10 +75,11 @@ public class PtNutritionalFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptNutritionalFeeDao.update(ptId, params.getMax_inpatient()|0, params.getMax_daily()|0, 
-                        params.getEvery_nday()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
-                        params.getOver_nday()|0, params.getOver_nday_days()|0, params.getOver_nday_times()|0, 
-                        params.getExclude_nhi_no()|0);
+                ptNutritionalFeeDao.update(ptId, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                        params.getMax_daily_enable()|0, params.getMax_daily()|0, 
+                        params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
+                        params.getOver_nday_enable()|0, params.getOver_nday_days()|0, params.getOver_nday_times()|0, 
+                        params.getExclude_nhi_no_enable()|0);
             }
         }
         return ret;
