@@ -3,32 +3,35 @@
  */
 package tw.com.leadtek.nhiwidget.payload;
 
+import java.io.Serializable;
 import io.swagger.annotations.ApiModelProperty;
 
-public class PointsValue extends ParameterPayload {
+public class PointsValue extends StartEndPayload implements Serializable {
 
-  @ApiModelProperty(value = "西醫門急診總點數", required = false)
+  private static final long serialVersionUID = 6399616008383699336L;
+
+  @ApiModelProperty(value = "西醫門急診分配點數", required = false)
   protected Long wmOpPoints;
   
-  @ApiModelProperty(value = "西醫住院總點數", required = false)
+  @ApiModelProperty(value = "西醫住院分配點數", required = false)
   protected Long wmIpPoints;
   
-  @ApiModelProperty(value = "西醫藥品總點數", required = false)
+  @ApiModelProperty(value = "西醫藥品分配點數", required = false)
   protected Long wmDrugPoints;
   
-  @ApiModelProperty(value = "透析總點數", required = false)
+  @ApiModelProperty(value = "透析分配點數", required = false)
   protected Long hemodialysisPoints;
   
-  @ApiModelProperty(value = "專款總點數", required = false)
+  @ApiModelProperty(value = "其他專款分配點數", required = false)
   protected Long fundPoints;
   
-  @ApiModelProperty(value = "牙醫門診總點數", required = false)
+  @ApiModelProperty(value = "牙醫門診分配點數", required = false)
   protected Long dentistOpPoints;
   
-  @ApiModelProperty(value = "牙醫藥品總點數", required = false)
+  @ApiModelProperty(value = "牙醫藥品分配點數", required = false)
   protected Long dentistDrugPoints;
   
-  @ApiModelProperty(value = "牙醫專款總點數", required = false)
+  @ApiModelProperty(value = "牙醫專款分配點數", required = false)
   protected Long dentistFundPoints;
 
   public Long getWmOpPoints() {

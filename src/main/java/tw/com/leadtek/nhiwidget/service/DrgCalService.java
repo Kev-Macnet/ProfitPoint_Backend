@@ -4,19 +4,46 @@
 package tw.com.leadtek.nhiwidget.service;
 
 import java.math.BigInteger;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import tw.com.leadtek.nhiwidget.controller.BaseController;
+import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_CODEDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.model.DrgCalculate;
+import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
+import tw.com.leadtek.nhiwidget.model.rdb.USER;
+import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
+import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
+import tw.com.leadtek.nhiwidget.payload.DrgCodeListResponse;
+import tw.com.leadtek.nhiwidget.payload.DrgCodePayload;
 import tw.com.leadtek.tools.DateTool;
 
 /**
@@ -117,8 +144,9 @@ public class DrgCalService {
   }
 
   public double getFixedWithoutRW(Date date, boolean isM, boolean isMDC15, int addChild) {
-    System.out.println("SPR=" + (Integer) parameters.getParameterValueBetween("SPR", date) + "," + getHospAdd(date, isM, isMDC15, addChild));
-    return ((double)((Integer) parameters.getParameterValueBetween("SPR", date))
+    System.out.println("SPR=" + (Integer) parameters.getParameterValueBetween("SPR", date) + ","
+        + getHospAdd(date, isM, isMDC15, addChild));
+    return ((double) ((Integer) parameters.getParameterValueBetween("SPR", date))
         * (double) getHospAdd(date, isM, isMDC15, addChild));
   }
 
@@ -131,14 +159,14 @@ public class DrgCalService {
   public int getDRGFixed(String drg, String applYM, int addChild) {
     Date date = DateTool.getDateByApplYM(applYM);
     List<DRG_CODE> drgList =
-        drgDao.findByCodeAndStartDayLessThanEqualAndEndDayGreaterThanEqual(drg, date, date);
+        drgDao.findByCodeAndStartDateLessThanEqualAndEndDateGreaterThanEqual(drg, date, date);
     if (drgList == null || drgList.size() == 0) {
       return -1;
     }
     DRG_CODE drgCode = drgList.get(0);
     double value = getFixedWithoutRW(date, "M".equals(drgCode.getDep()),
         "15".equals(drgCode.getMdc()), addChild);
-    return (int) Math.round((double)drgCode.getRw() * value);
+    return (int) Math.round((double) drgCode.getRw() * value);
   }
 
   /**
@@ -150,7 +178,7 @@ public class DrgCalService {
   public DrgCalculate getDRGSection(String drg, String applYM, int medDot, int childAdd) {
     Date date = DateTool.getDateByApplYM(applYM);
     List<DRG_CODE> drgList =
-        drgDao.findByCodeAndStartDayLessThanEqualAndEndDayGreaterThanEqual(drg, date, date);
+        drgDao.findByCodeAndStartDateLessThanEqualAndEndDateGreaterThanEqual(drg, date, date);
     if (drgList == null || drgList.size() == 0) {
       return null;
     }
@@ -171,7 +199,7 @@ public class DrgCalService {
           childAdd);
     }
 
-    result.setFixed((int)(Math.round(drgCode.getRw() * value)));
+    result.setFixed((int) (Math.round(drgCode.getRw() * value)));
     if (drgCode.getStarted().intValue() == 1) {
       // 有導入實施的 DRG
       if (result.isDrgNoAdd()) {
@@ -302,7 +330,7 @@ public class DrgCalService {
    * @return
    */
   public HashMap<String, List<Long>> countCase20(String applYM) {
-    HashMap<String, List<Long>> result = new HashMap<String,  List<Long>>();
+    HashMap<String, List<Long>> result = new HashMap<String, List<Long>>();
     Date date = DateTool.getDateByApplYM(applYM);
     java.sql.Date sqlDate = new java.sql.Date(date.getTime());
     List<Object[]> list = ipdDao.getDRGCase20Id(sqlDate, sqlDate, applYM);
@@ -319,4 +347,197 @@ public class DrgCalService {
     }
     return result;
   }
+
+  private void addPredicate(Root<DRG_CODE> root, List<Predicate> predicate, CriteriaBuilder cb,
+      String paramName, String params, boolean isAnd, boolean isInteger) {
+    if (params == null || params.length() == 0) {
+      return;
+    }
+    if (params.indexOf(' ') < 0) {
+      if (isInteger) {
+        predicate.add(cb.equal(root.get(paramName), params));
+      } else {
+        predicate.add(cb.like(root.get(paramName), params + "%"));
+      }
+    } else {
+      String[] ss = params.split(" ");
+      List<Predicate> predicates = new ArrayList<Predicate>();
+      for (int i = 0; i < ss.length; i++) {
+        if (isInteger) {
+          predicates.add(cb.equal(root.get(paramName), ss[i]));
+        } else {
+          predicates.add(cb.like(root.get(paramName), ss[i] + "%"));
+        }
+      }
+      Predicate[] pre = new Predicate[predicates.size()];
+      if (isAnd) {
+        predicate.add(cb.and(predicates.toArray(pre)));
+      } else {
+        predicate.add(cb.or(predicates.toArray(pre)));
+      }
+    }
+  }
+
+  private Date parseDateString(String s, SimpleDateFormat sdf) throws ParseException {
+    if (s != null && s.length() >= 10) {
+      return sdf.parse(s);
+    }
+    return null;
+  }
+
+  public LinkedHashMap<String, Object> getDRGCode2(String sdate, String edate, String mdc,
+      String code, String orderBy, Boolean asc, int perPage, int page) {
+    LinkedHashMap<String, Object> result = new LinkedHashMap<String, Object>();
+    List<DrgCodePayload> codes = new ArrayList<DrgCodePayload>();
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+    Specification<DRG_CODE> spec = null;
+    try {
+      Date sd = parseDateString(sdate, sdf);
+      Date ed = parseDateString(edate, sdf);
+      spec = new Specification<DRG_CODE>() {
+
+        private static final long serialVersionUID = 1L;
+
+        public Predicate toPredicate(Root<DRG_CODE> root, CriteriaQuery<?> query,
+            CriteriaBuilder cb) {
+          List<Predicate> predicate = new ArrayList<Predicate>();
+          if (sd != null) {
+            predicate.add(cb.lessThanOrEqualTo(root.get("startDate"), sd));
+          }
+          if (ed != null) {
+            predicate.add(cb.greaterThan(root.get("endDate"), ed));
+          }
+          if (mdc != null) {
+            predicate.add(cb.equal(root.get("mdc"), mdc));
+          }
+          if (code != null && code.length() > 1) {
+            predicate.add(cb.like(root.get("code"), code + "%"));
+          }
+          Predicate[] pre = new Predicate[predicate.size()];
+          query.where(predicate.toArray(pre));
+
+          if (orderBy != null && asc != null) {
+            List<Order> orderList = new ArrayList<Order>();
+            if (asc.booleanValue()) {
+              orderList.add(cb.asc(root.get(orderBy)));
+            } else {
+              orderList.add(cb.desc(root.get(orderBy)));
+            }
+            query.orderBy(orderList);
+          }
+          return query.getRestriction();
+        }
+      };
+    } catch (ParseException e) {
+      e.printStackTrace();
+    }
+    int count = (int) drgDao.count(spec);
+    result.put("count", count);
+    int totalPage = count / perPage;
+    if (count % perPage > 0) {
+      totalPage++;
+    }
+    result.put("totalPage", totalPage);
+    Page<DRG_CODE> pages = drgDao.findAll(spec, PageRequest.of(page, perPage));
+    if (pages != null && pages.getSize() > 0) {
+      for (DRG_CODE drg : pages) {
+        codes.add(DrgCodePayload.fromDB(drg));
+      }
+    }
+    result.put("drg", codes);
+    return result;
+  }
+
+  public DrgCodeListResponse getDRGCode(String sdate, String edate, String mdc, String code,
+      String orderBy, Boolean asc, int perPage, int page) {
+    List<DrgCodePayload> codes = new ArrayList<DrgCodePayload>();
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+    Specification<DRG_CODE> spec = null;
+    try {
+      Date sd = parseDateString(sdate, sdf);
+      Date ed = parseDateString(edate, sdf);
+      spec = new Specification<DRG_CODE>() {
+
+        private static final long serialVersionUID = 1L;
+
+        public Predicate toPredicate(Root<DRG_CODE> root, CriteriaQuery<?> query,
+            CriteriaBuilder cb) {
+          List<Predicate> predicate = new ArrayList<Predicate>();
+          if (sd != null) {
+            predicate.add(cb.lessThanOrEqualTo(root.get("startDate"), sd));
+          }
+          if (ed != null) {
+            predicate.add(cb.greaterThan(root.get("endDate"), ed));
+          }
+          if (mdc != null) {
+            predicate.add(cb.equal(root.get("mdc"), mdc));
+          }
+          if (code != null && code.length() > 1) {
+            predicate.add(cb.like(root.get("code"), code + "%"));
+          }
+          Predicate[] pre = new Predicate[predicate.size()];
+          query.where(predicate.toArray(pre));
+
+          if (orderBy != null && asc != null) {
+            List<Order> orderList = new ArrayList<Order>();
+            if (asc.booleanValue()) {
+              orderList.add(cb.asc(root.get(orderBy)));
+            } else {
+              orderList.add(cb.desc(root.get(orderBy)));
+            }
+            query.orderBy(orderList);
+          }
+          return query.getRestriction();
+        }
+      };
+    } catch (ParseException e) {
+      e.printStackTrace();
+    }
+    DrgCodeListResponse result = new DrgCodeListResponse();
+    result.setCount((int) drgDao.count(spec));
+    int totalPage = result.getCount() / perPage;
+    if (result.getCount() % perPage > 0) {
+      totalPage++;
+    }
+    result.setTotalPage(totalPage);
+    Page<DRG_CODE> pages = drgDao.findAll(spec, PageRequest.of(page, perPage));
+    if (pages != null && pages.getSize() > 0) {
+      for (DRG_CODE drg : pages) {
+        codes.add(DrgCodePayload.fromDB(drg));
+      }
+    }
+    result.setData(codes);
+    return result;
+  }
+
+  public DRG_CODE getDrgCode(DRG_CODE code) {
+    if (code.getId() != null) {
+      return getDrgCode(code.getId());
+    }
+    List<DRG_CODE> list = drgDao.findByCodeAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+        code.getCode(), code.getStartDate(), code.getStartDate());
+    if (list == null || list.size() == 0) {
+      return null;
+    }
+    return list.get(0);
+  }
+
+  public DRG_CODE getDrgCode(Long id) {
+    if (id != null) {
+      Optional<DRG_CODE> optional = drgDao.findById(id);
+      if (optional.isPresent()) {
+        return optional.get();
+      }
+    }
+    return null;
+  }
+
+  public void saveDrgCode(DRG_CODE code) {
+    drgDao.save(code);
+  }
+
+  public void deleteDrgCode(DRG_CODE code) {
+    drgDao.deleteById(code.getId());
+  }
+
 }

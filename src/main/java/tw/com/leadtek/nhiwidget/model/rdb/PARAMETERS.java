@@ -71,7 +71,6 @@ public class PARAMETERS {
     
   }
   
-  //"SYS", ParametersService.PAGE_COUNT, "20", "Integer, "預設每頁顯示筆數");
   public PARAMETERS(String cat, String name, String value, int dataType, String note) {
     this.cat = cat;
     this.dataType = dataType;

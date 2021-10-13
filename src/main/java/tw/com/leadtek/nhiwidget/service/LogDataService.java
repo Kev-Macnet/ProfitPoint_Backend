@@ -743,10 +743,10 @@ public class LogDataService {
       logDataDao.addLogSearchDetail(m_id, "allMatch", allMatch);
       logDataDao.addLogSearchDetail(m_id, "startDate", startDate);
       logDataDao.addLogSearchDetail(m_id, "endDate", endDate);
-      if (minPoints > 0) {
+      if (minPoints != null && minPoints > 0) {
         logDataDao.addLogSearchDetail(m_id, "minPoints", Integer.toString(minPoints));
       }
-      if (maxPoints > minPoints) {
+      if (maxPoints != null && maxPoints > minPoints) {
         logDataDao.addLogSearchDetail(m_id, "maxPoints", Integer.toString(maxPoints));
       }
       logDataDao.addLogSearchDetail(m_id, "dataFormat", dataFormat);

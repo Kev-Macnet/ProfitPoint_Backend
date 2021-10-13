@@ -65,6 +65,10 @@ public class TestDrgCalService {
         break;
       } else {
         System.out.println("pass " +(count++));
+        mr.setDrgFixed(drg.getFixed());
+        mr.setDrgSection(drg.getSection());
+        mr.setDrgCode(drg.getCode());
+        mrDao.save(mr);
       }
     }
   }

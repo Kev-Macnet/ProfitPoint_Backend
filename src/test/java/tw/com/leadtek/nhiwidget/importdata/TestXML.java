@@ -209,7 +209,7 @@ public class TestXML {
     // importConstants("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn compare.xlsx");
     importConstantsToRDB("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn compare.xlsx");
 //    importCODE_TABLEToRDB(
-//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Table Schema\\CODE_TABLE.xlsx");
+//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\CODE_TABLE.xlsx");
   }
 
   public void importXMLTag(String filename, String dataFormat) {

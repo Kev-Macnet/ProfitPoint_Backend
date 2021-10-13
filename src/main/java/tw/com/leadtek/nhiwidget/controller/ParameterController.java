@@ -6,25 +6,41 @@ package tw.com.leadtek.nhiwidget.controller;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.HtmlUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import tw.com.leadtek.nhiwidget.payload.AssignedPoints;
+import tw.com.leadtek.nhiwidget.payload.AssignedPointsListResponse;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
+import tw.com.leadtek.nhiwidget.payload.CodeConflictListResponse;
+import tw.com.leadtek.nhiwidget.payload.CodeConflictPayload;
+import tw.com.leadtek.nhiwidget.payload.DRGRelatedValues;
+import tw.com.leadtek.nhiwidget.payload.HighRatioOrder;
+import tw.com.leadtek.nhiwidget.payload.HighRatioOrderListResponse;
+import tw.com.leadtek.nhiwidget.payload.InfectiousListResponse;
+import tw.com.leadtek.nhiwidget.payload.ParameterListPayload;
+import tw.com.leadtek.nhiwidget.payload.ParameterValue;
 import tw.com.leadtek.nhiwidget.payload.PointsValue;
+import tw.com.leadtek.nhiwidget.payload.RareICDListResponse;
+import tw.com.leadtek.nhiwidget.payload.RareICDPayload;
+import tw.com.leadtek.nhiwidget.payload.SameATCListResponse;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
+import tw.com.leadtek.tools.DateTool;
 
 @Api(tags = "參數設定相關API", value = "參數設定相關API")
 @CrossOrigin(origins = "*", maxAge = 36000)
@@ -38,8 +54,16 @@ public class ParameterController extends BaseController {
 
   @ApiOperation(value = "取得是否使用西醫、牙醫總額度支配點數設定", notes = "取得是否使用西醫、牙醫總額度支配點數設定")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
-  @GetMapping("/pointsStatus")
-  public ResponseEntity<Map<String, Object>> getPointsSetting(
+  @GetMapping("/assignedPoints")
+  public ResponseEntity<AssignedPointsListResponse> getAssignedPoints(
+      @ApiParam(name = "sdate", value = "sdate",
+          example = "2021/01/01") @RequestParam(required = false) String sdate,
+      @ApiParam(name = "edate", value = "edate",
+          example = "2021/12/31") @RequestParam(required = false) String edate,
+      @ApiParam(name = "orderBy", value = "排序欄位名稱，sdate:生效日，edate:生效訖日，wp:西醫分配總點數，dp:牙科分配總點數",
+          example = "sdate") @RequestParam(required = false) String orderBy,
+      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
+          example = "true") @RequestParam(required = false) Boolean asc,
       @ApiParam(name = "perPage", value = "每頁顯示筆數",
           example = "20") @RequestParam(required = false) Integer perPage,
       @ApiParam(name = "page", value = "第幾頁，第一頁值為0", example = "0") @RequestParam(required = false,
@@ -47,51 +71,69 @@ public class ParameterController extends BaseController {
     int perPageInt =
         (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
             : perPage.intValue();
-    return ResponseEntity.ok(parameterService.getPointsStatus(perPageInt, page.intValue()));
+    return ResponseEntity.ok(parameterService.getAssignedPoints(sdate, edate, orderBy, asc,
+        perPageInt, page.intValue()));
   }
 
-  @ApiOperation(value = "修改支配總點數設定", notes = "修改支配總點數設定")
+  @ApiOperation(value = "新增分配點數", notes = "新增分配點數")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PostMapping("/assignedPoints")
+  public ResponseEntity<BaseResponse> newAssignedPoints(@RequestBody AssignedPoints ap) {
+    return returnAPIResult(parameterService.newAssignedPoints(ap));
+  }
+
+  @ApiOperation(value = "修改分配總點數設定", notes = "修改分配總點數設定")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
-  @PutMapping("/pointsStatus")
-  public ResponseEntity<BaseResponse> updatePointsSetting(
-      @ApiParam(name = "startDate", value = "生效日",
-      example = "2021/05/01") @RequestParam(required = true) String startDate,
-      @ApiParam(name = "wmStatus", value = "西醫是否計算總點數，true/false",
-      example = "true") @RequestParam(required = true) Boolean wmStatus,
-      @ApiParam(name = "dentistStatus", value = "牙醫是否計算總點數，true/false",
-      example = "false") @RequestParam(required = true) Boolean dentistStatus
-      ) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-    try {
-      Date sDate = sdf.parse(startDate);
-      return returnAPIResult(parameterService.updatePointsStatus(sDate, wmStatus, dentistStatus));
-    } catch (ParseException e) {
-      BaseResponse br = new BaseResponse();
-      br.setMessage(e.getLocalizedMessage());
-      return ResponseEntity.badRequest().body(br);
-    }
-    
+  @PutMapping("/assignedPoints")
+  public ResponseEntity<BaseResponse> updateAssignedPoints(@RequestBody AssignedPoints ap) {
+    return returnAPIResult(parameterService.updateAssignedPoints(ap));
   }
 
-  @ApiOperation(value = "取得支配總點數", notes = "取得支配總點數")
+  @ApiOperation(value = "刪除分配總點數", notes = "刪除分配總點數")
+  @DeleteMapping("/assignedPoints/{id}")
+  public ResponseEntity<BaseResponse> deleteAssignedPoints(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+      return returnAPIResult("id未帶入");
+    }
+    return returnAPIResult(parameterService.deleteAssignedPoints(id));
+  }
+
+  @ApiOperation(value = "取得分配總點數", notes = "取得分配總點數")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
-  @GetMapping("/pointsValue")
-  public ResponseEntity<PointsValue> getPointsValue(@ApiParam(name = "startDate", value = "生效日",
-      example = "2021/05/01") @RequestParam(required = true) String startDate) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-    PointsValue result = null;
-    try {
-      Date sDate = sdf.parse(startDate);
-      result = parameterService.getPointsValue(sDate);
-      if (result == null) {
-        return ResponseEntity.badRequest().body(null);
-      }
-      return ResponseEntity.ok(result);
-    } catch (ParseException e) {
+  @GetMapping("/assignedPoints/{id}")
+  public ResponseEntity<AssignedPoints> getAssignedPoints(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+      return ResponseEntity.badRequest().body(new AssignedPoints());
+    }
+    long idL = Long.parseLong(id);
+    AssignedPoints result = parameterService.getAssignedPoints(idL);
+    if (result == null) {
+      result = new AssignedPoints();
       return ResponseEntity.badRequest().body(result);
     }
+    return ResponseEntity.ok(result);
   }
+
+  // @ApiOperation(value = "取得支配總點數", notes = "取得支配總點數")
+  // @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  // @GetMapping("/pointsValue")
+  // public ResponseEntity<PointsValue> getPointsValue(@ApiParam(name = "startDate", value = "生效日",
+  // example = "2021/05/01") @RequestParam(required = true) String startDate) {
+  // SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+  // PointsValue result = null;
+  // try {
+  // Date sDate = sdf.parse(startDate);
+  // result = parameterService.getPointsValue(sDate);
+  // if (result == null) {
+  // return ResponseEntity.badRequest().body(null);
+  // }
+  // return ResponseEntity.ok(result);
+  // } catch (ParseException e) {
+  // return ResponseEntity.badRequest().body(result);
+  // }
+  // }
 
   @ApiOperation(value = "修改支配總點數", notes = "修改支配總點數")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
@@ -100,8 +142,8 @@ public class ParameterController extends BaseController {
   public ResponseEntity<BaseResponse> updatePointsValue(@RequestBody PointsValue pv) {
     return returnAPIResult(parameterService.updatePointsValue(pv));
   }
-  
-  @ApiOperation(value = "新增支配總點數", notes = "修改支配總點數")
+
+  @ApiOperation(value = "新增分配總點數", notes = "修改支配總點數")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/pointsValue")
@@ -112,30 +154,564 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得參數值", notes = "取得參數值")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/value")
-  public ResponseEntity<Map<String, Object>> getValue(
-      @ApiParam(name = "name", value = "參數值名稱，如抽件數(SAMPLING),標準給付額(SPR)", example = "SAMPLING") @RequestParam(required = true) String name,
+  public ResponseEntity<ParameterListPayload> getValue(
+      @ApiParam(name = "name", value = "參數值名稱，如抽件數(SAMPLING),標準給付額(SPR)",
+          example = "SPR") @RequestParam(required = true) String name,
+      @ApiParam(name = "sdate", value = "生效日",
+          example = "2019/07/01") @RequestParam(required = false) String sdate,
+      @ApiParam(name = "edate", value = "生效訖日",
+          example = "2021/12/31") @RequestParam(required = false) String edate,
+      @ApiParam(name = "orderBy", value = "排序欄位名稱，sdate:生效日，edate:失效日，spr:SPR點數，status:啟用狀態",
+          example = "sdate") @RequestParam(required = false) String orderBy,
+      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
+          example = "true") @RequestParam(required = false) Boolean asc,
       @ApiParam(name = "perPage", value = "每頁顯示筆數",
           example = "20") @RequestParam(required = false) Integer perPage,
-      @ApiParam(name = "page", value = "第幾頁，第一頁值為0", example = "0") @RequestParam(required = false,
-          defaultValue = "0") Integer page) {
+      @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
+          example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
     int perPageInt =
         (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
             : perPage.intValue();
-    return ResponseEntity.ok(parameterService.getParameterValue(name, perPageInt, page.intValue()));
+    Date startDate = null;
+    Date endDate = null;
+
+    if (sdate != null && edate != null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        startDate = sdf.parse(sdate);
+        endDate = sdf.parse(edate);
+      } catch (ParseException e) {
+        ParameterListPayload result = new ParameterListPayload();
+        result.setMessage("日期格式有誤");
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("sdate")) {
+        column = "startDate";
+      } else if (column.equals("edate")) {
+        column = "endDate";
+      } else if (column.equals("spr")) {
+        column = "value";
+      } else if (column.equals("status")) {
+        column = "startDate";
+      } else {
+        ParameterListPayload result = new ParameterListPayload();
+        result.setMessage("orderBy無此欄位：" + column);
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    return ResponseEntity.ok(parameterService.getParameterValue(name, startDate, endDate, column,
+        asc, perPageInt, page.intValue()));
   }
-  
-  @ApiOperation(value = "新增支配總點數", notes = "修改支配總點數")
+
+  @ApiOperation(value = "取得指定id參數值", notes = "取得指定id參數值")
+  @GetMapping("/value/{id}")
+  public ResponseEntity<ParameterValue> getValue(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+      ParameterValue result = new ParameterValue();
+      result.setValue("id未帶入");
+      return ResponseEntity.badRequest().body(result);
+    }
+    return ResponseEntity.ok(parameterService.getParameterValue(Long.parseLong(id)));
+  }
+
+  @ApiOperation(value = "新增參數值", notes = "新增參數值")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/value")
   public ResponseEntity<BaseResponse> newValue(
-      @ApiParam(name = "name", value = "參數值名稱，如抽件數(SAMPLING),標準給付額(SPR)", example = "SAMPLING") @RequestParam(required = true) String name,
-      @ApiParam(name = "value", value = "參數值", example = "1234") @RequestParam(required = true) String value,
-      @ApiParam(name = "startDate", value = "生效日",
-      example = "2021/05/01") @RequestParam(required = true) Date startDate,
-      @ApiParam(name = "endDate", value = "生效日",
-      example = "2021/12/31") @RequestParam(required = true) Date endDate
-      ) {
-    return returnAPIResult(parameterService.newValue(name, value, startDate, endDate));
+      @ApiParam(name = "name", value = "參數值名稱，如抽件數(SAMPLING),標準給付額(SPR)",
+          example = "SPR") @RequestParam(required = true) String name,
+      @ApiParam(name = "value", value = "參數值",
+          example = "1234") @RequestParam(required = true) String value,
+      @ApiParam(name = "sdate", value = "生效日",
+          example = "2021/05/01") @RequestParam(required = true) Date sdate,
+      @ApiParam(name = "edate", value = "生效訖日",
+          example = "2021/12/31") @RequestParam(required = true) Date edate) {
+    if (value == null || value.length() == 0 || "null".equals(value.toLowerCase())) {
+      return returnAPIResult("value值不可為空");
+    }
+    return returnAPIResult(parameterService.newValue(name, value, sdate, edate));
+  }
+
+  @ApiOperation(value = "修改參數值", notes = "修改參數值")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/value")
+  public ResponseEntity<BaseResponse> updateValue(@RequestBody ParameterValue pv) {
+    if (pv.getValue() == null || pv.getValue().toString().length() == 0
+        || "null".equals(pv.getValue())) {
+      return returnAPIResult("value值不可為空");
+    }
+    return returnAPIResult(parameterService.updateValue(pv));
+  }
+
+  @ApiOperation(value = "刪除參數值", notes = "刪除參數值")
+  @DeleteMapping("/value/{id}")
+  public ResponseEntity<BaseResponse> deleteValue(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+      return returnAPIResult("id未帶入");
+    }
+    return returnAPIResult(parameterService.deleteParameterValue(id));
+  }
+
+  @ApiOperation(value = "取得DRG相關參數值", notes = "取得DRG相關參數值")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/drg")
+  public ResponseEntity<DRGRelatedValues> getDRGValues(
+      @ApiParam(name = "sdate", value = "生效日",
+          example = "2021/07/01") @RequestParam(required = false) String sdate,
+      @ApiParam(name = "edate", value = "生效訖日",
+          example = "2021/12/31") @RequestParam(required = false) String edate,
+      @ApiParam(name = "isMax", value = "最新一筆DRG參數值",
+          example = "2021/12/31") @RequestParam(required = false) Boolean isMax) {
+
+    if (isMax != null && isMax.booleanValue()) {
+      return ResponseEntity.ok(parameterService.getDRGValues(null, null, null));
+    }
+    DRGRelatedValues result = new DRGRelatedValues();
+    if (sdate == null || sdate.length() == 0 || edate == null || edate.length() == 0) {
+      result.setMessage("日期格式有誤");
+      result.setResult("failed");
+      return ResponseEntity.badRequest().body(result);
+    }
+    result.setStartDate(sdate);
+    result.setEndDate(edate);
+
+    SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+    Date startDate = null;
+    Date endDate = null;
+
+    try {
+      startDate = sdf.parse(sdate);
+      endDate = sdf.parse(edate);
+    } catch (ParseException e) {
+      result.setMessage("日期格式有誤");
+      result.setResult("failed");
+      return ResponseEntity.badRequest().body(result);
+    }
+
+    return ResponseEntity.ok(parameterService.getDRGValues(startDate, endDate, result));
+  }
+
+  @ApiOperation(value = "新增DRG參數值", notes = "新增參數值")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PostMapping("/drg")
+  public ResponseEntity<BaseResponse> newDRGValues(@RequestBody DRGRelatedValues request) {
+
+    BaseResponse result = new BaseResponse();
+    SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+    Date sDate = null;
+    Date eDate = null;
+
+    try {
+      sDate = sdf.parse(request.getStartDate());
+      eDate = sdf.parse(request.getEndDate());
+      if (eDate.before(sDate)) {
+        return returnAPIResult("訖日不可小於起日");
+      }
+    } catch (ParseException e) {
+      return returnAPIResult("日期格式有誤");
+    }
+    return returnAPIResult(parameterService.newDRGValues(sDate, eDate, request));
+  }
+
+  @ApiOperation(value = "修改DRG參數值", notes = "修改DRG參數值")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/drg")
+  public ResponseEntity<BaseResponse> updateDRGValue(@RequestBody DRGRelatedValues request) {
+    return returnAPIResult(parameterService.updateDRGValue(request));
+  }
+
+  @ApiOperation(value = "取得法定傳染病列表", notes = "取得法定傳染病列表")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/infectious")
+  public ResponseEntity<InfectiousListResponse> getInfectious(
+      @ApiParam(name = "icd", value = "ICD代碼",
+          example = "J10.01") @RequestParam(required = false) String icd,
+      @ApiParam(name = "cat", value = "傳染病分類，1~5",
+          example = "4") @RequestParam(required = false) String cat,
+      @ApiParam(name = "orderBy", value = "排序欄位名稱，icd:診斷ICD代碼，name:診斷名稱，cat:傳染病分類",
+          example = "sdate") @RequestParam(required = false) String orderBy,
+      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
+          example = "true") @RequestParam(required = false) Boolean asc,
+      @ApiParam(name = "perPage", value = "每頁顯示筆數",
+          example = "20") @RequestParam(required = false) Integer perPage,
+      @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
+          example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
+
+    int perPageInt =
+        (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
+            : perPage.intValue();
+
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("icd")) {
+        column = "code";
+      } else if (column.equals("name")) {
+        column = "descChi";
+      } else if (column.equals("cat")) {
+        column = "parentCode";
+      } else {
+        InfectiousListResponse response = new InfectiousListResponse();
+        response.setMessage("orderBy無此欄位：" + orderBy);
+        response.setResult("failed");
+        return ResponseEntity.badRequest().body(response);
+      }
+    }
+    return ResponseEntity
+        .ok(parameterService.getInfectious(icd, cat, column, asc, perPageInt, page));
+  }
+
+  @ApiOperation(value = "修改法定傳染病狀態", notes = "修改法定傳染病狀態")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/infectious")
+  public ResponseEntity<BaseResponse> updateInfectiousStatus(
+      @ApiParam(name = "icd", value = "ICD代碼",
+          example = "J10.01") @RequestParam(required = true) String icd,
+      @ApiParam(name = "enable", value = "是否啟用，true/false",
+          example = "true") @RequestParam(required = true) Boolean enable) {
+    return returnAPIResult(parameterService.updateInfectiousStatus(icd, enable.booleanValue()));
+  }
+
+  @ApiOperation(value = "取得罕見ICD代碼列表", notes = "取得罕見ICD代碼列表")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/rareICD")
+  public ResponseEntity<RareICDListResponse> getRareICD(
+      @ApiParam(name = "icd", value = "ICD代碼",
+          example = "J10.01") @RequestParam(required = false) String icd,
+      @ApiParam(name = "orderBy", value = "排序欄位名稱，sdate:生效日，edate:失效日，icd:診斷/處置ICD，status:啟用狀態",
+          example = "sdate") @RequestParam(required = false) String orderBy,
+      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
+          example = "true") @RequestParam(required = false) Boolean asc,
+      @ApiParam(name = "perPage", value = "每頁顯示筆數",
+          example = "20") @RequestParam(required = false) Integer perPage,
+      @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
+          example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
+
+    String code = (icd == null) ? null : HtmlUtils.htmlEscape(icd);
+    int perPageInt =
+        (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
+            : perPage.intValue();
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("sdate")) {
+        column = "startDate";
+      } else if (column.equals("edate")) {
+        column = "endDate";
+      } else if (column.equals("icd")) {
+        column = "code";
+      } else if (column.equals("status")) {
+        column = orderBy;
+      } else {
+        RareICDListResponse response = new RareICDListResponse();
+        response.setMessage("orderBy無此欄位：" + orderBy);
+        response.setResult("failed");
+        return ResponseEntity.badRequest().body(response);
+      }
+    }
+    return ResponseEntity.ok(parameterService.getRareICD(code, column, asc, perPageInt, page));
+  }
+
+  @ApiOperation(value = "取得指定的罕見ICD應用參數", notes = "取得指定的罕見ICD應用參數")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/rareICD/{id}")
+  public ResponseEntity<RareICDPayload> getRareICDById(@PathVariable String id) {
+    RareICDPayload response = new RareICDPayload();
+    if (id == null || id.length() == 0) {
+      response.setName("id未帶入");
+      return ResponseEntity.badRequest().body(response);
+    }
+    response = parameterService.getRareICDById(id);
+    if (response.getId() == null) {
+      return ResponseEntity.badRequest().body(response);
+    } else {
+      return ResponseEntity.ok(response);
+    }
+  }
+
+  @ApiOperation(value = "新增罕見ICD代碼", notes = "新增罕見ICD代碼")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PostMapping("/rareICD")
+  public ResponseEntity<BaseResponse> newRareICD(@RequestBody RareICDPayload request) {
+    return returnAPIResult(parameterService.newRareICD(request));
+  }
+
+  @ApiOperation(value = "修改罕見ICD代碼參數", notes = "修改罕見ICD代碼參數")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/rareICD")
+  public ResponseEntity<BaseResponse> updateRareICD(@RequestBody RareICDPayload request) {
+    if (request == null || request.getId() == null) {
+      return returnAPIResult("id未帶入");
+    }
+    return returnAPIResult(parameterService.updateRareICD(request));
+  }
+
+  @ApiOperation(value = "刪除罕見ICD資料", notes = "刪除罕見ICD資料")
+  @DeleteMapping("/rareICD/{id}")
+  public ResponseEntity<BaseResponse> deleteRareICDById(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+      return returnAPIResult("id未帶入");
+    }
+    return returnAPIResult(parameterService.deleteCodeThreshold(id));
+  }
+
+  @ApiOperation(value = "取得應用比例偏高醫令列表", notes = "取得應用比例偏高醫令列表")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/highRatioOrder")
+  public ResponseEntity<HighRatioOrderListResponse> getHighRatioOrder(
+      @ApiParam(name = "code", value = "支付標準代碼",
+          example = "J10.01") @RequestParam(required = false) String code,
+      @ApiParam(name = "inhCode", value = "院內碼",
+          example = "J10.01") @RequestParam(required = false) String inhCode,
+      @ApiParam(name = "orderBy",
+          value = "排序欄位名稱，sdate:生效日，edate:失效日，code:支付標準代碼，inhCode:院內碼，status:啟用狀態",
+          example = "sdate") @RequestParam(required = false) String orderBy,
+      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
+          example = "true") @RequestParam(required = false) Boolean asc,
+      @ApiParam(name = "perPage", value = "每頁顯示筆數",
+          example = "20") @RequestParam(required = false) Integer perPage,
+      @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
+          example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
+
+    String codeS = (code == null) ? null : HtmlUtils.htmlEscape(code);
+    int perPageInt =
+        (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
+            : perPage.intValue();
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("sdate")) {
+        column = "startDate";
+      } else if (column.equals("edate")) {
+        column = "endDate";
+      } else if (column.equals("code") || column.equals("inhCode") || column.equals("status")) {
+      } else {
+        HighRatioOrderListResponse response = new HighRatioOrderListResponse();
+        response.setMessage("orderBy無此欄位：" + orderBy);
+        response.setResult("failed");
+        return ResponseEntity.badRequest().body(response);
+      }
+    }
+    return ResponseEntity
+        .ok(parameterService.getHighRatioOrder(codeS, inhCode, column, asc, perPageInt, page));
+  }
+
+  @ApiOperation(value = "取得應用比例偏高醫令", notes = "取得應用比例偏高醫令")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/highRatioOrder/{id}")
+  public ResponseEntity<HighRatioOrder> getHighRatioOrder(@PathVariable String id) {
+    HighRatioOrder response = new HighRatioOrder();
+    if (id == null || id.length() == 0) {
+      response.setName("id未帶入");
+      return ResponseEntity.badRequest().body(response);
+    }
+    response = parameterService.getHighRatioOrderById(id);
+    if (response.getId() == null) {
+      return ResponseEntity.badRequest().body(response);
+    } else {
+      return ResponseEntity.ok(response);
+    }
+  }
+
+  @ApiOperation(value = "新增應用比例偏高醫令", notes = "新增應用比例偏高醫令")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PostMapping("/highRatioOrder")
+  public ResponseEntity<BaseResponse> newHighRatioOrder(@RequestBody HighRatioOrder request) {
+    return returnAPIResult(parameterService.newHighRatioOrder(request));
+  }
+
+  @ApiOperation(value = "修改應用比例偏高醫令", notes = "修改應用比例偏高醫令")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/highRatioOrder")
+  public ResponseEntity<BaseResponse> updateHighRatioOrder(@RequestBody HighRatioOrder request) {
+    if (request == null || request.getId() == null) {
+      return returnAPIResult("id未帶入");
+    }
+    return returnAPIResult(parameterService.updateHighRatioOrder(request));
+  }
+
+  /**
+   * 刪除表單資料
+   * 
+   * @param 應用比例偏高醫令 Id
+   * @return
+   */
+  @ApiOperation(value = "刪除應用比例偏高醫令", notes = "刪除應用比例偏高醫令")
+  @DeleteMapping("/highRatioOrder/{id}")
+  public ResponseEntity<BaseResponse> deleteHighRatioOrder(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+      return returnAPIResult("id未帶入");
+    }
+    return returnAPIResult(parameterService.deleteCodeThreshold(id));
+  }
+
+  @ApiOperation(value = "取得同性質藥物列表", notes = "取得同性質藥物列表")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/sameATC")
+  public ResponseEntity<SameATCListResponse> getSameATC(
+      @ApiParam(name = "code", value = "搜尋支付標準代碼",
+          example = "") @RequestParam(required = false) String code,
+      @ApiParam(name = "inhCode", value = "搜尋院內碼",
+          example = "") @RequestParam(required = false) String inhCode,
+      @ApiParam(name = "atc", value = "搜尋ATC分類",
+          example = "") @RequestParam(required = false) String atc,
+      @ApiParam(name = "orderBy",
+          value = "排序欄位名稱，atc:ATC分類，inhCode:院內碼，code:支付標準代碼，name:藥品名稱，status:啟用狀態",
+          example = "sdate") @RequestParam(required = false) String orderBy,
+      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
+          example = "true") @RequestParam(required = false) Boolean asc,
+      @ApiParam(name = "perPage", value = "每頁顯示筆數",
+          example = "20") @RequestParam(required = false) Integer perPage,
+      @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
+          example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
+    int perPageInt =
+        (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
+            : perPage.intValue();
+
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("atc") || column.equals("code") || column.equals("inhCode")
+          || column.equals("name") || column.equals("stauts")) {
+
+      } else {
+        SameATCListResponse result = new SameATCListResponse();
+        result.setMessage("orderBy無此欄位：" + column);
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    return ResponseEntity.ok(
+        parameterService.getSameATC(code, inhCode, atc, column, asc, perPageInt, page.intValue()));
+  }
+
+  @ApiOperation(value = "修改同性質藥物狀態", notes = "修改同性質藥物狀態")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/sameATC")
+  public ResponseEntity<BaseResponse> updateSameATCStatus(
+      @ApiParam(name = "id", value = "id",
+          example = "J10.01") @RequestParam(required = true) String id,
+      @ApiParam(name = "enable", value = "是否啟用，true/false",
+          example = "true") @RequestParam(required = true) Boolean enable) {
+    Long idL = null;
+    try {
+      idL = Long.parseLong(id);
+    } catch (NumberFormatException e) {
+      return returnAPIResult("id有誤");
+    }
+    return returnAPIResult(parameterService.updateSameATC(idL, enable.booleanValue()));
+  }
+
+  @ApiOperation(value = "取得健保項目對應自費項目並存列表", notes = "取得健保項目對應自費項目並存列表")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/codeConflict")
+  public ResponseEntity<CodeConflictListResponse> getCodeConflict(
+      @ApiParam(name = "code", value = "搜尋支付標準代碼",
+          example = "") @RequestParam(required = false) String code,
+      @ApiParam(name = "inhCode", value = "搜尋健保品項院內碼",
+          example = "") @RequestParam(required = false) String inhCode,
+      @ApiParam(name = "ownCode", value = "搜尋自費品項院內碼",
+          example = "") @RequestParam(required = false) String ownCode,
+      @ApiParam(name = "orderBy",
+          value = "排序欄位名稱，sdate:生效日，edate:生效訖日，ownCode:自費品項院內碼，inhCode:健保品項院內碼，code:支付標準代碼，status:啟用狀態",
+          example = "sdate") @RequestParam(required = false) String orderBy,
+      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
+          example = "true") @RequestParam(required = false) Boolean asc,
+      @ApiParam(name = "perPage", value = "每頁顯示筆數",
+          example = "20") @RequestParam(required = false) Integer perPage,
+      @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
+          example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
+    int perPageInt =
+        (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
+            : perPage.intValue();
+
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("atc") || column.equals("code") || column.equals("inhCode")
+          || column.equals("stauts")) {
+
+      } else if (column.equals("sdate")) {
+        column = "startDate";
+      } else if (column.equals("edate")) {
+        column = "endDate";
+      } else {
+        CodeConflictListResponse result = new CodeConflictListResponse();
+        result.setMessage("orderBy無此欄位：" + column);
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    return ResponseEntity.ok(
+        parameterService.getCodeConflict(code, inhCode, ownCode, orderBy, asc, perPageInt, page));
+  }
+
+  @ApiOperation(value = "取得健保項目對應自費項目並存詳細資料", notes = "取得健保項目對應自費項目並存詳細資料")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/codeConflict/{id}")
+  public ResponseEntity<CodeConflictPayload> getCodeConflict(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+      CodeConflictPayload result = new CodeConflictPayload();
+      result.setName("id 未帶入");
+      return ResponseEntity.badRequest().body(result);
+    }
+
+    try {
+      return ResponseEntity.ok(parameterService.getCodeConflict(Long.parseLong(id)));
+    } catch (NumberFormatException e) {
+      CodeConflictPayload result = new CodeConflictPayload();
+      result.setName("id 值有誤");
+      return ResponseEntity.badRequest().body(result);
+    }
+  }
+
+  @ApiOperation(value = "新增健保項目對應自費項目並存資料", notes = "新增參數值")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PostMapping("/codeConflict")
+  public ResponseEntity<BaseResponse> newCodeConflict(@RequestBody CodeConflictPayload request) {
+    if (request.getEdate().getTime() == request.getSdate().getTime()) {
+      return returnAPIResult("訖日不可等於生效日");
+    }
+    if (request.getEdate().before(request.getSdate())) {
+      return returnAPIResult("訖日不可小於生效日");
+    }
+    return returnAPIResult(parameterService.upsertCodeConflict(request, false));
+  }
+
+  @ApiOperation(value = "修改健保項目對應自費項目並存資料", notes = "修改健保項目對應自費項目並存資料")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/codeConflict")
+  public ResponseEntity<BaseResponse> updateCodeConflict(@RequestBody CodeConflictPayload request) {
+    if (request.getId() == null || request.getId().longValue() == 0) {
+      return returnAPIResult("id有誤");
+    }
+    return returnAPIResult(parameterService.upsertCodeConflict(request, true));
+  }
+
+  @ApiOperation(value = "刪除健保項目對應自費項目並存資料", notes = "刪除健保項目對應自費項目並存資料")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @DeleteMapping("/codeConflict/{id}")
+  public ResponseEntity<BaseResponse> deleteCodeConflict(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+     return returnAPIResult("id 未帶入");
+    }
+
+    try {
+      return returnAPIResult(parameterService.deleteCodeConflict(Long.parseLong(id)));
+    } catch (NumberFormatException e) {
+      return returnAPIResult("id 值有誤");
+    }
   }
 }

@@ -20,7 +20,7 @@ import io.swagger.annotations.ApiModelProperty;
 public class DRG_CODE {
 
   @Id
-  @ApiModelProperty(value = "序號", example = "1", required = true)
+  @ApiModelProperty(value = "序號", example = "1", required = false)
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "ID", nullable = false)
   protected Long id;
@@ -58,14 +58,14 @@ public class DRG_CODE {
   private Integer ulimit;
   
   @ApiModelProperty(value = "DRG代碼設定啟用日", example = "2019/07/01", required = true)
-  @Column(name = "START_DAY")
+  @Column(name = "START_DATE")
   @JsonFormat(pattern = "yyyy/MM/dd", timezone = "GMT+8")
-  private Date startDay;
+  private Date startDate;
   
   @ApiModelProperty(value = "DRG代碼設定結束日", example = "2019/12/31", required = true)
-  @Column(name = "END_DAY")
+  @Column(name = "END_DATE")
   @JsonFormat(pattern = "yyyy/MM/dd", timezone = "GMT+8")
-  private Date endDay;
+  private Date endDate;
   
   @ApiModelProperty(value = "個案數<20註記", example = "1:個案數<20實報實銷，0:否", required = false)
   @Column(name = "CASE20")
@@ -74,7 +74,10 @@ public class DRG_CODE {
   @ApiModelProperty(value = "是否導入，1:有，0:否", example = "1", required = false)
   @Column(name = "STARTED")
   private Integer started;
-
+  
+  @ApiModelProperty(value = "是否為論件計酬，1:是，0:否", example = "0", required = false)
+  @Column(name = "PR")
+  private Integer pr;
 
   public Long getId() {
     return id;
@@ -140,20 +143,20 @@ public class DRG_CODE {
     this.ulimit = ulimit;
   }
 
-  public Date getStartDay() {
-    return startDay;
+  public Date getStartDate() {
+    return startDate;
   }
 
-  public void setStartDay(Date startDay) {
-    this.startDay = startDay;
+  public void setStartDate(Date startDate) {
+    this.startDate = startDate;
   }
 
-  public Date getEndDay() {
-    return endDay;
+  public Date getEndDate() {
+    return endDate;
   }
 
-  public void setEndDay(Date endDay) {
-    this.endDay = endDay;
+  public void setEndDate(Date endDate) {
+    this.endDate = endDate;
   }
 
   public Integer getCase20() {
@@ -179,5 +182,13 @@ public class DRG_CODE {
   public void setStarted(Integer started) {
     this.started = started;
   }
-  
+
+  public Integer getPr() {
+    return pr;
+  }
+
+  public void setPr(Integer pr) {
+    this.pr = pr;
+  }
+
 }

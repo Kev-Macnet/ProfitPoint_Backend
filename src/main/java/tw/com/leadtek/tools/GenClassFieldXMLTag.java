@@ -123,9 +123,10 @@ public class GenClassFieldXMLTag extends GenClassField {
       return null;
     }
     String[] ss = sql.trim().split(" ");
-    if (")".equals(ss[0])) {
+    if (")".equals(ss[0]) || ss.length == 1) {
       return null;
     }
+    //System.out.println("sql=" + sql + ", length=" + ss.length);
     result.setName(ss[0]);
     result.retrieveTypeStringAndLength(ss[1]);
     int commentIndex = 0;
@@ -151,7 +152,7 @@ public class GenClassFieldXMLTag extends GenClassField {
       }
       String commentRaw = commentSB.toString().trim();
       int index = commentRaw.indexOf('<');
-      if (index > -1) {
+      if (index > -1 && commentRaw.charAt(index + 1) != '=') {
         // 有 XML　tag, 會轉成全大寫，所以要拿原始資料
         index = s.toUpperCase().indexOf(commentRaw) + index;
         int endIndex = commentRaw.indexOf('>');

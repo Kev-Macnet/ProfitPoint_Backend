@@ -421,7 +421,7 @@ public class GenerateSqlByClass {
       String createTable = "CREATE TABLE ";
       while ((line = br.readLine()) != null) {
         System.out.println("line=" + line);
-        if (line.indexOf("ENGINE") > -1) {
+        if (line.indexOf("ENGINE") > -1 || line.startsWith("ALTER TABLE") || line.startsWith("CREATE INDEX")) {
           continue;
         }
         int index = line.toUpperCase().indexOf(createTable);
@@ -571,7 +571,7 @@ public class GenerateSqlByClass {
     // gen.generateClassBySQL("D:\\Users\\2268\\2020\\健保點數申報\\src\\NWUSER-ALL-HANA.sql",
     // "tw.com.leadtek.nhiwidget.model.rdb", "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
 
-    gen.generateClassByDB(GenerateDocumentFromDB.HANA, "NWUSER", "10.10.5.55", 30041, "NWUSER",
+    gen.generateClassByDB(GenerateDocumentFromDB.HANA, "NWUSER", "10.10.5.31", 30041, "NWUSER",
         "Leadtek2021", "tw.com.leadtek.nhiwidget.model.rdb",
         "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
   }

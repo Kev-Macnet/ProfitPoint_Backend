@@ -3,12 +3,22 @@
  */
 package tw.com.leadtek.nhiwidget.importdata;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -23,10 +33,15 @@ import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
+import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
+import tw.com.leadtek.nhiwidget.service.RedisService;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = NHIWidget.class)
@@ -38,7 +53,15 @@ public class ImportPayCode {
   @Autowired
   private RedisTemplate<String, Object> redisTemplate;
 
+  @Autowired
+  private RedisService redisService;
+
+  @Autowired
+  private PAY_CODEDao payCodeDao;
+
   private SimpleDateFormat sdf = new SimpleDateFormat("yyyy/M/d");
+
+  private final static String[] HOSP_LEVEL = new String[] {"基層院所", "醫學中心", "區域醫院", "地區醫院"};
 
   /**
    * 存放在 HashSet 的 id
@@ -52,6 +75,8 @@ public class ImportPayCode {
   @Test
   public void importPayCode() {
     System.out.println("importPayCode");
+
+
     maxId = 163661;
     importExcelToRedis("ICD10",
         "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\醫令\\2-1-2至2-1-3.xlsx", "ORDER");
@@ -65,7 +90,7 @@ public class ImportPayCode {
         "ORDER");
   }
 
-  //@Ignore
+  @Ignore
   @Test
   public void verifyImportDataCorrect() {
     compareExcelToRedis("ICD10",
@@ -157,14 +182,14 @@ public class ImportPayCode {
   private OrderCode getOrderCodyByExcelRow(XSSFRow row) {
     String code = row.getCell(0).getStringCellValue().trim().toLowerCase();
 
-    String descEn = null;
+    String descEn = row.getCell(5).getStringCellValue().trim();
+    String descTw = null;
     if (row.getCell(4) != null) {
-      descEn = row.getCell(4).getStringCellValue();
-      if (descEn != null) {
-        descEn = descEn.trim();
+      descTw = row.getCell(4).getStringCellValue();
+      if (descTw != null) {
+        descTw = descTw.trim();
       }
     }
-    String descTw = row.getCell(5).getStringCellValue().trim();
 
     // addCode1(collectionName, code);
     OrderCode oc = new OrderCode(++maxId, code, descTw, descEn);
@@ -191,6 +216,90 @@ public class ImportPayCode {
       oc.setCon(row.getCell(11).getStringCellValue());
     }
     return oc;
+  }
+
+  private OrderCode getOrderCodyByExcelRowNew(XSSFRow row, SimpleDateFormat sdf, DecimalFormat df)
+      throws ParseException {
+    String code = null;
+    if (row.getCell(0).getCellType() == CellType.NUMERIC) {
+      code = String.valueOf(df.format(row.getCell(3).getNumericCellValue()));
+    } else if (row.getCell(0).getStringCellValue().length() > 0) {
+      code = row.getCell(0).getStringCellValue();
+    } else {
+      System.err.println("error!");
+      return null;
+    }
+
+    String descEn = row.getCell(5).getStringCellValue().trim();
+    String descTw = null;
+    if (row.getCell(4) != null) {
+      descTw = row.getCell(4).getStringCellValue();
+      if (descTw != null) {
+        descTw = descTw.trim();
+      }
+    }
+
+    // addCode1(collectionName, code);
+    OrderCode oc = new OrderCode(++maxId, code, descTw, descEn);
+
+    oc.setP((int) row.getCell(1).getNumericCellValue());
+    oc.setsDate(getDateFromCell(row.getCell(2), sdf, df));
+    if (row.getCell(22) != null) {
+      oc.seteDate(getDateFromCell(row.getCell(22), sdf, df));
+    } else {
+      oc.seteDate(getDateFromCell(row.getCell(3), sdf, df));
+    }
+    System.out.println(oc.getCode() + ":" + oc.getsDate() + "-" + oc.geteDate());
+
+    if (row.getCell(7) != null) {
+      oc.setDetail(row.getCell(7).getStringCellValue());
+    }
+    if (row.getCell(8) != null) {
+      oc.setDetailCat(row.getCell(8).getStringCellValue());
+    }
+    if (row.getCell(9) != null) {
+      String[] level = row.getCell(9).getStringCellValue().split(",");
+      oc.setLevel(getHospLevel(level));
+    }
+    if (row.getCell(10) != null) {
+      oc.setOutIsland(row.getCell(10).getStringCellValue());
+    }
+    return oc;
+  }
+
+  private Date getDateFromCell(XSSFCell cell, SimpleDateFormat sdf, DecimalFormat df)
+      throws ParseException {
+    if (cell != null) {
+      if (cell.getCellType() == CellType.NUMERIC) {
+        double value = cell.getNumericCellValue();
+        if (value > 10000000) {
+          // yyyyMMdd 格式
+          return sdf.parse(String.valueOf(df.format(value)));
+        } else {
+          return cell.getDateCellValue();
+        }
+      } else if (cell.getStringCellValue().length() > 0) {
+        return sdf.parse(cell.getStringCellValue());
+      }
+    }
+    return null;
+  }
+
+  private String getHospLevel(String[] s) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      for (int j = 0; j < HOSP_LEVEL.length; j++) {
+        if (s[i].equals(HOSP_LEVEL[j])) {
+          sb.append(j);
+          sb.append(",");
+          break;
+        }
+      }
+    }
+    if (sb.length() > 0 && sb.charAt(sb.length() - 1) == ',') {
+      sb.deleteCharAt(sb.length() - 1);
+    }
+    return sb.toString();
   }
 
   private void addCodeByThread(WriteToRedisThreadPool pool, String key, CodeBaseLongId cb,
@@ -274,5 +383,195 @@ public class ImportPayCode {
       logger.error("import excel failed", e);
       e.printStackTrace();
     }
+  }
+
+  /**
+   * 匯入醫令代碼(支付代碼)
+   */
+  // @Ignore
+  @Test
+  public void importPayCodeNew() {
+    System.out.println("importPayCode");
+
+    maxId = getMaxId() + 1;
+    System.out.println("maxid=" + maxId);
+    importExcelToRedisNew("ICD10",
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\醫療服務給付項目(1100701執行).xlsx",
+        "ORDER");
+  }
+
+  private int getMaxId() {
+    String key = "ICD10-data";
+    HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
+    Set<String> fields = hashOp.keys(key);
+    int result = -1;
+    for (String field : fields) {
+      int id = Integer.parseInt(field);
+      if (id > result) {
+        result = id;
+      }
+    }
+    return result;
+  }
+
+  public void importExcelToRedisNew(String collectionName, String filename, String category) {
+    // HashOperations<String, String, Object> hashOp = ;
+    // long maxId = redisTemplate.opsForHash().size(collectionName + "-data");
+    // 前面 163661 筆是 ICD10 診斷碼 + 處置碼
+
+    ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
+    HashMap<String, String> keys = getRedisId(collectionName + "-data", category);
+    
+    File file = new File(filename);
+    WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      objectMapper.setSerializationInclusion(Include.NON_NULL);
+      XSSFWorkbook workbook = new XSSFWorkbook(file);
+      HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
+
+      int total = 0;
+      XSSFSheet sheet = workbook.getSheetAt(0);
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+      DecimalFormat df = new DecimalFormat("#");
+      for (int j = 1; j < sheet.getPhysicalNumberOfRows(); j++) {
+        XSSFRow row = sheet.getRow(j);
+        if (row == null || row.getCell(0) == null) {
+          // System.out.println("sheet:" + i + ", row=" + j + " is null");
+          continue;
+        }
+        String code = null;
+        if (row.getCell(0).getCellType() == CellType.NUMERIC) {
+          code = df.format(row.getCell(0).getNumericCellValue());
+        } else {
+          code = row.getCell(0).getStringCellValue().trim().toLowerCase();
+        }
+        if (code.length() == 0) {
+          break;
+        }
+        OrderCode oc = getOrderCodyByExcelRowNew(row, sdf, df);
+        saveOrderCode(oc, keys);
+        total++;
+      }
+      System.out.println("finish total:" + total);
+      workbook.close();
+    } catch (ParseException e) {
+      logger.error("import excel failed", e);
+      e.printStackTrace();
+    } catch (InvalidFormatException e) {
+      logger.error("import excel failed", e);
+      e.printStackTrace();
+    } catch (IOException e) {
+      logger.error("import excel failed", e);
+      e.printStackTrace();
+    }
+  }
+
+  private void saveOrderCode(OrderCode oc, HashMap<String, String> keys) {
+    PAY_CODE payCode = PAY_CODE.convertFromOrderCode(oc);
+
+    String json = null;
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.setSerializationInclusion(Include.NON_NULL);
+    ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
+    try {
+      json = objectMapper.writeValueAsString(oc);
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+    }
+
+    String sId = keys.get(oc.getCode());
+    if (sId == null) {
+      oc.setId(maxId);
+      payCode.setRedisId((int) maxId);
+      maxId++;
+      redisService.putHash("ICD10-data", String.valueOf(oc.getId()), json);
+      redisService.addIndexToRedisIndex("IDC10-index", String.valueOf(oc.getId()), oc.getCode());
+    } else {
+      System.out.println("save " + oc.getCode());
+      oc.setId(Long.parseLong(sId));
+      payCode.setRedisId(Integer.parseInt(sId));
+      redisService.putHash("ICD10-data", sId, json);
+      redisService.addIndexToRedisIndex("IDC10-index", sId, oc.getCode());
+    }
+    savePayCode(payCode);
+  }
+
+  private void savePayCode(PAY_CODE code) {
+    List<PAY_CODE> codes = payCodeDao.findByCode(code.getCode());
+    if (codes == null || codes.size() == 0) {
+      payCodeDao.save(code);
+    } else {
+      boolean isFound = false;
+      for (PAY_CODE old : codes) {
+        if (old.getStartDate().equals(code.getStartDate())) {
+          isFound = true;
+          old.setAtc(code.getAtc());
+          old.setCodeType(code.getCodeType());
+          old.setEndDate(code.getEndDate());
+          old.setStartDate(code.getStartDate());
+          old.setName(code.getName());
+          old.setHospLevel(code.getHospLevel());
+          old.setPoint(code.getPoint());
+          old.setUpdateAt(new Date());
+          old.setRedisId(code.getRedisId());
+          payCodeDao.save(old);
+          break;
+        }
+      }
+      if (!isFound) {
+        payCodeDao.save(code);
+      }
+    }
+  }
+
+  private HashMap<String, String> getRedisId(String key, String cat) {
+    HashMap<String, String> result = new HashMap<String, String>();
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.setSerializationInclusion(Include.NON_NULL);
+    List<Object> list = redisTemplate.opsForHash().values(key);
+    System.out.println(key + " size:" + list.size());
+    for (Object object : list) {
+      try {
+        String value = (String) object;
+        if (value.indexOf("\"category\":\"" + cat + "\"") < 0) {
+          continue;
+        }
+        if (value.indexOf("detailCat") > 0 || value.indexOf("sDate") > 0
+            || value.indexOf("level") > 0 || value.indexOf("law") > 0) {
+          OrderCode oc = mapper.readValue(value, OrderCode.class);
+          if (cat.equals(oc.getCategory())) {
+            result.put(oc.getCode(), oc.getId().toString());
+          }
+        } else {
+          CodeBaseLongId cb = mapper.readValue(value, CodeBaseLongId.class);
+          if (cat.equals(cb.getCategory())) {
+            result.put(cb.getCode(), cb.getId().toString());
+          }
+        }
+      } catch (JsonMappingException e) {
+        e.printStackTrace();
+      } catch (JsonProcessingException e) {
+        e.printStackTrace();
+      }
+    }
+    return result;
+  }
+
+  private boolean saveExistToFile(String collectionName, String catogory) {
+    HashMap<String, String> keys = getRedisId(collectionName + "-data", "ORDER");
+    try {
+      BufferedWriter bw = new BufferedWriter(new FileWriter("ORDER.txt"));
+      for (String string : keys.keySet()) {
+        bw.write(string);
+        bw.write(",");
+        bw.write(keys.get(string));
+        bw.newLine();
+      }
+      bw.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return keys.keySet().size() > 0;
   }
 }

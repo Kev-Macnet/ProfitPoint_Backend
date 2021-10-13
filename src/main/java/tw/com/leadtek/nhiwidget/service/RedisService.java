@@ -54,7 +54,7 @@ public class RedisService {
         }
         if (ss.length > 1) {
           boolean needContinue = false;
-          for(int i=1;i<ss.length;i++) {
+          for (int i = 1; i < ss.length; i++) {
             if (lowerCase.indexOf(ss[i]) < 0) {
               needContinue = true;
               break;
@@ -66,22 +66,23 @@ public class RedisService {
         }
         if (string.indexOf("\"p\"") > 0) {
           OrderCode oc = mapper.readValue(string, OrderCode.class);
-          if (cat!= null && !cat.toUpperCase().equals(oc.getCategory())) {
+          if (cat != null && !cat.toUpperCase().equals(oc.getCategory())) {
             continue;
           }
+
           // 將支付點數放在 DescEn 欄位
           oc.setDescEn(String.valueOf(oc.getP()));
           json = new JsonSuggestion(oc);
         } else {
           CodeBaseLongId cb = mapper.readValue(string, CodeBaseLongId.class);
-          if (cat!= null && !cat.toUpperCase().equals(cb.getCategory())) {
+          if (cat != null && !cat.toUpperCase().equals(cb.getCategory())) {
             continue;
           }
           json = new JsonSuggestion(cb);
         }
         // System.out.println("name=" + cb.getCode() + "," + cb.getDesc() + "," + cb.getDescEn());
-        
-        // System.out.println(string); 
+
+        // System.out.println(string);
         // addBold(json, q);
         // System.out.println("name=" + json.getId() + "," + json.getLabel() + "," +
         // json.getValue());
@@ -117,5 +118,65 @@ public class RedisService {
     sb.insert(index, "<b>");
     System.out.println("after bold:" + sb.toString());
     return sb.toString();
+  }
+
+  /**
+   * 將 code 依2, 3, 4... 個字元塞到 redis,以達到 search suggestion功能.
+   * 
+   * @param op
+   * @param prefix
+   * @param index
+   * @param code
+   * @return
+   */
+  public int addIndexToRedisIndex(String prefix, String index, String code) {
+    ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
+    int result = 0;
+    for (int i = 2; i <= code.length(); i++) {
+      String key = prefix + ":" + code.substring(0, i).toLowerCase();
+      Long oldCount = op.zCard(key);
+      if (oldCount == null || oldCount.longValue() == 0) {
+        System.out.println("add " + key + " index=" + index);
+        op.add(key, index, 0.0);
+        result++;
+      }
+    }
+    return result;
+  }
+
+  public void removeIndexToRedisIndex(String prefix, String name, int removeId) {
+    ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
+    for (int i = 2; i <= name.length(); i++) {
+      String key = name.substring(0, i);
+      Set<Object> set = op.range(prefix + ":" + key, 0, -1);
+      for (Object object : set) {
+        if (Integer.parseInt((String) object) == removeId) {
+          op.remove(prefix + ":" + key, object);
+        }
+      }
+    }
+  }
+
+  public int getMaxId() {
+    String key = "ICD10-data";
+    HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
+    // Set<Object> rangeSet = zsetOp.range(indexKey + searchValue, 0, -1);
+    Set<String> fields = hashOp.keys(key);
+    int result = -1;
+    for (String field : fields) {
+      int id = Integer.parseInt(field);
+      if (id > result) {
+        result = id;
+      }
+    }
+    return result;
+  }
+  
+  public void putHash(String key, String name, String value) {
+    redisTemplate.opsForHash().put(key, name, value);
+  }
+  
+  public void deleteHash(String key, String name) {
+    redisTemplate.opsForHash().delete(key, name);
   }
 }
