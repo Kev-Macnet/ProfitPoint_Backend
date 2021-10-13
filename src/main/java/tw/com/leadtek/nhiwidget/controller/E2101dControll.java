@@ -259,7 +259,7 @@ public class E2101dControll {
     }
 
     
-  //==== 石膏繃帶費 (Plaster bandage fee)
+  //==== 石膏繃帶費 (Plaster bandage fee, P57)
     @ApiOperation(value="10-4.09 石膏繃帶費設定(get)", notes="", position=9)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtPlasterBandageFeeDto.class)
@@ -359,7 +359,7 @@ public class E2101dControll {
     }
     
     
-    //==== 麻醉費設定 Anesthesia fee
+    //==== 麻醉費設定 Anesthesia fee, P58
     @ApiOperation(value="10-4.13 麻醉費設定(get)", notes="", position=13)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtAnesthesiaFeeDto.class)
@@ -386,7 +386,7 @@ public class E2101dControll {
     public ResponseEntity<?> addPaymentAnesthesiafee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @RequestBody PtAnesthesiaFeePl params) throws Exception {
-        
+        System.out.println("jwt="+jwt);
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);

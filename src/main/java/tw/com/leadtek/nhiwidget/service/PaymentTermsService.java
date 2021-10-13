@@ -35,7 +35,28 @@ public class PaymentTermsService {
         java.util.Map<String, Object> validationMap = Utility.jwtValidate(jwt);
         System.out.println(validationMap);
         if ((int)validationMap.get("status") == 200) {
-            if (findUserRole(validationMap.get("userName").toString())<roleNo) {
+            String role = findUserRole(validationMap.get("userName").toString());
+            // "A: MIS主管, B: 行政主管, C: 申報主管, D: coding人員/申報人員, E: 醫護人員, Z: 原廠開發者" 
+            java.util.List<String> lstRole = null; // = new java.util.ArrayList<String>();
+            if (roleNo==1) {
+                String arr[] = {"Z"};
+                lstRole = java.util.Arrays.asList(arr);
+            } else if (roleNo==2) {
+                String arr[] = {"A"};
+                lstRole = java.util.Arrays.asList(arr);
+            } else if (roleNo==3) {
+                String arr[] = {"A","Z"};
+                lstRole = java.util.Arrays.asList(arr);
+            } else if (roleNo==4) {
+                String arr[] = {"A","C","Z"};
+                lstRole = java.util.Arrays.asList(arr);
+            } else if (roleNo>=5) {
+                String arr[] = {"A","B","C","D","E","Z"};
+                lstRole = java.util.Arrays.asList(arr);
+            } else {
+                lstRole = new java.util.ArrayList<String>();
+            }
+            if (listStrIndexOf(role, lstRole) < 0) {
                 validationMap.put("status", 401);
                 validationMap.put("message", "權限不足!");
             }
@@ -43,7 +64,21 @@ public class PaymentTermsService {
         return validationMap;
     }
     
-    private int findUserRole(String userName) {
+    private String findUserRole(String userName) {
         return paymentTermsDao.findUserRole(userName);
     }
+    
+    private int listStrIndexOf(String key, java.util.List<String> lstStr) {
+        int ret = -1;
+        int idx = 0;
+        for (String str : lstStr) {
+            if (key.equals(str)) {
+                ret = idx;
+                break;
+             }
+            idx++;
+        }
+        return (ret);
+     }
+
 }

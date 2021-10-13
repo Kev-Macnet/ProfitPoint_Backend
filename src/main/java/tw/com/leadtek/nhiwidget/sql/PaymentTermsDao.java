@@ -551,17 +551,18 @@ public class PaymentTermsDao {
         sql = String.format(sql, userName);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
+            // A: MIS主管, B: 行政主管, C: 申報主管, D: coding人員/申報人員, E: 醫護人員, Z: 原廠開發者
             return Utility.mapLowerCase(lst.get(0));
         } else {
             return null;
         }
     }
     
-    public int findUserRole(String userName) {
-        int ret = 0;
+    public String findUserRole(String userName) {
+        String ret = "x";
         java.util.Map<String, Object> user = findUser(userName);
         if (user != null) {
-            ret = (int)user.get("role");
+            ret = user.get("role").toString();
         }
         return ret;
     }

@@ -57,10 +57,12 @@ public class PtAnesthesiaFeeService {
             if (params.getLst_division() != null) {
                 paymentTermsDao.addLimDivision(ptId, params.getLst_division());
             }
-            ptAnesthesiaFeeDao.add(ptId, params.getInclude_drg_no()|0, params.getCoexist_nhi_no()|0, 
-                    params.getOver_times()|0, params.getOver_times_n()|0, params.getOver_times_first_n()|0,
-                    params.getOver_times_next_n()|0, params.getLim_division()|0);
-//            include_drg_no, coexist_nhi_no, over_times, over_times_n, over_times_first_n, over_times_next_n, lim_division
+//            ptAnesthesiaFeeDao.add(ptId, params.getInclude_drg_no()|0, params.getCoexist_nhi_no()|0, 
+//                    params.getOver_times()|0, params.getOver_times_n()|0, params.getOver_times_first_n()|0,
+//                    params.getOver_times_next_n()|0, params.getLim_division()|0);
+            ptAnesthesiaFeeDao.add(ptId, params.getInclude_drg_no_enable()|0, params.getCoexist_nhi_no_enable()|0, 
+                    params.getOver_times_enable()|0, params.getOver_times_n()|0, params.getOver_times_first_n()|0, params.getOver_times_next_n()|0, 
+                    params.getLim_division_enable()|0);
         }
         return ptId;
     }
@@ -87,9 +89,9 @@ public class PtAnesthesiaFeeService {
                     paymentTermsDao.addLimDivision(ptId, params.getLst_division());
                 }
                 
-                ptAnesthesiaFeeDao.update(ptId, params.getInclude_drg_no()|0, params.getCoexist_nhi_no()|0, 
-                        params.getOver_times()|0, params.getOver_times_n()|0, params.getOver_times_first_n()|0,
-                        params.getOver_times_next_n()|0, params.getLim_division()|0);
+                ptAnesthesiaFeeDao.update(ptId, params.getInclude_drg_no_enable()|0, params.getCoexist_nhi_no_enable()|0, 
+                        params.getOver_times_enable()|0, params.getOver_times_n()|0, params.getOver_times_first_n()|0, params.getOver_times_next_n()|0, 
+                        params.getLim_division_enable()|0);
             }
         }
         return ret;
