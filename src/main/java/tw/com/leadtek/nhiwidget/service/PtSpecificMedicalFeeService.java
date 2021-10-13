@@ -49,8 +49,9 @@ public class PtSpecificMedicalFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptSpecificMedicalFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getInterval_nday()|0, params.getMax_times()|0);
-//            exclude_nhi_no, interval_nday, max_times
+//            ptSpecificMedicalFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getInterval_nday()|0, params.getMax_times()|0);
+            ptSpecificMedicalFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                    params.getMax_times_enable()|0, params.getMax_times()|0);
         }
         return ptId;
     }
@@ -68,7 +69,8 @@ public class PtSpecificMedicalFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptSpecificMedicalFeeDao.update(ptId, params.getExclude_nhi_no()|0, params.getInterval_nday()|0, params.getMax_times()|0);
+                ptSpecificMedicalFeeDao.update(ptId, params.getExclude_nhi_no_enable()|0, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                        params.getMax_times_enable()|0, params.getMax_times()|0);
             }
         }
         return ret;

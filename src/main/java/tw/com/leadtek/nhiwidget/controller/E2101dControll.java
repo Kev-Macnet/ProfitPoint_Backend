@@ -459,7 +459,7 @@ public class E2101dControll {
     }
     
     
-    //==== 特定診療檢查費 Specific Medical fee
+    //==== 特定診療檢查費 Specific Medical fee, P60
     @ApiOperation(value="10-4.17 特定診療檢查費設定(get)", notes="", position=17)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtSpecificMedicalFeeDto.class)

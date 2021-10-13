@@ -21,7 +21,7 @@ public class PtSpecificMedicalFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, EXCLUDE_NHI_NO, INTERVAL_NDAY, MAX_TIMES\r\n"
+        sql = "Select PT_ID, EXCLUDE_NHI_NO_ENABLE, INTERVAL_NDAY_ENABLE, INTERVAL_NDAY, MAX_TIMES_ENABLE, MAX_TIMES\r\n"
                 + "From PT_SPECIFIC_MEDICAL_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -44,12 +44,14 @@ public class PtSpecificMedicalFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int exclude_nhi_no, int interval_nday, int max_times) {
+    //pt_id, exclude_nhi_no_enable, interval_nday_enable, interval_nday, max_times_enable, max_times
+    public int add(long ptId, int exclude_nhi_no_enable, int interval_nday_enable, int interval_nday, 
+            int max_times_enable, int max_times) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_SPECIFIC_MEDICAL_FEE(PT_ID, EXCLUDE_NHI_NO, INTERVAL_NDAY, MAX_TIMES)\r\n"
-                + "Values(%d, %d, %d, %d)";
-        sql = String.format(sql, ptId, exclude_nhi_no, interval_nday, max_times);
+                + "PT_SPECIFIC_MEDICAL_FEE(PT_ID, EXCLUDE_NHI_NO_ENABLE, INTERVAL_NDAY_ENABLE, INTERVAL_NDAY, MAX_TIMES_ENABLE, MAX_TIMES)\r\n"
+                + "Values(%d, %d, %d, %d, %d, %d)";
+        sql = String.format(sql, ptId, exclude_nhi_no_enable, interval_nday_enable, interval_nday, max_times_enable, max_times);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,14 +61,17 @@ public class PtSpecificMedicalFeeDao {
         }
     }
     
-    public int update(long ptId, int exclude_nhi_no, int interval_nday, int max_times) {
+    public int update(long ptId, int exclude_nhi_no_enable, int interval_nday_enable, int interval_nday, 
+            int max_times_enable, int max_times) {
         String sql;
         sql = "Update PT_SPECIFIC_MEDICAL_FEE\r\n"
-                + "Set EXCLUDE_NHI_NO=%d, \r\n"
+                + "Set EXCLUDE_NHI_NO_ENABLE=%d, \r\n"
+                + "    INTERVAL_NDAY_ENABLE=%d, \r\n"
                 + "    INTERVAL_NDAY=%d, \r\n"
-                + "    MAX_TIMES=%d\r\n"
+                + "    MAX_TIMES_ENABLE=%d, \r\n"
+                + "    MAX_TIMES=%d \r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, exclude_nhi_no, interval_nday, max_times, ptId);
+        sql = String.format(sql, exclude_nhi_no_enable, interval_nday_enable, interval_nday, max_times_enable, max_times, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
