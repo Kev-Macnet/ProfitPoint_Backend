@@ -1,5 +1,6 @@
 package tw.com.leadtek.nhiwidget.sql;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ public class PtInjectionFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, INTERVAL_NDAY, EXCLUDE_NHI_NO, MAX_INPATIENT\r\n"
+        sql = "Select PT_ID, INTERVAL_NDAY_ENABLE, INTERVAL_NDAY, EXCLUDE_NHI_NO_ENABLE, MAX_INPATIENT_ENABLE, MAX_INPATIENT\r\n"
                 + "From PT_INJECTION_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -30,7 +31,8 @@ public class PtInjectionFeeDao {
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
         } else {
-            return new java.util.HashMap<String, Object>();
+//            return new java.util.HashMap<String, Object>();
+            return Collections.emptyMap();
         }
     }
     
@@ -44,12 +46,13 @@ public class PtInjectionFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int interval_nday, int exclude_nhi_no, int max_inpatient) {
+    //pt_id, interval_nday_enable, interval_nday, exclude_nhi_no_enable, max_inpatient_enable, max_inpatient
+    public int add(long ptId, int interval_nday_enable, int interval_nday, int exclude_nhi_no_enable, int max_inpatient_enable, int max_inpatient) {
         String sql;
         sql = "Insert into\r\n"
-                + "PT_INJECTION_FEE(PT_ID, INTERVAL_NDAY, EXCLUDE_NHI_NO, MAX_INPATIENT)\r\n"
-                + "Values(%d, %d, %d, %d)";
-        sql = String.format(sql, ptId, interval_nday, exclude_nhi_no, max_inpatient);
+                + "PT_INJECTION_FEE(PT_ID, INTERVAL_NDAY_ENABLE, INTERVAL_NDAY, EXCLUDE_NHI_NO_ENABLE, MAX_INPATIENT_ENABLE, MAX_INPATIENT)\r\n"
+                + "Values(%d, %d, %d, %d, %d, %d)";
+        sql = String.format(sql, ptId, interval_nday_enable, interval_nday, exclude_nhi_no_enable, max_inpatient_enable, max_inpatient);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,14 +62,16 @@ public class PtInjectionFeeDao {
         }
     }
     
-    public int update(long ptId, int interval_nday, int exclude_nhi_no, int max_inpatient) {
+    public int update(long ptId, int interval_nday_enable, int interval_nday, int exclude_nhi_no_enable, int max_inpatient_enable, int max_inpatient) {
         String sql;
         sql = "Update PT_INJECTION_FEE\r\n"
-                + "Set INTERVAL_NDAY=%d, \r\n"
-                + "    EXCLUDE_NHI_NO=%d, \r\n"
-                + "    MAX_INPATIENT=%d\r\n"
+                + "Set INTERVAL_NDAY_ENABLE=%d, \r\n"
+                + "    INTERVAL_NDAY=%d, \r\n"
+                + "    EXCLUDE_NHI_NO_ENABLE=%d, \r\n"
+                + "    MAX_INPATIENT_ENABLE=%d, \r\n"
+                + "    MAX_INPATIENT=%d \r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, interval_nday, exclude_nhi_no, max_inpatient, ptId);
+        sql = String.format(sql, interval_nday_enable, interval_nday, exclude_nhi_no_enable, max_inpatient_enable, max_inpatient, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

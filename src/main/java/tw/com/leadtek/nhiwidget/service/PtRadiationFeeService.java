@@ -57,9 +57,11 @@ public class PtRadiationFeeService {
             if (params.getLst_ntf_nhi_no() != null) {
                 paymentTermsDao.addNotifyNhiNo(ptId, params.getLst_ntf_nhi_no());
             }
-            ptRadiationFeeDao.add(ptId, params.getNotify_nhi_no()|0, params.getExclude_nhi_no()|0, 
-                                        params.getCoexist_nhi_no()|0, params.getMax_inpatient()|0);
-//            add(long ptId, int notify_nhi_no, int exclude_nhi_no, int coexist_nhi_no, int max_inpatient)
+//            ptRadiationFeeDao.add(ptId, params.getNotify_nhi_no()|0, params.getExclude_nhi_no()|0, 
+//                                        params.getCoexist_nhi_no()|0, params.getMax_inpatient()|0);
+            ptRadiationFeeDao.add(ptId, params.getNotify_nhi_no_enable()|0, params.getExclude_nhi_no_enable()|0, 
+                    params.getCoexist_nhi_no_enable()|0, 
+                    params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0);
         }
         return ptId;
     }
@@ -85,8 +87,9 @@ public class PtRadiationFeeService {
                     paymentTermsDao.deleteNotifyNhiNo(ptId);
                     paymentTermsDao.addNotifyNhiNo(ptId, params.getLst_ntf_nhi_no());
                 }
-                ret += ptRadiationFeeDao.update(ptId, params.getNotify_nhi_no()|0, params.getExclude_nhi_no()|0, 
-                                               params.getCoexist_nhi_no()|0, params.getMax_inpatient()|0);
+                ret += ptRadiationFeeDao.update(ptId, params.getNotify_nhi_no_enable()|0, params.getExclude_nhi_no_enable()|0, 
+                        params.getCoexist_nhi_no_enable()|0, 
+                        params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0);
             }
         }
         return ret;
