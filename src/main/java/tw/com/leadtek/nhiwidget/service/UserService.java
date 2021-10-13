@@ -249,7 +249,7 @@ public class UserService {
     }
     department.setUpdateAt(new Date());
     DEPARTMENT result = departmentDao.save(department);
-    
+    departments.put(result.getId(), result);
     return result;
   }
 
@@ -279,9 +279,9 @@ public class UserService {
     if ((funcTypeC != null && !"不分科".equals(funcTypeC)) || (funcType != null && !"00".equals(funcType))) {
       Long depId = null;
       if (funcType != null) {
-        depId = getDepartmentIdByName(funcTypeC);
-      } else if (funcTypeC != null) {
         depId = getDepartmentIdByCode(funcType);
+      } else if (funcTypeC != null) {
+        depId = getDepartmentIdByName(funcTypeC);
       }
       if (depId < 0) {
         return result;

@@ -101,6 +101,9 @@ public class GenClassField {
     if ("DATE".equals(type)) {
       return "Date";
     }
+    if ("DOUBLE".equals(type)) {
+      return "Double";
+    }
     return "Unknown";
   }
 

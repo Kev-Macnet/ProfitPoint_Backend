@@ -57,7 +57,7 @@ public class ImportDRG {
 
   private List<String> started = null;
 
-  @Ignore
+  //@Ignore
   @Test
   public void importDRG() {
     importDRGDep("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除110年7月至12月.xlsx",
@@ -65,26 +65,36 @@ public class ImportDRG {
     String[] sheetNames = new String[2];
     sheetNames[0] = "第一階段導入";
     sheetNames[1] = "第二階段導入";
+    
     started = new ArrayList<String>();
     importDRGStarted(
         "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
-        sheetNames, "20200701", "20201231");
-    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除109年7至12月.xlsx",
-        "109年7至12月 3.4版 TW-DRGs權重表", "20200701", "20201231");
+        sheetNames, "20200101", "20200630");
+    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+        "109年1至6月 3.4版 TW-DRGs權重表", "20200101", "20200630");
+    // ====================================
+//    started = new ArrayList<String>();
+//    importDRGStarted(
+//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+//        sheetNames, "20200701", "20201231");
+//    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除109年7至12月.xlsx",
+//        "109年7至12月 3.4版 TW-DRGs權重表", "20200701", "20201231");
 
-    started = new ArrayList<String>();
-    importDRGStarted(
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
-        sheetNames, "20210101", "20210630");
-    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除110年1月至6月.xlsx",
-        "110年1至6月 3.4版 TW-DRGs權重表", "20210101", "20210630");
+    // ====================================
+//    started = new ArrayList<String>();
+//    importDRGStarted(
+//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+//        sheetNames, "20210101", "20210630");
+//    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除110年1月至6月.xlsx",
+//        "110年1至6月 3.4版 TW-DRGs權重表", "20210101", "20210630");
 
-    started = new ArrayList<String>();
-    importDRGStarted(
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
-        sheetNames, "20210701", "20211231");
-    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除110年7月至12月.xlsx",
-        "110年7至12月 3.4版 TW-DRGs權重表", "20210701", "20211231");
+    // ====================================
+//    started = new ArrayList<String>();
+//    importDRGStarted(
+//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+//        sheetNames, "20210701", "20211231");
+//    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除110年7月至12月.xlsx",
+//        "110年7至12月 3.4版 TW-DRGs權重表", "20210701", "20211231");
   }
 
   /**
@@ -166,6 +176,7 @@ public class ImportDRG {
   }
 
   private void importDRGFromSheet(XSSFSheet sheet, Date startDate, Date endDate) {
+    System.out.println("importDRGFromSheet:" + startDate + "," + endDate);
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       XSSFRow row = sheet.getRow(i);
       if (row == null || row.getCell(2) == null) {
@@ -184,7 +195,7 @@ public class ImportDRG {
         System.out.println("DRG DEP not found:" + code);
         drg.setDep("M");
       }
-      List<DRG_CODE> list = drgDao.findByCodeAndStartDayAndEndDay(code, startDate, endDate);
+      List<DRG_CODE> list = drgDao.findByCodeAndStartDateAndEndDate(code, startDate, endDate);
       if (list != null && list.size() > 0) {
         // 之前有匯過
         System.out.println("duplicate:" + code);
@@ -214,7 +225,7 @@ public class ImportDRG {
       // System.out.println("code=" + drg.getCode() + ", rw=" + drg.getRw()+ ", mdc=" + drg.getMdc()
       // + ", case20:"
       // + row.getCell(4).getRawValue());
-      if (row.getCell(4).getCellType() == CellType.STRING
+      if (row.getCell(4) != null && row.getCell(4).getCellType() == CellType.STRING
           && ("＊".equals(row.getCell(4).getStringCellValue())
               || "*".equals(row.getCell(4).getStringCellValue()))) {
         drg.setCase20(1);
@@ -225,14 +236,15 @@ public class ImportDRG {
       drg.setAvgInDay(getNumericCell(row.getCell(6)));
       drg.setLlimit(getNumericCell(row.getCell(7)));
       drg.setUlimit(getNumericCell(row.getCell(8)));
-      drg.setStartDay(startDate);
-      drg.setEndDay(endDate);
+      drg.setStartDate(startDate);
+      drg.setEndDate(endDate);
       if (isDRGFound(code, started)) {
         drg.setStarted(1);
       } else {
         drg.setStarted(0);
       }
       drgDao.save(drg);
+      System.out.println("save:" + drg.getCode());
     }
   }
 
@@ -336,7 +348,7 @@ public class ImportDRG {
     System.out.println(mr.getApplYm() + ":" + value);
 
     List<DRG_CODE> drgList = drgDao
-        .findByCodeAndStartDayLessThanEqualAndEndDayGreaterThanEqual(mr.getDrgCode(), date, date);
+        .findByCodeAndStartDateLessThanEqualAndEndDateGreaterThanEqual(mr.getDrgCode(), date, date);
     if (drgList == null || drgList.size() == 0) {
       System.out.println("DRG " + mr.getDrgCode() + " not found in " + date);
       return;
@@ -395,11 +407,11 @@ public class ImportDRG {
   @SuppressWarnings("unchecked")
   private Object getParameterValue(String key, Date date) {
     List<ParameterValue> list =
-        (List<ParameterValue>) (parameters.getParameterValue(key, 10000, 0).get("value"));
+        (List<ParameterValue>) (parameters.getParameterValue(key, null, null, null, null, 10000, 0).getData());
 
     for (ParameterValue p : list) {
-      if (date.getTime() >= p.getStartDate().getTime()
-          && date.getTime() <= p.getEndDate().getTime()) {
+      if (date.getTime() >= p.getSdate().getTime()
+          && date.getTime() <= p.getEdate().getTime()) {
         return p.getValue();
       }
     }
@@ -415,6 +427,7 @@ public class ImportDRG {
     return false;
   }
 
+  @Ignore
   @Test
   public void updateMRTDotData() {
     List<Map<String, Object>> ipds = logDataDao.find_IPD_Dot();

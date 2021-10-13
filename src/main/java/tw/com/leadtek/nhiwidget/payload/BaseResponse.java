@@ -17,10 +17,10 @@ public class BaseResponse implements Serializable {
   public final static String ERROR = "error";
 
   @ApiModelProperty(value = "結果", example = SUCCESS, required = true)
-  private String result = SUCCESS;
+  protected String result = SUCCESS;
 
   @ApiModelProperty(value = "訊息", example = "錯誤訊息", required = false)
-  private String message;
+  protected String message;
 
   public BaseResponse() {}
 

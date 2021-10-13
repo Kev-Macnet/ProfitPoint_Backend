@@ -120,6 +120,9 @@ public class GenerateDocumentFromDB {
     for (int i = 0; i < list.size(); i++) {
       // System.out.println("list[" + i + "]="+ list.get(i));
       GenClassFieldXMLTag field = GenClassFieldXMLTag.sqlToClass(list.get(i));
+      if (field == null) {
+        continue;
+      }
       if (primaryKey != null && primaryKey.equals(field.getName())) {
         field.setPrimaryKey(true);
       }

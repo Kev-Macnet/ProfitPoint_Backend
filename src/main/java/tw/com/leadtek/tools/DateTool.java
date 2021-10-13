@@ -10,6 +10,11 @@ import java.util.Date;
 public class DateTool {
 
   /**
+   * 日期格式
+   */
+  public final static String SDF = "yyyy/MM/dd";
+  
+  /**
    * 將西元年月轉成民國年月
    * 
    * @param year ex:20210223

@@ -209,7 +209,6 @@ public class UserController extends BaseController {
     return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getId(), userDetails.getUsername(),
         userDetails.getDisplayName()));
   }
-  
 
   /**
    * 取得同義詞/代碼表資料

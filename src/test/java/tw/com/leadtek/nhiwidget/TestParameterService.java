@@ -43,7 +43,6 @@ public class TestParameterService {
   @Autowired
   private PARAMETERSDao pDao;
 
-
   // 初始化系統參數
   @Ignore
   @Test
@@ -140,8 +139,11 @@ public class TestParameterService {
 
   @Test
   public void importFromExcel() {
-    importFromExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\PARAMETERS.xlsx", "參數設定",
-        1);
+    importFromExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\PARAMETERS.xlsx", "參數設定", 1);
+//    System.out.println(DATA_TYPE.NULL + "=" + DATA_TYPE.NULL.ordinal());
+//    System.out.println(DATA_TYPE.INT + "=" + DATA_TYPE.INT.ordinal());
+//    System.out.println(DATA_TYPE.FLOAT + "=" + DATA_TYPE.FLOAT.ordinal());
+//    System.out.println(DATA_TYPE.STRING + "=" + DATA_TYPE.STRING.ordinal());
   }
 
   public void importFromExcel(String filename, String sheetName, int titleRow) {

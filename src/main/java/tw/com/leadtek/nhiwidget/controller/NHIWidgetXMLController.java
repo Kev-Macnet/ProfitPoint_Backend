@@ -118,7 +118,6 @@ public class NHIWidgetXMLController extends BaseController {
     try {
       String filename = (ym == null) ? sdate + ".xml" : ym + ".xml";
       int rows = 0;
-      System.out.println("dataFormat=" + dataFormat);
       if (ym != null && ym.length() > 4) {
         String op = ("10".equals(dataFormat)) ? "OP" : "IP";
         String yearMonth = String.valueOf(Integer.parseInt(ym) - 191100);
@@ -240,10 +239,10 @@ public class NHIWidgetXMLController extends BaseController {
    * @param model
    * @return
    */
-  @ApiOperation(value = "取得指定日期區間的病歷", notes = "取得指定日期區間的病歷")
+  @ApiOperation(value = "取得指定條件的病歷", notes = "取得指定條件的病歷")
   @GetMapping("/nhixml/mr")
   public ResponseEntity<Map<String, Object>> getMR(
-      @ApiParam(name = "allMatch", value = "單一分項內容如有逗號，須/不須完全符合，Y/N",
+      @ApiParam(name = "allMatch", value = "單一分項內容如有空格 須/不須完全符合，Y/N",
           example = "N") @RequestParam(required = false) String allMatch,
       @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
           example = "2021/03/15") @RequestParam(required = false) String sdate,
@@ -265,6 +264,14 @@ public class NHIWidgetXMLController extends BaseController {
           example = "王大明") @RequestParam(required = false) String prsnName,
       @ApiParam(name = "prsnId", value = "醫護代碼",
           example = "A123456789") @RequestParam(required = false) String prsnId,
+      @ApiParam(name = "pharName", value = "藥師名",
+        example = "王小明") @RequestParam(required = false) String pharName,
+      @ApiParam(name = "pharId", value = "藥師代碼",
+        example = "A123456789") @RequestParam(required = false) String pharId,
+      @ApiParam(name = "patientName", value = "病患名稱",
+        example = "王小明") @RequestParam(required = false) String patientName,
+      @ApiParam(name = "patientId", value = "病患身分證字號",
+        example = "A123456789") @RequestParam(required = false) String patientId,
       @ApiParam(name = "applId", value = "標記人員代碼",
           example = "A123456789") @RequestParam(required = false) String applId,
       @ApiParam(name = "applName", value = "標記人員名稱",
@@ -277,10 +284,10 @@ public class NHIWidgetXMLController extends BaseController {
           example = "048201") @RequestParam(required = false) String drg,
       @ApiParam(name = "drgSection", value = "DRG落點區間",
           example = "B1") @RequestParam(required = false) String drgSection,
-      @ApiParam(name = "orderCode", value = "健保碼",
+      @ApiParam(name = "orderCode", value = "支付標準代碼",
           example = "03001K") @RequestParam(required = false) String orderCode,
-      @ApiParam(name = "drugUse", value = "健保碼用量",
-          example = "03001K") @RequestParam(required = false) String drugUse,
+      @ApiParam(name = "drugUse", value = "用量",
+          example = "1") @RequestParam(required = false) String drugUse,
       @ApiParam(name = "inhCode", value = "院內碼",
           example = "03001K") @RequestParam(required = false) String inhCode,
       @ApiParam(name = "inhCodeDrugUse", value = "院內碼用量",
@@ -289,16 +296,16 @@ public class NHIWidgetXMLController extends BaseController {
           example = "V20.0") @RequestParam(required = false) String icdAll,
       @ApiParam(name = "icdCMMajor", value = "主診斷ICD",
           example = "V20.0") @RequestParam(required = false) String icdCMMajor,
-      @ApiParam(name = "icdCMSecondary", value = "次診斷ICD",
-          example = "V20.0") @RequestParam(required = false) String icdCMSecondary,
+      @ApiParam(name = "icdCMSec", value = "次診斷ICD",
+          example = "V20.0") @RequestParam(required = false) String icdCMSec,
       @ApiParam(name = "icdPCS", value = "處置ICD",
           example = "V20.0") @RequestParam(required = false) String icdPCS,
       @ApiParam(name = "qrObject",
           value = "品質獎勵計畫收案對象") @RequestParam(required = false) String qrObject,
       @ApiParam(name = "qrSdate",
-          value = "品質獎勵計畫收案對象") @RequestParam(required = false) String qrSdate,
+          value = "品質獎勵計畫收案啟始日") @RequestParam(required = false) String qrSdate,
       @ApiParam(name = "qrEdate",
-          value = "品質獎勵計畫收案對象") @RequestParam(required = false) String qrEdate,
+          value = "品質獎勵計畫收案結束日") @RequestParam(required = false) String qrEdate,
       @ApiParam(name = "status",
           value = "病歷狀態：-3:疾病分類完成, -2:待確認，-1:疑問標示，0:待處理，1:無需變更，2:優化完成，3:評估不調整",
           example = "1") @RequestParam(required = false) String status,
@@ -306,7 +313,7 @@ public class NHIWidgetXMLController extends BaseController {
           value = "核刪代碼") @RequestParam(required = false) String deductedCode,
       @ApiParam(name = "deductedOrder",
           value = "核刪醫令") @RequestParam(required = false) String deductedOrder,
-      @ApiParam(name = "all", value = "全站搜尋/關鍵字",
+      @ApiParam(name = "all", value = "全站/其他搜尋/關鍵字",
           example = "0") @RequestParam(required = false) String all,
       @ApiParam(name = "perPage", value = "每頁顯示筆數",
           example = "20") @RequestParam(required = false) Integer perPage,
@@ -340,13 +347,13 @@ public class NHIWidgetXMLController extends BaseController {
     
     logService.updateLogSearch("system", allMatch, sdate, edate, minPoints, maxPoints, dataFormat, funcType, prsnId,
             prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, orderCode, inhCode,
-            drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSecondary, icdPCS, qrObject, qrSdate,
+            drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSec, icdPCS, qrObject, qrSdate,
             qrEdate, status, deductedCode, deductedOrder);
 
     Map<String, Object> list =
         xmlService.getMR(allMatch, startDate, endDate, applYM, minPoints, maxPoints, dataFormat, funcType, prsnId,
             prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, orderCode, inhCode,
-            drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSecondary, icdPCS, qrObject, qrSdate,
+            drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSec, icdPCS, qrObject, qrSdate,
             qrEdate, status, deductedCode, deductedOrder, all, iPerPage, iPage);
     if (list.size() == 0) {
       return ResponseEntity.badRequest().body(returnMRError("無符合條件資料"));

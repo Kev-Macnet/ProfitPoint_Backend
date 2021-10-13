@@ -36,8 +36,8 @@ public class SwaggerConfig<RequestHandler> {
     private ApiInfo innerApiInfo() {
         return new ApiInfoBuilder()
                 .title("健保申保最佳化系統 API") //大標題
-                .description("RESTful APIs") //描述
-                .version("2.0.0")  //版本
+                //.description("RESTful APIs") //描述
+                .version("0.0.2")  //版本
                 .build();
     }
     
