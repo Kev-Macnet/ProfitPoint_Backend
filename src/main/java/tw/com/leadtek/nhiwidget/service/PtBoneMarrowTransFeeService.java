@@ -57,8 +57,8 @@ public class PtBoneMarrowTransFeeService {
             if (params.getLst_division() != null) {
                 paymentTermsDao.addLimDivision(ptId, params.getLst_division());
             }
-            ptBoneMarrowTransFeeDao.add(ptId, params.getCoexist_nhi_no()|0, params.getNot_allow_plan()|0, params.getLim_division()|0);
-//            int coexist_nhi_no, int not_allow_plan, int lim_division
+            ptBoneMarrowTransFeeDao.add(ptId, params.getCoexist_nhi_no_enable()|0, params.getNot_allow_plan_enable()|0, params.getLim_division_enable()|0);
+//            coexist_nhi_no_enable, not_allow_plan_enable, lim_division_enable
         }
         return ptId;
     }
@@ -84,7 +84,7 @@ public class PtBoneMarrowTransFeeService {
                     paymentTermsDao.deleteLimDivision(ptId);
                     paymentTermsDao.addLimDivision(ptId, params.getLst_division());
                 }
-                ptBoneMarrowTransFeeDao.update(ptId, params.getCoexist_nhi_no()|0, params.getNot_allow_plan()|0, params.getLim_division()|0);
+                ptBoneMarrowTransFeeDao.update(ptId, params.getCoexist_nhi_no_enable()|0, params.getNot_allow_plan_enable()|0, params.getLim_division_enable()|0);
             }
         }
         return ret;

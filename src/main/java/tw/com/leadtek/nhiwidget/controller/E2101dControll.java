@@ -159,7 +159,7 @@ public class E2101dControll {
         }
     }
     
-    //==== 輸血及骨髓移植費 Bone Marrow Trans Fee
+    //==== 輸血及骨髓移植費 Bone Marrow Trans Fee, P56
     @ApiOperation(value="10-4.05 輸血及骨髓移植費設定(get)", notes="", position=5)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtBoneMarrowTransFeeDto.class)

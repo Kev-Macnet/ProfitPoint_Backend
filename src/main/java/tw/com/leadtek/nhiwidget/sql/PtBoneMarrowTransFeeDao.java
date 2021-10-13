@@ -21,7 +21,7 @@ public class PtBoneMarrowTransFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, COEXIST_NHI_NO, NOT_ALLOW_PLAN, LIM_DIVISION\r\n"
+        sql = "Select PT_ID, COEXIST_NHI_NO_ENABLE, NOT_ALLOW_PLAN_ENABLE, LIM_DIVISION_ENABLE\r\n"
                 + "From PT_BONE_MARROW_TRANS_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -44,12 +44,13 @@ public class PtBoneMarrowTransFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int coexist_nhi_no, int not_allow_plan, int lim_division) {
+    //coexist_nhi_no_enable, not_allow_plan_enable, lim_division_enable
+    public int add(long ptId, int coexist_nhi_no_enable, int not_allow_plan_enable, int lim_division_enable) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_BONE_MARROW_TRANS_FEE(PT_ID, COEXIST_NHI_NO, NOT_ALLOW_PLAN, LIM_DIVISION)\r\n"
+                + "PT_BONE_MARROW_TRANS_FEE(PT_ID, COEXIST_NHI_NO_ENABLE, NOT_ALLOW_PLAN_ENABLE, LIM_DIVISION_ENABLE)\r\n"
                 + "Values(%d, %d, %d, %d)";
-        sql = String.format(sql, ptId, coexist_nhi_no, not_allow_plan, lim_division);
+        sql = String.format(sql, ptId, coexist_nhi_no_enable, not_allow_plan_enable, lim_division_enable);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,14 +60,14 @@ public class PtBoneMarrowTransFeeDao {
         }
     }
     
-    public int update(long ptId, int coexist_nhi_no, int not_allow_plan, int lim_division) {
+    public int update(long ptId, int coexist_nhi_no_enable, int not_allow_plan_enable, int lim_division_enable) {
         String sql;
         sql = "Update PT_BONE_MARROW_TRANS_FEE\r\n"
-                + "Set COEXIST_NHI_NO=%d, \r\n"
-                + "    NOT_ALLOW_PLAN=%d, \r\n"
-                + "    LIM_DIVISION=%d\r\n"
+                + "Set COEXIST_NHI_NO_ENABLE=%d, \r\n"
+                + "    NOT_ALLOW_PLAN_ENABLE=%d, \r\n"
+                + "    LIM_DIVISION_ENABLE=%d \r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, coexist_nhi_no, not_allow_plan, lim_division, ptId);
+        sql = String.format(sql, coexist_nhi_no_enable, not_allow_plan_enable, lim_division_enable, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

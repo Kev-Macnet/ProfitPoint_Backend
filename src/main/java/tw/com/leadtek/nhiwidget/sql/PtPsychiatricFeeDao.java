@@ -21,7 +21,7 @@ public class PtPsychiatricFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, EXCLUDE_NHI_NO, PATIENT_NDAY, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, MAX_INPATIENT, LIM_DIVISION\r\n"
+        sql = "Select PT_ID, EXCLUDE_NHI_NO_ENABLE, PATIENT_NDAY_ENABLE, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, MAX_INPATIENT_ENABLE, MAX_INPATIENT, LIM_DIVISION_ENABLE\r\n"
                 + "From PT_PSYCHIATRIC_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -44,12 +44,14 @@ public class PtPsychiatricFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int exclude_nhi_no, int patient_nday, int patient_nday_days, int patient_nday_times, int max_inpatient, int lim_division) {
+    // pt_id, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, max_inpatient_enable, max_inpatient, lim_division_enable
+    public int add(long ptId, int exclude_nhi_no_enable, int patient_nday_enable, int patient_nday_days, int patient_nday_times, 
+            int max_inpatient_enable, int max_inpatient, int lim_division_enable) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_PSYCHIATRIC_FEE(PT_ID, EXCLUDE_NHI_NO, PATIENT_NDAY, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, MAX_INPATIENT, LIM_DIVISION)\r\n"
-                + "Values(%d, %d, %d, %d, %d, %d, %d)";
-        sql = String.format(sql, ptId, exclude_nhi_no, patient_nday, patient_nday_days, patient_nday_times, max_inpatient, lim_division);
+                + "PT_PSYCHIATRIC_FEE(PT_ID, EXCLUDE_NHI_NO_ENABLE, PATIENT_NDAY_ENABLE, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, MAX_INPATIENT_ENABLE, MAX_INPATIENT, LIM_DIVISION_ENABLE)\r\n"
+                + "Values(%d, %d, %d, %d, %d, %d, %d, %d)";
+        sql = String.format(sql, ptId, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, max_inpatient_enable, max_inpatient, lim_division_enable);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,17 +61,19 @@ public class PtPsychiatricFeeDao {
         }
     }
     
-    public int update(long ptId, int exclude_nhi_no, int patient_nday, int patient_nday_days, int patient_nday_times, int max_inpatient, int lim_division) {
+    public int update(long ptId, int exclude_nhi_no_enable, int patient_nday_enable, int patient_nday_days, int patient_nday_times, 
+            int max_inpatient_enable, int max_inpatient, int lim_division_enable) {
         String sql;
         sql = "Update PT_PSYCHIATRIC_FEE\r\n"
-                + "Set EXCLUDE_NHI_NO=%d, \r\n"
-                + "    PATIENT_NDAY=%d, \r\n"
+                + "Set EXCLUDE_NHI_NO_ENABLE=%d, \r\n"
+                + "    PATIENT_NDAY_ENABLE=%d, \r\n"
                 + "    PATIENT_NDAY_DAYS=%d, \r\n"
                 + "    PATIENT_NDAY_TIMES=%d, \r\n"
+                + "    MAX_INPATIENT_ENABLE=%d, \r\n"
                 + "    MAX_INPATIENT=%d, \r\n"
-                + "    LIM_DIVISION=%d\r\n"
+                + "    LIM_DIVISION_ENABLE=%d \r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, exclude_nhi_no, patient_nday, patient_nday_days, patient_nday_times, max_inpatient, lim_division, ptId);
+        sql = String.format(sql, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, max_inpatient_enable, max_inpatient, lim_division_enable, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
