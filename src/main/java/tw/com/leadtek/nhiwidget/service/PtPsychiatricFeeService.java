@@ -55,9 +55,10 @@ public class PtPsychiatricFeeService {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
 
-            ptPsychiatricFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getPatient_nday()|0, params.getPatient_nday_days()|0, 
-                    params.getPatient_nday_times()|0, params.getMax_inpatient()|0, params.getLim_division()|0);
-//            exclude_nhi_no, patient_nday, patient_nday_days, patient_nday_times, max_inpatient, lim_division
+//            ptPsychiatricFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getPatient_nday()|0, params.getPatient_nday_days()|0, 
+//                    params.getPatient_nday_times()|0, params.getMax_inpatient()|0, params.getLim_division()|0);
+            ptPsychiatricFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0, params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
+                    params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, params.getLim_division_enable()|0);
         }
         return ptId;
     }
@@ -79,8 +80,8 @@ public class PtPsychiatricFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptPsychiatricFeeDao.update(ptId, params.getExclude_nhi_no()|0, params.getPatient_nday()|0, params.getPatient_nday_days()|0, 
-                        params.getPatient_nday_times()|0, params.getMax_inpatient()|0, params.getLim_division()|0);
+                ptPsychiatricFeeDao.update(ptId, params.getExclude_nhi_no_enable()|0, params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
+                        params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, params.getLim_division_enable()|0);
             }
         }
         return ret;
