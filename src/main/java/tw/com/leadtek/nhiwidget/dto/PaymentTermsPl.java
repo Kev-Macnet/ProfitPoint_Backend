@@ -27,10 +27,12 @@ public class PaymentTermsPl {
     @ApiModelProperty(value="失效日(timestamp)", example="1627488000000", position=7, required=true)
     private long end_date;
     
-    @Min(0)
-    @Max(4)
-    @ApiModelProperty(value="醫院層級(1醫學中心/2區域醫院/3地方醫院/4基層診所)", example="2", position=8, required=true)
-    private int hospital_type;
+//    @Min(0)
+//    @Max(4)
+//    @ApiModelProperty(value="醫院層級(1醫學中心/2區域醫院/3地方醫院/4基層診所)", example="2", position=8, required=true)
+//    private int hospital_type;
+    @ApiModelProperty(value="醫院層級(醫學中心/區域醫院/地方醫院/基層診所)", position=8, required=true)
+    private java.util.List<String> hospital_type;
     
     @ApiModelProperty(value="就醫方式(門急)(1|0)", example="1", position=9, required=true)
     private int outpatient_type;
@@ -80,12 +82,7 @@ public class PaymentTermsPl {
     public void setEnd_date(long end_date) {
         this.end_date = end_date;
     }
-    public int getHospital_type() {
-        return hospital_type;
-    }
-    public void setHospital_type(int hospital_type) {
-        this.hospital_type = hospital_type;
-    }
+    
     public int getOutpatient_type() {
         return outpatient_type;
     }
@@ -98,8 +95,13 @@ public class PaymentTermsPl {
     public void setHospitalized_type(int hospitalized_type) {
         this.hospitalized_type = hospitalized_type;
     }
+    public java.util.List<String> getHospital_type() {
+        return hospital_type;
+    }
+    public void setHospital_type(java.util.List<String> hospital_type) {
+        this.hospital_type = hospital_type;
+    }
 
-    
 }
 
 

@@ -28,7 +28,7 @@ public class PaymentTermsDao {
         String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         
         String sql;
-        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
+        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
                 + "From PT_PAYMENT_TERMS\r\n"
                 + "Where (1=1)\r\n"
                 + " -- and (FEE_NO like '%s%%')\r\n"
@@ -54,8 +54,12 @@ public class PaymentTermsDao {
         }
         logger.info(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
-        
-        return Utility.listLowerCase(lst);
+        lst = Utility.listLowerCase(lst);
+        for (Map<String, Object> item : lst) {
+            item.put("hospital_type", filterHospitalType((long)item.get("id")));
+        }
+
+        return lst;
     }
     
 
@@ -72,7 +76,7 @@ public class PaymentTermsDao {
         }
         strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         String sql;
-        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
+        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
                 + "From PT_PAYMENT_TERMS\r\n"
                 + "Where (1=1)\n"
                 + " -- and (CATEGORY='%s')\n"
@@ -92,43 +96,53 @@ public class PaymentTermsDao {
             sql = sql.replace("-- and (NHI_NO", " and (NHI_NO");
         }
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
-        return Utility.listLowerCase(lst);
+        lst = Utility.listLowerCase(lst);
+        for (Map<String, Object> item : lst) {
+            item.put("hospital_type", filterHospitalType((long)item.get("id")));
+        }
+        return lst;
     }
     
     public java.util.Map<String, Object> findPaymentTerms(long id, String category) {
         String sql;
-        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
+//        sql= "Insert into\r\n"
+//                + "PT_PAYMENT_TERMS(ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\r\n"
+//                + "Values(0, '', '', '', '', CURRENT_DATE, '', '', 0, 0)";
+        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
                 + "From PT_PAYMENT_TERMS\r\n"
-                + "Where (ID=%d)\n"
-                + "  and (CATEGORY='%s')";
+                + "Where (ID=%d) and (CATEGORY='%s')";
         sql = String.format(sql, id, category);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
-            return Utility.mapLowerCase(lst.get(0));
+            java.util.Map<String, Object> retMap = Utility.mapLowerCase(lst.get(0));
+            retMap.put("hospital_type", filterHospitalType(id));
+            return retMap;
         } else {
-            return new java.util.HashMap<String, Object>();
+            return java.util.Collections.emptyMap();
         }
     }
     
     public long addPaymentTerms(String fee_no, String fee_name, String nhi_no, String nhi_name, 
                     java.util.Date start_date, java.util.Date end_date, 
-                    String category, int hospital_type, int outpatient_type, int hospitalized_type) {
+                    String category, java.util.List<String> hospital_type, int outpatient_type, int hospitalized_type) {
         String strStart = Utility.dateFormat(start_date, "yyyy/MM/dd");
         String strEnd = Utility.dateFormat(end_date, "yyyy/MM/dd");
         long newId=0;
         String sql, s1;
         
         sql = "Insert into \r\n"
-                + "PT_PAYMENT_TERMS (ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE,END_DATE, CATEGORY, HOSPITAL_TYPE, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\r\n"
-                + "Values(%d, %s, %s, %s, %s, '%s','%s', '%s', %d, %d, %d)";
+                + "PT_PAYMENT_TERMS (ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\r\n"
+                + "Values(%d, %s, %s, %s, %s, '%s','%s', '%s', %d, %d)";
         for (int a=0; a<50; a++) {
             newId = newTableId_l("PT_PAYMENT_TERMS", "ID");
+            //fee_no, fee_name, nhi_no, nhi_name, start_date, end_date, category, outpatient_type, hospitalized_type
             s1 = String.format(sql, newId, Utility.quotedNotNull(fee_no), Utility.quotedNotNull(fee_name), 
                     Utility.quotedNotNull(nhi_no), Utility.quotedNotNull(nhi_name), strStart, strEnd, 
-                    category, hospital_type, outpatient_type, hospitalized_type);
+                    category, outpatient_type, hospitalized_type);
             try {
                 int ret = jdbcTemplate.update(s1);
                 if (ret > 0) {
+                    addHospitalType(newId, hospital_type);
                     break;
                 }
             } catch(DataAccessException ex) {
@@ -141,10 +155,11 @@ public class PaymentTermsDao {
     
     public int updatePaymentTerms(long id, String fee_no, String fee_name, String nhi_no, String nhi_name, 
             java.util.Date start_date, java.util.Date end_date, 
-            String category, int hospital_type, int outpatient_type, int hospitalized_type) {
+            String category, java.util.List<String> hospital_type, int outpatient_type, int hospitalized_type) {
         String strStart = Utility.dateFormat(start_date, "yyyy/MM/dd");
         String strEnd = Utility.dateFormat(end_date, "yyyy/MM/dd");
         String sql;
+        /*
         sql = "Update PT_PAYMENT_TERMS\r\n"
                 + "Set FEE_NO=%s, \r\n"
                 + "    FEE_NAME=%s, \r\n"
@@ -157,10 +172,26 @@ public class PaymentTermsDao {
                 + "    OUTPATIENT_TYPE=%d, \r\n"
                 + "    HOSPITALIZED_TYPE=%d\r\n"
                 + "Where (ID=%d)and(CATEGORY='%s')";
+                */
+        sql = "Update PT_PAYMENT_TERMS\r\n"
+                + "Set FEE_NO=%s, \r\n"
+                + "    FEE_NAME=%s, \r\n"
+                + "    NHI_NO=%s, \r\n"
+                + "    NHI_NAME=%s, \r\n"
+                + "    START_DATE='%s', \r\n"
+                + "    END_DATE='%s', \r\n"
+                + "    OUTPATIENT_TYPE=%d, \r\n"
+                + "    HOSPITALIZED_TYPE=%d\r\n"
+                + "Where (ID=%d)and(CATEGORY='%s')";
         sql = String.format(sql, Utility.quotedNotNull(fee_no), Utility.quotedNotNull(fee_name), 
                 Utility.quotedNotNull(nhi_no), Utility.quotedNotNull(nhi_name), strStart, strEnd, 
-                category, hospital_type, outpatient_type, hospitalized_type, id, category);
+                outpatient_type, hospitalized_type, id, category);
         int ret = jdbcTemplate.update(sql);
+        //----
+        if (ret > 0) {
+            deleteHospitalType(id);
+            addHospitalType(id, hospital_type);
+        }
         return ret;
     }
     
@@ -170,6 +201,9 @@ public class PaymentTermsDao {
                 + "Where (ID=%d)and(CATEGORY='%s')";
         sql = String.format(sql, id, category);
         int ret =  jdbcTemplate.update(sql);
+        if (ret >0) {
+            deleteHospitalType(id);
+        }
         return ret;
     }
     
@@ -458,6 +492,47 @@ public class PaymentTermsDao {
                 + "Values(%d, '%s')";
         for (String plan : lstPlan) {
             String s1=String.format(sql, ptId, plan);
+            try {
+                ret += jdbcTemplate.update(s1);
+            } catch(DataAccessException ex) {
+                //
+            }
+        }
+        return ret;
+    }
+    
+  //=== pt_hospital_type 醫院層級
+    public int deleteHospitalType(long ptId) {
+        String sql;
+        sql = "Delete from PT_HOSPITAL_TYPE\r\n"
+                + "WHERE (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        int ret =  jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public java.util.List<String> filterHospitalType(long ptId) {
+        String sql;
+        sql = "Select HOSPITAL_TYPE\r\n"
+                + "From PT_HOSPITAL_TYPE\r\n"
+                + "Where (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        java.util.List<String> retList = new java.util.ArrayList<String>();
+        for (Map<String, Object> item : lst) {
+            retList.add(item.get("HOSPITAL_TYPE").toString());
+        }
+        return retList;
+    }
+    
+    public int addHospitalType(long ptId, java.util.List<String> lstHospitalType) {
+        int ret = 0;
+        String sql;
+        sql = "Insert into \r\n"
+                + "PT_HOSPITAL_TYPE(PT_ID, HOSPITAL_TYPE)\r\n"
+                + "Values(%d, '%s')";
+        for (String hospitalType : lstHospitalType) {
+            String s1=String.format(sql, ptId, hospitalType);
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
