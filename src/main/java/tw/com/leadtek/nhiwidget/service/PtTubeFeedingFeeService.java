@@ -49,7 +49,7 @@ public class PtTubeFeedingFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptTubeFeedingFeeDao.add(ptId, params.getExclude_nhi_no()|0);
+            ptTubeFeedingFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0);
         }
         return ptId;
     }
@@ -67,7 +67,7 @@ public class PtTubeFeedingFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptTubeFeedingFeeDao.update(ptId, params.getExclude_nhi_no()|0);
+                ptTubeFeedingFeeDao.update(ptId, params.getExclude_nhi_no_enable()|0);
             }
         }
         return ret;

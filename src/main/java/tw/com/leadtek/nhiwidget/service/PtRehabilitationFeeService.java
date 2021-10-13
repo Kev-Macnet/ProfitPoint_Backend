@@ -63,10 +63,11 @@ public class PtRehabilitationFeeService {
             if (params.getLst_division() != null) {
                 paymentTermsDao.addLimDivision(ptId, params.getLst_division());
             }
-            ptRehabilitationFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getPatient_nday()|0, params.getPatient_nday_days()|0,
-                    params.getPatient_nday_times()|0, params.getInclude_icd_no()|0, params.getCoexist_nhi_no()|0,
-                    params.getMin_coexist()|0, params.getLim_division()|0);
-//            exclude_nhi_no, patient_nday, patient_nday_days, patient_nday_times, include_icd_no, coexist_nhi_no, min_coexist, lim_division
+
+            ptRehabilitationFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0, 
+                    params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
+                    params.getInclude_icd_no_enable()|0, params.getCoexist_nhi_no_enable()|0, 
+                    params.getMin_coexist_enable()|0, params.getMin_coexist()|0, params.getLim_division_enable()|0);
         }
         return ptId;
     }
@@ -96,9 +97,10 @@ public class PtRehabilitationFeeService {
                     paymentTermsDao.deleteLimDivision(ptId);
                     paymentTermsDao.addLimDivision(ptId, params.getLst_division());
                 }
-                ptRehabilitationFeeDao.update(ptId, params.getExclude_nhi_no()|0, params.getPatient_nday()|0, params.getPatient_nday_days()|0,
-                        params.getPatient_nday_times()|0, params.getInclude_icd_no()|0, params.getCoexist_nhi_no()|0,
-                        params.getMin_coexist()|0, params.getLim_division()|0);
+                ptRehabilitationFeeDao.update(ptId, params.getExclude_nhi_no_enable()|0, 
+                        params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
+                        params.getInclude_icd_no_enable()|0, params.getCoexist_nhi_no_enable()|0, 
+                        params.getMin_coexist_enable()|0, params.getMin_coexist()|0, params.getLim_division_enable()|0);
             }
         }
         return ret;

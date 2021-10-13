@@ -21,7 +21,7 @@ public class PtRadiationFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, NOTIFY_NHI_NO, EXCLUDE_NHI_NO, COEXIST_NHI_NO, MAX_INPATIENT\r\n"
+        sql = "Select PT_ID, NOTIFY_NHI_NO_ENABLE, EXCLUDE_NHI_NO_ENABLE, COEXIST_NHI_NO_ENABLE, MAX_INPATIENT_ENABLE, MAX_INPATIENT\r\n"
                 + "From PT_RADIATION_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -43,13 +43,15 @@ public class PtRadiationFeeDao {
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
-    
-    public int add(long ptId, int notify_nhi_no, int exclude_nhi_no, int coexist_nhi_no, int max_inpatient) {
+
+    //PT_ID, notify_nhi_no_enable, exclude_nhi_no_enable, coexist_nhi_no_enable, max_inpatient_enable, max_inpatient
+    public int add(long ptId, int notify_nhi_no_enable, int exclude_nhi_no_enable, int coexist_nhi_no_enable, 
+            int max_inpatient_enable, int max_inpatient) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_RADIATION_FEE(PT_ID, NOTIFY_NHI_NO, EXCLUDE_NHI_NO, COEXIST_NHI_NO, MAX_INPATIENT)\r\n"
-                + "Values(%d, %d, %d, %d, %d)";
-        sql = String.format(sql, ptId, notify_nhi_no, exclude_nhi_no, coexist_nhi_no, max_inpatient);
+                + "PT_RADIATION_FEE(PT_ID, NOTIFY_NHI_NO_ENABLE, EXCLUDE_NHI_NO_ENABLE, COEXIST_NHI_NO_ENABLE, MAX_INPATIENT_ENABLE, MAX_INPATIENT)\r\n"
+                + "Values(%d, %d, %d, %d, %d, %d)";
+        sql = String.format(sql, ptId, notify_nhi_no_enable, exclude_nhi_no_enable, coexist_nhi_no_enable, max_inpatient_enable, max_inpatient);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,15 +61,17 @@ public class PtRadiationFeeDao {
         }
     }
     
-    public int update(long ptId, int notify_nhi_no, int exclude_nhi_no, int coexist_nhi_no, int max_inpatient) {
+    public int update(long ptId, int notify_nhi_no_enable, int exclude_nhi_no_enable, int coexist_nhi_no_enable, 
+            int max_inpatient_enable, int max_inpatient) {
         String sql;
         sql = "Update PT_RADIATION_FEE\r\n"
-                + "Set NOTIFY_NHI_NO=%d, \r\n"
-                + "    EXCLUDE_NHI_NO=%d, \r\n"
-                + "    COEXIST_NHI_NO=%d, \r\n"
-                + "    MAX_INPATIENT=%d\r\n"
+                + "Set NOTIFY_NHI_NO_ENABLE=%d, \r\n"
+                + "    EXCLUDE_NHI_NO_ENABLE=%d, \r\n"
+                + "    COEXIST_NHI_NO_ENABLE=%d, \r\n"
+                + "    MAX_INPATIENT_ENABLE=%d, \r\n"
+                + "    MAX_INPATIENT=%d \r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, notify_nhi_no, exclude_nhi_no, coexist_nhi_no, max_inpatient, ptId);
+        sql = String.format(sql, notify_nhi_no_enable, exclude_nhi_no_enable, coexist_nhi_no_enable, max_inpatient_enable, max_inpatient, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

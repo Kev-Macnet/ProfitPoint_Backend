@@ -41,6 +41,7 @@ public class PtTreatmentFeeService {
         return retMap;
     }
 
+    //exclude_nhi_no_enable, coexist_nhi_no_enable, max_inpatient_enable, max_inpatient, max_daily_enable, max_daily, every_nday_enable, every_nday_days, every_nday_times, patient_nday_enable, patient_nday_days, patient_nday_times, max_patient_enable, max_patient, include_icd_no_enable, max_month_enable, max_month_percentage, max_age_enable, max_age, lim_division_enable
     public long addTreatmentFee(PtTreatmentFeePl params) {
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
@@ -61,11 +62,15 @@ public class PtTreatmentFeeService {
             if (params.getLst_division() != null) {
                 paymentTermsDao.addLimDivision(ptId, params.getLst_division());
             }
-            ptTreatmentFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getCoexist_nhi_no()|0, params.getMax_inpatient()|0, params.getMax_daily()|0, 
-                    params.getEvery_nday()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
-                    params.getPatient_nday()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
-                    params.getMax_patient()|0, params.getInclude_icd_no()|0, params.getMax_month_percentage()|0, 
-                    params.getMax_age()|0, params.getLim_division()|0);
+            // ptTreatmentFeeDao.add(ptId, params.getExclude_nhi_no()|0
+            ptTreatmentFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0, params.getCoexist_nhi_no_enable()|0, 
+                    params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                    params.getMax_daily_enable()|0, params.getMax_daily()|0, 
+                    params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
+                    params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
+                    params.getMax_patient_enable()|0, params.getMax_patient()|0, 
+                    params.getInclude_icd_no_enable()|0, params.getMax_month_enable()|0, params.getMax_month_percentage()|0, 
+                    params.getMax_age_enable()|0, params.getMax_age()|0, params.getLim_division_enable()|0);
         }
         return ptId;
     }
@@ -95,11 +100,14 @@ public class PtTreatmentFeeService {
                     paymentTermsDao.deleteLimDivision(ptId);
                     paymentTermsDao.addLimDivision(ptId, params.getLst_division());
                 }
-                ptTreatmentFeeDao.update(ptId, params.getExclude_nhi_no()|0, params.getCoexist_nhi_no()|0, params.getMax_inpatient()|0, params.getMax_daily()|0, 
-                        params.getEvery_nday()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
-                        params.getPatient_nday()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
-                        params.getMax_patient()|0, params.getInclude_icd_no()|0, params.getMax_month_percentage()|0, 
-                        params.getMax_age()|0, params.getLim_division()|0);
+                ptTreatmentFeeDao.update(ptId, params.getExclude_nhi_no_enable()|0, params.getCoexist_nhi_no_enable()|0, 
+                        params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                        params.getMax_daily_enable()|0, params.getMax_daily()|0, 
+                        params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
+                        params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
+                        params.getMax_patient_enable()|0, params.getMax_patient()|0, 
+                        params.getInclude_icd_no_enable()|0, params.getMax_month_enable()|0, params.getMax_month_percentage()|0, 
+                        params.getMax_age_enable()|0, params.getMax_age()|0, params.getLim_division_enable()|0);
             }
         }
         return ret;

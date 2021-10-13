@@ -50,8 +50,8 @@ public class PtInjectionFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptInjectionFeeDao.add(ptId, params.getInterval_nday()|0, params.getExclude_nhi_no()|0, params.getMax_inpatient()|0);
-//            interval_nday, exclude_nhi_no, max_inpatient
+            ptInjectionFeeDao.add(ptId, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                    params.getExclude_nhi_no_enable()|0, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0);
         }
         return ptId;
     }
@@ -69,7 +69,8 @@ public class PtInjectionFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptInjectionFeeDao.update(ptId, params.getInterval_nday()|0, params.getExclude_nhi_no()|0, params.getMax_inpatient()|0);
+                ptInjectionFeeDao.update(ptId, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                        params.getExclude_nhi_no_enable()|0, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0);
             }
         }
         return ret;

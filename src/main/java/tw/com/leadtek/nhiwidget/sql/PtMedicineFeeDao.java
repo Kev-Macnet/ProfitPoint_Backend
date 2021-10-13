@@ -21,7 +21,7 @@ public class PtMedicineFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, MAX_NDAY\r\n"
+        sql = "Select PT_ID, MAX_NDAY_ENABLE, MAX_NDAY\r\n"
                 + "From PT_MEDICINE_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -44,12 +44,13 @@ public class PtMedicineFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int max_nday) {
+    // pt_id, max_nday_enable, max_nday
+    public int add(long ptId, int max_nday_enable, int max_nday) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_MEDICINE_FEE(PT_ID, MAX_NDAY)\r\n"
-                + "Values(%d, %d)";
-        sql = String.format(sql, ptId, max_nday);
+                + "PT_MEDICINE_FEE(PT_ID, MAX_NDAY_ENABLE, MAX_NDAY)\r\n"
+                + "Values(%d, %d, %d)";
+        sql = String.format(sql, ptId, max_nday_enable, max_nday);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,12 +60,13 @@ public class PtMedicineFeeDao {
         }
     }
     
-    public int update(long ptId, int max_nday) {
+    public int update(long ptId, int max_nday_enable, int max_nday) {
         String sql;
         sql = "Update PT_MEDICINE_FEE\r\n"
-                + "Set MAX_NDAY=%d\r\n"
+                + "Set MAX_NDAY_ENABLE=%d, \r\n"
+                + "    MAX_NDAY=%d\r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, max_nday, ptId);
+        sql = String.format(sql, max_nday_enable, max_nday, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

@@ -55,7 +55,7 @@ public class PtAdjustmentFeeService {
             if (params.getLst_co_nhi_no() != null) {
                 paymentTermsDao.addCoexistNhiNo(ptId, params.getLst_co_nhi_no());
             }
-            ptAdjustmentFeeDao.add(ptId, params.getCoexist_nhi_no()|0, params.getExclude_nhi_no()|0);
+            ptAdjustmentFeeDao.add(ptId, params.getCoexist_nhi_no_enable()|0, params.getExclude_nhi_no_enable()|0);
         }
         return ptId;
     }
@@ -79,7 +79,7 @@ public class PtAdjustmentFeeService {
                     paymentTermsDao.addCoexistNhiNo(ptId, params.getLst_co_nhi_no());
                 }
 
-                ptAdjustmentFeeDao.update(ptId, params.getCoexist_nhi_no()|0, params.getExclude_nhi_no());
+                ptAdjustmentFeeDao.update(ptId, params.getCoexist_nhi_no_enable()|0, params.getExclude_nhi_no_enable());
             }
         }
         return ret;

@@ -21,7 +21,7 @@ public class PtPsychiatricWardFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, LIM_PASS_REVIEW\r\n"
+        sql = "Select PT_ID, NEED_PASS_REVIEW_ENABLE\r\n"
                 + "From PT_PSYCHIATRICWARD_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -44,12 +44,12 @@ public class PtPsychiatricWardFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int lim_pass_review) {
+    public int add(long ptId, int need_pass_review_enable) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_PSYCHIATRICWARD_FEE(PT_ID, LIM_PASS_REVIEW)\r\n"
+                + "PT_PSYCHIATRICWARD_FEE(PT_ID, NEED_PASS_REVIEW_ENABLE)\r\n"
                 + "Values(%d, %d)";
-        sql = String.format(sql, ptId, lim_pass_review);
+        sql = String.format(sql, ptId, need_pass_review_enable);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -59,12 +59,12 @@ public class PtPsychiatricWardFeeDao {
         }
     }
     
-    public int update(long ptId, int lim_pass_review) {
+    public int update(long ptId, int need_pass_review_enable) {
         String sql;
         sql = "Update PT_PSYCHIATRICWARD_FEE\r\n"
-                + "Set LIM_PASS_REVIEW=%d\r\n"
+                + "Set NEED_PASS_REVIEW_ENABLE=%d\r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, lim_pass_review, ptId);
+        sql = String.format(sql, need_pass_review_enable, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

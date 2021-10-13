@@ -21,7 +21,7 @@ public class PtRehabilitationFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, EXCLUDE_NHI_NO, PATIENT_NDAY, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, INCLUDE_ICD_NO, COEXIST_NHI_NO, MIN_COEXIST, LIM_DIVISION\r\n"
+        sql = "Select PT_ID, EXCLUDE_NHI_NO_ENABLE, PATIENT_NDAY_ENABLE, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, INCLUDE_ICD_NO_ENABLE, COEXIST_NHI_NO_ENABLE, MIN_COEXIST_ENABLE, MIN_COEXIST, LIM_DIVISION_ENABLE\r\n"
                 + "From PT_REHABILITATION_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -30,7 +30,7 @@ public class PtRehabilitationFeeDao {
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
         } else {
-            return new java.util.HashMap<String, Object>();
+            return java.util.Collections.emptyMap();
         }
     }
     
@@ -44,13 +44,15 @@ public class PtRehabilitationFeeDao {
         return ret;
     }
     
-    public int add(long ptId, int exclude_nhi_no, int patient_nday, int patient_nday_days, int patient_nday_times, int include_icd_no, 
-            int coexist_nhi_no, int min_coexist, int lim_division) {
+    
+    // pt_id, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, include_icd_no_enable, coexist_nhi_no_enable, min_coexist_enable, min_coexist, lim_division_enable
+    public int add(long ptId, int exclude_nhi_no_enable, int patient_nday_enable, int patient_nday_days, int patient_nday_times, 
+            int include_icd_no_enable, int coexist_nhi_no_enable, int min_coexist_enable, int min_coexist, int lim_division_enable) {
         String sql;
         sql = "Insert into\r\n"
-                + "PT_REHABILITATION_FEE(PT_ID, EXCLUDE_NHI_NO, PATIENT_NDAY, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, INCLUDE_ICD_NO, COEXIST_NHI_NO, MIN_COEXIST, LIM_DIVISION)\r\n"
-                + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d)";
-        sql = String.format(sql, ptId, exclude_nhi_no, patient_nday, patient_nday_days, patient_nday_times, include_icd_no, coexist_nhi_no, min_coexist, lim_division);
+                + "PT_REHABILITATION_FEE(PT_ID, EXCLUDE_NHI_NO_ENABLE, PATIENT_NDAY_ENABLE, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, INCLUDE_ICD_NO_ENABLE, COEXIST_NHI_NO_ENABLE, MIN_COEXIST_ENABLE, MIN_COEXIST, LIM_DIVISION_ENABLE)\r\n"
+                + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d)";
+        sql = String.format(sql, ptId, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, include_icd_no_enable, coexist_nhi_no_enable, min_coexist_enable, min_coexist, lim_division_enable);
         logger.info(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
@@ -60,8 +62,8 @@ public class PtRehabilitationFeeDao {
         }
     }
     
-    public int update(long ptId,  int exclude_nhi_no, int patient_nday, int patient_nday_days, int patient_nday_times, int include_icd_no, 
-            int coexist_nhi_no, int min_coexist, int lim_division) {
+    public int update(long ptId, int exclude_nhi_no_enable, int patient_nday_enable, int patient_nday_days, int patient_nday_times, 
+            int include_icd_no_enable, int coexist_nhi_no_enable, int min_coexist_enable, int min_coexist, int lim_division_enable) {
         String sql;
         sql = "Update PT_REHABILITATION_FEE\r\n"
                 + "Set EXCLUDE_NHI_NO=%d, \r\n"
@@ -73,7 +75,7 @@ public class PtRehabilitationFeeDao {
                 + "    MIN_COEXIST=%d, \r\n"
                 + "    LIM_DIVISION=%d\r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, exclude_nhi_no, patient_nday, patient_nday_days, patient_nday_times, include_icd_no, coexist_nhi_no, min_coexist, lim_division, ptId);
+        sql = String.format(sql, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, include_icd_no_enable, coexist_nhi_no_enable, min_coexist_enable, min_coexist, lim_division_enable, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

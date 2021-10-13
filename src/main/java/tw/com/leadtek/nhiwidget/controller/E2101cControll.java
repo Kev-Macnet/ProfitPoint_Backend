@@ -152,7 +152,7 @@ public class E2101cControll {
         }
     }
     
-  //==== 注射 (injection Fee, P75)
+    //==== 注射 (injection Fee, P51)
     @ApiOperation(value="10-3.05 注射費設定(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtInjectionFeeDto.class)

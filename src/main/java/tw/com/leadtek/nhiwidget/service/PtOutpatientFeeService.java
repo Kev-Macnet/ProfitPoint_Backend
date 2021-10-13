@@ -55,14 +55,12 @@ public class PtOutpatientFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptOutpatientFeeDao.add(ptId, params.getNo_dentisit(), params.getNo_chi_medicine(), params.getNo_service_charge()|0, 
-                    params.getLim_out_islands()|0, params.getLim_holiday()|0, params.getLim_max()|0, 
-                    params.getLim_age()|0, params.getLim_age_type()|0,
-                    params.getLim_division()|0, params.getLim_holiday()|0);
+            ptOutpatientFeeDao.add(ptId, params.getNo_dentisit()|0, params.getNo_chi_medicine()|0, params.getNo_service_charge()|0, 
+                    params.getLim_out_islands()|0, params.getLim_holiday()|0, 
+                    params.getLim_max_enable()|0, params.getLim_max()|0, 
+                    params.getLim_age_enable()|0, params.getLim_age_type()|0, params.getLim_age()|0, 
+                    params.getLim_division_enable()|0, params.getExclude_nhi_no_enable()|0);
         }
-//        add(long ptId, int no_dentisit, int no_chi_medicine, int no_service_charge, int lim_out_islands, int lim_holiday, 
-//                int lim_max, int lim_age, int lim_age_type, int lim_division, int exclude_nhi_no)
-        
         return ptId;
     }
     
@@ -83,15 +81,13 @@ public class PtOutpatientFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptOutpatientFeeDao.update(ptId, params.getNo_dentisit(), params.getNo_chi_medicine(), params.getNo_service_charge()|0, 
-                        params.getLim_out_islands()|0, params.getLim_holiday()|0, params.getLim_max()|0, 
-                        params.getLim_age()|0, params.getLim_age_type()|0,
-                        params.getLim_division()|0, params.getLim_holiday()|0);
+                ptOutpatientFeeDao.update(ptId, params.getNo_dentisit()|0, params.getNo_chi_medicine()|0, params.getNo_service_charge()|0, 
+                        params.getLim_out_islands()|0, params.getLim_holiday()|0, 
+                        params.getLim_max_enable()|0, params.getLim_max()|0, 
+                        params.getLim_age_enable()|0, params.getLim_age_type()|0, params.getLim_age()|0, 
+                        params.getLim_division_enable()|0, params.getExclude_nhi_no_enable()|0);
             }
         }
-//        add(long ptId, int no_dentisit, int no_chi_medicine, int no_service_charge, int lim_out_islands, int lim_holiday, 
-//                int lim_max, int lim_age, int lim_age_type, int lim_division, int exclude_nhi_no)
-        
         return ret;
     }
 

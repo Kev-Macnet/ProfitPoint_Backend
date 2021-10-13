@@ -21,7 +21,7 @@ public class PtTubeFeedingFeeDao {
 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, EXCLUDE_NHI_NO\r\n"
+        sql = "Select PT_ID, EXCLUDE_NHI_NO_ENABLE\r\n"
                 + "From PT_TUBE_FEEDING_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
@@ -47,7 +47,7 @@ public class PtTubeFeedingFeeDao {
     public int add(long ptId, int exclude_nhi_no) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_TUBE_FEEDING_FEE(PT_ID, EXCLUDE_NHI_NO)\r\n"
+                + "PT_TUBE_FEEDING_FEE(PT_ID, EXCLUDE_NHI_NO_ENABLE)\r\n"
                 + "Values(%d, %d)";
         sql = String.format(sql, ptId, exclude_nhi_no);
         logger.info(sql);
@@ -62,7 +62,7 @@ public class PtTubeFeedingFeeDao {
     public int update(long ptId, int exclude_nhi_no) {
         String sql;
         sql = "Update PT_TUBE_FEEDING_FEE\r\n"
-                + "Set EXCLUDE_NHI_NO=%d\r\n"
+                + "Set EXCLUDE_NHI_NO_ENABLE=%d\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, exclude_nhi_no, ptId);
         logger.info(sql);

@@ -57,8 +57,10 @@ public class PtInpatientFeeService {
             if (params.getLst_allow_plan() != null) {
                 paymentTermsDao.addNotAllowPlan(ptId, params.getLst_allow_plan());
             }
-            ptInpatientFeeDao.add(ptId, params.getMax_inpatient()|0, params.getMax_emergency()|0,  params.getMax_patient_no()|0,
-                    params.getExclude_nhi_no()|0, params.getNot_allow_plan()|0, params.getCoexist_nhi_no()|0, params.getNo_coexist()|0);
+            ptInpatientFeeDao.add(ptId, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                    params.getMax_emergency_enable()|0, params.getMax_emergency()|0, 
+                    params.getMax_patient_no_enable()|0, params.getMax_patient_no()|0, params.getExclude_nhi_no_enable()|0, 
+                    params.getNot_allow_plan_enable()|0, params.getCoexist_nhi_no_enable()|0, params.getNo_coexist_enable()|0);
         }
         return ptId;
     }
@@ -84,9 +86,10 @@ public class PtInpatientFeeService {
                     paymentTermsDao.deleteNotAllowPlan(ptId);
                     paymentTermsDao.addNotAllowPlan(ptId, params.getLst_allow_plan());
                 }
-                ptInpatientFeeDao.update(ptId, params.getMax_inpatient()|0, params.getMax_emergency()|0,  params.getMax_patient_no()|0,
-                                               params.getExclude_nhi_no()|0, params.getNot_allow_plan()|0, params.getCoexist_nhi_no()|0, 
-                                               params.getNo_coexist()|0);
+                ptInpatientFeeDao.update(ptId, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                        params.getMax_emergency_enable()|0, params.getMax_emergency()|0, 
+                        params.getMax_patient_no_enable()|0, params.getMax_patient_no()|0, params.getExclude_nhi_no_enable()|0, 
+                        params.getNot_allow_plan_enable()|0, params.getCoexist_nhi_no_enable()|0, params.getNo_coexist_enable()|0);
             }
         }
         return ret;

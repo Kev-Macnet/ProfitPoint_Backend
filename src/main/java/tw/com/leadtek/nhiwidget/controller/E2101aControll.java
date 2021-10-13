@@ -105,7 +105,7 @@ public class E2101aControll {
                 {"門診診察費","/payment/outpatientfee/"},
                 {"住院診察費","/payment/inpatientfee/"},
                 {"病房費","/payment/wardfee/"},
-                {"精神慢性病房費","/payment/psychiatricWardfee/"},
+                {"精神慢性病房費","/payment/psychiatricwardfee/"},
                 {"手術費","/payment/surgeryfee/"},
                 
                 {"治療處置費","/payment/treatmentfee/"},
@@ -543,7 +543,7 @@ public class E2101aControll {
         }
     }
     
-  //==== 手術費設定 surgery fee
+    //==== 手術費設定 surgery fee
     @ApiOperation(value="10-1.19 手術費設定(get)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtSurgeryFeeDto.class)

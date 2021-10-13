@@ -46,7 +46,7 @@ public class PtPsychiatricWardFeeService {
                                                     start_date, end_data, params.getCategory(), 
                                                     params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
         if (ptId>0) {
-            ptPsychiatricWardFeeDao.add(ptId, params.getLim_pass_review()|0);
+            ptPsychiatricWardFeeDao.add(ptId, params.getNeed_pass_review_enable()|0);
         }
         return ptId;
     }
@@ -60,7 +60,7 @@ public class PtPsychiatricWardFeeService {
                                                   start_date, end_data, this.Category, 
                                                   params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
             if (ret>0) {
-                ptPsychiatricWardFeeDao.update(ptId, params.getLim_pass_review()|0);
+                ptPsychiatricWardFeeDao.update(ptId, params.getNeed_pass_review_enable()|0);
             }
         }
         return ret;

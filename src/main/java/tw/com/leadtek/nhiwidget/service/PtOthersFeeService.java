@@ -49,9 +49,13 @@ public class PtOthersFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            ptOthersFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getMax_inpatient()|0, 
-                    params.getMax_times()|0, params.getInterval_nday()|0);
-//            exclude_nhi_no, max_inpatient, max_times, interval_nday
+//            ptOthersFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0, params.getMax_inpatient()|0, 
+//                    params.getMax_times()|0, params.getInterval_nday()|0,
+//                    params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0);
+            ptOthersFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                    params.getMax_times_enable()|0, params.getMax_times()|0, 
+                    params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                    params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0);
         }
         return ptId;
     }
@@ -69,8 +73,10 @@ public class PtOthersFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptOthersFeeDao.update(ptId, params.getExclude_nhi_no()|0, params.getMax_inpatient()|0, 
-                        params.getMax_times()|0, params.getInterval_nday()|0);
+                ptOthersFeeDao.update(ptId, params.getExclude_nhi_no_enable()|0, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                        params.getMax_times_enable()|0, params.getMax_times()|0, 
+                        params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                        params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0);
             }
         }
         return ret;

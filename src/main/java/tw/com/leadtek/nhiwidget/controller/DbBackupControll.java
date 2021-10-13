@@ -24,7 +24,7 @@ import tw.com.leadtek.nhiwidget.dto.BackupSettingDto;
 import tw.com.leadtek.nhiwidget.service.DbBackupService; 
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.sql.WebConfigDao;
-import tw.com.leadtek.tools.Utility;
+
 
 @Api(value = "系統備份與還原 API", tags = {"12 系統備份與還原"})
 @RestController

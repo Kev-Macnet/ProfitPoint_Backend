@@ -50,9 +50,10 @@ public class PtQualityServiceService {
             if (params.getLst_co_nhi_no() != null) {
                 paymentTermsDao.addCoexistNhiNo(ptId, params.getLst_co_nhi_no());
             }
-            ptQualityServiceDao.add(ptId, params.getInterval_nday()|0, params.getCoexist_nhi_no()|0, params.getMin_coexist()|0,
-                    params.getEvery_nday()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0);
-//            interval_nday, coexist_nhi_no, min_coexist, every_nday, every_nday_days, every_nday_times
+
+            ptQualityServiceDao.add(ptId, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                    params.getCoexist_nhi_no_enable()|0, params.getMin_coexist_enable()|0, params.getMin_coexist()|0, 
+                    params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0);
         }
         return ptId;
     }
@@ -70,8 +71,9 @@ public class PtQualityServiceService {
                     paymentTermsDao.deleteCoexistNhiNo(ptId);
                     paymentTermsDao.addCoexistNhiNo(ptId, params.getLst_co_nhi_no());
                 }
-                ptQualityServiceDao.update(ptId, params.getInterval_nday()|0, params.getCoexist_nhi_no()|0, params.getMin_coexist()|0,
-                        params.getEvery_nday()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0);
+                ptQualityServiceDao.update(ptId, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                        params.getCoexist_nhi_no_enable()|0, params.getMin_coexist_enable()|0, params.getMin_coexist()|0, 
+                        params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0);
             }
         }
         return ret;
