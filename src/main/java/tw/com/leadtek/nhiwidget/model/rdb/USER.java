@@ -46,9 +46,9 @@ public class USER {
   @Column(name = "EMAIL", length = 30)
   protected String email;
 
-  @ApiModelProperty(value = "1: 一般user, 2: 醫師, 3: 主管, 4: 系統管理員, 5: 原廠開發者", required = false)
+  @ApiModelProperty(value = "A: MIS主管, B: 行政主管, C: 申報主管, D: coding人員/申報人員, E: 醫護人員, Z: 原廠開發者", required = false)
   @Column(name = "ROLE")
-  protected Integer role;
+  protected String role;
   
   @ApiModelProperty(value = "狀態，1: 有效，0: 無效", required = false)
   @Column(name = "STATUS")
@@ -180,11 +180,11 @@ public class USER {
     updateAt = UPDATE_AT;
   }
 
-  public Integer getRole() {
+  public String getRole() {
     return role;
   }
 
-  public void setRole(Integer role) {
+  public void setRole(String role) {
     this.role = role;
   }
 

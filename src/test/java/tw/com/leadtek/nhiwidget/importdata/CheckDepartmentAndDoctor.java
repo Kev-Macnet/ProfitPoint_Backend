@@ -134,7 +134,7 @@ public class CheckDepartmentAndDoctor {
         user.setCreateAt(new Date());
         user.setUpdateAt(new Date());
         user.setRocId(rocId);
-        user.setRole(ROLE_TYPE.doctor.getType());
+        user.setRole("E");
         user.setUsername(user.getRocId());
         user = userDao.save(user);
         

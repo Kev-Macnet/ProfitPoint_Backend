@@ -194,7 +194,6 @@ public class UserController extends BaseController {
   @PostMapping("/auth/login")
   public ResponseEntity<JwtResponse> authenticateUser(
       @Valid @RequestBody LoginRequest loginRequest) {
-    logger.info("signin:" + loginRequest.getUsername() + "/" + loginRequest.getPassword());
     Authentication authentication =
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
             loginRequest.getUsername(), loginRequest.getPassword()));
@@ -206,7 +205,7 @@ public class UserController extends BaseController {
     // List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())
     // .collect(Collectors.toList());
 
-    return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getId(), userDetails.getUsername(),
+    return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getRole(), userDetails.getUsername(),
         userDetails.getDisplayName()));
   }
 

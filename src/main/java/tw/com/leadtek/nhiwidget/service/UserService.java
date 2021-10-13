@@ -319,7 +319,7 @@ public class UserService {
   
   private Long getDepartmentIdByCode(String code) {
     for (DEPARTMENT dep : departments.values()) {
-      if (dep.getNhCode().equals(code) || dep.getCode().equals(code)) {
+      if ((dep.getNhCode() != null && dep.getNhCode().equals(code)) || dep.getCode().equals(code)) {
         return dep.getId();
       }
     }

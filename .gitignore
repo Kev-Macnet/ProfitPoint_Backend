@@ -16,3 +16,4 @@ UPLOAD
 gradle
 gradlew*
 bin/
+drg_data/

@@ -38,6 +38,8 @@ public class JwtUtils {
   private static final String CLAIM_KEY_CREATED = "created";
 
   private static final String CLAIM_KEY_USER_ID = "uid";
+  
+  private static final String CLAIM_KEY_ROLE = "role";
 
   private static final String CLAIM_KEY_USER_IP = "uip";
 
@@ -66,7 +68,8 @@ public class JwtUtils {
     // .compact();
     Map<String, Object> claims = new HashMap<>(16);
     claims.put(CLAIM_KEY_USERNAME, userPrincipal.getUsername());
-    claims.put(CLAIM_KEY_USER_ID, userPrincipal.getId());
+    //claims.put(CLAIM_KEY_USER_ID, userPrincipal.getId());
+    claims.put(CLAIM_KEY_ROLE, userPrincipal.getRole());
     // claims.put(CLAIM_KEY_USER_IP, clientIP);
     return Jwts.builder().setClaims(claims)
         .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs)).signWith(KEY)

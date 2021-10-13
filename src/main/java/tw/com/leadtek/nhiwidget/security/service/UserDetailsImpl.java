@@ -32,42 +32,56 @@ public class UserDetailsImpl implements UserDetails {
 
   @JsonIgnore
   private String password;
+  
+  private String role;
 
   private Collection<? extends GrantedAuthority> authorities;
 
   public UserDetailsImpl(Long id, String username, String displayName, String email,
-      String password, Collection<? extends GrantedAuthority> authorities) {
+      String password, Collection<? extends GrantedAuthority> authorities, String role) {
     this.id = id;
     this.username = username;
     this.displayName = displayName;
     this.email = email;
     this.password = password;
     this.authorities = authorities;
+    this.role = role;
   }
 
   public static UserDetailsImpl build(USER user) {
     logger.info("UserDetailsImpl build user:" + user.getUsername());
     return new UserDetailsImpl(user.getId(), user.getUsername(), user.getDisplayName(),
-        user.getEmail(), user.getPassword(), getAuthority(user.getRole()));
+        user.getEmail(), user.getPassword(), getAuthority(user.getRole()), user.getRole());
   }
   
-  private static List<GrantedAuthority> getAuthority(Integer role) {
+  private static List<GrantedAuthority> getAuthority(String role) {
     List<GrantedAuthority> result = new ArrayList<GrantedAuthority>();
-    if (role >= ROLE_TYPE.user.getType()) {
-      result.add(new SimpleGrantedAuthority(ROLE_TYPE.getRoleString(ROLE_TYPE.user.getType())));
-    }
-    if (role >= ROLE_TYPE.doctor.getType()) {
-      result.add(new SimpleGrantedAuthority(ROLE_TYPE.getRoleString(ROLE_TYPE.doctor.getType())));
-    }
-    if (role >= ROLE_TYPE.supervisor.getType()) {
-      result.add(new SimpleGrantedAuthority(ROLE_TYPE.getRoleString(ROLE_TYPE.supervisor.getType())));
-    }
-    if (role >= ROLE_TYPE.administrator.getType()) {
-      result.add(new SimpleGrantedAuthority(ROLE_TYPE.getRoleString(ROLE_TYPE.administrator.getType())));
-    }
-    if (role >= ROLE_TYPE.superadmin.getType()) {
-      result.add(new SimpleGrantedAuthority(ROLE_TYPE.getRoleString(ROLE_TYPE.superadmin.getType())));
-    }
+    if (role.equals("Z")) {
+      result.add(new SimpleGrantedAuthority(role));
+      result.add(new SimpleGrantedAuthority("A"));
+      result.add(new SimpleGrantedAuthority("B"));
+      result.add(new SimpleGrantedAuthority("C"));
+      result.add(new SimpleGrantedAuthority("D"));
+      result.add(new SimpleGrantedAuthority("E"));
+    } else if (role.equals("A")) {
+      result.add(new SimpleGrantedAuthority("A"));
+      result.add(new SimpleGrantedAuthority("B"));
+      result.add(new SimpleGrantedAuthority("C"));
+      result.add(new SimpleGrantedAuthority("D"));
+      result.add(new SimpleGrantedAuthority("E"));
+    } else if (role.equals("B") || role.equals("E")) {
+      result.add(new SimpleGrantedAuthority("B"));
+      result.add(new SimpleGrantedAuthority("E"));
+    } else if (role.equals("C")) {
+      result.add(new SimpleGrantedAuthority("B"));
+      result.add(new SimpleGrantedAuthority("C"));
+      result.add(new SimpleGrantedAuthority("D"));
+      result.add(new SimpleGrantedAuthority("E"));
+    }  else if (role.equals("D")) {
+      result.add(new SimpleGrantedAuthority("B"));
+      result.add(new SimpleGrantedAuthority("D"));
+      result.add(new SimpleGrantedAuthority("E"));
+    } 
     return result;
   }
 
@@ -114,6 +128,14 @@ public class UserDetailsImpl implements UserDetails {
   @Override
   public boolean isEnabled() {
     return true;
+  }
+  
+  public String getRole() {
+    return role;
+  }
+
+  public void setRole(String role) {
+    this.role = role;
   }
 
   @Override
