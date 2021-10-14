@@ -65,7 +65,6 @@ public class PlanConditionService {
             long id = (long)mapPlan.get("id");
             if (params.getIcd_no()!=null) {
                 planConditionDao.delIcdNo(id);
-                //shunxian 1014
                 for (String icd_no : params.getIcd_no()) {
                     ret += planConditionDao.addIcdNo(id, params.getIcd_no_enable(), icd_no);
                 }
@@ -99,7 +98,6 @@ public class PlanConditionService {
                     params.getExclude_join_enable(), params.getExclude_join());
             if (params.getIcd_no()!=null) {
                 planConditionDao.delIcdNo(id);
-                //shunxian 1014
                 for (String icd_no : params.getIcd_no()) {
                     ret += planConditionDao.addIcdNo(id, params.getIcd_no_enable(), icd_no);
                 }

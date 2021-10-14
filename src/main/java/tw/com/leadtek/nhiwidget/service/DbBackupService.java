@@ -224,10 +224,10 @@ public class DbBackupService {
         java.util.List<String> lstData = new java.util.LinkedList<String>();
         java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idName);
         System.out.println(mapRange);
+//        mapRange.put("max_id", 30000l); //shunxian test! test! test!
         long minId = mapRange.get("min_id");
         long maxId = mapRange.get("max_id");
         long start = minId;
-//        mapRange.put("max_id", 30000l); //shunxian test! test! test!
         String fileName = path+tableName+".txt";
         while (start <= maxId) {
 //            lstData.clear();
@@ -615,9 +615,7 @@ public class DbBackupService {
                     nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
 //                    System.out.println("nextOnTime="+nextOnTime);
                     if (nextOnTime.getTime() < new java.util.Date().getTime()) {
-                        System.out.println("pass-3.1");
                         if (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime()) {
-                            System.out.println("pass-3.2");
                             doIt = true;
                         }
                     }
