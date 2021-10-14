@@ -27,11 +27,11 @@ public class AdditionalPointDao {
         String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         
         String sql;
-        sql = "Select ID, ACTIVE, SYEAR, START_DATE, END_DATE\r\n"
-                + "From AP_ADDITIONAL_POINT\r\n"
-                + "Where (1=1)\r\n"
-                + "  -- and (SYEAR=%d)\r\n"
-                + "  -- and (START_DATE='%s')\r\n"
+        sql = "Select ID, ACTIVE, SYEAR, START_DATE, END_DATE\n"
+                + "From AP_ADDITIONAL_POINT\n"
+                + "Where (1=1)\n"
+                + "  -- and (SYEAR=%d)\n"
+                + "  -- and (START_DATE='%s')\n"
                 + "  -- and (END_DATE='%s')";
         sql = String.format(sql, syear, strStart, strEnd);
         if (syear>0) {
@@ -62,10 +62,10 @@ public class AdditionalPointDao {
         }
         strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         String sql;
-        sql = "Select ID, ACTIVE, SYEAR, START_DATE, END_DATE\r\n"
-                + "From AP_ADDITIONAL_POINT\r\n"
-                + "Where (1=1)\r\n"
-                + "  -- and (SYEAR=%d)\r\n"
+        sql = "Select ID, ACTIVE, SYEAR, START_DATE, END_DATE\n"
+                + "From AP_ADDITIONAL_POINT\n"
+                + "Where (1=1)\n"
+                + "  -- and (SYEAR=%d)\n"
                 + " and (START_DATE BETWEEN '%s' and '%s')\n"
                 + " and (END_DATE BETWEEN '%s' and '%s')\n";
         
@@ -81,9 +81,9 @@ public class AdditionalPointDao {
     
     public java.util.Map<String, Object> findAdditionalPoint(long ad_id) {
         String sql;
-        sql = "Select ID, ACTIVE, SYEAR, START_DATE, END_DATE\r\n"
-                + "From AP_ADDITIONAL_POINT\r\n"
-                + "Where (ID=%d)\r\n";
+        sql = "Select ID, ACTIVE, SYEAR, START_DATE, END_DATE\n"
+                + "From AP_ADDITIONAL_POINT\n"
+                + "Where (ID=%d)\n";
         sql = String.format(sql, ad_id);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
@@ -101,8 +101,8 @@ public class AdditionalPointDao {
         String strEnd = Utility.dateFormat(end_date, "yyyy/MM/dd");
         long newId=0;
         String sql, s1;
-        sql = "Insert into \r\n"
-                + "AP_ADDITIONAL_POINT(ID, ACTIVE, SYEAR, START_DATE, END_DATE)\r\n"
+        sql = "Insert into \n"
+                + "AP_ADDITIONAL_POINT(ID, ACTIVE, SYEAR, START_DATE, END_DATE)\n"
                 + "Values(%d, %d, %d, '%s', '%s')";
         for (int a=0; a<50; a++) {
             newId = newTableId_l("AP_ADDITIONAL_POINT", "ID");
@@ -125,11 +125,11 @@ public class AdditionalPointDao {
         String strStart = Utility.dateFormat(start_date, "yyyy/MM/dd");
         String strEnd = Utility.dateFormat(end_date, "yyyy/MM/dd");
         String sql;
-        sql = "Update AP_ADDITIONAL_POINT\r\n"
-                + "Set ACTIVE=%d, \r\n"
-                + "    SYEAR=%d, \r\n"
-                + "    START_DATE='%s', \r\n"
-                + "    END_DATE='%s'\r\n"
+        sql = "Update AP_ADDITIONAL_POINT\n"
+                + "Set ACTIVE=%d, \n"
+                + "    SYEAR=%d, \n"
+                + "    START_DATE='%s', \n"
+                + "    END_DATE='%s'\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, active, syear, strStart, strEnd, id);
         int ret = jdbcTemplate.update(sql);
@@ -138,7 +138,7 @@ public class AdditionalPointDao {
     
     public int deleteAdditionalPoint(long id) {
         String sql;
-        sql = "Delete from AP_ADDITIONAL_POINT\r\n"
+        sql = "Delete from AP_ADDITIONAL_POINT\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
         int ret =  jdbcTemplate.update(sql);
@@ -150,8 +150,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(categorys.size()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_OUTPATIENT_1(ID, ENABLE, AP_ID)\r\n"
+            sql = "Insert into \n"
+                    + "AP_OUTPATIENT_1(ID, ENABLE, AP_ID)\n"
                     + "Values(%d, %d, %d)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_1", "ID");
@@ -177,8 +177,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_1_category(long id, String category) {
         String sql;
-        sql = "Insert into\r\n"
-                + "AP_OUTPATIENT_1_CATEGORY(ID, CATEGORY)\r\n"
+        sql = "Insert into\n"
+                + "AP_OUTPATIENT_1_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, category);
         int ret = jdbcTemplate.update(sql);
@@ -191,13 +191,13 @@ public class AdditionalPointDao {
         java.util.List<Map<String, Object>> lst = findOutpatient(ap_id, 1);
         for (Map<String, Object> item: lst) {
             long id = (long)item.get("id");
-            sql = "Delete from AP_OUTPATIENT_1_CATEGORY\r\n"
+            sql = "Delete from AP_OUTPATIENT_1_CATEGORY\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
         }
         //----
-        sql = "Delete from AP_OUTPATIENT_1\r\n"
+        sql = "Delete from AP_OUTPATIENT_1\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -209,8 +209,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(cpoes.size()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_OUTPATIENT_2(ID, ENABLE, AP_ID, NHI_NO)\r\n"
+            sql = "Insert into \n"
+                    + "AP_OUTPATIENT_2(ID, ENABLE, AP_ID, NHI_NO)\n"
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_2", "ID");
@@ -236,8 +236,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_2_cpoe(long id, String cpoe) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_2_CPOE(ID, CPOE)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_2_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, cpoe);
         int ret = jdbcTemplate.update(sql);
@@ -250,13 +250,13 @@ public class AdditionalPointDao {
         java.util.List<Map<String, Object>> lst = findOutpatient(ap_id, 2);
         for (Map<String, Object> item: lst) {
             long id = (long)item.get("id");
-            sql = "Delete from AP_OUTPATIENT_2_CPOE\r\n"
+            sql = "Delete from AP_OUTPATIENT_2_CPOE\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
         }
         //----
-        sql = "Delete from AP_OUTPATIENT_2\r\n"
+        sql = "Delete from AP_OUTPATIENT_2\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -268,8 +268,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(nhi_no.length()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_OUTPATIENT_3(ID, ENABLE, AP_ID, NHI_NO)\r\n"
+            sql = "Insert into \n"
+                    + "AP_OUTPATIENT_3(ID, ENABLE, AP_ID, NHI_NO)\n"
                     + "Values(%d, %d, %d, '%s')";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_3", "ID");
@@ -291,7 +291,7 @@ public class AdditionalPointDao {
     public int delOutpatient_3(long ap_id) {
         int ret = 0;
         String sql;
-        sql = "DELETE FROM AP_OUTPATIENT_3\r\n"
+        sql = "DELETE FROM AP_OUTPATIENT_3\n"
               + "WHERE (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -304,8 +304,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(categorys.size()>0)||(cpoes.size()>0)||(treatments.size()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_OUTPATIENT_4(ID, ENABLE, AP_ID, NHI_NO)\r\n"
+            sql = "Insert into \n"
+                    + "AP_OUTPATIENT_4(ID, ENABLE, AP_ID, NHI_NO)\n"
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_4", "ID");
@@ -337,8 +337,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_4_category(long id, String category) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_4_CATEGORY(ID, CATEGORY)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_4_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, category);
         int ret = jdbcTemplate.update(sql);
@@ -347,8 +347,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_4_cpoe(long id, String cpoe) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_4_CPOE(ID, CPOE)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_4_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, cpoe);
         int ret = jdbcTemplate.update(sql);
@@ -357,8 +357,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_4_treatment(long id, String treatment) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_4_TREATMENT(ID, TREATMENT)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_4_TREATMENT(ID, TREATMENT)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, treatment);
         int ret = jdbcTemplate.update(sql);
@@ -371,23 +371,23 @@ public class AdditionalPointDao {
         java.util.List<Map<String, Object>> lst = findOutpatient(ap_id, 4);
         for (Map<String, Object> item: lst) {
             long id = (long)item.get("id");
-            sql = "Delete from AP_OUTPATIENT_4_CATEGORY\r\n"
+            sql = "Delete from AP_OUTPATIENT_4_CATEGORY\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
             //----
-            sql = "Delete from AP_OUTPATIENT_4_CPOE\r\n"
+            sql = "Delete from AP_OUTPATIENT_4_CPOE\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
             //----
-            sql = "Delete from AP_OUTPATIENT_4_TREATMENT\r\n"
+            sql = "Delete from AP_OUTPATIENT_4_TREATMENT\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
         }
         //----
-        sql = "Delete from AP_OUTPATIENT_4\r\n"
+        sql = "Delete from AP_OUTPATIENT_4\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -399,8 +399,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(cpoes.size()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_OUTPATIENT_5(ID, ENABLE, AP_ID, ICD_NO, NHI_NO)\r\n"
+            sql = "Insert into \n"
+                    + "AP_OUTPATIENT_5(ID, ENABLE, AP_ID, ICD_NO, NHI_NO)\n"
                     + "Values(%d, %d, %d, %s, %s);";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_5", "ID");
@@ -426,8 +426,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_5_cpoe(long id, String cpoe) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_5_CPOE(ID, CPOE)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_5_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, cpoe);
         int ret = jdbcTemplate.update(sql);
@@ -440,13 +440,13 @@ public class AdditionalPointDao {
         java.util.List<Map<String, Object>> lst = findOutpatient(ap_id, 5);
         for (Map<String, Object> item: lst) {
             long id = (long)item.get("id");
-            sql = "Delete from AP_OUTPATIENT_5_CPOE\r\n"
+            sql = "Delete from AP_OUTPATIENT_5_CPOE\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
         }
         //----
-        sql = "Delete from AP_OUTPATIENT_5\r\n"
+        sql = "Delete from AP_OUTPATIENT_5\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -459,8 +459,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(categorys.size()>0)||(cpoes.size()>0)||(plans.size()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_OUTPATIENT_6(ID, ENABLE, AP_ID, NHI_NO)\r\n"
+            sql = "Insert into \n"
+                    + "AP_OUTPATIENT_6(ID, ENABLE, AP_ID, NHI_NO)\n"
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_6", "ID");
@@ -492,8 +492,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_6_category(long id, String category) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_6_CATEGORY(ID, CATEGORY)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_6_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, category);
         int ret = jdbcTemplate.update(sql);
@@ -502,8 +502,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_6_cpoe(long id, String cpoe) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_6_CPOE(ID, CPOE)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_6_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, cpoe);
         int ret = jdbcTemplate.update(sql);
@@ -512,8 +512,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_6_plan(long id, String plan) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_6_PLAN(ID, PLAN)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_6_PLAN(ID, PLAN)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, plan);
         int ret = jdbcTemplate.update(sql);
@@ -526,23 +526,23 @@ public class AdditionalPointDao {
         java.util.List<Map<String, Object>> lst = findOutpatient(ap_id, 6);
         for (Map<String, Object> item: lst) {
             long id = (long)item.get("id");
-            sql = "Delete from AP_OUTPATIENT_6_CATEGORY\r\n"
+            sql = "Delete from AP_OUTPATIENT_6_CATEGORY\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
             //----
-            sql = "Delete from AP_OUTPATIENT_6_CPOE\r\n"
+            sql = "Delete from AP_OUTPATIENT_6_CPOE\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
             //----
-            sql = "Delete from AP_OUTPATIENT_6_PLAN\r\n"
+            sql = "Delete from AP_OUTPATIENT_6_PLAN\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
         }
         //----
-        sql = "Delete from AP_OUTPATIENT_6\r\n"
+        sql = "Delete from AP_OUTPATIENT_6\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -555,8 +555,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&((plans.size()>0)||(trials.size()>0))) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_OUTPATIENT_7(ID, ENABLE, AP_ID, NHI_NO)\r\n"
+            sql = "Insert into \n"
+                    + "AP_OUTPATIENT_7(ID, ENABLE, AP_ID, NHI_NO)\n"
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_7", "ID");
@@ -585,8 +585,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_7_trial(long id, String trial) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_7_TRIAL(ID, TRIAL)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_7_TRIAL(ID, TRIAL)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, trial);
         int ret = jdbcTemplate.update(sql);
@@ -595,8 +595,8 @@ public class AdditionalPointDao {
     
     private int addOutpatient_7_plan(long id, String plan) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_OUTPATIENT_7_PLAN(ID, PLAN)\r\n"
+        sql = "Insert into \n"
+                + "AP_OUTPATIENT_7_PLAN(ID, PLAN)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, plan);
         int ret = jdbcTemplate.update(sql);
@@ -609,18 +609,18 @@ public class AdditionalPointDao {
         java.util.List<Map<String, Object>> lst = findOutpatient(ap_id, 7);
         for (Map<String, Object> item: lst) {
             long id = (long)item.get("id");
-            sql = "Delete from AP_OUTPATIENT_7_TRIAL\r\n"
+            sql = "Delete from AP_OUTPATIENT_7_TRIAL\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
             //----
-            sql = "Delete from AP_OUTPATIENT_7_PLAN\r\n"
+            sql = "Delete from AP_OUTPATIENT_7_PLAN\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
         }
         //----
-        sql = "Delete from AP_OUTPATIENT_7\r\n"
+        sql = "Delete from AP_OUTPATIENT_7\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -632,8 +632,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(categorys.size()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_INPATIENT_1(ID, ENABLE, AP_ID)\r\n"
+            sql = "Insert into \n"
+                    + "AP_INPATIENT_1(ID, ENABLE, AP_ID)\n"
                     + "Values(%d, %d, %d)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_INPATIENT_1", "ID");
@@ -659,8 +659,8 @@ public class AdditionalPointDao {
     
     private int addInpatient_1_category(long id, String category) {
         String sql;
-        sql = "Insert into\r\n"
-                + "AP_INPATIENT_1_CATEGORY(ID, CATEGORY)\r\n"
+        sql = "Insert into\n"
+                + "AP_INPATIENT_1_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, category);
         int ret = jdbcTemplate.update(sql);
@@ -673,13 +673,13 @@ public class AdditionalPointDao {
         java.util.List<Map<String, Object>> lst = findInpatient(ap_id, 1);
         for (Map<String, Object> item: lst) {
             long id = (long)item.get("id");
-            sql = "Delete from AP_INPATIENT_1_CATEGORY\r\n"
+            sql = "Delete from AP_INPATIENT_1_CATEGORY\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
         }
         //----
-        sql = "Delete from AP_INPATIENT_1\r\n"
+        sql = "Delete from AP_INPATIENT_1\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -691,8 +691,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(cpoes.size()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_INPATIENT_2(ID, ENABLE, AP_ID, NHI_NO)\r\n"
+            sql = "Insert into \n"
+                    + "AP_INPATIENT_2(ID, ENABLE, AP_ID, NHI_NO)\n"
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_INPATIENT_2", "ID");
@@ -718,8 +718,8 @@ public class AdditionalPointDao {
     
     private int addInpatient_2_cpoe(long id, String cpoe) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_INPATIENT_2_CPOE(ID, CPOE)\r\n"
+        sql = "Insert into \n"
+                + "AP_INPATIENT_2_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, cpoe);
         int ret = jdbcTemplate.update(sql);
@@ -732,13 +732,13 @@ public class AdditionalPointDao {
         java.util.List<Map<String, Object>> lst = findInpatient(ap_id, 2);
         for (Map<String, Object> item: lst) {
             long id = (long)item.get("id");
-            sql = "Delete from AP_INPATIENT_2_CPOE\r\n"
+            sql = "Delete from AP_INPATIENT_2_CPOE\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
         }
         //----
-        sql = "Delete from AP_INPATIENT_2\r\n"
+        sql = "Delete from AP_INPATIENT_2\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -750,8 +750,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(nhi_no.length()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_INPATIENT_3(ID, ENABLE, AP_ID, NHI_NO)\r\n"
+            sql = "Insert into \n"
+                    + "AP_INPATIENT_3(ID, ENABLE, AP_ID, NHI_NO)\n"
                     + "Values(%d, %d, %d, '%s')";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_INPATIENT_3", "ID");
@@ -773,7 +773,7 @@ public class AdditionalPointDao {
     public int delInpatient_3(long ap_id) {
         int ret = 0;
         String sql;
-        sql = "DELETE FROM AP_INPATIENT_3\r\n"
+        sql = "DELETE FROM AP_INPATIENT_3\n"
               + "WHERE (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -786,8 +786,8 @@ public class AdditionalPointDao {
         long newId = 0;
         if ((ap_id>0)&&(categorys.size()>0)||(cpoes.size()>0)||(plans.size()>0)) {
             String sql, s1;
-            sql = "Insert into \r\n"
-                    + "AP_INPATIENT_6(ID, ENABLE, AP_ID, NHI_NO)\r\n"
+            sql = "Insert into \n"
+                    + "AP_INPATIENT_6(ID, ENABLE, AP_ID, NHI_NO)\n"
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_INPATIENT_6", "ID");
@@ -819,8 +819,8 @@ public class AdditionalPointDao {
     
     private int addInpatient_6_category(long id, String category) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_INPATIENT_6_CATEGORY(ID, CATEGORY)\r\n"
+        sql = "Insert into \n"
+                + "AP_INPATIENT_6_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, category);
         int ret = jdbcTemplate.update(sql);
@@ -829,8 +829,8 @@ public class AdditionalPointDao {
     
     private int addInpatient_6_cpoe(long id, String cpoe) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_INPATIENT_6_CPOE(ID, CPOE)\r\n"
+        sql = "Insert into \n"
+                + "AP_INPATIENT_6_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, cpoe);
         int ret = jdbcTemplate.update(sql);
@@ -839,8 +839,8 @@ public class AdditionalPointDao {
     
     private int addInpatient_6_plan(long id, String plan) {
         String sql;
-        sql = "Insert into \r\n"
-                + "AP_INPATIENT_6_PLAN(ID, PLAN)\r\n"
+        sql = "Insert into \n"
+                + "AP_INPATIENT_6_PLAN(ID, PLAN)\n"
                 + "Values(%d, '%s')";
         sql = String.format(sql, id, plan);
         int ret = jdbcTemplate.update(sql);
@@ -853,23 +853,23 @@ public class AdditionalPointDao {
         java.util.List<Map<String, Object>> lst = findInpatient(ap_id, 6);
         for (Map<String, Object> item: lst) {
             long id = (long)item.get("id");
-            sql = "Delete from AP_INPATIENT_6_CATEGORY\r\n"
+            sql = "Delete from AP_INPATIENT_6_CATEGORY\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
             //----
-            sql = "Delete from AP_INPATIENT_6_CPOE\r\n"
+            sql = "Delete from AP_INPATIENT_6_CPOE\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
             //----
-            sql = "Delete from AP_INPATIENT_6_PLAN\r\n"
+            sql = "Delete from AP_INPATIENT_6_PLAN\n"
                     + "Where (ID=%d)";
             sql = String.format(sql, id);
             ret += jdbcTemplate.update(sql);
         }
         //----
-        sql = "Delete from AP_INPATIENT_6\r\n"
+        sql = "Delete from AP_INPATIENT_6\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
@@ -879,8 +879,8 @@ public class AdditionalPointDao {
     //---------------------
     public java.util.List<Map<String, Object>> findOutpatient(long ap_id, int sn) {
         String sql;
-        sql = "Select *\r\n"
-                + "From AP_OUTPATIENT_%d\r\n"
+        sql = "Select *\n"
+                + "From AP_OUTPATIENT_%d\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, sn, ap_id);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -895,8 +895,8 @@ public class AdditionalPointDao {
         field = field.toUpperCase();
         java.util.List<String> retList = new java.util.ArrayList<String>();
         String sql;
-        sql = "Select %s\r\n"
-                + "From AP_OUTPATIENT_%d_%s\r\n"
+        sql = "Select %s\n"
+                + "From AP_OUTPATIENT_%d_%s\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, field, sn, field, mid);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -910,8 +910,8 @@ public class AdditionalPointDao {
     
     public java.util.List<Map<String, Object>> findInpatient(long ap_id, int sn) {
         String sql;
-        sql = "Select *\r\n"
-                + "From AP_INPATIENT_%d\r\n"
+        sql = "Select *\n"
+                + "From AP_INPATIENT_%d\n"
                 + "Where (AP_ID=%d)";
         sql = String.format(sql, sn, ap_id);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -926,8 +926,8 @@ public class AdditionalPointDao {
         field = field.toUpperCase();
         java.util.List<String> retList = new java.util.ArrayList<String>();
         String sql;
-        sql = "Select %s\r\n"
-                + "From AP_INPATIENT_%d_%s\r\n"
+        sql = "Select %s\n"
+                + "From AP_INPATIENT_%d_%s\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, field, sn, field, mid);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());

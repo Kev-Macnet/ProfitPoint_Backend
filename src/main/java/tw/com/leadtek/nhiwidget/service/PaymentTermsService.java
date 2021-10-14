@@ -20,6 +20,10 @@ public class PaymentTermsService {
             java.util.Date startDate, java.util.Date endDate) {
 
         java.util.List<Map<String, Object>> lst = paymentTermsDao.searchPaymentTerms(feeNo, nhiNo, category, startDate, endDate);
+        if (lst.size()==0) {
+            //searchPaymentTermsByDateRange(String category, String feeNo, String nhiNo, java.util.Date startDate, java.util.Date endDate)
+            lst = paymentTermsDao.searchPaymentTermsByDateRange(feeNo, nhiNo, category, startDate, endDate);
+        }
         return lst;
     }
     

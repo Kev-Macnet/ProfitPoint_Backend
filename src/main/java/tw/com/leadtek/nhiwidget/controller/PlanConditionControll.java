@@ -68,13 +68,13 @@ public class PlanConditionControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
-            int status = planConditionService.addPlanCondition(params);
+            long planId = planConditionService.addPlanCondition(params);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
-            retMap.put("status", status);
+            retMap.put("status", 0);
+            retMap.put("new_id", planId);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
-    
     
     @ApiOperation(value="13.03 更新計畫可收案病例條件", notes="", position=3)
     @ApiResponses({

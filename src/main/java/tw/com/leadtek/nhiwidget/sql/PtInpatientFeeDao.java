@@ -22,8 +22,8 @@ public class PtInpatientFeeDao {
     // pt_id, max_inpatient_enable, max_inpatient, max_emergency_enable, max_emergency, max_patient_no_enable, max_patient_no, exclude_nhi_no_enable, not_allow_plan_enable, coexist_nhi_no_enable, no_coexist_enable 
     public java.util.Map<String, Object> findOne(long ptId) {
         String sql;
-        sql = "Select PT_ID, MAX_INPATIENT_ENABLE, MAX_INPATIENT, MAX_EMERGENCY_ENABLE, MAX_EMERGENCY, MAX_PATIENT_NO_ENABLE, MAX_PATIENT_NO, EXCLUDE_NHI_NO_ENABLE, NOT_ALLOW_PLAN_ENABLE, COEXIST_NHI_NO_ENABLE, NO_COEXIST_ENABLE\r\n"
-                + "From PT_INPATIENT_FEE\r\n"
+        sql = "Select PT_ID, MAX_INPATIENT_ENABLE, MAX_INPATIENT, MAX_EMERGENCY_ENABLE, MAX_EMERGENCY, MAX_PATIENT_NO_ENABLE, MAX_PATIENT_NO, EXCLUDE_NHI_NO_ENABLE, NOT_ALLOW_PLAN_ENABLE, COEXIST_NHI_NO_ENABLE, NO_COEXIST_ENABLE\n"
+                + "From PT_INPATIENT_FEE\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         logger.info(sql);
@@ -37,7 +37,7 @@ public class PtInpatientFeeDao {
     
     public int delete(long ptId) {
         String sql;
-        sql = "Delete from PT_INPATIENT_FEE\r\n"
+        sql = "Delete from PT_INPATIENT_FEE\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         logger.info(sql);
@@ -50,8 +50,8 @@ public class PtInpatientFeeDao {
             int max_patient_no_enable, int max_patient_no, int exclude_nhi_no_enable, int not_allow_plan_enable, 
             int coexist_nhi_no_enable, int no_coexist_enable) {
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_INPATIENT_FEE(PT_ID, MAX_INPATIENT_ENABLE, MAX_INPATIENT, MAX_EMERGENCY_ENABLE, MAX_EMERGENCY, MAX_PATIENT_NO_ENABLE, MAX_PATIENT_NO, EXCLUDE_NHI_NO_ENABLE, NOT_ALLOW_PLAN_ENABLE, COEXIST_NHI_NO_ENABLE, NO_COEXIST_ENABLE)\r\n"
+        sql = "Insert into \n"
+                + "PT_INPATIENT_FEE(PT_ID, MAX_INPATIENT_ENABLE, MAX_INPATIENT, MAX_EMERGENCY_ENABLE, MAX_EMERGENCY, MAX_PATIENT_NO_ENABLE, MAX_PATIENT_NO, EXCLUDE_NHI_NO_ENABLE, NOT_ALLOW_PLAN_ENABLE, COEXIST_NHI_NO_ENABLE, NO_COEXIST_ENABLE)\n"
                 + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)";
         sql = String.format(sql, ptId, max_inpatient_enable, max_inpatient, max_emergency_enable, max_emergency, max_patient_no_enable, max_patient_no, exclude_nhi_no_enable, not_allow_plan_enable, coexist_nhi_no_enable, no_coexist_enable);
         logger.info(sql);
@@ -67,17 +67,17 @@ public class PtInpatientFeeDao {
             int max_patient_no_enable, int max_patient_no, int exclude_nhi_no_enable, int not_allow_plan_enable, 
             int coexist_nhi_no_enable, int no_coexist_enable) {
         String sql;
-        sql = "UPDATE PT_INPATIENT_FEE \r\n"
-                + "SET MAX_INPATIENT_ENABLE=%d, \r\n"
-                + "    MAX_INPATIENT=%d, \r\n"
-                + "    MAX_EMERGENCY_ENABLE=%d, \r\n"
-                + "    MAX_EMERGENCY=%d, \r\n"
-                + "    MAX_PATIENT_NO_ENABLE=%d, \r\n"
-                + "    MAX_PATIENT_NO=%d, \r\n"
-                + "    EXCLUDE_NHI_NO_ENABLE=%d, \r\n"
-                + "    NOT_ALLOW_PLAN_ENABLE=%d, \r\n"
-                + "    COEXIST_NHI_NO_ENABLE=%d, \r\n"
-                + "    NO_COEXIST_ENABLE=%d \r\n"
+        sql = "UPDATE PT_INPATIENT_FEE \n"
+                + "SET MAX_INPATIENT_ENABLE=%d, \n"
+                + "    MAX_INPATIENT=%d, \n"
+                + "    MAX_EMERGENCY_ENABLE=%d, \n"
+                + "    MAX_EMERGENCY=%d, \n"
+                + "    MAX_PATIENT_NO_ENABLE=%d, \n"
+                + "    MAX_PATIENT_NO=%d, \n"
+                + "    EXCLUDE_NHI_NO_ENABLE=%d, \n"
+                + "    NOT_ALLOW_PLAN_ENABLE=%d, \n"
+                + "    COEXIST_NHI_NO_ENABLE=%d, \n"
+                + "    NO_COEXIST_ENABLE=%d \n"
                 + "WHERE (PT_ID=%d)";
         sql = String.format(sql, max_inpatient_enable, max_inpatient, max_emergency_enable, max_emergency, max_patient_no_enable, max_patient_no, exclude_nhi_no_enable, not_allow_plan_enable, coexist_nhi_no_enable, no_coexist_enable, ptId);
         logger.info(sql);

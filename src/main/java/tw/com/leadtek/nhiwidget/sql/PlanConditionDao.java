@@ -21,8 +21,8 @@ public class PlanConditionDao {
 
     public java.util.List<Map<String, Object>> findList(String searchName) {
         String sql;
-        sql = "Select ID, NAME, DIVISION, ACTIVE\r\n"
-                + "From PLAN_CONDITION\r\n"
+        sql = "Select ID, NAME, DIVISION, ACTIVE\n"
+                + "From PLAN_CONDITION\n"
                 + "Where(1=1) \n"
                 + "  -- and(NAME like '%%%s%%')";
         sql = String.format(sql, searchName);
@@ -36,8 +36,8 @@ public class PlanConditionDao {
 
     public java.util.Map<String, Object> findOne(long id) {
         String sql;
-        sql = "Select ID, NAME, DIVISION, ACTIVE, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN\r\n"
-                  + "From PLAN_CONDITION\r\n"
+        sql = "Select ID, NAME, DIVISION, ACTIVE, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN\n"
+                  + "From PLAN_CONDITION\n"
                   + "Where(ID = %d)";
         sql = String.format(sql, id);
         logger.info(sql);
@@ -52,8 +52,8 @@ public class PlanConditionDao {
     
     public java.util.Map<String, Object> findOne(String name, String division) {
         String sql;
-        sql = "Select ID, NAME, DIVISION, ACTIVE, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN\r\n"
-                  + "From PLAN_CONDITION\r\n"
+        sql = "Select ID, NAME, DIVISION, ACTIVE, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN\n"
+                  + "From PLAN_CONDITION\n"
                   + "Where(NAME = '%s')\n"
                   + "  and(DIVISION = '%s')";
         sql = String.format(sql, name, division);
@@ -67,17 +67,30 @@ public class PlanConditionDao {
     }
     
     
-    public int addPlanCondition(String name, String division, int active, 
+    public long addPlanCondition(String name, String division, int active, 
             int exp_icd_no_enable, String exp_icd_no, int no_exp_icd_no_enable, String no_exp_icd_no, 
             int exclude_psychiatric_enable, int medicine_times_enable, int medicine_times, String medicine_times_division, 
             int exclude_plan_nday_enable, int exclude_plan_nday, int exclude_join_enable, String exclude_join) {
         String sql;
-        sql = "Insert into \r\n"
-                + "PLAN_CONDITION(NAME, DIVISION, ACTIVE, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN)\r\n"
+        sql = "Insert into \n"
+                + "PLAN_CONDITION(NAME, DIVISION, ACTIVE, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN)\n"
                 + "Values('%s', '%s', %d, %d, '%s', %d, '%s', %d, %d, %d, '%s', %d, %d, %d, '%s')";
         sql = String.format(sql, name, division, active, exp_icd_no_enable, exp_icd_no, no_exp_icd_no_enable, no_exp_icd_no, exclude_psychiatric_enable, medicine_times_enable, medicine_times, medicine_times_division, exclude_plan_nday_enable, exclude_plan_nday, exclude_join_enable, exclude_join);
         logger.info(sql);
-        int ret = jdbcTemplate.update(sql);
+        long ret = jdbcTemplate.update(sql);
+        if (ret>0) {
+            sql = "SELECT ID, NAME, DIVISION\n"
+                    + "FROM PLAN_CONDITION\n"
+                    + "Where (1=1)\n"
+                    + "   -- and(NAME='月光計畫')\n"
+                    + "   and(DIVISION='內分泌科')\n"
+                    + "Order By ID DESC\n"
+                    + "Limit 1";
+            java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+            if (lst.size()>0) {
+                ret = (long)lst.get(0).get("id");
+            }
+        }
         return ret;
     }
     
@@ -87,22 +100,22 @@ public class PlanConditionDao {
             int exclude_psychiatric_enable, int medicine_times_enable, int medicine_times, String medicine_times_division, 
             int exclude_plan_nday_enable, int exclude_plan_nday, int exclude_join_enable, String exclude_join) {
         String sql;
-        sql = "Update PLAN_CONDITION\r\n"
-                + "Set NAME='%s', \r\n"
-                + "    DIVISION='%s', \r\n"
-                + "    ACTIVE=%d, \r\n"
-                + "    EXP_ICD_NO_ENABLE=%d, \r\n"
-                + "    EXP_ICD_NO='%s', \r\n"
-                + "    NO_EXP_ICD_NO_ENABLE=%d, \r\n"
-                + "    NO_EXP_ICD_NO='%s', \r\n"
-                + "    EXCLUDE_PSYCHIATRIC_ENABLE=%d, \r\n"
-                + "    MEDICINE_TIMES_ENABLE=%d, \r\n"
-                + "    MEDICINE_TIMES=%d, \r\n"
-                + "    MEDICINE_TIMES_DIVISION='%s', \r\n"
-                + "    EXCLUDE_PLAN_NDAY_ENABLE=%d, \r\n"
-                + "    EXCLUDE_PLAN_NDAY=%d, \r\n"
-                + "    EXCLUDE_JOIN_ENABLE=%d, \r\n"
-                + "    EXCLUDE_JOIN='%s'\r\n"
+        sql = "Update PLAN_CONDITION\n"
+                + "Set NAME='%s', \n"
+                + "    DIVISION='%s', \n"
+                + "    ACTIVE=%d, \n"
+                + "    EXP_ICD_NO_ENABLE=%d, \n"
+                + "    EXP_ICD_NO='%s', \n"
+                + "    NO_EXP_ICD_NO_ENABLE=%d, \n"
+                + "    NO_EXP_ICD_NO='%s', \n"
+                + "    EXCLUDE_PSYCHIATRIC_ENABLE=%d, \n"
+                + "    MEDICINE_TIMES_ENABLE=%d, \n"
+                + "    MEDICINE_TIMES=%d, \n"
+                + "    MEDICINE_TIMES_DIVISION='%s', \n"
+                + "    EXCLUDE_PLAN_NDAY_ENABLE=%d, \n"
+                + "    EXCLUDE_PLAN_NDAY=%d, \n"
+                + "    EXCLUDE_JOIN_ENABLE=%d, \n"
+                + "    EXCLUDE_JOIN='%s'\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, name, division, active, exp_icd_no_enable, exp_icd_no, no_exp_icd_no_enable, no_exp_icd_no, 
                             exclude_psychiatric_enable, medicine_times_enable, medicine_times, medicine_times_division, 
@@ -114,7 +127,7 @@ public class PlanConditionDao {
     
     public int delPlanCondition(long id) {
         String sql;
-        sql = "Delete From PLAN_CONDITION\r\n"
+        sql = "Delete From PLAN_CONDITION\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
         logger.info(sql);
@@ -125,8 +138,8 @@ public class PlanConditionDao {
     //=== PLAN_icd_no
     public java.util.List<Map<String, Object>> findIcdNo(long id) {
         String sql;
-        sql = "Select ENABLE, ICD_NO\r\n"
-                + "From PLAN_ICD_NO\r\n"
+        sql = "Select ENABLE, ICD_NO\n"
+                + "From PLAN_ICD_NO\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
         logger.info(sql);
@@ -136,8 +149,8 @@ public class PlanConditionDao {
   
     public int addIcdNo(long id, int enable, String icdNo) {
         String sql;
-        sql = "Insert into \r\n"
-              + "PLAN_ICD_NO(ID, ENABLE, ICD_NO)\r\n"
+        sql = "Insert into \n"
+              + "PLAN_ICD_NO(ID, ENABLE, ICD_NO)\n"
               + "Values(%d, %d, '%s')";
         sql = String.format(sql, id, enable, icdNo);
         logger.info(sql);
@@ -147,7 +160,7 @@ public class PlanConditionDao {
 
     public int delIcdNo(long id) {
         String sql;
-        sql = "Delete From PLAN_ICD_NO\r\n"
+        sql = "Delete From PLAN_ICD_NO\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
         logger.info(sql);
@@ -159,8 +172,8 @@ public class PlanConditionDao {
     //=== PLAN_less_nday 
     public java.util.List<Map<String, Object>> findLessNDay(long id) {
         String sql;
-        sql = "Select ENABLE, ICD_NO, NDAY\r\n"
-                + "From PLAN_LESS_NDAY\r\n"
+        sql = "Select ENABLE, ICD_NO, NDAY\n"
+                + "From PLAN_LESS_NDAY\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
         logger.info(sql);
@@ -170,8 +183,8 @@ public class PlanConditionDao {
   
     public int addLessNDay(long id, int enable, String icdNo, int nday) {
         String sql;
-        sql = "Insert into \r\n"
-                + "PLAN_LESS_NDAY (ID, ENABLE, ICD_NO, NDAY)\r\n"
+        sql = "Insert into \n"
+                + "PLAN_LESS_NDAY (ID, ENABLE, ICD_NO, NDAY)\n"
                 + "Values(%d, %d, '%s', %d)";
         sql = String.format(sql, id, enable, icdNo, nday);
         logger.info(sql);
@@ -181,7 +194,7 @@ public class PlanConditionDao {
 
     public int delLessNDay(long id) {
         String sql;
-        sql = "Delete From PLAN_LESS_NDAY\r\n"
+        sql = "Delete From PLAN_LESS_NDAY\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
         logger.info(sql);
@@ -193,8 +206,8 @@ public class PlanConditionDao {
   //=== PLAN_more_times 
     public java.util.List<Map<String, Object>> findMoreTimes(long id) {
         String sql;
-        sql = "Select ENABLE, ICD_NO, TIMES\r\n"
-                + "From PLAN_MORE_TIMES\r\n"
+        sql = "Select ENABLE, ICD_NO, TIMES\n"
+                + "From PLAN_MORE_TIMES\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
         logger.info(sql);
@@ -204,8 +217,8 @@ public class PlanConditionDao {
   
     public int addMoreTimes(long id, int enable, String icdNo, int times) {
         String sql;
-        sql = "Insert into \r\n"
-                + "PLAN_MORE_TIMES(ID, ENABLE, ICD_NO, TIMES)\r\n"
+        sql = "Insert into \n"
+                + "PLAN_MORE_TIMES(ID, ENABLE, ICD_NO, TIMES)\n"
                 + "Values(%d, %d, '%s', %d)";
         sql = String.format(sql, id, enable, icdNo, times);
         logger.info(sql);
@@ -215,7 +228,7 @@ public class PlanConditionDao {
 
     public int delMoreTimes(long id) {
         String sql;
-        sql = "Delete From PLAN_MORE_TIMES\r\n"
+        sql = "Delete From PLAN_MORE_TIMES\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
         logger.info(sql);

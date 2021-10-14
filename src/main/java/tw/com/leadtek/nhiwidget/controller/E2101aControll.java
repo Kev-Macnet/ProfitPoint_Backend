@@ -75,7 +75,6 @@ public class E2101aControll {
     public ResponseEntity<?> paymentTermsSearh(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @RequestBody PaymentTermsSearchPl params) throws Exception {
-        System.out.println("useModelV3="+useModelV3);
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);

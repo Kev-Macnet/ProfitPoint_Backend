@@ -13,10 +13,19 @@ public class PlanConditionPl {
     private String division;
     @ApiModelProperty(value="是否啟用(1|0)", example="1", required=true, position=4)
     private int active;
+    
+    @ApiModelProperty(value="開關--本院ICD碼(1|0)", example="1", required=false, position=5)
+    private int icd_no_enable;
     @ApiModelProperty(value="本院ICD碼列表", required=true, position=5)
-    private java.util.List<PlanIcdNoPl> icd_no;
+    private java.util.List<String> icd_no;
+    
+    @ApiModelProperty(value="開關--就醫天數少於 n day(1|0)", example="1", required=false, position=6)
+    private int less_nday_enable;
     @ApiModelProperty(value="就醫天數少於 n day列表", required=true, position=6)
     private java.util.List<PlanLessNDayPl> less_nday;
+    
+    @ApiModelProperty(value="開關--就醫次數大於 n 次(1|0)", example="1", required=false, position=7)
+    private int more_times_enable;
     @ApiModelProperty(value="就醫次數大於 n 次列表", required=true, position=7)
     private java.util.List<PlanMoreTimesPl> more_times;
     
@@ -141,12 +150,7 @@ public class PlanConditionPl {
     public void setExclude_join(String exclude_join) {
         this.exclude_join = exclude_join;
     }
-    public java.util.List<PlanIcdNoPl> getIcd_no() {
-        return icd_no;
-    }
-    public void setIcd_no(java.util.List<PlanIcdNoPl> icd_no) {
-        this.icd_no = icd_no;
-    }
+    
     public java.util.List<PlanLessNDayPl> getLess_nday() {
         return less_nday;
     }
@@ -159,7 +163,31 @@ public class PlanConditionPl {
     public void setMore_times(java.util.List<PlanMoreTimesPl> more_times) {
         this.more_times = more_times;
     }
-
+    public int getIcd_no_enable() {
+        return icd_no_enable;
+    }
+    public void setIcd_no_enable(int icd_no_enable) {
+        this.icd_no_enable = icd_no_enable;
+    }
+    public java.util.List<String> getIcd_no() {
+        return icd_no;
+    }
+    public void setIcd_no(java.util.List<String> icd_no) {
+        this.icd_no = icd_no;
+    }
+    public int getLess_nday_enable() {
+        return less_nday_enable;
+    }
+    public void setLess_nday_enable(int less_nday_enable) {
+        this.less_nday_enable = less_nday_enable;
+    }
+    public int getMore_times_enable() {
+        return more_times_enable;
+    }
+    public void setMore_times_enable(int more_times_enable) {
+        this.more_times_enable = more_times_enable;
+    }
+    
 }
 
 /*

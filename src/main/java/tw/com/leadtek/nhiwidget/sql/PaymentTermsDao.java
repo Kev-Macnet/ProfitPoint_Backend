@@ -28,14 +28,15 @@ public class PaymentTermsDao {
         String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         
         String sql;
-        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
-                + "From PT_PAYMENT_TERMS\r\n"
-                + "Where (1=1)\r\n"
-                + " -- and (FEE_NO like '%s%%')\r\n"
-                + " -- and (NHI_NO  like '%s%%')\r\n"
-                + " -- and (CATEGORY='%s')\r\n"
-                + " -- and (START_DATE='%s')\r\n"
-                + " -- and (END_DATE='%s')";
+        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
+                + "From PT_PAYMENT_TERMS\n"
+                + "Where (1=1)\n"
+                + " -- and (FEE_NO like '%s%%')\n"
+                + " -- and (NHI_NO  like '%s%%')\n"
+                + " -- and (CATEGORY='%s')\n"
+                + " -- and (START_DATE='%s')\n"
+                + " -- and (END_DATE='%s')"
+                + "Order By ID";
         sql = String.format(sql, feeNo, nhiNo, category, strStart, strEnd);
         if (feeNo.length()>0) {
             sql=sql.replace("-- and (FEE_NO", " and (FEE_NO");
@@ -52,6 +53,7 @@ public class PaymentTermsDao {
         if (strEnd.length()>0) {
           sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
         }
+//        System.out.println("sql-55="+sql);
         logger.info(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         lst = Utility.listLowerCase(lst);
@@ -76,14 +78,15 @@ public class PaymentTermsDao {
         }
         strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         String sql;
-        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
-                + "From PT_PAYMENT_TERMS\r\n"
+        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
+                + "From PT_PAYMENT_TERMS\n"
                 + "Where (1=1)\n"
                 + " -- and (CATEGORY='%s')\n"
                 + " -- and (FEE_NO='%s')\n"
                 + " -- and (NHI_NO='%s')\n"
                 + " and (START_DATE BETWEEN '%s' and '%s')\n"
-                + " and (END_DATE BETWEEN '%s' and '%s')\n";
+                + " and (END_DATE BETWEEN '%s' and '%s')\n"
+                + "Order By ID";
         
         sql = String.format(sql, category, feeNo, nhiNo, strStart, strEnd, strStart, strEnd);
         if (category.length()>0) {
@@ -105,11 +108,11 @@ public class PaymentTermsDao {
     
     public java.util.Map<String, Object> findPaymentTerms(long id, String category) {
         String sql;
-//        sql= "Insert into\r\n"
-//                + "PT_PAYMENT_TERMS(ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\r\n"
+//        sql= "Insert into\n"
+//                + "PT_PAYMENT_TERMS(ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\n"
 //                + "Values(0, '', '', '', '', CURRENT_DATE, '', '', 0, 0)";
-        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\r\n"
-                + "From PT_PAYMENT_TERMS\r\n"
+        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
+                + "From PT_PAYMENT_TERMS\n"
                 + "Where (ID=%d) and (CATEGORY='%s')";
         sql = String.format(sql, id, category);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -130,8 +133,8 @@ public class PaymentTermsDao {
         long newId=0;
         String sql, s1;
         
-        sql = "Insert into \r\n"
-                + "PT_PAYMENT_TERMS (ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\r\n"
+        sql = "Insert into \n"
+                + "PT_PAYMENT_TERMS (ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\n"
                 + "Values(%d, %s, %s, %s, %s, '%s','%s', '%s', %d, %d)";
         for (int a=0; a<50; a++) {
             newId = newTableId_l("PT_PAYMENT_TERMS", "ID");
@@ -160,28 +163,28 @@ public class PaymentTermsDao {
         String strEnd = Utility.dateFormat(end_date, "yyyy/MM/dd");
         String sql;
         /*
-        sql = "Update PT_PAYMENT_TERMS\r\n"
-                + "Set FEE_NO=%s, \r\n"
-                + "    FEE_NAME=%s, \r\n"
-                + "    NHI_NO=%s, \r\n"
-                + "    NHI_NAME=%s, \r\n"
-                + "    START_DATE='%s', \r\n"
-                + "    END_DATE='%s', \r\n"
-                + " --   CATEGORY='%s', \r\n"
-                + "    HOSPITAL_TYPE=%d, \r\n"
-                + "    OUTPATIENT_TYPE=%d, \r\n"
-                + "    HOSPITALIZED_TYPE=%d\r\n"
+        sql = "Update PT_PAYMENT_TERMS\n"
+                + "Set FEE_NO=%s, \n"
+                + "    FEE_NAME=%s, \n"
+                + "    NHI_NO=%s, \n"
+                + "    NHI_NAME=%s, \n"
+                + "    START_DATE='%s', \n"
+                + "    END_DATE='%s', \n"
+                + " --   CATEGORY='%s', \n"
+                + "    HOSPITAL_TYPE=%d, \n"
+                + "    OUTPATIENT_TYPE=%d, \n"
+                + "    HOSPITALIZED_TYPE=%d\n"
                 + "Where (ID=%d)and(CATEGORY='%s')";
                 */
-        sql = "Update PT_PAYMENT_TERMS\r\n"
-                + "Set FEE_NO=%s, \r\n"
-                + "    FEE_NAME=%s, \r\n"
-                + "    NHI_NO=%s, \r\n"
-                + "    NHI_NAME=%s, \r\n"
-                + "    START_DATE='%s', \r\n"
-                + "    END_DATE='%s', \r\n"
-                + "    OUTPATIENT_TYPE=%d, \r\n"
-                + "    HOSPITALIZED_TYPE=%d\r\n"
+        sql = "Update PT_PAYMENT_TERMS\n"
+                + "Set FEE_NO=%s, \n"
+                + "    FEE_NAME=%s, \n"
+                + "    NHI_NO=%s, \n"
+                + "    NHI_NAME=%s, \n"
+                + "    START_DATE='%s', \n"
+                + "    END_DATE='%s', \n"
+                + "    OUTPATIENT_TYPE=%d, \n"
+                + "    HOSPITALIZED_TYPE=%d\n"
                 + "Where (ID=%d)and(CATEGORY='%s')";
         sql = String.format(sql, Utility.quotedNotNull(fee_no), Utility.quotedNotNull(fee_name), 
                 Utility.quotedNotNull(nhi_no), Utility.quotedNotNull(nhi_name), strStart, strEnd, 
@@ -197,7 +200,7 @@ public class PaymentTermsDao {
     
     public int deletePaymentTerms(long id, String category) {
         String sql;
-        sql = "Delete from PT_PAYMENT_TERMS\r\n"
+        sql = "Delete from PT_PAYMENT_TERMS\n"
                 + "Where (ID=%d)and(CATEGORY='%s')";
         sql = String.format(sql, id, category);
         int ret =  jdbcTemplate.update(sql);
@@ -210,7 +213,7 @@ public class PaymentTermsDao {
     //=== ExcludeNhiNo
     public int deleteExcludeNhiNo(long ptId) {
         String sql;
-        sql = "Delete from PT_EXCLUDE_NHI_NO\r\n"
+        sql = "Delete from PT_EXCLUDE_NHI_NO\n"
                 + "WHERE (PT_ID=%d)";
         sql = String.format(sql, ptId);
         int ret =  jdbcTemplate.update(sql);
@@ -219,8 +222,8 @@ public class PaymentTermsDao {
     
     public java.util.List<String> filterExcludeNhiNo(long ptId) {
         String sql;
-        sql = "Select NHI_NO\r\n"
-                + "From PT_EXCLUDE_NHI_NO\r\n"
+        sql = "Select NHI_NO\n"
+                + "From PT_EXCLUDE_NHI_NO\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -234,8 +237,8 @@ public class PaymentTermsDao {
     public int addExcludeNhiNo(long ptId, java.util.List<String> lstNhiNo) {
         int ret = 0;
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_EXCLUDE_NHI_NO (PT_ID, NHI_NO)\r\n"
+        sql = "Insert into \n"
+                + "PT_EXCLUDE_NHI_NO (PT_ID, NHI_NO)\n"
                 + "Values(%d, '%s')";
         for (String nhiNo : lstNhiNo) {
             String s1=String.format(sql, ptId, nhiNo);
@@ -251,7 +254,7 @@ public class PaymentTermsDao {
     //=== CoexistNhiNo
     public int deleteCoexistNhiNo(long ptId) {
         String sql;
-        sql = "Delete from PT_COEXIST_NHI_NO\r\n"
+        sql = "Delete from PT_COEXIST_NHI_NO\n"
                 + "WHERE (PT_ID=%d)";
         sql = String.format(sql, ptId);
         int ret =  jdbcTemplate.update(sql);
@@ -260,8 +263,8 @@ public class PaymentTermsDao {
     
     public java.util.List<String> filterCoexistNhiNo(long ptId) {
         String sql;
-        sql = "Select NHI_NO\r\n"
-                + "From PT_COEXIST_NHI_NO\r\n"
+        sql = "Select NHI_NO\n"
+                + "From PT_COEXIST_NHI_NO\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -275,8 +278,8 @@ public class PaymentTermsDao {
     public int addCoexistNhiNo(long ptId, java.util.List<String> lstNhiNo) {
         int ret = 0;
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_COEXIST_NHI_NO (PT_ID, NHI_NO)\r\n"
+        sql = "Insert into \n"
+                + "PT_COEXIST_NHI_NO (PT_ID, NHI_NO)\n"
                 + "Values(%d, '%s')";
         for (String nhiNo : lstNhiNo) {
             String s1=String.format(sql, ptId, nhiNo);
@@ -292,7 +295,7 @@ public class PaymentTermsDao {
     //=== NotifyNhiNo
     public int deleteNotifyNhiNo(long ptId) {
         String sql;
-        sql = "Delete from PT_NOTIFY_NHI_NO\r\n"
+        sql = "Delete from PT_NOTIFY_NHI_NO\n"
                 + "WHERE (PT_ID=%d)";
         sql = String.format(sql, ptId);
         int ret =  jdbcTemplate.update(sql);
@@ -301,8 +304,8 @@ public class PaymentTermsDao {
     
     public java.util.List<String> filterNotifyNhiNo(long ptId) {
         String sql;
-        sql = "Select NHI_NO\r\n"
-                + "From PT_NOTIFY_NHI_NO\r\n"
+        sql = "Select NHI_NO\n"
+                + "From PT_NOTIFY_NHI_NO\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -316,8 +319,8 @@ public class PaymentTermsDao {
     public int addNotifyNhiNo(long ptId, java.util.List<String> lstNhiNo) {
         int ret = 0;
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_NOTIFY_NHI_NO (PT_ID, NHI_NO)\r\n"
+        sql = "Insert into \n"
+                + "PT_NOTIFY_NHI_NO (PT_ID, NHI_NO)\n"
                 + "Values(%d, '%s')";
         for (String nhiNo : lstNhiNo) {
             String s1=String.format(sql, ptId, nhiNo);
@@ -338,7 +341,7 @@ public class PaymentTermsDao {
     */
     public int deleteDrgNo(long ptId) {
         String sql;
-        sql = "Delete from PT_DRG_NO\r\n"
+        sql = "Delete from PT_DRG_NO\n"
                 + "WHERE (PT_ID=%d)";
         sql = String.format(sql, ptId);
         int ret =  jdbcTemplate.update(sql);
@@ -347,8 +350,8 @@ public class PaymentTermsDao {
     
     public java.util.List<String> filterDrgNo(long ptId) {
         String sql;
-        sql = "Select DRG_NO\r\n"
-                + "From PT_DRG_NO\r\n"
+        sql = "Select DRG_NO\n"
+                + "From PT_DRG_NO\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -362,8 +365,8 @@ public class PaymentTermsDao {
     public int addDrgNo(long ptId, java.util.List<String> lstDrgNo) {
         int ret = 0;
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_DRG_NO (PT_ID, DRG_NO)\r\n"
+        sql = "Insert into \n"
+                + "PT_DRG_NO (PT_ID, DRG_NO)\n"
                 + "Values(%d, '%s')";
         for (String drgNo : lstDrgNo) {
             String s1=String.format(sql, ptId, drgNo);
@@ -379,7 +382,7 @@ public class PaymentTermsDao {
     //===
     public int deleteLimDivision(long ptId) {
         String sql;
-        sql = "Delete from PT_LIM_DIVISION\r\n"
+        sql = "Delete from PT_LIM_DIVISION\n"
                 + "WHERE (PT_ID=%d)";
         sql = String.format(sql, ptId);
         int ret =  jdbcTemplate.update(sql);
@@ -388,8 +391,8 @@ public class PaymentTermsDao {
     
     public java.util.List<String> filterLimDivision(long ptId) {
         String sql;
-        sql = "Select DIVISION\r\n"
-                + "From PT_LIM_DIVISION\r\n"
+        sql = "Select DIVISION\n"
+                + "From PT_LIM_DIVISION\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -403,8 +406,8 @@ public class PaymentTermsDao {
     public int addLimDivision(long ptId, java.util.List<String> lstDivision) {
         int ret = 0;
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_LIM_DIVISION (PT_ID, DIVISION)\r\n"
+        sql = "Insert into \n"
+                + "PT_LIM_DIVISION (PT_ID, DIVISION)\n"
                 + "Values(%d, '%s')";
         for (String division : lstDivision) {
             String s1=String.format(sql, ptId, division);
@@ -420,7 +423,7 @@ public class PaymentTermsDao {
   //===
     public int deleteIncludeIcdNo(long ptId) {
         String sql;
-        sql = "Delete from PT_INCLUDE_ICD_NO\r\n"
+        sql = "Delete from PT_INCLUDE_ICD_NO\n"
                 + "WHERE (PT_ID=%d)";
         sql = String.format(sql, ptId);
         int ret =  jdbcTemplate.update(sql);
@@ -429,8 +432,8 @@ public class PaymentTermsDao {
     
     public java.util.List<String> filterIncludeIcdNo(long ptId) {
         String sql;
-        sql = "Select ICD_NO\r\n"
-                + "From PT_INCLUDE_ICD_NO\r\n"
+        sql = "Select ICD_NO\n"
+                + "From PT_INCLUDE_ICD_NO\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -444,8 +447,8 @@ public class PaymentTermsDao {
     public int addIncludeIcdNo(long ptId, java.util.List<String> lstIcdNo) {
         int ret = 0;
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_INCLUDE_ICD_NO (PT_ID, ICD_NO)\r\n"
+        sql = "Insert into \n"
+                + "PT_INCLUDE_ICD_NO (PT_ID, ICD_NO)\n"
                 + "Values(%d, '%s')";
         for (String icdNo : lstIcdNo) {
             String s1=String.format(sql, ptId, icdNo);
@@ -463,7 +466,7 @@ public class PaymentTermsDao {
   //=== PT_NOT_ALLOW_PLAN  
     public int deleteNotAllowPlan(long ptId) {
         String sql;
-        sql = "Delete from PT_NOT_ALLOW_PLAN\r\n"
+        sql = "Delete from PT_NOT_ALLOW_PLAN\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         int ret =  jdbcTemplate.update(sql);
@@ -472,8 +475,8 @@ public class PaymentTermsDao {
     
     public java.util.List<String> filterNotAllowPlan(long ptId) {
         String sql;
-        sql = "Select PLAN\r\n"
-                + "From PT_NOT_ALLOW_PLAN\r\n"
+        sql = "Select PLAN\n"
+                + "From PT_NOT_ALLOW_PLAN\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -487,8 +490,8 @@ public class PaymentTermsDao {
     public int addNotAllowPlan(long ptId, java.util.List<String> lstPlan) {
         int ret = 0;
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_NOT_ALLOW_PLAN (PT_ID, PLAN)\r\n"
+        sql = "Insert into \n"
+                + "PT_NOT_ALLOW_PLAN (PT_ID, PLAN)\n"
                 + "Values(%d, '%s')";
         for (String plan : lstPlan) {
             String s1=String.format(sql, ptId, plan);
@@ -504,7 +507,7 @@ public class PaymentTermsDao {
   //=== pt_hospital_type 醫院層級
     public int deleteHospitalType(long ptId) {
         String sql;
-        sql = "Delete from PT_HOSPITAL_TYPE\r\n"
+        sql = "Delete from PT_HOSPITAL_TYPE\n"
                 + "WHERE (PT_ID=%d)";
         sql = String.format(sql, ptId);
         int ret =  jdbcTemplate.update(sql);
@@ -513,8 +516,8 @@ public class PaymentTermsDao {
     
     public java.util.List<String> filterHospitalType(long ptId) {
         String sql;
-        sql = "Select HOSPITAL_TYPE\r\n"
-                + "From PT_HOSPITAL_TYPE\r\n"
+        sql = "Select HOSPITAL_TYPE\n"
+                + "From PT_HOSPITAL_TYPE\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -528,8 +531,8 @@ public class PaymentTermsDao {
     public int addHospitalType(long ptId, java.util.List<String> lstHospitalType) {
         int ret = 0;
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_HOSPITAL_TYPE(PT_ID, HOSPITAL_TYPE)\r\n"
+        sql = "Insert into \n"
+                + "PT_HOSPITAL_TYPE(PT_ID, HOSPITAL_TYPE)\n"
                 + "Values(%d, '%s')";
         for (String hospitalType : lstHospitalType) {
             String s1=String.format(sql, ptId, hospitalType);
@@ -545,8 +548,8 @@ public class PaymentTermsDao {
     //===
     public java.util.Map<String, Object> findUser(String userName) {
         String sql;
-        sql = "Select ID, USERNAME, DISPLAY_NAME, EMAIL, STATUS, \"ROLE\"\r\n"
-                + "From USER\r\n"
+        sql = "Select ID, USERNAME, DISPLAY_NAME, EMAIL, STATUS, \"ROLE\"\n"
+                + "From USER\n"
                 + "Where (USERNAME='%s')";
         sql = String.format(sql, userName);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());

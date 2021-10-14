@@ -20,7 +20,7 @@ public class DbBackupDao {
     
     public java.util.List<Map<String, Object>> findAll(String tableName) {
         String sql;
-        sql = "Select *\r\n"
+        sql = "Select *\n"
                 + "From %s";
         sql = String.format(sql, tableName);
         logger.info(sql);
@@ -34,7 +34,7 @@ public class DbBackupDao {
         String startUpdate = Utility.dateFormat(minUpdate, "yyyy-MM-dd");
 //        System.out.println("stopUpdate="+stopUpdate);
         String sql;
-        sql = "Select *\r\n"
+        sql = "Select *\n"
                 + "From %s\n"
                 + "Where (%s between %d and %d)\n"
                 + " -- UPDATE_AT and (%s >= '%s')\n"
@@ -51,7 +51,7 @@ public class DbBackupDao {
 
     public java.util.Map<String, Long> getTableIdRange(String tableName, String fieldName) {
         String sql;
-        sql = "Select min(%s) AS min_id, max(%s) AS max_id \r\n"
+        sql = "Select min(%s) AS min_id, max(%s) AS max_id \n"
                 + "From %s\n";
         sql = String.format(sql, fieldName, fieldName, tableName);
         logger.info(sql);
@@ -110,7 +110,7 @@ public class DbBackupDao {
     /*
     public int delete(long ptId) {
         String sql;
-        sql = "Delete from PT_MEDICINE_FEE\r\n"
+        sql = "Delete from PT_MEDICINE_FEE\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
         logger.info(sql);
@@ -120,8 +120,8 @@ public class DbBackupDao {
     
     public int add(long ptId, int max_nday) {
         String sql;
-        sql = "Insert into \r\n"
-                + "PT_MEDICINE_FEE(PT_ID, MAX_NDAY)\r\n"
+        sql = "Insert into \n"
+                + "PT_MEDICINE_FEE(PT_ID, MAX_NDAY)\n"
                 + "Values(%d, %d)";
         sql = String.format(sql, ptId, max_nday);
         logger.info(sql);
@@ -135,8 +135,8 @@ public class DbBackupDao {
     
     public int update(long ptId, int max_nday) {
         String sql;
-        sql = "Update PT_MEDICINE_FEE\r\n"
-                + "Set MAX_NDAY=%d\r\n"
+        sql = "Update PT_MEDICINE_FEE\n"
+                + "Set MAX_NDAY=%d\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, max_nday, ptId);
         logger.info(sql);
