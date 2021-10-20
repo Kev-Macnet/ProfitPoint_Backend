@@ -33,7 +33,7 @@ public class PtAnesthesiaFeePl extends PaymentTermsPl {
     private int over_times_next_n;
     
     public String getCategory() {
-        return category;
+        return category.replaceAll("\'", "\'\'");
     }
     public void setCategory(String category) {
         this.category = category;

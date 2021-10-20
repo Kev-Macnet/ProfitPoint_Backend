@@ -52,13 +52,13 @@ public class AdditionalConditionPl {
         this.syear = syear;
     }
     public String getStart_date() {
-        return start_date;
+        return start_date.replaceAll("\'", "\'\'");
     }
     public void setStart_date(String start_date) {
         this.start_date = start_date;
     }
     public String getEnd_date() {
-        return end_date;
+        return end_date.replaceAll("\'", "\'\'");
     }
     public void setEnd_date(String end_date) {
         this.end_date = end_date;

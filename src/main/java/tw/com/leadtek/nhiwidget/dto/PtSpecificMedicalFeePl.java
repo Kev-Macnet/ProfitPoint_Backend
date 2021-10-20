@@ -24,7 +24,7 @@ public class PtSpecificMedicalFeePl extends PaymentTermsPl {
     private int max_times;
 
     public String getCategory() {
-        return category;
+        return category.replaceAll("\'", "\'\'");
     }
 
     public void setCategory(String category) {

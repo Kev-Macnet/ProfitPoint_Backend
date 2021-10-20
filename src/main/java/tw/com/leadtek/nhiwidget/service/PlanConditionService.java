@@ -47,7 +47,6 @@ public class PlanConditionService {
                 retMap.put("more_times", extractListMap(moreTimes, new String[] {"icd_no","times"}));
             }
         }
-        
         return retMap;
     }
     

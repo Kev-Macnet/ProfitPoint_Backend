@@ -11,7 +11,7 @@ public class PlanLessNDayPl {
     private int nday;
 
     public String getIcd_no() {
-        return icd_no;
+        return icd_no.replaceAll("\'", "\'\'");
     }
     public void setIcd_no(String icd_no) {
         this.icd_no = icd_no;

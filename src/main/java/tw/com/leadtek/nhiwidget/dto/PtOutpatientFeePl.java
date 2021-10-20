@@ -46,7 +46,7 @@ public class PtOutpatientFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="exclude_nhi_no 清單", position=34, required=false)
     private java.util.List<String> lst_nhi_no;
     public String getCategory() {
-        return category;
+        return category.replaceAll("\'", "\'\'");
     }
     public void setCategory(String category) {
         this.category = category;

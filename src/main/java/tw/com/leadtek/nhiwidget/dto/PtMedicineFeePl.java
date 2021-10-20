@@ -13,7 +13,7 @@ public class PtMedicineFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="每件給藥日數不得超過n日", example="3",required=false, position=23)
     private int max_nday;
     public String getCategory() {
-        return category;
+        return category.replaceAll("\'", "\'\'");
     }
     public void setCategory(String category) {
         this.category = category;

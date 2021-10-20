@@ -24,7 +24,7 @@ public class PtInjectionFeePl extends PaymentTermsPl {
     private java.util.List<String> lst_nhi_no;
     
     public String getCategory() {
-        return category;
+        return category.replaceAll("\'", "\'\'");
     }
     public void setCategory(String category) {
         this.category = category;

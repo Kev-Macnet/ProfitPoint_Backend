@@ -169,7 +169,7 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String category : categorys) {
-                addOutpatient_1_category(newId, category);
+                addOutpatient_1_category(newId, category.replaceAll("\'", "\'\'"));
             }
         }
         return newId;
@@ -228,7 +228,7 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String cpoe : cpoes) {
-                addOutpatient_2_cpoe(newId, cpoe);
+                addOutpatient_2_cpoe(newId, cpoe.replaceAll("\'", "\'\'"));
             }
         }
         return newId;
@@ -323,13 +323,13 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String category : categorys) {
-                addOutpatient_4_category(newId, category);
+                addOutpatient_4_category(newId, category.replaceAll("\'", "\'\'"));
             }
             for (String cpoe : cpoes) {
-                addOutpatient_4_cpoe(newId, cpoe);
+                addOutpatient_4_cpoe(newId, cpoe.replaceAll("\'", "\'\'"));
             }
             for (String treatment : treatments) {
-                addOutpatient_4_treatment(newId, treatment);
+                addOutpatient_4_treatment(newId, treatment.replaceAll("\'", "\'\'"));
             }
         }
         return newId;
@@ -418,7 +418,7 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String cpoe : cpoes) {
-                addOutpatient_5_cpoe(newId, cpoe);
+                addOutpatient_5_cpoe(newId, cpoe.replaceAll("\'", "\'\'"));
             }
         }
         return newId;
@@ -478,13 +478,13 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String category : categorys) {
-                addOutpatient_6_category(newId, category);
+                addOutpatient_6_category(newId, category.replaceAll("\'", "\'\'"));
             }
             for (String cpoe : cpoes) {
-                addOutpatient_6_cpoe(newId, cpoe);
+                addOutpatient_6_cpoe(newId, cpoe.replaceAll("\'", "\'\'"));
             }
             for (String plan : plans) {
-                addOutpatient_6_plan(newId, plan);
+                addOutpatient_6_plan(newId, plan.replaceAll("\'", "\'\'"));
             }
         }
         return newId;
@@ -574,10 +574,10 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String trial : trials) {
-                addOutpatient_7_trial(newId, trial);
+                addOutpatient_7_trial(newId, trial.replaceAll("\'", "\'\'"));
             }
             for (String plan : plans) {
-                addOutpatient_7_plan(newId, plan);
+                addOutpatient_7_plan(newId, plan.replaceAll("\'", "\'\'"));
             }
         }
         return newId;
@@ -651,7 +651,7 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String category : categorys) {
-                addInpatient_1_category(newId, category);
+                addInpatient_1_category(newId, category.replaceAll("\'", "\'\'"));
             }
         }
         return newId;
@@ -773,8 +773,8 @@ public class AdditionalPointDao {
     public int delInpatient_3(long ap_id) {
         int ret = 0;
         String sql;
-        sql = "DELETE FROM AP_INPATIENT_3\n"
-              + "WHERE (AP_ID=%d)";
+        sql = "Delete from AP_INPATIENT_3\n"
+              + "Where (AP_ID=%d)";
         sql = String.format(sql, ap_id);
         ret += jdbcTemplate.update(sql);
         return ret;

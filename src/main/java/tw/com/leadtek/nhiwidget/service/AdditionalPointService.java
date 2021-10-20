@@ -205,7 +205,7 @@ public class AdditionalPointService {
             AdditionalContent3Pl out3 = params.getOutpatient_3();
             if (out3 != null) {
                 for (String nhi_no : out3.getNhi_no()) {
-                    additionalPointDao.addOutpatient_3(newId, out3.getEnable(), nhi_no);
+                    additionalPointDao.addOutpatient_3(newId, out3.getEnable(), nhi_no.replaceAll("\'", "\'\'"));
                 }
             }
             // shunxian 1007

@@ -14,7 +14,7 @@ public class AdditionalContent6ListPl {
     private java.util.List<String> plan;
     
     public String getNhi_no() {
-        return nhi_no;
+        return nhi_no.replaceAll("\'", "\'\'");
     }
     public void setNhi_no(String nhi_no) {
         this.nhi_no = nhi_no;

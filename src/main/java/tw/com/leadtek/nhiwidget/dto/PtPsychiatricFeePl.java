@@ -31,7 +31,7 @@ public class PtPsychiatricFeePl extends PaymentTermsPl {
     private java.util.List<String> lst_division;
     
     public String getCategory() {
-        return category;
+        return category.replaceAll("\'", "\'\'");
     }
     public void setCategory(String category) {
         this.category = category;

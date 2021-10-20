@@ -241,7 +241,7 @@ public class PaymentTermsDao {
                 + "PT_EXCLUDE_NHI_NO (PT_ID, NHI_NO)\n"
                 + "Values(%d, '%s')";
         for (String nhiNo : lstNhiNo) {
-            String s1=String.format(sql, ptId, nhiNo);
+            String s1=String.format(sql, ptId, nhiNo.replaceAll("\'", "\'\'"));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -282,7 +282,7 @@ public class PaymentTermsDao {
                 + "PT_COEXIST_NHI_NO (PT_ID, NHI_NO)\n"
                 + "Values(%d, '%s')";
         for (String nhiNo : lstNhiNo) {
-            String s1=String.format(sql, ptId, nhiNo);
+            String s1=String.format(sql, ptId, nhiNo.replaceAll("\'", "\'\'"));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -323,7 +323,7 @@ public class PaymentTermsDao {
                 + "PT_NOTIFY_NHI_NO (PT_ID, NHI_NO)\n"
                 + "Values(%d, '%s')";
         for (String nhiNo : lstNhiNo) {
-            String s1=String.format(sql, ptId, nhiNo);
+            String s1=String.format(sql, ptId, nhiNo.replaceAll("\'", "\'\'"));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -369,7 +369,7 @@ public class PaymentTermsDao {
                 + "PT_DRG_NO (PT_ID, DRG_NO)\n"
                 + "Values(%d, '%s')";
         for (String drgNo : lstDrgNo) {
-            String s1=String.format(sql, ptId, drgNo);
+            String s1=String.format(sql, ptId, drgNo.replaceAll("\'", "\'\'"));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -410,7 +410,7 @@ public class PaymentTermsDao {
                 + "PT_LIM_DIVISION (PT_ID, DIVISION)\n"
                 + "Values(%d, '%s')";
         for (String division : lstDivision) {
-            String s1=String.format(sql, ptId, division);
+            String s1=String.format(sql, ptId, division.replaceAll("\'", "\'\'"));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -451,7 +451,7 @@ public class PaymentTermsDao {
                 + "PT_INCLUDE_ICD_NO (PT_ID, ICD_NO)\n"
                 + "Values(%d, '%s')";
         for (String icdNo : lstIcdNo) {
-            String s1=String.format(sql, ptId, icdNo);
+            String s1=String.format(sql, ptId, icdNo.replaceAll("\'", "\'\'"));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -494,7 +494,7 @@ public class PaymentTermsDao {
                 + "PT_NOT_ALLOW_PLAN (PT_ID, PLAN)\n"
                 + "Values(%d, '%s')";
         for (String plan : lstPlan) {
-            String s1=String.format(sql, ptId, plan);
+            String s1=String.format(sql, ptId, plan.replaceAll("\'", "\'\'"));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -535,7 +535,7 @@ public class PaymentTermsDao {
                 + "PT_HOSPITAL_TYPE(PT_ID, HOSPITAL_TYPE)\n"
                 + "Values(%d, '%s')";
         for (String hospitalType : lstHospitalType) {
-            String s1=String.format(sql, ptId, hospitalType);
+            String s1=String.format(sql, ptId, hospitalType.replaceAll("\'", "\'\'"));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {

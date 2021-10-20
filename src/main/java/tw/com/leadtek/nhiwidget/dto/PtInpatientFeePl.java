@@ -42,7 +42,7 @@ public class PtInpatientFeePl extends PaymentTermsPl {
     private int no_coexist_enable;
 
     public String getCategory() {
-        return category;
+        return category.replaceAll("\'", "\'\'");
     }
 
     public void setCategory(String category) {

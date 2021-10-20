@@ -11,13 +11,13 @@ public class AdditionalContent5ListPl {
     private java.util.List<String> cpoe;
     
     public String getIcd_no() {
-        return icd_no;
+        return icd_no.replaceAll("\'", "\'\'");
     }
     public void setIcd_no(String icd_no) {
         this.icd_no = icd_no;
     }
     public String getNhi_no() {
-        return nhi_no;
+        return nhi_no.replaceAll("\'", "\'\'");
     }
     public void setNhi_no(String nhi_no) {
         this.nhi_no = nhi_no;

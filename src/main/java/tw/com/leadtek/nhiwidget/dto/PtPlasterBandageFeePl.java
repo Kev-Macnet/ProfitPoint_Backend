@@ -9,7 +9,7 @@ public class PtPlasterBandageFeePl extends PaymentTermsPl {
     private String category;
 
     public String getCategory() {
-        return category;
+        return category.replaceAll("\'", "\'\'");
     }
 
     public void setCategory(String category) {
