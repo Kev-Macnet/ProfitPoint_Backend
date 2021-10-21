@@ -37,7 +37,7 @@ public class PtOthersFeePl extends PaymentTermsPl {
     private int patient_nday_times;
     
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
     public void setCategory(String category) {
         this.category = category;

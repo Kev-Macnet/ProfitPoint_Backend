@@ -14,7 +14,7 @@ public class AdditionalContent4ListPl {
     private java.util.List<String> treatment;
 
     public String getNhi_no() {
-        return nhi_no.replaceAll("\'", "\'\'");
+        return nhi_no;
     }
     public void setNhi_no(String nhi_no) {
         this.nhi_no = nhi_no;

@@ -11,7 +11,7 @@ public class AdditionalSearchPl {
     private String end_date;
 
     public String getStart_date() {
-        return start_date.replaceAll("\'", "\'\'");
+        return start_date;
     }
 
     public void setStart_date(String start_date) {
@@ -19,7 +19,7 @@ public class AdditionalSearchPl {
     }
 
     public String getEnd_date() {
-        return end_date.replaceAll("\'", "\'\'");
+        return end_date;
     }
 
     public void setEnd_date(String end_date) {

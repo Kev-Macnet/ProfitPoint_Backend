@@ -25,7 +25,7 @@ public class PtPsychiatricWardFeeDao {
                 + "From PT_PSYCHIATRICWARD_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -39,7 +39,7 @@ public class PtPsychiatricWardFeeDao {
         sql = "Delete from PT_PSYCHIATRICWARD_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -50,7 +50,7 @@ public class PtPsychiatricWardFeeDao {
                 + "PT_PSYCHIATRICWARD_FEE(PT_ID, NEED_PASS_REVIEW_ENABLE)\r\n"
                 + "Values(%d, %d)";
         sql = String.format(sql, ptId, need_pass_review_enable);
-        logger.info(sql);
+        logger.trace(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -65,7 +65,7 @@ public class PtPsychiatricWardFeeDao {
                 + "Set NEED_PASS_REVIEW_ENABLE=%d\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, need_pass_review_enable, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

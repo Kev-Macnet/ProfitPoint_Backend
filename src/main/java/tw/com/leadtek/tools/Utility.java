@@ -185,7 +185,8 @@ public class Utility {
       if (str==null) {
           return "NULL";
       } else {
-          return "\'"+str+"\'";
+          
+          return "\'"+str.replaceAll("\'", "\'\'")+"\'";
       }
   }
   

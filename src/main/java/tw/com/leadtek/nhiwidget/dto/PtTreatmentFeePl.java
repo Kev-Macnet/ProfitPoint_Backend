@@ -68,7 +68,7 @@ public class PtTreatmentFeePl extends PaymentTermsPl {
     private int max_age;
     
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
     public void setCategory(String category) {
         this.category = category;

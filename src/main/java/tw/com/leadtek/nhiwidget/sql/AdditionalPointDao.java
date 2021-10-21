@@ -15,7 +15,7 @@ import tw.com.leadtek.tools.Utility;
 
 
 @Repository
-public class AdditionalPointDao {
+public class AdditionalPointDao extends BaseSqlDao {
 
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
     
@@ -43,7 +43,7 @@ public class AdditionalPointDao {
         if (strEnd.length()>0) {
           sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
         }
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         
         return Utility.listLowerCase(lst);
@@ -73,7 +73,7 @@ public class AdditionalPointDao {
         if (syear>0) {
             sql=sql.replace("-- and (SYEAR=", " and (SYEAR=");
         }
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
     }
@@ -169,7 +169,7 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String category : categorys) {
-                addOutpatient_1_category(newId, category.replaceAll("\'", "\'\'"));
+                addOutpatient_1_category(newId, noInjection(category));
             }
         }
         return newId;
@@ -180,7 +180,7 @@ public class AdditionalPointDao {
         sql = "Insert into\n"
                 + "AP_OUTPATIENT_1_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, category);
+        sql = String.format(sql, id, noInjection(category));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -214,7 +214,7 @@ public class AdditionalPointDao {
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_2", "ID");
-                s1 = String.format(sql, newId, enable, ap_id, Utility.quotedNotNull(nhi_no));
+                s1 = String.format(sql, newId, enable, ap_id, quotedNotNull(nhi_no));
                 try {
                     int ret = jdbcTemplate.update(s1);
                     if (ret > 0) {
@@ -228,7 +228,7 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String cpoe : cpoes) {
-                addOutpatient_2_cpoe(newId, cpoe.replaceAll("\'", "\'\'"));
+                addOutpatient_2_cpoe(newId, cpoe);
             }
         }
         return newId;
@@ -239,7 +239,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_2_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, cpoe);
+        sql = String.format(sql, id, noInjection(cpoe));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -273,7 +273,7 @@ public class AdditionalPointDao {
                     + "Values(%d, %d, %d, '%s')";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_3", "ID");
-                s1 = String.format(sql, newId, enable, ap_id, nhi_no);
+                s1 = String.format(sql, newId, enable, ap_id, noInjection(nhi_no));
                 try {
                     int ret = jdbcTemplate.update(s1);
                     if (ret > 0) {
@@ -309,7 +309,7 @@ public class AdditionalPointDao {
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_4", "ID");
-                s1 = String.format(sql, newId, enable, ap_id, Utility.quotedNotNull(nhi_no));
+                s1 = String.format(sql, newId, enable, ap_id, quotedNotNull(nhi_no));
                 try {
                     int ret = jdbcTemplate.update(s1);
                     if (ret > 0) {
@@ -323,13 +323,13 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String category : categorys) {
-                addOutpatient_4_category(newId, category.replaceAll("\'", "\'\'"));
+                addOutpatient_4_category(newId, category);
             }
             for (String cpoe : cpoes) {
-                addOutpatient_4_cpoe(newId, cpoe.replaceAll("\'", "\'\'"));
+                addOutpatient_4_cpoe(newId, cpoe);
             }
             for (String treatment : treatments) {
-                addOutpatient_4_treatment(newId, treatment.replaceAll("\'", "\'\'"));
+                addOutpatient_4_treatment(newId, treatment);
             }
         }
         return newId;
@@ -340,7 +340,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_4_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, category);
+        sql = String.format(sql, id, noInjection(category));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -350,7 +350,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_4_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, cpoe);
+        sql = String.format(sql, id, noInjection(cpoe));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -360,7 +360,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_4_TREATMENT(ID, TREATMENT)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, treatment);
+        sql = String.format(sql, id, noInjection(treatment));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -404,7 +404,7 @@ public class AdditionalPointDao {
                     + "Values(%d, %d, %d, %s, %s);";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_5", "ID");
-                s1 = String.format(sql, newId, enable, ap_id, Utility.quotedNotNull(icd_no), Utility.quotedNotNull(nhi_no));
+                s1 = String.format(sql, newId, enable, ap_id, quotedNotNull(icd_no), quotedNotNull(nhi_no));
                 try {
                     int ret = jdbcTemplate.update(s1);
                     if (ret > 0) {
@@ -418,7 +418,7 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String cpoe : cpoes) {
-                addOutpatient_5_cpoe(newId, cpoe.replaceAll("\'", "\'\'"));
+                addOutpatient_5_cpoe(newId, cpoe);
             }
         }
         return newId;
@@ -429,7 +429,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_5_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, cpoe);
+        sql = String.format(sql, id, noInjection(cpoe));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -464,7 +464,7 @@ public class AdditionalPointDao {
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_6", "ID");
-                s1 = String.format(sql, newId, enable, ap_id, Utility.quotedNotNull(nhi_no));
+                s1 = String.format(sql, newId, enable, ap_id, quotedNotNull(nhi_no));
                 try {
                     int ret = jdbcTemplate.update(s1);
                     if (ret > 0) {
@@ -478,13 +478,13 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String category : categorys) {
-                addOutpatient_6_category(newId, category.replaceAll("\'", "\'\'"));
+                addOutpatient_6_category(newId, category);
             }
             for (String cpoe : cpoes) {
-                addOutpatient_6_cpoe(newId, cpoe.replaceAll("\'", "\'\'"));
+                addOutpatient_6_cpoe(newId, cpoe);
             }
             for (String plan : plans) {
-                addOutpatient_6_plan(newId, plan.replaceAll("\'", "\'\'"));
+                addOutpatient_6_plan(newId, plan);
             }
         }
         return newId;
@@ -495,7 +495,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_6_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, category);
+        sql = String.format(sql, id, noInjection(category));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -505,7 +505,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_6_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, cpoe);
+        sql = String.format(sql, id, noInjection(cpoe));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -515,7 +515,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_6_PLAN(ID, PLAN)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, plan);
+        sql = String.format(sql, id, noInjection(plan));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -560,7 +560,7 @@ public class AdditionalPointDao {
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_OUTPATIENT_7", "ID");
-                s1 = String.format(sql, newId, enable, ap_id, Utility.quotedNotNull(nhi_no));
+                s1 = String.format(sql, newId, enable, ap_id, quotedNotNull(nhi_no));
                 try {
                     int ret = jdbcTemplate.update(s1);
                     if (ret > 0) {
@@ -574,10 +574,10 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String trial : trials) {
-                addOutpatient_7_trial(newId, trial.replaceAll("\'", "\'\'"));
+                addOutpatient_7_trial(newId, trial);
             }
             for (String plan : plans) {
-                addOutpatient_7_plan(newId, plan.replaceAll("\'", "\'\'"));
+                addOutpatient_7_plan(newId, plan);
             }
         }
         return newId;
@@ -588,7 +588,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_7_TRIAL(ID, TRIAL)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, trial);
+        sql = String.format(sql, id, noInjection(trial));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -598,7 +598,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_OUTPATIENT_7_PLAN(ID, PLAN)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, plan);
+        sql = String.format(sql, id, noInjection(plan));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -651,7 +651,7 @@ public class AdditionalPointDao {
         }
         if (newId > 0) {
             for (String category : categorys) {
-                addInpatient_1_category(newId, category.replaceAll("\'", "\'\'"));
+                addInpatient_1_category(newId, category);
             }
         }
         return newId;
@@ -662,7 +662,7 @@ public class AdditionalPointDao {
         sql = "Insert into\n"
                 + "AP_INPATIENT_1_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, category);
+        sql = String.format(sql, id, noInjection(category));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -696,7 +696,7 @@ public class AdditionalPointDao {
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_INPATIENT_2", "ID");
-                s1 = String.format(sql, newId, enable, ap_id, Utility.quotedNotNull(nhi_no));
+                s1 = String.format(sql, newId, enable, ap_id, quotedNotNull(nhi_no));
                 try {
                     int ret = jdbcTemplate.update(s1);
                     if (ret > 0) {
@@ -721,7 +721,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_INPATIENT_2_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, cpoe);
+        sql = String.format(sql, id, noInjection(cpoe));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -755,7 +755,7 @@ public class AdditionalPointDao {
                     + "Values(%d, %d, %d, '%s')";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_INPATIENT_3", "ID");
-                s1 = String.format(sql, newId, enable, ap_id, nhi_no);
+                s1 = String.format(sql, newId, enable, ap_id, noInjection(nhi_no));
                 try {
                     int ret = jdbcTemplate.update(s1);
                     if (ret > 0) {
@@ -791,7 +791,7 @@ public class AdditionalPointDao {
                     + "Values(%d, %d, %d, %s)";
             for (int a=0; a<50; a++) {
                 newId = newTableId_l("AP_INPATIENT_6", "ID");
-                s1 = String.format(sql, newId, enable, ap_id, Utility.quotedNotNull(nhi_no));
+                s1 = String.format(sql, newId, enable, ap_id, quotedNotNull(nhi_no));
                 try {
                     int ret = jdbcTemplate.update(s1);
                     if (ret > 0) {
@@ -822,7 +822,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_INPATIENT_6_CATEGORY(ID, CATEGORY)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, category);
+        sql = String.format(sql, id, noInjection(category));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -832,7 +832,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_INPATIENT_6_CPOE(ID, CPOE)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, cpoe);
+        sql = String.format(sql, id, noInjection(cpoe));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -842,7 +842,7 @@ public class AdditionalPointDao {
         sql = "Insert into \n"
                 + "AP_INPATIENT_6_PLAN(ID, PLAN)\n"
                 + "Values(%d, '%s')";
-        sql = String.format(sql, id, plan);
+        sql = String.format(sql, id, noInjection(plan));
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -937,20 +937,6 @@ public class AdditionalPointDao {
             }
         } 
         return retList;
-    }
-    
-  //---------------------
-    public long newTableId_l(String tbName, String fdName) {
-        long lastID = 0;
-        String s1;
-        s1 = "Select Max(" + fdName + ") as lastid \n" +
-             "From " + tbName;
-        try {
-            lastID = jdbcTemplate.queryForObject(s1, Long.class);
-        } catch (java.lang.NullPointerException e) {
-            lastID = 0;
-        }
-        return (lastID + 1);
     }
 
 

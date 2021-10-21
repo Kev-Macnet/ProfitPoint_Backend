@@ -12,7 +12,7 @@ public class PtPsychiatricWardFeePl extends PaymentTermsPl {
     private int need_pass_review_enable;
 
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
 
     public void setCategory(String category) {

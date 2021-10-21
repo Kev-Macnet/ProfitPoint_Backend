@@ -6,15 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import tw.com.leadtek.tools.Utility;
 
 
 @Repository
-public class PaymentTermsDao {
+public class PaymentTermsDao extends BaseSqlDao {
 
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
     
@@ -37,7 +35,7 @@ public class PaymentTermsDao {
                 + " -- and (START_DATE='%s')\n"
                 + " -- and (END_DATE='%s')"
                 + "Order By ID";
-        sql = String.format(sql, feeNo, nhiNo, category, strStart, strEnd);
+        sql = String.format(sql, noInjection(feeNo), noInjection(nhiNo), noInjection(category), strStart, strEnd);
         if (feeNo.length()>0) {
             sql=sql.replace("-- and (FEE_NO", " and (FEE_NO");
         }
@@ -54,7 +52,7 @@ public class PaymentTermsDao {
           sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
         }
 //        System.out.println("sql-55="+sql);
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         lst = Utility.listLowerCase(lst);
         for (Map<String, Object> item : lst) {
@@ -88,7 +86,7 @@ public class PaymentTermsDao {
                 + " and (END_DATE BETWEEN '%s' and '%s')\n"
                 + "Order By ID";
         
-        sql = String.format(sql, category, feeNo, nhiNo, strStart, strEnd, strStart, strEnd);
+        sql = String.format(sql, noInjection(category), noInjection(feeNo), noInjection(nhiNo), strStart, strEnd, strStart, strEnd);
         if (category.length()>0) {
             sql = sql.replace("-- and (CATEGORY", " and (CATEGORY");
         }
@@ -114,7 +112,7 @@ public class PaymentTermsDao {
         sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
                 + "From PT_PAYMENT_TERMS\n"
                 + "Where (ID=%d) and (CATEGORY='%s')";
-        sql = String.format(sql, id, category);
+        sql = String.format(sql, id, noInjection(category));
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             java.util.Map<String, Object> retMap = Utility.mapLowerCase(lst.get(0));
@@ -139,9 +137,9 @@ public class PaymentTermsDao {
         for (int a=0; a<50; a++) {
             newId = newTableId_l("PT_PAYMENT_TERMS", "ID");
             //fee_no, fee_name, nhi_no, nhi_name, start_date, end_date, category, outpatient_type, hospitalized_type
-            s1 = String.format(sql, newId, Utility.quotedNotNull(fee_no), Utility.quotedNotNull(fee_name), 
-                    Utility.quotedNotNull(nhi_no), Utility.quotedNotNull(nhi_name), strStart, strEnd, 
-                    category, outpatient_type, hospitalized_type);
+            s1 = String.format(sql, newId, quotedNotNull(fee_no), quotedNotNull(fee_name), 
+                    quotedNotNull(nhi_no), quotedNotNull(nhi_name), strStart, strEnd, 
+                    noInjection(category), outpatient_type, hospitalized_type);
             try {
                 int ret = jdbcTemplate.update(s1);
                 if (ret > 0) {
@@ -186,9 +184,9 @@ public class PaymentTermsDao {
                 + "    OUTPATIENT_TYPE=%d, \n"
                 + "    HOSPITALIZED_TYPE=%d\n"
                 + "Where (ID=%d)and(CATEGORY='%s')";
-        sql = String.format(sql, Utility.quotedNotNull(fee_no), Utility.quotedNotNull(fee_name), 
-                Utility.quotedNotNull(nhi_no), Utility.quotedNotNull(nhi_name), strStart, strEnd, 
-                outpatient_type, hospitalized_type, id, category);
+        sql = String.format(sql, quotedNotNull(fee_no), quotedNotNull(fee_name), 
+                quotedNotNull(nhi_no), quotedNotNull(nhi_name), strStart, strEnd, 
+                outpatient_type, hospitalized_type, id, noInjection(category));
         int ret = jdbcTemplate.update(sql);
         //----
         if (ret > 0) {
@@ -202,7 +200,7 @@ public class PaymentTermsDao {
         String sql;
         sql = "Delete from PT_PAYMENT_TERMS\n"
                 + "Where (ID=%d)and(CATEGORY='%s')";
-        sql = String.format(sql, id, category);
+        sql = String.format(sql, id, noInjection(category));
         int ret =  jdbcTemplate.update(sql);
         if (ret >0) {
             deleteHospitalType(id);
@@ -241,7 +239,7 @@ public class PaymentTermsDao {
                 + "PT_EXCLUDE_NHI_NO (PT_ID, NHI_NO)\n"
                 + "Values(%d, '%s')";
         for (String nhiNo : lstNhiNo) {
-            String s1=String.format(sql, ptId, nhiNo.replaceAll("\'", "\'\'"));
+            String s1=String.format(sql, ptId, noInjection(nhiNo));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -282,7 +280,7 @@ public class PaymentTermsDao {
                 + "PT_COEXIST_NHI_NO (PT_ID, NHI_NO)\n"
                 + "Values(%d, '%s')";
         for (String nhiNo : lstNhiNo) {
-            String s1=String.format(sql, ptId, nhiNo.replaceAll("\'", "\'\'"));
+            String s1=String.format(sql, ptId, noInjection(nhiNo));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -323,7 +321,7 @@ public class PaymentTermsDao {
                 + "PT_NOTIFY_NHI_NO (PT_ID, NHI_NO)\n"
                 + "Values(%d, '%s')";
         for (String nhiNo : lstNhiNo) {
-            String s1=String.format(sql, ptId, nhiNo.replaceAll("\'", "\'\'"));
+            String s1=String.format(sql, ptId, noInjection(nhiNo));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -369,7 +367,7 @@ public class PaymentTermsDao {
                 + "PT_DRG_NO (PT_ID, DRG_NO)\n"
                 + "Values(%d, '%s')";
         for (String drgNo : lstDrgNo) {
-            String s1=String.format(sql, ptId, drgNo.replaceAll("\'", "\'\'"));
+            String s1=String.format(sql, ptId, noInjection(drgNo));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -410,7 +408,7 @@ public class PaymentTermsDao {
                 + "PT_LIM_DIVISION (PT_ID, DIVISION)\n"
                 + "Values(%d, '%s')";
         for (String division : lstDivision) {
-            String s1=String.format(sql, ptId, division.replaceAll("\'", "\'\'"));
+            String s1=String.format(sql, ptId, noInjection(division));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -451,7 +449,7 @@ public class PaymentTermsDao {
                 + "PT_INCLUDE_ICD_NO (PT_ID, ICD_NO)\n"
                 + "Values(%d, '%s')";
         for (String icdNo : lstIcdNo) {
-            String s1=String.format(sql, ptId, icdNo.replaceAll("\'", "\'\'"));
+            String s1=String.format(sql, ptId, noInjection(icdNo));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -494,7 +492,7 @@ public class PaymentTermsDao {
                 + "PT_NOT_ALLOW_PLAN (PT_ID, PLAN)\n"
                 + "Values(%d, '%s')";
         for (String plan : lstPlan) {
-            String s1=String.format(sql, ptId, plan.replaceAll("\'", "\'\'"));
+            String s1=String.format(sql, ptId, noInjection(plan));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -535,7 +533,7 @@ public class PaymentTermsDao {
                 + "PT_HOSPITAL_TYPE(PT_ID, HOSPITAL_TYPE)\n"
                 + "Values(%d, '%s')";
         for (String hospitalType : lstHospitalType) {
-            String s1=String.format(sql, ptId, hospitalType.replaceAll("\'", "\'\'"));
+            String s1=String.format(sql, ptId, noInjection(hospitalType));
             try {
                 ret += jdbcTemplate.update(s1);
             } catch(DataAccessException ex) {
@@ -551,7 +549,7 @@ public class PaymentTermsDao {
         sql = "Select ID, USERNAME, DISPLAY_NAME, EMAIL, STATUS, \"ROLE\"\n"
                 + "From USER\n"
                 + "Where (USERNAME='%s')";
-        sql = String.format(sql, userName);
+        sql = String.format(sql, noInjection(userName));
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             // A: MIS主管, B: 行政主管, C: 申報主管, D: coding人員/申報人員, E: 醫護人員, Z: 原廠開發者
@@ -571,18 +569,5 @@ public class PaymentTermsDao {
     }
 
     //===
-    public long newTableId_l(String tbName, String fdName) {
-        long lastID = 0;
-        String s1;
-        s1 = "Select Max(" + fdName + ") as lastid \n" +
-             "From " + tbName;
-        try {
-            lastID = jdbcTemplate.queryForObject(s1, Long.class);
-        } catch (java.lang.NullPointerException e) {
-            lastID = 0;
-        }
-        return (lastID + 1);
-    }
-
 
 }

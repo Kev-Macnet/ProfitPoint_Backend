@@ -6,12 +6,11 @@ import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import tw.com.leadtek.nhiwidget.dto.PlanConditionPl;
 import tw.com.leadtek.tools.Utility;
 
 
 @Repository
-public class PlanConditionDao {
+public class PlanConditionDao extends BaseSqlDao {
 
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
@@ -29,7 +28,7 @@ public class PlanConditionDao {
         if (searchName.length()>0) {
             sql = sql.replace("-- and(NAME", " and(NAME");
         }
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
     }
@@ -40,7 +39,7 @@ public class PlanConditionDao {
                   + "From PLAN_CONDITION\n"
                   + "Where(ID = %d)";
         sql = String.format(sql, id);
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -55,9 +54,10 @@ public class PlanConditionDao {
         sql = "Select ID, NAME, DIVISION, ACTIVE, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN\n"
                   + "From PLAN_CONDITION\n"
                   + "Where(NAME = '%s')\n"
-                  + "  and(DIVISION = '%s')";
-        sql = String.format(sql, name, division);
-        logger.info(sql);
+                  + "  and(DIVISION = '%s')\n"
+                  + "Order By ID Desc";
+        sql = String.format(sql, name, noInjection(division));
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -75,20 +75,26 @@ public class PlanConditionDao {
         sql = "Insert into \n"
                 + "PLAN_CONDITION(NAME, DIVISION, ACTIVE, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN)\n"
                 + "Values('%s', '%s', %d, %d, '%s', %d, '%s', %d, %d, %d, '%s', %d, %d, %d, '%s')";
-        sql = String.format(sql, name, division, active, exp_icd_no_enable, exp_icd_no, no_exp_icd_no_enable, no_exp_icd_no, exclude_psychiatric_enable, medicine_times_enable, medicine_times, medicine_times_division, exclude_plan_nday_enable, exclude_plan_nday, exclude_join_enable, exclude_join);
-        logger.info(sql);
+        sql = String.format(sql, noInjection(name), noInjection(division), active, exp_icd_no_enable, 
+                exp_icd_no, no_exp_icd_no_enable, noInjection(no_exp_icd_no), 
+                exclude_psychiatric_enable, medicine_times_enable, medicine_times, noInjection(medicine_times_division), 
+                exclude_plan_nday_enable, exclude_plan_nday, exclude_join_enable, noInjection(exclude_join));
+        logger.trace(sql);
         long ret = jdbcTemplate.update(sql);
-        if (ret>0) {
-            sql = "SELECT ID, NAME, DIVISION\n"
-                    + "FROM PLAN_CONDITION\n"
+        if (ret > 0) {
+            sql = "Select ID, NAME, DIVISION\n"
+                    + "From PLAN_CONDITION\n"
                     + "Where (1=1)\n"
-                    + "   -- and(NAME='月光計畫')\n"
-                    + "   and(DIVISION='內分泌科')\n"
+                    + "   and(NAME='%s')\n"
+                    + "   and(DIVISION='%s')\n"
                     + "Order By ID DESC\n"
                     + "Limit 1";
+            sql = String.format(sql, noInjection(name), noInjection(division));
+            logger.trace(sql);
             java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
             if (lst.size()>0) {
                 ret = (long)lst.get(0).get("id");
+//                System.out.println("plan_condition_id="+ret);
             }
         }
         return ret;
@@ -117,10 +123,11 @@ public class PlanConditionDao {
                 + "    EXCLUDE_JOIN_ENABLE=%d, \n"
                 + "    EXCLUDE_JOIN='%s'\n"
                 + "Where (ID=%d)";
-        sql = String.format(sql, name, division, active, exp_icd_no_enable, exp_icd_no, no_exp_icd_no_enable, no_exp_icd_no, 
-                            exclude_psychiatric_enable, medicine_times_enable, medicine_times, medicine_times_division, 
-                            exclude_plan_nday_enable, exclude_plan_nday, exclude_join_enable, exclude_join, id);
-        logger.info(sql);
+        sql = String.format(sql, noInjection(name), noInjection(division), active, exp_icd_no_enable, noInjection(exp_icd_no), 
+                            no_exp_icd_no_enable, noInjection(no_exp_icd_no), 
+                            exclude_psychiatric_enable, medicine_times_enable, medicine_times, noInjection(medicine_times_division), 
+                            exclude_plan_nday_enable, exclude_plan_nday, exclude_join_enable, noInjection(exclude_join), id);
+        logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -130,7 +137,7 @@ public class PlanConditionDao {
         sql = "Delete From PLAN_CONDITION\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
-        logger.info(sql);
+        logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -142,7 +149,7 @@ public class PlanConditionDao {
                 + "From PLAN_ICD_NO\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
     }
@@ -152,8 +159,8 @@ public class PlanConditionDao {
         sql = "Insert into \n"
               + "PLAN_ICD_NO(ID, ENABLE, ICD_NO)\n"
               + "Values(%d, %d, '%s')";
-        sql = String.format(sql, id, enable, icdNo);
-        logger.info(sql);
+        sql = String.format(sql, id, enable, noInjection(icdNo));
+        logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -163,7 +170,7 @@ public class PlanConditionDao {
         sql = "Delete From PLAN_ICD_NO\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
-        logger.info(sql);
+        logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -176,7 +183,7 @@ public class PlanConditionDao {
                 + "From PLAN_LESS_NDAY\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
     }
@@ -186,8 +193,8 @@ public class PlanConditionDao {
         sql = "Insert into \n"
                 + "PLAN_LESS_NDAY (ID, ENABLE, ICD_NO, NDAY)\n"
                 + "Values(%d, %d, '%s', %d)";
-        sql = String.format(sql, id, enable, icdNo, nday);
-        logger.info(sql);
+        sql = String.format(sql, id, enable, noInjection(icdNo), nday);
+        logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -197,7 +204,7 @@ public class PlanConditionDao {
         sql = "Delete From PLAN_LESS_NDAY\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
-        logger.info(sql);
+        logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -210,7 +217,7 @@ public class PlanConditionDao {
                 + "From PLAN_MORE_TIMES\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
     }
@@ -220,8 +227,8 @@ public class PlanConditionDao {
         sql = "Insert into \n"
                 + "PLAN_MORE_TIMES(ID, ENABLE, ICD_NO, TIMES)\n"
                 + "Values(%d, %d, '%s', %d)";
-        sql = String.format(sql, id, enable, icdNo, times);
-        logger.info(sql);
+        sql = String.format(sql, id, enable, noInjection(icdNo), times);
+        logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
@@ -231,7 +238,7 @@ public class PlanConditionDao {
         sql = "Delete From PLAN_MORE_TIMES\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
-        logger.info(sql);
+        logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }

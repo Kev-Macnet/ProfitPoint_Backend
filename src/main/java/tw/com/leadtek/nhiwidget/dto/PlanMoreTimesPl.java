@@ -11,7 +11,7 @@ public class PlanMoreTimesPl {
     private int times;
     
     public String getIcd_no() {
-        return icd_no.replaceAll("\'", "\'\'");
+        return icd_no;
     }
     public void setIcd_no(String icd_no) {
         this.icd_no = icd_no;

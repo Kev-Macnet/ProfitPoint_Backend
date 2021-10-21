@@ -28,7 +28,7 @@ public class PtRadiationFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="單一住院就醫紀錄應用數量<=n次", example="5",required=false, position=29)
     private int max_inpatient;
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
     public void setCategory(String category) {
         this.category = category;

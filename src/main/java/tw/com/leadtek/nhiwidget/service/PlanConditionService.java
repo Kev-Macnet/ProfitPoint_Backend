@@ -53,36 +53,36 @@ public class PlanConditionService {
 
     //PlanIcdNoPl, PlanLessNdayPl, PlanMoreTimesPl
     public long addPlanCondition(PlanConditionPl params) {
-        long ret = planConditionDao.addPlanCondition(params.getName(), params.getDivision(), params.getActive(), 
+        long new_id = planConditionDao.addPlanCondition(params.getName(), params.getDivision(), params.getActive(), 
                 params.getExp_icd_no_enable(), params.getExp_icd_no(), params.getNo_exp_icd_no_enable(), params.getNo_exp_icd_no(), 
                 params.getExclude_psychiatric_enable(), 
                 params.getMedicine_times_enable(), params.getMedicine_times(), params.getMedicine_times_division(), 
                 params.getExclude_plan_nday_enable(), params.getExclude_plan_nday(), 
                 params.getExclude_join_enable(), params.getExclude_join());
-        java.util.Map<String, Object> mapPlan = planConditionDao.findOne(params.getName(), params.getDivision());
-        if (mapPlan != null) {
-            long id = (long)mapPlan.get("id");
+//        java.util.Map<String, Object> mapPlan = planConditionDao.findOne(params.getName(), params.getDivision());
+        if (new_id > 0) {
+            int cnt=1;
+//            long id = (long)mapPlan.get("id");
             if (params.getIcd_no()!=null) {
-                planConditionDao.delIcdNo(id);
+                planConditionDao.delIcdNo(new_id);
                 for (String icd_no : params.getIcd_no()) {
-                    ret += planConditionDao.addIcdNo(id, params.getIcd_no_enable(), icd_no);
+                    cnt += planConditionDao.addIcdNo(new_id, params.getIcd_no_enable(), icd_no);
                 }
             }
             if (params.getLess_nday()!=null) {
-                planConditionDao.delLessNDay(id);
+                planConditionDao.delLessNDay(new_id);
                 for (PlanLessNDayPl pl : params.getLess_nday()) {
-                    ret += planConditionDao.addLessNDay(id, params.getLess_nday_enable(), pl.getIcd_no(), pl.getNday());
+                    cnt += planConditionDao.addLessNDay(new_id, params.getLess_nday_enable(), pl.getIcd_no(), pl.getNday());
                 }
             }
             if (params.getMore_times()!=null) {
-                planConditionDao.delMoreTimes(id);
+                planConditionDao.delMoreTimes(new_id);
                 for (PlanMoreTimesPl pl : params.getMore_times()) {
-                    ret += planConditionDao.addMoreTimes(id, params.getMore_times_enable(), pl.getIcd_no(), pl.getTimes());
+                    cnt += planConditionDao.addMoreTimes(new_id, params.getMore_times_enable(), pl.getIcd_no(), pl.getTimes());
                 }
             }
         }
-
-        return ret;
+        return new_id;
     }
     
     

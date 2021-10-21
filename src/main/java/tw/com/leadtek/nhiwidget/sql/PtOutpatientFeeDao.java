@@ -25,7 +25,7 @@ public class PtOutpatientFeeDao {
                 + "From PT_OUTPATIENT_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -39,7 +39,7 @@ public class PtOutpatientFeeDao {
         sql = "Delete from PT_OUTPATIENT_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -56,7 +56,7 @@ public class PtOutpatientFeeDao {
         sql = String.format(sql, ptId, no_dentisit, no_chi_medicine, no_service_charge, lim_out_islands, lim_holiday, 
                 lim_max_enable, lim_max, lim_age_enable, lim_age_type, lim_age, 
                 lim_division_enable, exclude_nhi_no_enable);
-        logger.info(sql);
+        logger.trace(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -87,7 +87,7 @@ public class PtOutpatientFeeDao {
         sql = String.format(sql, no_dentisit, no_chi_medicine, no_service_charge, lim_out_islands, lim_holiday, 
                 lim_max_enable, lim_max, lim_age_enable, lim_age_type, lim_age, 
                 lim_division_enable, exclude_nhi_no_enable, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

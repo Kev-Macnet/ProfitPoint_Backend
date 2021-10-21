@@ -67,8 +67,8 @@ public class PtInpatientFeeDao {
             int max_patient_no_enable, int max_patient_no, int exclude_nhi_no_enable, int not_allow_plan_enable, 
             int coexist_nhi_no_enable, int no_coexist_enable) {
         String sql;
-        sql = "UPDATE PT_INPATIENT_FEE \n"
-                + "SET MAX_INPATIENT_ENABLE=%d, \n"
+        sql = "Update PT_INPATIENT_FEE \n"
+                + "Set MAX_INPATIENT_ENABLE=%d, \n"
                 + "    MAX_INPATIENT=%d, \n"
                 + "    MAX_EMERGENCY_ENABLE=%d, \n"
                 + "    MAX_EMERGENCY=%d, \n"
@@ -78,9 +78,9 @@ public class PtInpatientFeeDao {
                 + "    NOT_ALLOW_PLAN_ENABLE=%d, \n"
                 + "    COEXIST_NHI_NO_ENABLE=%d, \n"
                 + "    NO_COEXIST_ENABLE=%d \n"
-                + "WHERE (PT_ID=%d)";
+                + "Where (PT_ID=%d)";
         sql = String.format(sql, max_inpatient_enable, max_inpatient, max_emergency_enable, max_emergency, max_patient_no_enable, max_patient_no, exclude_nhi_no_enable, not_allow_plan_enable, coexist_nhi_no_enable, no_coexist_enable, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

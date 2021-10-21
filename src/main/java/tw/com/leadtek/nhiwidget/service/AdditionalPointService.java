@@ -205,17 +205,10 @@ public class AdditionalPointService {
             AdditionalContent3Pl out3 = params.getOutpatient_3();
             if (out3 != null) {
                 for (String nhi_no : out3.getNhi_no()) {
-                    additionalPointDao.addOutpatient_3(newId, out3.getEnable(), nhi_no.replaceAll("\'", "\'\'"));
+                    additionalPointDao.addOutpatient_3(newId, out3.getEnable(), nhi_no);
                 }
             }
-            // shunxian 1007
-//            java.util.List<AdditionalContent4Pl> lstOut4 = params.getOutpatient_4();
-//            if (lstOut4 != null) {
-//                for (AdditionalContent4Pl out4 : lstOut4) {
-//                    additionalPointDao.addOutpatient_4(newId, out4.getEnable(), out4.getNhi_no(), out4.getCategory(), 
-//                                out4.getCpoe(), out4.getTreatment());
-//                }
-//            }
+
             AdditionalContent4Pl out4 = params.getOutpatient_4();
             if (out4 != null) {
                 for (AdditionalContent4ListPl item : out4.getData()) {
@@ -230,13 +223,7 @@ public class AdditionalPointService {
                     additionalPointDao.addOutpatient_5(newId, out5.getEnable(), item.getIcd_no(), item.getNhi_no(), item.getCpoe());
                 }
             }
-//            java.util.List<AdditionalContent6Pl> lstOut6 = params.getOutpatient_6();
-//            if (lstOut6 != null) {
-//                for (AdditionalContent6Pl out6 : lstOut6) {
-//                    additionalPointDao.addOutpatient_6(newId, out6.getEnable(), out6.getNhi_no(), out6.getCategory(), 
-//                                out6.getCpoe(), out6.getPlan());
-//                }
-//            }
+
             AdditionalContent6Pl out6 = params.getOutpatient_6();
             if (out6 != null) {
                 for (AdditionalContent6ListPl item : out6.getData()) {
@@ -256,14 +243,7 @@ public class AdditionalPointService {
             if (inp1 != null) {
               additionalPointDao.addInpatient_1(newId, inp1.getEnable(), inp1.getCategory());
             }
-            /* shunxian 1006
-            java.util.List<AdditionalContent2Pl> lstInp2 = params.getInpatient_2();
-            if (lstInp2 != null) {
-                for (AdditionalContent2Pl inp2 : lstInp2) {
-                    additionalPointDao.addInpatient_2(newId, inp2.getEnable(), inp2.getNhi_no(), inp2.getCpoe());
-                }
-            }
-            */
+            
             AdditionalContent2Pl inp2 = params.getInpatient_2();
             if (inp2 != null) {
                 for (AdditionalContent2ListPl item : inp2.getData()) {
@@ -303,7 +283,7 @@ public class AdditionalPointService {
                     additionalPointDao.delOutpatient_1(id);
                     ret +=additionalPointDao.addOutpatient_1(id, out1.getEnable(), out1.getCategory());
                 }
-                // shunxian 1007
+                
                 AdditionalContent2Pl out2 = params.getOutpatient_2();
                 if (out2 != null) {
                     additionalPointDao.delOutpatient_2(id);

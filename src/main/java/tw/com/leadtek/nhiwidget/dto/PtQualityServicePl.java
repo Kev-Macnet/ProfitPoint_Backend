@@ -31,7 +31,7 @@ public class PtQualityServicePl extends PaymentTermsPl {
     private int every_nday_times;
     
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
     public void setCategory(String category) {
         this.category = category;

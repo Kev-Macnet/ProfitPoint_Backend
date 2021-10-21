@@ -23,7 +23,7 @@ public class PtWardFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="exclude_nhi_no 清單", required=false, position=27)
     private java.util.List<String> lst_nhi_no;
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
     public void setCategory(String category) {
         this.category = category;

@@ -24,7 +24,7 @@ public class PaymentTermsSearchPl {
     private String end_date;
 
     public String getFeeNo() {
-        return feeNo.replaceAll("\'", "\'\'");
+        return feeNo;
     }
 
     public void setFeeNo(String feeNo) {
@@ -32,7 +32,7 @@ public class PaymentTermsSearchPl {
     }
 
     public String getNhiNo() {
-        return nhiNo.replaceAll("\'", "\'\'");
+        return nhiNo;
     }
 
     public void setNhiNo(String nhiNo) {
@@ -40,7 +40,7 @@ public class PaymentTermsSearchPl {
     }
 
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
 
     public void setCategory(String category) {
@@ -48,7 +48,7 @@ public class PaymentTermsSearchPl {
     }
 
     public String getStart_date() {
-        return start_date.replaceAll("\'", "\'\'");
+        return start_date;
     }
 
     public void setStart_date(String start_date) {
@@ -56,7 +56,7 @@ public class PaymentTermsSearchPl {
     }
 
     public String getEnd_date() {
-        return end_date.replaceAll("\'", "\'\'");
+        return end_date;
     }
 
     public void setEnd_date(String end_date) {

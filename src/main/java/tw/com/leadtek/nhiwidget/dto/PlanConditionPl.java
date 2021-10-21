@@ -60,13 +60,13 @@ public class PlanConditionPl {
     private String exclude_join;
     
     public String getName() {
-        return name.replaceAll("\'", "\'\'");
+        return name;
     }
     public void setName(String name) {
         this.name = name;
     }
     public String getDivision() {
-        return division.replaceAll("\'", "\'\'");
+        return division;
     }
     public void setDivision(String division) {
         this.division = division;
@@ -85,7 +85,7 @@ public class PlanConditionPl {
         this.exp_icd_no_enable = exp_icd_no_enable;
     }
     public String getExp_icd_no() {
-        return exp_icd_no.replaceAll("\'", "\'\'");
+        return exp_icd_no;
     }
     public void setExp_icd_no(String exp_icd_no) {
         this.exp_icd_no = exp_icd_no;
@@ -97,7 +97,7 @@ public class PlanConditionPl {
         this.no_exp_icd_no_enable = no_exp_icd_no_enable;
     }
     public String getNo_exp_icd_no() {
-        return no_exp_icd_no.replaceAll("\'", "\'\'");
+        return no_exp_icd_no;
     }
     public void setNo_exp_icd_no(String no_exp_icd_no) {
         this.no_exp_icd_no = no_exp_icd_no;
@@ -121,7 +121,7 @@ public class PlanConditionPl {
         this.medicine_times = medicine_times;
     }
     public String getMedicine_times_division() {
-        return medicine_times_division.replaceAll("\'", "\'\'");
+        return medicine_times_division;
     }
     public void setMedicine_times_division(String medicine_times_division) {
         this.medicine_times_division = medicine_times_division;
@@ -145,7 +145,7 @@ public class PlanConditionPl {
         this.exclude_join_enable = exclude_join_enable;
     }
     public String getExclude_join() {
-        return exclude_join.replaceAll("\'", "\'\'");
+        return exclude_join;
     }
     public void setExclude_join(String exclude_join) {
         this.exclude_join = exclude_join;

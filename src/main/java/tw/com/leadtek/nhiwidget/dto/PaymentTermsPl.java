@@ -40,31 +40,31 @@ public class PaymentTermsPl {
     private int hospitalized_type;
     
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
     public void setCategory(String category) {
         this.category = category;
     }
     public String getFee_no() {
-        return fee_no.replaceAll("\'", "\'\'");
+        return fee_no;
     }
     public void setFee_no(String fee_no) {
         this.fee_no = fee_no;
     }
     public String getFee_name() {
-        return fee_name.replaceAll("\'", "\'\'");
+        return fee_name;
     }
     public void setFee_name(String fee_name) {
         this.fee_name = fee_name;
     }
     public String getNhi_no() {
-        return nhi_no.replaceAll("\'", "\'\'");
+        return nhi_no;
     }
     public void setNhi_no(String nhi_no) {
         this.nhi_no = nhi_no;
     }
     public String getNhi_name() {
-        return nhi_name.replaceAll("\'", "\'\'");
+        return nhi_name;
     }
     public void setNhi_name(String nhi_name) {
         this.nhi_name = nhi_name;

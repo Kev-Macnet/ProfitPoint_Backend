@@ -25,7 +25,7 @@ public class PtNutritionalFeeDao {
                 + "From PT_NUTRITIONAL_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -39,7 +39,7 @@ public class PtNutritionalFeeDao {
         sql = "Delete from PT_NUTRITIONAL_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -54,7 +54,7 @@ public class PtNutritionalFeeDao {
                 + "PT_NUTRITIONAL_FEE(PT_ID, MAX_INPATIENT_ENABLE, MAX_INPATIENT, MAX_DAILY_ENABLE, MAX_DAILY, EVERY_NDAY_ENABLE, EVERY_NDAY_DAYS, EVERY_NDAY_TIMES, OVER_NDAY_ENABLE, OVER_NDAY_DAYS, OVER_NDAY_TIMES, EXCLUDE_NHI_NO_ENABLE)\r\n"
                 + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)";
         sql = String.format(sql, ptId, max_inpatient_enable, max_inpatient, max_daily_enable, max_daily, every_nday_enable, every_nday_days, every_nday_times, over_nday_enable, over_nday_days, over_nday_times, exclude_nhi_no_enable);
-        logger.info(sql);
+        logger.trace(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -81,7 +81,7 @@ public class PtNutritionalFeeDao {
                 + "    EXCLUDE_NHI_NO_ENABLE=%d \r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, max_inpatient_enable, max_inpatient, max_daily_enable, max_daily, every_nday_enable, every_nday_days, every_nday_times, over_nday_enable, over_nday_days, over_nday_times, exclude_nhi_no_enable, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

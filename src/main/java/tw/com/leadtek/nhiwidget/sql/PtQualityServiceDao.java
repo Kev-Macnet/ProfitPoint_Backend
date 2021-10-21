@@ -26,7 +26,7 @@ public class PtQualityServiceDao {
                 + "From PT_QUALITY_SERVICE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -40,7 +40,7 @@ public class PtQualityServiceDao {
         sql = "Delete from PT_QUALITY_SERVICE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -53,7 +53,7 @@ public class PtQualityServiceDao {
                 + "PT_QUALITY_SERVICE(PT_ID, INTERVAL_NDAY_ENABLE, INTERVAL_NDAY, COEXIST_NHI_NO_ENABLE, MIN_COEXIST_ENABLE, MIN_COEXIST, EVERY_NDAY_ENABLE, EVERY_NDAY_DAYS, EVERY_NDAY_TIMES)\r\n"
                 + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d)";
         sql = String.format(sql, ptId, interval_nday_enable, interval_nday, coexist_nhi_no_enable, min_coexist_enable, min_coexist, every_nday_enable, every_nday_days, every_nday_times);
-        logger.info(sql);
+        logger.trace(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -76,7 +76,7 @@ public class PtQualityServiceDao {
                 + "    EVERY_NDAY_TIMES=%d\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, interval_nday_enable, interval_nday, coexist_nhi_no_enable, min_coexist_enable, min_coexist, every_nday_enable, every_nday_days, every_nday_times, ptId);
-        logger.info(sql);
+        logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

@@ -11,7 +11,7 @@ import tw.com.leadtek.tools.Utility;
 
 
 @Repository
-public class WebConfigDao {
+public class WebConfigDao extends BaseSqlDao {
 
     private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
@@ -20,8 +20,8 @@ public class WebConfigDao {
 
     public java.util.Map<String, Object> getConfig(String id) {
         String sql;
-        sql="Select * \r\n" + 
-            "From webconfig\r\n" + 
+        sql="Select *  \n" + 
+            "From webconfig \n" + 
             "Where(id = '%s')";
         sql = String.format(sql, id);
         
@@ -37,8 +37,8 @@ public class WebConfigDao {
     public String getConfigValue(String id) {
         String ret = "";
         String sql;
-        sql="Select * \r\n" + 
-            "From webconfig\r\n" + 
+        sql="Select *  \n" + 
+            "From webconfig \n" + 
             "Where(id = '%s')";
         sql = String.format(sql, id);
         
@@ -56,17 +56,17 @@ public class WebConfigDao {
     public int setConfig(String id, String val, String desc) {
         
         String sql;
-        sql = "Update webconfig\r\n" + 
-              "Set value='%s',\r\n" + 
-              "    description='%s'\r\n" + 
+        sql = "Update webconfig \n" + 
+              "Set value='%s', \n" + 
+              "    description='%s' \n" + 
               "Where(id = '%s')";
-        sql = String.format(sql, val, desc, id);
+        sql = String.format(sql, noInjection(val), noInjection(desc), noInjection(id));
         int ret = jdbcTemplate.update(sql);
         if (ret == 0) {
-            sql = "Insert Into\r\n" + 
-                  "webconfig(id,value,description)\r\n"+
+            sql = "Insert Into \n" + 
+                  "webconfig(id,value,description) \n"+
                   "Values ('%s','%s','%s')";
-            sql = String.format(sql, id, val, desc);
+            sql = String.format(sql, noInjection(id), noInjection(val), noInjection(desc));
             ret = jdbcTemplate.update(sql);
         }
         

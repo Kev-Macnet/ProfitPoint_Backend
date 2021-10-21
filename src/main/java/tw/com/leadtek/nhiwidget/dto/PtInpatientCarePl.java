@@ -9,7 +9,7 @@ public class PtInpatientCarePl extends PaymentTermsPl {
     private String category;
 
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
 
     public void setCategory(String category) {

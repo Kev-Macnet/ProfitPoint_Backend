@@ -46,7 +46,7 @@ public class BackupSettingDto {
         this.month = month;
     }
     public String getTime() {
-        return time.replaceAll("\'", "\'\'");
+        return time;
     }
     public void setTime(String time) {
         this.time = time;

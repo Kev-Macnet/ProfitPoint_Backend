@@ -14,7 +14,7 @@ public class PtTubeFeedingFeePl extends PaymentTermsPl {
     private java.util.List<String> lst_nhi_no;
 
     public String getCategory() {
-        return category.replaceAll("\'", "\'\'");
+        return category;
     }
 
     public void setCategory(String category) {
