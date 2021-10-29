@@ -71,7 +71,24 @@ public class ParameterController extends BaseController {
     int perPageInt =
         (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
             : perPage.intValue();
-    return ResponseEntity.ok(parameterService.getAssignedPoints(sdate, edate, orderBy, asc,
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("sdate")) {
+        column = "startDate";
+      } else if (column.equals("edate")) {
+        column = "endDate";
+      } else if (column.equals("wp") || column.equals("wmP") || column.equals("dp") || column.equals("dP")) {
+        column = "value";
+      } else if (column.equals("status")) {
+        column = "startDate";
+      } else {
+        AssignedPointsListResponse result = new AssignedPointsListResponse();
+        result.setMessage("orderBy無此欄位：" + column);
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    return ResponseEntity.ok(parameterService.getAssignedPoints(sdate, edate, column, asc,
         perPageInt, page.intValue()));
   }
 
@@ -97,7 +114,14 @@ public class ParameterController extends BaseController {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
     }
-    return returnAPIResult(parameterService.deleteAssignedPoints(id));
+    long idL;
+    try {
+      idL = Long.parseLong(id);
+    } catch (NumberFormatException e) {
+      return returnAPIResult("id格式有誤");
+    }
+    
+    return returnAPIResult(parameterService.deleteAssignedPoints(idL));
   }
 
   @ApiOperation(value = "取得分配總點數", notes = "取得分配總點數")
@@ -369,7 +393,7 @@ public class ParameterController extends BaseController {
         .ok(parameterService.getInfectious(icd, cat, column, asc, perPageInt, page));
   }
 
-  @ApiOperation(value = "修改法定傳染病狀態", notes = "修改法定傳染病狀態")
+  @ApiOperation(value = "修改法定傳染病啟用狀態", notes = "修改法定傳染病啟用狀態")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/infectious")
@@ -442,7 +466,28 @@ public class ParameterController extends BaseController {
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/rareICD")
   public ResponseEntity<BaseResponse> newRareICD(@RequestBody RareICDPayload request) {
+    if (request.getCode() == null || request.getCode().length() < 1) {
+      return returnAPIResult("code值不可為空");
+    }
     return returnAPIResult(parameterService.newRareICD(request));
+  }
+
+  @ApiOperation(value = "修改罕見ICD代碼啟用狀態", notes = "修改罕見ICD代碼啟用狀態")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/rareICDStatus")
+  public ResponseEntity<BaseResponse> updateRareICDStatus(
+      @ApiParam(name = "id", value = "ICD代碼",
+          example = "1") @RequestParam(required = true) String id,
+      @ApiParam(name = "enable", value = "是否啟用，true/false",
+          example = "true") @RequestParam(required = true) Boolean enable) {
+    long idL = 0;
+    try {
+      idL = Long.parseLong(id);
+    } catch (NumberFormatException e) {
+      return returnAPIResult("id值有誤");
+    }
+    return returnAPIResult(parameterService.updateRareICDStatus(idL, enable.booleanValue()));
   }
 
   @ApiOperation(value = "修改罕見ICD代碼參數", notes = "修改罕見ICD代碼參數")
@@ -465,7 +510,7 @@ public class ParameterController extends BaseController {
     return returnAPIResult(parameterService.deleteCodeThreshold(id));
   }
 
-  @ApiOperation(value = "取得應用比例偏高醫令列表", notes = "取得應用比例偏高醫令列表")
+  @ApiOperation(value = "取得應用比例偏高醫令/特別用量藥品、衛材列表", notes = "取得應用比例偏高醫令/特別用量藥品、衛材列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/highRatioOrder")
   public ResponseEntity<HighRatioOrderListResponse> getHighRatioOrder(
@@ -473,6 +518,8 @@ public class ParameterController extends BaseController {
           example = "J10.01") @RequestParam(required = false) String code,
       @ApiParam(name = "inhCode", value = "院內碼",
           example = "J10.01") @RequestParam(required = false) String inhCode,
+      @ApiParam(name = "isOrder", value = "是否為應用比例偏高醫令，true:是，false:否，為特別用量藥品、衛材",
+          example = "true") @RequestParam(required = false, defaultValue = "true") Boolean isOrder,
       @ApiParam(name = "orderBy",
           value = "排序欄位名稱，sdate:生效日，edate:失效日，code:支付標準代碼，inhCode:院內碼，status:啟用狀態",
           example = "sdate") @RequestParam(required = false) String orderBy,
@@ -501,11 +548,11 @@ public class ParameterController extends BaseController {
         return ResponseEntity.badRequest().body(response);
       }
     }
-    return ResponseEntity
-        .ok(parameterService.getHighRatioOrder(codeS, inhCode, column, asc, perPageInt, page));
+    return ResponseEntity.ok(
+        parameterService.getHighRatioOrder(codeS, inhCode, isOrder, column, asc, perPageInt, page));
   }
 
-  @ApiOperation(value = "取得應用比例偏高醫令", notes = "取得應用比例偏高醫令")
+  @ApiOperation(value = "取得應用比例偏高醫令/特別用量藥品、衛材", notes = "取得應用比例偏高醫令/特別用量藥品、衛材")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/highRatioOrder/{id}")
   public ResponseEntity<HighRatioOrder> getHighRatioOrder(@PathVariable String id) {
@@ -522,12 +569,19 @@ public class ParameterController extends BaseController {
     }
   }
 
-  @ApiOperation(value = "新增應用比例偏高醫令", notes = "新增應用比例偏高醫令")
+  @ApiOperation(value = "新增應用比例偏高醫令/特別用量藥品、衛材", notes = "新增應用比例偏高醫令/特別用量藥品、衛材")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/highRatioOrder")
-  public ResponseEntity<BaseResponse> newHighRatioOrder(@RequestBody HighRatioOrder request) {
-    return returnAPIResult(parameterService.newHighRatioOrder(request));
+  public ResponseEntity<BaseResponse> newHighRatioOrder(
+      @ApiParam(name = "isHighRatio", value = "是否為應用比例偏高醫令，true:是，false:否，為特別用量藥品、衛材",
+          example = "true") @RequestParam(required = false, defaultValue = "true") Boolean isOrder,
+      @RequestBody HighRatioOrder request) {
+    if (request.getCode() == null || request.getCode().length() < 1) {
+      return returnAPIResult("code值不可為空");
+    }
+    System.out.println("isOrder:" + isOrder);
+    return returnAPIResult(parameterService.newHighRatioOrder(request, isOrder));
   }
 
   @ApiOperation(value = "修改應用比例偏高醫令", notes = "修改應用比例偏高醫令")
@@ -592,7 +646,7 @@ public class ParameterController extends BaseController {
       }
     }
     return ResponseEntity.ok(
-        parameterService.getSameATC(code, inhCode, atc, column, asc, perPageInt, page.intValue()));
+        parameterService.getSameATCFromPayCode(code, inhCode, atc, column, asc, perPageInt, page.intValue()));
   }
 
   @ApiOperation(value = "修改同性質藥物狀態", notes = "修改同性質藥物狀態")
@@ -600,8 +654,7 @@ public class ParameterController extends BaseController {
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/sameATC")
   public ResponseEntity<BaseResponse> updateSameATCStatus(
-      @ApiParam(name = "id", value = "id",
-          example = "J10.01") @RequestParam(required = true) String id,
+      @ApiParam(name = "id", value = "id", example = "1") @RequestParam(required = true) String id,
       @ApiParam(name = "enable", value = "是否啟用，true/false",
           example = "true") @RequestParam(required = true) Boolean enable) {
     Long idL = null;
@@ -705,7 +758,7 @@ public class ParameterController extends BaseController {
   @DeleteMapping("/codeConflict/{id}")
   public ResponseEntity<BaseResponse> deleteCodeConflict(@PathVariable String id) {
     if (id == null || id.length() == 0) {
-     return returnAPIResult("id 未帶入");
+      return returnAPIResult("id 未帶入");
     }
 
     try {

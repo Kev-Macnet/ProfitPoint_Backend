@@ -36,6 +36,10 @@ public class PAY_CODE {
   @ApiModelProperty(value = "支付標準名稱", example = "藥品調劑費", required = false)
   @Column(name = "NAME")
   protected String name;
+  
+  @ApiModelProperty(value = "英文名稱", example = "TRANZEPAM TABLETS", required = false)
+  @Column(name = "NAME_EN")
+  protected String nameEn;
 
   @ApiModelProperty(value = "健保支付點數", example = "2100", required = false)
   @Column(name = "POINT")
@@ -51,7 +55,7 @@ public class PAY_CODE {
 
   @ApiModelProperty(value = "自費金額", example = "600", required = false)
   @Column(name = "OWN_EXPENSE")
-  protected Integer ownExpense;
+  protected Double ownExpense;
 
   @Column(name = "CODE_TYPE")
   @ApiModelProperty(value = "費用分類，如不分類、病房費、藥費…", example = "病房費", required = false)
@@ -93,6 +97,13 @@ public class PAY_CODE {
   @Column(name = "REDIS_ID")
   @JsonIgnore
   protected Integer redisId;
+  
+  /**
+   * 存放在REDIS中HASH的FIELD值
+   */
+  @Column(name = "SAME_ATC")
+  @JsonIgnore
+  protected Integer sameAtc;
 
   /**
    * 更新時間
@@ -188,14 +199,14 @@ public class PAY_CODE {
   /**
    * 自費金額
    */
-  public Integer getOwnExpense() {
+  public Double getOwnExpense() {
     return ownExpense;
   }
 
   /**
    * 自費金額
    */
-  public void setOwnExpense(Integer OWN_EXPENSE) {
+  public void setOwnExpense(Double OWN_EXPENSE) {
     ownExpense = OWN_EXPENSE;
   }
 
@@ -311,6 +322,22 @@ public class PAY_CODE {
     updateAt = UPDATE_AT;
   }
   
+  public String getNameEn() {
+    return nameEn;
+  }
+
+  public void setNameEn(String nameEn) {
+    this.nameEn = nameEn;
+  }
+  
+  public Integer getSameAtc() {
+    return sameAtc;
+  }
+
+  public void setSameAtc(Integer sameAtc) {
+    this.sameAtc = sameAtc;
+  }
+
   public static PAY_CODE convertFromOrderCode(OrderCode oc) {
     PAY_CODE result = new PAY_CODE();
     result.setCode(oc.getCode().toUpperCase());
@@ -321,6 +348,21 @@ public class PAY_CODE {
     result.setName(oc.getDesc());
     result.setPoint(oc.getP());
     result.setUpdateAt(new Date());
+    return result;
+  }
+  
+  public OrderCode toOrderCode() {
+    OrderCode result = new OrderCode();
+    result.setCode(code.toLowerCase());
+    result.setDetail(codeType);
+    result.setsDate(startDate);
+    result.seteDate(endDate);
+    result.setLevel(hospLevel);
+    result.setDesc(name);
+    if (point != null) {
+      result.setP(point);
+    }
+    result.setUpdateAt(updateAt);
     return result;
   }
 

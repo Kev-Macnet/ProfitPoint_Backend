@@ -20,6 +20,8 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
 
   public final static int CODE_TYPE_ORDER = 2;
 
+  public final static int CODE_TYPE_DRUG = 3;
+
   @ApiModelProperty(value = "代碼", example = "J10.01", required = true)
   protected String code;
 
@@ -74,7 +76,6 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
     edate = rareIcd.getEndDate();
     ip = rareIcd.getDataFormat().equals("20");
     op = rareIcd.getDataFormat().equals("10");
-    both = rareIcd.getDataFormat().equals("00");
 
     opTimesMStatus = (rareIcd.getOpTimesMStatus().intValue() == 1);
     opTimesM = rareIcd.getOpTimesM();
@@ -86,6 +87,18 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
     ipTimes6MStatus = (rareIcd.getIpTimes6mStatus().intValue() == 1);
     ipTimes6M = rareIcd.getIpTimes6m();
     status = rareIcd.getStatus().intValue() == 1;
+
+    if (rareIcd.getDataFormat().equals("00")) {
+      if (opTimesM.intValue() == ipTimesM.intValue()
+          && opTimes6M.intValue() == ipTimes6M.intValue()) {
+        both = true;
+      } else {
+        both = false;
+        ip = true;
+        op = true;
+      }
+    }
+
   }
 
   public CODE_THRESHOLD toDB() {
@@ -99,7 +112,7 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
 
     result.setStartDate(sdate);
     result.setEndDate(edate);
-    if (both) {
+    if (both || (ip && op)) {
       result.setDataFormat("00");
     } else if (ip) {
       result.setDataFormat("20");

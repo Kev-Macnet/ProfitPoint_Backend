@@ -88,6 +88,21 @@ public class JwtUtils {
   public String getUsernameFromToken(String token) throws ExpiredJwtException, SignatureException {
     return getClaimsFromToken(token).getSubject();
   }
+  
+  /**
+   * 根據Claims獲取username
+   */
+  public String getUsernameFromClaims(Claims claims) throws ExpiredJwtException, SignatureException {
+    return claims.getSubject();
+  }
+  
+  
+  /**
+   * 根據Claims獲取role
+   */
+  public String getRoleFromClaims(Claims claims) throws ExpiredJwtException, SignatureException {
+    return (String) claims.get(CLAIM_KEY_ROLE);
+  }
 
   public String getUserID(String token) {
     return (String) getClaimsFromToken(token).get(CLAIM_KEY_USER_ID);
@@ -100,7 +115,7 @@ public class JwtUtils {
     try {
       return Jwts.parserBuilder().setSigningKey(KEY).build().parseClaimsJws(token).getBody();
     } catch (SignatureException e) {
-      logger.error("Invalid JWT signature: {}", e.getMessage());
+      //logger.error("Invalid JWT signature: {}", e.getMessage());
     } catch (MalformedJwtException e) {
       logger.error("Invalid JWT token: {}", e.getMessage());
     } catch (ExpiredJwtException e) {
@@ -151,6 +166,13 @@ public class JwtUtils {
   public Date getExpirationDateFromToken(String token) {
     Date expiration = getClaimsFromToken(token).getExpiration();
     return expiration;
+  }
+  
+  /**
+   * 獲取token的建立時間
+   */
+  public long getLoginTimeFromToken(String token) {
+    return getClaimsFromToken(token).getExpiration().getTime() - jwtExpirationMs;
   }
 
   /**

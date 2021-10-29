@@ -3,17 +3,20 @@
  */
 package tw.com.leadtek.nhiwidget.service;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,8 @@ import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.model.rdb.USER_DEPARTMENT;
 import tw.com.leadtek.nhiwidget.payload.UserRequest;
+import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
+import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 
 /**
  * 處理用戶帳號、部門及權限
@@ -36,6 +41,8 @@ public class UserService {
 
   private Logger logger = LogManager.getLogger();
 
+  public final static String USER = "USER:";
+
   @Autowired
   private USERDao userDao;
 
@@ -47,12 +54,21 @@ public class UserService {
 
   @Autowired
   private PasswordEncoder encoder;
-  
+
   @Autowired
   private EMailService emailService;
+
+  @Autowired
+  private RedisService redisService;
   
+  @Autowired
+  private LogDataDao logDataDao;
+  
+  @Value("${jwt.afk}")
+  private long afkTime;
+
   private HashMap<Long, DEPARTMENT> departments;
-  
+
   private void retrieveData() {
     HashMap<Long, DEPARTMENT> newDepartments = new HashMap<Long, DEPARTMENT>();
     List<DEPARTMENT> departmentList = departmentDao.findAll();
@@ -171,7 +187,7 @@ public class UserService {
     }
     return null;
   }
-  
+
   public String login(String username, String password) {
     if (username == null || username.length() == 0 || password == null || password.length() == 0) {
       return "帳號密碼有誤";
@@ -182,12 +198,12 @@ public class UserService {
       return "帳號不存在";
     }
     USER existUser = optional.orElse(new USER());
-    if (encoder.matches(password, existUser.getPassword())){
+    if (encoder.matches(password, existUser.getPassword())) {
       return null;
     }
     return "密碼有誤";
   }
-  
+
   public String updateDepartment(DEPARTMENT department) {
     Optional<DEPARTMENT> optional = departmentDao.findById(department.getId());
     if (optional == null) {
@@ -259,7 +275,7 @@ public class UserService {
   }
 
   public String deleteDepartment(Long id) {
-    Optional<DEPARTMENT> existDepartment = departmentDao.findById(id); 
+    Optional<DEPARTMENT> existDepartment = departmentDao.findById(id);
     if (existDepartment == null) {
       return "部門id不存在";
     }
@@ -267,7 +283,7 @@ public class UserService {
     return null;
   }
 
-  //@PreAuthorize("hasAuthority('administrator')")
+  // @PreAuthorize("hasAuthority('administrator')")
   public List<UserRequest> getAllUser(String funcType, String funcTypeC) {
     if (departments == null) {
       retrieveData();
@@ -276,7 +292,8 @@ public class UserService {
 
     List<USER> list = userDao.findAll();
     List<USER_DEPARTMENT> udList = userDepartmentDao.findAll();
-    if ((funcTypeC != null && !"不分科".equals(funcTypeC)) || (funcType != null && !"00".equals(funcType))) {
+    if ((funcTypeC != null && !"不分科".equals(funcTypeC))
+        || (funcType != null && !"00".equals(funcType))) {
       Long depId = null;
       if (funcType != null) {
         depId = getDepartmentIdByCode(funcType);
@@ -307,7 +324,7 @@ public class UserService {
     }
     return result;
   }
-  
+
   private Long getDepartmentIdByName(String name) {
     for (DEPARTMENT dep : departments.values()) {
       if (dep.getName().equals(name) || dep.getNhName().equals(name)) {
@@ -316,7 +333,7 @@ public class UserService {
     }
     return -1L;
   }
-  
+
   private Long getDepartmentIdByCode(String code) {
     for (DEPARTMENT dep : departments.values()) {
       if ((dep.getNhCode() != null && dep.getNhCode().equals(code)) || dep.getCode().equals(code)) {
@@ -325,15 +342,15 @@ public class UserService {
     }
     return -1L;
   }
-  
+
   public List<DEPARTMENT> getAllDepartment() {
     if (departments == null) {
       retrieveData();
     }
     return new ArrayList<DEPARTMENT>(departments.values());
   }
-  
-  private String getDepartmentsByUserId(Long id,  List<USER_DEPARTMENT> udList) {
+
+  private String getDepartmentsByUserId(Long id, List<USER_DEPARTMENT> udList) {
     StringBuffer sb = new StringBuffer();
     for (USER_DEPARTMENT ud : udList) {
       if (ud.getUserId().longValue() == id) {
@@ -346,7 +363,7 @@ public class UserService {
     }
     return sb.toString();
   }
-  
+
   public String forgetPassword(String username, String email) {
     USER existUser = findUser(username);
     if (existUser == null) {
@@ -362,7 +379,7 @@ public class UserService {
     userDao.save(existUser);
     return null;
   }
-  
+
   public String generateCommonLangPassword() {
     String upperCaseLetters = RandomStringUtils.random(2, 65, 90, true, true);
     String lowerCaseLetters = RandomStringUtils.random(2, 97, 122, true, true);
@@ -379,27 +396,71 @@ public class UserService {
     return password;
   }
 
-  // public boolean newRole(ROLE role) {
-  // ROLE existRole = findRole(role.getName());
-  // if (existRole != null) {
-  // return false;
-  // }
-  // roleDao.save(role);
-  // return true;
-  // }
-  //
-  // public ROLE findRole(String name) {
-  // Optional<ROLE> role = roleDao.findByName(name);
-  // return role.orElse(null);
-  // }
-  //
-  // public boolean deleteRole(String name) {
-  // ROLE existRole = findRole(name);
-  // if (existRole == null) {
-  // return false;
-  // }
-  // roleDao.deleteById(existRole.getId());
-  // return true;
-  // }
+  public void loginLog(String username, String jwt) {
+    String key = USER + username;
+    Set<Object> sets = redisService.hkeys(key);
+    if (sets != null && sets.size() > 0) {
+      deleteAndSaveUserLogout(key, sets);
+    }
+    redisService.putHash(key, jwt, String.valueOf(System.currentTimeMillis()));
+  }
+  
+  public void deleteAndSaveUserLogout(String key, Set<Object> names) {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    for (Object object : names) {
+      String oldJWT = (String) object;
+      Object lastUsedTime = redisService.hget(key, oldJWT);
+      redisService.deleteHash(key, oldJWT);
+      long lastUsedTimeL = Long.parseLong((String) lastUsedTime);
+      if ((lastUsedTimeL + 60000) < System.currentTimeMillis()) {
+        // 點完頁面後加1分鐘當做觀看時間
+        lastUsedTimeL += 60000;
+      }
+      logDataDao.updateSignout(oldJWT, sdf.format(new Date(lastUsedTimeL)));
+    }
+  }
 
+  public void logoutLog(String username, String jwt) {
+    // 儲存 DB logout 時間由 logService.setLogout 處理
+    String key = USER + username;
+    Object loginTime = redisService.hget(key, jwt);
+    if (loginTime != null) {
+      redisService.deleteHash(key, jwt);
+    }
+  }
+
+  public boolean updateUserAlive(String username, String jwt) {
+    String key = USER + username;
+    Set<Object> sets = redisService.hkeys(key);
+    if (sets == null || sets.size() == 0) {
+      // @TODO 暫時先放行
+      return true;
+      //return false;
+    } else {
+      Object usedTime = redisService.hget(key, jwt);
+      if (usedTime == null) {
+        return false;
+      }
+      // 存放當下的時間
+      redisService.putHash(key, jwt, String.valueOf(System.currentTimeMillis()));
+    }
+    return true;
+  }
+  
+  /**
+   * 檢查已登入 user 的token，是否超過30分鐘未使用，是則刪掉在 redis的 JWT並儲存 logout時間
+   */
+  public void checkLoginUser() {
+    Set<String> users = redisService.keys("USER*");
+    for (String key : users) {
+      List<Object> lastUsedTime = redisService.values(key);
+      for (Object time : lastUsedTime) {
+        long lastUsedTimeL = Long.parseLong((String) time);
+        if (System.currentTimeMillis() - lastUsedTimeL > afkTime) {
+          deleteAndSaveUserLogout(key, redisService.hkeys(key));
+        }
+      }
+    }
+  }
+  
 }

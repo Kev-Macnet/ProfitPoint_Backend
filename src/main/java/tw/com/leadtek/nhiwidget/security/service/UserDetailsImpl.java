@@ -34,6 +34,8 @@ public class UserDetailsImpl implements UserDetails {
   private String password;
   
   private String role;
+  
+  private long loginTime;
 
   private Collection<? extends GrantedAuthority> authorities;
 
@@ -46,6 +48,7 @@ public class UserDetailsImpl implements UserDetails {
     this.password = password;
     this.authorities = authorities;
     this.role = role;
+    this.loginTime = System.currentTimeMillis();
   }
 
   public static UserDetailsImpl build(USER user) {
@@ -54,7 +57,7 @@ public class UserDetailsImpl implements UserDetails {
         user.getEmail(), user.getPassword(), getAuthority(user.getRole()), user.getRole());
   }
   
-  private static List<GrantedAuthority> getAuthority(String role) {
+  public static List<GrantedAuthority> getAuthority(String role) {
     List<GrantedAuthority> result = new ArrayList<GrantedAuthority>();
     if (role.equals("Z")) {
       result.add(new SimpleGrantedAuthority(role));
@@ -136,6 +139,14 @@ public class UserDetailsImpl implements UserDetails {
 
   public void setRole(String role) {
     this.role = role;
+  }
+  
+  public long getLoginTime() {
+    return loginTime;
+  }
+
+  public void setLoginTime(long loginTime) {
+    this.loginTime = loginTime;
   }
 
   @Override

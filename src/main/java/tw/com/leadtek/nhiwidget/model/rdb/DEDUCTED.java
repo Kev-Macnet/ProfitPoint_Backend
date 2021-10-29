@@ -1,8 +1,9 @@
 /**
- * Created on 2021/10/12 by GenerateSqlByClass().
+ * Created on 2021/10/27 by GenerateSqlByClass().
  */
 package tw.com.leadtek.nhiwidget.model.rdb;
 
+import java.io.Serializable;
 import java.util.Date;
 import javax.persistence.Basic;
 import javax.persistence.Column;
@@ -11,55 +12,61 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
-@Table(name = "SAME_ATC")
+@Table(name = "DEDUCTED")
 @Entity
-public class SAME_ATC {
+@ApiModel("核減代碼")
+public class DEDUCTED implements Serializable {
 
-  /**
-   * 序號
-   */
+  private static final long serialVersionUID = 3200001731594612865L;
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Basic(optional = false)
   @Column(name = "ID", nullable = false)
+  @ApiModelProperty(value = "id", example = "1", required = false)
   private Long id;
 
-  /**
-   * ATC分類
-   */
-  @Column(name = "ATC", length = 12)
-  private String atc;
+  @Column(name = "L1", length = 20)
+  @ApiModelProperty(value = "大分類", example = "專業審查不予支付代碼", required = true)
+  private String l1;
 
-  /**
-   * 院內碼
-   */
-  @Column(name = "INH_CODE", length = 16)
-  private String inhCode;
+  @Column(name = "L2", length = 20)
+  @ApiModelProperty(value = "中分類", example = "西醫", required = true)
+  private String l2;
 
-  /**
-   * 支付標準代碼
-   */
+  @Column(name = "L3", length = 50)
+  
+  private String l3;
+
   @Column(name = "CODE", length = 16)
+  @ApiModelProperty(value = "核檢代碼", example = "0001A", required = true)
   private String code;
 
-  /**
-   * 藥品名稱
-   */
-  @Column(name = "NAME", length = 180)
+  @Column(name = "NAME", length = 80)
+  @ApiModelProperty(value = "代碼名稱", example = "診療品質不符專業認定，理由____", required = true)
   private String name;
 
   /**
    * 啟用狀態，1:已啟用，0:未啟用
    */
   @Column(name = "STATUS")
+  @JsonIgnore
   private Integer status;
 
   /**
    * 更新時間
    */
   @Column(name = "UPDATE_AT", nullable = false)
+  @JsonIgnore
   private Date updateAt;
+  
+  public DEDUCTED() {
+    
+  }
 
   /**
    * 序號
@@ -76,56 +83,70 @@ public class SAME_ATC {
   }
 
   /**
-   * ATC分類
+   * 大分類
    */
-  public String getAtc() {
-    return atc;
+  public String getL1() {
+    return l1;
   }
 
   /**
-   * ATC分類
+   * 大分類
    */
-  public void setAtc(String ATC) {
-    atc = ATC;
+  public void setL1(String L1) {
+    l1 = L1;
   }
 
   /**
-   * 院內碼
+   * 中分類
    */
-  public String getInhCode() {
-    return inhCode;
+  public String getL2() {
+    return l2;
   }
 
   /**
-   * 院內碼
+   * 中分類
    */
-  public void setInhCode(String INH_CODE) {
-    inhCode = INH_CODE;
+  public void setL2(String L2) {
+    l2 = L2;
   }
 
   /**
-   * 支付標準代碼
+   * 小分類
+   */
+  public String getL3() {
+    return l3;
+  }
+
+  /**
+   * 小分類
+   */
+  public void setL3(String L3) {
+    l3 = L3;
+  }
+
+  /**
+   * 核減代碼
    */
   public String getCode() {
     return code;
   }
 
   /**
-   * 支付標準代碼
+   * 核減代碼
    */
   public void setCode(String CODE) {
     code = CODE;
   }
 
   /**
-   * 藥品名稱
+   * 中文名稱
    */
   public String getName() {
     return name;
   }
 
   /**
-   * 藥品名稱
+   * 中文名稱
    */
   public void setName(String NAME) {
     name = NAME;

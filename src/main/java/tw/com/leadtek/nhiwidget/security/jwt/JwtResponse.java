@@ -12,8 +12,8 @@ public class JwtResponse {
   @ApiModelProperty(value = "JWT", example = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwidWlkIjoiNWZiY2JmNmYxMjdkZWIwOGM1OGZjMjlmIiwiZXhwIjoxNjE1MjcwNTU0fQ.g6dfOms4tK5hhnDbJyYoAaXSSGH4QPopl1sLK2559EQ", required = true)
   private String token;
 
-//  @ApiModelProperty(value = "用戶帳號id", example = "5fbcbf6f127deb08c58fc29f", required = true)
-//  private Long id;
+  @ApiModelProperty(value = "用戶帳號id", example = "5fbcbf6f127deb08c58fc29f", required = true)
+  private Long id;
   
   @ApiModelProperty(value = "用戶帳號角色", example = "A", required = true)
   private String role;
@@ -23,19 +23,24 @@ public class JwtResponse {
 
   @ApiModelProperty(value = "用戶帳號顯示名稱", example = "test", required = true)
   private String displayName;
+  
+  @ApiModelProperty(value = "用戶登入時間", example = "16664407545315", required = true)
+  private long loginTime;
 
-  public JwtResponse(String token, String role, String username, String displayName) {
+  public JwtResponse(String token, String role, String username, String displayName, long id) {
+    this.id = id;
     this.token = token;
     this.role = role;
     this.username = username;
     this.displayName = displayName;
+    this.loginTime = System.currentTimeMillis();
   }
 
   public String getRole() {
     return role;
   }
-
-  public void setId(String role) {
+  
+  public void setRole(String role) {
     this.role = role;
   }
 
@@ -63,5 +68,21 @@ public class JwtResponse {
     this.displayName = displayName;
   }
 
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public long getLoginTime() {
+    return loginTime;
+  }
+
+  public void setLoginTime(long loginTime) {
+    this.loginTime = loginTime;
+  }
+  
 }
 

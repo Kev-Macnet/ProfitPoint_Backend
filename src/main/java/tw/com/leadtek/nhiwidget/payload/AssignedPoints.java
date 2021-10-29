@@ -4,8 +4,12 @@
 package tw.com.leadtek.nhiwidget.payload;
 
 import java.io.Serializable;
+import java.util.Date;
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import tw.com.leadtek.nhiwidget.model.rdb.ASSIGNED_POINT;
 
+@ApiModel("分配點數詳細資料")
 public class AssignedPoints extends StartEndPayload implements Serializable {
 
   private static final long serialVersionUID = -4694306579598385624L;
@@ -33,6 +37,43 @@ public class AssignedPoints extends StartEndPayload implements Serializable {
   
   @ApiModelProperty(value = "牙醫專款分配點數", required = false)
   protected Long dentistFundPoints;
+  
+  public AssignedPoints() {
+    
+  }
+  
+  public AssignedPoints(ASSIGNED_POINT ap) {
+    wmOpPoints = ap.getWmOpPoints();
+    wmIpPoints = ap.getWmIpPoints();
+    wmDrugPoints = ap.getWmDrugPoints();
+    hemodialysisPoints = ap.getHemodialysisPoints();
+    fundPoints = ap.getFundPoints();
+    dentistOpPoints = ap.getDentistOpPoints();
+    dentistDrugPoints = ap.getDentistDrugPoints();
+    dentistFundPoints = ap.getDentistFundPoints();
+    sdate = ap.getStartDate();
+    edate = ap.getEndDate();
+    id = ap.getId();
+  }
+  
+  public ASSIGNED_POINT toDB() {
+    ASSIGNED_POINT result = new ASSIGNED_POINT();
+    result.setId(id);
+    result.setDentistDrugPoints(dentistDrugPoints);
+    result.setDentistFundPoints(dentistFundPoints);
+    result.setDentistOpPoints(dentistOpPoints);
+    result.setDp(result.getDentistDrugPoints().longValue() + result.getDentistFundPoints().longValue() + result.getDentistOpPoints().longValue());
+    result.setEndDate(edate);
+    result.setStartDate(sdate);
+    result.setFundPoints(fundPoints);
+    result.setHemodialysisPoints(hemodialysisPoints);
+    result.setUpdateAt(new Date());
+    result.setWmDrugPoints(wmDrugPoints);
+    result.setWmIpPoints(wmIpPoints);
+    result.setWmOpPoints(wmOpPoints);
+    result.setWmp(result.getWmDrugPoints().longValue() + result.getWmIpPoints().longValue() + result.getWmOpPoints().longValue());
+    return result;
+  }
 
   public Long getWmOpPoints() {
     return wmOpPoints;

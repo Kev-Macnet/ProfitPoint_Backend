@@ -6,7 +6,7 @@ package tw.com.leadtek.nhiwidget.payload;
 import java.io.Serializable;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import tw.com.leadtek.nhiwidget.model.rdb.SAME_ATC;
+import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 
 @ApiModel("同性質藥物開立列表")
 public class SameATCListPayload implements Serializable {
@@ -35,13 +35,13 @@ public class SameATCListPayload implements Serializable {
     
   }
   
-  public SameATCListPayload(SAME_ATC sameATC) {
-    id = sameATC.getId();
-    atc = sameATC.getAtc();
-    inhCode = sameATC.getInhCode();
-    code = sameATC.getCode();
-    name = sameATC.getName();
-    status = sameATC.getStatus().intValue() == 1;
+  public SameATCListPayload(PAY_CODE pc) {
+    id = pc.getId();
+    atc = pc.getAtc();
+    inhCode = pc.getInhCode();
+    code = pc.getCode();
+    name = pc.getName();
+    status = pc.getSameAtc().intValue() == 1;
   }
 
   public Long getId() {

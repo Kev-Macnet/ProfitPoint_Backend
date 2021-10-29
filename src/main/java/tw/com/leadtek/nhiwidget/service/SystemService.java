@@ -26,13 +26,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.controller.BaseController;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
+import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
+import tw.com.leadtek.nhiwidget.dao.DEDUCTEDDao;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
+import tw.com.leadtek.nhiwidget.model.rdb.ASSIGNED_POINT;
 import tw.com.leadtek.nhiwidget.model.rdb.ATC;
+import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
+import tw.com.leadtek.nhiwidget.payload.AssignedPointsListPayload;
 import tw.com.leadtek.nhiwidget.payload.PayCode;
 import tw.com.leadtek.nhiwidget.payload.PayCodeListResponse;
+import tw.com.leadtek.nhiwidget.payload.system.DeductedListResponse;
+import tw.com.leadtek.tools.Utility;
 
 @Service
 public class SystemService {
@@ -47,6 +55,12 @@ public class SystemService {
 
   @Autowired
   private PAY_CODEDao payCodeDao;
+
+  @Autowired
+  private CODE_TABLEDao codeTableDao;
+  
+  @Autowired
+  private DEDUCTEDDao deductedDao;
 
   public ATCListResponse getATC(String code, Integer leng, int perPage, int page) {
     List<ATC> codes = new ArrayList<ATC>();
@@ -238,7 +252,8 @@ public class SystemService {
 
   private PAY_CODE checkPayCodeStartAndEndDay(List<PAY_CODE> list, PAY_CODE pc) {
     for (PAY_CODE payCode : list) {
-      if (payCode.getStartDate().getTime() == pc.getStartDate().getTime() && payCode.getEndDate().getTime() == pc.getEndDate().getTime()) {
+      if (payCode.getStartDate().getTime() == pc.getStartDate().getTime()
+          && payCode.getEndDate().getTime() == pc.getEndDate().getTime()) {
         return payCode;
       }
     }
@@ -275,10 +290,202 @@ public class SystemService {
     }
     payCodeDao.save(pc);
   }
-  
+
   public void deletePayCode(PAY_CODE pc) {
     payCodeDao.delete(pc);
     redisService.deleteHash("ICD10-data", pc.getRedisId().toString());
     redisService.removeIndexToRedisIndex("ICD10-index", pc.getCode(), pc.getRedisId());
   }
+
+  public List<String> getDeductedCat() {
+    List<String> result = new ArrayList<String>();
+    List<CODE_TABLE> list = codeTableDao.findByCat("DEDUCTED_L1");
+    if (list == null || list.size() == 0) {
+      return null;
+    }
+    for (CODE_TABLE ct : list) {
+      result.add(ct.getDescChi());
+    }
+    return result;
+  }
+  
+  public List<String> getDeductedCat(String l1) {
+    List<String> result = new ArrayList<String>();
+    List<CODE_TABLE> list = codeTableDao.findByCat("DEDUCTED_L2");
+    if (list == null || list.size() == 0) {
+      return null;
+    }
+    String codePrefix = null;
+    if (l1.equals("專業審查不予支付代碼")) {
+      codePrefix = "1";
+    } else if (l1.equals("程序審查核減代碼")) {
+      codePrefix = "2";
+    } else if (l1.equals("進階人工核減代碼")) {
+      codePrefix = "3";
+    } else {
+      return null;
+    }
+    for (CODE_TABLE ct : list) {
+      if (ct.getCode().startsWith(codePrefix)) {
+        result.add(ct.getDescChi());    
+      }
+    }
+    return result;
+  }
+  
+  public List<String> getDeductedCat(String l1, String l2) {
+    List<String> result = new ArrayList<String>();
+    List<CODE_TABLE> list = codeTableDao.findByCat("DEDUCTED_L3");
+    if (list == null || list.size() == 0) {
+      return null;
+    }
+    String codePrefix = null;
+    if (l1.equals("專業審查不予支付代碼")) {
+      codePrefix = "1";
+    } else if (l1.equals("程序審查核減代碼") || l1.equals("進階人工核減代碼")) {
+      result.add("-");
+      return result;
+    }     
+    if (l2.equals("西醫")) {
+      codePrefix = codePrefix + "1";
+    } else if (l1.equals("中醫")) {
+      codePrefix = codePrefix + "2";
+    } else if (l1.equals("牙醫")) {
+      codePrefix = codePrefix + "3";
+    } else {
+      return null;
+    }
+    for (CODE_TABLE ct : list) {
+      if (ct.getCode().startsWith(codePrefix)) {
+        result.add(ct.getDescChi());    
+      }
+    }
+    return result;
+  }
+  
+  public DeductedListResponse getDuductedList(String l1, String l2, String l3, String code, 
+      String name, String orderBy, Boolean asc, int perPage, int page) {
+    DeductedListResponse result = new DeductedListResponse();
+
+    Specification<DEDUCTED> spec = new Specification<DEDUCTED>() {
+
+      private static final long serialVersionUID = 1017L;
+
+      public Predicate toPredicate(Root<DEDUCTED> root, CriteriaQuery<?> query,
+          CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (l1 != null && l1.length() > 0) {
+          predicate.add(cb.equal(root.get("l1"), l1));
+        }
+        if (l2 != null && l2.length() > 0) {
+          predicate.add(cb.equal(root.get("l2"), l2));
+        }
+        if (l3 != null && l3.length() > 0) {
+          predicate.add(cb.equal(root.get("l3"), l3));
+        }
+        if (code != null && code.length() > 0) {
+          predicate.add(cb.equal(root.get("code"), code));
+        }
+        if (name != null && name.length() > 0) {
+          predicate.add(cb.equal(root.get("name"), name));
+        }
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+
+        List<Order> orderList = new ArrayList<Order>();
+        if (orderBy != null && asc != null) {
+          if (asc.booleanValue()) {
+            orderList.add(cb.asc(root.get(orderBy)));
+          } else {
+            orderList.add(cb.desc(root.get(orderBy)));
+          }
+        } else {
+          orderList.add(cb.asc(root.get("code")));
+        }
+        query.orderBy(orderList);
+        return query.getRestriction();
+      }
+    };
+    long total = deductedDao.count(spec);
+    Page<DEDUCTED> pages = deductedDao.findAll(spec, PageRequest.of(page, perPage));
+    List<DEDUCTED> list = new ArrayList<DEDUCTED>();
+    if (pages != null && pages.getSize() > 0) {
+      for (DEDUCTED p : pages) {
+        list.add(p);
+      }
+    }
+    result.setTotalPage(Utility.getTotalPage((int) total, perPage));
+    result.setData(list);
+    return result;
+  }
+  
+  public DEDUCTED getDeducted(long id) {
+    Optional<DEDUCTED> optional = deductedDao.findById(id);
+    if (optional.isPresent()) {
+      return optional.get();
+    }
+    return null;
+  }
+  
+  public String newDeducted(DEDUCTED request) {
+    List<DEDUCTED> list = deductedDao.findByCode(request.getCode());
+    if (list != null && list.size() > 0) {
+      return "核減代碼" + request.getCode() + "已存在";
+    }
+    String checkResult = checkDeductedCat(request.getL1(), request.getL2());
+    if (checkResult != null) {
+      return checkResult;
+    }
+    request.setUpdateAt(new Date());
+    request.setStatus(1);
+    deductedDao.save(request);
+    return null;
+  }
+  
+  public String checkDeductedCat(String l1, String l2) {
+    if (l1 == null) {
+      return "核減大分類值不可為空";
+    }
+    if (l2 == null) {
+      return "核減中分類值不可為空";
+    }
+    List<String> l1List = getDeductedCat();
+    if (!l1List.contains(l1)) {
+      return "核減大分類:" + l1 + "不存在！";
+    }
+    List<String> l2List = getDeductedCat(l1);
+    if (!l2List.contains(l2)) {
+      return "核減中分類:" + l2 + "不存在！";
+    }
+    return null;
+  }
+  
+  public String updateDeducted(DEDUCTED request) {
+    List<DEDUCTED> list = deductedDao.findByCode(request.getCode());
+    if (list == null || list.size() == 0) {
+      return "核減代碼" + request.getCode() + "不存在";
+    }
+    DEDUCTED old = list.get(0);
+    String checkResult = checkDeductedCat(request.getL1(), request.getL2());
+    if (checkResult != null) {
+      return checkResult;
+    }
+    request.setId(old.getId());
+    request.setUpdateAt(new Date());
+    request.setStatus(1);
+    deductedDao.save(request);
+    return null;
+  }
+  
+  public String deleteDeducted(long id) {
+    Optional<DEDUCTED> optional = deductedDao.findById(id);
+    if (optional.isPresent()) {
+      deductedDao.deleteById(id);
+    } else {
+      return "核減代碼id:" + id + "不存在";
+    }
+    return null;
+  }
+  
 }

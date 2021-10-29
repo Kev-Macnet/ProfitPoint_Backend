@@ -98,7 +98,7 @@ public class GenClassField {
     if ("FLOAT".equals(type)) {
       return "Float";
     }
-    if ("DATE".equals(type)) {
+    if ("DATE".equals(type) || "TIMESTAMP".equals(type) ||  "LONGDATE".equals(type)) {
       return "Date";
     }
     if ("DOUBLE".equals(type)) {

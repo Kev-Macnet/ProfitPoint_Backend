@@ -14,8 +14,10 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,11 +47,13 @@ import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP;
 import tw.com.leadtek.nhiwidget.model.xml.OutPatient;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
-import tw.com.leadtek.nhiwidget.payload.MRCount;
 import tw.com.leadtek.nhiwidget.payload.MRCountResponse;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
+import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
 import tw.com.leadtek.nhiwidget.payload.QuickSearchResponse;
+import tw.com.leadtek.nhiwidget.payload.RareICDPayload;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
+import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
@@ -66,7 +70,7 @@ public class NHIWidgetXMLController extends BaseController {
 
   @Autowired
   private ParametersService parameters;
-  
+
   @Autowired
   private LogDataService logService;
 
@@ -154,7 +158,7 @@ public class NHIWidgetXMLController extends BaseController {
   @ApiOperation(value = "下載代碼表", notes = "下載代碼表")
   @GetMapping("/nhixml/code/{cat}")
   public ResponseEntity<List<CODE_TABLE>> getCT(@ApiParam(name = "cat",
-      value = "代碼表類型，FUNC_TYPE:就診科別，PAY_TYPE:給付類別，OP_CASE_TYPE:門診案件分類，IP_CASE_TYPE:住院案件分類",
+      value = "代碼表類型，FUNC_TYPE:就診科別，PAY_TYPE:給付類別，OP_CASE_TYPE:門診案件分類，IP_CASE_TYPE:住院案件分類, PAY_STATUS:費用狀態, IP_TW_DRGS_SUIT_MARK:不適用Tw-DRGs案件特殊註記",
       example = "FUNC_TYPE") @PathVariable String cat) {
     logger.info("=========/nhixml/code/{" + cat + "} =============================");
     String catReal = HtmlUtils.htmlEscape(cat, "UTF-8").toUpperCase();
@@ -249,9 +253,9 @@ public class NHIWidgetXMLController extends BaseController {
       @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
           example = "2021/03/18") @RequestParam(required = false) String edate,
       @ApiParam(name = "applY", value = "申報年，格式西元年 yyyy",
-      example = "2021") @RequestParam(required = false) String applY,
+          example = "2021") @RequestParam(required = false) String applY,
       @ApiParam(name = "applM", value = "申報月，格式 M",
-      example = "8") @RequestParam(required = false) String applM,
+          example = "8") @RequestParam(required = false) String applM,
       @ApiParam(name = "minPoints", value = "最小申報點數",
           example = "175") @RequestParam(required = false) Integer minPoints,
       @ApiParam(name = "maxPoints", value = "最大申報點數",
@@ -265,13 +269,13 @@ public class NHIWidgetXMLController extends BaseController {
       @ApiParam(name = "prsnId", value = "醫護代碼",
           example = "A123456789") @RequestParam(required = false) String prsnId,
       @ApiParam(name = "pharName", value = "藥師名",
-        example = "王小明") @RequestParam(required = false) String pharName,
+          example = "王小明") @RequestParam(required = false) String pharName,
       @ApiParam(name = "pharId", value = "藥師代碼",
-        example = "A123456789") @RequestParam(required = false) String pharId,
+          example = "A123456789") @RequestParam(required = false) String pharId,
       @ApiParam(name = "patientName", value = "病患名稱",
-        example = "王小明") @RequestParam(required = false) String patientName,
+          example = "王小明") @RequestParam(required = false) String patientName,
       @ApiParam(name = "patientId", value = "病患身分證字號",
-        example = "A123456789") @RequestParam(required = false) String patientId,
+          example = "A123456789") @RequestParam(required = false) String patientId,
       @ApiParam(name = "applId", value = "標記人員代碼",
           example = "A123456789") @RequestParam(required = false) String applId,
       @ApiParam(name = "applName", value = "標記人員名稱",
@@ -344,17 +348,17 @@ public class NHIWidgetXMLController extends BaseController {
         applYM = String.valueOf(applYMInteger);
       }
     }
-    
-    logService.updateLogSearch("system", allMatch, sdate, edate, minPoints, maxPoints, dataFormat, funcType, prsnId,
-            prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, orderCode, inhCode,
-            drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSec, icdPCS, qrObject, qrSdate,
-            qrEdate, status, deductedCode, deductedOrder);
+
+    logService.updateLogSearch("system", allMatch, sdate, edate, minPoints, maxPoints, dataFormat,
+        funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
+        orderCode, inhCode, drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSec, icdPCS, qrObject,
+        qrSdate, qrEdate, status, deductedCode, deductedOrder);
 
     Map<String, Object> list =
-        xmlService.getMR(allMatch, startDate, endDate, applYM, minPoints, maxPoints, dataFormat, funcType, prsnId,
-            prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, orderCode, inhCode,
-            drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSec, icdPCS, qrObject, qrSdate,
-            qrEdate, status, deductedCode, deductedOrder, all, iPerPage, iPage);
+        xmlService.getMR(allMatch, startDate, endDate, applYM, minPoints, maxPoints, dataFormat,
+            funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
+            orderCode, inhCode, drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSec, icdPCS,
+            qrObject, qrSdate, qrEdate, status, deductedCode, deductedOrder, all, iPerPage, iPage);
     if (list.size() == 0) {
       return ResponseEntity.badRequest().body(returnMRError("無符合條件資料"));
     }
@@ -536,4 +540,78 @@ public class NHIWidgetXMLController extends BaseController {
     return ResponseEntity.ok(response);
   }
 
+  @ApiOperation(value = "新增病歷資訊備註/核刪註記", notes = "新增病歷資訊備註/核刪註記")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PostMapping("/nhixml/note")
+  public ResponseEntity<BaseResponse> newMrNote(
+      @ApiParam(name = "id", value = "病歷id",
+          example = "13220") @RequestParam(required = true) String id,
+      @ApiParam(name = "isNote", value = "是否為病歷資訊備註，true:是，false:否",
+          example = "13220") @RequestParam(required = true) Boolean isNote,
+      @ApiParam(name = "note", value = "備註內容",
+      example = "新增病歷資訊備註內容") @RequestParam(required = true) String note) {
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse br = new BaseResponse();
+      br.setResult("failed");
+      br.setMessage("未登入，無法執行");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
+    }
+    MrNotePayload request = new MrNotePayload();
+    request.setNote(note);
+    request.setEditor(user.getUsername());
+    request.setActionType("新增");
+    return returnAPIResult(xmlService.newMrNote(request, id, isNote));
+  }
+
+  @ApiOperation(value = "修改病歷資訊備註/核刪註記", notes = "修改病歷資訊備註/核刪註記")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/nhixml/note")
+  public ResponseEntity<BaseResponse> updateMrNote(
+      @ApiParam(name = "id", value = "病歷id",
+        example = "13220") @RequestParam(required = true) String id,
+      @ApiParam(name = "isNote", value = "是否為病歷資訊備註，true:是，false:否",
+        example = "13220") @RequestParam(required = true) Boolean isNote,
+      @ApiParam(name = "note", value = "備註內容",
+      example = "修改病歷資訊備註測試") @RequestParam(required = true) String note) {
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse br = new BaseResponse();
+      br.setResult("failed");
+      br.setMessage("未登入，無法執行");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
+    }
+    MrNotePayload request = new MrNotePayload();
+    request.setNote(note);
+    request.setEditor(user.getUsername());
+    request.setActionType("修改");
+    return returnAPIResult(xmlService.newMrNote(request, id, isNote));
+  }
+  
+  @ApiOperation(value = "刪除病歷資訊備註/核刪註記", notes = "刪除病歷資訊備註/核刪註記")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @DeleteMapping("/nhixml/note")
+  public ResponseEntity<BaseResponse> deleteMrNote(
+      @ApiParam(name = "id", value = "病歷id",
+        example = "13220") @RequestParam(required = true) String id,
+      @ApiParam(name = "isNote", value = "是否為病歷資訊備註，true:是，false:否",
+        example = "13220") @RequestParam(required = true) Boolean isNote,
+      @ApiParam(name = "note", value = "備註內容",
+      example = "刪除測試") @RequestParam(required = false) String note) {
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse br = new BaseResponse();
+      br.setResult("failed");
+      br.setMessage("未登入，無法執行");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
+    }
+    MrNotePayload request = new MrNotePayload();
+    request.setNote(note);
+    request.setEditor(user.getUsername());
+    request.setActionType("刪除");
+    return returnAPIResult(xmlService.newMrNote(request, id, isNote));
+  }
 }

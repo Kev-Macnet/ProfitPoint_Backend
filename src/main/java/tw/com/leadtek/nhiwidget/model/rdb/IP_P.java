@@ -278,11 +278,20 @@ public class IP_P {
   private Integer applStatus;
   
   /**
-   * 費用狀態，1:健保給付，2:自費，3:勞保，4:其他
+   * 費用狀態，Y:自費計價 
+N:健保計價申報 
+H:健保不計價申報
+h:健保不計價申報 
+S:任何身份皆自費 
+s:任何身份皆自費
+X:不計價不申報 
+x:不計價不申報 
+Z:自費病人自費,健保病人不申報不計價
+V:虛醫令,交付調劑之藥品空針
    */
   @Column(name = "PAY_BY")
   @JsonIgnore
-  private Integer payBy;
+  private String payBy;
 
   /**
    * 更新時間
@@ -728,14 +737,11 @@ public class IP_P {
     this.applStatus = applStatus;
   }
 
-  /**
-   * 費用狀態，1:健保給付，2:自費，3:勞保，4:其他
-   */
-  public Integer getPayBy() {
+  public String getPayBy() {
     return payBy;
   }
 
-  public void setPayBy(Integer payBy) {
+  public void setPayBy(String payBy) {
     this.payBy = payBy;
   }
 

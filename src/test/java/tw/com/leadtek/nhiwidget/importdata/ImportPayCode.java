@@ -3,17 +3,22 @@
  */
 package tw.com.leadtek.nhiwidget.importdata;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -395,15 +400,23 @@ public class ImportPayCode {
 
     maxId = getMaxId() + 1;
     System.out.println("maxid=" + maxId);
-    importExcelToRedisNew("ICD10",
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\醫療服務給付項目(1100701執行).xlsx",
+    // importExcelToRedisNew("ICD10",
+    // "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\醫療服務給付項目(1100701執行).xlsx",
+    // "ORDER");
+    // importDrugHtmlExcelToRedis("ICD10",
+    // "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020183522-用藥品項查詢結果.xls",
+    // "ORDER");
+    importDrugHtmlExcelToRedis("ICD10",
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020184556-用藥品項查詢結果.xls",
+        "ORDER");
+    importDrugHtmlExcelToRedis("ICD10",
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020184620-用藥品項查詢結果.xls",
         "ORDER");
   }
 
   private int getMaxId() {
-    String key = "ICD10-data";
     HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
-    Set<String> fields = hashOp.keys(key);
+    Set<String> fields = hashOp.keys(RedisService.DATA_KEY);
     int result = -1;
     for (String field : fields) {
       int id = Integer.parseInt(field);
@@ -421,7 +434,7 @@ public class ImportPayCode {
 
     ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
     HashMap<String, String> keys = getRedisId(collectionName + "-data", category);
-    
+
     File file = new File(filename);
     WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
     try {
@@ -435,6 +448,7 @@ public class ImportPayCode {
       SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
       DecimalFormat df = new DecimalFormat("#");
       for (int j = 1; j < sheet.getPhysicalNumberOfRows(); j++) {
+        // for (int j = 1; j < 3; j++) {
         XSSFRow row = sheet.getRow(j);
         if (row == null || row.getCell(0) == null) {
           // System.out.println("sheet:" + i + ", row=" + j + " is null");
@@ -450,7 +464,7 @@ public class ImportPayCode {
           break;
         }
         OrderCode oc = getOrderCodyByExcelRowNew(row, sdf, df);
-        saveOrderCode(oc, keys);
+        saveOrderCodeToRedis(oc, keys);
         total++;
       }
       System.out.println("finish total:" + total);
@@ -467,7 +481,7 @@ public class ImportPayCode {
     }
   }
 
-  private void saveOrderCode(OrderCode oc, HashMap<String, String> keys) {
+  private void saveOrderCodeToRedis(OrderCode oc, HashMap<String, String> keys) {
     PAY_CODE payCode = PAY_CODE.convertFromOrderCode(oc);
 
     String json = null;
@@ -481,18 +495,20 @@ public class ImportPayCode {
     }
 
     String sId = keys.get(oc.getCode());
+    System.out.println("saveOrderCode:" + oc.getCode() + "," + sId);
     if (sId == null) {
       oc.setId(maxId);
       payCode.setRedisId((int) maxId);
       maxId++;
-      redisService.putHash("ICD10-data", String.valueOf(oc.getId()), json);
-      redisService.addIndexToRedisIndex("IDC10-index", String.valueOf(oc.getId()), oc.getCode());
+      redisService.putHash(RedisService.DATA_KEY, String.valueOf(oc.getId()), json);
+      redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(oc.getId()),
+          oc.getCode());
     } else {
       System.out.println("save " + oc.getCode());
       oc.setId(Long.parseLong(sId));
       payCode.setRedisId(Integer.parseInt(sId));
-      redisService.putHash("ICD10-data", sId, json);
-      redisService.addIndexToRedisIndex("IDC10-index", sId, oc.getCode());
+      redisService.putHash(RedisService.DATA_KEY, sId, json);
+      redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, sId, oc.getCode());
     }
     savePayCode(payCode);
   }
@@ -515,6 +531,8 @@ public class ImportPayCode {
           old.setPoint(code.getPoint());
           old.setUpdateAt(new Date());
           old.setRedisId(code.getRedisId());
+          old.setNameEn(code.getNameEn());
+          old.setOwnExpense(code.getOwnExpense());
           payCodeDao.save(old);
           break;
         }
@@ -525,12 +543,50 @@ public class ImportPayCode {
     }
   }
 
+  private void savePayCodeToRedis(PAY_CODE code, HashMap<String, String> keys) {
+    OrderCode oc = code.toOrderCode();
+    String json = null;
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.setSerializationInclusion(Include.NON_NULL);
+    ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
+    try {
+      json = objectMapper.writeValueAsString(oc);
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+    }
+
+    String sId = keys.get(oc.getCode());
+    System.out.println("saveOrderCode:" + oc.getCode() + "," + sId);
+    if (sId == null) {
+      oc.setId(maxId);
+      code.setRedisId((int) maxId);
+      maxId++;
+      redisService.putHash(RedisService.DATA_KEY, String.valueOf(oc.getId()), json);
+      redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(oc.getId()),
+          oc.getCode());
+    } else {
+      System.out.println("save " + oc.getCode());
+      oc.setId(Long.parseLong(sId));
+      code.setRedisId(Integer.parseInt(sId));
+      redisService.putHash(RedisService.DATA_KEY, sId, json);
+      redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, sId, oc.getCode());
+    }
+    savePayCode(code);
+  }
+
+  /**
+   * 取得 key 此 hashset 裡面 category為cat的code/id對應表
+   * 
+   * @param key
+   * @param cat
+   * @return HashMap<code, id>
+   */
   private HashMap<String, String> getRedisId(String key, String cat) {
     HashMap<String, String> result = new HashMap<String, String>();
     ObjectMapper mapper = new ObjectMapper();
     mapper.setSerializationInclusion(Include.NON_NULL);
     List<Object> list = redisTemplate.opsForHash().values(key);
-    System.out.println(key + " size:" + list.size());
+    System.out.println(key + "-" + cat + " size:" + list.size());
     for (Object object : list) {
       try {
         String value = (String) object;
@@ -574,4 +630,199 @@ public class ImportPayCode {
     }
     return keys.keySet().size() > 0;
   }
+
+  /**
+   * 匯入健保局用藥品項查詢結果.xls
+   * 
+   * @param collectionName
+   * @param filename
+   * @param category
+   */
+  public void importDrugHtmlExcelToRedis(String collectionName, String filename, String category) {
+
+    ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
+    HashMap<String, String> keys = getRedisId(collectionName + "-data", category);
+
+    File file = new File(filename);
+    try {
+      BufferedReader br = new BufferedReader(
+          new InputStreamReader(new FileInputStream(new File(filename)), "UTF-8"));
+      String codePrefix = " title=\"藥政處網站(開新窗)\">";
+      String nameEnPrefix = "lblName\">";
+      String namePrefix = "lblNameChinese\">";
+      String pricePrefix = "lblPrice\">";
+      String startEndDate = "lblstartEndDate\">";
+      String classGroupName = "lblClassGroupName\">";
+      String atc = "</td><td>";
+      String line = null;
+      int index = 0;
+      PAY_CODE pc = null;
+      boolean isATCString = false;
+      while ((line = br.readLine()) != null) {
+        if (isATCString) {
+          isATCString = false;
+          index = line.indexOf(atc);
+          if (index > -1) {
+            String s = line.substring(index + atc.length());
+            pc.setAtc(s.substring(0, s.indexOf("</td>")));
+          }
+          continue;
+        }
+        if (line.indexOf(codePrefix) > 0) {
+          if (pc != null) {
+            System.out.println(
+                pc.getCode() + "," + pc.getName() + "," + pc.getNameEn() + "," + pc.getOwnExpense()
+                    + "," + pc.getStartDate() + pc.getEndDate() + "," + pc.getAtc());
+            savePayCodeToRedis(pc, keys);
+          }
+          String s = line.substring(line.indexOf(codePrefix) + codePrefix.length());
+          index = s.indexOf("</a>");
+          String code = s.substring(0, index);
+          pc = new PAY_CODE();
+          pc.setCode(code);
+          pc.setInhCode(code);
+          pc.setCodeType("藥品費");
+          pc.setUpdateAt(new Date());
+        } else if (line.indexOf(nameEnPrefix) > 0) {
+          String s = line.substring(line.indexOf(nameEnPrefix) + nameEnPrefix.length());
+          index = s.indexOf("</span");
+          pc.setNameEn(StringEscapeUtils.unescapeHtml4(s.substring(0, index)));
+        } else if (line.indexOf(namePrefix) > 0) {
+          String s = line.substring(line.indexOf(namePrefix) + namePrefix.length());
+          index = s.indexOf("</span>");
+          pc.setName(StringEscapeUtils.unescapeHtml4((s.substring(0, index))));
+          pc.setInhName(pc.getName());
+        } else if (line.indexOf(pricePrefix) > 0) {
+          String s = line.substring(line.indexOf(pricePrefix) + pricePrefix.length());
+          index = s.indexOf("</span>");
+          String price = StringEscapeUtils.unescapeHtml4((s.substring(0, index)));
+          if ("-".equals(price)) {
+            pc.setOwnExpense(0.0);
+          } else {
+            pc.setOwnExpense(Double.parseDouble(price));
+          }
+        } else if (line.indexOf(startEndDate) > 0) {
+          String s = line.substring(line.indexOf(startEndDate) + startEndDate.length());
+          index = s.indexOf("<br />");
+          String startDate = StringEscapeUtils.unescapeHtml4((s.substring(0, index)));
+          pc.setStartDate(getDateFromChineseDotString(startDate));
+          s = s.substring(index + 6);
+          index = s.indexOf("<br />");
+          s = s.substring(index + 6);
+          index = s.indexOf("</span>");
+          String endDate = StringEscapeUtils.unescapeHtml4((s.substring(0, index)));
+          pc.setEndDate(getDateFromChineseDotString(endDate));
+        } else if (line.indexOf(classGroupName) > 0) {
+          isATCString = true;
+        }
+      }
+      if (pc != null) {
+        savePayCodeToRedis(pc, keys);
+      }
+      br.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    // try {
+    // ObjectMapper objectMapper = new ObjectMapper();
+    // objectMapper.setSerializationInclusion(Include.NON_NULL);
+    // XSSFWorkbook workbook = new XSSFWorkbook(file);
+    // HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
+    //
+    // int total = 0;
+    // XSSFSheet sheet = workbook.getSheetAt(0);
+    // SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+    // DecimalFormat df = new DecimalFormat("#");
+    // for (int j = 2; j < sheet.getPhysicalNumberOfRows(); j++) {
+    // XSSFRow row = sheet.getRow(j);
+    // if (row == null || row.getCell(1) == null) {
+    // // System.out.println("sheet:" + i + ", row=" + j + " is null");
+    // continue;
+    // }
+    // // 存到redis要用小寫
+    // String code = row.getCell(1).getStringCellValue().trim().toLowerCase();
+    // System.out.println("code=" + code);
+    // if (code.length() == 0) {
+    // break;
+    // }
+    //// OrderCode oc = getDrugOrderCodyByExcelRow(row, sdf, df);
+    //// saveOrderCode(oc, keys);
+    // total++;
+    // }
+    // System.out.println("finish total:" + total);
+    // workbook.close();
+    // } catch (InvalidFormatException e) {
+    // logger.error("import excel failed", e);
+    // e.printStackTrace();
+    // } catch (IOException e) {
+    // logger.error("import excel failed", e);
+    // e.printStackTrace();
+    // }
+  }
+
+  private Date getDateFromChineseDotString(String s) {
+    Calendar cal = Calendar.getInstance();
+    if (s.indexOf('.') > 0) {
+      String[] ss = s.split("\\.");
+      if (ss.length == 3) {
+        cal.set(1911 + Integer.parseInt(ss[0]), Integer.parseInt(ss[1]) - 1,
+            Integer.parseInt(ss[2]));
+        return cal.getTime();
+      }
+    }
+    cal.set(2099, 11, 31);
+    return cal.getTime();
+  }
+
+  /**
+   * 匯入健保局用藥品項查詢結果.xls
+   * 
+   * @param collectionName
+   * @param filename
+   * @param category
+   */
+  public void importDrugExcelToRedis(String collectionName, String filename, String category) {
+
+    ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
+    HashMap<String, String> keys = getRedisId(collectionName + "-data", category);
+
+    File file = new File(filename);
+    WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      objectMapper.setSerializationInclusion(Include.NON_NULL);
+      XSSFWorkbook workbook = new XSSFWorkbook(file);
+      HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
+
+      int total = 0;
+      XSSFSheet sheet = workbook.getSheetAt(0);
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+      DecimalFormat df = new DecimalFormat("#");
+      for (int j = 2; j < sheet.getPhysicalNumberOfRows(); j++) {
+        XSSFRow row = sheet.getRow(j);
+        if (row == null || row.getCell(1) == null) {
+          // System.out.println("sheet:" + i + ", row=" + j + " is null");
+          continue;
+        }
+        // 存到redis要用小寫
+        String code = row.getCell(1).getStringCellValue().trim().toLowerCase();
+        System.out.println("code=" + code);
+        if (code.length() == 0) {
+          break;
+        }
+        // OrderCode oc = getDrugOrderCodyByExcelRow(row, sdf, df);
+        // saveOrderCode(oc, keys);
+        total++;
+      }
+      System.out.println("finish total:" + total);
+      workbook.close();
+    } catch (InvalidFormatException e) {
+      logger.error("import excel failed", e);
+      e.printStackTrace();
+    } catch (IOException e) {
+      logger.error("import excel failed", e);
+      e.printStackTrace();
+    }
+  }
+
 }

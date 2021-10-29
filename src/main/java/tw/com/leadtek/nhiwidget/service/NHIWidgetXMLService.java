@@ -44,6 +44,7 @@ import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.IP_TDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.MR_CHECKEDDao;
+import tw.com.leadtek.nhiwidget.dao.MR_NOTEDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.OP_TDao;
@@ -57,6 +58,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.IP_DData;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_T;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
+import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.OP;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_DData;
@@ -68,6 +70,7 @@ import tw.com.leadtek.nhiwidget.payload.MRCountResponse;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.MRResponse;
 import tw.com.leadtek.nhiwidget.payload.MRStatusCount;
+import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
 import tw.com.leadtek.nhiwidget.payload.QuickSearchResponse;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
 import tw.com.leadtek.tools.DateTool;
@@ -128,6 +131,9 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private LogDataService logService;
+  
+  @Autowired
+  private MR_NOTEDao mrNoteDao;
 
   public void saveOP(OP op) {
     OP_T opt = saveOPT(op.getTdata());
@@ -426,11 +432,7 @@ public class NHIWidgetXMLService {
     if (ISMASK) {
       opp.setPrsnId(StringUtility.maskString(opp.getPrsnId(), StringUtility.MASK_MOBILE));
     }
-    if ("B6".equals(caseType)) {
-      opp.setPayBy(3);
-    } else {
-      opp.setPayBy(1);
-    }
+    opp.setPayBy("N");
     opp.setApplStatus(1);
   }
   
@@ -438,11 +440,7 @@ public class NHIWidgetXMLService {
     if (ISMASK) {
       ipp.setPrsnId(StringUtility.maskString(ipp.getPrsnId(), StringUtility.MASK_MOBILE));
     }
-    if (caseType != null && caseType.startsWith("A")) {
-      ipp.setPayBy(3);
-    } else {
-      ipp.setPayBy(1);
-    }
+    ipp.setPayBy("N");
     ipp.setApplStatus(1);
   }
   
@@ -1516,8 +1514,24 @@ public class NHIWidgetXMLService {
         }
         result.setMos(moList);
       }
+      getMRNote(result);
     }
     return result;
+  }
+  
+  public void getMRNote(MRDetail mrDetail) {
+    List<MR_NOTE> list = mrNoteDao.findByMrIdOrderById(mrDetail.getId());
+    List<MrNotePayload> notes = new ArrayList<MrNotePayload>();
+    List<MrNotePayload> deduct = new ArrayList<MrNotePayload>();
+    for (MR_NOTE note : list) {
+      if (note.getNoteType() == 1) {
+        notes.add(new MrNotePayload(note));
+      } else {
+        deduct.add(new MrNotePayload(note));
+      }
+    }
+    mrDetail.setNotes(notes);
+    mrDetail.setDeducted(deduct);
   }
 
   public MRDetail updateMRDetail(MRDetail mrDetail) {
@@ -1707,4 +1721,11 @@ public class NHIWidgetXMLService {
     sb.append(opd.getSeqNo());
     mr.setObjective(sb.toString());
   }
+  
+  public String newMrNote(MrNotePayload note, String mrId, boolean isMrNote) {
+    MR_NOTE mn = note.toDB(Long.parseLong(mrId), isMrNote);
+    mrNoteDao.save(mn);
+    return null;
+  }
+  
 }

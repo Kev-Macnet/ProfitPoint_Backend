@@ -19,38 +19,38 @@ import io.swagger.annotations.ApiModelProperty;
 @Entity
 public class USER {
 
-  @ApiModelProperty(value = "序號", required = false)
+  @ApiModelProperty(value = "序號", example = "1", required = false)
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Basic(optional = false)
   @Column(name = "ID", nullable = false)
   protected Long id;
   
-  @ApiModelProperty(value = "證號", required = true)
+  @ApiModelProperty(value = "證號", example = "A123456789", required = true)
   @Column(name = "ROC_ID", length = 20)
   protected String rocId;
 
-  @ApiModelProperty(value = "帳號", required = true)
+  @ApiModelProperty(value = "帳號", example = "test", required = true)
   @Column(name = "USERNAME", length = 20)
   protected String username;
 
-  @ApiModelProperty(value = "顯示名稱", required = false)
+  @ApiModelProperty(value = "顯示名稱", example = "測試帳號", required = false)
   @Column(name = "DISPLAY_NAME", length = 20)
   protected String displayName;
 
-  @ApiModelProperty(value = "密碼", required = false)
+  @ApiModelProperty(value = "密碼", example = "test1234", required = false)
   @Column(name = "PASSWORD", length = 64)
   protected String password;
 
-  @ApiModelProperty(value = "email", required = false)
+  @ApiModelProperty(value = "email", example = "test@test.gmail.com", required = false)
   @Column(name = "EMAIL", length = 30)
   protected String email;
 
-  @ApiModelProperty(value = "A: MIS主管, B: 行政主管, C: 申報主管, D: coding人員/申報人員, E: 醫護人員, Z: 原廠開發者", required = false)
+  @ApiModelProperty(value = "A: MIS主管, B: 行政主管, C: 申報主管, D: coding人員/申報人員, E: 醫護人員, Z: 原廠開發者", example = "A", required = false)
   @Column(name = "ROLE")
   protected String role;
   
-  @ApiModelProperty(value = "狀態，1: 有效，0: 無效", required = false)
+  @ApiModelProperty(value = "狀態，1: 有效，0: 無效", example = "1", required = false)
   @Column(name = "STATUS")
   protected Integer status;
 

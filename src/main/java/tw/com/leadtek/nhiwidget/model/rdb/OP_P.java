@@ -258,7 +258,7 @@ public class OP_P {
    */
   @Column(name = "PAY_BY")
   @JsonIgnore
-  private Integer payBy;
+  private String payBy;
   
   /**
    * 院內碼
@@ -675,11 +675,11 @@ public class OP_P {
     this.applStatus = applStatus;
   }
 
-  public Integer getPayBy() {
+  public String getPayBy() {
     return payBy;
   }
 
-  public void setPayBy(Integer payBy) {
+  public void setPayBy(String payBy) {
     this.payBy = payBy;
   }
 

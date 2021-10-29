@@ -6,6 +6,8 @@ package tw.com.leadtek.nhiwidget.importdata;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -25,6 +27,8 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.dao.DEDUCTEDDao;
+import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
 
@@ -36,6 +40,9 @@ public class ImportDeductedCode {
 
   @Autowired
   private RedisTemplate<String, Object> redisTemplate;
+  
+  @Autowired
+  private DEDUCTEDDao deductedDao;
 
   private SimpleDateFormat sdf = new SimpleDateFormat("yyyy/M/d");
   
@@ -53,18 +60,26 @@ public class ImportDeductedCode {
   @Test
   public void importCode() {
     System.out.println("importDeductedCode");
-    // maxId = 163869;
     maxId = redisTemplate.opsForHash().size("ICD10" + "-data");
     System.out.println("maxId:" + maxId);
-//    importExcelToRedis("ICD10",
-//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\(行政審查)全民健康保險檔案分析審查異常不予支付指標及處理方式2001228.xlsx",
-//        CATEGORY, 1);
     importExcelToRedis("ICD10",
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\(專業審查)不予支付理由_20201218.xlsx",
-        CATEGORY, 0);
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\核減代碼\\(行政審查)全民健康保險檔案分析審查異常不予支付指標及處理方式2001228.xlsx",
+        CATEGORY, 1, "程序審查核減代碼", null);
+    importExcelToRedis("ICD10",
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\核減代碼\\(行政審查)全民健康保險檔案分析審查異常不予支付指標及處理方式2001228.xlsx",
+        CATEGORY, 1, "進階人工核減代碼", null);
+    importExcelToRedis("ICD10",
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\核減代碼\\(專業審查)不予支付理由_20201218.xlsx",
+        CATEGORY, 0, "西醫專業審查", "專業審查不予支付代碼");
+    importExcelToRedis("ICD10",
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\核減代碼\\(專業審查)不予支付理由_20201218.xlsx",
+        CATEGORY, 0, "中醫專業審查", "專業審查不予支付代碼");
+    importExcelToRedis("ICD10",
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\核減代碼\\(專業審查)不予支付理由_20201218.xlsx",
+        CATEGORY, 0, "牙醫專業審查", "專業審查不予支付代碼");
   }
 
-  public void importExcelToRedis(String collectionName, String filename, String category, int titleRow) {
+  public void importExcelToRedis(String collectionName, String filename, String category, int titleRow, String sheetName, String l1) {
     // HashOperations<String, String, Object> hashOp = ;
     // long maxId = redisTemplate.opsForHash().size(collectionName + "-data");
     // 前面 163661 筆是 ICD10 診斷碼 + 處置碼
@@ -83,9 +98,11 @@ public class ImportDeductedCode {
 
       poolThread.start();
       int total = 0;
-      String sheetName = "";
       for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
         XSSFSheet sheet = workbook.getSheetAt(i);
+        if (!sheet.getSheetName().equals(sheetName)) {
+          continue;
+        }
         // 存放代碼欄位順序
         int codeIndex = getDeductedCodeFieldIndex(sheet.getRow(titleRow), new String[] {"代碼"});
         if (codeIndex < 0) {
@@ -104,7 +121,7 @@ public class ImportDeductedCode {
         System.out.println(sheet.getSheetName() + ", desc:" + descIndex + ",detailCategory:"
             + detailCategoryIndex + ",law:" + lawIndex);
         String detailCategory = null;
-        for (int j = 2; j < sheet.getPhysicalNumberOfRows(); j++) {
+        for (int j = titleRow + 1; j < sheet.getPhysicalNumberOfRows(); j++) {
           XSSFRow row = sheet.getRow(j);
           if (row == null || row.getCell(codeIndex) == null) {
             // System.out.println("sheet:" + i + ", row=" + j + " is null");
@@ -116,12 +133,12 @@ public class ImportDeductedCode {
             break;
           }
           OrderCode oc = getOrderCodyByExcelRow(row, codeIndex,descIndex, detailCategoryIndex, detailCategory, lawIndex );
+          saveDeductedToDB(oc, sheetName, l1);
           if (oc.getDetailCat() != null && !oc.getDetailCat().equals(detailCategory)) {
             detailCategory = oc.getDetailCat();
           }
-          // addCount += addCode3(op, objectMapper, collectionName, cb);
-          addCodeByThread(wtrPool, collectionName, oc, false);
-          System.out.println("add(" + maxId + ")[" + addCount + "]" + code + ":" + oc.getDescEn());
+          //addCodeByThread(wtrPool, collectionName, oc, false);
+          //System.out.println("add(" + maxId + ")[" + addCount + "]" + code + ":" + oc.getDescEn());
           count++;
           total++;
           if (wtrPool.getThreadCount() > 1000) {
@@ -215,5 +232,36 @@ public class ImportDeductedCode {
       }
     }
     return -1;
+  }
+  
+  private DEDUCTED orderCodeConvertToDeducted(OrderCode oc, String sheetName, String l1) {
+    DEDUCTED result = new DEDUCTED();
+    result.setCode(oc.getCode().toUpperCase());
+    if (l1 == null) {
+      result.setL1(sheetName);
+      result.setL2(oc.getDetailCat());
+    } else {
+      result.setL1(l1);
+      String l2 = sheetName;
+      if (l2.charAt(1) == '醫') {
+        l2 = l2.substring(0, 2);
+      }
+      result.setL2(l2);
+      result.setL3(oc.getDetailCat());
+    }
+    result.setName(oc.getDesc());
+    result.setStatus(1);
+    result.setUpdateAt(new Date());
+    return result;
+  }
+  
+  public void saveDeductedToDB(OrderCode oc, String sheetName, String l1) {
+    DEDUCTED deducted = orderCodeConvertToDeducted(oc, sheetName, l1);
+    List<DEDUCTED> list = deductedDao.findByCode(deducted.getCode());
+    if (list != null && list.size() > 0) {
+      DEDUCTED old = list.get(0);
+      deducted.setId(old.getId());
+    }
+    deductedDao.save(deducted);
   }
 }

@@ -277,6 +277,12 @@ public class MRDetail extends MR {
   @ApiModelProperty(value = "醫令list", required = false)
   protected List<MO> mos;
   
+  @ApiModelProperty(value = "資訊備註", required = false)
+  protected List<MrNotePayload> notes;
+  
+  @ApiModelProperty(value = "核刪註記", required = false)
+  protected List<MrNotePayload> deducted;
+  
   public MRDetail() {
     
   }
@@ -1005,6 +1011,22 @@ public class MRDetail extends MR {
 
   public void setShareHospId(String shareHospId) {
     this.shareHospId = shareHospId;
+  }
+  
+  public List<MrNotePayload> getNotes() {
+    return notes;
+  }
+
+  public void setNotes(List<MrNotePayload> notes) {
+    this.notes = notes;
+  }
+
+  public List<MrNotePayload> getDeducted() {
+    return deducted;
+  }
+
+  public void setDeducted(List<MrNotePayload> deducted) {
+    this.deducted = deducted;
   }
 
   /**

@@ -182,9 +182,14 @@ public class UserController extends BaseController {
   @PostMapping("/user/logout")
   public ResponseEntity<BaseResponse> logout(HttpServletRequest request, @RequestHeader("Authorization") String jwt) {
     request.getSession().invalidate();
-    if (jwt!=null && jwt.length()>20) {
-        int status = logService.setLogout(jwt);
+    UserDetailsImpl user = getUserDetails();
+    if (user == null || (jwt == null || jwt.indexOf(' ') < 0 || jwt.split(" ").length != 2)) {
+      return returnAPIResult(null);
     }
+    if (jwt !=null && jwt.length()>20) {
+        int status = logService.setLogout(jwt.split(" ")[1]);
+    }
+    userService.logoutLog(user.getUsername(), jwt.split(" ")[1]);
     return returnAPIResult(null);
   }
   
@@ -202,11 +207,12 @@ public class UserController extends BaseController {
     String jwt = jwtUtils.generateJwtToken(authentication);
     logService.setLogin(jwt);
     UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+    userService.loginLog(loginRequest.getUsername(), jwt);
     // List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())
     // .collect(Collectors.toList());
 
     return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getRole(), userDetails.getUsername(),
-        userDetails.getDisplayName()));
+        userDetails.getDisplayName(), userDetails.getId()));
   }
 
   /**

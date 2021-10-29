@@ -30,4 +30,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
     return UserDetailsImpl.build(user);
   }
+
+  public UserDetails build(String username, String role) {
+    USER user = new USER();
+    user.setUsername(username);
+    return new UserDetailsImpl(null, username, null, null, null, UserDetailsImpl.getAuthority(role),
+        role);
+  }
 }

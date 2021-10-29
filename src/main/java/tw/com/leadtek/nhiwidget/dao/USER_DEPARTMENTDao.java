@@ -11,5 +11,5 @@ public interface USER_DEPARTMENTDao extends JpaRepository<USER_DEPARTMENT, Long>
 
   public List<USER_DEPARTMENT> findByUserIdOrderByDepartmentId(Long userId);
   
-  public void deleteByUserId(Long userId);
+  public long deleteByUserId(Long userId);
 }

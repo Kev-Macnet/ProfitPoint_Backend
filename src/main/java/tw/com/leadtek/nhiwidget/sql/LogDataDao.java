@@ -1,5 +1,6 @@
 package tw.com.leadtek.nhiwidget.sql;
 
+import java.sql.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -216,6 +217,7 @@ public class LogDataDao {
     sql = "Update LOG_SIGNIN\r\n" + "Set LOGOUT_TM=CURRENT_TIMESTAMP\r\n"
         + "Where (JWT='%s')and(LOGOUT_TM is null)";
     sql = String.format(sql, jwt);
+    //System.out.println("updateSignout:" + sql);
     try {
       int ret = jdbcTemplate.update(sql);
       return ret;
@@ -223,6 +225,21 @@ public class LogDataDao {
       return 0;
     }
   }
+  
+  public int updateSignout(String jwt, String logoutTime) {
+    String sql;
+    sql = "Update LOG_SIGNIN\r\n" + "Set LOGOUT_TM='%s'\r\n"
+        + "Where (JWT='%s')and(LOGOUT_TM is null)";
+    sql = String.format(sql, logoutTime, jwt);
+    System.out.println("updateSignout:" + sql);
+    try {
+      int ret = jdbcTemplate.update(sql);
+      return ret;
+    } catch (DataAccessException ex) {
+      return 0;
+    }
+  }
+
 
   // ===
   public long addLogSearch(String user) {

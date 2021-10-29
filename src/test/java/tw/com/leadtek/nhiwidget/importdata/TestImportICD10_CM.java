@@ -729,7 +729,7 @@ public class TestImportICD10_CM {
     long initialId = maxId;
     try {
       ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
-      removeRedisHashByCat(op, "ICD10-data", cat);
+      removeRedisHashByCat(op, RedisService.DATA_KEY, cat);
 
       XSSFWorkbook workbook = new XSSFWorkbook(file);
       for (int i = 0; i < workbook.getNumberOfSheets(); i++) {

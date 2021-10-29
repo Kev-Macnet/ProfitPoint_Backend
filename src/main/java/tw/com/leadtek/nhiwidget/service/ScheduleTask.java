@@ -17,6 +17,9 @@ public class ScheduleTask {
     
     @Autowired
     private DbBackupService dbBackupService;
+    
+    @Autowired
+    private UserService userService;
         
     
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -29,6 +32,7 @@ public class ScheduleTask {
         System.out.println(msg);
         logger.info(msg);
         dbBackupProcess();
+        userService.checkLoginUser();
 //        try {
 //            scheduleService.calcShareExpiration();
 //        } catch(Exception ex) {

@@ -20,30 +20,30 @@ import io.swagger.annotations.ApiModelProperty;
 @Entity
 public class DEPARTMENT {
 
-  @ApiModelProperty(value = "序號", required = false)
+  @ApiModelProperty(value = "序號", example = "1" , required = false)
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Basic(optional = false)
   @Column(name = "ID", nullable = false)
   private Long id;
 
-  @ApiModelProperty(value = "部門名稱", required = true)
+  @ApiModelProperty(value = "部門名稱", example = "骨科", required = true)
   @Column(name = "NAME", length = 20)
   private String name;
 
-  @ApiModelProperty(value = "部門代碼", required = false)
+  @ApiModelProperty(value = "部門代碼", example = "06", required = false)
   @Column(name = "CODE", length = 12)
   private String code;
   
-  @ApiModelProperty(value = "對應至健保科別名稱", required = true)
+  @ApiModelProperty(value = "對應至健保科別名稱", example = "骨科", required = true)
   @Column(name = "NH_NAME", length = 20)
   private String nhName;
 
-  @ApiModelProperty(value = "對應至健保科別代碼", required = false)
+  @ApiModelProperty(value = "對應至健保科別代碼", example = "06", required = false)
   @Column(name = "NH_CODE", length = 12)
   private String nhCode;
 
-  @ApiModelProperty(value = "說明", required = false)
+  @ApiModelProperty(value = "說明", example = "骨科", required = false)
   @Column(name = "NOTE", length = 30)
   private String note;
 
@@ -54,7 +54,7 @@ public class DEPARTMENT {
   @Column(name = "PARENT_ID")
   private Long parentId;
 
-  @ApiModelProperty(value = "狀態，1: 有效，0: 無效", required = false)
+  @ApiModelProperty(value = "狀態，1: 有效，0: 無效", example = "1", required = false)
   @Column(name = "STATUS")
   private Integer status;
 

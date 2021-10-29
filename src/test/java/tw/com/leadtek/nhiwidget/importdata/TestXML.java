@@ -207,9 +207,9 @@ public class TestXML {
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\outpatient.xlsx", "OP");
 
     // importConstants("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn compare.xlsx");
-    importConstantsToRDB("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn compare.xlsx");
-//    importCODE_TABLEToRDB(
-//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\CODE_TABLE.xlsx");
+    //importConstantsToRDB("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn compare.xlsx");
+    importCODE_TABLEToRDB(
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\CODE_TABLE.xlsx");
   }
 
   public void importXMLTag(String filename, String dataFormat) {
@@ -678,11 +678,25 @@ public class TestXML {
       // CODE_TABLE ct = CODE_TABLE.initial(ss, codeIndex);
       CODE_TABLE ct = new CODE_TABLE();
       ct.setCat(row.getCell(1).getStringCellValue());
-      ct.setCode(row.getCell(2).getStringCellValue());
+      if (row.getCell(2).getCellType() == CellType.NUMERIC) {
+        String value = String.valueOf(row.getCell(2).getNumericCellValue());
+        if (value.endsWith(".0")) {
+          value = value.substring(0, value.length() - 2);
+        }
+        ct.setCode(value); 
+      } else {
+        ct.setCode(row.getCell(2).getStringCellValue()); 
+      }
       if (row.getCell(3) == null) {
         System.err.println(ct.getCat() + "," + ct.getCode() + " no DESC_CHI");
         ct.setDescChi("");
         //break;
+      } else if (row.getCell(3).getCellType() == CellType.NUMERIC) {
+        String value = String.valueOf(row.getCell(3).getNumericCellValue());
+        if (value.endsWith(".0")) {
+          value = value.substring(0, value.length() - 2);
+        }
+        ct.setDescChi(value); 
       } else {
         ct.setDescChi(row.getCell(3).getStringCellValue());
       }

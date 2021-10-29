@@ -4,11 +4,10 @@
 package tw.com.leadtek.nhiwidget.payload;
 
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import tw.com.leadtek.nhiwidget.model.rdb.ASSIGNED_POINT;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
-import tw.com.leadtek.tools.DateTool;
 
 @ApiModel("分配點數列表")
 public class AssignedPointsListPayload extends StartEndPayload implements Serializable {
@@ -26,14 +25,22 @@ public class AssignedPointsListPayload extends StartEndPayload implements Serial
   public final static String DENTIST = "DENTIST_P";
 
 
-  @ApiModelProperty(value = "西醫總點數", required = true)
+  @ApiModelProperty(value = "西醫總點數", example = "10000000", required = true)
   private Long wmP;
 
-  @ApiModelProperty(value = "牙醫總點數", required = true)
+  @ApiModelProperty(value = "牙醫總點數", example = "9000000", required = true)
   private Long dP;
 
   public AssignedPointsListPayload() {
 
+  }
+  
+  public AssignedPointsListPayload(ASSIGNED_POINT ap) {
+    id = ap.getId();
+    wmP = ap.getWmp();
+    dP = ap.getDp();
+    sdate = ap.getStartDate();
+    edate = ap.getEndDate();
   }
 
   public AssignedPointsListPayload(PARAMETERS p) {

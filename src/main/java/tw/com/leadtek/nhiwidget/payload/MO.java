@@ -55,8 +55,8 @@ public class MO implements Serializable {
   @ApiModelProperty(value = "點數", required = false)
   private Integer totalDot;
   
-  @ApiModelProperty(value = "費用狀態，1:健保給付，2:自費，3:勞保，4:其他", required = false)
-  private Integer payBy;
+  @ApiModelProperty(value = "費用狀態，N:健保計價申報 ...", required = false)
+  private String payBy;
   
   @ApiModelProperty(value = "申報狀態，0:不申報，1:要申報", required = false)
   private Integer applStatus;
@@ -201,11 +201,11 @@ public class MO implements Serializable {
     this.totalDot = totalDot;
   }
 
-  public Integer getPayBy() {
+  public String getPayBy() {
     return payBy;
   }
 
-  public void setPayBy(Integer payBy) {
+  public void setPayBy(String payBy) {
     this.payBy = payBy;
   }
 
