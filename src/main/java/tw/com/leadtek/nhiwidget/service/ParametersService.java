@@ -18,6 +18,8 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -62,6 +64,8 @@ import tw.com.leadtek.tools.Utility;
 @Service
 public class ParametersService {
 
+  private Logger logger = LogManager.getLogger();
+
   public final static int STATUS_ENABLED = 1;
 
   public final static int STATUS_DISABLED = 0;
@@ -85,13 +89,13 @@ public class ParametersService {
 
   @Autowired
   private CODE_THRESHOLDDao codeThresholdDao;
-  
+
   @Autowired
   private CODE_CONFLICTDao codeConflictDao;
-  
+
   @Autowired
   private PAY_CODEDao payCodeDao;
-  
+
   @Autowired
   private ASSIGNED_POINTDao assignedPointDao;
 
@@ -141,7 +145,7 @@ public class ParametersService {
     }
   }
 
-  public AssignedPointsListResponse getAssignedPoints(String sdate, String edate, String orderBy,
+  public AssignedPointsListResponse getAssignedPoints(Date sdate, Date edate, String orderBy,
       Boolean asc, int perPage, int page) {
     AssignedPointsListResponse result = new AssignedPointsListResponse();
 
@@ -152,6 +156,15 @@ public class ParametersService {
       public Predicate toPredicate(Root<ASSIGNED_POINT> root, CriteriaQuery<?> query,
           CriteriaBuilder cb) {
 
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (sdate != null && edate != null) {
+          predicate.add(cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), edate),
+              cb.lessThanOrEqualTo(root.get("startDate"), sdate)));
+        }
+        if (predicate.size() > 0) {
+          Predicate[] pre = new Predicate[predicate.size()];
+          query.where(predicate.toArray(pre));
+        }
         List<Order> orderList = new ArrayList<Order>();
         if (orderBy != null && asc != null) {
           if (asc.booleanValue()) {
@@ -179,7 +192,7 @@ public class ParametersService {
     result.setData(list);
     return result;
   }
-  
+
   public AssignedPoints getAssignedPoints(long id) {
     Optional<ASSIGNED_POINT> optional = assignedPointDao.findById(id);
     if (optional.isPresent()) {
@@ -188,43 +201,44 @@ public class ParametersService {
     return null;
   }
 
-//  public AssignedPoints getAssignedPoints(long id) {
-//    AssignedPoints result = new AssignedPoints();
-//    result.setId(new Long(id));
-//    List<PARAMETERS> list = getSameStartDateParameters(id);
-//    if (list == null) {
-//      return null;
-//    }
-//    for (PARAMETERS p : list) {
-//      result.setSdate(p.getStartDate());
-//      result.setEdate(p.getEndDate());
-//      if (p.getName().equals("WM_IP_P")) {
-//        result.setWmIpPoints(Long.parseLong(p.getValue()));
-//      } else if (p.getName().equals("WM_OP_P")) {
-//        result.setWmOpPoints(Long.parseLong(p.getValue()));
-//      } else if (p.getName().equals("WM_DRUG_P")) {
-//        result.setWmDrugPoints(Long.parseLong(p.getValue()));
-//      } else if (p.getName().equals("DENTIST_OP_P")) {
-//        result.setDentistOpPoints(Long.parseLong(p.getValue()));
-//      } else if (p.getName().equals("DENTIST_DRUG_P")) {
-//        result.setDentistDrugPoints(Long.parseLong(p.getValue()));
-//      } else if (p.getName().equals("DENTIST_FUND_P")) {
-//        result.setDentistFundPoints(Long.parseLong(p.getValue()));
-//      } else if (p.getName().equals("HEMODIALYSIS_P")) {
-//        result.setHemodialysisPoints(Long.parseLong(p.getValue()));
-//      } else if (p.getName().equals("FUND_P")) {
-//        result.setFundPoints(Long.parseLong(p.getValue()));
-//      }
-//    }
-//    return result;
-//  }
+  // public AssignedPoints getAssignedPoints(long id) {
+  // AssignedPoints result = new AssignedPoints();
+  // result.setId(new Long(id));
+  // List<PARAMETERS> list = getSameStartDateParameters(id);
+  // if (list == null) {
+  // return null;
+  // }
+  // for (PARAMETERS p : list) {
+  // result.setSdate(p.getStartDate());
+  // result.setEdate(p.getEndDate());
+  // if (p.getName().equals("WM_IP_P")) {
+  // result.setWmIpPoints(Long.parseLong(p.getValue()));
+  // } else if (p.getName().equals("WM_OP_P")) {
+  // result.setWmOpPoints(Long.parseLong(p.getValue()));
+  // } else if (p.getName().equals("WM_DRUG_P")) {
+  // result.setWmDrugPoints(Long.parseLong(p.getValue()));
+  // } else if (p.getName().equals("DENTIST_OP_P")) {
+  // result.setDentistOpPoints(Long.parseLong(p.getValue()));
+  // } else if (p.getName().equals("DENTIST_DRUG_P")) {
+  // result.setDentistDrugPoints(Long.parseLong(p.getValue()));
+  // } else if (p.getName().equals("DENTIST_FUND_P")) {
+  // result.setDentistFundPoints(Long.parseLong(p.getValue()));
+  // } else if (p.getName().equals("HEMODIALYSIS_P")) {
+  // result.setHemodialysisPoints(Long.parseLong(p.getValue()));
+  // } else if (p.getName().equals("FUND_P")) {
+  // result.setFundPoints(Long.parseLong(p.getValue()));
+  // }
+  // }
+  // return result;
+  // }
 
   public String newAssignedPoints(AssignedPoints ap) {
     if (ap.getEdate().getTime() <= ap.getSdate().getTime()) {
       return "失效日不可早於或等於生效日！";
     }
     List<ASSIGNED_POINT> list = assignedPointDao.findAll();
-    if (checkTimeOverwriteAssignedPoint(list, ap.getSdate().getTime(), ap.getEdate().getTime(), 0)) {
+    if (checkTimeOverwriteAssignedPoint(list, ap.getSdate().getTime(), ap.getEdate().getTime(),
+        0)) {
       return "該時段已有相關設定";
     }
     assignedPointDao.save(ap.toDB());
@@ -239,7 +253,8 @@ public class ParametersService {
       return "失效日不可早於或等於生效日！";
     }
     List<ASSIGNED_POINT> list = assignedPointDao.findAll();
-    if (checkTimeOverwriteAssignedPoint(list, ap.getSdate().getTime(), ap.getEdate().getTime(), ap.getId())) {
+    if (checkTimeOverwriteAssignedPoint(list, ap.getSdate().getTime(), ap.getEdate().getTime(),
+        ap.getId())) {
       return "該時段已有相關設定";
     }
 
@@ -512,12 +527,14 @@ public class ParametersService {
         pv.setId(p.getId());
         pv.setEdate(p.getEndDate());
         pv.setSdate(p.getStartDate());
-        if (p.getDataType().intValue() == 1) {
-          // integer
-          pv.setValue(Integer.parseInt(p.getValue()));
-        } else if (p.getDataType().intValue() == 2) {
-          // integer
-          pv.setValue(Float.parseFloat(p.getValue()));
+        try {
+          if (p.getDataType().intValue() == 1 && p.getValue() != null) {
+            pv.setValue(Integer.parseInt(p.getValue()));
+          } else if (p.getDataType().intValue() == 2 && p.getValue() != null) {
+            pv.setValue(Float.parseFloat(p.getValue()));
+          }
+        } catch (NumberFormatException e) {
+          logger.error("getParameterValue:", e);
         }
         pv.setStatus(getStatusString(p.getStartDate(), p.getEndDate()));
         if ("value".equals(orderBy) && asc != null && p.getDataType() != 3) {
@@ -532,7 +549,7 @@ public class ParametersService {
     result.setData(list);
     return result;
   }
-  
+
   public ParameterValue getParameterValue(long id) {
     Optional<PARAMETERS> optional = parametersDao.findById(id);
     if (optional.isPresent()) {
@@ -592,13 +609,13 @@ public class ParametersService {
     list = parametersDao.findByNameOrderByStartDateDesc(name);
     if (checkTimeOverwrite(list, startDate.getTime(), endDate.getTime(), 0)) {
       return "該時段有相同的參數設定";
-    }    
-//    list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan(name, startDate,
-//        startDate);
-//    if (list != null && list.size() > 0) {
-//      // 將有衝突的失效日往前
-//      changeEndDateByNewStatus(list, startDate);
-//    }
+    }
+    // list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan(name, startDate,
+    // startDate);
+    // if (list != null && list.size() > 0) {
+    // // 將有衝突的失效日往前
+    // changeEndDateByNewStatus(list, startDate);
+    // }
     list = parametersDao.findByName(name);
     String cat = null;
     String note = null;
@@ -618,13 +635,14 @@ public class ParametersService {
     if (note == null) {
       note = ("SPR".equals(name) ? "標準給付額" : "核刪抽件數");
     }
-//    System.out.println("cat=" + cat + ", name=" + name + ",value=" + value + ",start=" + startDate
-//        + ", end=" + endDate);
+    // System.out.println("cat=" + cat + ", name=" + name + ",value=" + value + ",start=" +
+    // startDate
+    // + ", end=" + endDate);
     PARAMETERS p = new PARAMETERS(cat, name, value, dataType, note);
     saveParameter(p, startDate, endDate);
     return null;
   }
-  
+
   public String updateValue(ParameterValue pv) {
     if (pv.getId() == null || pv.getId() == 0) {
       return "id不可為空";
@@ -637,14 +655,14 @@ public class ParametersService {
     List<PARAMETERS> list = parametersDao.findByNameOrderByStartDateDesc(p.getName());
     if (checkTimeOverwrite(list, pv.getSdate().getTime(), pv.getEdate().getTime(), pv.getId())) {
       return "該時段有相同的參數設定";
-    }    
+    }
     p.setEndDate(pv.getEdate());
     p.setStartDate(pv.getSdate());
     p.setValue(String.valueOf(pv.getValue()));
     parametersDao.save(p);
     return null;
   }
-  
+
   public String deleteParameterValue(String id) {
     Optional<PARAMETERS> optional = parametersDao.findById(Long.parseLong(id));
     if (optional.isPresent()) {
@@ -861,7 +879,7 @@ public class ParametersService {
       }
     }
   }
-  
+
   /**
    * 將參數的結束日往前移一天
    * 
@@ -1069,7 +1087,7 @@ public class ParametersService {
         List<Predicate> predicate = new ArrayList<Predicate>();
         predicate.add(cb.equal(root.get("codeType"), new Integer(RareICDPayload.CODE_TYPE_ICD)));
         if (icd != null && icd.length() > 0) {
-          predicate.add(cb.equal(root.get("code"), icd.toUpperCase()));
+          predicate.add(cb.like(root.get("code"), icd.toUpperCase() + "%"));
         }
 
         if (predicate.size() > 0) {
@@ -1087,6 +1105,7 @@ public class ParametersService {
           query.orderBy(orderList);
         } else {
           orderList.add(cb.desc(root.get("startDate")));
+          orderList.add(cb.asc(root.get("code")));
           query.orderBy(orderList);
         }
         return query.getRestriction();
@@ -1133,14 +1152,15 @@ public class ParametersService {
     codeThresholdDao.save(db);
     return null;
   }
-  
+
   public String updateRareICDStatus(long id, boolean isEnable) {
     Optional<CODE_THRESHOLD> optional = codeThresholdDao.findById(id);
     if (!optional.isPresent()) {
       return "id:" + id + " 不存在";
     }
     CODE_THRESHOLD ct = optional.get();
-    if ((ct.getStatus().intValue() == 1 && isEnable) || (ct.getStatus().intValue() == 0 && !isEnable)) {
+    if ((ct.getStatus().intValue() == 1 && isEnable)
+        || (ct.getStatus().intValue() == 0 && !isEnable)) {
       // 狀態相同，不處理
       return null;
     }
@@ -1149,7 +1169,7 @@ public class ParametersService {
     codeThresholdDao.save(ct);
     return null;
   }
-  
+
   public String updateRareICD(RareICDPayload request) {
     CODE_THRESHOLD db = request.toDB();
     if (db.getEndDate().before(db.getStartDate())) {
@@ -1176,8 +1196,8 @@ public class ParametersService {
     return "id不存在";
   }
 
-  public HighRatioOrderListResponse getHighRatioOrder(String code, String inhCode, boolean isHighRatio,
-      String orderBy, Boolean asc, int perPage, int page) {
+  public HighRatioOrderListResponse getHighRatioOrder(String code, String inhCode,
+      boolean isHighRatio, String orderBy, Boolean asc, int perPage, int page) {
     HighRatioOrderListResponse result = new HighRatioOrderListResponse();
 
     Specification<CODE_THRESHOLD> spec = new Specification<CODE_THRESHOLD>() {
@@ -1275,6 +1295,18 @@ public class ParametersService {
     codeThresholdDao.save(db);
     return null;
   }
+  
+  public String updateHighRatioOrder(long id, boolean enable) {
+    Optional<CODE_THRESHOLD> optional = codeThresholdDao.findById(id);
+    if (!optional.isPresent()) {
+      return "id不存在";
+    }
+    CODE_THRESHOLD ct = optional.get();
+    ct.setStatus(enable ? 1 : 0);
+    ct.setUpdateAt(new Date());
+    codeThresholdDao.save(ct);
+    return null;
+  }
 
   /**
    * 檢查是否有同時段的設定
@@ -1317,8 +1349,7 @@ public class ParametersService {
    * @param id
    * @return true:有重疊，false:無
    */
-  public boolean checkTimeOverwrite(List<PARAMETERS> list, long startDate, long endDate,
-      long id) {
+  public boolean checkTimeOverwrite(List<PARAMETERS> list, long startDate, long endDate, long id) {
     List<PARAMETERS> needProcessList = new ArrayList<PARAMETERS>();
     for (PARAMETERS p : list) {
       if (id > 0 && p.getId().longValue() == id) {
@@ -1341,7 +1372,7 @@ public class ParametersService {
     moveEndDateInAdvance(needProcessList, new Date(startDate));
     return false;
   }
-  
+
   /**
    * 檢查該參數設定是否有和其他時段重疊
    * 
@@ -1351,8 +1382,8 @@ public class ParametersService {
    * @param id
    * @return true:有重疊，false:無
    */
-  public boolean checkTimeOverwriteAssignedPoint(List<ASSIGNED_POINT> list, long startDate, long endDate,
-      long id) {
+  public boolean checkTimeOverwriteAssignedPoint(List<ASSIGNED_POINT> list, long startDate,
+      long endDate, long id) {
     List<ASSIGNED_POINT> needProcessList = new ArrayList<ASSIGNED_POINT>();
     for (ASSIGNED_POINT p : list) {
       if (id > 0 && p.getId().longValue() == id) {
@@ -1376,12 +1407,12 @@ public class ParametersService {
     return false;
   }
 
-  public SameATCListResponse getSameATCFromPayCode(String code, String inhCode, String atc, String orderBy,
-      Boolean asc, int perPage, int page) {
+  public SameATCListResponse getSameATCFromPayCode(String code, String inhCode, String atc,
+      String orderBy, Boolean asc, int perPage, int page) {
     SameATCListResponse result = new SameATCListResponse();
     List<SameATCListPayload> data = new ArrayList<SameATCListPayload>();
     // 取得有啟用的同性質藥物開立清單
-    
+
     Specification<PAY_CODE> spec = new Specification<PAY_CODE>() {
 
       private static final long serialVersionUID = 5L;
@@ -1391,13 +1422,13 @@ public class ParametersService {
 
         List<Predicate> predicate = new ArrayList<Predicate>();
         if (code != null && code.length() > 0) {
-          predicate.add(cb.equal(root.get("code"), code.toUpperCase()));
+          predicate.add(cb.like(root.get("code"), code.toUpperCase() + "%"));
         }
         if (inhCode != null && inhCode.length() > 0) {
-          predicate.add(cb.equal(root.get("inhCode"), inhCode.toUpperCase()));
+          predicate.add(cb.like(root.get("inhCode"), inhCode.toUpperCase() + "%"));
         }
         if (atc != null && atc.length() > 0) {
-          predicate.add(cb.equal(root.get("atc"), atc.toUpperCase()));
+          predicate.add(cb.like(root.get("atc"), atc.toUpperCase() + "%"));
         } else {
           predicate.add(cb.isNotNull(root.get("atc")));
         }
@@ -1432,10 +1463,10 @@ public class ParametersService {
     result.setCount((int) total);
     result.setTotalPage(Utility.getTotalPage((int) total, perPage));
     result.setData(data);
-    
+
     return result;
   }
-  
+
   public String updateSameATC(Long id, boolean enable) {
     Optional<PAY_CODE> optional = payCodeDao.findById(id);
     if (optional == null || !optional.isPresent()) {
@@ -1455,12 +1486,12 @@ public class ParametersService {
     payCodeDao.save(pc);
     return null;
   }
-  
-  public CodeConflictListResponse getCodeConflict(String code, String inhCode, String ownCode, String orderBy,
-      Boolean asc, int perPage, int page) {
+
+  public CodeConflictListResponse getCodeConflict(String code, String inhCode, String ownCode,
+      String orderBy, Boolean asc, int perPage, int page) {
     CodeConflictListResponse result = new CodeConflictListResponse();
     List<CodeConflictListPayload> data = new ArrayList<CodeConflictListPayload>();
-    
+
     Specification<CODE_CONFLICT> spec = new Specification<CODE_CONFLICT>() {
 
       private static final long serialVersionUID = 5L;
@@ -1470,13 +1501,13 @@ public class ParametersService {
 
         List<Predicate> predicate = new ArrayList<Predicate>();
         if (code != null && code.length() > 0) {
-          predicate.add(cb.equal(root.get("code"), code.toUpperCase()));
+          predicate.add(cb.like(root.get("code"), code.toUpperCase() + "%"));
         }
         if (inhCode != null && inhCode.length() > 0) {
-          predicate.add(cb.equal(root.get("inhCode"), inhCode.toUpperCase()));
+          predicate.add(cb.like(root.get("inhCode"), inhCode.toUpperCase() + "%"));
         }
         if (ownCode != null && ownCode.length() > 0) {
-          predicate.add(cb.equal(root.get("ownExpCode"), inhCode.toUpperCase()));
+          predicate.add(cb.like(root.get("ownExpCode"), ownCode.toUpperCase() + "%"));
         }
 
         if (predicate.size() > 0) {
@@ -1511,7 +1542,7 @@ public class ParametersService {
     result.setData(data);
     return result;
   }
-  
+
   public CodeConflictPayload getCodeConflict(long id) {
     Optional<CODE_CONFLICT> optional = codeConflictDao.findById(new Long(id));
     if (!optional.isPresent()) {
@@ -1520,9 +1551,10 @@ public class ParametersService {
     CODE_CONFLICT cc = optional.get();
     return new CodeConflictPayload(cc);
   }
-  
+
   public String upsertCodeConflict(CodeConflictPayload cc, boolean checkSameId) {
-    List<CODE_CONFLICT> list = codeConflictDao.findByCodeAndOwnExpCode(cc.getCode(), cc.getOwnCode());
+    List<CODE_CONFLICT> list =
+        codeConflictDao.findByCodeAndOwnExpCode(cc.getCode(), cc.getOwnCode());
     if (list != null && list.size() > 0) {
       for (CODE_CONFLICT code_CONFLICT : list) {
         if (checkSameId && code_CONFLICT.getId().longValue() == cc.getId().longValue()) {
@@ -1536,7 +1568,28 @@ public class ParametersService {
     codeConflictDao.save(cc.toDB());
     return null;
   }
-  
+
+  public String updateCodeConflict(Long id, boolean enable) {
+    Optional<CODE_CONFLICT> optional = codeConflictDao.findById(id);
+     
+    if (!optional.isPresent()) {
+      return "id: " + id + " 不存在";
+    }
+    CODE_CONFLICT pc = optional.get();
+    if (pc.getStatus() == 0 && !enable) {
+      // 都是 disable 狀態，不處理
+      return null;
+    }
+    if (pc.getStatus().intValue() == 1 && enable) {
+      // 都是 enable 狀態，不處理
+      return null;
+    }
+    pc.setStatus(enable ? new Integer(1) : new Integer(0));
+    pc.setUpdateAt(new Date());
+    codeConflictDao.save(pc);
+    return null;
+  }
+
   public String deleteCodeConflict(long id) {
     Optional<CODE_CONFLICT> optional = codeConflictDao.findById(new Long(id));
     if (!optional.isPresent()) {

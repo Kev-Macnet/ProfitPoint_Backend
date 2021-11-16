@@ -400,9 +400,9 @@ public class ImportPayCode {
 
     maxId = getMaxId() + 1;
     System.out.println("maxid=" + maxId);
-    // importExcelToRedisNew("ICD10",
-    // "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\醫療服務給付項目(1100701執行).xlsx",
-    // "ORDER");
+     importExcelToRedisNew("ICD10",
+     "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\醫療服務給付項目(1100701執行).xlsx",
+     "ORDER");
     // importDrugHtmlExcelToRedis("ICD10",
     // "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020183522-用藥品項查詢結果.xls",
     // "ORDER");

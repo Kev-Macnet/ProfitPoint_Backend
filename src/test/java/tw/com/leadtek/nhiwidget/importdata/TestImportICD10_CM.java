@@ -34,7 +34,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
 import tw.com.leadtek.nhiwidget.constant.RedisConstants;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
+import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
 import tw.com.leadtek.nhiwidget.model.rdb.ATC;
+import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
 import tw.com.leadtek.nhiwidget.service.RedisService;
@@ -48,12 +50,15 @@ public class TestImportICD10_CM {
 
   @Autowired
   private RedisTemplate<String, Object> redisTemplate;
-  
+
   @Autowired
   private RedisService redisService;
 
   @Autowired
   private ATCDao atcDao;
+  
+  @Autowired
+  private ICD10Dao icd10Dao;
 
   private static List<String> ignoreWords = Arrays.asList("other", "the", "to", "of", "and");
 
@@ -127,18 +132,17 @@ public class TestImportICD10_CM {
   /**
    * 將excel檔案資料匯至 Redis
    */
-  @Ignore
+  // @Ignore
   @Test
   public void importICD10ToRedis() {
     System.out.println("importICD10ToRedis");
     long start = System.currentTimeMillis();
-    // importExcelToRedis("ICD10",
-    // "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.1
-    // 中文版ICD-10-CM(106.07.19更新)_Chapter.xlsx",
-    // "ICD10-CM");
-    importExcelToRedis("ICD10",
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.2 中文版ICD-10-PCS(106.07.19更新).xlsx",
-        "ICD10-PCS");
+//    importExcelToRedis("ICD10",
+//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.1 中文版ICD-10-CM(106.07.19更新)_Chapter.xlsx",
+//        "ICD10-CM");
+     importExcelToRedis("ICD10",
+     "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.2 中文版ICD-10-PCS(106.07.19更新).xlsx",
+     "ICD10-PCS");
 
     long usedTime = System.currentTimeMillis() - start;
     System.out.println("usedTime:" + usedTime);
@@ -168,7 +172,7 @@ public class TestImportICD10_CM {
     String key = "ICD10";
     ZSetOperations<String, Object> zsetOp =
         (ZSetOperations<String, Object>) redisTemplate.opsForZSet();
-    Set<String> set = redisTemplate.keys("ICD10*");
+    Set<String> set = redisTemplate.keys(key + "*");
     int count = 0;
     for (String string : set) {
       RemoveInRedisThread remove = new RemoveInRedisThread(redisTemplate);
@@ -233,7 +237,8 @@ public class TestImportICD10_CM {
   public void importExcelToRedis(String collectionName, String filename, String category) {
     // HashOperations<String, String, Object> hashOp = ;
     // long maxId = redisTemplate.opsForHash().size(collectionName + "-data");
-    long maxId = 91737;
+    long maxId = (long) redisService.getMaxId();
+    System.out.println("maxId:" + maxId);
     File file = new File(filename);
     int addCount = 0;
     WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
@@ -267,9 +272,18 @@ public class TestImportICD10_CM {
           if (code.length() == 0) {
             break;
           }
+          
           String descEn = row.getCell(1).getStringCellValue().trim();
           row = sheet.getRow(j + 1);
           String descTw = row.getCell(1).getStringCellValue().trim();
+          
+          long dataId = getCodeId(code, category, op, hashOp, objectMapper);
+          if (dataId > 0) {
+            saveICD10DB(code, category, descTw, descEn, dataId);
+            continue;
+          } else {
+            System.out.println("not found in redis:" + code);
+          }
 
           // addCode1(collectionName, code);
           CodeBaseLongId cb = new CodeBaseLongId(++maxId, code, descTw, descEn);
@@ -284,6 +298,7 @@ public class TestImportICD10_CM {
           // addCount += addCode3(op, objectMapper, collectionName, cb);
           addCodeByThread(wtrPool, collectionName, cb, false);
           System.out.println("add(" + maxId + ")[" + addCount + "]" + code + ":" + descEn);
+          saveICD10DB(code, category, descTw, descEn, cb.getId());
           count++;
           total++;
           if (wtrPool.getThreadCount() > 1000) {
@@ -353,7 +368,8 @@ public class TestImportICD10_CM {
       redisTemplate.opsForHash().put(key + "-data", String.valueOf(cb.getId()), json);
       result++;
       // 2. save code to index for search
-      result += redisService.addIndexToRedisIndex(key + "-index", String.valueOf(cb.getId()), cb.getCode());
+      result += redisService.addIndexToRedisIndex(key + "-index", String.valueOf(cb.getId()),
+          cb.getCode());
 
       String[] descList = cb.getDescEn().split(" ");
       for (String string : descList) {
@@ -364,7 +380,8 @@ public class TestImportICD10_CM {
         if (newKey.length() < 2) {
           continue;
         }
-        result += redisService.addIndexToRedisIndex(key + "-index", String.valueOf(cb.getId()), newKey);
+        result +=
+            redisService.addIndexToRedisIndex(key + "-index", String.valueOf(cb.getId()), newKey);
       }
     } catch (JsonProcessingException e) {
       e.printStackTrace();
@@ -716,7 +733,7 @@ public class TestImportICD10_CM {
     }
   }
 
-  // @Ignore
+  @Ignore
   @Test
   public void importATC() {
     String cat = "ATC";
@@ -855,7 +872,7 @@ public class TestImportICD10_CM {
   }
 
   private int getMaxId() {
-    String key = "ICD10-data";
+    String key = RedisService.DATA_KEY;
     long start = System.currentTimeMillis();
     HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
     // Set<Object> rangeSet = zsetOp.range(indexKey + searchValue, 0, -1);
@@ -878,7 +895,8 @@ public class TestImportICD10_CM {
     for (Object object : set) {
       try {
         String value = (String) redisTemplate.opsForHash().get(key, object);
-        if (value.indexOf("detailCat") > 0 || value.indexOf("sDate") > 0 || value.indexOf("level") > 0 || value.indexOf("law") > 0) {
+        if (value.indexOf("detailCat") > 0 || value.indexOf("sDate") > 0
+            || value.indexOf("level") > 0 || value.indexOf("law") > 0) {
           OrderCode oc = mapper.readValue(value, OrderCode.class);
           if (cat.equals(oc.getCategory())) {
             redisTemplate.opsForHash().delete(key, oc.getId().toString());
@@ -900,4 +918,57 @@ public class TestImportICD10_CM {
     }
   }
 
+  /**
+   * 取得 code 在ICD10-data 中的id
+   * @param code
+   * @param category
+   * @param zsetOp
+   * @param hashOp
+   * @param mapper
+   * @return
+   */
+  public long getCodeId(String code, String category, ZSetOperations<String, Object> zsetOp,
+      HashOperations<String, String, String> hashOp, ObjectMapper mapper) {
+    // ZSetOperations<String, Object> zsetOp =
+    // (ZSetOperations<String, Object>) redisTemplate.opsForZSet();
+    Set<String> set = (Set<String>) (Set<?>) zsetOp.range(RedisService.INDEX_KEY + code.toLowerCase(), 0, -1);
+    List<String> values = hashOp.multiGet(RedisService.DATA_KEY, set);
+    for (String string : values) {
+      if (string == null) {
+        continue;
+      }
+      try {
+        if (string.indexOf("detailCat") > 0 || string.indexOf("sDate") > 0
+            || string.indexOf("level") > 0 || string.indexOf("law") > 0) {
+          //OrderCode oc = mapper.readValue(string, OrderCode.class);
+        } else {
+          CodeBaseLongId cb = mapper.readValue(string, CodeBaseLongId.class);
+          if (cb.getCode().toLowerCase().equals(code.toLowerCase())) {
+            return cb.getId();
+          }
+        }
+      } catch (JsonMappingException e) {
+        e.printStackTrace();
+      } catch (JsonProcessingException e) {
+        e.printStackTrace();
+      }
+    }
+    return -1;
+  }
+
+  public void saveICD10DB(String code, String category, String descTw, String descEn, long redisId) {
+    ICD10 icd = icd10Dao.findByCode(code.toUpperCase());
+    if (icd != null) {
+      return;
+    }
+    icd = new ICD10();
+    icd.setCat(category.split("-")[1]);
+    icd.setCode(code.toUpperCase());
+    icd.setDescChi(descTw);
+    icd.setDescEn(descEn);
+    icd.setRedisId(redisId);
+    icd.setInfectious(0);
+    icd10Dao.save(icd);
+    System.out.println("save db:" + icd.getCode());
+  }
 }

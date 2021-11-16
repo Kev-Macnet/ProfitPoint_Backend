@@ -29,7 +29,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   public List<Object[]> findDRGCodeNotNull();
   
   // fot Test
-  @Query(value = "SELECT * FROM IP_D WHERE TW_DRG_CODE IS NOT NULL AND TW_DRGS_SUIT_MARK='0' AND ID > ?1 AND IN_DATE > '1090630' ORDER BY ID", nativeQuery = true)
+  @Query(value = "SELECT * FROM IP_D WHERE TW_DRG_CODE IS NOT NULL AND TW_DRGS_SUIT_MARK='0' AND ID > ?1 AND IN_DATE >= '1090101' ORDER BY ID", nativeQuery = true)
   public List<IP_D> findAllWithDRG(long maxId);
   
   /**
@@ -40,7 +40,44 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "SELECT TW_DRG_CODE, d.ID FROM IP_D d, MR mr WHERE TW_DRG_CODE IN (" + 
-      "SELECT CODE FROM DRG_CODE WHERE STARTED = 1 AND CASE20 = 1 AND START_DAY  <= ?1 AND END_DAY  >= ?2" + 
+      "SELECT CODE FROM DRG_CODE WHERE STARTED = 1 AND CASE20 = 1 AND START_DATE <= ?1 AND END_DATE >= ?2" + 
       ") AND mr.ID = d.MR_ID AND mr.APPL_YM = ?3", nativeQuery = true)
   public List<Object[]> getDRGCase20Id(Date inDate, Date inDate2, String ym);
+  
+  /**
+   *  住院各科申報總點數
+   * @param sdate 啟始日
+   * @param edate 結束日
+   * @return [科別代碼, 申報金額, 件數]
+   */
+  @Query(value = "SELECT IP_D.FUNC_TYPE, SUM(IP_D.APPL_DOT), COUNT(1) FROM MR, IP_D " + 
+      "WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND IP_D.MR_ID = MR.ID GROUP BY IP_D.FUNC_TYPE", nativeQuery = true) 
+  public List<Object[]> findApplPointGroupByFuncType(Date sdate, Date edate);
+  
+  /**
+   * 住院各科部分負擔總金額
+   * @param sdate
+   * @param edate
+   * @return [科別代碼, 部分負擔金額, 件數]
+   */
+  @Query(value = "SELECT IP_D.FUNC_TYPE, SUM(PART_DOT), COUNT(1) FROM MR, IP_D " + 
+      "WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND IP_D.MR_ID = MR.ID GROUP BY IP_D.FUNC_TYPE", nativeQuery = true) 
+  public List<Object[]> findPartPointGroupByFuncType(Date sdate, Date edate);
+  
+  /**
+   * 取得指定區間的DRG件數及點數
+   * @param sdate1
+   * @param edate1
+   * @param sdate2
+   * @param edate2
+   * @return [門急診點數, 住院點數]
+   */
+  @Query(value ="SELECT * FROM " + 
+      "(SELECT COUNT(1) AS DRG_QUANTITY FROM MR WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 " + 
+      "AND DRG_SECTION IS NOT NULL)," + 
+      "(SELECT COUNT(1) AS IP_QUANTITY FROM MR WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 "
+      + "AND DRG_SECTION IS NULL AND DATA_FORMAT ='20')," +
+      "(SELECT (SUM(IP_D.MED_DOT) - SUM(IP_D.PART_DOT)) AS IP_POINT FROM MR, IP_D " + 
+      "WHERE MR_DATE >= ?3 AND MR_DATE <= ?4 AND IP_D.MR_ID = MR.ID)", nativeQuery = true)
+  public List<Object[]> findDRGAllPoint(Date sdate1, Date edate1, Date sdate2, Date edate2);
 }

@@ -46,6 +46,10 @@ public class RedisService {
         (ZSetOperations<String, Object>) redisTemplate.opsForZSet();
 
     String[] ss = q.split(" ");
+    String[] cats = null; 
+    if (cat != null && cat.length() > 0) {
+      cats = cat.split(" ");
+    }
     HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
     Set<String> rangeSet = (Set<String>) (Set<?>) zsetOp.range(INDEX_KEY + ss[0], 0, -1);
     List<String> values = hashOp.multiGet(DATA_KEY, rangeSet);
@@ -75,8 +79,8 @@ public class RedisService {
         }
         if (string.indexOf("\"p\"") > 0) {
           OrderCode oc = mapper.readValue(string, OrderCode.class);
-          if (cat != null && !cat.toUpperCase().equals(oc.getCategory())) {
-            continue;
+          if (!checkCategory(cats, oc.getCategory())) {
+            continue;            
           }
 
           // 將支付點數放在 DescEn 欄位
@@ -84,8 +88,8 @@ public class RedisService {
           json = new JsonSuggestion(oc);
         } else {
           CodeBaseLongId cb = mapper.readValue(string, CodeBaseLongId.class);
-          if (cat != null && !cat.toUpperCase().equals(cb.getCategory())) {
-            continue;
+          if (!checkCategory(cats, cb.getCategory())) {
+            continue;            
           }
           json = new JsonSuggestion(cb);
         }
@@ -108,6 +112,24 @@ public class RedisService {
     }
 
     return result;
+  }
+  
+  /**
+   * 是否和request要求的類別相符合
+   * @param cats
+   * @param category
+   * @return true:有符合，false:不符合
+   */
+  private boolean checkCategory(String[] cats, String category) {
+    if (cats == null || cats.length == 0) {
+      return true;
+    }
+    for (String cat : cats) {
+      if (cat.equals(category.toUpperCase())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private void addBold(JsonSuggestion json, String q) {
@@ -144,9 +166,9 @@ public class RedisService {
     for (int i = 2; i <= code.length(); i++) {
       String key = prefix + code.substring(0, i).toLowerCase();
       Long oldCount = op.zCard(key);
-      System.out.println("addIndexToRedisIndex:" + key + "," + oldCount) ;
+      //System.out.println("addIndexToRedisIndex:" + key + "," + oldCount) ;
       if (oldCount == null || oldCount.longValue() == 0) {
-        System.out.println("add " + key + " index=" + index);
+        //System.out.println("add " + key + " index=" + index);
         op.add(key, index, 0.0);
         result++;
       }
@@ -224,5 +246,12 @@ public class RedisService {
   
   public void deleteHash(String key, String name) {
     redisTemplate.opsForHash().delete(key, name);
+  }
+  
+  public void deleteHash(String key) {
+    Set<Object> names = redisTemplate.opsForHash().keys(key);
+    for (Object name : names) {
+      redisTemplate.opsForHash().delete(key, name);
+    }
   }
 }

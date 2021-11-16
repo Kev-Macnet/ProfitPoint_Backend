@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
+import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -33,6 +34,7 @@ import tw.com.leadtek.nhiwidget.payload.DrgCodePayload;
 import tw.com.leadtek.nhiwidget.payload.PayCode;
 import tw.com.leadtek.nhiwidget.payload.PayCodeListResponse;
 import tw.com.leadtek.nhiwidget.payload.system.DeductedListResponse;
+import tw.com.leadtek.nhiwidget.payload.system.ICD10ListResponse;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.SystemService;
@@ -407,4 +409,86 @@ public class SystemController extends BaseController {
     }
     return returnAPIResult(systemService.deleteDeducted(idL));
   }
+  
+  @ApiOperation(value = "取得核減代碼列表", notes = "取得核減代碼列表")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/icd10")
+  public ResponseEntity<ICD10ListResponse> getICD10List(
+      @ApiParam(name = "isInfectious", value = "是否為法定傳染病",
+          example = "true") @RequestParam(required = false) Boolean isInfectious,
+      @ApiParam(name = "infCat", value = "法定傳染病分類層級",
+          example = "第一類") @RequestParam(required = false) String infCat,
+      @ApiParam(name = "code", value = "ICD10代碼",
+          example = "0001A") @RequestParam(required = false) String code,
+      @ApiParam(name = "name", value = "ICD10項目名稱",
+          example = "維生素B1 (硫胺素)缺乏") @RequestParam(required = false) String name,
+      @ApiParam(name = "orderBy",
+          value = "排序欄位名稱，code:ICD10代碼，name:ICD10項目名稱，isInfectious:是否為法定傳染病，infCat:分類層級",
+          example = "code") @RequestParam(required = false) String orderBy,
+      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小",
+          example = "true") @RequestParam(required = false) Boolean asc,
+      @ApiParam(name = "perPage", value = "每頁顯示筆數",
+          example = "20") @RequestParam(required = false) Integer perPage,
+      @ApiParam(name = "page", value = "第幾頁，第一頁值為0", example = "0") @RequestParam(required = false,
+          defaultValue = "0") Integer page) {
+    int perPageInt =
+        (perPage == null) ? parametersService.getIntParameter(ParametersService.PAGE_COUNT)
+            : perPage.intValue();
+    int pageInt = page == null ? 0 : page.intValue();
+    return ResponseEntity.ok(
+        systemService.getIcd10(code, name, isInfectious, infCat, perPageInt, pageInt));
+  }
+
+  @ApiOperation(value = "新增ICD10代碼", notes = "新增ICD10代碼")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PostMapping("/icd10")
+  public ResponseEntity<BaseResponse> newICD10(@RequestBody ICD10 request) {
+    if (request.getCode() == null || request.getCode().length() < 1) {
+      return returnAPIResult("code值不可為空");
+    }
+    return returnAPIResult(systemService.saveIcd10(request, true));
+  }
+
+  @ApiOperation(value = "取得指定ICD10代碼", notes = "取得指定ICD10代碼")
+  @GetMapping("/icd10/{id}")
+  public ResponseEntity<ICD10> getICD10(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+      return ResponseEntity.badRequest().body(new ICD10());
+    }
+    long idL = 0;
+    try {
+      idL = Long.parseLong(id);
+    } catch (NumberFormatException e) {
+      return ResponseEntity.badRequest().body(new ICD10());
+    }
+    return ResponseEntity.ok(systemService.getIcd10(idL));
+  }
+
+  @ApiOperation(value = "修改ICD10代碼", notes = "修改ICD10代碼")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/icd10")
+  public ResponseEntity<BaseResponse> updateIcd10(@RequestBody ICD10 request) {
+    if (request == null || request.getId() == null) {
+      return returnAPIResult("id未帶入");
+    }
+    return returnAPIResult(systemService.saveIcd10(request, false));
+  }
+
+  @ApiOperation(value = "刪除ICD10代碼", notes = "刪除ICD10代碼")
+  @DeleteMapping("/icd10/{id}")
+  public ResponseEntity<BaseResponse> deleteICD10(@PathVariable String id) {
+    if (id == null || id.length() == 0) {
+      return returnAPIResult("id未帶入");
+    }
+    long idL = 0;
+    try {
+      idL = Long.parseLong(id);
+    } catch (NumberFormatException e) {
+      return returnAPIResult("id不正確");
+    }
+    return returnAPIResult(systemService.deleteIcd10(idL));
+  }
+  
 }

@@ -5,6 +5,7 @@ package tw.com.leadtek.nhiwidget.payload;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.model.CodeBase;
@@ -282,6 +283,9 @@ public class MRDetail extends MR {
   
   @ApiModelProperty(value = "核刪註記", required = false)
   protected List<MrNotePayload> deducted;
+  
+  @JsonIgnore
+  protected String error;
   
   public MRDetail() {
     
@@ -1027,6 +1031,14 @@ public class MRDetail extends MR {
 
   public void setDeducted(List<MrNotePayload> deducted) {
     this.deducted = deducted;
+  }
+  
+  public String getError() {
+    return error;
+  }
+
+  public void setError(String error) {
+    this.error = error;
   }
 
   /**

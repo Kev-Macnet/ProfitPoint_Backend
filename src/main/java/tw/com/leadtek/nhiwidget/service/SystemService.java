@@ -28,18 +28,19 @@ import tw.com.leadtek.nhiwidget.controller.BaseController;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.DEDUCTEDDao;
+import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
-import tw.com.leadtek.nhiwidget.model.rdb.ASSIGNED_POINT;
 import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED;
+import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
-import tw.com.leadtek.nhiwidget.payload.AssignedPointsListPayload;
 import tw.com.leadtek.nhiwidget.payload.PayCode;
 import tw.com.leadtek.nhiwidget.payload.PayCodeListResponse;
 import tw.com.leadtek.nhiwidget.payload.system.DeductedListResponse;
+import tw.com.leadtek.nhiwidget.payload.system.ICD10ListResponse;
 import tw.com.leadtek.tools.Utility;
 
 @Service
@@ -58,9 +59,12 @@ public class SystemService {
 
   @Autowired
   private CODE_TABLEDao codeTableDao;
-  
+
   @Autowired
   private DEDUCTEDDao deductedDao;
+
+  @Autowired
+  private ICD10Dao icd10Dao;
 
   public ATCListResponse getATC(String code, Integer leng, int perPage, int page) {
     List<ATC> codes = new ArrayList<ATC>();
@@ -308,7 +312,7 @@ public class SystemService {
     }
     return result;
   }
-  
+
   public List<String> getDeductedCat(String l1) {
     List<String> result = new ArrayList<String>();
     List<CODE_TABLE> list = codeTableDao.findByCat("DEDUCTED_L2");
@@ -327,12 +331,12 @@ public class SystemService {
     }
     for (CODE_TABLE ct : list) {
       if (ct.getCode().startsWith(codePrefix)) {
-        result.add(ct.getDescChi());    
+        result.add(ct.getDescChi());
       }
     }
     return result;
   }
-  
+
   public List<String> getDeductedCat(String l1, String l2) {
     List<String> result = new ArrayList<String>();
     List<CODE_TABLE> list = codeTableDao.findByCat("DEDUCTED_L3");
@@ -345,7 +349,7 @@ public class SystemService {
     } else if (l1.equals("程序審查核減代碼") || l1.equals("進階人工核減代碼")) {
       result.add("-");
       return result;
-    }     
+    }
     if (l2.equals("西醫")) {
       codePrefix = codePrefix + "1";
     } else if (l1.equals("中醫")) {
@@ -357,13 +361,13 @@ public class SystemService {
     }
     for (CODE_TABLE ct : list) {
       if (ct.getCode().startsWith(codePrefix)) {
-        result.add(ct.getDescChi());    
+        result.add(ct.getDescChi());
       }
     }
     return result;
   }
-  
-  public DeductedListResponse getDuductedList(String l1, String l2, String l3, String code, 
+
+  public DeductedListResponse getDuductedList(String l1, String l2, String l3, String code,
       String name, String orderBy, Boolean asc, int perPage, int page) {
     DeductedListResponse result = new DeductedListResponse();
 
@@ -419,7 +423,7 @@ public class SystemService {
     result.setData(list);
     return result;
   }
-  
+
   public DEDUCTED getDeducted(long id) {
     Optional<DEDUCTED> optional = deductedDao.findById(id);
     if (optional.isPresent()) {
@@ -427,7 +431,7 @@ public class SystemService {
     }
     return null;
   }
-  
+
   public String newDeducted(DEDUCTED request) {
     List<DEDUCTED> list = deductedDao.findByCode(request.getCode());
     if (list != null && list.size() > 0) {
@@ -442,7 +446,7 @@ public class SystemService {
     deductedDao.save(request);
     return null;
   }
-  
+
   public String checkDeductedCat(String l1, String l2) {
     if (l1 == null) {
       return "核減大分類值不可為空";
@@ -460,7 +464,7 @@ public class SystemService {
     }
     return null;
   }
-  
+
   public String updateDeducted(DEDUCTED request) {
     List<DEDUCTED> list = deductedDao.findByCode(request.getCode());
     if (list == null || list.size() == 0) {
@@ -477,7 +481,7 @@ public class SystemService {
     deductedDao.save(request);
     return null;
   }
-  
+
   public String deleteDeducted(long id) {
     Optional<DEDUCTED> optional = deductedDao.findById(id);
     if (optional.isPresent()) {
@@ -487,5 +491,89 @@ public class SystemService {
     }
     return null;
   }
-  
+
+  public ICD10ListResponse getIcd10(String code, String descChi, Boolean isInfectious, String infCat, int perPage, int page) {
+    List<ICD10> codes = new ArrayList<ICD10>();
+    Specification<ICD10> spec = new Specification<ICD10>() {
+
+      private static final long serialVersionUID = 1L;
+
+      public Predicate toPredicate(Root<ICD10> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (code != null) {
+          predicate.add(cb.like(root.get("code"), code.toUpperCase() + "%"));
+        }
+        if (descChi != null) {
+          predicate.add(cb.like(root.get("descChi"), "%" + descChi + "%"));
+        }
+        if (isInfectious != null) {
+          predicate.add(cb.equal(root.get("infectious"), isInfectious ? 1 : 0));
+        }
+        if (infCat != null) {
+          predicate.add(cb.equal(root.get("infCat"), infCat));
+        }
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        return query.getRestriction();
+      }
+    };
+
+    ICD10ListResponse result = new ICD10ListResponse();
+    result.setCount((int) icd10Dao.count(spec));
+    result.setTotalPage(BaseController.countTotalPage(result.getCount(), perPage));
+    Page<ICD10> pages = icd10Dao.findAll(spec, PageRequest.of(page, perPage));
+    if (pages != null && pages.getSize() > 0) {
+      for (ICD10 icd10 : pages) {
+        codes.add(icd10);
+      }
+    }
+    result.setData(codes);
+    return result;
+  }
+
+  public ICD10 getIcd10(long id) {
+    return icd10Dao.findById(id).orElse(null);
+  }
+
+  public String saveIcd10(ICD10 icd10, boolean isCreate) {
+    CodeBaseLongId cb = new CodeBaseLongId(0, icd10.getCode(), null, null);
+    cb.setCategory("ICD10-CM");
+    cb.setDesc(icd10.getDescChi());
+    cb.setDescEn(icd10.getDescEn());
+    
+    if (isCreate) {
+      int id = redisService.getMaxId() + 1;
+      cb.setId((long) id);
+      icd10.setRedisId((long)id);
+      redisService.addIndexToRedisIndex("ICD10-index", String.valueOf(cb.getId()),
+          cb.getCode().toLowerCase());
+    } else {
+      cb.setId((long) icd10.getRedisId());
+    }
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      objectMapper.setSerializationInclusion(Include.NON_NULL);
+      String json = objectMapper.writeValueAsString(cb);
+      // 1. save to data
+      redisService.putHash("ICD10-data", String.valueOf(cb.getId()), json);
+      // 2. save code to index for search
+    } catch (JsonProcessingException e) {
+      logger.error("saveIcd10", e);
+    }
+    icd10Dao.save(icd10);
+    return null;
+  }
+
+  public String deleteIcd10(long id) {
+    ICD10 db = getIcd10(id);
+    if (db == null) {
+      return "ICD10 id:" + id + "不存在";
+    }
+        
+    icd10Dao.deleteById(id);
+    redisService.deleteHash("ICD10-data", db.getRedisId().toString());
+    redisService.removeIndexToRedisIndex("ICD10-index", db.getCode(), db.getRedisId().intValue());
+    return null;
+  }
+
 }

@@ -10,7 +10,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.USER;
 @ApiModel("用戶帳號")
 public class UserRequest extends USER {
   
-  @ApiModelProperty(value = "所屬部門，若有一個以上，用,區隔", required = true)
+  @ApiModelProperty(value = "所屬部門，若有一個以上，用,區隔", example ="內科", required = true)
   protected String departments;
   
   public UserRequest() {

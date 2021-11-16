@@ -130,25 +130,21 @@ public class UserController extends BaseController {
     }
   }
 
-  /**
-   * 取得同義詞/代碼表資料
-   * 
-   * @param name
-   * @param model
-   * @return
-   */
   @ApiOperation(value = "取得所有帳號", notes = "取得所有帳號")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/user")
   public ResponseEntity<List<UserRequest>> getAllUser(@ApiParam(name = "funcType", value = "科別代碼",
       example = "00") @RequestParam(required = false) String funcType,
       @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...",
-      example = "不分科") @RequestParam(required = false) String funcTypeC) {
+      example = "不分科") @RequestParam(required = false) String funcTypeC,
+      @ApiParam(name = "rocId", value = "醫護代碼", example = "00") @RequestParam(required = false) String rocId,
+      @ApiParam(name = "name", value = "醫護名稱",
+      example = "王小明") @RequestParam(required = false) String name) {
     // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     // System.out.println("currentPrincipalName:" + authentication.getName());
     // UserDetailsImpl userDetail = (UserDetailsImpl) authentication.getPrincipal();
     // System.out.println(userDetail.getEmail());
-    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeC));
+    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeC, rocId, name));
   }
 
   @ApiOperation(value = "更換密碼", notes = "更換密碼")
@@ -225,8 +221,12 @@ public class UserController extends BaseController {
   @ApiOperation(value = "取得所有部門", notes = "取得所有部門")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/department")
-  public ResponseEntity<List<DEPARTMENT>> getAllDepartments() {
-    return ResponseEntity.ok(userService.getAllDepartment());
+  public ResponseEntity<List<DEPARTMENT>> getAllDepartments(
+      @ApiParam(name = "funcType", value = "科別代碼", example = "00") 
+      @RequestParam(required = false) String funcType,
+      @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...", example = "家醫科") 
+      @RequestParam(required = false) String funcTypeC) {
+    return ResponseEntity.ok(userService.getAllDepartment(funcType, funcTypeC));
   }
 
   @ApiOperation(value = "新增部門", notes = "新增部門")

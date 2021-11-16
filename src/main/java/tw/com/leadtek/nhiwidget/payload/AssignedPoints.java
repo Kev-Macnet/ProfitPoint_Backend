@@ -71,7 +71,7 @@ public class AssignedPoints extends StartEndPayload implements Serializable {
     result.setWmDrugPoints(wmDrugPoints);
     result.setWmIpPoints(wmIpPoints);
     result.setWmOpPoints(wmOpPoints);
-    result.setWmp(result.getWmDrugPoints().longValue() + result.getWmIpPoints().longValue() + result.getWmOpPoints().longValue());
+    result.setWmp(result.getWmIpPoints().longValue() + result.getWmOpPoints().longValue());
     return result;
   }
 

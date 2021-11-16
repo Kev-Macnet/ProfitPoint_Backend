@@ -56,9 +56,9 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/assignedPoints")
   public ResponseEntity<AssignedPointsListResponse> getAssignedPoints(
-      @ApiParam(name = "sdate", value = "sdate",
+      @ApiParam(name = "sdate", value = "起始日期",
           example = "2021/01/01") @RequestParam(required = false) String sdate,
-      @ApiParam(name = "edate", value = "edate",
+      @ApiParam(name = "edate", value = "結束日期",
           example = "2021/12/31") @RequestParam(required = false) String edate,
       @ApiParam(name = "orderBy", value = "排序欄位名稱，sdate:生效日，edate:生效訖日，wp:西醫分配總點數，dp:牙科分配總點數",
           example = "sdate") @RequestParam(required = false) String orderBy,
@@ -71,14 +71,31 @@ public class ParameterController extends BaseController {
     int perPageInt =
         (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
             : perPage.intValue();
+
+    Date startDate = null;
+    Date endDate = null;
+    if (sdate != null && edate != null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        startDate = sdf.parse(sdate);
+        endDate = sdf.parse(edate);
+      } catch (ParseException e) {
+        AssignedPointsListResponse result = new AssignedPointsListResponse();
+        result.setMessage("日期格式有誤");
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
     String column = orderBy;
     if (column != null) {
       if (column.equals("sdate")) {
         column = "startDate";
       } else if (column.equals("edate")) {
         column = "endDate";
-      } else if (column.equals("wp") || column.equals("wmP") || column.equals("dp") || column.equals("dP")) {
-        column = "value";
+      } else if (column.equals("wp") || column.equals("wmP")) {
+        column = "wmp";
+      } else if (column.equals("dp") || column.equals("dP")) {
+        column = "dp";
       } else if (column.equals("status")) {
         column = "startDate";
       } else {
@@ -88,8 +105,8 @@ public class ParameterController extends BaseController {
         return ResponseEntity.badRequest().body(result);
       }
     }
-    return ResponseEntity.ok(parameterService.getAssignedPoints(sdate, edate, column, asc,
-        perPageInt, page.intValue()));
+    return ResponseEntity.ok(
+        parameterService.getAssignedPoints(startDate, endDate, column, asc, perPageInt, page.intValue()));
   }
 
   @ApiOperation(value = "新增分配點數", notes = "新增分配點數")
@@ -120,7 +137,7 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id格式有誤");
     }
-    
+
     return returnAPIResult(parameterService.deleteAssignedPoints(idL));
   }
 
@@ -217,7 +234,7 @@ public class ParameterController extends BaseController {
         column = "startDate";
       } else if (column.equals("edate")) {
         column = "endDate";
-      } else if (column.equals("spr")) {
+      } else if (column.equals("spr") || column.equals("sampling")) {
         column = "value";
       } else if (column.equals("status")) {
         column = "startDate";
@@ -257,6 +274,15 @@ public class ParameterController extends BaseController {
       @ApiParam(name = "edate", value = "生效訖日",
           example = "2021/12/31") @RequestParam(required = true) Date edate) {
     if (value == null || value.length() == 0 || "null".equals(value.toLowerCase())) {
+      return returnAPIResult("value值不可為空");
+    }
+    if (edate.before(sdate)) {
+      return returnAPIResult("生效訖日不可小於生效日");
+    }
+    if (edate.getTime() == sdate.getTime()) {
+      return returnAPIResult("生效訖日不可等於生效日");
+    }
+    if (value == null || value.length() < 1 || "null".equals(value)) {
       return returnAPIResult("value值不可為空");
     }
     return returnAPIResult(parameterService.newValue(name, value, sdate, edate));
@@ -469,6 +495,16 @@ public class ParameterController extends BaseController {
     if (request.getCode() == null || request.getCode().length() < 1) {
       return returnAPIResult("code值不可為空");
     }
+    request.setCode(request.getCode().toUpperCase());
+    if (request.getSdate() == null) {
+      return returnAPIResult("生效日不可為空");
+    }
+    if (request.getEdate() == null) {
+      return returnAPIResult("生效訖日不可為空");
+    }
+    if (request.getEdate().before(request.getSdate())) {
+      return returnAPIResult("生效訖日不可小於生效日");
+    }
     return returnAPIResult(parameterService.newRareICD(request));
   }
 
@@ -580,7 +616,6 @@ public class ParameterController extends BaseController {
     if (request.getCode() == null || request.getCode().length() < 1) {
       return returnAPIResult("code值不可為空");
     }
-    System.out.println("isOrder:" + isOrder);
     return returnAPIResult(parameterService.newHighRatioOrder(request, isOrder));
   }
 
@@ -593,6 +628,22 @@ public class ParameterController extends BaseController {
       return returnAPIResult("id未帶入");
     }
     return returnAPIResult(parameterService.updateHighRatioOrder(request));
+  }
+  
+  @ApiOperation(value = "修改應用比例偏高醫令狀態", notes = "修改應用比例偏高醫令狀態")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/highRatioOrder/status/{id}")
+  public ResponseEntity<BaseResponse> updateHighRatioOrderStatus(@PathVariable String id,
+      @ApiParam(name = "enable", value = "是否啟用，true/false",
+          example = "true") @RequestParam(required = true) Boolean enable) {
+    Long idL = null;
+    try {
+      idL = Long.parseLong(id);
+    } catch (NumberFormatException e) {
+      return returnAPIResult("id有誤");
+    }
+    return returnAPIResult(parameterService.updateHighRatioOrder(idL, enable.booleanValue()));
   }
 
   /**
@@ -645,8 +696,8 @@ public class ParameterController extends BaseController {
         return ResponseEntity.badRequest().body(result);
       }
     }
-    return ResponseEntity.ok(
-        parameterService.getSameATCFromPayCode(code, inhCode, atc, column, asc, perPageInt, page.intValue()));
+    return ResponseEntity.ok(parameterService.getSameATCFromPayCode(code, inhCode, atc, column, asc,
+        perPageInt, page.intValue()));
   }
 
   @ApiOperation(value = "修改同性質藥物狀態", notes = "修改同性質藥物狀態")
@@ -692,12 +743,14 @@ public class ParameterController extends BaseController {
     String column = orderBy;
     if (column != null) {
       if (column.equals("atc") || column.equals("code") || column.equals("inhCode")
-          || column.equals("stauts")) {
+          || column.equals("status")) {
 
       } else if (column.equals("sdate")) {
         column = "startDate";
       } else if (column.equals("edate")) {
         column = "endDate";
+      } else if (column.equals("ownCode")) {
+        column = "ownExpCode";
       } else {
         CodeConflictListResponse result = new CodeConflictListResponse();
         result.setMessage("orderBy無此欄位：" + column);
@@ -706,7 +759,7 @@ public class ParameterController extends BaseController {
       }
     }
     return ResponseEntity.ok(
-        parameterService.getCodeConflict(code, inhCode, ownCode, orderBy, asc, perPageInt, page));
+        parameterService.getCodeConflict(code, inhCode, ownCode, column, asc, perPageInt, page));
   }
 
   @ApiOperation(value = "取得健保項目對應自費項目並存詳細資料", notes = "取得健保項目對應自費項目並存詳細資料")
@@ -751,6 +804,22 @@ public class ParameterController extends BaseController {
       return returnAPIResult("id有誤");
     }
     return returnAPIResult(parameterService.upsertCodeConflict(request, true));
+  }
+
+  @ApiOperation(value = "修改健保項目對應自費項目並存資料狀態", notes = "修改健保項目對應自費項目並存資料狀態")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PutMapping("/codeConflict/{id}")
+  public ResponseEntity<BaseResponse> updateCodeConflictStatus(@PathVariable String id,
+      @ApiParam(name = "enable", value = "是否啟用，true/false",
+          example = "true") @RequestParam(required = true) Boolean enable) {
+    Long idL = null;
+    try {
+      idL = Long.parseLong(id);
+    } catch (NumberFormatException e) {
+      return returnAPIResult("id有誤");
+    }
+    return returnAPIResult(parameterService.updateCodeConflict(idL, enable.booleanValue()));
   }
 
   @ApiOperation(value = "刪除健保項目對應自費項目並存資料", notes = "刪除健保項目對應自費項目並存資料")

@@ -99,7 +99,7 @@ public class DrgCalService {
     }
     // 基本診療加成率
     String hospLevel = parameters.getParameter("HOSP_LEVEL");
-    result += (Float) parameters.getParameterValueBetween("ADD_" + hospLevel, date);
+    result += (Float) parameters.getParameterValueBetween("ADD_HOSP_LEVEL_" + hospLevel, date);
 
     // CMI 加成率
     float cmi = (Float) parameters.getParameterValueBetween("CMI", date);
@@ -184,6 +184,7 @@ public class DrgCalService {
     }
     DRG_CODE drgCode = drgList.get(0);
     DrgCalculate result = new DrgCalculate(drgCode);
+    result.setDrgNoAdd(false);
     double value = 0;
     for (String string : DRG_NO_ADD) {
       if (string.equals(drg)) {
@@ -210,7 +211,7 @@ public class DrgCalService {
         }
       } else if (medDot < drgCode.getLlimit().intValue()) {
         result.setSection("A");
-      } else if (medDot < drgCode.getSerial().intValue()) {
+      } else if (medDot < result.getFixed()) {
         result.setSection("B1");
       } else if (medDot < drgCode.getUlimit().intValue()) {
         result.setSection("B2");

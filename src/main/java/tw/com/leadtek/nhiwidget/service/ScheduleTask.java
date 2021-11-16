@@ -29,7 +29,6 @@ public class ScheduleTask {
     @Scheduled(fixedDelay = 60000*10, initialDelay = 5000)
     public void runCurrentTimeEvery60m() throws InterruptedException {
         String msg = String.format("(10分鐘)第%d次執行，目前時間：%s",count1++, dateFormat.format(new java.util.Date()));
-        System.out.println(msg);
         logger.info(msg);
         dbBackupProcess();
         userService.checkLoginUser();
@@ -55,8 +54,6 @@ public class ScheduleTask {
               
                 dbBackupService.dbBackupKernel(mode, "schedule task", (add==1) ? true : false);
           }
-        } else {
-            System.out.println("今天備份過或未到時間.......");
         }
     }
 

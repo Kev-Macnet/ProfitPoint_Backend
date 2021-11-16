@@ -6,7 +6,9 @@ package tw.com.leadtek.nhiwidget.dao;
 import java.sql.Date;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
@@ -35,4 +37,27 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
       "MR_ID=?1 AND ((TW_DRGS_CALCU > 0 AND (ORDER_CODE = 'G00001' OR ORDER_CODE LIKE 'H000%' or ORDER_CODE = 'J00001')) "
       + "OR ORDER_TYPE = 'X')", nativeQuery = true)
   public List<Object[]> findVirtualCodeByMrId(Long mrId);
+  
+  /**
+   * 住院各醫令類別點數
+   * @param sdate
+   * @param edate
+   * @return [醫令代碼, 加總點數, 件數]
+   */
+  @Query(value = "SELECT IP_P.PAY_CODE_TYPE , SUM(TOTAL_DOT), COUNT(1) FROM MR, IP_P " + 
+      "WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND IP_P.MR_ID = MR.ID AND TOTAL_DOT > 0 GROUP BY IP_P.PAY_CODE_TYPE", nativeQuery = true)
+  public List<Object[]> findPointGroupByPayCodeType(Date sdate, Date edate);
+  
+  /**
+   *  取得醫令碼與支付標準代碼相同的所有醫令
+   * @return [醫令代碼]
+   */
+  @Query(value = "SELECT DISTINCT(ORDER_CODE) FROM IP_P " + 
+      "WHERE ORDER_CODE IN (SELECT CODE FROM PAY_CODE) AND PAY_CODE_TYPE IS NULL", nativeQuery = true)
+  public List<Object[]> findDistinctOrderCode();
+  
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE IP_P SET PAY_CODE_TYPE=?1 WHERE ORDER_CODE=?2", nativeQuery = true)
+  public void updatePayCodeType(String payCodeType, String orderCode);
 }

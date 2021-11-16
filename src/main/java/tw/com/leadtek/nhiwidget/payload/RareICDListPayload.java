@@ -44,18 +44,7 @@ public class RareICDListPayload extends StartEndPayload implements Serializable 
     edate = ct.getEndDate();
     ip = false;
     op = false;
-    if ((ct.getIpTimesM() != null && ct.getIpTimesMStatus().intValue() == 1)
-        || ct.getOpTimesM() != null && ct.getOpTimesMStatus().intValue() == 1) {
-      amount = true;
-    } else {
-      amount = false;
-    }
-    if ((ct.getIpTimes6m() != null && ct.getIpTimes6mStatus().intValue() == 1)
-        || (ct.getOpTimes6m() != null && ct.getOpTimes6mStatus().intValue() == 1)) {
-      average = true;
-    } else {
-      average = false;
-    }
+ 
     if ("00".equals(ct.getDataFormat())) {
       ip = true;
       op = true;
@@ -63,6 +52,19 @@ public class RareICDListPayload extends StartEndPayload implements Serializable 
       op = true;
     }  else if ("20".equals(ct.getDataFormat())) {
       ip = true;
+    }
+    
+    if ((ct.getIpTimesM() != null && ct.getIpTimesMStatus().intValue() == 1 && ip)
+        || ct.getOpTimesM() != null && ct.getOpTimesMStatus().intValue() == 1 && op) {
+      amount = true;
+    } else {
+      amount = false;
+    }
+    if ((ct.getIpTimes6m() != null && ct.getIpTimes6mStatus().intValue() == 1  && ip)
+        || (ct.getOpTimes6m() != null && ct.getOpTimes6mStatus().intValue() == 1)  && op) {
+      average = true;
+    } else {
+      average = false;
     }
     status = ct.getStatus() != null && ct.getStatus().intValue() == 1;
   }

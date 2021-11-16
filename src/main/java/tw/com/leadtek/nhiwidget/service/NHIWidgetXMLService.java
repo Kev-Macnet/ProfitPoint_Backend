@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
@@ -73,6 +73,8 @@ import tw.com.leadtek.nhiwidget.payload.MRStatusCount;
 import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
 import tw.com.leadtek.nhiwidget.payload.QuickSearchResponse;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
+import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
+import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.StringUtility;
 import tw.com.leadtek.tools.Utility;
@@ -81,13 +83,13 @@ import tw.com.leadtek.tools.Utility;
 public class NHIWidgetXMLService {
 
   private Logger logger = LogManager.getLogger();
-  
+
   private final String DOCTYPE = "<?xml version=\"1.0\" encoding=\"Big5\"?>\n";
-  
+
   private final int IGNORE_STATUS = 100;
-  
+
   private final int BATCH = 1000;
-  
+
   /**
    * 針對姓名、證號是否隱碼
    */
@@ -131,16 +133,23 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private LogDataService logService;
-  
+
   @Autowired
   private MR_NOTEDao mrNoteDao;
 
+  @Autowired
+  private RedisService redisService;
+
+  @Autowired
+  private JwtUtils jwtUtils;
+
   public void saveOP(OP op) {
     OP_T opt = saveOPT(op.getTdata());
-//    Map<String, Object> condition1 =
-//        logService.makeCondition(new String[][] {{"ID", Long.toString(opt.getId())}});
-//    Map<String, Object> row1 = logService.findOne("OP_T", condition1);
-//    logService.updateModification("system", "OP_T", condition1, new HashMap<String, Object>(), row1);
+    // Map<String, Object> condition1 =
+    // logService.makeCondition(new String[][] {{"ID", Long.toString(opt.getId())}});
+    // Map<String, Object> row1 = logService.findOne("OP_T", condition1);
+    // logService.updateModification("system", "OP_T", condition1, new HashMap<String, Object>(),
+    // row1);
     List<HashMap<String, Object>> opdList = getOPDByOPTID(opt.getId());
     List<HashMap<String, Object>> oppList = getOPPByOPTID(opt.getId());
 
@@ -150,7 +159,7 @@ public class NHIWidgetXMLService {
     long timeAllMR = 0;
     int count = 0;
     for (OP_DData op_dData : dDataList) {
-      count ++;
+      count++;
       if (count > 1000) {
         break;
       }
@@ -160,7 +169,7 @@ public class NHIWidgetXMLService {
       opd.setCaseType(op_dData.getDhead().getCASE_TYPE());
       opd.setSeqNo(op_dData.getDhead().getSEQ_NO());
       opd.setOptId(opt.getId());
-      
+
       updateOPDID(opdList, opd);
 
       long timeMR = System.currentTimeMillis();
@@ -172,53 +181,55 @@ public class NHIWidgetXMLService {
       mr = mrDao.save(mr);
       timeMR = System.currentTimeMillis() - timeMR;
       timeAllMR += timeMR;
-      //System.out.println("timeMR=" + timeMR + " ms");
+      // System.out.println("timeMR=" + timeMR + " ms");
       long timeOpd = System.currentTimeMillis();
       CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", opd.getIcdCm1());
       mr.setInfectious((ct == null) ? 0 : 1);
       opd.setMrId(mr.getId());
       opd = opdDao.save(opd);
 
-     // timeOpd = System.currentTimeMillis() - timeOpd;
-     // System.out.println("timeOpd=" + timeOpd + " ms");
+      // timeOpd = System.currentTimeMillis() - timeOpd;
+      // System.out.println("timeOpd=" + timeOpd + " ms");
       mr.setdId(opd.getId());
       mrDao.updateDid(opd.getId(), mr.getId());
-//      Map<String, Object> condition2 =
-//          logService.makeCondition(new String[][] {{"ID", Long.toString(opd.getId())}});
-//      Map<String, Object> row2 = logService.findOne("OP_D", condition2);
-//      logService.updateModification("system", "OP_D", condition2, new HashMap<String, Object>(),
-//          row2);l
+      // Map<String, Object> condition2 =
+      // logService.makeCondition(new String[][] {{"ID", Long.toString(opd.getId())}});
+      // Map<String, Object> row2 = logService.findOne("OP_D", condition2);
+      // logService.updateModification("system", "OP_D", condition2, new HashMap<String, Object>(),
+      // row2);l
       for (OP_P opp : oppListXML) {
         opp.setOpdId(opd.getId());
         updateOPPID(oppList, opp);
         opp.setMrId(mr.getId());
-        //oppBatch.add(opp);
+        // oppBatch.add(opp);
         if (oppBatch.size() > BATCH) {
-         // long timeOpp = System.currentTimeMillis();
-         // oppDao.saveAll(oppBatch);
-         // timeOpp = System.currentTimeMillis() - timeOpp;
-         // System.out.println("save opp:" + timeOpp + " ms, " + oppBatch.size());
+          // long timeOpp = System.currentTimeMillis();
+          // oppDao.saveAll(oppBatch);
+          // timeOpp = System.currentTimeMillis() - timeOpp;
+          // System.out.println("save opp:" + timeOpp + " ms, " + oppBatch.size());
           oppBatch.clear();
         }
-        //oppDao.save(opp);
-//        Map<String, Object> condition3 =
-//            logService.makeCondition(new String[][] {{"ID", Long.toString(opp.getId())}});
-//        Map<String, Object> row3 = logService.findOne("OP_P", condition3);
-//        logService.updateModification("system", "OP_P", condition3, new HashMap<String, Object>(),
-//            row3);
+        // oppDao.save(opp);
+        // Map<String, Object> condition3 =
+        // logService.makeCondition(new String[][] {{"ID", Long.toString(opp.getId())}});
+        // Map<String, Object> row3 = logService.findOne("OP_P", condition3);
+        // logService.updateModification("system", "OP_P", condition3, new HashMap<String,
+        // Object>(),
+        // row3);
       }
     }
     if (oppBatch.size() > 0) {
-      //oppDao.saveAll(oppBatch);
+      // oppDao.saveAll(oppBatch);
     }
     timeAll = System.currentTimeMillis() - timeAll;
     count--;
     double avg = (double) timeAllMR / (double) count;
-    System.out.println("timeAll:" + count + "," + timeAll + " ms" + ", mr:" + timeAllMR + ", avg:" + avg);
+    System.out
+        .println("timeAll:" + count + "," + timeAll + " ms" + ", mr:" + timeAllMR + ", avg:" + avg);
   }
-  
+
   public void saveOPBatch(OP op) {
-   int testMax = 10000000; 
+    int testMax = 10000000;
     OP_T opt = saveOPT(op.getTdata());
     // 避免重複insert
     List<HashMap<String, Object>> opdList = getOPDByOPTID(opt.getId());
@@ -228,11 +239,11 @@ public class NHIWidgetXMLService {
     long timeAll = System.currentTimeMillis();
     int count = 0;
     if (dDataList == null) {
-        System.err.println("dataList is null");
-        return;
+      System.err.println("dataList is null");
+      return;
     }
     for (OP_DData op_dData : dDataList) {
-      count ++;
+      count++;
       if (count > testMax) {
         break;
       }
@@ -242,7 +253,7 @@ public class NHIWidgetXMLService {
       opd.setCaseType(op_dData.getDhead().getCASE_TYPE());
       opd.setSeqNo(op_dData.getDhead().getSEQ_NO());
       opd.setOptId(opt.getId());
-      
+
       updateOPDID(opdList, opd);
       MR mr = new MR(opd);
       if (opd.getMrId() != null) {
@@ -250,7 +261,7 @@ public class NHIWidgetXMLService {
       }
       mr.setStatus(MR_STATUS.NO_CHANGE.value());
       mr.setApplYm(opt.getFeeYm());
-      //beforeSaveMRAndOPD(opt.getId(), mr, opd);
+      // beforeSaveMRAndOPD(opt.getId(), mr, opd);
       CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", opd.getIcdCm1());
       mr.setInfectious((ct == null) ? 0 : 1);
       mr = mrDao.save(mr);
@@ -281,25 +292,25 @@ public class NHIWidgetXMLService {
 
   public void saveIP(IP ip) {
     IP_T ipt = saveIPT(ip.getTdata());
-//    Map<String, Object> condition1 =
-//        logService.makeCondition(new String[][] {{"ID", Long.toString(ipt.getId())}});
-//    Map<String, Object> row1 = logService.findOne("IP_T", condition1);
-//    logService.updateModification("system", "IP_T", condition1, new HashMap<String, Object>(),
-//        row1);
+    // Map<String, Object> condition1 =
+    // logService.makeCondition(new String[][] {{"ID", Long.toString(ipt.getId())}});
+    // Map<String, Object> row1 = logService.findOne("IP_T", condition1);
+    // logService.updateModification("system", "IP_T", condition1, new HashMap<String, Object>(),
+    // row1);
     List<HashMap<String, Object>> ipdList = getIPDByIPTID(ipt.getId());
     List<HashMap<String, Object>> ippList = getIPPByIPTID(ipt.getId());
-    
+
     if (ip.getDdata() == null) {
-        System.err.println("dataList is null");
-        return;
+      System.err.println("dataList is null");
+      return;
     }
-    int count =0;
-    long start =System.currentTimeMillis();
-    //long saveIPD = 0;
+    int count = 0;
+    long start = System.currentTimeMillis();
+    // long saveIPD = 0;
     List<IP_P> ippBatch = new ArrayList<IP_P>();
     for (IP_DData ip_dData : ip.getDdata()) {
       count++;
-      if (count >50) {
+      if (count > 50) {
         break;
       }
 
@@ -309,31 +320,31 @@ public class NHIWidgetXMLService {
       ipd.setCaseType(ip_dData.getDhead().getCASE_TYPE());
       ipd.setSeqNo(ip_dData.getDhead().getSEQ_NO());
       ipd.setIptId(ipt.getId());
-      
+
       updateIPDID(ipdList, ipd);
-      
-      //long startMR =System.currentTimeMillis();
+
+      // long startMR =System.currentTimeMillis();
       MR mr = new MR(ipd);
       if (ipd.getMrId() != null) {
         mr.setId(ipd.getMrId());
       }
       mr.setStatus(MR_STATUS.NO_CHANGE.value());
       mr.setApplYm(ipt.getFeeYm());
-      
+
       mr = mrDao.save(mr);
-      //startMR = System.currentTimeMillis() - startMR;
-     // System.out.println("save MR:" + startMR + " ms");
+      // startMR = System.currentTimeMillis() - startMR;
+      // System.out.println("save MR:" + startMR + " ms");
       CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", ipd.getIcdCm1());
       mr.setInfectious((ct == null) ? 0 : 1);
       ipd.setMrId(mr.getId());
-      
-      //long startIPD = System.currentTimeMillis();
+
+      // long startIPD = System.currentTimeMillis();
       ipd = ipdDao.save(ipd);
 
       mr.setdId(ipd.getId());
       mrDao.updateDid(ipd.getId(), mr.getId());
-      
-      //long startIPP = System.currentTimeMillis();
+
+      // long startIPP = System.currentTimeMillis();
       for (IP_P ipp : ippListXML) {
         ipp.setIpdId(ipd.getId());
         updateIPPID(ippList, ipp);
@@ -344,11 +355,12 @@ public class NHIWidgetXMLService {
           ippDao.saveAll(ippBatch);
           ippBatch.clear();
         }
-//        Map<String, Object> condition3 =
-//            logService.makeCondition(new String[][] {{"ID", Long.toString(ipp.getId())}});
-//        Map<String, Object> row3 = logService.findOne("IP_P", condition3);
-//        logService.updateModification("system", "IP_P", condition3, new HashMap<String, Object>(),
-//            row3);
+        // Map<String, Object> condition3 =
+        // logService.makeCondition(new String[][] {{"ID", Long.toString(ipp.getId())}});
+        // Map<String, Object> row3 = logService.findOne("IP_P", condition3);
+        // logService.updateModification("system", "IP_P", condition3, new HashMap<String,
+        // Object>(),
+        // row3);
       }
     }
     if (ippBatch.size() > 0) {
@@ -357,7 +369,7 @@ public class NHIWidgetXMLService {
     count--;
     start = System.currentTimeMillis() - start;
     double avg = (double) start / (double) count;
-     System.out.println("save " + count + " MR:" + start + "ms, avg=" + avg + "ms");
+    System.out.println("save " + count + " MR:" + start + "ms, avg=" + avg + "ms");
   }
 
   private OP_T saveOPT(OP_T opt) {
@@ -371,7 +383,7 @@ public class NHIWidgetXMLService {
       return optDao.save(opt);
     }
   }
-  
+
   private IP_T saveIPT(IP_T ipt) {
     ipt.setUpdateAt(new java.util.Date());
     List<IP_T> list = iptDao.findByFeeYmAndHospIdOrderById(ipt.getFeeYm(), ipt.getHospId());
@@ -383,7 +395,7 @@ public class NHIWidgetXMLService {
       return iptDao.save(ipt);
     }
   }
-  
+
   private void maskOPD(OP_D opd) {
     if (ISMASK) {
       opd.setRocId(StringUtility.maskString(opd.getRocId(), StringUtility.MASK_MOBILE));
@@ -427,7 +439,7 @@ public class NHIWidgetXMLService {
     opd.setIcdCm4(StringUtility.formatICDtoUpperCase(opd.getIcdCm4()));
     opd.setIcdCm5(StringUtility.formatICDtoUpperCase(opd.getIcdCm5()));
   }
-  
+
   private void maskOPP(OP_P opp, String caseType) {
     if (ISMASK) {
       opp.setPrsnId(StringUtility.maskString(opp.getPrsnId(), StringUtility.MASK_MOBILE));
@@ -435,7 +447,7 @@ public class NHIWidgetXMLService {
     opp.setPayBy("N");
     opp.setApplStatus(1);
   }
-  
+
   private void maskIPP(IP_P ipp, String caseType) {
     if (ISMASK) {
       ipp.setPrsnId(StringUtility.maskString(ipp.getPrsnId(), StringUtility.MASK_MOBILE));
@@ -443,7 +455,7 @@ public class NHIWidgetXMLService {
     ipp.setPayBy("N");
     ipp.setApplStatus(1);
   }
-  
+
   private void maskIPD(IP_D ipd) {
     if (ISMASK) {
       ipd.setRocId(StringUtility.maskString(ipd.getRocId(), StringUtility.MASK_MOBILE));
@@ -471,9 +483,10 @@ public class NHIWidgetXMLService {
     ipd.setIcdCm19(StringUtility.formatICDtoUpperCase(ipd.getIcdCm19()));
     ipd.setIcdCm20(StringUtility.formatICDtoUpperCase(ipd.getIcdCm20()));
   }
-  
+
   /**
    * 取得DB中相同OPT_ID的 OP_D，減少存取DB次數.
+   * 
    * @param optId
    * @return
    */
@@ -494,7 +507,7 @@ public class NHIWidgetXMLService {
     logger.info("getOPDByOPTID used:" + start + "ms");
     return result;
   }
-  
+
   private List<HashMap<String, Object>> getOPPByOPTID(long optId) {
     long start = System.currentTimeMillis();
     List<Object[]> list = oppDao.findByOptId(optId);
@@ -510,9 +523,10 @@ public class NHIWidgetXMLService {
     logger.info("getOPPByOPTID used:" + start + "ms");
     return result;
   }
-  
+
   /**
    * 取得DB中相同IPT_ID的 IP_D，減少存取DB次數.
+   * 
    * @param optId
    * @return
    */
@@ -533,7 +547,7 @@ public class NHIWidgetXMLService {
     logger.info("getIPDByIPTID used:" + start + "ms");
     return result;
   }
-  
+
   private List<HashMap<String, Object>> getIPPByIPTID(long iptId) {
     long start = System.currentTimeMillis();
     List<Object[]> list = ippDao.findByIptId(iptId);
@@ -549,14 +563,14 @@ public class NHIWidgetXMLService {
     logger.info("getIPPByIPTID used:" + start + "ms");
     return result;
   }
-  
+
   private void updateOPDID(List<HashMap<String, Object>> list, OP_D opd) {
     opd.setUpdateAt(new java.util.Date());
     int index = -1;
-    for (int i=list.size() -1; i>=0; i--) {
+    for (int i = list.size() - 1; i >= 0; i--) {
       HashMap<String, Object> map = list.get(i);
-      if (((Integer) map.get("seqNo")).intValue() == opd.getSeqNo().intValue() 
-          && ((String) map.get("rocId")).equals(opd.getRocId()) 
+      if (((Integer) map.get("seqNo")).intValue() == opd.getSeqNo().intValue()
+          && ((String) map.get("rocId")).equals(opd.getRocId())
           && ((String) map.get("funcDate")).equals(opd.getFuncDate())) {
         index = i;
         opd.setId(((BigInteger) map.get("id")).longValue());
@@ -568,11 +582,11 @@ public class NHIWidgetXMLService {
       list.remove(index);
     }
   }
-  
+
   private void updateOPPID(List<HashMap<String, Object>> list, OP_P opp) {
     opp.setUpdateAt(new java.util.Date());
     int index = -1;
-    for (int i=list.size() -1; i>=0; i--) {
+    for (int i = list.size() - 1; i >= 0; i--) {
       HashMap<String, Object> map = list.get(i);
       if (((BigInteger) map.get("opdId")).longValue() == opp.getOpdId().longValue()
           && ((Integer) map.get("orderSeqNo")).intValue() == opp.getOrderSeqNo().intValue()) {
@@ -589,10 +603,10 @@ public class NHIWidgetXMLService {
   private void updateIPDID(List<HashMap<String, Object>> list, IP_D ipd) {
     ipd.setUpdateAt(new java.util.Date());
     int index = -1;
-    for (int i=list.size() -1; i>=0; i--) {
+    for (int i = list.size() - 1; i >= 0; i--) {
       HashMap<String, Object> map = list.get(i);
-      if (((Integer) map.get("seqNo")).intValue() == ipd.getSeqNo().intValue() 
-          && ((String) map.get("rocId")).equals(ipd.getRocId()) 
+      if (((Integer) map.get("seqNo")).intValue() == ipd.getSeqNo().intValue()
+          && ((String) map.get("rocId")).equals(ipd.getRocId())
           && ((String) map.get("inDate")).equals(ipd.getInDate())) {
         index = i;
         ipd.setId(((BigInteger) map.get("id")).longValue());
@@ -603,11 +617,11 @@ public class NHIWidgetXMLService {
       list.remove(index);
     }
   }
-  
+
   private void updateIPPID(List<HashMap<String, Object>> list, IP_P ipp) {
     ipp.setUpdateAt(new java.util.Date());
     int index = -1;
-    for (int i=list.size() -1; i>=0; i--) {
+    for (int i = list.size() - 1; i >= 0; i--) {
       HashMap<String, Object> map = list.get(i);
       if (((BigInteger) map.get("ipdId")).longValue() == ipp.getIpdId().longValue()
           && ((Integer) map.get("orderSeqNo")).intValue() == ipp.getOrderSeqNo().intValue()) {
@@ -1044,7 +1058,7 @@ public class NHIWidgetXMLService {
     result.put("mrStatus", mc);
     return result;
   }
-  
+
   private void updateMRStatusCount(MR mr, MRStatusCount mc) {
     if (mr.getStatus() == null) {
       mr.setStatus(MR_STATUS.NO_CHANGE.value());
@@ -1072,7 +1086,8 @@ public class NHIWidgetXMLService {
       String drg, String drgSection, String orderCode, String inhCode, String drugUse,
       String inhCodeDrugUse, String icdAll, String icdCMMajor, String icdCMSecondary, String icdPCS,
       String qrObject, String qrSdate, String qrEdate, String status, String deductedCode,
-      String deductedOrder, String all, int perPage, int page) {
+      String deductedOrder, String all, String patientName, String patientId, String pharId, 
+      int perPage, int page) {
 
     Map<String, Object> result = new HashMap<String, Object>();
 
@@ -1091,24 +1106,26 @@ public class NHIWidgetXMLService {
         if (allMatch != null && allMatch.toUpperCase().equals("Y")) {
           isAnd = true;
         }
-        // TODO 缺drg, drgSection, orderCode, drugUse, icdAll, icdCMMajor, icdCMSecondary, icdPCS
+        // TODO 缺orderCode, drugUse, icdAll, icdCMMajor, icdCMSecondary, icdPCS
         // qrObject, qrSdate, qrEdate, deductedCode, deductedOrder, inhCode, inhCodeDrugUse
         result = getMR(page, perPage, isAnd, sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
             funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-            status, deductedCode);
+            status, deductedCode, patientName, patientId, pharId);
       }
       return result;
     } catch (ParseException e) {
-      e.printStackTrace();
+      result.put("result", "error");
+      result.put("message", "sdate或edate格式錯誤");
+      return result;
     }
-    return new HashMap<String, Object>();
   }
 
   // List<MR>
   private Map<String, Object> getMR(int page, int perPage, boolean isAnd, Date sDate, Date eDate,
-      String applYM, Integer minPoints, Integer maxPoints, String dataFormat, String funcType, String prsnId,
-      String prsnName, String applId, String applName, String inhMrId, String inhClinicId,
-      String drg, String drgSection, String status, String deductedCode) {
+      String applYM, Integer minPoints, Integer maxPoints, String dataFormat, String funcType,
+      String prsnId, String prsnName, String applId, String applName, String inhMrId,
+      String inhClinicId, String drg, String drgSection, String status, String deductedCode,
+      String patientName, String patientId, String pharId) {
 
     Specification<MR> spec = new Specification<MR>() {
 
@@ -1134,6 +1151,12 @@ public class NHIWidgetXMLService {
         addPredicate(root, predicate, cb, "drgSection", drgSection, false, false);
         addPredicate(root, predicate, cb, "status", status, false, true);
         addPredicate(root, predicate, cb, "applYm", applYM, true, false);
+        if (patientName != null && patientName.length() > 0) {
+          addPredicate(root, predicate, cb, "name", "%" + patientName, true, false);
+        }
+        if (patientId != null && patientId.length() > 0) {
+          addPredicate(root, predicate, cb, "rocId", "%" + patientId, true, false);
+        }
         if (deductedCode != null && deductedCode.length() > 0) {
           predicate.add(cb.greaterThan(root.get("deductedDot"), 0));
         }
@@ -1185,8 +1208,8 @@ public class NHIWidgetXMLService {
 
       // TODO 缺drg, drgSection, orderCode, drugUse, icdAll, icdCMMajor, icdCMSecondary, icdPCS
       // qrObject, qrSdate, qrEdate, deductedCode, deductedOrder, inhCode, inhCodeDrugUse
-      return getMR(page, perPage, false, sDate, eDate, null, null, null, dataFormat, funcType, prsnId,
-          prsnName, applId, applName, null, null, null, null, null, null);
+      return getMR(page, perPage, false, sDate, eDate, null, null, null, dataFormat, funcType,
+          prsnId, prsnName, applId, applName, null, null, null, null, null, null, null, null, null);
 
     } catch (ParseException e) {
       e.printStackTrace();
@@ -1209,8 +1232,9 @@ public class NHIWidgetXMLService {
           : new Date(sdf.parse(endDate).getTime());
 
 
-      Map<String, Object> mrMap = getMR(page, perPage, false, sDate, eDate, null, minPoints, maxPoints,
-          dataFormat, funcType, null, null, null, null, null, null, null, null, null, null);
+      Map<String, Object> mrMap =
+          getMR(page, perPage, false, sDate, eDate, null, minPoints, maxPoints, dataFormat,
+              funcType, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
       if (mrMap == null || mrMap.get("mr") == null) {
         return new HashMap<String, Object>();
@@ -1247,14 +1271,14 @@ public class NHIWidgetXMLService {
     if (params == null || params.length() == 0) {
       return;
     }
-    if (params.indexOf(',') < 0) {
+    if (params.indexOf(' ') < 0) {
       if (isInteger) {
         predicate.add(cb.equal(root.get(paramName), params));
       } else {
         predicate.add(cb.like(root.get(paramName), params + "%"));
       }
     } else {
-      String[] ss = params.split(",");
+      String[] ss = params.split(" ");
       List<Predicate> predicates = new ArrayList<Predicate>();
       for (int i = 0; i < ss.length; i++) {
         if (isInteger) {
@@ -1381,8 +1405,8 @@ public class NHIWidgetXMLService {
           }
         }
       } else {
-        Map<String, Object> map = getMR(0, 1000000, false, sDate, eDate, null, null, null, dataFormat,
-            funcType, prsnId, null, applId, null, null, null, null, null, null, null);
+        Map<String, Object> map = getMR(0, 1000000, false, sDate, eDate, null, null, null,
+            dataFormat, funcType, prsnId, null, applId, null, null, null, null, null, null, null, null, null, null);
         if (map.get("mr") != null) {
           List<MR> mrList = (List<MR>) map.get("mr");
           for (MR mr : mrList) {
@@ -1504,7 +1528,7 @@ public class NHIWidgetXMLService {
       } else if (XMLConstant.DATA_FORMAT_IP.equals(result.getDataFormat())) {
         IP_D ipD = ipdDao.getOne(result.getdId());
         result.setIPDData(ipD, cts);
-        
+
         List<IP_P> ippList = ippDao.findByIpdIdOrderByOrderSeqNo(ipD.getId());
         List<MO> moList = new ArrayList<MO>();
         for (IP_P ip_P : ippList) {
@@ -1518,7 +1542,48 @@ public class NHIWidgetXMLService {
     }
     return result;
   }
+
+  public String editMRDetail(long id, String jwt, boolean isEdit) {
+    MR mr = mrDao.findById(id).orElse(null);
+    if (mr == null) {
+      return "病歷id:" + id + "不存在";
+    }
+    String key = UserService.MREDIT + id;
+    String userKey = UserService.USER + jwtUtils.getUsernameFromToken(jwt);
+    Set<Object> sets = redisService.hkeys(key);
+    if (sets != null && sets.size() > 0) {
+      if (isEdit) {
+        for (Object object : sets) {
+          String user = jwtUtils.getUsernameFromToken((String) object);
+          if (user == null) {
+            redisService.deleteHash(key, (String) object);
+          } else {
+            return "病歷id:" + id + " " + user + " 正在編輯";
+          }
+        }
+      } else {
+        redisService.deleteHash(key, jwt);
+        redisService.deleteHash(userKey, UserService.EDITING);
+        return null;
+      }
+    }
+    redisService.putHash(key, jwt, String.valueOf(System.currentTimeMillis()));
+    redisService.putHash(userKey, UserService.EDITING, String.valueOf(id));
+    return null;
+  }
   
+  public String updateMRStatus(long id, UserDetailsImpl user, int status) {
+    MR mr = mrDao.findById(id).orElse(null);
+    if (mr == null) {
+      return "病歷id:" + id + "不存在";
+    }
+    mr.setStatus(status);
+    mr.setApplName(user.getUsername());
+    mr.setApplId(String.valueOf(user.getId()));
+    mrDao.save(mr);
+    return null;
+  }
+
   public void getMRNote(MRDetail mrDetail) {
     List<MR_NOTE> list = mrNoteDao.findByMrIdOrderById(mrDetail.getId());
     List<MrNotePayload> notes = new ArrayList<MrNotePayload>();
@@ -1534,12 +1599,27 @@ public class NHIWidgetXMLService {
     mrDetail.setDeducted(deduct);
   }
 
-  public MRDetail updateMRDetail(MRDetail mrDetail) {
+  public MRDetail updateMRDetail(MRDetail mrDetail, String jwt) {
     MRDetail result = null;
     MR mr = mrDao.getOne(mrDetail.getId());
     if (mr == null) {
-      return null;
+      result = new MRDetail();
+      result.setError("id:" + mrDetail.getId() + " 不存在");
+      return result;
     }
+    
+    String key = UserService.MREDIT + mrDetail.getId();
+    Set<Object> sets = redisService.hkeys(key);
+    if (sets != null && sets.size() > 0) {
+        redisService.deleteHash(key, jwt);
+    } else {
+      result = new MRDetail();
+      result.setError("編輯時間已逾時");
+      return result;
+    }
+    String userKey = UserService.USER + jwtUtils.getUsernameFromToken(jwt);
+    redisService.deleteHash(userKey, UserService.EDITING);
+    
     mr.updateMR(mrDetail);
     if (XMLConstant.DATA_FORMAT_OP.equals(mrDetail.getDataFormat())) {
       OP_D opD = opdDao.getOne(mr.getdId());
@@ -1690,7 +1770,7 @@ public class NHIWidgetXMLService {
     if (code == null || code.length() == 0) {
       return;
     }
-    String codes = "ICD10-CM".equals(category) ?  StringUtility.formatICD(code) : code;
+    String codes = "ICD10-CM".equals(category) ? StringUtility.formatICD(code) : code;
     System.out.println("addCodeBaseByCode:" + codes);
     List<JsonSuggestion> query = redis.query(category, codes);
     for (JsonSuggestion jsonSuggestion : query) {
@@ -1711,7 +1791,7 @@ public class NHIWidgetXMLService {
     }
     return s;
   }
-  
+
   private void beforeSaveMRAndOPD(long tid, MR mr, OP_D opd) {
     StringBuffer sb = new StringBuffer();
     sb.append(tid);
@@ -1721,11 +1801,11 @@ public class NHIWidgetXMLService {
     sb.append(opd.getSeqNo());
     mr.setObjective(sb.toString());
   }
-  
+
   public String newMrNote(MrNotePayload note, String mrId, boolean isMrNote) {
     MR_NOTE mn = note.toDB(Long.parseLong(mrId), isMrNote);
     mrNoteDao.save(mn);
     return null;
   }
-  
+
 }

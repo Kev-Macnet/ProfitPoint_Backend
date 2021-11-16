@@ -14,6 +14,10 @@ public enum MR_STATUS {
   DONT_CHANGE(3); // 評估不調整
 
   private int value;
+  
+  public final static int STATUS_ERROR = -100;
+  
+  public final static String STATUS_ERROR_DESC = "錯誤代碼";
 
   private MR_STATUS(int value) {
     this.value = value;
@@ -33,7 +37,26 @@ public enum MR_STATUS {
       case 2: return "優化完成";
       case 3: return "評估不調整";
     }
-    return "未知";
+    return STATUS_ERROR_DESC;
+  }
+  
+  public static int statusStringToInt(String status) {
+    if (status.equals("疾病分類完成")) {
+      return -3;
+    } else if (status.equals("待確認")) {
+      return -2;
+    } else if (status.equals("疑問標示")) {
+      return -1;
+    } else if (status.equals("待處理")) {
+      return 0;
+    } else if (status.equals("無需變更")) {
+      return 1;
+    } else if (status.equals("優化完成")) {
+      return 2;
+    } else if (status.equals("評估不調整")) {
+      return 3;
+    }
+    return STATUS_ERROR;
   }
 
   public static void main(String[] args) {

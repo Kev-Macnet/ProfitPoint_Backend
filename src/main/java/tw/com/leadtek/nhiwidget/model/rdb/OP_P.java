@@ -247,14 +247,23 @@ public class OP_P {
   private String drugSerialNo;
 
   /**
-   * 是否申報，0:不申報，1:要申報
+   * 申報狀態，1:要申報，2:下月申報，3:不申報，4:自費項目
    */
   @Column(name = "APPL_STATUS")
   @JsonIgnore
   private Integer applStatus;
   
   /**
-   * 費用狀態，1:健保給付，2:自費，3:勞保，4:其他
+   * 費用狀態，Y:自費計價 
+N:健保計價申報 
+H:健保不計價申報
+h:健保不計價申報 
+S:任何身份皆自費 
+s:任何身份皆自費
+X:不計價不申報 
+x:不計價不申報 
+Z:自費病人自費,健保病人不申報不計價
+V:虛醫令,交付調劑之藥品空針
    */
   @Column(name = "PAY_BY")
   @JsonIgnore
@@ -280,7 +289,14 @@ public class OP_P {
   @Column(name = "MR_ID", nullable = true)
   @JsonIgnore
   private Long mrId;
-
+  
+  /**
+   * 醫令於標準支付代碼中的類別代碼
+   */
+  @Column(name = "PAY_CODE_TYPE", nullable = true)
+  @JsonIgnore
+  private String payCodeType;
+  
   /**
    * 序號
    */
@@ -699,4 +715,12 @@ public class OP_P {
     this.mrId = mrId;
   }
 
+  public String getPayCodeType() {
+    return payCodeType;
+  }
+
+  public void setPayCodeType(String payCodeType) {
+    this.payCodeType = payCodeType;
+  }
+  
 }

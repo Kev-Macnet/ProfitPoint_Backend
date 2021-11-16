@@ -72,6 +72,7 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
   public RareICDPayload(CODE_THRESHOLD rareIcd) {
     id = rareIcd.getId();
     code = rareIcd.getCode();
+    name = rareIcd.getDescChi();
     sdate = rareIcd.getStartDate();
     edate = rareIcd.getEndDate();
     ip = rareIcd.getDataFormat().equals("20");
@@ -89,8 +90,8 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
     status = rareIcd.getStatus().intValue() == 1;
 
     if (rareIcd.getDataFormat().equals("00")) {
-      if (opTimesM.intValue() == ipTimesM.intValue()
-          && opTimes6M.intValue() == ipTimes6M.intValue()) {
+      if ((opTimesM != null && ipTimesM != null) && (opTimesM.intValue() == ipTimesM.intValue())
+          && (opTimes6M != null && ipTimes6M != null) && opTimes6M.intValue() == ipTimes6M.intValue()) {
         both = true;
       } else {
         both = false;
@@ -112,7 +113,7 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
 
     result.setStartDate(sdate);
     result.setEndDate(edate);
-    if (both || (ip && op)) {
+    if ((both != null && both.booleanValue())|| (ip && op)) {
       result.setDataFormat("00");
     } else if (ip) {
       result.setDataFormat("20");

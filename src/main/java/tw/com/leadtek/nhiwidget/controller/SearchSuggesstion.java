@@ -30,7 +30,7 @@ public class SearchSuggesstion extends BaseController {
   public ResponseEntity<?> suggestions(
       @ApiParam(name = "term", value = "搜尋關鍵字，若有多個用空格區隔，如\"diabetes mellitus without\"", example = "l97.") @RequestParam(required = true) String term,
       @ApiParam(name = "類別", value = "有 ICD10-PCS(處置碼), ICD10-CM(診斷碼)", example = "ICD10-CM") @RequestParam(required = false) String cat) {
-    logger.info("search:" + term + ", cat=" + cat);
+    //logger.info("search:" + term + ", cat=" + cat);
     List<JsonSuggestion> result = rs.query(cat, term.toLowerCase());
     return ResponseEntity.ok(result);
     // if (cfService.doesCfNameExist(request.getName())) {

@@ -431,7 +431,6 @@ public class ImportDRG {
   @Test
   public void updateMRTDotData() {
     List<Map<String, Object>> ipds = logDataDao.find_IPD_Dot();
-    System.out.println("list size=" + ipds.size());
     for (Map<String, Object> ipd : ipds) {
       int total = 0;
       if (ipd.get("APPL_DOT") != null) {

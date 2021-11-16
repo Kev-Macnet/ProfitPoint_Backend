@@ -231,7 +231,6 @@ public class LogDataDao {
     sql = "Update LOG_SIGNIN\r\n" + "Set LOGOUT_TM='%s'\r\n"
         + "Where (JWT='%s')and(LOGOUT_TM is null)";
     sql = String.format(sql, logoutTime, jwt);
-    System.out.println("updateSignout:" + sql);
     try {
       int ret = jdbcTemplate.update(sql);
       return ret;

@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
+import tw.com.leadtek.nhiwidget.service.RedisService;
 
 public class WriteToRedisThread implements Runnable {
 
@@ -112,13 +113,10 @@ public class WriteToRedisThread implements Runnable {
   }
 
   public boolean search(boolean needReturn) {
-    String key = "ICD10-data";
-    String indexKey = "ICD10-index:";
-
     ObjectMapper mapper = new ObjectMapper();
     ZSetOperations<String, Object> zsetOp = (ZSetOperations<String, Object>) redis.opsForZSet();
     HashOperations<String, String, String> hashOp = redis.opsForHash();
-    Set<Object> rangeSet = zsetOp.range(indexKey + searchKey, 0, -1);
+    Set<Object> rangeSet = zsetOp.range(RedisService.INDEX_KEY + searchKey, 0, -1);
 
     boolean isFound = false;
     for (Object object : rangeSet) {

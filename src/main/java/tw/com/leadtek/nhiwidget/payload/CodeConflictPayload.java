@@ -46,11 +46,11 @@ public class CodeConflictPayload extends CodeConflictListPayload implements Seri
     CODE_CONFLICT result = new CODE_CONFLICT();
     result.setId(id);
     result.setCode(code);
-    if (op && ip) {
+    if (op != null && op.booleanValue() && ip != null && ip.booleanValue()) {
       result.setDataFormat("00");
-    } else if(op) {
+    } else if(op != null && op.booleanValue()) {
       result.setDataFormat("10");
-    } else if (ip) {
+    } else if (ip != null && ip.booleanValue()) {
       result.setDataFormat("20"); 
     }
     result.setDescChi(name);

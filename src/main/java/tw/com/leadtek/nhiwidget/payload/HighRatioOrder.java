@@ -96,7 +96,8 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
 
     result.setStartDate(sdate);
     result.setEndDate(edate);
-    if (both) {
+    
+    if ((both != null && both.booleanValue())|| (ip && op)) {
       result.setDataFormat("00");
     } else if (ip) {
       result.setDataFormat("20");
@@ -105,6 +106,7 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
     } else {
       result.setDataFormat("-1");
     }
+
 
     if (opTimesStatus != null && opTimesStatus.booleanValue()) {
       result.setOpTimesStatus(1);

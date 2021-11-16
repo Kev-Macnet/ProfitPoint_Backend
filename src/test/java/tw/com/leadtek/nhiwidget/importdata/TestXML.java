@@ -44,6 +44,9 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
+import tw.com.leadtek.nhiwidget.dao.IP_PDao;
+import tw.com.leadtek.nhiwidget.dao.OP_PDao;
+import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.model.CodeBase;
 import tw.com.leadtek.nhiwidget.model.CodeMap;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
@@ -62,6 +65,15 @@ public class TestXML {
 
   @Autowired
   private CODE_TABLEDao ctDao;
+  
+  @Autowired
+  private PAY_CODEDao payCodeDao;
+  
+  @Autowired
+  private IP_PDao ippDao;
+  
+  @Autowired
+  private OP_PDao oppDao;
 
   /**
    * 測試讀取申報檔XML並寫至 mongo DB
@@ -200,7 +212,7 @@ public class TestXML {
   /**
    * 匯入XML tag定義檔，至用到的常數
    */
-  // @Ignore
+  @Ignore
   @Test
   public void readExcel() {
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\inpatient.xlsx", "IP");
@@ -726,6 +738,67 @@ public class TestXML {
     // System.out.println(
     // "================================" + groupName + "===================================");
     // printCodeBook(codes, groupName);
+  }
+
+  /**
+   * 更新IP_P, OP_P 醫令的標準代碼類別代碼
+   */
+  @Ignore
+  @Test
+  public void updateCodeTypeCode() {
+    // 1. 先將 OP_P.DRUG_NO 長度=10 的列為藥品類
+    // UPDATE OP_P SET PAY_CODE_TYPE = '7' WHERE LENGTH(DRUG_NO) = 10 
+    // 2. 再將 OP_P.DRUG_NO 長度>10 的列為不分類
+    // UPDATE OP_P SET PAY_CODE_TYPE = '20' WHERE LENGTH(DRUG_NO) > 10
+    // 3. 其餘找 OP_P.DRUG_NO = PAY_CODE.CODE 的 CODE_TYPE
+   
+    List<Object[]> codeList = payCodeDao.findAllPayCodeAndTypeCode();
+    HashMap<String, String> payCodeType = new HashMap<String, String>();
+    for (Object[] objects : codeList) {
+      payCodeType.put((String)objects[0], (String) objects[1]);
+    }
+//    
+    List<String> codes = new ArrayList<String>();
+//    List<Object[]> oppDrugNo = oppDao.findDistinctDrugNo();
+//    for (Object[] objects : oppDrugNo) {
+//      codes.add((String)objects[0]);
+//    }
+//    for (String code : codes) {
+//      System.out.println("update " + payCodeType.get(code) + "," + code);
+//      if (payCodeType.get(code) == null) {
+//        // 20 不分類
+//        oppDao.updatePayCodeType("20", code);
+//      } else {
+//        oppDao.updatePayCodeType(payCodeType.get(code), code);
+//      }
+//    }
+    
+    // 4. 最後剩下沒有支付代碼類別的全部設為不分類
+    // UPDATE OP_P SET PAY_CODE_TYPE = '20' WHERE PAY_CODE_TYPE IS NULL
+    
+    // 5. 先將 IP_P.ORDER_CODE 長度=10 的列為藥品類
+    // UPDATE IP_P SET PAY_CODE_TYPE ='7' WHERE LENGTH (ORDER_CODE) = 10
+    // 6. 再將 IP_P.ORDER_CODE 長度>10 的列為不分類
+    // UPDATE IP_P SET PAY_CODE_TYPE = '20' WHERE LENGTH(ORDER_CODE) > 10
+    // 7. 其餘找 IP_P.ORDER_CODE = PAY_CODE.CODE 的 CODE_TYPE
+    
+    codes = new ArrayList<String>();
+    List<Object[]> ippOrderCode = ippDao.findDistinctOrderCode();
+    for (Object[] objects : ippOrderCode) {
+      codes.add((String)objects[0]);
+    }
+    for (String code : codes) {
+      System.out.println("update " + payCodeType.get(code) + "," + code);
+      if (payCodeType.get(code) == null) {
+        // 20 不分類
+        ippDao.updatePayCodeType("20", code);
+      } else {
+        ippDao.updatePayCodeType(payCodeType.get(code), code);
+      }
+    }
+    
+    // 8. 最後剩下沒有支付代碼類別的全部設為不分類
+    // UPDATE IP_P SET PAY_CODE_TYPE = '20' WHERE PAY_CODE_TYPE IS NULL 
   }
 
 

@@ -35,11 +35,11 @@ public class DEPARTMENT {
   @Column(name = "CODE", length = 12)
   private String code;
   
-  @ApiModelProperty(value = "對應至健保科別名稱", example = "骨科", required = true)
+  @ApiModelProperty(value = "對應至健保科別名稱", example = "骨科", required = false)
   @Column(name = "NH_NAME", length = 20)
   private String nhName;
 
-  @ApiModelProperty(value = "對應至健保科別代碼", example = "06", required = false)
+  @ApiModelProperty(value = "對應至健保科別代碼", example = "false06", required = false)
   @Column(name = "NH_CODE", length = 12)
   private String nhCode;
 

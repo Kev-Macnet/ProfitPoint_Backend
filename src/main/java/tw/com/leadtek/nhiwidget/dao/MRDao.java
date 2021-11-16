@@ -96,4 +96,77 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Modifying
   @Query(value = "UPDATE MR SET DRG_CODE=?1 WHERE ID=?2", nativeQuery = true)
   public void updateDRG(String drg, Long mrId);
+  
+  /**
+   * 取得DRG各科, 非DRG在指定日期區間的件數及點數
+   */
+  @Query(value ="SELECT * FROM " + 
+      "(SELECT FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(APPL_DOT) AS DRG_POINT FROM MR " + 
+      " WHERE DRG_SECTION IS NOT NULL AND MR_DATE >= ?1 AND MR_DATE <= ?2 GROUP BY FUNC_TYPE) DRG," + 
+      "(SELECT FUNC_TYPE AS NONDRG_FUNC_TYPE, COUNT(1) AS NONDRG_QUANTITY, SUM(APPL_DOT) AS NONDRG_POINT FROM MR " + 
+      " WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_DATE >= ?3 AND MR_DATE <= ?4 " + 
+      " AND FUNC_TYPE IN (SELECT DISTINCT(FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL " +
+      " AND MR_DATE >= ?5 AND MR_DATE <= ?6) GROUP BY FUNC_TYPE) NODRG " +
+      "WHERE DRG.FUNC_TYPE = NODRG.NONDRG_FUNC_TYPE", nativeQuery = true)
+  public List<Object[]> countDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1, Date startDate2, Date endDate2, 
+      Date startDate3, Date endDate3);
+  
+  /**
+   * 取得DRG各科在指定日期區間的件數及點數
+   */
+  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(APPL_DOT) AS DRG_POINT FROM MR " + 
+      " WHERE DRG_SECTION IS NOT NULL AND MR_DATE >= ?1 AND MR_DATE <= ?2 GROUP BY FUNC_TYPE", nativeQuery = true)
+  public List<Object[]> countDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
+  
+  /**
+   * 取得非DRG各科在指定日期區間的件數及點數
+   */
+  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS NONDRG_QUANTITY, SUM(APPL_DOT) AS NONDRG_POINT FROM MR " + 
+      " WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_DATE >= ?1 AND MR_DATE <= ?2 GROUP BY FUNC_TYPE", nativeQuery = true)
+  public List<Object[]> countNonDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
+  
+  /**
+   * 取得DRG指定科別在指定日期區間的不同區的件數及點數
+   */
+  @Query(value="SELECT DRG_SECTION, COUNT(1) AS QUANTITY, SUM(APPL_DOT) AS POINT FROM MR " + 
+      "WHERE DRG_SECTION IS NOT NULL AND MR_DATE >= ?1 AND MR_DATE <= ?2 AND FUNC_TYPE =?3 GROUP BY DRG_SECTION", nativeQuery = true)
+  public List<Object[]> countDRGPointByFuncTypeGroupByDRGSection(Date startDate1, Date endDate1, String funcType);
+  
+  /**
+   * 取得某一年月落入DRG的所有科別
+   * @param ym 民國年
+   * @return
+   */
+  @Query(value="SELECT DISTINCT (FUNC_TYPE) FROM MR WHERE APPL_YM =?1 AND DRG_SECTION IS NOT NULL",
+      nativeQuery = true)
+  public List<Object[]> findDRGDistinctFuncTypeByApplYm(String ym);
+  
+  /**
+   * 取得曾落入DRG的所有科別
+   * @return
+   */
+  @Query(value="SELECT DISTINCT (FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL",
+      nativeQuery = true)
+  public List<Object[]> findDRGAllFuncType();
+  
+  /**
+   * 取得指定時間落入DRG的所有科別
+   * @param startDate
+   * @param endDate
+   * @return
+   */
+  @Query(value="SELECT DISTINCT (FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL AND\r\n" + 
+      "MR_DATE >= ?1 AND MR_DATE <= ?2", nativeQuery = true)
+  public List<Object[]> findDRGDistinctFuncTypeByDate(Date startDate, Date endDate);
+  
+  /**
+   * 取得某一年月落入DRG的指定科別的各區件數及點數
+   * @param ym
+   * @param funcType
+   * @return
+   */
+  @Query(value="SELECT DRG_SECTION , COUNT(1) AS DRG_COUNT, SUM(T_DOT), SUM(IP_D.MED_DOT) FROM MR, IP_D " + 
+      "WHERE APPL_YM = ?1 AND DRG_SECTION IS NOT NULL AND MR.ID = IP_D.MR_ID " + 
+      "AND MR.FUNC_TYPE = ?2 GROUP BY DRG_SECTION ", nativeQuery = true)
+  public List<Object[]> findDRGCountAndDotByApplYmGroupByDrgSection(String ym, String funcType);
 }

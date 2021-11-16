@@ -30,7 +30,7 @@ public class DateTool {
    * 將民國年月日轉成西元年月日
    * 
    * @param year ex:20210223
-   * @return ex:1100223
+   * @return Date
    */
   public static Date convertChineseToYear(String date) {
     int minguo = Integer.parseInt(date);
@@ -42,6 +42,23 @@ public class DateTool {
       e.printStackTrace();
     }
     return null;
+  }
+  
+  /**
+   * 將民國年月日轉成西元年月日
+   * 
+   * @param year ex:1100223
+   * @return ex:20210223
+   */
+  public static String convertChineseToAD(String date) {
+    int minguo = Integer.parseInt(date);
+    int dateInt = 0;
+    if (date.length() == 5) {
+      dateInt = 191100 + minguo;
+    } else if (date.length() == 7) {
+      dateInt = 19110000 + minguo;
+    }
+    return String.valueOf(dateInt);
   }
 
   /**

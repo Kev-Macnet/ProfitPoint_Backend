@@ -68,7 +68,7 @@ public class JwtUtils {
     // .compact();
     Map<String, Object> claims = new HashMap<>(16);
     claims.put(CLAIM_KEY_USERNAME, userPrincipal.getUsername());
-    //claims.put(CLAIM_KEY_USER_ID, userPrincipal.getId());
+    claims.put(CLAIM_KEY_USER_ID, userPrincipal.getId());
     claims.put(CLAIM_KEY_ROLE, userPrincipal.getRole());
     // claims.put(CLAIM_KEY_USER_IP, clientIP);
     return Jwts.builder().setClaims(claims)
@@ -86,7 +86,11 @@ public class JwtUtils {
    * 根據token獲取username
    */
   public String getUsernameFromToken(String token) throws ExpiredJwtException, SignatureException {
-    return getClaimsFromToken(token).getSubject();
+    Claims claims = getClaimsFromToken(token);
+    if (claims == null) {
+      return null;
+    }
+    return claims.getSubject();
   }
   
   /**
@@ -105,7 +109,11 @@ public class JwtUtils {
   }
 
   public String getUserID(String token) {
-    return (String) getClaimsFromToken(token).get(CLAIM_KEY_USER_ID);
+    String result = String.valueOf((Double)getClaimsFromToken(token).get(CLAIM_KEY_USER_ID));
+    if (result != null && result.endsWith(".0")) {
+      result = result.substring(0, result.length() - 2);
+    }
+    return result;
   }
 
   /**

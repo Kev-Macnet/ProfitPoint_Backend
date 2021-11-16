@@ -271,7 +271,7 @@ public class IP_P {
   private String drugSerialNo;
   
   /**
-   * 是否申報，0:不申報，1:要申報
+   * 是否申報，申報狀態，1:要申報，2:下月申報，3:不申報，4:自費項目
    */
   @Column(name = "APPL_STATUS")
   @JsonIgnore
@@ -306,6 +306,13 @@ V:虛醫令,交付調劑之藥品空針
   @Column(name = "MR_ID", nullable = true)
   @JsonIgnore
   private Long mrId;
+  
+  /**
+   * 醫令於標準支付代碼中的類別代碼
+   */
+  @Column(name = "PAY_CODE_TYPE", nullable = true)
+  @JsonIgnore
+  private String payCodeType;
 
   /**
    * 序號
@@ -752,5 +759,14 @@ V:虛醫令,交付調劑之藥品空針
   public void setMrId(Long mrId) {
     this.mrId = mrId;
   }
+
+  public String getPayCodeType() {
+    return payCodeType;
+  }
+
+  public void setPayCodeType(String payCodeType) {
+    this.payCodeType = payCodeType;
+  }
+
   
 }

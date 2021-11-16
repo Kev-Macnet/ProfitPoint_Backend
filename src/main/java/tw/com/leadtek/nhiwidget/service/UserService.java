@@ -17,7 +17,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.dao.DEPARTMENTDao;
@@ -27,7 +26,6 @@ import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.model.rdb.USER_DEPARTMENT;
 import tw.com.leadtek.nhiwidget.payload.UserRequest;
-import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 
 /**
@@ -42,7 +40,14 @@ public class UserService {
   private Logger logger = LogManager.getLogger();
 
   public final static String USER = "USER:";
-
+  
+  public final static String EDITING = "EDITING";
+  
+  /**
+   * 存放用戶正在編輯的病歷id
+   */
+  public final static String MREDIT = "MREDIT:";
+  
   @Autowired
   private USERDao userDao;
 
@@ -283,8 +288,8 @@ public class UserService {
     return null;
   }
 
-  // @PreAuthorize("hasAuthority('administrator')")
-  public List<UserRequest> getAllUser(String funcType, String funcTypeC) {
+  //@PreAuthorize("hasAuthority('B')")
+  public List<UserRequest> getAllUser(String funcType, String funcTypeC, String rocId, String name) {
     if (departments == null) {
       retrieveData();
     }
@@ -294,19 +299,33 @@ public class UserService {
     List<USER_DEPARTMENT> udList = userDepartmentDao.findAll();
     if ((funcTypeC != null && !"不分科".equals(funcTypeC))
         || (funcType != null && !"00".equals(funcType))) {
-      Long depId = null;
+      List<Long> depId = new ArrayList<Long>();
       if (funcType != null) {
-        depId = getDepartmentIdByCode(funcType);
+        String[] s = funcType.split(" ");
+        for (String string : s) {
+          Long id = getDepartmentIdByCode(string);
+          if (id != null) {
+            depId.add(id);
+          }
+        }
       } else if (funcTypeC != null) {
-        depId = getDepartmentIdByName(funcTypeC);
+        String[] s = funcTypeC.split(" ");
+        for (String string : s) {
+          Long id = getDepartmentIdByName(string);
+          if (id != null) {
+            depId.add(id);
+          }
+        }
       }
-      if (depId < 0) {
+      if (depId.size() == 0) {
         return result;
       }
       List<USER_DEPARTMENT> newUserDepartmentList = new ArrayList<USER_DEPARTMENT>();
       for (USER_DEPARTMENT ud : udList) {
-        if (ud.getDepartmentId().longValue() == depId) {
-          newUserDepartmentList.add(ud);
+        for (Long id : depId) {
+          if (ud.getDepartmentId().longValue() == id.longValue()) {
+            newUserDepartmentList.add(ud);
+          }
         }
       }
       udList = newUserDepartmentList;
@@ -316,6 +335,18 @@ public class UserService {
       if (departments.length() == 0) {
         continue;
       }
+      if (rocId != null && rocId.length() > 0) {
+        if (!user.getRocId().startsWith(rocId)) {
+          continue;
+        }
+      }
+      if (name != null && name.length() > 0) {
+        if ((user.getDisplayName() == null || !user.getDisplayName().startsWith(name)) &&
+            user.getUsername() == null || user.getUsername().startsWith(name)) {
+          continue;
+        }
+      }
+    
       UserRequest ur = new UserRequest(user);
       ur.setPassword(null);
       ur.setCreateAt(null);
@@ -327,7 +358,8 @@ public class UserService {
 
   private Long getDepartmentIdByName(String name) {
     for (DEPARTMENT dep : departments.values()) {
-      if (dep.getName().equals(name) || dep.getNhName().equals(name)) {
+      if ((dep.getName() != null && dep.getName().equals(name)) ||
+          (dep.getNhName() != null && dep.getNhName().equals(name))) {
         return dep.getId();
       }
     }
@@ -343,11 +375,30 @@ public class UserService {
     return -1L;
   }
 
-  public List<DEPARTMENT> getAllDepartment() {
+  public List<DEPARTMENT> getAllDepartment(String code, String name) {
     if (departments == null) {
       retrieveData();
     }
-    return new ArrayList<DEPARTMENT>(departments.values());
+    List<DEPARTMENT> result = new ArrayList<DEPARTMENT>();
+    List<DEPARTMENT> all = new ArrayList<DEPARTMENT>(departments.values());
+    if ((code == null || code.length() == 0) && (name == null || name.length() == 0)) {
+      return all;
+    }
+    if (code != null && code.length() > 0) {
+      for (DEPARTMENT department : all) {
+        if (department.getCode().startsWith(code)) {
+          result.add(department);
+        }
+      }
+    }
+    if (name != null && name.length() > 0) {
+      for (DEPARTMENT department : all) {
+        if (department.getName().startsWith(name)) {
+          result.add(department);
+        }
+      }
+    }
+    return result;
   }
 
   private String getDepartmentsByUserId(Long id, List<USER_DEPARTMENT> udList) {
@@ -429,7 +480,7 @@ public class UserService {
     }
   }
 
-  public boolean updateUserAlive(String username, String jwt) {
+  public boolean updateUserAlive(String username, String jwt, boolean isEditing) {
     String key = USER + username;
     Set<Object> sets = redisService.hkeys(key);
     if (sets == null || sets.size() == 0) {
@@ -443,6 +494,13 @@ public class UserService {
       }
       // 存放當下的時間
       redisService.putHash(key, jwt, String.valueOf(System.currentTimeMillis()));
+      if (!isEditing) {
+        Object mrId = redisService.hget(key, EDITING);
+        if (mrId != null) {
+          redisService.deleteHash(key, EDITING);
+          redisService.deleteHash(MREDIT + mrId);
+        }
+      }
     }
     return true;
   }
@@ -458,6 +516,17 @@ public class UserService {
         long lastUsedTimeL = Long.parseLong((String) time);
         if (System.currentTimeMillis() - lastUsedTimeL > afkTime) {
           deleteAndSaveUserLogout(key, redisService.hkeys(key));
+        }
+      }
+    }
+    
+    Set<String> mr = redisService.keys("MREDIT*");
+    for (String key : mr) {
+      Set<Object> names = redisService.hkeys(key);
+      for (Object name : names) {
+        long lastUsedTimeL = Long.parseLong((String) redisService.hget(key, (String) name));
+        if (System.currentTimeMillis() - lastUsedTimeL > afkTime) {
+          redisService.deleteHash(key, (String)name);
         }
       }
     }
