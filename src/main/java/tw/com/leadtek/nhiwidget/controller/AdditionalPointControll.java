@@ -20,6 +20,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.dto.AdditionalConditionDto;
+import tw.com.leadtek.nhiwidget.dto.AdditionalConditionListDto;
 import tw.com.leadtek.nhiwidget.dto.AdditionalConditionPl;
 import tw.com.leadtek.nhiwidget.dto.AdditionalSearchPl;
 import tw.com.leadtek.nhiwidget.dto.PlanConditionDto;
@@ -42,7 +43,7 @@ public class AdditionalPointControll {
     //==== 
     @ApiOperation(value="14.01 總額外點數條件清單", notes="", position=1)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=AdditionalConditionDto.class)
+        @ApiResponse(code = 200, message="{ ... }", response=AdditionalConditionListDto.class, responseContainer = "List")
     })
     @RequestMapping(value = "/additional/list", method = RequestMethod.POST)
     public ResponseEntity<?> additionalConditionList(@RequestHeader("Authorization") String jwt,

@@ -21,6 +21,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.dto.AdditionalConditionDto;
 import tw.com.leadtek.nhiwidget.dto.PlanConditionDto;
+import tw.com.leadtek.nhiwidget.dto.PlanConditionListDto;
 import tw.com.leadtek.nhiwidget.dto.PlanConditionPl;
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.service.PlanConditionService;
@@ -38,7 +39,7 @@ public class PlanConditionControll {
     //==== 
     @ApiOperation(value="13.01 計畫可收案病例條件清單", notes="", position=1)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=PlanConditionDto.class)
+        @ApiResponse(code = 200, message="{ ... }", response=PlanConditionListDto.class, responseContainer = "List")
     })
     @RequestMapping(value = "/plan/list", method = RequestMethod.POST)
     public ResponseEntity<?> planConditionList(@RequestHeader("Authorization") String jwt,
