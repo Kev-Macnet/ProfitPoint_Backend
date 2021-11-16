@@ -66,10 +66,11 @@ public class E2101aControll {
     private PtPsychiatricWardFeeService ptPsychiatricWardFeeService;
     @Autowired
     private PtSurgeryFeeService ptSurgeryFeeService;
-    
-    @ApiOperation(value="10-1.01 支付條件設定搜尋", notes="Result: PaymentTermsSearchDto")
+
+    // PPT Page38
+    @ApiOperation(value="10-1.01 支付條件設定搜尋(清單)", notes="")
     @ApiResponses(value={
-        @ApiResponse(code = 200, message="[{...}, {...}, ...]", response=PaymentTermsSearchDto.class)
+        @ApiResponse(code = 200, message="[{...}, {...}, ...]", response=PaymentTermsSearchDto.class, responseContainer = "List")
     })
     @RequestMapping(value = "/payment/terms/search", method = RequestMethod.POST)
     public ResponseEntity<?> paymentTermsSearh(HttpServletRequest request,
