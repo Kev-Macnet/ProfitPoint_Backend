@@ -32,7 +32,8 @@ public class AdditionalPointDao extends BaseSqlDao {
                 + "Where (1=1)\n"
                 + "  -- and (SYEAR=%d)\n"
                 + "  -- and (START_DATE='%s')\n"
-                + "  -- and (END_DATE='%s')";
+                + "  -- and (END_DATE='%s')\n"
+                + "Order By ID";
         sql = String.format(sql, syear, strStart, strEnd);
         if (syear>0) {
             sql=sql.replace("-- and (SYEAR=", " and (SYEAR=");
@@ -43,6 +44,7 @@ public class AdditionalPointDao extends BaseSqlDao {
         if (strEnd.length()>0) {
           sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
         }
+//        System.out.println("sql-46="+sql);
         logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         
@@ -67,7 +69,8 @@ public class AdditionalPointDao extends BaseSqlDao {
                 + "Where (1=1)\n"
                 + "  -- and (SYEAR=%d)\n"
                 + " and (START_DATE BETWEEN '%s' and '%s')\n"
-                + " and (END_DATE BETWEEN '%s' and '%s')\n";
+                + " and (END_DATE BETWEEN '%s' and '%s')\n"
+                + "Order By ID";
         
         sql = String.format(sql, syear, strStart, strEnd, strStart, strEnd);
         if (syear>0) {

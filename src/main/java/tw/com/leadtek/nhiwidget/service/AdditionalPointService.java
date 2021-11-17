@@ -28,12 +28,25 @@ public class AdditionalPointService {
     @Autowired
     private AdditionalPointDao additionalPointDao;
     
-    public java.util.List<Map<String, Object>> findList(java.util.Date startDate, java.util.Date endDate) {
+    public java.util.Map<String, Object> findList(java.util.Date startDate, java.util.Date endDate, int pageSize, int pageIndex) {
         java.util.List<Map<String, Object>> lst = additionalPointDao.searchAdditionalPoint(0, startDate, endDate);
         if (lst.size()==0) {
             lst = additionalPointDao.searchAdditionalPointByDateRange(0, startDate, endDate);
         }
-        return lst;
+        java.util.List<Map<String, Object>> data = new java.util.ArrayList<Map<String, Object>>();
+        long totalCount = lst.size();
+        int start = pageSize*pageIndex;
+        for (int a=start; a<start+pageSize; a++) {
+            if (a<totalCount) {
+                data.add(lst.get(a));
+            } else {
+                break;
+            }
+        }
+        java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+        retMap.put("total", totalCount);
+        retMap.put("data", data);
+        return retMap;
     }
     
     public java.util.Map<String, Object> findOne(long ap_id) {

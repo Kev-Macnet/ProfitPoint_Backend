@@ -10,18 +10,18 @@ public class PaymentTermsSearchPl {
 
     @ApiModelProperty(value="院內碼", position=1, example="abc001", required=false)
     private String feeNo;
-    
     @ApiModelProperty(value="支付標準代碼", position=2, example="def001", required=false)
     private String nhiNo;
-
     @ApiModelProperty(value="分類", position=3, example="門診診察費", required=false)
     private String category;
-    
     @ApiModelProperty(value="生效日", position=4, example="2021/07/11 (1625932800000)", required=false)
     private String start_date;
-    
     @ApiModelProperty(value="失效日", position=5, example="2021/07/29 (1627488000000)", required=false)
     private String end_date;
+    @ApiModelProperty(value="每頁筆數", position=6, example="10", required=true)
+    private int pageSize;
+    @ApiModelProperty(value="頁數(由0起算)", position=7, example="2", required=true)
+    private int pageIndex;
 
     public String getFeeNo() {
         return feeNo;
@@ -61,6 +61,22 @@ public class PaymentTermsSearchPl {
 
     public void setEnd_date(String end_date) {
         this.end_date = end_date;
+    }
+
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
+    }
+
+    public int getPageIndex() {
+        return pageIndex;
+    }
+
+    public void setPageIndex(int pageIndex) {
+        this.pageIndex = pageIndex;
     }
 
 }

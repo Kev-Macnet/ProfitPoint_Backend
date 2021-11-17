@@ -5,13 +5,10 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.dto.PlanConditionPl;
-import tw.com.leadtek.nhiwidget.dto.PlanIcdNoPl;
 import tw.com.leadtek.nhiwidget.dto.PlanLessNDayPl;
 import tw.com.leadtek.nhiwidget.dto.PlanMoreTimesPl;
 import tw.com.leadtek.nhiwidget.sql.PlanConditionDao;
-import tw.com.leadtek.tools.Utility;
 
 @Service
 public class PlanConditionService {
@@ -20,8 +17,22 @@ public class PlanConditionService {
     @Autowired
     private PlanConditionDao planConditionDao;
     
-    public java.util.List<Map<String, Object>> findList(String searchName) {
-        return planConditionDao.findList(searchName);
+    public java.util.Map<String, Object> findList(String searchName, int pageSize, int pageIndex) {
+        java.util.List<Map<String, Object>> lst = planConditionDao.findList(searchName);
+        java.util.List<Map<String, Object>> data = new java.util.ArrayList<Map<String, Object>>();
+        long totalCount = lst.size();
+        int start = pageSize*pageIndex;
+        for (int a=start; a<start+pageSize; a++) {
+            if (a<totalCount) {
+                data.add(lst.get(a));
+            } else {
+                break;
+            }
+        }
+        java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+        retMap.put("total", totalCount);
+        retMap.put("data", data);
+        return retMap;
     }
     
     public java.util.Map<String, Object> findOne(long id) {
@@ -62,7 +73,6 @@ public class PlanConditionService {
 //        java.util.Map<String, Object> mapPlan = planConditionDao.findOne(params.getName(), params.getDivision());
         if (new_id > 0) {
             int cnt=1;
-//            long id = (long)mapPlan.get("id");
             if (params.getIcd_no()!=null) {
                 planConditionDao.delIcdNo(new_id);
                 for (String icd_no : params.getIcd_no()) {

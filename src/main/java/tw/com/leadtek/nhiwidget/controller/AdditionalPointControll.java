@@ -1,8 +1,6 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
@@ -20,14 +17,11 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.dto.AdditionalConditionDto;
-import tw.com.leadtek.nhiwidget.dto.AdditionalConditionListDto;
+import tw.com.leadtek.nhiwidget.dto.AdditionalSearchListDto;
 import tw.com.leadtek.nhiwidget.dto.AdditionalConditionPl;
 import tw.com.leadtek.nhiwidget.dto.AdditionalSearchPl;
-import tw.com.leadtek.nhiwidget.dto.PlanConditionDto;
-import tw.com.leadtek.nhiwidget.dto.PlanConditionPl;
 import tw.com.leadtek.nhiwidget.service.AdditionalPointService;
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
-import tw.com.leadtek.nhiwidget.service.PlanConditionService;
 import tw.com.leadtek.tools.Utility;
 
 @Api(value = "參數設定-總額外點數條件 API", tags = {"14 參數設定-總額外點數條件"})
@@ -43,7 +37,7 @@ public class AdditionalPointControll {
     //==== 
     @ApiOperation(value="14.01 總額外點數條件清單", notes="", position=1)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=AdditionalConditionListDto.class, responseContainer = "List")
+        @ApiResponse(code = 200, message="{ ... }", response=AdditionalSearchListDto.class) //, responseContainer = "List"
     })
     @RequestMapping(value = "/additional/list", method = RequestMethod.POST)
     public ResponseEntity<?> additionalConditionList(@RequestHeader("Authorization") String jwt,
@@ -56,7 +50,7 @@ public class AdditionalPointControll {
             java.util.Date da1 = Utility.detectDate(params.getStart_date());
             java.util.Date da2 = Utility.detectDate(params.getEnd_date());
 
-            java.util.List<Map<String, Object>> retMap = additionalPointService.findList(da1, da2);
+            java.util.Map<String, Object> retMap = additionalPointService.findList(da1, da2, params.getPageSize(), params.getPageIndex());
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }

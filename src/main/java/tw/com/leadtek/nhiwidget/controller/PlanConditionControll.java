@@ -20,9 +20,11 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.dto.AdditionalConditionDto;
+import tw.com.leadtek.nhiwidget.dto.AdditionalSearchPl;
 import tw.com.leadtek.nhiwidget.dto.PlanConditionDto;
-import tw.com.leadtek.nhiwidget.dto.PlanConditionListDto;
 import tw.com.leadtek.nhiwidget.dto.PlanConditionPl;
+import tw.com.leadtek.nhiwidget.dto.PlanSearchListDto;
+import tw.com.leadtek.nhiwidget.dto.PlanSearchPl;
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.service.PlanConditionService;
 
@@ -39,20 +41,20 @@ public class PlanConditionControll {
     //==== 
     @ApiOperation(value="13.01 計畫可收案病例條件清單", notes="", position=1)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=PlanConditionListDto.class, responseContainer = "List")
+        @ApiResponse(code = 200, message="{ ... }", response=PlanSearchListDto.class) //, responseContainer = "List"
     })
     @RequestMapping(value = "/plan/list", method = RequestMethod.POST)
     public ResponseEntity<?> planConditionList(@RequestHeader("Authorization") String jwt,
-            @RequestParam(required=false, defaultValue="") String searchName) throws Exception {
+            @RequestBody PlanSearchPl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
-            if (searchName==null) {
-                searchName= "";
+            if (params.getSearchName()==null) {
+                params.setSearchName("");
             }
-            java.util.List<Map<String, Object>> retMap = planConditionService.findList(searchName);
+            java.util.Map<String, Object> retMap = planConditionService.findList(params.getSearchName(), params.getPageSize(), params.getPageIndex());
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }

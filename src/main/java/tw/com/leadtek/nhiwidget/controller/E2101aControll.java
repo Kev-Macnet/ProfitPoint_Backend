@@ -70,7 +70,7 @@ public class E2101aControll {
     // PPT Page38
     @ApiOperation(value="10-1.01 支付條件設定搜尋(清單)", notes="")
     @ApiResponses(value={
-        @ApiResponse(code = 200, message="[{...}, {...}, ...]", response=PaymentTermsSearchDto.class, responseContainer = "List")
+        @ApiResponse(code = 200, message="[{...}, {...}, ...]", response=PaymentTermsSearchDto.class)
     })
     @RequestMapping(value = "/payment/terms/search", method = RequestMethod.POST)
     public ResponseEntity<?> paymentTermsSearh(HttpServletRequest request,
@@ -85,8 +85,9 @@ public class E2101aControll {
             String feeNo = (params.getFeeNo()==null) ? "" : params.getFeeNo();
             String nhiNo = (params.getNhiNo()==null) ? "" : params.getNhiNo();
             String category = (params.getCategory()==null) ? "" : params.getCategory();
-            List<Map<String, Object>> retList = paymentTermsService.searchPaymentTerms(feeNo, nhiNo, category, da1, da2);
-            return new ResponseEntity<>(retList, HttpStatus.OK);
+            java.util.Map<String, Object> retMap = paymentTermsService.searchPaymentTerms(feeNo, nhiNo, category, da1, da2, 
+                    params.getPageSize(), params.getPageIndex());
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
     

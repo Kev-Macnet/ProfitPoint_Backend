@@ -4,7 +4,32 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "計畫可收案病例清單 DTO")
-public class PlanConditionListDto {
+public class PlanSearchListDto {
+    @ApiModelProperty(value="資料總筆數", example="76", required=true, position=1)
+    private long total;
+    
+    @ApiModelProperty(value="資料", required=true, position=2)
+    private java.util.List<PlanSearchListData> data;
+
+    public long getTotal() {
+        return total;
+    }
+
+    public void setTotal(long total) {
+        this.total = total;
+    }
+
+    public java.util.List<PlanSearchListData> getData() {
+        return data;
+    }
+
+    public void setData(java.util.List<PlanSearchListData> data) {
+        this.data = data;
+    }
+
+}
+
+class PlanSearchListData {
     @ApiModelProperty(value="代碼", example="000001", required=true, position=1)
     private long id;
     @ApiModelProperty(value="計畫名稱", example="星光計畫", required=true, position=2)

@@ -23,7 +23,9 @@ public class PlanConditionDao extends BaseSqlDao {
         sql = "Select ID, NAME, DIVISION, ACTIVE\n"
                 + "From PLAN_CONDITION\n"
                 + "Where(1=1) \n"
-                + "  -- and(NAME like '%%%s%%')";
+                + "  -- and(NAME like '%%%s%%')\n"
+                + "Order By ID";
+                
         sql = String.format(sql, searchName);
         if (searchName.length()>0) {
             sql = sql.replace("-- and(NAME", " and(NAME");
