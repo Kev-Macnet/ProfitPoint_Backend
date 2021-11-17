@@ -100,6 +100,9 @@ public class JwtUtils {
     return claims.getSubject();
   }
   
+  public Long getUserIdFromClaims(Claims claims)  throws ExpiredJwtException, SignatureException {
+    return ((Double) claims.get(CLAIM_KEY_USER_ID)).longValue();
+  }
   
   /**
    * 根據Claims獲取role

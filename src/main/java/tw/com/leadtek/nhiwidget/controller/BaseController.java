@@ -80,6 +80,29 @@ public class BaseController {
     return userDetails;
   }
   
+  /**
+   * 比對orderBy欄位是否存在用
+   * @param className
+   * @param field
+   * @return
+   */
+  public static boolean findDeclaredMethod(String className, String field) {
+    try {
+      Class<?> c = Class.forName(className);
+      String functionName = field.substring(0, 1).toUpperCase() + field.substring(1);
+      c.getDeclaredMethod("get" + functionName, null);
+      return true;
+    } catch (ClassNotFoundException e) {
+      e.printStackTrace();
+    } catch (NoSuchMethodException e) {
+      e.printStackTrace();
+    } catch (SecurityException e) {
+      e.printStackTrace();
+    }
+    return false;
+  }
+  
+  
 //  public boolean checkUserAuthority(UserDetailsImpl userDetails, String menuName, boolean isEditable) {
 //    List<LeftMenu> menus = userService.getUserMenus(userDetails.getId());
 //    for (LeftMenu leftMenu : menus) {

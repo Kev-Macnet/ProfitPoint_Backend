@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -37,14 +38,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
+import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.IP_TDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
-import tw.com.leadtek.nhiwidget.dao.MR_CHECKEDDao;
 import tw.com.leadtek.nhiwidget.dao.MR_NOTEDao;
+import tw.com.leadtek.nhiwidget.dao.MR_NOTICEDao;
+import tw.com.leadtek.nhiwidget.dao.MY_MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.OP_TDao;
@@ -59,20 +62,26 @@ import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_T;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTE;
+import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTICE;
+import tw.com.leadtek.nhiwidget.model.rdb.MY_MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_DData;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
+import tw.com.leadtek.nhiwidget.model.rdb.USER;
+import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.MO;
 import tw.com.leadtek.nhiwidget.payload.MRCount;
 import tw.com.leadtek.nhiwidget.payload.MRCountResponse;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.MRResponse;
 import tw.com.leadtek.nhiwidget.payload.MRStatusCount;
+import tw.com.leadtek.nhiwidget.payload.MrNoteListResponse;
 import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
-import tw.com.leadtek.nhiwidget.payload.QuickSearchResponse;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
+import tw.com.leadtek.nhiwidget.payload.my.MyOrderListResponse;
+import tw.com.leadtek.nhiwidget.payload.my.MyOrderPayload;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.tools.DateTool;
@@ -123,10 +132,13 @@ public class NHIWidgetXMLService {
   private RedisService redis;
 
   @Autowired
-  private CodeTableService cts;
+  private CodeTableService codeTableService;
 
   @Autowired
-  private MR_CHECKEDDao mrCheckedDao;
+  private MY_MRDao myMrDao;
+
+  @Autowired
+  private MR_NOTICEDao mrNoticeDao;
 
   @Autowired
   private ParametersService parameters;
@@ -142,6 +154,9 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private JwtUtils jwtUtils;
+
+  @Autowired
+  private UserService userService;
 
   public void saveOP(OP op) {
     OP_T opt = saveOPT(op.getTdata());
@@ -183,7 +198,7 @@ public class NHIWidgetXMLService {
       timeAllMR += timeMR;
       // System.out.println("timeMR=" + timeMR + " ms");
       long timeOpd = System.currentTimeMillis();
-      CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", opd.getIcdCm1());
+      CODE_TABLE ct = codeTableService.getCodeTable("INFECTIOUS", opd.getIcdCm1());
       mr.setInfectious((ct == null) ? 0 : 1);
       opd.setMrId(mr.getId());
       opd = opdDao.save(opd);
@@ -262,7 +277,7 @@ public class NHIWidgetXMLService {
       mr.setStatus(MR_STATUS.NO_CHANGE.value());
       mr.setApplYm(opt.getFeeYm());
       // beforeSaveMRAndOPD(opt.getId(), mr, opd);
-      CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", opd.getIcdCm1());
+      CODE_TABLE ct = codeTableService.getCodeTable("INFECTIOUS", opd.getIcdCm1());
       mr.setInfectious((ct == null) ? 0 : 1);
       mr = mrDao.save(mr);
       opd.setMrId(mr.getId());
@@ -334,7 +349,7 @@ public class NHIWidgetXMLService {
       mr = mrDao.save(mr);
       // startMR = System.currentTimeMillis() - startMR;
       // System.out.println("save MR:" + startMR + " ms");
-      CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", ipd.getIcdCm1());
+      CODE_TABLE ct = codeTableService.getCodeTable("INFECTIOUS", ipd.getIcdCm1());
       mr.setInfectious((ct == null) ? 0 : 1);
       ipd.setMrId(mr.getId());
 
@@ -1046,7 +1061,7 @@ public class NHIWidgetXMLService {
         }
         count++;
         if (count >= min && count <= max) {
-          mrList.add(new MRResponse(mrDb, cts));
+          mrList.add(new MRResponse(mrDb, codeTableService));
         }
         updateMRStatusCount(mrDb, mc);
       }
@@ -1086,7 +1101,7 @@ public class NHIWidgetXMLService {
       String drg, String drgSection, String orderCode, String inhCode, String drugUse,
       String inhCodeDrugUse, String icdAll, String icdCMMajor, String icdCMSecondary, String icdPCS,
       String qrObject, String qrSdate, String qrEdate, String status, String deductedCode,
-      String deductedOrder, String all, String patientName, String patientId, String pharId, 
+      String deductedOrder, String all, String patientName, String patientId, String pharId,
       int perPage, int page) {
 
     Map<String, Object> result = new HashMap<String, Object>();
@@ -1180,7 +1195,7 @@ public class NHIWidgetXMLService {
     if (pages != null && pages.getSize() > 0) {
       for (MR mrDb : pages) {
         updateMRStatusCount(mrDb, mc);
-        MRResponse mrr = new MRResponse(mrDb, cts);
+        MRResponse mrr = new MRResponse(mrDb, codeTableService);
         mrList.add(mrr);
         try {
           String json = objectMapper.writeValueAsString(mrr);
@@ -1216,54 +1231,6 @@ public class NHIWidgetXMLService {
     }
 
     return new HashMap<String, Object>();
-  }
-
-  public Map<String, Object> quickSearch(int perPage, int page, String startDate, String endDate,
-      Integer minPoints, Integer maxPoints, String dataFormat, String funcType, String orderCode,
-      String inhCode, String icdCMMajor) {
-
-    List<QuickSearchResponse> qsList = new ArrayList<QuickSearchResponse>();
-    Map<String, Object> result = new HashMap<String, Object>();
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-    try {
-      Date sDate = (startDate == null || startDate.length() == 0) ? null
-          : new Date(sdf.parse(startDate).getTime());
-      Date eDate = (endDate == null || endDate.length() == 0) ? null
-          : new Date(sdf.parse(endDate).getTime());
-
-
-      Map<String, Object> mrMap =
-          getMR(page, perPage, false, sDate, eDate, null, minPoints, maxPoints, dataFormat,
-              funcType, null, null, null, null, null, null, null, null, null, null, null, null, null);
-
-      if (mrMap == null || mrMap.get("mr") == null) {
-        return new HashMap<String, Object>();
-      }
-      List<Long> ids = new ArrayList<Long>();
-      for (MR mr : (List<MR>) mrMap.get("mr")) {
-        qsList.add(new QuickSearchResponse(mr, cts.getDesc("FUNC_TYPE", mr.getFuncType())));
-        ids.add(mr.getId());
-      }
-      List<Map<String, Object>> reasons = mrCheckedDao.queryMRChecked(ids);
-      for (Map<String, Object> map : reasons) {
-        Long id = (Long) map.get("MRID");
-        String reason = (String) map.get("REASON");
-        String detail = (String) map.get("DETAIL");
-        for (QuickSearchResponse qsr : qsList) {
-          if (qsr.getId().longValue() == id.longValue()) {
-            qsr.setDetail(detail);
-            qsr.setReason(reason);
-            break;
-          }
-        }
-      }
-      result.put("totalPage", mrMap.get("totalPage"));
-      result.put("qs", qsList);
-      return result;
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
-    return result;
   }
 
   private void addPredicate(Root<MR> root, List<Predicate> predicate, CriteriaBuilder cb,
@@ -1405,8 +1372,9 @@ public class NHIWidgetXMLService {
           }
         }
       } else {
-        Map<String, Object> map = getMR(0, 1000000, false, sDate, eDate, null, null, null,
-            dataFormat, funcType, prsnId, null, applId, null, null, null, null, null, null, null, null, null, null);
+        Map<String, Object> map =
+            getMR(0, 1000000, false, sDate, eDate, null, null, null, dataFormat, funcType, prsnId,
+                null, applId, null, null, null, null, null, null, null, null, null, null);
         if (map.get("mr") != null) {
           List<MR> mrList = (List<MR>) map.get("mr");
           for (MR mr : mrList) {
@@ -1508,37 +1476,38 @@ public class NHIWidgetXMLService {
     return result;
   }
 
-  public MRDetail getMRDetail(String id) {
+  public MRDetail getMRDetail(long id, UserDetailsImpl user) {
     MRDetail result = null;
-    MR mr = mrDao.findById(Long.parseLong(id)).orElse(null);
+    MR mr = mrDao.findById(id).orElse(null);
     if (mr != null) {
       result = new MRDetail(mr);
       if (XMLConstant.DATA_FORMAT_OP.equals(result.getDataFormat())) {
         OP_D opD = opdDao.getOne(result.getdId());
-        result.setOPDData(opD, cts);
+        result.setOPDData(opD, codeTableService);
 
         List<OP_P> oppList = oppDao.findByOpdIdOrderByOrderSeqNo(opD.getId());
         List<MO> moList = new ArrayList<MO>();
         for (OP_P op_P : oppList) {
           MO mo = new MO();
-          mo.setOPPData(op_P, cts);
+          mo.setOPPData(op_P, codeTableService);
           moList.add(mo);
         }
         result.setMos(moList);
       } else if (XMLConstant.DATA_FORMAT_IP.equals(result.getDataFormat())) {
         IP_D ipD = ipdDao.getOne(result.getdId());
-        result.setIPDData(ipD, cts);
+        result.setIPDData(ipD, codeTableService);
 
         List<IP_P> ippList = ippDao.findByIpdIdOrderByOrderSeqNo(ipD.getId());
         List<MO> moList = new ArrayList<MO>();
         for (IP_P ip_P : ippList) {
           MO mo = new MO();
-          mo.setIPPData(ip_P, cts);
+          mo.setIPPData(ip_P, codeTableService);
           moList.add(mo);
         }
         result.setMos(moList);
       }
       getMRNote(result);
+      updateMRReaded(id, user);
     }
     return result;
   }
@@ -1571,7 +1540,35 @@ public class NHIWidgetXMLService {
     redisService.putHash(userKey, UserService.EDITING, String.valueOf(id));
     return null;
   }
-  
+
+  /**
+   * 取得該病歷的所有資料備註或核刪註記
+   * @param id
+   * @param user
+   * @param isNote
+   * @return
+   */
+  public MrNoteListResponse getMRNote(long id, UserDetailsImpl user, boolean isNote) {
+    MrNoteListResponse result = new MrNoteListResponse();
+    MR mr = mrDao.findById(id).orElse(null);
+    if (mr == null) {
+      result.setMessage("病歷id" + id + "不存在");
+      result.setResult(BaseResponse.ERROR);
+    }
+    
+    List<MR_NOTE> list = mrNoteDao.findByMrIdOrderById(id);
+    List<MrNotePayload> data = new ArrayList<MrNotePayload>();
+    for (MR_NOTE note : list) {
+      if (isNote && note.getNoteType() == 1) {
+        data.add(new MrNotePayload(note));
+      } else if (!isNote && note.getNoteType() == 2) {
+        data.add(new MrNotePayload(note));
+      }
+    }
+    result.setData(data);
+    return result;
+  }
+
   public String updateMRStatus(long id, UserDetailsImpl user, int status) {
     MR mr = mrDao.findById(id).orElse(null);
     if (mr == null) {
@@ -1579,8 +1576,22 @@ public class NHIWidgetXMLService {
     }
     mr.setStatus(status);
     mr.setApplName(user.getUsername());
-    mr.setApplId(String.valueOf(user.getId()));
+    mr.setApplId(userService.findUserById(user.getId()).getRocId());
     mrDao.save(mr);
+
+    MY_MR myMr = myMrDao.findByMrId(id);
+    if (myMr == null) {
+      if (status == MR_STATUS.WAIT_PROCESS.value() || status == MR_STATUS.QUESTION_MARK.value()) {
+        myMr = new MY_MR(mr);
+        myMr.setApplUserId(user.getId());
+        myMr.setPrsnUserId(userService.getUserIdByName(mr.getPrsnName()));
+        myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
+        myMrDao.save(myMr);
+      }
+    } else {
+      myMr.setStatus(status);
+      myMrDao.save(myMr);
+    }
     return null;
   }
 
@@ -1607,11 +1618,11 @@ public class NHIWidgetXMLService {
       result.setError("id:" + mrDetail.getId() + " 不存在");
       return result;
     }
-    
+
     String key = UserService.MREDIT + mrDetail.getId();
     Set<Object> sets = redisService.hkeys(key);
     if (sets != null && sets.size() > 0) {
-        redisService.deleteHash(key, jwt);
+      redisService.deleteHash(key, jwt);
     } else {
       result = new MRDetail();
       result.setError("編輯時間已逾時");
@@ -1619,7 +1630,7 @@ public class NHIWidgetXMLService {
     }
     String userKey = UserService.USER + jwtUtils.getUsernameFromToken(jwt);
     redisService.deleteHash(userKey, UserService.EDITING);
-    
+
     mr.updateMR(mrDetail);
     if (XMLConstant.DATA_FORMAT_OP.equals(mrDetail.getDataFormat())) {
       OP_D opD = opdDao.getOne(mr.getdId());
@@ -1808,4 +1819,261 @@ public class NHIWidgetXMLService {
     return null;
   }
 
+  public MyOrderListResponse getMyTodoList(UserDetailsImpl user, String orderBy, Boolean asc,
+      int perPage, int page, boolean isDoctor) {
+    MyOrderListResponse result = new MyOrderListResponse();
+
+    Specification<MY_MR> spec = new Specification<MY_MR>() {
+
+      private static final long serialVersionUID = 1001L;
+
+      public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (ROLE_TYPE.DOCTOR.getRole().equals(user.getRole())) {
+          predicate.add(cb.equal(root.get("prsnUserId"), user.getId()));
+        } else if (ROLE_TYPE.APPL.getRole().equals(user.getRole())) {
+          predicate.add(cb.equal(root.get("applUserId"), user.getId()));
+        }
+        if (isDoctor) {
+          predicate.add(cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value()));
+        } else {
+          predicate.add(cb.or(cb.equal(root.get("status"), MR_STATUS.WAIT_PROCESS.value()),
+              cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value())));
+        }
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+
+        List<Order> orderList = new ArrayList<Order>();
+        if (orderBy != null && asc != null) {
+          if (asc.booleanValue()) {
+            orderList.add(cb.asc(root.get(orderBy)));
+          } else {
+            orderList.add(cb.desc(root.get(orderBy)));
+          }
+        } else {
+          orderList.add(cb.desc(root.get("startDate")));
+        }
+        query.orderBy(orderList);
+        return query.getRestriction();
+      }
+    };
+    result.setCount((int) myMrDao.count(spec));
+    Page<MY_MR> pages = myMrDao.findAll(spec, PageRequest.of(page, perPage));
+    List<MyOrderPayload> list = new ArrayList<MyOrderPayload>();
+    if (pages != null && pages.getSize() > 0) {
+      for (MY_MR p : pages) {
+        MyOrderPayload ap = new MyOrderPayload(p);
+        if (p.getNoticeName() != null && p.getReadedName() != null
+            && ROLE_TYPE.DOCTOR.getRole().equals(user.getRole()) && isDoctor) {
+          if (p.getReadedName().indexOf(user.getUsername()) > -1) {
+            ap.setReadedStatus("已讀取");
+          } else {
+            ap.setReadedStatus("未讀取");
+          }
+        }
+        list.add(ap);
+      }
+    }
+    result.setTotalPage(Utility.getTotalPage(result.getCount(), perPage));
+    result.setData(list);
+    result.setQuestionMark(getCountOfQuestionMark(user, isDoctor));
+    if (isDoctor) {
+      result.setReaded(getCountOfReaded(user));
+      result.setUnread(result.getQuestionMark().intValue() - result.getReaded().intValue());
+    } else {
+      result.setWaitProcess(getCountOfWaitProcess(user));
+    }
+    return result;
+  }
+
+  /**
+   * 取得待處理病歷數
+   * 
+   * @param user
+   * @return
+   */
+  private int getCountOfWaitProcess(UserDetailsImpl user) {
+
+    Specification<MY_MR> spec = new Specification<MY_MR>() {
+
+      private static final long serialVersionUID = 1002L;
+
+      public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (ROLE_TYPE.APPL.getRole().equals(user.getRole())) {
+          predicate.add(cb.equal(root.get("applUserId"), user.getId()));
+        }
+        predicate.add(cb.equal(root.get("status"), MR_STATUS.WAIT_PROCESS.value()));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        return query.getRestriction();
+      }
+    };
+    return (int) myMrDao.count(spec);
+  }
+
+  /**
+   * 取得疑問標示病歷數
+   * 
+   * @param user
+   * @return
+   */
+  private int getCountOfQuestionMark(UserDetailsImpl user, boolean isDoctor) {
+
+    Specification<MY_MR> spec = new Specification<MY_MR>() {
+
+      private static final long serialVersionUID = 1003L;
+
+      public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (ROLE_TYPE.APPL.getRole().equals(user.getRole()) && !isDoctor) {
+          predicate.add(cb.equal(root.get("applUserId"), user.getId()));
+        } else if (ROLE_TYPE.DOCTOR.getRole().equals(user.getRole()) && isDoctor) {
+          predicate.add(cb.equal(root.get("prsnUserId"), user.getId()));
+        }
+        predicate.add(cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value()));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        return query.getRestriction();
+      }
+    };
+    return (int) myMrDao.count(spec);
+  }
+
+  /**
+   * 取得疑問標示病歷數
+   * 
+   * @param user
+   * @param readed true:已讀取，false:未讀取
+   * @return
+   */
+  private int getCountOfReaded(UserDetailsImpl user) {
+
+    Specification<MY_MR> spec = new Specification<MY_MR>() {
+
+      private static final long serialVersionUID = 1003L;
+
+      public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (ROLE_TYPE.DOCTOR.getRole().equals(user.getRole())) {
+          predicate.add(cb.equal(root.get("prsnUserId"), user.getId()));
+          predicate.add(cb.like(root.get("readedName"), root.get("%" + user.getUsername() + "%")));
+        } else {
+          predicate.add(cb.isNotNull(root.get("readedName")));
+        }
+        predicate.add(cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value()));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        return query.getRestriction();
+      }
+    };
+    return (int) myMrDao.count(spec);
+  }
+
+  public String sendNotice(long mrId, UserDetailsImpl user, String doctorId) {
+    MR mr = mrDao.findById(mrId).orElse(null);
+    if (mr == null) {
+      return "病歷id:" + mrId + "不存在";
+    }
+    String[] ids = splitBySpace(doctorId);
+    if (ids == null || ids.length == 0) {
+      return "接收人員id有誤";
+    }
+    String receiver = getAllUserName(ids);
+    MY_MR myMr = myMrDao.findByMrId(mrId);
+    if (myMr == null) {
+      myMr = new MY_MR(mr);
+      myMr.setPrsnUserId(userService.getUserIdByName(mr.getPrsnName()));
+      myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
+    }
+    myMr.setApplUserId(user.getId());
+    myMr.setNoticeName(receiver);
+    myMr.setNoticePpl(ids.length);
+    System.out.println("myMr = " + myMr);
+    myMr.setNoticeSeq(myMr.getNoticeSeq().intValue() + 1);
+    myMr.setNoticeTimes(myMr.getNoticeTimes().intValue() + 1);
+    myMr.setNoticeDate(new java.util.Date());
+    myMr.setReadedPpl(0);
+    myMr.setReadedName(null);
+    myMr.setStatus(MR_STATUS.QUESTION_MARK.value());
+    myMrDao.save(myMr);
+
+    MR_NOTICE notice = new MR_NOTICE(myMr);
+    StringBuffer sb = new StringBuffer(",");
+    for (String string : ids) {
+      sb.append(string);
+      sb.append(",");
+    }
+    notice.setReceiveUserId(sb.toString());
+    mrNoticeDao.save(notice);
+    return null;
+  }
+
+  private String[] splitBySpace(String s) {
+    if (s == null || s.length() < 1) {
+      return new String[0];
+    }
+    if (s.indexOf(' ') < 0) {
+      return new String[] {s};
+    }
+    return s.split(" ");
+  }
+
+  private String getAllUserName(String[] ids) {
+    if (ids == null || ids.length == 0) {
+      return null;
+    }
+    StringBuffer sb = new StringBuffer(",");
+    for (String id : ids) {
+      USER user = userService.findUserById(Long.parseLong(id));
+      if (user != null) {
+        sb.append(user.getUsername());
+        sb.append(",");
+      }
+    }
+    if (sb.length() == 1) {
+      return null;
+    }
+    return sb.toString();
+  }
+
+  private void updateMRReaded(long mrId, UserDetailsImpl user) {
+    List<MR_NOTICE> list =
+        mrNoticeDao.findByMrIdAndStatusAndReceiveUserIdContainingOrderByNoticeDateDesc(mrId, 0,
+            "," + String.valueOf(user.getId()) + ",");
+    for (int i = 0; i < list.size(); i++) {
+      MR_NOTICE mn = list.get(i);
+      if (mn.getReadedName() != null && mn.getReadedName().indexOf(user.getUsername()) > -1) {
+        // 之前已讀取過
+        continue;
+      }
+      if (mn.getReadedName() == null) {
+        mn.setReadedName("," + user.getUsername() + ",");
+      } else {
+        mn.setReadedName(mn.getReadedName() + user.getUsername() + ",");
+      }
+      mn.setReadedPpl(mn.getReadedPpl().intValue() + 1);
+      if (mn.getNoticePpl().intValue() == mn.getReadedPpl().intValue()) {
+        mn.setStatus(1);
+      }
+      mrNoticeDao.save(mn);
+
+      if (i == 0) {
+        // 最新一則
+        MY_MR myMr = myMrDao.findByMrId(mrId);
+        if (myMr == null) {
+          System.err.println("MY_MR id:" + mrId + " not found!");
+          logger.error("MY_MR id:" + mrId + " not found!");
+        } else {
+          myMr.setReadedName(mn.getReadedName());
+          myMr.setReadedPpl(mn.getReadedPpl());
+          myMrDao.save(myMr);
+        }
+      }
+    }
+  }
 }

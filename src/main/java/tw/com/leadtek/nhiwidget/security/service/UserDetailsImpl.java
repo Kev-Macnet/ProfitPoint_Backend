@@ -52,7 +52,7 @@ public class UserDetailsImpl implements UserDetails {
   }
 
   public static UserDetailsImpl build(USER user) {
-    logger.info("UserDetailsImpl build user:" + user.getUsername());
+//    logger.info("UserDetailsImpl build user:" + user.getUsername());
     return new UserDetailsImpl(user.getId(), user.getUsername(), user.getDisplayName(),
         user.getEmail(), user.getPassword(), getAuthority(user.getRole()), user.getRole());
   }

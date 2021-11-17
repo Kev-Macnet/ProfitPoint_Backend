@@ -51,7 +51,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         }
         // UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         UserDetails userDetails =
-            userDetailsService.build(username, jwtUtils.getRoleFromClaims(claims));
+            userDetailsService.build(username, jwtUtils.getRoleFromClaims(claims), jwtUtils.getUserIdFromClaims(claims));
         // for (GrantedAuthority authority : userDetails.getAuthorities()) {
         // logger.info("authority:" + authority.getAuthority());
         // }

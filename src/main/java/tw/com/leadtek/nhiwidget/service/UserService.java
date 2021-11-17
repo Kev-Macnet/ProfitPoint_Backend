@@ -176,6 +176,14 @@ public class UserService {
     Optional<USER> user = userDao.findByUsername(username);
     return user.orElse(null);
   }
+  
+  public USER findUserById(long id) {
+    Optional<USER> optional = userDao.findById(id);
+    if (optional.isPresent()) {
+      return optional.get();
+    }
+    return null;
+  }
 
   public String deleteUser(Long id) {
     Optional<USER> optional = userDao.findById(id);
@@ -532,4 +540,11 @@ public class UserService {
     }
   }
   
+  public long getUserIdByName(String name) {
+    USER user = findUser(name);
+    if (user != null) {
+      return user.getId();
+    }
+    return -1;
+  }
 }
