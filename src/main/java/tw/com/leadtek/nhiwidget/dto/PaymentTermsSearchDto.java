@@ -9,8 +9,19 @@ public class PaymentTermsSearchDto {
     @ApiModelProperty(value="資料總筆數", example="76", required=true, position=1)
     private long total;
     
-    @ApiModelProperty(value="資料", required=true, position=2)
+    @ApiModelProperty(value="總頁數", example="5", required=true, position=2)
+    private long pages;
+    
+    @ApiModelProperty(value="資料", required=true, position=3)
     private java.util.List<PaymentTermsSearchData> data;
+
+    public long getPages() {
+        return pages;
+    }
+
+    public void setPages(long pages) {
+        this.pages = pages;
+    }
 
     public long getTotal() {
         return total;

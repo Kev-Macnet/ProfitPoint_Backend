@@ -17,16 +17,35 @@ public class PlanConditionDao extends BaseSqlDao {
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;
+    
+    public long findListCount(String searchName) {
+        String sql;
+        sql = "Select Count(*) as CNT\n"
+                + "From PLAN_CONDITION\n"
+                + "Where(1=1) \n"
+                + "  -- and(NAME like '%%%s%%')";
+        sql = String.format(sql, searchName);
+        if (searchName.length()>0) {
+            sql = sql.replace("-- and(NAME", " and(NAME");
+        }
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        if (lst.size()>0) {
+            return (long)lst.get(0).get("CNT");
+        } else {
+            return 0l;
+        }
+    }
 
-    public java.util.List<Map<String, Object>> findList(String searchName) {
+    public java.util.List<Map<String, Object>> findList(String searchName, int start, int pageSize) {
         String sql;
         sql = "Select ID, NAME, DIVISION, ACTIVE\n"
                 + "From PLAN_CONDITION\n"
                 + "Where(1=1) \n"
                 + "  -- and(NAME like '%%%s%%')\n"
-                + "Order By ID";
+                + "Order By ID\n"
+                + "limit %d offset %d";
                 
-        sql = String.format(sql, searchName);
+        sql = String.format(sql, searchName, pageSize, start);
         if (searchName.length()>0) {
             sql = sql.replace("-- and(NAME", " and(NAME");
         }

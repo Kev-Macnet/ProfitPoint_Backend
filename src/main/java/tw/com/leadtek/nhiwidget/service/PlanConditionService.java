@@ -18,20 +18,21 @@ public class PlanConditionService {
     private PlanConditionDao planConditionDao;
     
     public java.util.Map<String, Object> findList(String searchName, int pageSize, int pageIndex) {
-        java.util.List<Map<String, Object>> lst = planConditionDao.findList(searchName);
-        java.util.List<Map<String, Object>> data = new java.util.ArrayList<Map<String, Object>>();
-        long totalCount = lst.size();
+        long totalCount = planConditionDao.findListCount(searchName);
         int start = pageSize*pageIndex;
-        for (int a=start; a<start+pageSize; a++) {
-            if (a<totalCount) {
-                data.add(lst.get(a));
-            } else {
-                break;
-            }
+        if (start>totalCount) {
+            start = (int)totalCount;
+        } else if (start<0) {
+            start = 0;
         }
-        java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+        java.util.List<Map<String, Object>> lst = planConditionDao.findList(searchName, start, pageSize);
+        
+        java.util.Map<String, Object> retMap = new java.util.LinkedHashMap<String, Object>();
         retMap.put("total", totalCount);
-        retMap.put("data", data);
+        retMap.put("pages", (int)totalCount/pageSize + ((totalCount%pageSize)>0 ? 1: 0));
+        retMap.put("pageIndex", pageIndex);
+        retMap.put("pageSize", pageSize);
+        retMap.put("data", lst);
         return retMap;
     }
     

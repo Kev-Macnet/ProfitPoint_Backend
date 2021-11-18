@@ -18,10 +18,47 @@ public class PaymentTermsDao extends BaseSqlDao {
     
     @Autowired
     protected JdbcTemplate jdbcTemplate;
-
+    
+    public long searchPaymentTermsCount(String feeNo, String nhiNo, String category, 
+            java.util.Date startDate, java.util.Date endDate) {
+        String strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
+        String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
+        
+        String sql;
+        sql = "Select Count(*) as CNT\n"
+                + "From PT_PAYMENT_TERMS\n"
+                + "Where (1=1)\n"
+                + " -- and (FEE_NO like '%s%%')\n"
+                + " -- and (NHI_NO  like '%s%%')\n"
+                + " -- and (CATEGORY='%s')\n"
+                + " -- and (START_DATE='%s')\n"
+                + " -- and (END_DATE='%s')";
+        sql = String.format(sql, noInjection(feeNo), noInjection(nhiNo), noInjection(category), strStart, strEnd);
+        if (feeNo.length()>0) {
+            sql=sql.replace("-- and (FEE_NO", " and (FEE_NO");
+        }
+        if (nhiNo.length()>0) {
+            sql=sql.replace("-- and (NHI_NO", " and (NHI_NO");
+        }
+        if (category.length()>0) {
+            sql=sql.replace("-- and (CATEGORY", " and (CATEGORY");
+        }
+        if (strStart.length()>0) {
+          sql=sql.replace("-- and (START_DATE=", " and (START_DATE=");
+        }
+        if (strEnd.length()>0) {
+          sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
+        }
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        if (lst.size()>0) {
+            return (long)lst.get(0).get("CNT");
+        } else {
+            return 0l;
+        }
+    }
 
     public java.util.List<Map<String, Object>> searchPaymentTerms(String feeNo, String nhiNo, String category, 
-            java.util.Date startDate, java.util.Date endDate) {
+            java.util.Date startDate, java.util.Date endDate, int start, int pageSize) {
         String strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
         String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         
@@ -33,9 +70,10 @@ public class PaymentTermsDao extends BaseSqlDao {
                 + " -- and (NHI_NO  like '%s%%')\n"
                 + " -- and (CATEGORY='%s')\n"
                 + " -- and (START_DATE='%s')\n"
-                + " -- and (END_DATE='%s')"
-                + "Order By ID";
-        sql = String.format(sql, noInjection(feeNo), noInjection(nhiNo), noInjection(category), strStart, strEnd);
+                + " -- and (END_DATE='%s')\n"
+                + "Order By ID\n"
+                + "limit %d offset %d";
+        sql = String.format(sql, noInjection(feeNo), noInjection(nhiNo), noInjection(category), strStart, strEnd, pageSize, start);
         if (feeNo.length()>0) {
             sql=sql.replace("-- and (FEE_NO", " and (FEE_NO");
         }
@@ -62,9 +100,48 @@ public class PaymentTermsDao extends BaseSqlDao {
         return lst;
     }
     
+    
+    public long searchPaymentTermsByDateRangeCount(String category, String feeNo, String nhiNo, 
+            java.util.Date startDate, java.util.Date endDate) {
+        String strStart, strEnd;
+        if (startDate!=null) {
+            strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
+        } else {
+            strStart = "2000/01/01";
+        }
+        if (endDate==null) {
+            endDate = new java.util.Date();
+        }
+        strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
+        String sql;
+        sql = "Select Count(*) as CNT\n"
+                + "From PT_PAYMENT_TERMS\n"
+                + "Where (1=1)\n"
+                + " -- and (CATEGORY='%s')\n"
+                + " -- and (FEE_NO='%s')\n"
+                + " -- and (NHI_NO='%s')\n"
+                + " and (START_DATE BETWEEN '%s' and '%s')\n"
+                + " and (END_DATE BETWEEN '%s' and '%s')";
+        sql = String.format(sql, noInjection(category), noInjection(feeNo), noInjection(nhiNo), strStart, strEnd, strStart, strEnd);
+        if (category.length()>0) {
+            sql = sql.replace("-- and (CATEGORY", " and (CATEGORY");
+        }
+        if (feeNo.length()>0) {
+            sql = sql.replace("-- and (FEE_NO", " and (FEE_NO");
+        }
+        if (nhiNo.length()>0) {
+            sql = sql.replace("-- and (NHI_NO", " and (NHI_NO");
+        }
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        if (lst.size()>0) {
+            return (long)lst.get(0).get("CNT");
+        } else {
+            return 0l;
+        }
+    }
 
     public java.util.List<Map<String, Object>> searchPaymentTermsByDateRange(String category, String feeNo, String nhiNo, 
-            java.util.Date startDate, java.util.Date endDate) {
+            java.util.Date startDate, java.util.Date endDate, int start, int pageSize) {
         String strStart, strEnd;
         if (startDate!=null) {
             strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
@@ -84,9 +161,10 @@ public class PaymentTermsDao extends BaseSqlDao {
                 + " -- and (NHI_NO='%s')\n"
                 + " and (START_DATE BETWEEN '%s' and '%s')\n"
                 + " and (END_DATE BETWEEN '%s' and '%s')\n"
-                + "Order By ID";
+                + "Order By ID\n"
+                + "limit %d offset %d";
         
-        sql = String.format(sql, noInjection(category), noInjection(feeNo), noInjection(nhiNo), strStart, strEnd, strStart, strEnd);
+        sql = String.format(sql, noInjection(category), noInjection(feeNo), noInjection(nhiNo), strStart, strEnd, strStart, strEnd, pageSize, start);
         if (category.length()>0) {
             sql = sql.replace("-- and (CATEGORY", " and (CATEGORY");
         }
