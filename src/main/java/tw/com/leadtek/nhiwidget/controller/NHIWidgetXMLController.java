@@ -54,11 +54,8 @@ import tw.com.leadtek.nhiwidget.payload.MRCountResponse;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.MrNoteListResponse;
 import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
-import tw.com.leadtek.nhiwidget.payload.QuickSearchResponse;
-import tw.com.leadtek.nhiwidget.payload.SameATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
-import tw.com.leadtek.nhiwidget.payload.my.MyOrderListResponse;
-import tw.com.leadtek.nhiwidget.payload.my.MyOrderPayload;
+import tw.com.leadtek.nhiwidget.payload.my.MyTodoListResponse;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
@@ -84,9 +81,6 @@ public class NHIWidgetXMLController extends BaseController {
 
   @Autowired
   private UserService userService;
-
-  @Autowired
-  private JwtUtils jwtUtils;
 
   @ApiOperation(value = "上傳申報檔XML檔案", notes = "上傳申報檔XML檔案")
   @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "申報檔XML檔案",
@@ -475,19 +469,12 @@ public class NHIWidgetXMLController extends BaseController {
     if (user == null) {
       MRDetail result = new MRDetail();
       result.setError("無法取得登入狀態");
-      return ResponseEntity.badRequest().body(result);
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
     return ResponseEntity.ok(xmlService.getMRDetail(idL, user));
   }
   
-  /**
-   * 取得指定日期區間的病歷
-   * 
-   * @param name
-   * @param model
-   * @return
-   */
-  @ApiOperation(value = "取得指定病歷的全部資料備註", notes = "取得指定病歷的全部資料備註")
+  @ApiOperation(value = "取得指定病歷的全部資料備註/核刪註記", notes = "取得指定病歷的全部資料備註/核刪註記")
   @GetMapping("/nhixml/mrNote/{id}")
   public ResponseEntity<MrNoteListResponse> getMRNote(
       @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id,
@@ -506,7 +493,31 @@ public class NHIWidgetXMLController extends BaseController {
       MrNoteListResponse result = new MrNoteListResponse();
       result.setResult(BaseResponse.ERROR);
       result.setMessage("無法取得登入狀態");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    }
+    return ResponseEntity.ok(xmlService.getMRNote(idL, user, isNote));
+  }
+  
+  @ApiOperation(value = "取得指定病歷的全部資料備註/核刪註記", notes = "取得指定病歷的全部資料備註/核刪註記")
+  @GetMapping("/nhixml/note/{id}")
+  public ResponseEntity<MrNoteListResponse> getAllMRNote(
+      @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id,
+      @ApiParam(name = "isNote", value = "病歷id", example = "true") @RequestParam(required = true) Boolean isNote) {
+    long idL = 0;
+    try {
+      idL = Long.parseLong(id);
+    } catch (NumberFormatException e) {
+      MrNoteListResponse result = new MrNoteListResponse();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("id格式不正確");
       return ResponseEntity.badRequest().body(result);
+    }
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      MrNoteListResponse result = new MrNoteListResponse();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("無法取得登入狀態");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
     return ResponseEntity.ok(xmlService.getMRNote(idL, user, isNote));
   }
@@ -581,7 +592,7 @@ public class NHIWidgetXMLController extends BaseController {
     }
     UserDetailsImpl user = getUserDetails();
     if (user == null) {
-      return returnAPIResult("無法取得登入狀態");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new BaseResponse(BaseResponse.ERROR, "無法取得登入狀態"));
     }
     int statusInt = MR_STATUS.STATUS_ERROR;
     if (status != null && status.length() > 0) {
@@ -740,90 +751,6 @@ public class NHIWidgetXMLController extends BaseController {
     return sb.toString();
   }
 
-  @ApiOperation(value = "取得我的清單-待辦事項", notes = "取得我的清單-待辦事項")
-  @GetMapping("/nhixml/my/todo")
-  public ResponseEntity<MyOrderListResponse> getMyTodo(
-      @ApiParam(name = "orderBy",
-      value = "排序欄位名稱，status:資料狀態，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
-          + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
-          + "totalDot:病歷點數，applId:負責人員代碼，applName:負責人員",
-      example = "sdate") @RequestParam(required = false) String orderBy,
-      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
-          example = "true") @RequestParam(required = false) Boolean asc,
-      @ApiParam(name = "perPage", value = "每頁顯示筆數",
-          example = "20") @RequestParam(required = false) Integer perPage,
-      @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
-          example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
-    int perPageInt = (perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
-        : perPage.intValue();
-
-    String column = orderBy;
-    if (column != null) {
-      if (column.equals("sdate")) {
-        column = "startDate";
-      } else if (column.equals("edate")) {
-        column = "endDate";
-      } else if (column.equals("totalDot")) {
-        column = "tDot";
-      } else if (!findDeclaredMethod("tw.com.leadtek.nhiwidget.model.rdb.MY_MR", column)) {
-        MyOrderListResponse result = new MyOrderListResponse();
-        result.setMessage("orderBy無此欄位：" + column);
-        result.setResult("failed");
-        return ResponseEntity.badRequest().body(result);
-      }
-    }
-    UserDetailsImpl user = getUserDetails();
-    if (user == null) {
-      MyOrderListResponse result = new MyOrderListResponse();
-      result.setMessage("無法取得登入狀態");
-      result.setResult(BaseResponse.ERROR);
-      return ResponseEntity.badRequest().body(result);
-    }
-    return ResponseEntity.ok(xmlService.getMyTodoList(user, column, asc, perPageInt, page, false));
-  }
-  
-  @ApiOperation(value = "取得我的清單-醫師查看清單", notes = "取得我的清單-醫師查看清單")
-  @GetMapping("/nhixml/my/doctor")
-  public ResponseEntity<MyOrderListResponse> getMyTodoDoctor(
-      @ApiParam(name = "orderBy",
-      value = "排序欄位名稱，status:資料狀態，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
-          + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
-          + "totalDot:病歷點數，applId:負責人員代碼，applName:負責人員",
-      example = "sdate") @RequestParam(required = false) String orderBy,
-      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
-          example = "true") @RequestParam(required = false) Boolean asc,
-      @ApiParam(name = "perPage", value = "每頁顯示筆數",
-          example = "20") @RequestParam(required = false) Integer perPage,
-      @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
-          example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
-    int perPageInt = (perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
-        : perPage.intValue();
-
-    String column = orderBy;
-    if (column != null) {
-      if (column.equals("sdate")) {
-        column = "startDate";
-      } else if (column.equals("edate")) {
-        column = "endDate";
-      } else if (column.equals("totalDot")) {
-        column = "tDot";
-      } else if (!findDeclaredMethod("tw.com.leadtek.nhiwidget.model.rdb.MY_MR", column)) {
-        MyOrderListResponse result = new MyOrderListResponse();
-        result.setMessage("orderBy無此欄位：" + column);
-        result.setResult("failed");
-        return ResponseEntity.badRequest().body(result);
-      }
-    }
-    UserDetailsImpl user = getUserDetails();
-    if (user == null) {
-      MyOrderListResponse result = new MyOrderListResponse();
-      result.setMessage("無法取得登入狀態");
-      result.setResult(BaseResponse.ERROR);
-      return ResponseEntity.badRequest().body(result);
-    }
-    return ResponseEntity.ok(xmlService.getMyTodoList(user, column, asc, perPageInt, page, true));
-  }
-  
   @ApiOperation(value = "發送通知", notes = "發送通知")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @PostMapping(value = "/nhixml/sendNotice/{id}")
@@ -833,7 +760,7 @@ public class NHIWidgetXMLController extends BaseController {
     
     UserDetailsImpl user = getUserDetails();
     if (user == null) {
-      return returnAPIResult("無法取得登入狀態");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new BaseResponse(BaseResponse.ERROR, "無法取得登入狀態"));
     }
     
     long idL = 0;

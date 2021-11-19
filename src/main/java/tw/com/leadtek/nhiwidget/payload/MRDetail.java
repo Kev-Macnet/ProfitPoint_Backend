@@ -284,7 +284,7 @@ public class MRDetail extends MR {
   @ApiModelProperty(value = "核刪註記", required = false)
   protected List<MrNotePayload> deducted;
   
-  @JsonIgnore
+  @ApiModelProperty(value = "核刪註記", required = false)
   protected String error;
   
   public MRDetail() {

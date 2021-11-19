@@ -572,10 +572,10 @@ public class GenerateSqlByClass {
     // gen.generateClassBySQL("D:\\Users\\2268\\2020\\健保點數申報\\src\\NWUSER-ALL-HANA.sql",
     // "tw.com.leadtek.nhiwidget.model.rdb", "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
 
-//    gen.generateClassByDB(GenerateDocumentFromDB.HANA, "NWUSER", "10.10.5.31", 30041, "NWUSER",
-//        "Leadtek2021", "tw.com.leadtek.nhiwidget.model.rdb",
-//        "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
-    findDeclaredMethod("tw.com.leadtek.nhiwidget.payload.my.MyOrderPayload", "applId");
+    gen.generateClassByDB(GenerateDocumentFromDB.HANA, "NWUSER", "10.10.5.31", 30041, "NWUSER",
+        "Leadtek2021", "tw.com.leadtek.nhiwidget.model.rdb",
+        "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
+    //findDeclaredMethod("tw.com.leadtek.nhiwidget.payload.my.MyOrderPayload", "applId");
   }
 
   public static boolean findDeclaredMethod(String className, String field) {

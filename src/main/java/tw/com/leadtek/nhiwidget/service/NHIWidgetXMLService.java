@@ -80,8 +80,16 @@ import tw.com.leadtek.nhiwidget.payload.MRStatusCount;
 import tw.com.leadtek.nhiwidget.payload.MrNoteListResponse;
 import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
-import tw.com.leadtek.nhiwidget.payload.my.MyOrderListResponse;
-import tw.com.leadtek.nhiwidget.payload.my.MyOrderPayload;
+import tw.com.leadtek.nhiwidget.payload.my.DoctorList;
+import tw.com.leadtek.nhiwidget.payload.my.DoctorListResponse;
+import tw.com.leadtek.nhiwidget.payload.my.MyTodoList;
+import tw.com.leadtek.nhiwidget.payload.my.MyTodoListResponse;
+import tw.com.leadtek.nhiwidget.payload.my.NoticeRecord;
+import tw.com.leadtek.nhiwidget.payload.my.NoticeRecordResponse;
+import tw.com.leadtek.nhiwidget.payload.my.QuestionMark;
+import tw.com.leadtek.nhiwidget.payload.my.QuestionMarkResponse;
+import tw.com.leadtek.nhiwidget.payload.my.WarningOrder;
+import tw.com.leadtek.nhiwidget.payload.my.WarningOrderResponse;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.tools.DateTool;
@@ -157,7 +165,7 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private UserService userService;
-
+  
   public void saveOP(OP op) {
     OP_T opt = saveOPT(op.getTdata());
     // Map<String, Object> condition1 =
@@ -1543,6 +1551,7 @@ public class NHIWidgetXMLService {
 
   /**
    * 取得該病歷的所有資料備註或核刪註記
+   * 
    * @param id
    * @param user
    * @param isNote
@@ -1555,7 +1564,7 @@ public class NHIWidgetXMLService {
       result.setMessage("病歷id" + id + "不存在");
       result.setResult(BaseResponse.ERROR);
     }
-    
+
     List<MR_NOTE> list = mrNoteDao.findByMrIdOrderById(id);
     List<MrNotePayload> data = new ArrayList<MrNotePayload>();
     for (MR_NOTE note : list) {
@@ -1819,9 +1828,9 @@ public class NHIWidgetXMLService {
     return null;
   }
 
-  public MyOrderListResponse getMyTodoList(UserDetailsImpl user, String orderBy, Boolean asc,
-      int perPage, int page, boolean isDoctor) {
-    MyOrderListResponse result = new MyOrderListResponse();
+  public MyTodoListResponse getMyTodoList(UserDetailsImpl user, String orderBy, Boolean asc,
+      int perPage, int page) {
+    MyTodoListResponse result = new MyTodoListResponse();
 
     Specification<MY_MR> spec = new Specification<MY_MR>() {
 
@@ -1830,17 +1839,13 @@ public class NHIWidgetXMLService {
       public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 
         List<Predicate> predicate = new ArrayList<Predicate>();
-        if (ROLE_TYPE.DOCTOR.getRole().equals(user.getRole())) {
-          predicate.add(cb.equal(root.get("prsnUserId"), user.getId()));
-        } else if (ROLE_TYPE.APPL.getRole().equals(user.getRole())) {
+        if (ROLE_TYPE.APPL.getRole().equals(user.getRole())) {
+          // 是申報人員，只撈自己的，若不是，則是看所有人的
           predicate.add(cb.equal(root.get("applUserId"), user.getId()));
         }
-        if (isDoctor) {
-          predicate.add(cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value()));
-        } else {
-          predicate.add(cb.or(cb.equal(root.get("status"), MR_STATUS.WAIT_PROCESS.value()),
-              cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value())));
-        }
+
+        predicate.add(cb.or(cb.equal(root.get("status"), MR_STATUS.WAIT_PROCESS.value()),
+            cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value())));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
 
@@ -1860,30 +1865,144 @@ public class NHIWidgetXMLService {
     };
     result.setCount((int) myMrDao.count(spec));
     Page<MY_MR> pages = myMrDao.findAll(spec, PageRequest.of(page, perPage));
-    List<MyOrderPayload> list = new ArrayList<MyOrderPayload>();
+    List<MyTodoList> list = new ArrayList<MyTodoList>();
     if (pages != null && pages.getSize() > 0) {
       for (MY_MR p : pages) {
-        MyOrderPayload ap = new MyOrderPayload(p);
-        if (p.getNoticeName() != null && p.getReadedName() != null
-            && ROLE_TYPE.DOCTOR.getRole().equals(user.getRole()) && isDoctor) {
-          if (p.getReadedName().indexOf(user.getUsername()) > -1) {
-            ap.setReadedStatus("已讀取");
-          } else {
-            ap.setReadedStatus("未讀取");
-          }
-        }
-        list.add(ap);
+        list.add(new MyTodoList(p));
       }
     }
     result.setTotalPage(Utility.getTotalPage(result.getCount(), perPage));
     result.setData(list);
-    result.setQuestionMark(getCountOfQuestionMark(user, isDoctor));
-    if (isDoctor) {
-      result.setReaded(getCountOfReaded(user));
-      result.setUnread(result.getQuestionMark().intValue() - result.getReaded().intValue());
-    } else {
-      result.setWaitProcess(getCountOfWaitProcess(user));
+    result.setQuestionMark(getCountOfQuestionMark(user, false));
+    result.setWaitProcess(getCountOfWaitProcess(user));
+    return result;
+  }
+
+  public NoticeRecordResponse getNoticeRecord(UserDetailsImpl user, String orderBy, Boolean asc,
+      int perPage, int page) {
+    
+    NoticeRecordResponse result = new NoticeRecordResponse();
+    boolean isAppl = ROLE_TYPE.APPL.getRole().equals(user.getRole());
+    Specification<MR_NOTICE> spec = new Specification<MR_NOTICE>() {
+
+      private static final long serialVersionUID = 1008L;
+
+      public Predicate toPredicate(Root<MR_NOTICE> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (isAppl) {
+          // 是申報人員，只撈自己的，若不是，則是看所有人的
+          predicate.add(cb.equal(root.get("applUserId"), user.getId()));
+          Predicate[] pre = new Predicate[predicate.size()];
+          query.where(predicate.toArray(pre));
+        }
+
+        List<Order> orderList = new ArrayList<Order>();
+        if (orderBy != null && asc != null) {
+          if (asc.booleanValue()) {
+            orderList.add(cb.asc(root.get(orderBy)));
+          } else {
+            orderList.add(cb.desc(root.get(orderBy)));
+          }
+        } else {
+          orderList.add(cb.desc(root.get("startDate")));
+          orderList.add(cb.desc(root.get("seq")));
+        }
+        query.orderBy(orderList);
+        return query.getRestriction();
+      }
+    };
+    result.setCount((int) mrNoticeDao.count(spec));
+    Page<MR_NOTICE> pages = mrNoticeDao.findAll(spec, PageRequest.of(page, perPage));
+    List<NoticeRecord> list = new ArrayList<NoticeRecord>();
+    if (pages != null && pages.getSize() > 0) {
+      System.out.println("page size=" + pages.getSize());
+      for (MR_NOTICE p : pages) {
+        NoticeRecord dl = new NoticeRecord(p);
+        list.add(dl);
+      }
     }
+    result.setTotalPage(Utility.getTotalPage(result.getCount(), perPage));
+    result.setData(list);
+
+    if (isAppl) {
+      result.setQuestionMark(myMrDao.getCountByStatusAndApplUserId(MR_STATUS.QUESTION_MARK.value(), user.getId()).intValue());
+    } else {
+      result.setQuestionMark(myMrDao.getCountByStatus(MR_STATUS.QUESTION_MARK.value()).intValue());
+    }
+    
+    List<Object[]> times = (isAppl)
+        ? myMrDao.getNoticeAndReadedTimes(MR_STATUS.QUESTION_MARK.value(), user.getId(),
+            MR_STATUS.QUESTION_MARK.value(), user.getId())
+        : myMrDao.getNoticeAndReadedTimes(MR_STATUS.QUESTION_MARK.value(),
+            MR_STATUS.QUESTION_MARK.value());
+
+    if (times != null && times.size() > 0) {
+      Object[] obj = times.get(0);
+      result.setNoticeTimes(((BigInteger) obj[0]).intValue());
+      result.setReaded(((BigInteger) obj[1]).intValue());
+    }
+    result.setUnread(result.getQuestionMark().intValue() - result.getReaded().intValue());
+    return result;
+  }
+  // INH_CODE VARCHAR(12) COMMENT '院內碼',
+  // 
+  public DoctorListResponse getDoctorList(UserDetailsImpl user, String orderBy, Boolean asc,
+      int perPage, int page) {
+    DoctorListResponse result = new DoctorListResponse();
+
+    Specification<MY_MR> spec = new Specification<MY_MR>() {
+
+      private static final long serialVersionUID = 1002L;
+
+      public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (ROLE_TYPE.DOCTOR.getRole().equals(user.getRole())) {
+          predicate.add(cb.like(root.get("noticeName"), "%" + user.getUsername() + "%"));
+        }
+        predicate.add(cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value()));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+
+        List<Order> orderList = new ArrayList<Order>();
+        if (orderBy != null && asc != null) {
+          if (asc.booleanValue()) {
+            orderList.add(cb.asc(root.get(orderBy)));
+          } else {
+            orderList.add(cb.desc(root.get(orderBy)));
+          }
+        } else {
+          orderList.add(cb.desc(root.get("startDate")));
+        }
+        query.orderBy(orderList);
+        return query.getRestriction();
+      }
+    };
+    result.setCount((int) myMrDao.count(spec));
+    Page<MY_MR> pages = myMrDao.findAll(spec, PageRequest.of(page, perPage));
+    List<DoctorList> list = new ArrayList<DoctorList>();
+    if (pages != null && pages.getSize() > 0) {
+      for (MY_MR p : pages) {
+        DoctorList dl = new DoctorList(p);
+        if (p.getNoticeName() != null) {
+          if (p.getReadedName() != null && ROLE_TYPE.DOCTOR.getRole().equals(user.getRole())) {
+            if (p.getReadedName().indexOf(user.getUsername()) > -1) {
+              dl.setReadedStatus("已讀取");
+            } else {
+              dl.setReadedStatus("未讀取");
+            }
+          }
+        }
+        list.add(dl);
+      }
+    }
+    result.setTotalPage(Utility.getTotalPage(result.getCount(), perPage));
+    result.setData(list);
+
+    result.setQuestionMark(getCountOfQuestionMark(user, true));
+    result.setReaded(getCountOfReaded(user));
+    result.setUnread(result.getQuestionMark().intValue() - result.getReaded().intValue());
     return result;
   }
 
@@ -1897,7 +2016,7 @@ public class NHIWidgetXMLService {
 
     Specification<MY_MR> spec = new Specification<MY_MR>() {
 
-      private static final long serialVersionUID = 1002L;
+      private static final long serialVersionUID = 1003L;
 
       public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 
@@ -1924,7 +2043,7 @@ public class NHIWidgetXMLService {
 
     Specification<MY_MR> spec = new Specification<MY_MR>() {
 
-      private static final long serialVersionUID = 1003L;
+      private static final long serialVersionUID = 1004L;
 
       public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 
@@ -1932,7 +2051,7 @@ public class NHIWidgetXMLService {
         if (ROLE_TYPE.APPL.getRole().equals(user.getRole()) && !isDoctor) {
           predicate.add(cb.equal(root.get("applUserId"), user.getId()));
         } else if (ROLE_TYPE.DOCTOR.getRole().equals(user.getRole()) && isDoctor) {
-          predicate.add(cb.equal(root.get("prsnUserId"), user.getId()));
+          predicate.add(cb.like(root.get("noticeName"), "%" + user.getUsername() + "%"));
         }
         predicate.add(cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value()));
         Predicate[] pre = new Predicate[predicate.size()];
@@ -1954,14 +2073,14 @@ public class NHIWidgetXMLService {
 
     Specification<MY_MR> spec = new Specification<MY_MR>() {
 
-      private static final long serialVersionUID = 1003L;
+      private static final long serialVersionUID = 1005L;
 
       public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 
         List<Predicate> predicate = new ArrayList<Predicate>();
         if (ROLE_TYPE.DOCTOR.getRole().equals(user.getRole())) {
           predicate.add(cb.equal(root.get("prsnUserId"), user.getId()));
-          predicate.add(cb.like(root.get("readedName"), root.get("%" + user.getUsername() + "%")));
+          predicate.add(cb.like(root.get("readedName"), "%" + user.getUsername() + "%"));
         } else {
           predicate.add(cb.isNotNull(root.get("readedName")));
         }
@@ -2075,5 +2194,149 @@ public class NHIWidgetXMLService {
         }
       }
     }
+  }
+
+  public WarningOrderResponse getWarningOrderList(UserDetailsImpl user, String orderBy, Boolean asc,
+      int perPage, int page) {
+    WarningOrderResponse result = new WarningOrderResponse();
+
+    // 是否為申報人員，若是則只撈自己的，若不是，則是看所有人的
+    boolean isAppl = ROLE_TYPE.APPL.getRole().equals(user.getRole());
+
+    Specification<MY_MR> spec = new Specification<MY_MR>() {
+
+      private static final long serialVersionUID = 1006L;
+
+      public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (isAppl) {
+          // 是申報人員，只撈自己的，若不是，則是看所有人的
+          predicate.add(cb.equal(root.get("applUserId"), user.getId()));
+        }
+        predicate.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+
+        List<Order> orderList = new ArrayList<Order>();
+        if (orderBy != null && asc != null) {
+          if (asc.booleanValue()) {
+            orderList.add(cb.asc(root.get(orderBy)));
+          } else {
+            orderList.add(cb.desc(root.get(orderBy)));
+          }
+        } else {
+          orderList.add(cb.desc(root.get("startDate")));
+        }
+        query.orderBy(orderList);
+        return query.getRestriction();
+      }
+    };
+    result.setCount((int) myMrDao.count(spec));
+    Page<MY_MR> pages = myMrDao.findAll(spec, PageRequest.of(page, perPage));
+    List<WarningOrder> list = new ArrayList<WarningOrder>();
+    if (pages != null && pages.getSize() > 0) {
+      for (MY_MR p : pages) {
+        list.add(new WarningOrder(p));
+      }
+    }
+    
+    if (result.getCount() > 0) {
+      List<Object[]> times = (isAppl)
+          ? myMrDao.getNoticeAndReadedTimes(MR_STATUS.WAIT_CONFIRM.value(), user.getId(),
+              MR_STATUS.QUESTION_MARK.value(), user.getId())
+          : myMrDao.getNoticeAndReadedTimes(MR_STATUS.WAIT_CONFIRM.value(),
+              MR_STATUS.QUESTION_MARK.value());
+
+      if (times != null && times.size() > 0) {
+        Object[] obj = times.get(0);
+        result.setNoticeTimes(((BigInteger) obj[0]).intValue());
+        result.setNonNoticeTimes(result.getCount() - result.getNoticeTimes());
+      }
+    }
+    
+    result.setTotalPage(Utility.getTotalPage(result.getCount(), perPage));
+    result.setData(list);
+
+    if (result.getCount() > 0) {
+      List<Object[]> countList =
+          (isAppl) ? myMrDao.getWarningOrderCount(user.getId()) : myMrDao.getWarningOrderCount();
+      if (countList != null && countList.size() > 0) {
+        Object[] obj = countList.get(0);
+        result.setChangeIcd((int) obj[0]);
+        result.setChangeInh((int) obj[1]);
+        result.setChangeOrder((int) obj[2]);
+        result.setChangeOther((int) obj[3]);
+        result.setChangeSo((int) obj[4]);
+      }
+    }
+    return result;
+  }
+
+
+  public QuestionMarkResponse getQuestionMark(UserDetailsImpl user, String orderBy, Boolean asc,
+      int perPage, int page) {
+    
+    QuestionMarkResponse result = new QuestionMarkResponse();
+ // 是否為申報人員，若是則只撈自己的，若不是，則是看所有人的
+    boolean isAppl = ROLE_TYPE.APPL.getRole().equals(user.getRole());
+
+    Specification<MY_MR> spec = new Specification<MY_MR>() {
+
+      private static final long serialVersionUID = 1006L;
+
+      public Predicate toPredicate(Root<MY_MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (isAppl) {
+          // 是申報人員，只撈自己的，若不是，則是看所有人的
+          predicate.add(cb.equal(root.get("applUserId"), user.getId()));
+        }
+        predicate.add(cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value()));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+
+        List<Order> orderList = new ArrayList<Order>();
+        if (orderBy != null && asc != null) {
+          if (asc.booleanValue()) {
+            orderList.add(cb.asc(root.get(orderBy)));
+          } else {
+            orderList.add(cb.desc(root.get(orderBy)));
+          }
+        } else {
+          orderList.add(cb.desc(root.get("startDate")));
+        }
+        query.orderBy(orderList);
+        return query.getRestriction();
+      }
+    };
+    result.setCount((int) myMrDao.count(spec));
+    result.setQuestionMark(result.getCount());
+    Page<MY_MR> pages = myMrDao.findAll(spec, PageRequest.of(page, perPage));
+    List<QuestionMark> list = new ArrayList<QuestionMark>();
+    if (pages != null && pages.getSize() > 0) {
+      for (MY_MR p : pages) {
+        list.add(new QuestionMark(p));
+      }
+    }
+    if (result.getCount() > 0) {
+      List<Object[]> times = (isAppl)
+          ? myMrDao.getNoticeAndReadedTimes(MR_STATUS.QUESTION_MARK.value(), user.getId(),
+              MR_STATUS.QUESTION_MARK.value(), user.getId())
+          : myMrDao.getNoticeAndReadedTimes(MR_STATUS.QUESTION_MARK.value(),
+              MR_STATUS.QUESTION_MARK.value());
+
+      if (times != null && times.size() > 0) {
+        Object[] obj = times.get(0);
+        result.setNoticeTimes(((BigInteger) obj[0]).intValue());
+        result.setNonNoticeTimes(result.getCount() - result.getNoticeTimes());
+
+        result.setReaded(((BigInteger) obj[1]).intValue());
+        result.setUnread(result.getCount() - result.getReaded());
+      }
+    }
+    result.setTotalPage(Utility.getTotalPage(result.getCount(), perPage));
+    result.setData(list);
+    return result;
   }
 }

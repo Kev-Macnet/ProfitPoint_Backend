@@ -26,6 +26,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import tw.com.leadtek.nhiwidget.dao.PARAMETERSDao;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
+import tw.com.leadtek.tools.ExcelUtil;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = NHIWidget.class)
@@ -171,14 +172,16 @@ public class TestParameterService {
           // (參數失效日)
           PARAMETERS p = new PARAMETERS();
           p.setCat(row.getCell(0).getStringCellValue());
-          p.setName(row.getCell(1).getStringCellValue());
+          p.setName(ExcelUtil.getCellStringValue(row.getCell(1)));
           if (row.getCell(2) != null && row.getCell(2).getCellType() == CellType.NUMERIC) {
             p.setValue(df.format(row.getCell(2).getNumericCellValue()));
           } else {
             p.setValue(row.getCell(2).getStringCellValue());
           }
           p.setDataType((int) row.getCell(3).getNumericCellValue());
-          p.setNote(row.getCell(4).getStringCellValue());
+          if (row.getCell(4) != null) {
+            p.setNote(row.getCell(4).getStringCellValue());
+          }
           p.setUpdateAt(new Date());
           p.setStartDate(row.getCell(5).getDateCellValue());
           p.setEndDate(row.getCell(6).getDateCellValue());

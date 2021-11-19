@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTE;
+import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTICE;
 
 @ApiModel("病歷資料備註/核刪註記")
 public class MrNotePayload implements Serializable {

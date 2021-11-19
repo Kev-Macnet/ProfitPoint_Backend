@@ -152,7 +152,7 @@ public class GenClassFieldXMLTag extends GenClassField {
       }
       String commentRaw = commentSB.toString().trim();
       int index = commentRaw.indexOf('<');
-      if (index > -1 && commentRaw.charAt(index + 1) != '=') {
+      if (index > -1 && commentRaw.charAt(index + 1) != '=' && commentRaw.indexOf('>') > index) {
         // 有 XML　tag, 會轉成全大寫，所以要拿原始資料
         index = s.toUpperCase().indexOf(commentRaw) + index;
         int endIndex = commentRaw.indexOf('>');

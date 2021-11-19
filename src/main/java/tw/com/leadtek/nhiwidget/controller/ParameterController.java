@@ -45,7 +45,6 @@ import tw.com.leadtek.tools.DateTool;
 @Api(tags = "參數設定相關API", value = "參數設定相關API")
 @CrossOrigin(origins = "*", maxAge = 36000)
 @RestController
-// @CrossOrigin(value = "http://localhost:8080")
 @RequestMapping(value = "/p", produces = "application/json; charset=utf-8")
 public class ParameterController extends BaseController {
 

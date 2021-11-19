@@ -1,29 +1,23 @@
 /**
- * Created on 2021/11/16.
+ * Created on 2021/11/18.
  */
 package tw.com.leadtek.nhiwidget.payload.my;
 
 import java.io.Serializable;
 import java.util.Date;
-import javax.persistence.Column;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.model.rdb.MY_MR;
 
-@ApiModel("我的清單-待辦事項")
-public class MyOrderPayload implements Serializable {
+@ApiModel("我的清單")
+public class MyListBasePayload implements Serializable {
 
-  private static final long serialVersionUID = 2869299391406291981L;
+  private static final long serialVersionUID = 3247347831325206303L;
 
   @ApiModelProperty(value = "病歷id", example = "991903", required = true)
   protected Long mrId;
-  
-  @ApiModelProperty(value = "資料狀態", example = "待處理", required = true)
-  protected String status;
-  
+   
   @ApiModelProperty(value = "就醫日期-起", example = "2021/03/16", dataType = "String", required = true)
   @JsonFormat(pattern = "yyyy/MM/dd", timezone = "GMT+8")
   protected Date sdate;
@@ -53,28 +47,18 @@ public class MyOrderPayload implements Serializable {
   @ApiModelProperty(value = "醫護姓名", example = "王大明", required = false)
   protected String prsnName;
 
-  @ApiModelProperty(value = "病歷點數", example = "400", required = false)
-  protected Integer totalDot;
-  
   @ApiModelProperty(value = "負責人員代碼", example = "A123456789", required = false)
   protected String applId;
 
   @ApiModelProperty(value = "負責人員姓名", example = "陳小春", required = false)
   protected String applName;
   
-  @ApiModelProperty(value = "通知次數", example = "3", required = false)
-  private Integer noticeTimes;
-  
-  @ApiModelProperty(value = "讀取狀態", example = "未讀取", required = false)
-  private String readedStatus;
-  
-  public MyOrderPayload() {
+  public MyListBasePayload() {
     
   }
-  
-  public MyOrderPayload(MY_MR mr) {
+
+  public MyListBasePayload(MY_MR mr) {
     mrId = mr.getMrId();
-    status = MR_STATUS.toStatusString(mr.getStatus());
     sdate = mr.getStartDate();
     edate = mr.getEndDate();
     inhMrId = mr.getInhMrId();
@@ -84,10 +68,8 @@ public class MyOrderPayload implements Serializable {
     funcTypeC = mr.getFuncTypec();
     prsnId = mr.getPrsnId();
     prsnName = mr.getPrsnName();
-    totalDot = mr.getTDot();
     applId = mr.getApplId();
     applName = mr.getApplName();
-    noticeTimes = mr.getNoticeTimes();
   }
 
   public Long getMrId() {
@@ -96,14 +78,6 @@ public class MyOrderPayload implements Serializable {
 
   public void setMrId(Long mrId) {
     this.mrId = mrId;
-  }
-
-  public String getStatus() {
-    return status;
-  }
-
-  public void setStatus(String status) {
-    this.status = status;
   }
 
   public Date getSdate() {
@@ -178,14 +152,6 @@ public class MyOrderPayload implements Serializable {
     this.prsnName = prsnName;
   }
 
-  public Integer getTotalDot() {
-    return totalDot;
-  }
-
-  public void setTotalDot(Integer totalDot) {
-    this.totalDot = totalDot;
-  }
-
   public String getApplId() {
     return applId;
   }
@@ -201,21 +167,19 @@ public class MyOrderPayload implements Serializable {
   public void setApplName(String applName) {
     this.applName = applName;
   }
-
-  public Integer getNoticeTimes() {
-    return noticeTimes;
+  
+  public static String removeDot(String s) {
+    if (s == null) {
+      return null;
+    }
+    StringBuffer sb = new StringBuffer(s);
+    if (sb.charAt(0) == ',') {
+      sb.deleteCharAt(0);
+    }
+    if (sb.charAt(sb.length() - 1) == ',') {
+      sb.deleteCharAt(sb.length() - 1);
+    }
+    return sb.toString();
   }
-
-  public void setNoticeTimes(Integer noticeTimes) {
-    this.noticeTimes = noticeTimes;
-  }
-
-  public String getReadedStatus() {
-    return readedStatus;
-  }
-
-  public void setReadedStatus(String readedStatus) {
-    this.readedStatus = readedStatus;
-  }
-
+  
 }

@@ -219,6 +219,7 @@ public class MR_NOTICE {
     noticeDate = new Date();
     noticePpl = myMr.getNoticePpl();
     noticeName = myMr.getNoticeName();
+    status = 0;
     readedPpl = 0;
     updateAt = new Date();
   }

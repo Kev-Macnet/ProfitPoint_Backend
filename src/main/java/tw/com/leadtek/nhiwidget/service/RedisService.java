@@ -121,7 +121,7 @@ public class RedisService {
    * @return true:有符合，false:不符合
    */
   private boolean checkCategory(String[] cats, String category) {
-    if (cats == null || cats.length == 0) {
+    if (cats == null || cats.length == 0 || category == null) {
       return true;
     }
     for (String cat : cats) {
