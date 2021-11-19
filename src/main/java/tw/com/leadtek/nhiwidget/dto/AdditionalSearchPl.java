@@ -12,7 +12,10 @@ public class AdditionalSearchPl {
     private int pageSize;
     @ApiModelProperty(value="頁數(由0起算)", position=4, example="2", required=true)
     private int pageIndex;
-
+    @ApiModelProperty(value="排序欄位(''/START_DATE/END_DATE)", position=5, example="START_DATE", required=false)
+    private String sort_field;
+    @ApiModelProperty(value="排序方向(ASC/DESC)", position=6, example="ASC", required=false)
+    private String sort_direction;
 
     public String getStart_date() {
         return start_date;
@@ -45,6 +48,24 @@ public class AdditionalSearchPl {
     public void setPageIndex(int pageIndex) {
         this.pageIndex = pageIndex;
     }
+
+    public String getSort_field() {
+        return sort_field;
+    }
+
+    public void setSort_field(String sort_field) {
+        this.sort_field = sort_field;
+    }
+
+    public String getSort_direction() {
+        return sort_direction;
+    }
+
+    public void setSort_direction(String sort_direction) {
+        this.sort_direction = sort_direction;
+    }
+
+    
 
 }
 

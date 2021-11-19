@@ -11,7 +11,7 @@ public class PlanConditionPl {
     private String name;
     @ApiModelProperty(value="就醫科別", example="心臟科", required=true, position=3)
     private String division;
-    @ApiModelProperty(value="是否啟用(1|0)", example="1", required=true, position=4)
+    @ApiModelProperty(value="是否啟用(0.未啟動/1.使用中/2.鎖定),更新API不支援此參數", example="1", required=true, position=4)
     private int active;
     
     @ApiModelProperty(value="開關--本院ICD碼(1|0)", example="1", required=false, position=5)
@@ -70,12 +70,6 @@ public class PlanConditionPl {
     }
     public void setDivision(String division) {
         this.division = division;
-    }
-    public int getActive() {
-        return active;
-    }
-    public void setActive(int active) {
-        this.active = active;
     }
     
     public int getExp_icd_no_enable() {
@@ -188,92 +182,11 @@ public class PlanConditionPl {
         this.more_times_enable = more_times_enable;
     }
     
-}
-
-/*
-class icd_no {
-    @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=true, position=1)
-    private int enable;
-    @ApiModelProperty(value="ICD診斷碼", example="icd-0001", required=true, position=2)
-    private String icd_no;
+    public int getActive() {
+        return active;
+    }
     
-    public int getEnable() {
-        return enable;
-    }
-    public void setEnable(int enable) {
-        this.enable = enable;
-    }
-    public String getIcd_no() {
-        return icd_no;
-    }
-    public void setIcd_no(String icd_no) {
-        this.icd_no = icd_no;
+    public void setActive(int active) {
+        this.active = active;
     }
 }
-
-class less_nday {
-    @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=true, position=1)
-    private int enable;
-    @ApiModelProperty(value="ICD診斷碼", example="icd-0001", required=true, position=2)
-    private String icd_no;
-    @ApiModelProperty(value="就醫天數少於 n day", example="20", required=true, position=3)
-    private int nday;
-    
-    public int getEnable() {
-        return enable;
-    }
-    public void setEnable(int enable) {
-        this.enable = enable;
-    }
-    public String getIcd_no() {
-        return icd_no;
-    }
-    public void setIcd_no(String icd_no) {
-        this.icd_no = icd_no;
-    }
-    public int getNday() {
-        return nday;
-    }
-    public void setNday(int nday) {
-        this.nday = nday;
-    }
-    
-    
-}
-
-
-class more_times {
-    @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=true, position=1)
-    private int enable;
-    @ApiModelProperty(value="ICD診斷碼", example="icd-0001", required=true, position=2)
-    private String icd_no;
-    @ApiModelProperty(value="就醫次數大於 n 次", example="10", required=true, position=3)
-    private int times;
-    
-    public int getEnable() {
-        return enable;
-    }
-    public void setEnable(int enable) {
-        this.enable = enable;
-    }
-    public String getIcd_no() {
-        return icd_no;
-    }
-    public void setIcd_no(String icd_no) {
-        this.icd_no = icd_no;
-    }
-    public int getTimes() {
-        return times;
-    }
-    public void setTimes(int times) {
-        this.times = times;
-    }
-
-}
-
-*/
-
-
-
-
-

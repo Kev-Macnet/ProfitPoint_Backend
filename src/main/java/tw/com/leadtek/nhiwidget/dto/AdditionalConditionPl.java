@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "總額外點數條件參數")
 public class AdditionalConditionPl {
-    @ApiModelProperty(value="是否啟用(1|0)", example="1", required=true, position=1)
+    @ApiModelProperty(value="是否啟用(1|0),更新API不支援此參數", example="1", required=true, position=1)
     private int active;
     @ApiModelProperty(value="年度", example="110", required=true, position=2)
     private int syear;

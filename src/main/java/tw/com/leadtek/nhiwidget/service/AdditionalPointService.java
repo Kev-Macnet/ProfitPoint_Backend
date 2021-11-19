@@ -28,7 +28,8 @@ public class AdditionalPointService {
     @Autowired
     private AdditionalPointDao additionalPointDao;
     
-    public java.util.Map<String, Object> findList(java.util.Date startDate, java.util.Date endDate, int pageSize, int pageIndex) {
+    public java.util.Map<String, Object> findList(java.util.Date startDate, java.util.Date endDate, int pageSize, int pageIndex,
+            String sortField, String sortDirection) {
         long totalCount = additionalPointDao.searchAdditionalPointCount(0, startDate, endDate);
         int start = pageSize*pageIndex;
         if (start>totalCount) {
@@ -36,7 +37,7 @@ public class AdditionalPointService {
         } else if (start<0) {
             start = 0;
         }
-        java.util.List<Map<String, Object>> lst = additionalPointDao.searchAdditionalPoint(0, startDate, endDate, start, pageSize);
+        java.util.List<Map<String, Object>> lst = additionalPointDao.searchAdditionalPoint(0, startDate, endDate, start, pageSize, sortField, sortDirection);
         if (totalCount==0) {
             totalCount = additionalPointDao.searchAdditionalPointByDateRangeCount(0, startDate, endDate);
             start = pageSize*pageIndex;
@@ -45,7 +46,7 @@ public class AdditionalPointService {
             } else if (start<0) {
                 start = 0;
             }
-            lst = additionalPointDao.searchAdditionalPointByDateRange(0, startDate, endDate, start, pageSize);
+            lst = additionalPointDao.searchAdditionalPointByDateRange(0, startDate, endDate, start, pageSize, sortField, sortDirection);
         }
 
         java.util.Map<String, Object> retMap = new java.util.LinkedHashMap<String, Object>();
@@ -211,7 +212,7 @@ public class AdditionalPointService {
         java.util.Date startDate = Utility.detectDate(params.getStart_date());
         java.util.Date endDate = Utility.detectDate(params.getEnd_date());
         
-        long newId = additionalPointDao.addAdditionalPoint(params.getActive(), params.getSyear(), startDate, endDate);
+        long newId = additionalPointDao.addAdditionalPoint(params.getSyear(), startDate, endDate);
         if (newId>0) {
             AdditionalContent1Pl out1 = params.getOutpatient_1();
             if (out1 != null) {
@@ -296,7 +297,7 @@ public class AdditionalPointService {
         
         int ret=0;
         if (id > 0) {
-            ret = additionalPointDao.updateAdditionalPoint(id, params.getActive(), params.getSyear(), startDate, endDate);
+            ret = additionalPointDao.updateAdditionalPoint(id, params.getSyear(), startDate, endDate);
 //            System.out.println("update-ret="+ret);
             if (ret > 0) {
                 AdditionalContent1Pl out1 = params.getOutpatient_1();
@@ -409,4 +410,9 @@ public class AdditionalPointService {
         }
         return ret;
     }
+    
+    public int updateActive(long id, int state) {
+        return additionalPointDao.updateAdditionalPointActive(id, state);
+    }
+    
 }

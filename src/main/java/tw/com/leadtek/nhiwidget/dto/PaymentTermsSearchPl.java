@@ -22,7 +22,12 @@ public class PaymentTermsSearchPl {
     private int pageSize;
     @ApiModelProperty(value="頁數(由0起算)", position=7, example="2", required=true)
     private int pageIndex;
-
+    @ApiModelProperty(value="排序欄位(''/FEE_NO/NHI_NO/CATEGORY/START_DATE/END_DATE, fee_no=院內碼, nhi_no=支付標準代碼, category=分類, start_date=生效日, end_date=失效日)", position=7, example="START_DATE", required=false)
+    private String sort_field;
+    @ApiModelProperty(value="排序方向(ASC/DESC)", position=8, example="ASC", required=false)
+    private String sort_direction;
+    
+    // fee_no=院內碼, nhi_no=支付標準代碼, category=分類, start_date=生效日, end_date=失效日,
     public String getFeeNo() {
         return feeNo;
     }
@@ -78,6 +83,24 @@ public class PaymentTermsSearchPl {
     public void setPageIndex(int pageIndex) {
         this.pageIndex = pageIndex;
     }
+
+    public String getSort_field() {
+        return sort_field;
+    }
+
+    public void setSort_field(String sort_field) {
+        this.sort_field = sort_field;
+    }
+
+    public String getSort_direction() {
+        return sort_direction;
+    }
+
+    public void setSort_direction(String sort_direction) {
+        this.sort_direction = sort_direction;
+    }
+    
+    
 
 }
 

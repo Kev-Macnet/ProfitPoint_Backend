@@ -48,7 +48,7 @@ class PlanSearchListData {
     private String name;
     @ApiModelProperty(value="就醫科別", example="心臟科", required=true, position=3)
     private String division;
-    @ApiModelProperty(value="是否啟用(1|0)", example="1", required=true, position=4)
+    @ApiModelProperty(value="狀態(0.未啟動/1.使用中/2.鎖定)", example="1", required=true, position=4)
     private int active;
 
     public long getId() {

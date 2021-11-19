@@ -11,22 +11,23 @@ public class PaymentTermsPl {
     
     @ApiModelProperty(value="分類", example="門診診察費", position=1, required=true)
     private String category;
+    @ApiModelProperty(value="是否啟用(0/1),更新API不支援此參數", example="1", position=2, required=false)
+    private int active;
     
-    @ApiModelProperty(value="院內碼",example="zz001", position=2, required=false)
+    @ApiModelProperty(value="院內碼",example="zz001", position=3, required=false)
     private String fee_no;
-    @ApiModelProperty(value="院內碼名稱", example="雜支", position=3, required=false)
+    @ApiModelProperty(value="院內碼名稱", example="雜支", position=4, required=false)
     private String fee_name;
     
-    @ApiModelProperty(value="支付標準代碼", example="axow-001", position=4, required=false)
+    @ApiModelProperty(value="支付標準代碼", example="axow-001", position=5, required=false)
     private String nhi_no;
-    @ApiModelProperty(value="支付標準代碼名稱", example="雜支", position=5, required=false)
+    @ApiModelProperty(value="支付標準代碼名稱", example="雜支", position=6, required=false)
     private String nhi_name;
 
-    @ApiModelProperty(value="生效日(timestamp)", example="1625932800000", position=6, required=true)
+    @ApiModelProperty(value="生效日(timestamp)", example="1625932800000", position=7, required=true)
     private long start_date;
-    @ApiModelProperty(value="失效日(timestamp)", example="1627488000000", position=7, required=true)
+    @ApiModelProperty(value="失效日(timestamp)", example="1627488000000", position=8, required=true)
     private long end_date;
-    
 //    @Min(0)
 //    @Max(4)
 //    @ApiModelProperty(value="醫院層級(1醫學中心/2區域醫院/3地方醫院/4基層診所)", example="2", position=8, required=true)
@@ -100,6 +101,12 @@ public class PaymentTermsPl {
     }
     public void setHospital_type(java.util.List<String> hospital_type) {
         this.hospital_type = hospital_type;
+    }
+    public int getActive() {
+        return active;
+    }
+    public void setActive(int active) {
+        this.active = active;
     }
 
 }

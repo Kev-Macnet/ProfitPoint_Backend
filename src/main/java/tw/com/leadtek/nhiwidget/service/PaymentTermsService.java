@@ -17,7 +17,8 @@ public class PaymentTermsService {
     private PaymentTermsDao paymentTermsDao;
 
     public java.util.Map<String, Object> searchPaymentTerms(String feeNo, String nhiNo, String category, 
-            java.util.Date startDate, java.util.Date endDate, int pageSize, int pageIndex) {
+            java.util.Date startDate, java.util.Date endDate, int pageSize, int pageIndex,
+            String sortField, String sortDirection) {
         long totalCount = paymentTermsDao.searchPaymentTermsCount(feeNo, nhiNo, category, startDate, endDate);
         int start = pageSize*pageIndex;
         if (start>totalCount) {
@@ -25,7 +26,7 @@ public class PaymentTermsService {
         } else if (start<0) {
             start = 0;
         }
-        java.util.List<Map<String, Object>> lst = paymentTermsDao.searchPaymentTerms(feeNo, nhiNo, category, startDate, endDate, start, pageSize);
+        java.util.List<Map<String, Object>> lst = paymentTermsDao.searchPaymentTerms(feeNo, nhiNo, category, startDate, endDate, start, pageSize, sortField, sortDirection);
         if (lst.size()==0) {
             totalCount = paymentTermsDao.searchPaymentTermsByDateRangeCount(feeNo, nhiNo, category, startDate, endDate);
             start = pageSize*pageIndex;
@@ -34,7 +35,7 @@ public class PaymentTermsService {
             } else if (start<0) {
                 start = 0;
             }
-            lst = paymentTermsDao.searchPaymentTermsByDateRange(feeNo, nhiNo, category, startDate, endDate, start, pageSize);
+            lst = paymentTermsDao.searchPaymentTermsByDateRange(feeNo, nhiNo, category, startDate, endDate, start, pageSize, sortField, sortDirection);
         }
         
         java.util.Map<String, Object> retMap = new java.util.LinkedHashMap<String, Object>();
@@ -77,6 +78,11 @@ public class PaymentTermsService {
             }
         }
         return validationMap;
+    }
+    
+    
+    public int updateActive(long id, String category, int state) {
+        return paymentTermsDao.updatePaymentTermsActive(id, category, state);
     }
     
     private String findUserRole(String userName) {

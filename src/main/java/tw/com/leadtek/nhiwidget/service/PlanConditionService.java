@@ -65,7 +65,7 @@ public class PlanConditionService {
 
     //PlanIcdNoPl, PlanLessNdayPl, PlanMoreTimesPl
     public long addPlanCondition(PlanConditionPl params) {
-        long new_id = planConditionDao.addPlanCondition(params.getName(), params.getDivision(), params.getActive(), 
+        long new_id = planConditionDao.addPlanCondition(params.getName(), params.getDivision(), 
                 params.getExp_icd_no_enable(), params.getExp_icd_no(), params.getNo_exp_icd_no_enable(), params.getNo_exp_icd_no(), 
                 params.getExclude_psychiatric_enable(), 
                 params.getMedicine_times_enable(), params.getMedicine_times(), params.getMedicine_times_division(), 
@@ -97,10 +97,14 @@ public class PlanConditionService {
     }
     
     
+    public int updatePlanConditionActive(long id, int state) {
+        return planConditionDao.updatePlanConditionActive(id, state);
+    }
+    
     public int updatePlanCondition(long id, PlanConditionPl params) {
         int ret=0;
         if (id > 0) {
-            ret += planConditionDao.updatePlanCondition(id, params.getName(), params.getDivision(), params.getActive(), 
+            ret += planConditionDao.updatePlanCondition(id, params.getName(), params.getDivision(), 
                     params.getExp_icd_no_enable(), params.getExp_icd_no(), params.getNo_exp_icd_no_enable(), params.getNo_exp_icd_no(), 
                     params.getExclude_psychiatric_enable(), 
                     params.getMedicine_times_enable(), params.getMedicine_times(), params.getMedicine_times_division(), 

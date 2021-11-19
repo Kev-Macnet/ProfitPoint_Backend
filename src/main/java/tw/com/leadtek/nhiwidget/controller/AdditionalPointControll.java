@@ -10,9 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -49,8 +52,23 @@ public class AdditionalPointControll {
         } else {
             java.util.Date da1 = Utility.detectDate(params.getStart_date());
             java.util.Date da2 = Utility.detectDate(params.getEnd_date());
+            String sortField = params.getSort_field();
+            String sortDirection = params.getSort_direction(); // ASC|DESC
+            if ((sortField==null)||(sortField.length()==0)) {
+                sortField = "ID";
+            }
+            if ((sortDirection==null)||(sortDirection.length()==0)) {
+                sortDirection = "ASC";
+            }
+            if (java.util.Arrays.asList(new String[] {"ID","START_DATE","END_DATE"}).indexOf(sortField.toUpperCase())<0) {
+                sortField = "ID";
+            }
+            if (java.util.Arrays.asList(new String[] {"ASC","DESC"}).indexOf(sortDirection.toUpperCase())<0) {
+                sortField = "ASC";
+            }
 
-            java.util.Map<String, Object> retMap = additionalPointService.findList(da1, da2, params.getPageSize(), params.getPageIndex());
+            java.util.Map<String, Object> retMap = additionalPointService.findList(da1, da2, params.getPageSize(), params.getPageIndex(),
+                    sortField.toUpperCase(), sortDirection.toUpperCase());
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
@@ -135,6 +153,36 @@ public class AdditionalPointControll {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             java.util.Map<String, Object> retMap = additionalPointService.findOne(id);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="14.06 總額外點數條件狀態設定", notes="", position=6)
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{status:1.設定成功)/else.設定失敗 }")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name="Authorization", value="token", example="", dataType="String", paramType="header", required=true),
+        @ApiImplicitParam(name="id", value="單號", dataType="String", paramType="path", required=true),
+        @ApiImplicitParam(name="state", value="0.未啟動/1.使用中/2.鎖定", dataType="String", paramType="query", required=true)
+     })
+    @RequestMapping(value = "/additional/setactive/{id}", method = RequestMethod.POST)
+    public ResponseEntity<?> additionalSetActive(@RequestHeader("Authorization") String jwt,
+            @PathVariable long id,
+            @RequestParam(required=true, defaultValue="") int state) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = additionalPointService.updateActive(id, state);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>=1) {
+                retMap.put("message", "設定完成。");
+            } else {
+                retMap.put("message", "單號不存在。");
+            }
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }

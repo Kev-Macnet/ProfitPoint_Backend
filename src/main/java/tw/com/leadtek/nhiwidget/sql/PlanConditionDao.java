@@ -88,15 +88,15 @@ public class PlanConditionDao extends BaseSqlDao {
     }
     
     
-    public long addPlanCondition(String name, String division, int active, 
+    public long addPlanCondition(String name, String division, 
             int exp_icd_no_enable, String exp_icd_no, int no_exp_icd_no_enable, String no_exp_icd_no, 
             int exclude_psychiatric_enable, int medicine_times_enable, int medicine_times, String medicine_times_division, 
             int exclude_plan_nday_enable, int exclude_plan_nday, int exclude_join_enable, String exclude_join) {
         String sql;
         sql = "Insert into \n"
-                + "PLAN_CONDITION(NAME, DIVISION, ACTIVE, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN)\n"
-                + "Values('%s', '%s', %d, %d, '%s', %d, '%s', %d, %d, %d, '%s', %d, %d, %d, '%s')";
-        sql = String.format(sql, noInjection(name), noInjection(division), active, exp_icd_no_enable, 
+                + "PLAN_CONDITION(NAME, DIVISION, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN)\n"
+                + "Values('%s', '%s', %d, '%s', %d, '%s', %d, %d, %d, '%s', %d, %d, %d, '%s')";
+        sql = String.format(sql, noInjection(name), noInjection(division), exp_icd_no_enable, 
                 exp_icd_no, no_exp_icd_no_enable, noInjection(no_exp_icd_no), 
                 exclude_psychiatric_enable, medicine_times_enable, medicine_times, noInjection(medicine_times_division), 
                 exclude_plan_nday_enable, exclude_plan_nday, exclude_join_enable, noInjection(exclude_join));
@@ -122,7 +122,7 @@ public class PlanConditionDao extends BaseSqlDao {
     }
     
     
-    public int updatePlanCondition(long id, String name, String division, int active, 
+    public int updatePlanCondition(long id, String name, String division, 
             int exp_icd_no_enable, String exp_icd_no, int no_exp_icd_no_enable, String no_exp_icd_no, 
             int exclude_psychiatric_enable, int medicine_times_enable, int medicine_times, String medicine_times_division, 
             int exclude_plan_nday_enable, int exclude_plan_nday, int exclude_join_enable, String exclude_join) {
@@ -130,7 +130,6 @@ public class PlanConditionDao extends BaseSqlDao {
         sql = "Update PLAN_CONDITION\n"
                 + "Set NAME='%s', \n"
                 + "    DIVISION='%s', \n"
-                + "    ACTIVE=%d, \n"
                 + "    EXP_ICD_NO_ENABLE=%d, \n"
                 + "    EXP_ICD_NO='%s', \n"
                 + "    NO_EXP_ICD_NO_ENABLE=%d, \n"
@@ -144,7 +143,7 @@ public class PlanConditionDao extends BaseSqlDao {
                 + "    EXCLUDE_JOIN_ENABLE=%d, \n"
                 + "    EXCLUDE_JOIN='%s'\n"
                 + "Where (ID=%d)";
-        sql = String.format(sql, noInjection(name), noInjection(division), active, exp_icd_no_enable, noInjection(exp_icd_no), 
+        sql = String.format(sql, noInjection(name), noInjection(division), exp_icd_no_enable, noInjection(exp_icd_no), 
                             no_exp_icd_no_enable, noInjection(no_exp_icd_no), 
                             exclude_psychiatric_enable, medicine_times_enable, medicine_times, noInjection(medicine_times_division), 
                             exclude_plan_nday_enable, exclude_plan_nday, exclude_join_enable, noInjection(exclude_join), id);
@@ -158,6 +157,18 @@ public class PlanConditionDao extends BaseSqlDao {
         sql = "Delete From PLAN_CONDITION\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
+        logger.trace(sql);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    
+    public int updatePlanConditionActive(long id, int state) {
+        String sql;
+        sql = "Update PLAN_CONDITION\n"
+                + "Set ACTIVE=%d\n"
+                + "Where (ID=%d)";
+        sql = String.format(sql, state, id);
         logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;

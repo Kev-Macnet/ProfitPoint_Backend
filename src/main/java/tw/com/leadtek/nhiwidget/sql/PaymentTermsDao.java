@@ -58,12 +58,13 @@ public class PaymentTermsDao extends BaseSqlDao {
     }
 
     public java.util.List<Map<String, Object>> searchPaymentTerms(String feeNo, String nhiNo, String category, 
-            java.util.Date startDate, java.util.Date endDate, int start, int pageSize) {
+            java.util.Date startDate, java.util.Date endDate, int start, int pageSize,
+            String sortField, String sortDirection) {
         String strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
         String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         
         String sql;
-        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
+        sql = "Select ID, ACTIVE, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
                 + "From PT_PAYMENT_TERMS\n"
                 + "Where (1=1)\n"
                 + " -- and (FEE_NO like '%s%%')\n"
@@ -71,9 +72,11 @@ public class PaymentTermsDao extends BaseSqlDao {
                 + " -- and (CATEGORY='%s')\n"
                 + " -- and (START_DATE='%s')\n"
                 + " -- and (END_DATE='%s')\n"
-                + "Order By ID\n"
+//                + "Order By ID\n"
+                + "Order By %s %s\n"
                 + "limit %d offset %d";
-        sql = String.format(sql, noInjection(feeNo), noInjection(nhiNo), noInjection(category), strStart, strEnd, pageSize, start);
+        sql = String.format(sql, noInjection(feeNo), noInjection(nhiNo), noInjection(category), strStart, strEnd, 
+                sortField, sortDirection, pageSize, start);
         if (feeNo.length()>0) {
             sql=sql.replace("-- and (FEE_NO", " and (FEE_NO");
         }
@@ -89,7 +92,7 @@ public class PaymentTermsDao extends BaseSqlDao {
         if (strEnd.length()>0) {
           sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
         }
-//        System.out.println("sql-55="+sql);
+//        System.out.println("sql-95="+sql);
         logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         lst = Utility.listLowerCase(lst);
@@ -101,7 +104,7 @@ public class PaymentTermsDao extends BaseSqlDao {
     }
     
     
-    public long searchPaymentTermsByDateRangeCount(String category, String feeNo, String nhiNo, 
+    public long searchPaymentTermsByDateRangeCount(String feeNo, String nhiNo, String category, 
             java.util.Date startDate, java.util.Date endDate) {
         String strStart, strEnd;
         if (startDate!=null) {
@@ -140,8 +143,9 @@ public class PaymentTermsDao extends BaseSqlDao {
         }
     }
 
-    public java.util.List<Map<String, Object>> searchPaymentTermsByDateRange(String category, String feeNo, String nhiNo, 
-            java.util.Date startDate, java.util.Date endDate, int start, int pageSize) {
+    public java.util.List<Map<String, Object>> searchPaymentTermsByDateRange(String feeNo, String nhiNo, String category,
+            java.util.Date startDate, java.util.Date endDate, int start, int pageSize,
+            String sortField, String sortDirection) {
         String strStart, strEnd;
         if (startDate!=null) {
             strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
@@ -153,7 +157,7 @@ public class PaymentTermsDao extends BaseSqlDao {
         }
         strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         String sql;
-        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
+        sql = "Select ID, ACTIVE, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
                 + "From PT_PAYMENT_TERMS\n"
                 + "Where (1=1)\n"
                 + " -- and (CATEGORY='%s')\n"
@@ -161,10 +165,12 @@ public class PaymentTermsDao extends BaseSqlDao {
                 + " -- and (NHI_NO='%s')\n"
                 + " and (START_DATE BETWEEN '%s' and '%s')\n"
                 + " and (END_DATE BETWEEN '%s' and '%s')\n"
-                + "Order By ID\n"
+//                + "Order By ID\n"
+                + "Order By %s %s\n"
                 + "limit %d offset %d";
         
-        sql = String.format(sql, noInjection(category), noInjection(feeNo), noInjection(nhiNo), strStart, strEnd, strStart, strEnd, pageSize, start);
+        sql = String.format(sql, noInjection(category), noInjection(feeNo), noInjection(nhiNo), strStart, strEnd, strStart, strEnd, 
+                sortField, sortDirection, pageSize, start);
         if (category.length()>0) {
             sql = sql.replace("-- and (CATEGORY", " and (CATEGORY");
         }
@@ -174,6 +180,7 @@ public class PaymentTermsDao extends BaseSqlDao {
         if (nhiNo.length()>0) {
             sql = sql.replace("-- and (NHI_NO", " and (NHI_NO");
         }
+//        System.out.println("sql-183="+sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         lst = Utility.listLowerCase(lst);
         for (Map<String, Object> item : lst) {
@@ -187,7 +194,7 @@ public class PaymentTermsDao extends BaseSqlDao {
 //        sql= "Insert into\n"
 //                + "PT_PAYMENT_TERMS(ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\n"
 //                + "Values(0, '', '', '', '', CURRENT_DATE, '', '', 0, 0)";
-        sql = "Select ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
+        sql = "Select ID, ACTIVE, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
                 + "From PT_PAYMENT_TERMS\n"
                 + "Where (ID=%d) and (CATEGORY='%s')";
         sql = String.format(sql, id, noInjection(category));
@@ -271,6 +278,16 @@ public class PaymentTermsDao extends BaseSqlDao {
             deleteHospitalType(id);
             addHospitalType(id, hospital_type);
         }
+        return ret;
+    }
+    
+    public int updatePaymentTermsActive(long id, String category, int state) {
+        String sql;
+        sql = "Update PT_PAYMENT_TERMS\n"
+                + "Set ACTIVE=%d\n"
+                + "Where (ID=%d)and(CATEGORY='%s')";
+        sql = String.format(sql, state, id, noInjection(category));
+        int ret = jdbcTemplate.update(sql);
         return ret;
     }
     

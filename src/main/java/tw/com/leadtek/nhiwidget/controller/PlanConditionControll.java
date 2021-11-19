@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -130,6 +132,36 @@ public class PlanConditionControll {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             java.util.Map<String, Object> retMap = planConditionService.findOne(id);
+            return new ResponseEntity<>(retMap, HttpStatus.OK);
+        }
+    }
+    
+    @ApiOperation(value="13.06 計畫可收案病例條件狀態設定", notes="", position=6)
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{status:1.設定成功)/else.設定失敗 }")
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name="Authorization", value="token", example="", dataType="String", paramType="header", required=true),
+        @ApiImplicitParam(name="id", value="單號", dataType="String", paramType="path", required=true),
+        @ApiImplicitParam(name="state", value="0.未啟動/1.使用中/2.鎖定", dataType="String", paramType="query", required=true)
+     })
+    @RequestMapping(value = "/plan/setactive/{id}", method = RequestMethod.POST)
+    public ResponseEntity<?> planConditionSetActive(@RequestHeader("Authorization") String jwt,
+            @PathVariable long id,
+            @RequestParam(required=true, defaultValue="") int state) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
+        if ((int)jwtValidation.get("status") != 200) {
+            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else {
+            int status = planConditionService.updatePlanConditionActive(id, state);
+            java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+            retMap.put("status", status);
+            if (status>=1) {
+                retMap.put("message", "設定完成。");
+            } else {
+                retMap.put("message", "單號不存在。");
+            }
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
