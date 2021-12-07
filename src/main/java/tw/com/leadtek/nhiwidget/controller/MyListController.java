@@ -3,6 +3,9 @@
  */
 package tw.com.leadtek.nhiwidget.controller;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +19,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
+import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentResponse;
 import tw.com.leadtek.nhiwidget.payload.my.DoctorListResponse;
 import tw.com.leadtek.nhiwidget.payload.my.MyTodoListResponse;
 import tw.com.leadtek.nhiwidget.payload.my.NoticeRecordResponse;
@@ -24,6 +28,7 @@ import tw.com.leadtek.nhiwidget.payload.my.WarningOrderResponse;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
+import tw.com.leadtek.tools.DateTool;
 
 @Api(tags = "我的清單相關API", value = "我的清單相關API")
 @CrossOrigin(origins = "*", maxAge = 36000)
@@ -40,6 +45,26 @@ public class MyListController extends BaseController {
   @ApiOperation(value = "取得我的清單-待辦事項", notes = "取得我的清單-待辦事項")
   @GetMapping("/todo")
   public ResponseEntity<MyTodoListResponse> getMyTodo(
+      @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
+      example = "2021/03/15") @RequestParam(required = false) String sdate,
+    @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
+      example = "2021/03/18") @RequestParam(required = false) String edate,
+    @ApiParam(name = "isOp", value = "就醫類別為門急診",
+      example = "true") @RequestParam(required = false) Boolean isOp,
+    @ApiParam(name = "isIp", value = "就醫類別為住院",
+      example = "true") @RequestParam(required = false) Boolean isIp,
+    @ApiParam(name = "funcType", value = "科別代碼，如：00(不分科)，01(家醫科)，02(內科)，03(外科)...",
+      example = "03") @RequestParam(required = false) String funcType,
+    @ApiParam(name = "funcTypec", value = "科別名稱，如：不分科、家醫科、內科、外科...",
+      example = "家醫科") @RequestParam(required = false) String funcTypec,
+    @ApiParam(name = "prsnId", value = "醫護代碼",
+      example = "A123456789") @RequestParam(required = false) String prsnId,
+    @ApiParam(name = "prsnName", value = "醫護姓名",
+      example = "王小明") @RequestParam(required = false) String prsnName,
+    @ApiParam(name = "applId", value = "負責人員代碼",
+      example = "A123456789") @RequestParam(required = false) String applId,
+    @ApiParam(name = "applName", value = "負責人員姓名",
+      example = "王小明") @RequestParam(required = false) String applName,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，status:資料狀態，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
@@ -82,12 +107,65 @@ public class MyListController extends BaseController {
       result.setResult(BaseResponse.ERROR);
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
     }
-    return ResponseEntity.ok(xmlService.getMyTodoList(user, column, asc, perPageInt, page));
+    String dataFormat = null;
+    if (isOp != null && isOp.booleanValue()) {
+      if (isIp != null && isIp) {
+        // null
+      } else {
+        dataFormat = "10";
+      }
+    } else if (isIp != null && isIp.booleanValue()) {
+      dataFormat = "20";
+    }
+   
+    Date startDate = null;
+    Date endDate = null;
+
+    if (sdate != null && edate != null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        startDate = sdf.parse(sdate);
+        endDate = sdf.parse(edate);
+        if (startDate.after(endDate)) {
+          MyTodoListResponse result = new MyTodoListResponse();
+          result.setMessage("啟始日不可大於結束日");
+          result.setResult("failed");
+          return ResponseEntity.badRequest().body(result);
+        }
+      } catch (ParseException e) {
+        MyTodoListResponse result = new MyTodoListResponse();
+        result.setMessage("日期格式有誤");
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    return ResponseEntity.ok(xmlService.getMyTodoList(user, startDate, endDate, dataFormat, 
+        funcType, funcTypec, prsnId, prsnName, applId, applName, column, asc, perPageInt, page));
   }
   
   @ApiOperation(value = "取得我的清單-比對警示", notes = "取得我的清單-比對警示")
   @GetMapping("/warning")
   public ResponseEntity<WarningOrderResponse> getWarningOrder(
+    @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
+      example = "2021/03/15") @RequestParam(required = false) String sdate,
+    @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
+      example = "2021/03/18") @RequestParam(required = false) String edate,
+    @ApiParam(name = "isOp", value = "就醫類別為門急診",
+      example = "true") @RequestParam(required = false) Boolean isOp,
+    @ApiParam(name = "isIp", value = "就醫類別為住院",
+      example = "true") @RequestParam(required = false) Boolean isIp,
+    @ApiParam(name = "funcType", value = "科別代碼，如：00(不分科)，01(家醫科)，02(內科)，03(外科)...",
+      example = "03") @RequestParam(required = false) String funcType,
+    @ApiParam(name = "funcTypec", value = "科別名稱，如：不分科、家醫科、內科、外科...",
+      example = "家醫科") @RequestParam(required = false) String funcTypec,
+    @ApiParam(name = "prsnId", value = "醫護代碼",
+      example = "A123456789") @RequestParam(required = false) String prsnId,
+    @ApiParam(name = "prsnName", value = "醫護姓名",
+      example = "王小明") @RequestParam(required = false) String prsnName,
+    @ApiParam(name = "applId", value = "負責人員代碼",
+      example = "A123456789") @RequestParam(required = false) String applId,
+    @ApiParam(name = "applName", value = "負責人員姓名",
+      example = "王小明") @RequestParam(required = false) String applName,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
@@ -131,12 +209,67 @@ public class MyListController extends BaseController {
       result.setResult(BaseResponse.ERROR);
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
     }
-    return ResponseEntity.ok(xmlService.getWarningOrderList(user, column, asc, perPageInt, page));
+    String dataFormat = null;
+    if (isOp != null && isOp.booleanValue()) {
+      if (isIp != null && isIp) {
+        // null
+      } else {
+        dataFormat = "10";
+      }
+    } else if (isIp != null && isIp.booleanValue()) {
+      dataFormat = "20";
+    }
+   
+    Date startDate = null;
+    Date endDate = null;
+
+    if (sdate != null && edate != null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        startDate = sdf.parse(sdate);
+        endDate = sdf.parse(edate);
+        if (startDate.after(endDate)) {
+          WarningOrderResponse result = new WarningOrderResponse();
+          result.setMessage("啟始日不可大於結束日");
+          result.setResult("failed");
+          return ResponseEntity.badRequest().body(result);
+        }
+      } catch (ParseException e) {
+        WarningOrderResponse result = new WarningOrderResponse();
+        result.setMessage("日期格式有誤");
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    return ResponseEntity.ok(xmlService.getWarningOrderList(user, startDate, endDate, dataFormat, 
+        funcType, funcTypec, prsnId, prsnName, applId, applName, column, asc, perPageInt, page));
   }
   
   @ApiOperation(value = "取得我的清單-疑問標示", notes = "取得我的清單-疑問標示")
   @GetMapping("/question")
   public ResponseEntity<QuestionMarkResponse> getQuestionMark(
+    @ApiParam(name = "applYm", value = "申報西元年月，格式 yyyyMM",
+      example = "202103") @RequestParam(required = false) String applYm,
+    @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
+      example = "2021/03/15") @RequestParam(required = false) String sdate,
+    @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
+      example = "2021/03/18") @RequestParam(required = false) String edate,
+    @ApiParam(name = "isOp", value = "就醫類別為門急診",
+      example = "true") @RequestParam(required = false) Boolean isOp,
+    @ApiParam(name = "isIp", value = "就醫類別為住院",
+      example = "true") @RequestParam(required = false) Boolean isIp,
+    @ApiParam(name = "funcType", value = "科別代碼，如：00(不分科)，01(家醫科)，02(內科)，03(外科)...",
+      example = "03") @RequestParam(required = false) String funcType,
+    @ApiParam(name = "funcTypec", value = "科別名稱，如：不分科、家醫科、內科、外科...",
+      example = "家醫科") @RequestParam(required = false) String funcTypec,
+    @ApiParam(name = "prsnId", value = "醫護代碼",
+      example = "A123456789") @RequestParam(required = false) String prsnId,
+    @ApiParam(name = "prsnName", value = "醫護姓名",
+      example = "王小明") @RequestParam(required = false) String prsnName,
+    @ApiParam(name = "applId", value = "負責人員代碼",
+      example = "A123456789") @RequestParam(required = false) String applId,
+    @ApiParam(name = "applName", value = "負責人員姓名",
+      example = "王小明") @RequestParam(required = false) String applName,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
@@ -151,6 +284,9 @@ public class MyListController extends BaseController {
     int perPageInt = (perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
         : perPage.intValue();
 
+    if ("undefined".equals(applYm)) {
+    	applYm = null;
+    }
     String column = orderBy;
     if (column != null) {
       if (column.equals("sdate")) {
@@ -173,12 +309,68 @@ public class MyListController extends BaseController {
       result.setResult(BaseResponse.ERROR);
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
-    return ResponseEntity.ok(xmlService.getQuestionMark(user, column, asc, perPageInt, page));
+    String dataFormat = null;
+    if (isOp != null && isOp.booleanValue()) {
+      if (isIp != null && isIp) {
+        // null
+      } else {
+        dataFormat = "10";
+      }
+    } else if (isIp != null && isIp.booleanValue()) {
+      dataFormat = "20";
+    }
+   
+    Date startDate = null;
+    Date endDate = null;
+
+    if (sdate != null && edate != null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        startDate = sdf.parse(sdate);
+        endDate = sdf.parse(edate);
+        if (startDate.after(endDate)) {
+          QuestionMarkResponse result = new QuestionMarkResponse();
+          result.setMessage("啟始日不可大於結束日");
+          result.setResult("failed");
+          return ResponseEntity.badRequest().body(result);
+        }
+      } catch (ParseException e) {
+        QuestionMarkResponse result = new QuestionMarkResponse();
+        result.setMessage("日期格式有誤");
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    return ResponseEntity.ok(xmlService.getQuestionMark(user, applYm,
+        startDate, endDate, dataFormat, funcType, funcTypec, prsnId, prsnName, 
+        applId, applName, column, asc, perPageInt, page));
   }
   
   @ApiOperation(value = "取得我的清單-通知記錄", notes = "取得我的清單-比對警示")
   @GetMapping("/notice")
   public ResponseEntity<NoticeRecordResponse> getNoticeRecord(
+    @ApiParam(name = "applYm", value = "申報西元年月，格式 yyyyMM",
+      example = "202103") @RequestParam(required = false) String applYm,
+    @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
+      example = "2021/03/15") @RequestParam(required = false) String sdate,
+    @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
+      example = "2021/03/18") @RequestParam(required = false) String edate,
+    @ApiParam(name = "isOp", value = "就醫類別為門急診",
+      example = "true") @RequestParam(required = false) Boolean isOp,
+    @ApiParam(name = "isIp", value = "就醫類別為住院",
+      example = "true") @RequestParam(required = false) Boolean isIp,
+    @ApiParam(name = "funcType", value = "科別代碼，如：00(不分科)，01(家醫科)，02(內科)，03(外科)...",
+      example = "03") @RequestParam(required = false) String funcType,
+    @ApiParam(name = "funcTypec", value = "科別名稱，如：不分科、家醫科、內科、外科...",
+      example = "家醫科") @RequestParam(required = false) String funcTypec,
+    @ApiParam(name = "prsnId", value = "醫護代碼",
+      example = "A123456789") @RequestParam(required = false) String prsnId,
+    @ApiParam(name = "prsnName", value = "醫護姓名",
+      example = "王小明") @RequestParam(required = false) String prsnName,
+    @ApiParam(name = "applId", value = "負責人員代碼",
+      example = "A123456789") @RequestParam(required = false) String applId,
+    @ApiParam(name = "applName", value = "負責人員姓名",
+      example = "王小明") @RequestParam(required = false) String applName,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，status:資料狀態，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
@@ -213,7 +405,41 @@ public class MyListController extends BaseController {
       result.setResult(BaseResponse.ERROR);
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
-    return ResponseEntity.ok(xmlService.getNoticeRecord(user, column, asc, perPageInt, page));
+    String dataFormat = null;
+    if (isOp != null && isOp.booleanValue()) {
+      if (isIp != null && isIp) {
+        // null
+      } else {
+        dataFormat = "10";
+      }
+    } else if (isIp != null && isIp.booleanValue()) {
+      dataFormat = "20";
+    }
+   
+    Date startDate = null;
+    Date endDate = null;
+
+    if (sdate != null && edate != null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        startDate = sdf.parse(sdate);
+        endDate = sdf.parse(edate);
+        if (startDate.after(endDate)) {
+          NoticeRecordResponse result = new NoticeRecordResponse();
+          result.setMessage("啟始日不可大於結束日");
+          result.setResult("failed");
+          return ResponseEntity.badRequest().body(result);
+        }
+      } catch (ParseException e) {
+        NoticeRecordResponse result = new NoticeRecordResponse();
+        result.setMessage("日期格式有誤");
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    return ResponseEntity.ok(xmlService.getNoticeRecord(user, applYm,
+        startDate, endDate, dataFormat, funcType, funcTypec, prsnId, prsnName, 
+        applId, applName, column, asc, perPageInt, page));
   }
   
   @ApiOperation(value = "取得我的清單-醫師查看清單", notes = "取得我的清單-醫師查看清單")

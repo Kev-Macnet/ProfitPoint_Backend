@@ -28,7 +28,7 @@ public class CODE_THRESHOLD {
   private Long id;
 
   /**
-   * 代碼類別，1:罕見ICD代碼，2:支付代碼應用比例偏高
+   * 代碼類別，1:罕見ICD代碼，2:支付代碼應用比例偏高，3:特別用量藥材、衛品
    */
   @Column(name = "CODE_TYPE")
   @JsonIgnore
@@ -245,7 +245,7 @@ public class CODE_THRESHOLD {
   }
 
   /**
-   * 代碼類別，1:罕見ICD代碼，2:支付代碼應用比例偏高
+   * 代碼類別，1:罕見ICD代碼，2:支付代碼應用比例偏高，3:特別用量藥材、衛品
    */
   public void setCodeType(Integer CODE_TYPE) {
     codeType = CODE_TYPE;

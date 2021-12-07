@@ -13,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
@@ -221,6 +222,31 @@ public class MR {
   @ApiModelProperty(value = "DRG落點區間", required = false)
   @Column(name = "DRG_SECTION")
   protected String drgSection;
+  
+  @ApiModelProperty(value = "主診斷碼", required = false)
+  @Column(name = "ICDCM1")
+  protected String icdcm1;
+  
+  @ApiModelProperty(value = "次診斷碼", required = false)
+  @Column(name = "ICDCM_OTHERS")
+  protected String icdcmOthers;
+  
+  @ApiModelProperty(value = "所有的處置碼", required = false)
+  @Column(name = "ICDPCS")
+  protected String icdpcs;
+  
+  @ApiModelProperty(value = "所有的診斷碼+處置碼", required = false)
+  @Column(name = "ICD_ALL")
+  protected String icdAll;
+  
+  @ApiModelProperty(value = "所有的健保碼/醫令/支付標準代碼", required = false)
+  @Column(name = "CODE_ALL")
+  protected String codeAll;
+  
+  @ApiModelProperty(value = "上次異動病歷狀態的user ID", required = false)
+  @Column(name = "UPDATE_USER_ID")
+  @JsonIgnore
+  protected Long updateUserId;
 
   /**
    * 更新時間
@@ -627,6 +653,14 @@ public class MR {
   public void setChangeSo(Integer changeSo) {
     this.changeSo = changeSo;
   }
+  
+  public Long getUpdateUserId() {
+    return updateUserId;
+  }
+
+  public void setUpdateUserId(Long updateUserId) {
+    this.updateUserId = updateUserId;
+  }
 
   public void updateMR(MR mr) {
     this.inhMrId = mr.getInhMrId();
@@ -661,5 +695,52 @@ public class MR {
     this.drgCode = mr.getDrgCode();
     this.drgSection = mr.getDrgSection();
     this.applYm = mr.getApplYm();
+    this.updateAt = new Date();
+    icdcm1 = mr.getIcdcm1();
+    icdcmOthers = mr.getIcdcmOthers();
+    icdpcs = mr.getIcdpcs();
+    icdAll = mr.getIcdAll();
+    codeAll = mr.getCodeAll();
   }
+
+  public String getIcdcm1() {
+    return icdcm1;
+  }
+
+  public void setIcdcm1(String icdcm1) {
+    this.icdcm1 = icdcm1;
+  }
+
+  public String getIcdcmOthers() {
+    return icdcmOthers;
+  }
+
+  public void setIcdcmOthers(String icdcmOthers) {
+    this.icdcmOthers = icdcmOthers;
+  }
+
+  public String getIcdpcs() {
+    return icdpcs;
+  }
+
+  public void setIcdpcs(String icdpcs) {
+    this.icdpcs = icdpcs;
+  }
+
+  public String getIcdAll() {
+    return icdAll;
+  }
+
+  public void setIcdAll(String icdAll) {
+    this.icdAll = icdAll;
+  }
+
+  public String getCodeAll() {
+    return codeAll;
+  }
+
+  public void setCodeAll(String codeAll) {
+    this.codeAll = codeAll;
+  }
+  
 }

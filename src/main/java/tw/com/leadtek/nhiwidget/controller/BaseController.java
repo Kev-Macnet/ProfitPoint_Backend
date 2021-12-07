@@ -90,7 +90,7 @@ public class BaseController {
     try {
       Class<?> c = Class.forName(className);
       String functionName = field.substring(0, 1).toUpperCase() + field.substring(1);
-      c.getDeclaredMethod("get" + functionName, null);
+      c.getDeclaredMethod("get" + functionName, (Class<?>[])new Class[]{});
       return true;
     } catch (ClassNotFoundException e) {
       e.printStackTrace();

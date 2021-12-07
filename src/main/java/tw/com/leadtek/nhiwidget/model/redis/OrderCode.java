@@ -59,7 +59,7 @@ public class OrderCode extends CodeBaseLongId {
   }
 
   public OrderCode(long id, String code, String desc, String descEn) {
-    this.id = new Long(id);
+    this.id = id;
     setCode(code);
     if (descEn != null && descEn.length() > 0) {
       setDescEn(descEn);

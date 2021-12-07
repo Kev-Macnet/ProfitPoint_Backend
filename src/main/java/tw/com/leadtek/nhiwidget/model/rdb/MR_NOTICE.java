@@ -187,6 +187,18 @@ public class MR_NOTICE {
   @Column(name = "STATUS")
   @JsonIgnore
   private Integer status;
+  
+  /**
+   * 申報年月(西元年)，如 202111
+   */
+  @Column(name = "YM")
+  private Integer ym;
+  
+  /**
+   * 資料格式，與IP_T, OP_T的DATA_FORMAT值一樣。10:門診，20:住院
+   */
+  @Column(name = "DATA_FORMAT")
+  private String dataFormat;
 
   /**
    * 更新時間
@@ -221,6 +233,8 @@ public class MR_NOTICE {
     noticeName = myMr.getNoticeName();
     status = 0;
     readedPpl = 0;
+    ym = myMr.getYm();
+    dataFormat = myMr.getDataFormat();
     updateAt = new Date();
   }
 
@@ -572,6 +586,22 @@ public class MR_NOTICE {
    */
   public void setUpdateAt(Date UPDATE_AT) {
     updateAt = UPDATE_AT;
+  }
+
+  public Integer getYm() {
+    return ym;
+  }
+
+  public void setYm(Integer ym) {
+    this.ym = ym;
+  }
+
+  public String getDataFormat() {
+    return dataFormat;
+  }
+
+  public void setDataFormat(String dataFormat) {
+    this.dataFormat = dataFormat;
   }
 
 }

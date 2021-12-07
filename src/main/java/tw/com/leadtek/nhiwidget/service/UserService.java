@@ -25,7 +25,9 @@ import tw.com.leadtek.nhiwidget.dao.USER_DEPARTMENTDao;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.model.rdb.USER_DEPARTMENT;
+import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.UserRequest;
+import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 
 /**
@@ -68,6 +70,9 @@ public class UserService {
   
   @Autowired
   private LogDataDao logDataDao;
+  
+  @Autowired
+  private JwtUtils jwtUtils;
   
   @Value("${jwt.afk}")
   private long afkTime;
@@ -173,8 +178,11 @@ public class UserService {
   }
 
   public USER findUser(String username) {
-    Optional<USER> user = userDao.findByUsername(username);
-    return user.orElse(null);
+    List<USER> list = userDao.findByUsername(username);
+    if (list != null && list.size() > 0) {
+      return list.get(0);
+    }
+    return null;
   }
   
   public USER findUserById(long id) {
@@ -205,12 +213,11 @@ public class UserService {
     if (username == null || username.length() == 0 || password == null || password.length() == 0) {
       return "帳號密碼有誤";
     }
-    System.out.println("login username:" + username);
-    Optional<USER> optional = userDao.findByUsername(username);
-    if (optional == null) {
+    List<USER> list = userDao.findByUsername(username);
+    if (list == null || list.size() == 0) {
       return "帳號不存在";
     }
-    USER existUser = optional.orElse(new USER());
+    USER existUser = list.get(0);
     if (encoder.matches(password, existUser.getPassword())) {
       return null;
     }
@@ -272,6 +279,9 @@ public class UserService {
   }
 
   public DEPARTMENT newDepartment(DEPARTMENT department) {
+    if (departments == null) {
+      retrieveData();
+    }
     DEPARTMENT existDepartment = findDepartment(department.getName());
     if (existDepartment != null) {
       return null;
@@ -288,8 +298,9 @@ public class UserService {
   }
 
   public String deleteDepartment(Long id) {
+    departments.remove(id);
     Optional<DEPARTMENT> existDepartment = departmentDao.findById(id);
-    if (existDepartment == null) {
+    if (!existDepartment.isPresent()) {
       return "部門id不存在";
     }
     departmentDao.deleteById(id);
@@ -462,6 +473,25 @@ public class UserService {
       deleteAndSaveUserLogout(key, sets);
     }
     redisService.putHash(key, jwt, String.valueOf(System.currentTimeMillis()));
+    removeMrEditKey(username);
+  }
+  
+  /**
+   * 同一帳號，重複登入，需把之前尚在編輯病歷的記錄移除，以免無法再次編輯
+   * @param username
+   */
+  public void removeMrEditKey(String username) {
+    Set<String> mrEditKeys = redisService.keys(UserService.MREDIT + "*");
+    for (String key : mrEditKeys) {
+      Set<Object> names = redisService.hkeys(key);
+      for (Object obj : names) {
+        String jwt = (String) obj;
+        String jwtUsername = jwtUtils.getUsernameFromToken(jwt);
+        if (jwtUsername == null || jwtUsername.equals(username)) {
+          redisService.deleteHash(key, jwt);
+        }
+      }
+    }
   }
   
   public void deleteAndSaveUserLogout(String key, Set<Object> names) {

@@ -1,3 +1,4 @@
+# 59.120.139.60 -> ec2-54-168-152-76.ap-northeast-1.compute.amazonaws.com
 server:
   port: ${port:8081}
   tomcat:
@@ -21,10 +22,11 @@ spring:
       max-file-size: 256MB
       max-request-size: 256MB
       enabled: true
-#  jackson:
-#    default-property-inclusion: non_null
+  jackson:
+    default-property-inclusion: NON_NULL
   redis:
-    host: 10.10.5.30
+    host: 59.120.139.62
+#    host: 10.10.5.30
     port: 6379
     database: 0
     password: Leadtek
@@ -33,27 +35,26 @@ spring:
         max-active: 8
         max-wait: -1
         max-idle: 4
-#  datasource:
-#    hikari:
-#      data-source-class-name: com.zaxxer.hikari.HikariDataSource
-#      driver-class-name: com.sap.db.jdbc.Driver
-#      url: 
-#      username: NWUSER
-#      password: Leadtek21191
-#      connection-test-query: SELECT '1' FROM DUMMY
   datasource:
-    url: jdbc:sap://10.10.5.31:30041/NHIWIDGET
-    username: NWUSER
-    password: Leadtek2021
+    url: jdbc:mariadb://${dbip:leadtek-aws-db.cdw1dvedcf5w.ap-northeast-1.rds.amazonaws.com}:${dbport:3306}/nwuser
+    username: admin
+    password: AWSLeadtek23850!
+#  datasource:
+#    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+#    url: jdbc:sqlserver://${dbip:140.127.232.81}:${dbport:1433}; databaseName=ProjectData
+#    username: sa
+#    password: "!si7966"
+#    connection-test-query: SELECT '1' FROM DUMMY
   jpa:
+#    orm:
+    mapping-resources: orm.xml
     show-sql: false
     hibernate:
       naming:
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
     properties:
       hibernate:
-#       dialect: org.hibernate.dialect.SAPDBDialect
-        dialect: org.hibernate.dialect.HANAColumnStoreDialect
+        dialect: org.hibernate.dialect.MariaDBDialect
         id: 
           new_generator_mappings: false
           connection:
@@ -70,30 +71,20 @@ spring:
         batch_size: 1000
         lob:
           non_contextual_creation: true
-      default-schema: NWUSER
+      default-schema: nwuser
       connection:
-        pool_size: 100
+        pool_size: 10
       show_sql: false
       format_sql: false
       bytecode: 
         provider: javassist
         use_reflection_optimizer: true
-#  datasource:
-#    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#    url: jdbc:sqlserver://${dbip:140.127.232.81}:${dbport:1433}; databaseName=ProjectData
-#    username: sa
-#    password: "!si7966"
-#    connection-test-query: SELECT '1' FROM DUMMY
-springfox:
-  documentation:
-    swagger:
-      use-model-v3: false
 jwt:
   secret: leadtek_NHIWidget
 # jwt expire time: 8 hours
   expiration: 28800000
 # away from keyboard 時間，超過30分則刪除 jwt
-  afk: 28800000
+  afk: 1800000
 mail:
   host: 59.120.139.196
   port: 25

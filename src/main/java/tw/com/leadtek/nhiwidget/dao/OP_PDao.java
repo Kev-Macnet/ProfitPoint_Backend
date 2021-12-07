@@ -15,6 +15,8 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
 
   public List<OP_P> findByOpdIdOrderByOrderSeqNo(Long opdId);
   
+  public List<OP_P> findByMrId(Long mrId);
+  
   @Query(value = "SELECT * FROM OP_P WHERE OPD_ID IN (SELECT D_ID FROM MR WHERE DATA_FORMAT = ?1 AND MR_DATE BETWEEN ?2 AND ?3) ", nativeQuery = true)
   public List<OP_P> findByOpdIDFromMR(String dataFormat, Date sDate, Date eDate);
   
@@ -46,5 +48,30 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
   @Modifying
   @Query(value = "UPDATE OP_P SET PAY_CODE_TYPE=?1 WHERE DRUG_NO=?2", nativeQuery = true)
   public void updatePayCodeType(String payCodeType, String drugNo);
+  
+  /**
+   * 應用比例偏高：取得單月申報總數量
+   * @param applYm
+   * @param drugNo
+   * @return
+   */
+  @Query(value = "SELECT COUNT(1) FROM OP_P WHERE MR_ID IN ("
+      + "SELECT id FROM mr WHERE APPL_YM =?1) AND DRUG_NO =?2", nativeQuery = true)
+  public Long countOrderByDrugNoAndApplYm(String applYm, String drugNo);
+  
+  /**
+   * 應用比例偏高：取得六個月申報總數量
+   * 
+   * @param applYm
+   * @param drugNo
+   * @return
+   */
+  @Query(
+      value = "SELECT COUNT(1) FROM OP_P WHERE MR_ID IN ("
+          + "SELECT id FROM mr WHERE APPL_YM = ?1 OR APPL_YM = ?2 OR APPL_YM = ?3 "
+          + "OR APPL_YM = ?4 OR APPL_YM = ?5 OR APPL_YM = ?6 ) AND DRUG_NO =?7",
+      nativeQuery = true)
+  public Long countOrderByDrugNoAnd6ApplYm(String applYm1, String applYm2, String applYm3,
+      String applYm4, String applYm5, String applYm6, String drugNo);
   
 }

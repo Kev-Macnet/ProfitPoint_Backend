@@ -1,4 +1,5 @@
 spring:
   profiles:
-   active: leadtek-office-hana
+#    active: leadtek-office-hana
+    active: leadtek-office-demo
 #    active: ms

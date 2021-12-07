@@ -12,6 +12,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import tw.com.leadtek.tools.DateTool;
 
 @Table(name = "MY_MR")
 @Entity
@@ -222,6 +223,18 @@ public class MY_MR {
   @Column(name = "STATUS")
   @JsonIgnore
   private Integer status;
+  
+  /**
+   * 申報年月(西元年)，如 202111
+   */
+  @Column(name = "YM")
+  private Integer ym;
+  
+  /**
+   * 資料格式，與IP_T, OP_T的DATA_FORMAT值一樣。10:門診，20:住院
+   */
+  @Column(name = "DATA_FORMAT")
+  private String dataFormat;
 
   /**
    * 更新時間
@@ -238,6 +251,9 @@ public class MY_MR {
     mrId = mr.getId();
     startDate = mr.getMrDate();
     endDate = mr.getMrEndDate();
+    if (endDate == null) {
+      endDate = mr.getMrDate();
+    }
     inhMrId = mr.getInhMrId();
     inhClinicId = mr.getInhClinicId();
     name = mr.getName();
@@ -257,6 +273,14 @@ public class MY_MR {
     noticeSeq = 0;
     noticePpl = 0;
     readedPpl = 0;
+    if (mr.getApplYm() != null) {
+      if (mr.getApplYm().startsWith("20") && mr.getApplYm().length() == 6) {
+        ym = Integer.parseInt(mr.getApplYm());
+      } else if (mr.getApplYm().startsWith("1") && mr.getApplYm().length() == 5) {
+        ym = Integer.parseInt(DateTool.convertChineseToAD(mr.getApplYm()));
+      }
+    }
+    dataFormat = mr.getDataFormat();
     updateAt = new Date();
   }
   
@@ -678,6 +702,22 @@ public class MY_MR {
    */
   public void setUpdateAt(Date UPDATE_AT) {
     updateAt = UPDATE_AT;
+  }
+
+  public Integer getYm() {
+    return ym;
+  }
+
+  public void setYm(Integer ym) {
+    this.ym = ym;
+  }
+
+  public String getDataFormat() {
+    return dataFormat;
+  }
+
+  public void setDataFormat(String dataFormat) {
+    this.dataFormat = dataFormat;
   }
 
 }

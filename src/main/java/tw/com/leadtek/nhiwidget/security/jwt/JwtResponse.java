@@ -26,6 +26,10 @@ public class JwtResponse {
   
   @ApiModelProperty(value = "用戶登入時間", example = "16664407545315", required = true)
   private long loginTime;
+  
+  public JwtResponse() {
+    
+  }
 
   public JwtResponse(String token, String role, String username, String displayName, long id) {
     this.id = id;

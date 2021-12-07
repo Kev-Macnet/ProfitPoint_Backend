@@ -79,7 +79,10 @@ spring:
         use_reflection_optimizer: true
 jwt:
   secret: leadtek_NHIWidget
-  expiration: 360000000
+# jwt expire time: 8 hours
+  expiration: 28800000
+# away from keyboard 時間，超過30分則刪除 jwt
+  afk: 1800000
 mail:
   host: 59.120.139.196
   port: 25

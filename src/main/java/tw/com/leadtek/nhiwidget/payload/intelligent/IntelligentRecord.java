@@ -12,7 +12,7 @@ import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
 
-@ApiModel("智能提示助能")
+@ApiModel("智能提示助理")
 public class IntelligentRecord implements Serializable {
 
   private static final long serialVersionUID = 3935157516250372246L;
@@ -48,6 +48,9 @@ public class IntelligentRecord implements Serializable {
 
   @ApiModelProperty(value = "詳細資訊", example = "詳細資訊", required = false)
   protected String detail;
+  
+  @ApiModelProperty(value = "病歷格式，10:門急診，20:住院，30:特約藥局，40:特約物理(職能)治療所..", example = "10", required = false)
+  protected String dataFormat;
 
   public IntelligentRecord() {
 
@@ -55,6 +58,7 @@ public class IntelligentRecord implements Serializable {
   
   public IntelligentRecord(INTELLIGENT in) {
     mrId = in.getMrId();
+    dataFormat = in.getDataFormat();
     status = MR_STATUS.toStatusString(in.getStatus());
     sdate = in.getStartDate();
     edate = in.getEndDate();
@@ -62,6 +66,7 @@ public class IntelligentRecord implements Serializable {
     funcType = in.getFuncType();
     funcTypeC = in.getFuncTypec();
     totalDot = in.getApplDot();
+    detail = in.getReason();
     reason = INTELLIGENT_REASON.toReasonString(in.getConditionCode());
   }
 
@@ -143,6 +148,14 @@ public class IntelligentRecord implements Serializable {
 
   public void setDetail(String detail) {
     this.detail = detail;
+  }
+
+  public String getDataFormat() {
+    return dataFormat;
+  }
+
+  public void setDataFormat(String dataFormat) {
+    this.dataFormat = dataFormat;
   }
   
 }

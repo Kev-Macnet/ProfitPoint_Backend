@@ -13,8 +13,6 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 
 @Table(name = "MR_NOTE")
 @Entity
@@ -66,6 +64,12 @@ public class MR_NOTE {
    */
   @Column(name = "EDITOR", length = 20)
   private String editor;
+  
+  /**
+   * 是否有效，1:有效，0:無效(被刪除)
+   */
+  @Column(name = "STATUS")
+  private Integer status;
 
   /**
    * 輸入日期
@@ -184,6 +188,14 @@ public class MR_NOTE {
    */
   public void setUpdateAt(Date UPDATE_AT) {
     updateAt = UPDATE_AT;
+  }
+
+  public Integer getStatus() {
+    return status;
+  }
+
+  public void setStatus(Integer status) {
+    this.status = status;
   }
 
 }

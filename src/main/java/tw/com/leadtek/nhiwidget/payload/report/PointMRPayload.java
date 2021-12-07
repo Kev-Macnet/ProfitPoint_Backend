@@ -163,19 +163,31 @@ public class PointMRPayload extends BaseResponse implements Serializable {
   }
   
   public void calculateDifference() {
+ 	if (lastM != null) {
     diffAllLastM = current.getApplAll()- lastM.getApplAll();
+		 diffOpAllLastM = current.getApplOpAll()- lastM.getApplOpAll();
+		 diffOpLastM = current.getApplOp() - lastM.getApplOp();
+		 diffEmLastM = current.getApplEm() - lastM.getApplEm();
+		 diffIpLastM = current.getApplIp() - lastM.getApplIp();
+	} else {
+		 diffAllLastM = current.getApplAll()- 0;
+		 diffOpAllLastM = current.getApplOpAll()- 0;
+		 diffOpLastM = current.getApplOp() - 0;
+		 diffEmLastM = current.getApplEm() - 0;
+		 diffIpLastM = current.getApplIp() - 0;
+	}
+	if (lastY != null) {
     diffAllLastY = current.getApplAll() - lastY.getApplAll();
-    
-    diffOpAllLastM = current.getApplOpAll()- lastM.getApplOpAll();
     diffOpAllLastY = current.getApplOpAll()- lastY.getApplOpAll();
-    
-    diffOpLastM = current.getApplOp() - lastM.getApplOp();
     diffOpLastY = current.getApplOp() - lastY.getApplOp();
-    
-    diffEmLastM = current.getApplEm() - lastM.getApplEm();
     diffEmLastY = current.getApplEm() - lastY.getApplEm();
-    
-    diffIpLastM = current.getApplIp() - lastM.getApplIp();
     diffIpLastY = current.getApplIp() - lastY.getApplIp();
+	} else {
+	    diffAllLastY = current.getApplAll() - 0;
+	    diffOpAllLastY = current.getApplOpAll()- 0;
+	    diffOpLastY = current.getApplOp() - 0;
+	    diffEmLastY = current.getApplEm() - 0;
+	    diffIpLastY = current.getApplIp() - 0;
+	}
   }
 }

@@ -15,6 +15,8 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
   public List<IP_P> findByIpdId(Long ipdId);
   
+  public List<IP_P> findByMrId(Long mrId);
+  
   public List<IP_P> findByIpdIdOrderByOrderSeqNo(Long ipdId);
   
   @Query(value = "SELECT * FROM IP_P WHERE IPD_ID IN (SELECT D_ID FROM MR WHERE DATA_FORMAT = ?1 AND MR_DATE BETWEEN ?2 AND ?3) ", nativeQuery = true)
@@ -60,4 +62,29 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
   @Modifying
   @Query(value = "UPDATE IP_P SET PAY_CODE_TYPE=?1 WHERE ORDER_CODE=?2", nativeQuery = true)
   public void updatePayCodeType(String payCodeType, String orderCode);
+  
+  /**
+   * 應用比例偏高：取得單月申報總數量
+   * @param applYm
+   * @param drugNo
+   * @return
+   */
+  @Query(value = "SELECT COUNT(1) FROM IP_P WHERE MR_ID IN ("
+      + "SELECT id FROM mr WHERE APPL_YM =?1) AND ORDER_CODE =?2", nativeQuery = true)
+  public Long countOrderByDrugNoAndApplYm(String applYm, String orderCode);
+  
+  /**
+   * 應用比例偏高：取得六個月申報總數量
+   * 
+   * @param applYm
+   * @param orderCode
+   * @return
+   */
+  @Query(
+      value = "SELECT COUNT(1) FROM IP_P WHERE MR_ID IN ("
+          + "SELECT id FROM mr WHERE APPL_YM = ?1 OR APPL_YM = ?2 OR APPL_YM = ?3 "
+          + "OR APPL_YM = ?4 OR APPL_YM = ?5 OR APPL_YM = ?6 ) AND ORDER_CODE =?7",
+      nativeQuery = true)
+  public Long countOrderByDrugNoAnd6ApplYm(String applYm1, String applYm2, String applYm3,
+      String applYm4, String applYm5, String applYm6, String orderCode);
 }

@@ -57,7 +57,6 @@ public class PayCode extends PAY_CODE implements Serializable {
     level = new ArrayList<String>();
     if (pc.getHospLevel() != null) {
       String[] ss = pc.getHospLevel().split(",");
-      System.out.println(pc.getCode() + ":" + pc.getHospLevel() + ",len=" + ss.length);
       for (String string : ss) {
         level.add(HOSP_LEVEL.get(string));
       }

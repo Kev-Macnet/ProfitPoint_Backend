@@ -609,7 +609,7 @@ public class ParameterController extends BaseController {
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/highRatioOrder")
   public ResponseEntity<BaseResponse> newHighRatioOrder(
-      @ApiParam(name = "isHighRatio", value = "是否為應用比例偏高醫令，true:是，false:否，為特別用量藥品、衛材",
+      @ApiParam(name = "isOrder", value = "是否為應用比例偏高醫令，true:是，false:否，為特別用量藥品、衛材",
           example = "true") @RequestParam(required = false, defaultValue = "true") Boolean isOrder,
       @RequestBody HighRatioOrder request) {
     if (request.getCode() == null || request.getCode().length() < 1) {

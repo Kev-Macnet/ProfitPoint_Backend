@@ -131,16 +131,18 @@ public class TestParameterService {
         }
       }
       if (!isFound) {
+        System.out.println("list found, but not found " + p.getName());
         pDao.save(p);
       }
     } else {
+      System.out.println("list not found " + p.getName());
       pDao.save(p);
     }
   }
 
   @Test
   public void importFromExcel() {
-    importFromExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\PARAMETERS.xlsx", "參數設定", 1);
+    importFromExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\PARAMETERS.xlsx", "參數設定", 1);
 //    System.out.println(DATA_TYPE.NULL + "=" + DATA_TYPE.NULL.ordinal());
 //    System.out.println(DATA_TYPE.INT + "=" + DATA_TYPE.INT.ordinal());
 //    System.out.println(DATA_TYPE.FLOAT + "=" + DATA_TYPE.FLOAT.ordinal());

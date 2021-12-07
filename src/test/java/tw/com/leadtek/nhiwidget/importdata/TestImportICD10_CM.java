@@ -132,17 +132,17 @@ public class TestImportICD10_CM {
   /**
    * 將excel檔案資料匯至 Redis
    */
-  // @Ignore
+  //@Ignore
   @Test
   public void importICD10ToRedis() {
     System.out.println("importICD10ToRedis");
     long start = System.currentTimeMillis();
-//    importExcelToRedis("ICD10",
-//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.1 中文版ICD-10-CM(106.07.19更新)_Chapter.xlsx",
-//        "ICD10-CM");
-     importExcelToRedis("ICD10",
-     "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.2 中文版ICD-10-PCS(106.07.19更新).xlsx",
-     "ICD10-PCS");
+    importExcelToRedis("ICD10",
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.1 中文版ICD-10-CM(106.07.19更新)_Chapter.xlsx",
+        "ICD10-CM");
+//     importExcelToRedis("ICD10",
+//     "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.2 中文版ICD-10-PCS(106.07.19更新).xlsx",
+//     "ICD10-PCS");
 
     long usedTime = System.currentTimeMillis() - start;
     System.out.println("usedTime:" + usedTime);
@@ -238,11 +238,14 @@ public class TestImportICD10_CM {
     // HashOperations<String, String, Object> hashOp = ;
     // long maxId = redisTemplate.opsForHash().size(collectionName + "-data");
     long maxId = (long) redisService.getMaxId();
+    if (maxId == 0) {
+      maxId = 1;
+    }
     System.out.println("maxId:" + maxId);
     File file = new File(filename);
     int addCount = 0;
-    WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
-    Thread poolThread = new Thread(wtrPool);
+    //WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
+    //Thread poolThread = new Thread(wtrPool);
     try {
       ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
       ObjectMapper objectMapper = new ObjectMapper();
@@ -251,7 +254,7 @@ public class TestImportICD10_CM {
       HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
       // DataFormatter formatter = new DataFormatter();
 
-      poolThread.start();
+      //poolThread.start();
       int total = 0;
       for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
         XSSFSheet sheet = workbook.getSheetAt(i);
@@ -287,7 +290,7 @@ public class TestImportICD10_CM {
 
           // addCode1(collectionName, code);
           CodeBaseLongId cb = new CodeBaseLongId(++maxId, code, descTw, descEn);
-          String s = hashOp.get(collectionName + "-data", String.valueOf(maxId));
+          String s = hashOp.get(RedisService.DATA_KEY, String.valueOf(maxId));
           if (s != null && s.indexOf(code) > 0) {
             // DB 有這筆資料，換下一筆
             // maxId++;
@@ -296,34 +299,34 @@ public class TestImportICD10_CM {
 
           cb.setCategory(category);
           // addCount += addCode3(op, objectMapper, collectionName, cb);
-          addCodeByThread(wtrPool, collectionName, cb, false);
+          addCodeByThread(null, collectionName, cb, false);
           System.out.println("add(" + maxId + ")[" + addCount + "]" + code + ":" + descEn);
           saveICD10DB(code, category, descTw, descEn, cb.getId());
           count++;
           total++;
-          if (wtrPool.getThreadCount() > 1000) {
-            do {
-              try {
-                Thread.sleep(2000);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-            } while (wtrPool.getThreadCount() > 1000);
-          }
+//          if (wtrPool.getThreadCount() > 1000) {
+//            do {
+//              try {
+//                Thread.sleep(2000);
+//              } catch (InterruptedException e) {
+//                e.printStackTrace();
+//              }
+//            } while (wtrPool.getThreadCount() > 1000);
+//          }
         }
       }
-      wtrPool.setFinished(true);
+      //wtrPool.setFinished(true);
       System.out.println("finish total:" + total);
       workbook.close();
 
-      do {
-        try {
-          Thread.sleep(200);
-          System.out.println("elapsed:" + wtrPool.getThreadCount());
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
-      } while (wtrPool.getThreadCount() > 0);
+//      do {
+//        try {
+//          Thread.sleep(200);
+//          System.out.println("elapsed:" + wtrPool.getThreadCount());
+//        } catch (InterruptedException e) {
+//          e.printStackTrace();
+//        }
+//      } while (wtrPool.getThreadCount() > 0);
     } catch (InvalidFormatException e) {
       logger.error("import excel failed", e);
       e.printStackTrace();
@@ -350,7 +353,7 @@ public class TestImportICD10_CM {
       String name, int removeId) {
     for (int i = 2; i <= name.length(); i++) {
       String key = name.substring(0, i);
-      Set<Object> set = op.range(prefix + ":" + key, 0, -1);
+      Set<Object> set = op.range(prefix + key, 0, -1);
       for (Object object : set) {
         if (Integer.parseInt((String) object) == removeId) {
           op.remove(prefix + ":" + key, object);
@@ -368,7 +371,7 @@ public class TestImportICD10_CM {
       redisTemplate.opsForHash().put(key + "-data", String.valueOf(cb.getId()), json);
       result++;
       // 2. save code to index for search
-      result += redisService.addIndexToRedisIndex(key + "-index", String.valueOf(cb.getId()),
+      result += redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(cb.getId()),
           cb.getCode());
 
       String[] descList = cb.getDescEn().split(" ");
@@ -410,7 +413,7 @@ public class TestImportICD10_CM {
       // 1. save to data
       redisTemplate.opsForHash().put("ICD10" + "-data", String.valueOf(code.getId()), json);
       // 2. save code to index for search
-      redisService.addIndexToRedisIndex("ICD10-index", String.valueOf(code.getId()),
+      redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(code.getId()),
           code.getCode().toLowerCase());
       saveATCDB(code);
     } catch (JsonProcessingException e) {
@@ -439,7 +442,8 @@ public class TestImportICD10_CM {
     if (isSearch) {
       thread.setSearchKey(cb.getCode());
     }
-    pool.addThread(thread);
+    thread.run();
+    //pool.addThread(thread);
   }
 
   public static String removeCharacter(String s) {
@@ -530,16 +534,9 @@ public class TestImportICD10_CM {
     }
   }
 
-  // @Ignore
-  // @Test
+  @Ignore
+  @Test
   public void testLogic() {
-    String prefix = "ICD10-index:";
-    String name = "A01AB19";
-    for (int i = 2; i <= name.length(); i++) {
-      String key = name.substring(0, i);
-      System.out.println(prefix + ":" + key);
-    }
-
     ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
     removeRedisHashByCat(op, "ICD10-data", "ATC");
     // String key = "ICD10-index:Electromagneti";
@@ -549,6 +546,18 @@ public class TestImportICD10_CM {
     // } else {
     // System.out.println(lowerKey);
     // }
+  }
+  
+  @Ignore
+  @Test
+  public void deleteAllInRedis() {
+    String key = "ICD10*";
+    Set<String> set = redisTemplate.keys(key);
+    System.out.println(key + " size:" + set.size());
+    for (String s : set) {
+      redisTemplate.delete(s);
+     // System.out.println("delete:" + s);
+    }
   }
 
   /**
@@ -733,8 +742,8 @@ public class TestImportICD10_CM {
     }
   }
 
-  @Ignore
-  @Test
+  //@Ignore
+  //@Test
   public void importATC() {
     String cat = "ATC";
     File file = new File("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\ATC分類.xlsx");
@@ -900,13 +909,13 @@ public class TestImportICD10_CM {
           OrderCode oc = mapper.readValue(value, OrderCode.class);
           if (cat.equals(oc.getCategory())) {
             redisTemplate.opsForHash().delete(key, oc.getId().toString());
-            removeIndexToRedisIndex(op, "ICD10-index", oc.getCode(), oc.getId().intValue());
+            removeIndexToRedisIndex(op, RedisService.INDEX_KEY, oc.getCode(), oc.getId().intValue());
           }
         } else {
           CodeBaseLongId cb = mapper.readValue(value, CodeBaseLongId.class);
           if (cat.equals(cb.getCategory())) {
             redisTemplate.opsForHash().delete(key, cb.getId().toString());
-            removeIndexToRedisIndex(op, "ICD10-index", cb.getCode(), cb.getId().intValue());
+            removeIndexToRedisIndex(op, RedisService.INDEX_KEY, cb.getCode(), cb.getId().intValue());
           }
         }
       } catch (JsonMappingException e) {
@@ -966,9 +975,12 @@ public class TestImportICD10_CM {
     icd.setCode(code.toUpperCase());
     icd.setDescChi(descTw);
     icd.setDescEn(descEn);
+    if (descEn != null && descEn.length() > 200) {
+    	icd.setDescEn(descEn.substring(0, 199));
+    }
     icd.setRedisId(redisId);
     icd.setInfectious(0);
     icd10Dao.save(icd);
-    System.out.println("save db:" + icd.getCode());
+    //System.out.println("save db:" + icd.getCode());
   }
 }

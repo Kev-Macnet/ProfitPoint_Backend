@@ -12,6 +12,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.swagger.annotations.ApiModelProperty;
 
 @Table(name = "INTELLIGENT")
 @Entity
@@ -103,20 +104,23 @@ public class INTELLIGENT {
   @Column(name = "REASON", length = 100)
   @JsonIgnore
   private String reason;
+  
+  @Column(name = "PRSN_NAME", length = 30)
+  private String prsnName;
 
   /**
    * ICD診斷碼和處置碼，用,分隔
    */
-  @Column(name = "ICD", length = 500)
+  @Column(name = "ICD", length = 600)
   @JsonIgnore
   private String icd;
 
   /**
    * 健保碼/醫令/支付標準代碼
    */
-  @Column(name = "ORDER_CODE", length = 1600)
+  @Column(name = "CODE", length = 3200)
   @JsonIgnore
-  private String orderCode;
+  private String code;
 
   /**
    * 院內碼
@@ -124,6 +128,15 @@ public class INTELLIGENT {
   @Column(name = "INH_CODE", length = 1600)
   @JsonIgnore
   private String inhCode;
+  
+  /**
+   * 資料格式，與IP_T, OP_T的DATA_FORMAT值一樣。10:門診，20:住院，30:特約藥局，40:特約物理(職能)治療所...
+   */
+  @ApiModelProperty(value = "資料格式，與IP_T, OP_T的DATA_FORMAT值一樣。10:門診，20:住院，30:特約藥局，40:特約物理(職能)治療所...",
+      example = "10", required = false)
+  @Column(name = "DATA_FORMAT", length = 2)
+  @JsonIgnore
+  private String dataFormat;
 
   /**
    * 更新日期
@@ -317,15 +330,15 @@ public class INTELLIGENT {
   /**
    * 健保碼/醫令/支付標準代碼
    */
-  public String getOrderCode() {
-    return orderCode;
+  public String getCode() {
+    return code;
   }
 
   /**
    * 健保碼/醫令/支付標準代碼
    */
-  public void setOrderCode(String ORDER_CODE) {
-    orderCode = ORDER_CODE;
+  public void setCode(String CODE) {
+    code = CODE;
   }
 
   /**
@@ -356,4 +369,20 @@ public class INTELLIGENT {
     updateAt = UPDATE_AT;
   }
 
+  public String getPrsnName() {
+    return prsnName;
+  }
+
+  public void setPrsnName(String prsnName) {
+    this.prsnName = prsnName;
+  }
+
+  public String getDataFormat() {
+    return dataFormat;
+  }
+
+  public void setDataFormat(String dataFormat) {
+    this.dataFormat = dataFormat;
+  }
+  
 }

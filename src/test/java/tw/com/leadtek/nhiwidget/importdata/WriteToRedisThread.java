@@ -78,7 +78,9 @@ public class WriteToRedisThread implements Runnable {
       searchKey = cb.getCode();
       if (search(true)) {
         System.out.println("duplicate code:" + cb.getCode() +"," + cb.getCategory());
-        pool.decrease();
+        if (pool != null) {
+          pool.decrease();
+        }
         return;
       }
     }
@@ -88,28 +90,31 @@ public class WriteToRedisThread implements Runnable {
     try {
       String json = objectMapper.writeValueAsString(cb);
       // 1. save to data
-      redis.opsForHash().put(key + "-data", String.valueOf(cb.getId()), json);
-      System.out.println("insert data:" + cb.getId());
+      redis.opsForHash().put(RedisService.DATA_KEY, String.valueOf(cb.getId()), json);
+      //System.out.println("insert data:" + cb.getId());
       // 2. save code to index for search
-      addIndexToRedisIndex(op, key + "-index", String.valueOf(cb.getId()), cb.getCode());
+      addIndexToRedisIndex(op, RedisService.INDEX_KEY, String.valueOf(cb.getId()), cb.getCode().toLowerCase());
 
-      if (cb.getDescEn() != null && cb.getDescEn().length() > 0) {
-        String[] descList = cb.getDescEn().split(" ");
-        for (String string : descList) {
-          if (ignoreWords.contains(string.toLowerCase())) {
-            continue;
-          }
-          String newKey = removeCharacter(string);
-          if (newKey.length() < 2) {
-            continue;
-          }
-          addIndexToRedisIndex(op, key + "-index", String.valueOf(cb.getId()), newKey);
-        }
-      }
+      // 將英文說明寫入redis
+//      if (cb.getDescEn() != null && cb.getDescEn().length() > 0) {
+//        String[] descList = cb.getDescEn().split(" ");
+//        for (String string : descList) {
+//          if (ignoreWords.contains(string.toLowerCase())) {
+//            continue;
+//          }
+//          String newKey = removeCharacter(string);
+//          if (newKey.length() < 2) {
+//            continue;
+//          }
+//          addIndexToRedisIndex(op, key + "-index", String.valueOf(cb.getId()), newKey);
+//        }
+//      }
     } catch (JsonProcessingException e) {
       e.printStackTrace();
     }
-    pool.decrease();
+    if (pool != null) {
+      pool.decrease();
+    }
   }
 
   public boolean search(boolean needReturn) {
@@ -122,6 +127,9 @@ public class WriteToRedisThread implements Runnable {
     for (Object object : rangeSet) {
       //System.out.println(object);
       String s = hashOp.get(key, object);
+      if (s == null) {
+    	  continue;
+      }
       // System.out.println(s);
 
       try {
@@ -164,7 +172,7 @@ public class WriteToRedisThread implements Runnable {
     int result = 0;
     for (int i = 2; i <= name.length(); i++) {
       String key = name.substring(0, i);
-      op.add(prefix + ":" + key, index, 0.0);
+      op.add(prefix + key, index, 0.0);
       result++;
     }
     return result;

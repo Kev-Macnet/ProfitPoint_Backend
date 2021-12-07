@@ -4,9 +4,10 @@
 package tw.com.leadtek.nhiwidget.payload;
 
 import java.io.Serializable;
-import javax.persistence.Column;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
@@ -492,4 +493,127 @@ public class MO implements Serializable {
       endTime = DateTool.convertChineseTimeToFormatTime(ipp.getEndTime());
     }
   }
+  
+  public OP_P toOpp(CodeTableService cts) {
+    OP_P result = new OP_P();
+    result.setOrderSeqNo(orderSeqNo);
+    result.setInhCode(inhCode);
+    result.setFuncType(cts.getCodeByDesc("FUNC_TYPE", funcType));
+    result.setMedType(cts.getCodeByDesc("OP_MED_TYPE", medType));
+    result.setOrderType(cts.getCodeByDesc("ORDER_TYPE", orderType));
+    result.setDrugNo(drugNo);
+    result.setDrugUse(drugUse);
+    result.setTotalQ(totalQ);
+    result.setUnitP(unitP);
+    result.setTotalDot(totalDot);
+    result.setPayBy(payBy);
+    result.setApplStatus(applStatus);
+    result.setPrsnId(prsnId);
+    result.setDrugDay(drugDay);
+    result.setDrugFre(drugFre);
+    result.setDrugPath(drugPath);
+    result.setDrugSerialNo(drugSerialNo);
+    result.setPreNo(preNo);
+    result.setCurePath(curePath);
+    result.setPayRate(payRate);
+    result.setImgSource(imgSource);
+    result.setNonListMark(nonListMark);
+    result.setNonListName(nonListName);
+    result.setChrMark(chrMark);
+    result.setCommHospId(commHospId);
+    result.setOwnExpMtrNo(ownExpMtrNo);
+    if (startTime != null) {
+      result.setStartTime(DateTool.removeSlashForChineseYear(startTime));
+    }
+    if (endTime != null) {
+      result.setEndTime(DateTool.removeSlashForChineseYear(endTime));
+    }
+    result.setUpdateAt(new Date());
+    return result;
+  }
+  
+  public IP_P toIpp(CodeTableService cts) {
+    IP_P result = new IP_P();
+    // 醫令序
+    result.setOrderSeqNo(orderSeqNo);
+    // 院內碼
+    result.setInhCode(inhCode);
+    // 就醫科別
+    if (funcType != null && funcType.indexOf('-') > 0) {
+      result.setFuncType(funcType.substring(0, funcType.indexOf('-')));
+    } else {
+    result.setFuncType(cts.getCodeByDesc("FUNC_TYPE", funcType));
+    }
+    // 會診科別
+    if (conFuncType != null && conFuncType.indexOf('-') > 0) {
+        result.setConFuncType(conFuncType.substring(0, conFuncType.indexOf('-')));
+      } else {
+    result.setConFuncType(cts.getCodeByDesc("FUNC_TYPE", conFuncType));
+      }
+    // 醫令類別
+    if (orderType != null && orderType.indexOf('-') > 0) {
+        result.setOrderType(orderType.substring(0, orderType.indexOf('-')));
+      } else {
+    result.setOrderType(cts.getCodeByDesc("ORDER_TYPE", orderType));
+      }
+    // 醫令代碼
+    if (orderCode != null && orderCode.indexOf('-') > 0) {
+        result.setOrderCode(orderCode.substring(0, orderCode.indexOf('-')));
+      } else {
+    	  result.setOrderCode(orderCode);
+      }
+    // 藥品用量
+    result.setDrugUse(drugUse);
+    // 總量
+    result.setTotalQ(totalQ);
+    // 單價
+    result.setUnitP(unitP);
+    // 點數
+    result.setTotalDot(totalDot);
+    // 費用狀態
+    result.setPayBy(payBy);
+    // 申報狀態
+    result.setApplStatus(applStatus);
+    // 執行醫事人員代碼
+    result.setPrsnId(prsnId);
+    // 病床號
+    result.setBedNo(bedNo);
+    // 藥品使用頻率
+    result.setDrugFre(drugFre);
+    // 給藥途徑/作用部位
+    result.setDrugPath(drugPath);
+    // 藥品批號
+    result.setDrugSerialNo(drugSerialNo);
+    // TW-DRGs計算
+    result.setTwDrgsCalcu(twDrgsCalcu);
+    // 診療部位
+    result.setCurePath(curePath);
+    // 支付成數
+    result.setPayRate(payRate);
+    // 影像來源
+    result.setImgSource(imgSource);
+    // 未列像註記
+    result.setNonListMark(nonListMark);
+    // 未列像名稱
+    result.setNonListName(nonListName);
+    // 切帳前筆資料
+    result.setPartAccoData(partAccoData);
+    // 器官捐贈者資料
+    result.setDonater(donater);
+    // 委託或受託執行轉（代）檢醫事機構代號
+    result.setCommHospId(commHospId);
+    // 自費特材群組序號
+    result.setOwnExpMtrNo(ownExpMtrNo);
+    // 事前審查受理編號
+    result.setPreNo(preNo);
+    if (startTime != null) {
+		result.setStartTime(DateTool.removeSlashForChineseYear(startTime));
+    }
+    if (endTime != null) {
+		result.setEndTime(DateTool.removeSlashForChineseYear(endTime));
+    }
+	result.setUpdateAt(new Date());
+    return result;
+  }
+  
 }

@@ -3,12 +3,12 @@
  */
 package tw.com.leadtek.nhiwidget.dao;
 
-import java.util.Optional;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 
 public interface USERDao extends JpaRepository<USER, Long> {
 
-  public Optional<USER> findByUsername(String username);
+  public List<USER> findByUsername(String username);
 
 }

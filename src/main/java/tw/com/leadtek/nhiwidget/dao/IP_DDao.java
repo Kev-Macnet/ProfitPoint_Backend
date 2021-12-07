@@ -14,6 +14,8 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
 
   public List<IP_D> findByIptId(Long iptId);
   
+  public List<IP_D> findByMrId(Long mrid);
+  
   @Query(value =  "SELECT SEQ_NO ,ID ,ROC_ID, IN_DATE, MR_ID FROM IP_D WHERE IPT_ID=?1 ", nativeQuery = true)
   public List<Object[]> findByIptIdSimple(Long iptId);
   

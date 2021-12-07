@@ -13,4 +13,6 @@ public interface INTELLIGENTDao extends JpaRepository<INTELLIGENT, Long>, JpaSpe
 
   @Query(value ="SELECT CONDITION_CODE, COUNT(1) FROM INTELLIGENT GROUP BY CONDITION_CODE", nativeQuery = true)
   public List<Object[]> countGroupByConditionCode();
+  
+  public List<INTELLIGENT> findByMrIdAndConditionCode(Long mrId, int conditionCode);
 }

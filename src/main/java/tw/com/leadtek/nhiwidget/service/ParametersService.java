@@ -721,6 +721,15 @@ public class ParametersService {
     }
     return result;
   }
+  
+  public String getOneValueByName(String name) {
+    List<PARAMETERS> list = parametersDao.findByName(name);
+    if (list != null && list.size() > 0) {
+      PARAMETERS p = list.get(0);
+      return p.getValue();
+    }
+    return null;
+  }
 
   public DRGRelatedValues getDRGValues(Date sDate, Date eDate, DRGRelatedValues values) {
     if (values == null) {
@@ -1263,7 +1272,8 @@ public class ParametersService {
 
   public String newHighRatioOrder(HighRatioOrder request, boolean isOrder) {
     CODE_THRESHOLD db = request.toDB();
-    db.setCodeType(isOrder ? RareICDPayload.CODE_TYPE_ORDER : RareICDPayload.CODE_TYPE_DRUG);
+    int codeType = isOrder ? RareICDPayload.CODE_TYPE_ORDER : RareICDPayload.CODE_TYPE_DRUG;
+    db.setCodeType(codeType);
     if (db.getEndDate().before(db.getStartDate())) {
       return "失效日不可早於生效日！";
     }
@@ -1271,13 +1281,14 @@ public class ParametersService {
       return "失效日不可等於生效日！";
     }
     List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeAndCodeOrderByStartDateDesc(
-        new Integer(RareICDPayload.CODE_TYPE_ORDER), request.getCode().toUpperCase());
+        new Integer(codeType), request.getCode().toUpperCase());
     if (checkTimeOverwrite(list, db, false)) {
       return isOrder ? "該時段有相同的應用比例偏高醫令！" : "該時段有相同的特別用量藥品、衛品！";
     }
 
     db.setUpdateAt(new Date());
-    codeThresholdDao.save(db);
+    db = codeThresholdDao.save(db);
+    System.out.println("code type=" + db.getCodeType());
     return null;
   }
 

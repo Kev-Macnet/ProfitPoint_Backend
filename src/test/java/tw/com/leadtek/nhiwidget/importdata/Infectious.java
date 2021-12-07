@@ -174,6 +174,9 @@ public class Infectious {
           if (oc != null) {
             ct.setDescChi(oc.getDesc());
             ct.setDescEn(oc.getDescEn());
+            if (ct.getDescEn().length() > 100) {
+            	ct.setDescEn(ct.getDescEn().substring(0, 99));
+            }
           } else {
             System.out.println(ct.getCode() + ", redis not found");
           }

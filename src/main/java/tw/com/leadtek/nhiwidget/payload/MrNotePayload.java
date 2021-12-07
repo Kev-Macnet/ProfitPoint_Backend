@@ -56,6 +56,7 @@ public class MrNotePayload implements Serializable {
     result.setNote(note);
     result.setNoteType(isMrNote ? 1 : 2);
     result.setUpdateAt(new Date());
+    result.setStatus(1);
     return result;
   }
 

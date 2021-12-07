@@ -31,12 +31,12 @@ public class PointQuantityList implements Serializable {
   
   public void addIp(NameCodePointQuantity npq) {
     ip.add(npq);
-    all.add(npq);
+    addAll(npq);
   }
   
   public void addOp(NameCodePointQuantity npq) {
     op.add(npq);
-    all.add(npq);
+    addAll(npq);
   }
   
   public void addAll(NameCodePointQuantity npq) {

@@ -272,8 +272,8 @@ public class NHIWidgetXMLController extends BaseController {
           example = "10") @RequestParam(required = false) String dataFormat,
       @ApiParam(name = "funcType", value = "科別代碼，如：00(不分科)，01(家醫科)，02(內科)，03(外科)...",
           example = "03") @RequestParam(required = false) String funcType,
-      @ApiParam(name = "funcTypeC", value = "科別名稱，如：不分科、家醫科、內科、外科...",
-          example = "03") @RequestParam(required = false) String funcTypeC,
+      @ApiParam(name = "funcTypec", value = "科別名稱，如：不分科、家醫科、內科、外科...",
+          example = "03") @RequestParam(required = false) String funcTypec,
       @ApiParam(name = "prsnName", value = "醫護名",
           example = "王大明") @RequestParam(required = false) String prsnName,
       @ApiParam(name = "prsnId", value = "醫護代碼",
@@ -368,7 +368,7 @@ public class NHIWidgetXMLController extends BaseController {
       }
     }
 
-    funcType = addAllFuncType(funcType, funcTypeC);
+    funcType = addAllFuncType(funcType, funcTypec);
     if (funcType != null && funcType.startsWith("error:")) {
       String error = funcType.substring("error:".length());
       HashMap<String, String> result = new HashMap<String, String>();
@@ -567,7 +567,8 @@ public class NHIWidgetXMLController extends BaseController {
           value = "病歷詳細資訊") @RequestBody(required = true) MRDetail mrDetail) {
     logger.info("=========/nhixml/mr/{" + id + "} =============================");
     mrDetail.setId(Long.parseLong(id));
-    MRDetail result = xmlService.updateMRDetail(mrDetail, jwt);
+    String token = jwt.split(" ")[1];
+    MRDetail result = xmlService.updateMRDetail(mrDetail, token);
     if (result == null) {
       return ResponseEntity.ok(result);
     } else {
@@ -659,7 +660,7 @@ public class NHIWidgetXMLController extends BaseController {
     request.setNote(note);
     request.setEditor(user.getUsername());
     request.setActionType("新增");
-    return returnAPIResult(xmlService.newMrNote(request, id, isNote));
+    return returnAPIResult(xmlService.newMrNote(request, id, isNote, false));
   }
 
   @ApiOperation(value = "修改病歷資訊備註/核刪註記", notes = "修改病歷資訊備註/核刪註記")
@@ -684,7 +685,7 @@ public class NHIWidgetXMLController extends BaseController {
     request.setNote(note);
     request.setEditor(user.getUsername());
     request.setActionType("修改");
-    return returnAPIResult(xmlService.newMrNote(request, id, isNote));
+    return returnAPIResult(xmlService.newMrNote(request, id, isNote, false));
   }
 
   @ApiOperation(value = "刪除病歷資訊備註/核刪註記", notes = "刪除病歷資訊備註/核刪註記")
@@ -709,7 +710,7 @@ public class NHIWidgetXMLController extends BaseController {
     request.setNote(note);
     request.setEditor(user.getUsername());
     request.setActionType("刪除");
-    return returnAPIResult(xmlService.newMrNote(request, id, isNote));
+    return returnAPIResult(xmlService.newMrNote(request, id, isNote, true));
   }
 
   public String addAllFuncType(String funcType, String funcTypeC) {
@@ -770,5 +771,17 @@ public class NHIWidgetXMLController extends BaseController {
       return returnAPIResult("病歷id格式不正確");
     }
     return returnAPIResult(xmlService.sendNotice(idL, user, doctorId));
+  }
+  
+  @ApiOperation(value = "新增病歷", notes = "新增病歷")
+  @PostMapping("/nhixml/mrdetail")
+  public ResponseEntity<MRDetail> addMRDetail(
+      @ApiParam(name = "mrDetail", value = "病歷詳細資訊") @RequestBody(required = true) MRDetail mrDetail) {
+    MRDetail result = xmlService.addMRDetail(mrDetail);
+    if (result == null) {
+      return ResponseEntity.ok(result);
+    } else {
+      return ResponseEntity.badRequest().body(result);
+    }
   }
 }

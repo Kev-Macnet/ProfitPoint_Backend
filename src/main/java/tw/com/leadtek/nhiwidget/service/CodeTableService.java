@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,5 +118,30 @@ public class CodeTableService {
       return code;
     }
     return code + "-" + ct.getDescChi();
+  }
+  
+  public String getCodeByDesc(String cat, String desc) {
+	if (codes == null) {
+	  refreshCodes();
+    }
+    HashMap<String, CODE_TABLE> codeMap = codes.get(cat);
+    if (codeMap == null) {
+      return null;
+    }
+    for (CODE_TABLE ct : codeMap.values()) {
+      if (ct.getDescChi() != null && ct.getDescChi().equals(desc)) {
+        return ct.getCode();
+      }
+    }
+    return null;
+  }
+  
+  public List<String> getInfectious(){
+    List<String> result = new ArrayList<String>();
+    List<CODE_TABLE> list = ctDao.findByCat("INFECTIOUS");
+    for (CODE_TABLE code_TABLE : list) {
+      result.add(code_TABLE.getCode());
+    }
+    return result;
   }
 }

@@ -34,8 +34,8 @@ public interface MY_MRDao extends JpaRepository<MY_MR, Long>, JpaSpecificationEx
    * @return
    */
   @Query(value ="SELECT * FROM " + 
-      "(SELECT COUNT(1) AS NOTICE_TIMES FROM MY_MR WHERE STATUS=?1 AND NOTICE_DATE IS NOT NULL )," + 
-      "(SELECT COUNT(1) AS READED_TIMES FROM MY_MR WHERE STATUS=?2 AND READED_PPL > 0 )", nativeQuery = true)
+      "(SELECT COUNT(1) AS NOTICE_TIMES FROM MY_MR WHERE STATUS=?1 AND NOTICE_DATE IS NOT NULL ) a," + 
+      "(SELECT COUNT(1) AS READED_TIMES FROM MY_MR WHERE STATUS=?2 AND READED_PPL > 0 ) b", nativeQuery = true)
   public List<Object[]> getNoticeAndReadedTimes(int status, int status2);
   
   /**
@@ -43,8 +43,8 @@ public interface MY_MRDao extends JpaRepository<MY_MR, Long>, JpaSpecificationEx
    * @return
    */
   @Query(value ="SELECT * FROM " + 
-      "(SELECT COUNT(1) AS NOTICE_TIMES FROM MY_MR WHERE STATUS=?1 AND NOTICE_DATE IS NOT NULL AND APPL_USER_ID = ?2)," + 
-      "(SELECT COUNT(1) AS READED_TIMES FROM MY_MR WHERE STATUS=?3 AND READED_PPL > 0 AND APPL_USER_ID = ?4)", nativeQuery = true)
+      "(SELECT COUNT(1) AS NOTICE_TIMES FROM MY_MR WHERE STATUS=?1 AND NOTICE_DATE IS NOT NULL AND APPL_USER_ID = ?2) a," + 
+      "(SELECT COUNT(1) AS READED_TIMES FROM MY_MR WHERE STATUS=?3 AND READED_PPL > 0 AND APPL_USER_ID = ?4) b", nativeQuery = true)
   public List<Object[]> getNoticeAndReadedTimes(int status, long applUserId, int status2, long applUserId2);
   
   /**

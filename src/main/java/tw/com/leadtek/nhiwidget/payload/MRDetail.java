@@ -13,6 +13,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.service.CodeTableService;
+import tw.com.leadtek.tools.DateTool;
 
 @ApiModel("病歷詳細資料")
 public class MRDetail extends MR {
@@ -283,6 +284,9 @@ public class MRDetail extends MR {
   
   @ApiModelProperty(value = "核刪註記", required = false)
   protected List<MrNotePayload> deducted;
+  
+  @ApiModelProperty(value = "是否為上一次調整病歷狀態為優化完成的作者，若無人調整則值為true", example = "true", required = false)
+  protected Boolean isLastEditor;
   
   @ApiModelProperty(value = "核刪註記", required = false)
   protected String error;
@@ -1040,6 +1044,14 @@ public class MRDetail extends MR {
   public void setError(String error) {
     this.error = error;
   }
+  
+  public Boolean getIsLastEditor() {
+    return isLastEditor;
+  }
+
+  public void setIsLastEditor(Boolean isLastEditor) {
+    this.isLastEditor = isLastEditor;
+  }
 
   /**
    * 將table OP_D 的資料寫到MRDetail object
@@ -1053,7 +1065,11 @@ public class MRDetail extends MR {
     this.partNo = CodeTableService.getDesc(cts, "PART_NO", opd.getPartNo());
     this.funcType = CodeTableService.getDesc(cts, "FUNC_TYPE", opd.getFuncType());
     this.caseType = CodeTableService.getDesc(cts, "OP_CASE_TYPE", opd.getCaseType());
+    if (opd.getSeqNo() != null) {
     this.seqNo = opd.getSeqNo().toString();
+    } else {
+      this.seqNo = "1";
+    }
     cardSeqNo = opd.getCardSeqNo();
     List<CodeBase> listCureItem = new ArrayList<CodeBase>();
     CodeTableService.addToList(cts, listCureItem, "OP_CURE_ITEM", opd.getCureItemNo1());
@@ -1123,7 +1139,11 @@ public class MRDetail extends MR {
   public void setIPDData(IP_D ipd, CodeTableService cts) {
     this.name = ipd.getName();
     this.rocId = ipd.getRocId();
+    if (ipd.getSeqNo() != null) {
     this.seqNo = ipd.getSeqNo().toString();
+      } else {
+        this.seqNo = "1";
+      }
     this.caseType = CodeTableService.getDesc(cts, "IP_CASE_TYPE", ipd.getCaseType());
     this.partNo = CodeTableService.getDesc(cts, "PART_NO", ipd.getPartNo());
     this.birthday = ipd.getIdBirthYmd();
@@ -1238,5 +1258,35 @@ public class MRDetail extends MR {
     this.svcPlan = ipd.getSvcPlan();
     this.pilotProject = ipd.getPilotProject();
     this.nonApplDot = ipd.getNonApplDot();
+  }
+  
+  public void convertToADYear() {
+    if (birthday != null && birthday.length() > 0) {
+      birthday = DateTool.convertChineseToADWithSlash(birthday);
+    }
+    if (applYm != null && applYm.length() > 0 ) {
+      applYm = DateTool.convertChineseToADWithSlash(applYm);
+    }
+    if (funcDate != null && funcDate.length() > 0 ) {
+      funcDate = DateTool.convertChineseToADWithSlash(funcDate);
+    }
+    if (funcEndDate != null && funcEndDate.length() > 0 ) {
+      funcEndDate = DateTool.convertChineseToADWithSlash(funcEndDate);
+    }
+    if (applSDate != null && applSDate.length() > 0) {
+      applSDate = DateTool.convertChineseToADWithSlash(applSDate);
+    }
+    if (applEDate != null && applEDate.length() > 0) {
+      applEDate = DateTool.convertChineseToADWithSlash(applEDate);
+    }
+    if (nbBirthday != null && nbBirthday.length() > 0) {
+      nbBirthday = DateTool.convertChineseToADWithSlash(nbBirthday);
+    }
+    if (inDate != null && inDate.length() > 0) {
+      inDate = DateTool.convertChineseToADWithSlash(inDate);
+    }
+    if (outDate != null && outDate.length() > 0) {
+      outDate = DateTool.convertChineseToADWithSlash(outDate);
+    }
   }
 }

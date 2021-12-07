@@ -137,6 +137,8 @@ public class UserController extends BaseController {
       example = "00") @RequestParam(required = false) String funcType,
       @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...",
       example = "不分科") @RequestParam(required = false) String funcTypeC,
+      @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...", example = "家醫科") 
+      @RequestParam(required = false) String funcTypec,
       @ApiParam(name = "rocId", value = "醫護代碼", example = "00") @RequestParam(required = false) String rocId,
       @ApiParam(name = "name", value = "醫護名稱",
       example = "王小明") @RequestParam(required = false) String name) {
@@ -144,7 +146,8 @@ public class UserController extends BaseController {
     // System.out.println("currentPrincipalName:" + authentication.getName());
     // UserDetailsImpl userDetail = (UserDetailsImpl) authentication.getPrincipal();
     // System.out.println(userDetail.getEmail());
-    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeC, rocId, name));
+	  String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
+    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeChinese, rocId, name));
   }
 
   @ApiOperation(value = "更換密碼", notes = "更換密碼")
@@ -224,9 +227,12 @@ public class UserController extends BaseController {
   public ResponseEntity<List<DEPARTMENT>> getAllDepartments(
       @ApiParam(name = "funcType", value = "科別代碼", example = "00") 
       @RequestParam(required = false) String funcType,
+      @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...", example = "家醫科") 
+      @RequestParam(required = false) String funcTypec,
       @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...", example = "家醫科") 
       @RequestParam(required = false) String funcTypeC) {
-    return ResponseEntity.ok(userService.getAllDepartment(funcType, funcTypeC));
+	String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
+    return ResponseEntity.ok(userService.getAllDepartment(funcType, funcTypeChinese));
   }
 
   @ApiOperation(value = "新增部門", notes = "新增部門")

@@ -11,4 +11,6 @@ import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTE;
 public interface MR_NOTEDao extends JpaRepository<MR_NOTE, Long>, JpaSpecificationExecutor<MR_NOTE> {
   
   public List<MR_NOTE> findByMrIdOrderById(Long mrId);
+  
+  public List<MR_NOTE> findByMrIdAndNoteAndStatusOrderById(Long mrId, String note, int status);
 }

@@ -91,7 +91,7 @@ public class TestXML {
 
       //saveToMongo(op);
       System.out.println(printOP(op));
-      outputFile(op, "test2.xml");
+      // outputFile(op, "test2.xml");
 
       // InPatient ip = xmlMapper.readValue(readXMLFile(
       // "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\醫療費用點數申報格式與說明_版1090813\\上傳格式作業說明\\sample_inpatient.xml"),
@@ -122,36 +122,36 @@ public class TestXML {
     return sb.toString();
   }
 
-  private void outputFile(Object obj, String filename) {
-    StringWriter stringWriter = new StringWriter();
-    XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newFactory();
-    try {
-      XMLStreamWriter sw = xmlOutputFactory.createXMLStreamWriter(stringWriter);
-      XmlMapper xmlMapper = new XmlMapper();
-      // 空的 tag 不輸出
-      xmlMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-      xmlMapper.enable(SerializationFeature.INDENT_OUTPUT);
-      sw.writeStartDocument("Big5", "1.0");
-      xmlMapper.writeValue(sw, obj);
-      sw.writeEndDocument();
-      String xml = stringWriter.toString();
-
-      BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(
-          "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\醫療費用點數申報格式與說明_版1090813\\上傳格式作業說明\\"
-              + filename),
-          "UTF-8"));
-      bw.write(xml);
-      bw.close();
-    } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    } catch (XMLStreamException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
+//  private void outputFile(Object obj, String filename) {
+//    StringWriter stringWriter = new StringWriter();
+//    XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newFactory();
+//    try {
+//      XMLStreamWriter sw = xmlOutputFactory.createXMLStreamWriter(stringWriter);
+//      XmlMapper xmlMapper = new XmlMapper();
+//      // 空的 tag 不輸出
+//      xmlMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+//      xmlMapper.enable(SerializationFeature.INDENT_OUTPUT);
+//      sw.writeStartDocument("Big5", "1.0");
+//      xmlMapper.writeValue(sw, obj);
+//      sw.writeEndDocument();
+//      String xml = stringWriter.toString();
+//
+//      BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(
+//          "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\醫療費用點數申報格式與說明_版1090813\\上傳格式作業說明\\"
+//              + filename),
+//          "UTF-8"));
+//      bw.write(xml);
+//      bw.close();
+//    } catch (UnsupportedEncodingException e) {
+//      e.printStackTrace();
+//    } catch (FileNotFoundException e) {
+//      e.printStackTrace();
+//    } catch (XMLStreamException e) {
+//      e.printStackTrace();
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    }
+//  }
 
   public void TestSimpleXML() {
     ObjectMapper xmlMapper = new XmlMapper();
@@ -160,7 +160,7 @@ public class TestXML {
     try {
       Simple value = xmlMapper.readValue("<Simple><tx>1</tx><ty>2</ty></Simple>", Simple.class);
 
-      outputFile(value, "simple.xml");
+      //outputFile(value, "simple.xml");
       // String xml = xmlMapper.writeValueAsString(new Simple());
       // // or
       // // xmlMapper.writeValue(new Simple());
@@ -212,7 +212,7 @@ public class TestXML {
   /**
    * 匯入XML tag定義檔，至用到的常數
    */
-  @Ignore
+  //@Ignore
   @Test
   public void readExcel() {
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\inpatient.xlsx", "IP");
@@ -221,7 +221,7 @@ public class TestXML {
     // importConstants("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn compare.xlsx");
     //importConstantsToRDB("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\OutIn compare.xlsx");
     importCODE_TABLEToRDB(
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\CODE_TABLE.xlsx");
+        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\CODE_TABLE.xlsx");
   }
 
   public void importXMLTag(String filename, String dataFormat) {

@@ -126,7 +126,7 @@ public class SystemService {
       int id = redisService.getMaxId() + 1;
       cb.setId((long) id);
       atc.setRedisId(id);
-      redisService.addIndexToRedisIndex("ICD10-index", String.valueOf(cb.getId()),
+      redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(cb.getId()),
           cb.getCode().toLowerCase());
     } else {
       cb.setId((long) atc.getRedisId());
@@ -277,7 +277,7 @@ public class SystemService {
       int id = redisService.getMaxId() + 1;
       cb.setId((long) id);
       pc.setRedisId(id);
-      redisService.addIndexToRedisIndex("ICD10-index", String.valueOf(cb.getId()),
+      redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(cb.getId()),
           cb.getCode().toLowerCase());
     } else {
       cb.setId((long) pc.getRedisId());
@@ -545,7 +545,7 @@ public class SystemService {
       int id = redisService.getMaxId() + 1;
       cb.setId((long) id);
       icd10.setRedisId((long)id);
-      redisService.addIndexToRedisIndex("ICD10-index", String.valueOf(cb.getId()),
+      redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(cb.getId()),
           cb.getCode().toLowerCase());
     } else {
       cb.setId((long) icd10.getRedisId());

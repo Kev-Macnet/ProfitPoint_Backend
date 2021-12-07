@@ -406,12 +406,12 @@ public class ImportPayCode {
     // importDrugHtmlExcelToRedis("ICD10",
     // "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020183522-用藥品項查詢結果.xls",
     // "ORDER");
-    importDrugHtmlExcelToRedis("ICD10",
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020184556-用藥品項查詢結果.xls",
-        "ORDER");
-    importDrugHtmlExcelToRedis("ICD10",
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020184620-用藥品項查詢結果.xls",
-        "ORDER");
+//    importDrugHtmlExcelToRedis("ICD10",
+//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020184556-用藥品項查詢結果.xls",
+//        "ORDER");
+//    importDrugHtmlExcelToRedis("ICD10",
+//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020184620-用藥品項查詢結果.xls",
+//        "ORDER");
   }
 
   private int getMaxId() {
@@ -428,13 +428,15 @@ public class ImportPayCode {
   }
 
   public void importExcelToRedisNew(String collectionName, String filename, String category) {
-    // HashOperations<String, String, Object> hashOp = ;
-    // long maxId = redisTemplate.opsForHash().size(collectionName + "-data");
-    // 前面 163661 筆是 ICD10 診斷碼 + 處置碼
-
     ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
     HashMap<String, String> keys = getRedisId(collectionName + "-data", category);
-
+    System.out.println("keys size=" + keys.size());
+    for (String string : keys.keySet()) {
+      System.out.println(string +":" + keys.get(string));
+    }
+    if (keys.size() > 0) {
+      return;
+    }
     File file = new File(filename);
     WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
     try {
@@ -447,8 +449,8 @@ public class ImportPayCode {
       XSSFSheet sheet = workbook.getSheetAt(0);
       SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
       DecimalFormat df = new DecimalFormat("#");
-      for (int j = 1; j < sheet.getPhysicalNumberOfRows(); j++) {
-        // for (int j = 1; j < 3; j++) {
+      //for (int j = 1; j < sheet.getPhysicalNumberOfRows(); j++) {
+         for (int j = 1; j < 3; j++) {
         XSSFRow row = sheet.getRow(j);
         if (row == null || row.getCell(0) == null) {
           // System.out.println("sheet:" + i + ", row=" + j + " is null");
@@ -495,7 +497,6 @@ public class ImportPayCode {
     }
 
     String sId = keys.get(oc.getCode());
-    System.out.println("saveOrderCode:" + oc.getCode() + "," + sId);
     if (sId == null) {
       oc.setId(maxId);
       payCode.setRedisId((int) maxId);
@@ -504,7 +505,6 @@ public class ImportPayCode {
       redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(oc.getId()),
           oc.getCode());
     } else {
-      System.out.println("save " + oc.getCode());
       oc.setId(Long.parseLong(sId));
       payCode.setRedisId(Integer.parseInt(sId));
       redisService.putHash(RedisService.DATA_KEY, sId, json);
@@ -520,7 +520,7 @@ public class ImportPayCode {
     } else {
       boolean isFound = false;
       for (PAY_CODE old : codes) {
-        if (old.getStartDate().equals(code.getStartDate())) {
+        if (old.getStartDate().getTime() == code.getStartDate().getTime()) {
           isFound = true;
           old.setAtc(code.getAtc());
           old.setCodeType(code.getCodeType());

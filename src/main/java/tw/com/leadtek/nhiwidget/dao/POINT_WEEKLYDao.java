@@ -14,5 +14,5 @@ public interface POINT_WEEKLYDao extends JpaRepository<POINT_WEEKLY, Long> {
   
   public POINT_WEEKLY findByStartDateAndEndDate(Date sdate, Date edate);
   
-  public List<POINT_WEEKLY> findByEndDateLessThanEqualOrderByEndDate(Date edate);
+  public List<POINT_WEEKLY> findByEndDateLessThanEqualOrderByEndDateDesc(Date edate);
 }

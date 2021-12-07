@@ -13,7 +13,10 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
+@ApiModel("月報表資料")
 @Table(name = "POINT_MONTHLY")
 @Entity
 public class POINT_MONTHLY {
@@ -28,171 +31,115 @@ public class POINT_MONTHLY {
   @JsonIgnore
   private Long id;
 
-  /**
-   * 年月(西元年)，如 201211
-   */
   @Column(name = "YM")
+  @ApiModelProperty(value = "年月(西元年)", example = "202101", required = true)
   private Integer ym;
 
-  /**
-   * 門診部分負擔
-   */
   @Column(name = "PART_OP")
+  @ApiModelProperty(value = "門診部分負擔", example = "1000000", required = true)
   private Long partOp;
 
-  /**
-   * 急診部分負擔
-   */
+  @ApiModelProperty(value = "急診部分負擔", example = "700000", required = true)
   @Column(name = "PART_EM")
   private Long partEm;
 
-  /**
-   * 門急診部分負擔
-   */
+  @ApiModelProperty(value = "門急診部分負擔", example = "1700000", required = true)
   @Column(name = "PART_OP_ALL")
   private Long partOpAll;
 
-  /**
-   * 住院部分負擔
-   */
+  @ApiModelProperty(value = "住院部分負擔", example = "1200000", required = true)
   @Column(name = "PART_IP")
   private Long partIp;
 
-  /**
-   * 部分負擔加總
-   */
+  @ApiModelProperty(value = "部分負擔加總", example = "2900000", required = true)
   @Column(name = "PART_ALL")
   private Long partAll;
 
-  /**
-   * 門診申請點數
-   */
+  @ApiModelProperty(value = "門診申請點數", example = "5000000", required = true)
   @Column(name = "APPL_OP")
   private Long applOp;
 
-  /**
-   * 急診申請點數
-   */
+  @ApiModelProperty(value = "急診申請點數", example = "6000000", required = true)
   @Column(name = "APPL_EM")
   private Long applEm;
 
-  /**
-   * 門急診申請點數
-   */
+  @ApiModelProperty(value = "門急診申請點數", example = "11000000", required = true)
   @Column(name = "APPL_OP_ALL")
   private Long applOpAll;
 
-  /**
-   * 住院申請點數
-   */
+  @ApiModelProperty(value = "住院申請點數", example = "9000000", required = true)
   @Column(name = "APPL_IP")
   private Long applIp;
 
-  /**
-   * 申請點數加總
-   */
+  @ApiModelProperty(value = "申請點數加總", example = "20000000", required = true)
   @Column(name = "APPL_ALL")
   private Long applAll;
 
-  /**
-   * 門診部分負擔+申請點數
-   */
+  @ApiModelProperty(value = "門診部分負擔+申請點數", example = "13900000", required = true)
   @Column(name = "TOTAL_OP")
   private Long totalOp;
 
-  /**
-   * 急診部分負擔+申請點數
-   */
+  @ApiModelProperty(value = "急診部分負擔+申請點數", example = "8900000", required = true)
   @Column(name = "TOTAL_EM")
   private Long totalEm;
 
-  /**
-   * 門急診部分負擔+申請點數
-   */
+  @ApiModelProperty(value = "門急診部分負擔+申請點數", example = "28900000", required = true)
   @Column(name = "TOTAL_OP_ALL")
   private Long totalOpAll;
 
-  /**
-   * 住院部分負擔+申請點數
-   */
+  @ApiModelProperty(value = "住院部分負擔+申請點數", example = "18900000", required = true)
   @Column(name = "TOTAL_IP")
   private Long totalIp;
 
-  /**
-   * 全部部分負擔+申請點數
-   */
+  @ApiModelProperty(value = "全部部分負擔+申請點數", example = "47800000", required = true)
   @Column(name = "TOTAL_ALL")
   private Long totalAll;
 
-  /**
-   * 門急診分配額度點數
-   */
+  @ApiModelProperty(value = "門急診分配額度點數", example = "20000000", required = true)
   @Column(name = "ASSIGNED_OP")
-  private Long assignedOp;
+  private Long assignedOpAll;
 
-  /**
-   * 住院分配額度點數
-   */
+  @ApiModelProperty(value = "住院分配額度點數", example = "20000000", required = true)
   @Column(name = "ASSIGNED_IP")
   private Long assignedIp;
 
-  /**
-   * 全部分配額度點數
-   */
+  @ApiModelProperty(value = "全部分配額度點數", example = "40000000", required = true)
   @Column(name = "ASSIGNED_ALL")
   private Long assignedAll;
 
-  /**
-   * 門急診總額達成率
-   */
+  @ApiModelProperty(value = "住院總額達成率", example = "100", required = true)
   @Column(name = "RATE_IP")
   private Double rateIp;
 
-  /**
-   * 住院總額達成率
-   */
+  @ApiModelProperty(value = "門急診總額達成率", example = "100", required = true)
   @Column(name = "RATE_OP")
-  private Double rateOp;
+  private Double rateOpAll;
 
-  /**
-   * 全部總額達成率
-   */
+  @ApiModelProperty(value = "全部總額達成率", example = "100", required = true)
   @Column(name = "RATE_ALL")
   private Double rateAll;
 
-  /**
-   * 門診人次
-   */
+  @ApiModelProperty(value = "門診人次", example = "100", required = true)
   @Column(name = "PATIENT_OP")
   private Long patientOp;
 
-  /**
-   * 出院人次
-   */
+  @ApiModelProperty(value = "出院人次", example = "100", required = true)
   @Column(name = "PATIENT_IP")
   private Long patientIp;
 
-  /**
-   * 急診人次
-   */
+  @ApiModelProperty(value = "急診人次", example = "100", required = true)
   @Column(name = "PATIENT_EM")
   private Long patientEm;
 
-  /**
-   * 慢性處方箋額度
-   */
+  @ApiModelProperty(value = "慢性處方箋額度", example = "100", required = true)
   @Column(name = "CHRONIC")
   private Long chronic;
-
-  /**
-   * 總分配額度扣除申請點數的剩餘額度
-   */
+  
+  @ApiModelProperty(value = "總分配額度扣除申請點數的剩餘額度", example = "100", required = true)
   @Column(name = "REMAINING")
   private Long remaining;
 
-  /**
-   * 總住院件數
-   */
+  @ApiModelProperty(value = "總住院件數", example = "10000", required = true)
   @Column(name = "IP_QUANTITY")
   @JsonIgnore
   private Long ipQuantity;
@@ -466,15 +413,15 @@ public class POINT_MONTHLY {
   /**
    * 門急診分配額度點數
    */
-  public Long getAssignedOp() {
-    return assignedOp;
+  public Long getAssignedOpAll() {
+    return assignedOpAll;
   }
 
   /**
    * 門急診分配額度點數
    */
-  public void setAssignedOp(Long ASSIGNED_OP) {
-    assignedOp = ASSIGNED_OP;
+  public void setAssignedOpAll(Long ASSIGNED_OP) {
+    assignedOpAll = ASSIGNED_OP;
   }
 
   /**
@@ -506,31 +453,31 @@ public class POINT_MONTHLY {
   }
 
   /**
-   * 門急診總額達成率
+   * 住院總額達成率
    */
   public Double getRateIp() {
     return rateIp;
   }
 
   /**
-   * 門急診總額達成率
+   * 住院總額達成率
    */
   public void setRateIp(Double RATE_IP) {
     rateIp = RATE_IP;
   }
 
   /**
-   * 住院總額達成率
+   * 門急診總額達成率
    */
-  public Double getRateOp() {
-    return rateOp;
+  public Double getRateOpAll() {
+    return rateOpAll;
   }
 
   /**
-   * 住院總額達成率
+   * 門急診總額達成率
    */
-  public void setRateOp(Double RATE_OP) {
-    rateOp = RATE_OP;
+  public void setRateOpAll(Double RATE_OP) {
+    rateOpAll = RATE_OP;
   }
 
   /**

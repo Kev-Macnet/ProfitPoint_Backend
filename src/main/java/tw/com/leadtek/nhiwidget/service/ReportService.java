@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.service;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -164,21 +165,21 @@ public class ReportService {
     } else {
       return;
     }
-
-    List<Object[]> list = opdDao.findMonthlyPoint(optId, optId, iptId, optId, optId, iptId, optId,
+  
+     List<Object[]> list = opdDao.findMonthlyPoint(optId, optId, iptId, optId, optId, iptId, optId,
         optId, iptId, optId, chineseYM, chineseYM, chineseYM);
     if (list != null && list.size() > 0) {
       Object[] obj = list.get(0);
-      pm.setPartOp((long) (int) obj[0]);
-      pm.setPartEm((long) (int) obj[1]);
+      pm.setPartOp(getLongValue(obj[0]));
+      pm.setPartEm(getLongValue(obj[1]));
       pm.setPartOpAll(pm.getPartOp() + pm.getPartEm());
-      pm.setPartIp((long) (int) obj[2]);
+      pm.setPartIp(getLongValue(obj[2]));
       pm.setPartAll(pm.getPartOpAll() + pm.getPartIp());
 
-      pm.setApplOp((long) (int) obj[3]);
-      pm.setApplEm((long) (int) obj[4]);
+      pm.setApplOp(getLongValue(obj[3]));
+      pm.setApplEm(getLongValue(obj[4]));
       pm.setApplOpAll(pm.getApplOp() + pm.getApplEm());
-      pm.setApplIp((long) (int) obj[5]);
+      pm.setApplIp(getLongValue(obj[5]));
       pm.setApplAll(pm.getApplOpAll() + pm.getApplIp());
 
       pm.setTotalOp(pm.getPartOp() + pm.getApplOp());
@@ -190,16 +191,12 @@ public class ReportService {
       pm.setPatientOp(((BigInteger) obj[6]).longValue());
       pm.setPatientEm(((BigInteger) obj[7]).longValue());
       pm.setPatientIp(((BigInteger) obj[8]).longValue());
-      pm.setChronic(((long) (int) obj[9]));
+      pm.setChronic(getLongValue(obj[9]));
 
       pm.setIpQuantity(((BigInteger) obj[10]).longValue());
       pm.setDrgQuantity(((BigInteger) obj[11]).longValue());
-      if (obj[12] != null) {
-        pm.setDrgApplPoint((long) (int) obj[12]);
-      }
-      if (obj[13] != null) {
-        pm.setDrgActualPoint((long) (int) obj[13]);
-      }
+      pm.setDrgApplPoint(getLongValue(obj[12]));
+      pm.setDrgActualPoint(getLongValue(obj[13]));
       pm.setUpdateAt(new Date());
 
       updateAssignedPoint(pm, adYM);
@@ -217,14 +214,14 @@ public class ReportService {
     if (ap == null) {
       return;
     }
-    pm.setAssignedOp(ap.getWmOpPoints());
+    pm.setAssignedOpAll(ap.getWmOpPoints());
     pm.setAssignedIp(ap.getWmIpPoints());
     pm.setAssignedAll(ap.getWmp());
 
     pm.setRateAll(
         cutPointNumber(((double) pm.getTotalAll() * (double) 100) / (double) pm.getAssignedAll()));
-    pm.setRateOp(
-        cutPointNumber(((double) pm.getTotalOp() * (double) 100) / (double) pm.getAssignedOp()));
+    pm.setRateOpAll(
+        cutPointNumber(((double) pm.getTotalOp() * (double) 100) / (double) pm.getAssignedOpAll()));
     pm.setRateIp(
         cutPointNumber(((double) pm.getTotalIp() * (double) 100) / (double) pm.getAssignedIp()));
   }
@@ -286,7 +283,7 @@ public class ReportService {
     return DateTool.convertChineseToAD(ym);
   }
 
-  public PeriodPointPayload getPeriodPoint(Date sdate, Date edate) {
+   public PeriodPointPayload getPeriodPoint(Date sdate, Date edate) {
     PeriodPointPayload result = new PeriodPointPayload();
     java.sql.Date s = new java.sql.Date(sdate.getTime());
     java.sql.Date e = new java.sql.Date(edate.getTime());
@@ -300,18 +297,17 @@ public class ReportService {
       result.setQuantityEm(((BigInteger) obj[3]).longValue());
       result.setQuantityIp(((BigInteger) obj[4]).longValue());
 
-      result.setApplPointOpAll(((long) (int) obj[5]));
-      result.setApplPointOp(((long) (int) obj[6]));
-      result.setApplPointEm(((long) (int) obj[7]));
-      result.setApplPointIp(((long) (int) obj[8]));
+      result.setApplPointOpAll(getLongValue(obj[5]));
+      result.setApplPointOp(getLongValue(obj[6]));
+	  result.setApplPointEm(getLongValue(obj[7]));
+	  result.setApplPointIp(getLongValue(obj[8]));
       result.setApplPointAll(result.getApplPointOpAll() + result.getApplPointIp());
-
-      result.setPartPointOpAll(((long) (int) obj[9]));
-      result.setPartPointOp(((long) (int) obj[10]));
-      result.setPartPointEm(((long) (int) obj[11]));
-      result.setPartPointIp(((long) (int) obj[12]));
+      result.setPartPointOpAll(getLongValue(obj[9]));
+      result.setPartPointOp(getLongValue(obj[10]));
+      result.setPartPointEm(getLongValue(obj[11]));
+      result.setPartPointIp(getLongValue(obj[12]));
+    
       result.setPartPointAll(result.getPartPointOpAll() + result.getPartPointIp());
-
       result.setPointAll(result.getApplPointAll() + result.getPartPointAll());
       result.setPointEm(result.getApplPointEm() + result.getPartPointEm());
       result.setPointIp(result.getApplPointIp() + result.getPartPointIp());
@@ -354,7 +350,14 @@ public class ReportService {
         NameCodePointQuantity npq = new NameCodePointQuantity();
         npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+        	npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+			BigDecimal dot = (BigDecimal)objects[1];
+			npq.setPoint(dot.longValue());
+		} else {
         npq.setPoint(((long) (int) objects[1]));
+		}
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addOp(npq);
       }
@@ -365,7 +368,14 @@ public class ReportService {
         NameCodePointQuantity npq = new NameCodePointQuantity();
         npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+        	npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+			BigDecimal dot = (BigDecimal)objects[1];
+			npq.setPoint(dot.longValue());
+		} else {
         npq.setPoint(((long) (int) objects[1]));
+		}
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addIp(npq);
       }
@@ -382,7 +392,14 @@ public class ReportService {
         NameCodePointQuantity npq = new NameCodePointQuantity();
         npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+        	npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+			BigDecimal dot = (BigDecimal)objects[1];
+			npq.setPoint(dot.longValue());
+		} else {
         npq.setPoint(((long) (int) objects[1]));
+		}
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addOp(npq);
       }
@@ -393,7 +410,14 @@ public class ReportService {
         NameCodePointQuantity npq = new NameCodePointQuantity();
         npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+        	npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+			BigDecimal dot = (BigDecimal)objects[1];
+			npq.setPoint(dot.longValue());
+		} else {
         npq.setPoint(((long) (int) objects[1]));
+		}
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addIp(npq);
       }
@@ -410,7 +434,14 @@ public class ReportService {
         NameCodePointQuantity npq = new NameCodePointQuantity();
         npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+        	npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+			BigDecimal dot = (BigDecimal)objects[1];
+			npq.setPoint(dot.longValue());
+		} else {
         npq.setPoint(((long) (int) objects[1]));
+		}
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addOp(npq);
       }
@@ -421,7 +452,14 @@ public class ReportService {
         NameCodePointQuantity npq = new NameCodePointQuantity();
         npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+        	npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+			BigDecimal dot = (BigDecimal)objects[1];
+			npq.setPoint(dot.longValue());
+		} else {
         npq.setPoint(((long) (int) objects[1]));
+		}
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addIp(npq);
       }
@@ -579,7 +617,7 @@ public class ReportService {
   public PeriodPointWeeklyPayload getPeroidPointWeekly(Date edate) {
     PeriodPointWeeklyPayload result = new PeriodPointWeeklyPayload();
     java.sql.Date e = new java.sql.Date(edate.getTime());
-    List<POINT_WEEKLY> list = pointWeeklyDao.findByEndDateLessThanEqualOrderByEndDate(e);
+    List<POINT_WEEKLY> list = pointWeeklyDao.findByEndDateLessThanEqualOrderByEndDateDesc(e);
     int count = 0;
     for (POINT_WEEKLY pw : list) {
       String name = pw.getPyear() + " w" + pw.getPweek();
@@ -862,5 +900,16 @@ public class ReportService {
       payload.getWeeklyB2Map().put(funcTypeName, nvlB2);
       payload.getWeeklyCMap().put(funcTypeName, nvlC);
     }
+  }
+  
+  public static long getLongValue(Object obj) {
+	  if (obj == null) {
+		  return 0L;
+	  }
+	  if (obj instanceof BigDecimal) {
+		  BigDecimal dot = (BigDecimal) obj;
+		  return dot.longValue();
+	  }
+	  return (long) (int) obj;
   }
 }

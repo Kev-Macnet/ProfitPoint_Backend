@@ -36,7 +36,7 @@ public class Utility {
               try {
                   Map<String, Object> jwtMap = linkJsonParser.parseMap(jwtBody);
                   long exp = (long) jwtMap.get("exp")*1000;
-                  System.out.println("exp="+exp+" / " + new java.util.Date().getTime());
+                  //System.out.println("exp="+exp+" / " + new java.util.Date().getTime());
                   if (new java.util.Date().getTime()<exp) {
                       retMap.put("status", 200);
                       retMap.put("userName", jwtMap.get("sub").toString());
