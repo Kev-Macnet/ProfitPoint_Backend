@@ -5,7 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 
 //PlanIcdNoPl, PlanLessNdayPl, PlanMoreTimesPl
 
-@ApiModel(value = "計畫可收案病例條件參數")
+@ApiModel(value = "計畫可收案病例條件參數") //Page 63
 public class PlanConditionPl {
     @ApiModelProperty(value="計畫名稱", example="星光計畫", required=true, position=2)
     private String name;
@@ -31,13 +31,13 @@ public class PlanConditionPl {
     
     @ApiModelProperty(value="開關--曾申報過ICD診斷碼(1|0)", example="1", required=true, position=8)
     private int exp_icd_no_enable;
-    @ApiModelProperty(value="曾申報過ICD診斷碼", example="icd-001", required=true, position=9)
-    private String exp_icd_no;
+    @ApiModelProperty(value="曾申報過ICD診斷碼", required=true, position=9)
+    private java.util.List<String> exp_icd_no;
     
     @ApiModelProperty(value="開關--不曾申報過ICD診斷碼(1|0)", example="1", required=true, position=10)
     private int no_exp_icd_no_enable;
-    @ApiModelProperty(value="不曾申報過ICD診斷碼", example="icd-002", required=true, position=11)
-    private String no_exp_icd_no;
+    @ApiModelProperty(value="不曾申報過ICD診斷碼", required=true, position=11)
+    private java.util.List<String> no_exp_icd_no;
     
     @ApiModelProperty(value="開關--排除就醫申報中含有精神科慢性病房住院照護類費用(1|0)", example="1", required=true, position=12)
     private int exclude_psychiatric_enable;
@@ -78,24 +78,14 @@ public class PlanConditionPl {
     public void setExp_icd_no_enable(int exp_icd_no_enable) {
         this.exp_icd_no_enable = exp_icd_no_enable;
     }
-    public String getExp_icd_no() {
-        return exp_icd_no;
-    }
-    public void setExp_icd_no(String exp_icd_no) {
-        this.exp_icd_no = exp_icd_no;
-    }
+    
     public int getNo_exp_icd_no_enable() {
         return no_exp_icd_no_enable;
     }
     public void setNo_exp_icd_no_enable(int no_exp_icd_no_enable) {
         this.no_exp_icd_no_enable = no_exp_icd_no_enable;
     }
-    public String getNo_exp_icd_no() {
-        return no_exp_icd_no;
-    }
-    public void setNo_exp_icd_no(String no_exp_icd_no) {
-        this.no_exp_icd_no = no_exp_icd_no;
-    }
+    
     public int getExclude_psychiatric_enable() {
         return exclude_psychiatric_enable;
     }
@@ -189,4 +179,17 @@ public class PlanConditionPl {
     public void setActive(int active) {
         this.active = active;
     }
+    public java.util.List<String> getExp_icd_no() {
+        return exp_icd_no;
+    }
+    public void setExp_icd_no(java.util.List<String> exp_icd_no) {
+        this.exp_icd_no = exp_icd_no;
+    }
+    public java.util.List<String> getNo_exp_icd_no() {
+        return no_exp_icd_no;
+    }
+    public void setNo_exp_icd_no(java.util.List<String> no_exp_icd_no) {
+        this.no_exp_icd_no = no_exp_icd_no;
+    }
+
 }

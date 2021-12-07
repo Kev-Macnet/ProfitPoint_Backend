@@ -56,7 +56,22 @@ public class PlanConditionControll {
             if (params.getSearchName()==null) {
                 params.setSearchName("");
             }
-            java.util.Map<String, Object> retMap = planConditionService.findList(params.getSearchName(), params.getPageSize(), params.getPageIndex());
+            String sortField = params.getSort_field();
+            String sortDirection = params.getSort_direction(); // ASC|DESC
+            if ((sortField==null)||(sortField.length()==0)) {
+                sortField = "ID";
+            }
+            if ((sortDirection==null)||(sortDirection.length()==0)) {
+                sortDirection = "ASC";
+            }
+            if (java.util.Arrays.asList(new String[] {"ID","DIVISION","PLAN_NAME"}).indexOf(sortField.toUpperCase())<0) {
+                sortField = "ID";
+            }
+            if (java.util.Arrays.asList(new String[] {"ASC","DESC"}).indexOf(sortDirection.toUpperCase())<0) {
+                sortField = "ASC";
+            }
+            java.util.Map<String, Object> retMap = planConditionService.findList(params.getSearchName(), params.getPageSize(), params.getPageIndex(),
+                    sortField.toUpperCase(), sortDirection.toUpperCase());
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }

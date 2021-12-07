@@ -10,6 +10,10 @@ public class PlanSearchPl {
     private int pageSize;
     @ApiModelProperty(value="頁數(由0起算)", position=3, example="2", required=true)
     private int pageIndex;
+    @ApiModelProperty(value="排序欄位(''/DIVISION/PLAN_NAME)", position=4, example="DIVISION", required=false)
+    private String sort_field;
+    @ApiModelProperty(value="排序方向(ASC/DESC)", position=5, example="ASC", required=false)
+    private String sort_direction;
 
     public String getSearchName() {
         return searchName;
@@ -34,6 +38,23 @@ public class PlanSearchPl {
     public void setPageIndex(int pageIndex) {
         this.pageIndex = pageIndex;
     }
+
+    public String getSort_field() {
+        return sort_field;
+    }
+
+    public void setSort_field(String sort_field) {
+        this.sort_field = sort_field;
+    }
+
+    public String getSort_direction() {
+        return sort_direction;
+    }
+
+    public void setSort_direction(String sort_direction) {
+        this.sort_direction = sort_direction;
+    }
+
 
 }
 

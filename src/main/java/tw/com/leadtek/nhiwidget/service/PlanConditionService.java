@@ -17,7 +17,8 @@ public class PlanConditionService {
     @Autowired
     private PlanConditionDao planConditionDao;
     
-    public java.util.Map<String, Object> findList(String searchName, int pageSize, int pageIndex) {
+    public java.util.Map<String, Object> findList(String searchName, int pageSize, int pageIndex,
+            String sortField, String sortDirection) {
         long totalCount = planConditionDao.findListCount(searchName);
         int start = pageSize*pageIndex;
         if (start>totalCount) {
@@ -25,7 +26,10 @@ public class PlanConditionService {
         } else if (start<0) {
             start = 0;
         }
-        java.util.List<Map<String, Object>> lst = planConditionDao.findList(searchName, start, pageSize);
+        if (sortField.equals("PLAN_NAME")) {
+            sortField = "NAME";
+        }
+        java.util.List<Map<String, Object>> lst = planConditionDao.findList(searchName, start, pageSize, sortField, sortDirection);
         
         java.util.Map<String, Object> retMap = new java.util.LinkedHashMap<String, Object>();
         retMap.put("total", totalCount);
@@ -58,6 +62,8 @@ public class PlanConditionService {
                 retMap.put("more_times_enable", map.get("enable"));
                 retMap.put("more_times", extractListMap(moreTimes, new String[] {"icd_no","times"}));
             }
+            retMap.put("exp_icd_no", planConditionDao.findExpIcdNo(id));
+            retMap.put("no_exp_icd_no", planConditionDao.findNoExpIcdNo(id));
         }
         return retMap;
     }
@@ -66,7 +72,7 @@ public class PlanConditionService {
     //PlanIcdNoPl, PlanLessNdayPl, PlanMoreTimesPl
     public long addPlanCondition(PlanConditionPl params) {
         long new_id = planConditionDao.addPlanCondition(params.getName(), params.getDivision(), 
-                params.getExp_icd_no_enable(), params.getExp_icd_no(), params.getNo_exp_icd_no_enable(), params.getNo_exp_icd_no(), 
+                params.getExp_icd_no_enable(), params.getNo_exp_icd_no_enable(), 
                 params.getExclude_psychiatric_enable(), 
                 params.getMedicine_times_enable(), params.getMedicine_times(), params.getMedicine_times_division(), 
                 params.getExclude_plan_nday_enable(), params.getExclude_plan_nday(), 
@@ -92,20 +98,35 @@ public class PlanConditionService {
                     cnt += planConditionDao.addMoreTimes(new_id, params.getMore_times_enable(), pl.getIcd_no(), pl.getTimes());
                 }
             }
+            //---- 12/06 
+            if (params.getExp_icd_no()!=null) {
+                planConditionDao.delExpIcdNo(new_id);
+                for (String icdNo : params.getExp_icd_no()) {
+                    cnt += planConditionDao.addExpIcdNo(new_id, icdNo);
+                }
+            }
+            if (params.getNo_exp_icd_no()!=null) {
+                planConditionDao.delNoExpIcdNo(new_id);
+                for (String icdNo : params.getNo_exp_icd_no()) {
+                    cnt += planConditionDao.addNoExpIcdNo(new_id, icdNo);
+                }
+            }
+            
         }
         return new_id;
     }
     
-    
+
     public int updatePlanConditionActive(long id, int state) {
         return planConditionDao.updatePlanConditionActive(id, state);
     }
+    
     
     public int updatePlanCondition(long id, PlanConditionPl params) {
         int ret=0;
         if (id > 0) {
             ret += planConditionDao.updatePlanCondition(id, params.getName(), params.getDivision(), 
-                    params.getExp_icd_no_enable(), params.getExp_icd_no(), params.getNo_exp_icd_no_enable(), params.getNo_exp_icd_no(), 
+                    params.getExp_icd_no_enable(), params.getNo_exp_icd_no_enable(), 
                     params.getExclude_psychiatric_enable(), 
                     params.getMedicine_times_enable(), params.getMedicine_times(), params.getMedicine_times_division(), 
                     params.getExclude_plan_nday_enable(), params.getExclude_plan_nday(), 
@@ -126,6 +147,19 @@ public class PlanConditionService {
                 planConditionDao.delMoreTimes(id);
                 for (PlanMoreTimesPl pl : params.getMore_times()) {
                     ret += planConditionDao.addMoreTimes(id, params.getMore_times_enable(), pl.getIcd_no(), pl.getTimes());
+                }
+            }
+            //---- 12/06 
+            if (params.getExp_icd_no()!=null) {
+                planConditionDao.delExpIcdNo(id);
+                for (String icdNo : params.getExp_icd_no()) {
+                    ret += planConditionDao.addExpIcdNo(id, icdNo);
+                }
+            }
+            if (params.getNo_exp_icd_no()!=null) {
+                planConditionDao.delNoExpIcdNo(id);
+                for (String icdNo : params.getNo_exp_icd_no()) {
+                    ret += planConditionDao.addNoExpIcdNo(id, icdNo);
                 }
             }
         }

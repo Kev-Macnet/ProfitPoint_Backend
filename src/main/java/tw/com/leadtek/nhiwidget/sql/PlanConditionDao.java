@@ -1,6 +1,8 @@
 package tw.com.leadtek.nhiwidget.sql;
 
 import java.util.Map;
+
+import org.hibernate.internal.build.AllowSysOut;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -36,19 +38,21 @@ public class PlanConditionDao extends BaseSqlDao {
         }
     }
 
-    public java.util.List<Map<String, Object>> findList(String searchName, int start, int pageSize) {
+    public java.util.List<Map<String, Object>> findList(String searchName, int start, int pageSize,
+            String sortField, String sortDirection) {
         String sql;
         sql = "Select ID, NAME, DIVISION, ACTIVE\n"
                 + "From PLAN_CONDITION\n"
                 + "Where(1=1) \n"
                 + "  -- and(NAME like '%%%s%%')\n"
-                + "Order By ID\n"
+                + "Order By %s %s\n"
                 + "limit %d offset %d";
                 
-        sql = String.format(sql, searchName, pageSize, start);
+        sql = String.format(sql, searchName, noInjection(sortField), noInjection(sortDirection), pageSize, start);
         if (searchName.length()>0) {
             sql = sql.replace("-- and(NAME", " and(NAME");
         }
+//        System.out.println("sql-55="+sql);
         logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
@@ -89,15 +93,14 @@ public class PlanConditionDao extends BaseSqlDao {
     
     
     public long addPlanCondition(String name, String division, 
-            int exp_icd_no_enable, String exp_icd_no, int no_exp_icd_no_enable, String no_exp_icd_no, 
+            int exp_icd_no_enable, int no_exp_icd_no_enable,  
             int exclude_psychiatric_enable, int medicine_times_enable, int medicine_times, String medicine_times_division, 
             int exclude_plan_nday_enable, int exclude_plan_nday, int exclude_join_enable, String exclude_join) {
         String sql;
         sql = "Insert into \n"
-                + "PLAN_CONDITION(NAME, DIVISION, EXP_ICD_NO_ENABLE, EXP_ICD_NO, NO_EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN)\n"
-                + "Values('%s', '%s', %d, '%s', %d, '%s', %d, %d, %d, '%s', %d, %d, %d, '%s')";
-        sql = String.format(sql, noInjection(name), noInjection(division), exp_icd_no_enable, 
-                exp_icd_no, no_exp_icd_no_enable, noInjection(no_exp_icd_no), 
+                + "PLAN_CONDITION(NAME, DIVISION, EXP_ICD_NO_ENABLE, NO_EXP_ICD_NO_ENABLE, EXCLUDE_PSYCHIATRIC_ENABLE, MEDICINE_TIMES_ENABLE, MEDICINE_TIMES, MEDICINE_TIMES_DIVISION, EXCLUDE_PLAN_NDAY_ENABLE, EXCLUDE_PLAN_NDAY, EXCLUDE_JOIN_ENABLE, EXCLUDE_JOIN)\n"
+                + "Values('%s', '%s', %d, %d, %d, %d, %d, '%s', %d, %d, %d, '%s')";
+        sql = String.format(sql, noInjection(name), noInjection(division), exp_icd_no_enable, no_exp_icd_no_enable, 
                 exclude_psychiatric_enable, medicine_times_enable, medicine_times, noInjection(medicine_times_division), 
                 exclude_plan_nday_enable, exclude_plan_nday, exclude_join_enable, noInjection(exclude_join));
         logger.trace(sql);
@@ -123,7 +126,7 @@ public class PlanConditionDao extends BaseSqlDao {
     
     
     public int updatePlanCondition(long id, String name, String division, 
-            int exp_icd_no_enable, String exp_icd_no, int no_exp_icd_no_enable, String no_exp_icd_no, 
+            int exp_icd_no_enable, int no_exp_icd_no_enable, 
             int exclude_psychiatric_enable, int medicine_times_enable, int medicine_times, String medicine_times_division, 
             int exclude_plan_nday_enable, int exclude_plan_nday, int exclude_join_enable, String exclude_join) {
         String sql;
@@ -131,9 +134,7 @@ public class PlanConditionDao extends BaseSqlDao {
                 + "Set NAME='%s', \n"
                 + "    DIVISION='%s', \n"
                 + "    EXP_ICD_NO_ENABLE=%d, \n"
-                + "    EXP_ICD_NO='%s', \n"
                 + "    NO_EXP_ICD_NO_ENABLE=%d, \n"
-                + "    NO_EXP_ICD_NO='%s', \n"
                 + "    EXCLUDE_PSYCHIATRIC_ENABLE=%d, \n"
                 + "    MEDICINE_TIMES_ENABLE=%d, \n"
                 + "    MEDICINE_TIMES=%d, \n"
@@ -143,8 +144,7 @@ public class PlanConditionDao extends BaseSqlDao {
                 + "    EXCLUDE_JOIN_ENABLE=%d, \n"
                 + "    EXCLUDE_JOIN='%s'\n"
                 + "Where (ID=%d)";
-        sql = String.format(sql, noInjection(name), noInjection(division), exp_icd_no_enable, noInjection(exp_icd_no), 
-                            no_exp_icd_no_enable, noInjection(no_exp_icd_no), 
+        sql = String.format(sql, noInjection(name), noInjection(division), exp_icd_no_enable, no_exp_icd_no_enable,
                             exclude_psychiatric_enable, medicine_times_enable, medicine_times, noInjection(medicine_times_division), 
                             exclude_plan_nday_enable, exclude_plan_nday, exclude_join_enable, noInjection(exclude_join), id);
         logger.trace(sql);
@@ -242,7 +242,7 @@ public class PlanConditionDao extends BaseSqlDao {
     }
     
     
-  //=== PLAN_more_times 
+    //=== PLAN_more_times 
     public java.util.List<Map<String, Object>> findMoreTimes(long id) {
         String sql;
         sql = "Select ENABLE, ICD_NO, TIMES\n"
@@ -273,6 +273,79 @@ public class PlanConditionDao extends BaseSqlDao {
         logger.trace(sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
+    }
+    
+    //------- 12/06
+    public int addExpIcdNo(long id, String icdNo) {
+        String sql;
+        sql = "Insert into\r\n"
+                + "PLAN_EXP_ICD_NO(ID, ICD_NO)\r\n"
+                + "Values(%d, '%s');";
+        sql = String.format(sql, id, noInjection(icdNo));
+        logger.trace(sql);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+
+    public int delExpIcdNo(long id) {
+        String sql;
+        sql = "Delete From PLAN_EXP_ICD_NO\n"
+                + "Where (ID=%d)";
+        sql = String.format(sql, id);
+        logger.trace(sql);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public java.util.List<String> findExpIcdNo(long id) {
+        String sql;
+        sql = "Select ID, ICD_NO\r\n"
+                + "From PLAN_EXP_ICD_NO\r\n"
+                + "Where (ID=%d)";
+        sql = String.format(sql, id);
+        logger.trace(sql);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        java.util.List<String> retList = new java.util.ArrayList<String>();
+        for (Map<String, Object> item : lst) {
+            retList.add(item.get("ICD_NO").toString());
+        }
+        return retList;
+    }
+    
+    public int addNoExpIcdNo(long id, String icdNo) {
+        String sql;
+        sql = "Insert into\r\n"
+                + "PLAN_NO_EXP_ICD_NO(ID, ICD_NO)\r\n"
+                + "Values(%d, '%s');";
+        sql = String.format(sql, id, noInjection(icdNo));
+        logger.trace(sql);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+
+    public int delNoExpIcdNo(long id) {
+        String sql;
+        sql = "Delete From PLAN_NO_EXP_ICD_NO\n"
+                + "Where (ID=%d)";
+        sql = String.format(sql, id);
+        logger.trace(sql);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public java.util.List<String> findNoExpIcdNo(long id) {
+        String sql;
+        sql = "Select ID, ICD_NO\r\n"
+                + "From PLAN_NO_EXP_ICD_NO\r\n"
+                + "Where (ID=%d)";
+        sql = String.format(sql, id);
+        logger.trace(sql);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        java.util.List<String> retList = new java.util.ArrayList<String>();
+        for (Map<String, Object> item : lst) {
+            retList.add(item.get("ICD_NO").toString());
+        }
+        return retList;
     }
 
 }
