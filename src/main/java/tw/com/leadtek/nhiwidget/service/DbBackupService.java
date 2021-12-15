@@ -2,6 +2,7 @@ package tw.com.leadtek.nhiwidget.service;
 
 import java.util.Map;
 
+import org.hibernate.internal.build.AllowSysOut;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.stereotype.Service;
@@ -24,10 +25,115 @@ public class DbBackupService {
     @Autowired
     private WebConfigDao webConfigDao;
     
+    String DELIMITER = ".|";
+    String spliteDELIMITER = ".\\|";
+    private String[][] tbName = {
+            {"MR", "ID", "UPDATE_AT", "2"},
+            {"IP_D", "ID", "UPDATE_AT", "2"},
+            {"IP_P", "ID", "UPDATE_AT", "2"},
+            {"IP_T", "ID", "UPDATE_AT", "2"},
+            {"OP_D", "ID", "UPDATE_AT", "2"},
+            {"OP_P", "ID", "UPDATE_AT", "2"},
+            {"OP_T", "ID", "UPDATE_AT", "2"},
+            {"AP_ADDITIONAL_POINT", "ID", "", "1"},
+            {"AP_OUTPATIENT_1", "ID", "", "1"},
+            {"AP_OUTPATIENT_1_CATEGORY", "ID,CATEGORY", "", "1"},
+            {"AP_OUTPATIENT_2", "ID", "", "1"},
+            {"AP_OUTPATIENT_2_CPOE", "id,cpoe", "", "1"},
+            {"AP_OUTPATIENT_3", "id,nhi_no", "", "1"},
+            {"AP_OUTPATIENT_4", "ID", "", "1"},
+            {"AP_OUTPATIENT_4_CATEGORY", "id,category", "", "1"},
+            {"AP_OUTPATIENT_4_CPOE", "id,cpoe", "", "1"},
+            {"AP_OUTPATIENT_4_TREATMENT", "id,treatment", "", "1"},
+            {"AP_OUTPATIENT_5", "id,icd_no,nhi_no", "", "1"},
+            {"AP_OUTPATIENT_5_CPOE", "id,cpoe", "", "1"},
+            {"AP_OUTPATIENT_6", "ID", "", "1"},
+            {"AP_OUTPATIENT_6_CATEGORY", "id,category", "", "1"},
+            {"AP_OUTPATIENT_6_CPOE", "id,cpoe", "", "1"},
+            {"AP_OUTPATIENT_6_PLAN", "id,plan", "", "1"},
+            {"AP_OUTPATIENT_7", "ID", "", "1"},
+            {"AP_OUTPATIENT_7_PLAN", "id,plan", "", "1"},
+            {"AP_OUTPATIENT_7_TRIAL", "id,trial", "", "1"},
+            {"AP_INPATIENT_1", "ID", "", "1"},
+            {"AP_INPATIENT_1_CATEGORY", "id,category", "", "1"},
+            {"AP_INPATIENT_2", "ID", "", "1"},
+            {"AP_INPATIENT_2_CPOE", "id,cpoe", "", "1"},
+            {"AP_INPATIENT_3", "id,nhi_no", "", "1"},
+            {"AP_INPATIENT_6", "ID", "", "1"},
+            {"AP_INPATIENT_6_CATEGORY", "id,category", "", "1"},
+            {"AP_INPATIENT_6_CPOE", "id,cpoe", "", "1"},
+            {"AP_INPATIENT_6_PLAN", "id,plan", "", "1"},
+            //----
+            {"PLAN_CONDITION", "ID", "", "1"},
+            {"PLAN_ICD_NO", "ID,ICD_NO", "", "1"},
+            {"PLAN_LESS_NDAY", "ID,ICD_NO", "", "1"},
+            {"PLAN_MORE_TIMES", "ID,ICD_NO", "", "1"},
+            {"PLAN_EXP_ICD_NO", "ID,ICD_NO", "", "1"},
+            {"PLAN_NO_EXP_ICD_NO", "ID,ICD_NO", "", "1"},
+            //----
+            {"PT_PAYMENT_TERMS", "ID", "", "1"},
+            {"pt_hospital_type", "pt_id,hospital_type", "", "1"},
+            {"pt_exclude_nhi_no", "pt_id,nhi_no", "", "1"},
+            {"pt_lim_division", "pt_id,division", "", "1"},
+            {"pt_not_allow_plan", "pt_id,plan", "", "1"},
+            {"pt_coexist_nhi_no", "pt_id,nhi_no", "", "1"},
+            {"pt_notify_nhi_no", "pt_id,nhi_no", "", "1"},
+            {"pt_include_icd_no", "pt_id,icd_no", "", "1"},
+            {"pt_drg_no", "pt_id,drg_no", "", "1"},
+            {"pt_outpatient_fee", "pt_id", "", "1"},
+            {"pt_inpatient_fee", "pt_id", "", "1"},
+            {"pt_ward_fee", "pt_id", "", "1"},
+            {"pt_surgery_fee", "pt_id", "", "1"},
+            {"pt_psychiatricward_fee", "pt_id", "", "1"},
+            {"pt_treatment_fee", "pt_id", "", "1"},
+            {"pt_tube_feeding_fee", "pt_id", "", "1"},
+            {"pt_nutritional_fee", "pt_id", "", "1"},
+            {"pt_adjustment_fee", "pt_id", "", "1"},
+            {"pt_medicine_fee", "pt_id", "", "1"},
+            {"pt_radiation_fee", "pt_id", "", "1"},
+            {"pt_injection_fee", "pt_id", "", "1"},
+            {"pt_quality_service", "pt_id", "", "1"},
+            {"pt_rehabilitation_fee", "pt_id", "", "1"},
+            {"pt_psychiatric_fee", "pt_id", "", "1"},
+            {"pt_bone_marrow_trans_fee", "pt_id", "", "1"},
+            {"pt_anesthesia_fee", "pt_id", "", "1"},
+            {"pt_specific_medical_fee", "pt_id", "", "1"},
+            {"pt_others_fee", "pt_id", "", "1"}
+//            {"", "ID", "", "1"},
+        };
+    
+    public String[] parsePrimaryKey(String tableName) {
+        String ret="";
+        for (int a=0; a<tbName.length; a++) {
+            if (tbName[a][0].toUpperCase().equals(tableName.toUpperCase())) {
+                ret= tbName[a][1].toUpperCase();
+            }
+        }
+        return ret.split(",");
+    }
+    
+    public int arrayIndexOf(String key, String arr[]) {
+        int ret=-1;
+        key = key.toUpperCase();
+        for (int m=0; m<arr.length; m++) {
+            if (key.equals(arr[m].toUpperCase())) {
+                ret = m;
+               break;
+            }
+        }
+      return (ret);
+    }
+
+    
     public java.util.List<Map<String, Object>> findAll(long id, String userName) {
+        BasicJsonParser linkJsonParser = new BasicJsonParser();
         java.util.List<Map<String, Object>> lst = dbBakupLogDao.findAll(id, userName);
         for (Map<String, Object> item: lst) {
             item.remove("filename");
+            String description = item.get("description").toString();
+            if (description.length()>7) {
+                item.put("description", linkJsonParser.parseList(description));
+            }
         }
         return lst;
     }
@@ -110,7 +216,7 @@ public class DbBackupService {
         webConfigDao.setConfig("backup_busy", "1", "");
         webConfigDao.setConfig("backup_abort", "0", "");
         java.util.Map<String, Object> mapBackup = backupEntry(backupPath, mode, newest);
-        java.util.List<String> lstFileName = (java.util.List)mapBackup.get("fileNames");
+        java.util.List<String> lstFileName = (java.util.List) mapBackup.get("fileNames");
         String zipFileName = zipName; //(String)mapBackup.get("zipName");
         String abort;
         if (lstFileName.size()>0) {
@@ -125,13 +231,14 @@ public class DbBackupService {
         Utility.deleteFile(backupPath); //((String)mapBackup.get("backupPath"));
         abort = webConfigDao.getConfigValue("backup_abort");
         if (!abort.equals("1")) {
+//            System.out.println("寫入 backup log");
             com.google.gson.Gson gson = new com.google.gson.Gson();
             dbBakupLogDao.add(username, extractFileName(zipFileName), mode, gson.toJson(mapBackup.get("description")));
             webConfigDao.setConfig("backup_progress", "100.0", "備份進度");
         }
         webConfigDao.setConfig("backup_busy", "0", "");
 //        webConfigDao.setConfig("backup_abort", "0", "");
-        
+        retMap.put("count", mapBackup.get("count"));
         retMap.put("description", mapBackup.get("description"));
         retMap.put("fileNames", lstFileName);
         return retMap;
@@ -141,16 +248,7 @@ public class DbBackupService {
         //------------
         int abortValue=0;
         java.util.Date update = Utility.detectDate("1990-01-01");
-        String[][] tbName = {
-                {"MR", "ID", "UPDATE_AT", "2"},
-//                {"MR_CHECKED", "ID", "UPDATE_AT", "1"},
-                {"IP_D", "ID", "UPDATE_AT", "2"},
-                {"IP_P", "ID", "UPDATE_AT", "1"},
-                {"IP_T", "ID", "UPDATE_AT", "2"},
-                {"OP_D", "ID", "UPDATE_AT", "2"},
-                {"OP_P", "ID", "UPDATE_AT", "1"},
-                {"OP_T", "ID", "UPDATE_AT", "2"}
-            };
+        
         if (newest) {
             String lastDate = webConfigDao.getConfigValue("backup_last_date");
             if (lastDate.length() > 0) {
@@ -184,16 +282,21 @@ public class DbBackupService {
                     if (!newest) {
                         update = new java.util.Date(0l);
                     } 
-                    java.util.Map<String, Object> backupResult = backupTable(backupPath, tbName[idx][0],tbName[idx][1], tbName[idx][2], update, 
-                            progress, totalProgress);
+                    java.util.Map<String, Object> backupResult;
+                    if (tbMode==1) {
+                        backupResult = backupSettingTable(backupPath, tbName[idx][0].toUpperCase(),tbName[idx][1]);
+                    } else {
+                        backupResult = backupDataTable(backupPath, tbName[idx][0].toUpperCase(),tbName[idx][1], tbName[idx][2], update, progress, totalProgress);
+                    }
+
                     String fileName = backupResult.get("fileName").toString();
                     if (fileName.length()>0) {
                         lstFileName.add(fileName);
                     }
                     java.util.Map<String, Object> mapDescription = new java.util.HashMap<String, Object>();
-                    mapDescription.put("table", tbName[idx][0]);
-                    mapDescription.put("count", backupResult.get("rowCount"));
-//                    mapDescription.put("fileName", backupResult.get("fileName").toString());
+//                    mapDescription.put("table", tbName[idx][0]);
+//                    mapDescription.put("count", backupResult.get("rowCount"));
+                    mapDescription.put(tbName[idx][0], backupResult.get("rowCount"));
                     lstDescription.add(mapDescription);
                     rowCount += (long)backupResult.get("rowCount");
                 }
@@ -213,18 +316,16 @@ public class DbBackupService {
         return retMap;
     }
     
-    public java.util.Map<String, Object> backupTable(String path, String tableName, String idName, String updateName, java.util.Date update, 
-                                                     int indexProgress, int totalProgress) {
+    public java.util.Map<String, Object> backupDataTable(String path, String tableName, String idName, String updateName, java.util.Date update, int indexProgress, int totalProgress) {
         long rowCount = 0;
-        long step = 20000;
-        String delimiter = ",";
+        long step = 2000;
         String abort;
         double progress1, progress2;
         progress1 = 100.0*(indexProgress-1)/totalProgress;
         java.util.List<String> lstData = new java.util.LinkedList<String>();
         java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idName);
-        System.out.println(mapRange);
-//        mapRange.put("max_id", 30000l); //shunxian test! test! test!
+//        System.out.println(mapRange);
+        mapRange.put("max_id", 4100l); //shunxian test! test! test!
         long minId = mapRange.get("min_id");
         long maxId = mapRange.get("max_id");
         long start = minId;
@@ -236,7 +337,7 @@ public class DbBackupService {
                 if (start == minId) { // 處理 Header
                     StringBuffer title = new StringBuffer(); 
                     for (java.util.Map.Entry<String, Object> entry : lstRow.get(0).entrySet()) {
-                        title.append(quotedStr(entry.getKey()) + delimiter);
+                        title.append(quotedStr(entry.getKey()) + DELIMITER);
                     }
                     lstData.add(title.toString());
                     Utility.saveToFile(fileName, lstData, false);
@@ -247,9 +348,9 @@ public class DbBackupService {
                     StringBuffer buff = new StringBuffer(); 
                     for (java.util.Map.Entry<String, Object> entry : item.entrySet()) {
                         if (entry.getValue() != null) {
-                            buff.append(quotedStr(entry.getValue()) + delimiter);
+                            buff.append(quotedStr(entry.getValue()) + DELIMITER);
                         } else {
-                            buff.append("[null]" + delimiter);
+                            buff.append("[null]" + DELIMITER);
                         }
                     }
                     lstData.add(buff.toString());
@@ -270,7 +371,7 @@ public class DbBackupService {
                 break;
             }
         }
-        System.out.println("lstData="+lstData.size()+", path="+path);
+//        System.out.println("lstData="+lstData.size()+", path="+path);
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         retMap.put("rowCount", rowCount);
         if (rowCount>0) {
@@ -281,6 +382,54 @@ public class DbBackupService {
         }
         return (retMap);
     }
+    
+    
+    public java.util.Map<String, Object> backupSettingTable(String path, String tableName, String idName) {
+        long rowCount = 0;
+        java.util.List<String> lstData = new java.util.LinkedList<String>();
+        String fileName = path+tableName+".txt";
+        java.util.List<Map<String, Object>> lstRow = dbBackupDao.findAll(tableName, idName);
+        if (lstRow.size() > 0) {
+            // 處理 Header
+            StringBuffer title = new StringBuffer(); 
+            for (java.util.Map.Entry<String, Object> entry : lstRow.get(0).entrySet()) {
+                title.append(quotedStr(entry.getKey()) + DELIMITER);
+            }
+            lstData.add(title.toString());
+            Utility.saveToFile(fileName, lstData, false);
+            lstData.clear();
+            // 處理資料
+            for (Map<String, Object>item : lstRow) {
+                rowCount++;
+                StringBuffer buff = new StringBuffer(); 
+                for (java.util.Map.Entry<String, Object> entry : item.entrySet()) {
+                    if (entry.getValue() != null) {
+                        buff.append(quotedStr(entry.getValue()) + DELIMITER);
+                    } else {
+                        buff.append("[null]" + DELIMITER);
+                    }
+                }
+                lstData.add(buff.toString());
+            }
+            lstRow.clear();
+            if (rowCount>0) {
+                Utility.saveToFile(fileName, lstData, true);
+            }
+            lstData.clear();
+        }
+
+//        System.out.println("lstData="+lstData.size()+", path="+path);
+        java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+        retMap.put("rowCount", rowCount);
+        if (rowCount>0) {
+            Utility.saveToFile(fileName, lstData, true);
+            retMap.put("fileName", fileName);
+        } else {
+            retMap.put("fileName", "");
+        }
+        return (retMap);
+    }
+
 
     public int saveSetting(BackupSettingDto params) {
         webConfigDao.setConfig("backup_setting", params.toString(), "系統資料備份參數");
@@ -372,7 +521,7 @@ public class DbBackupService {
 //                        System.out.println("unzipPath = "+unzipPath);
                         String csvFullName, tableName;
                         java.util.List<String> csvFiles = ZipLib.unzipFile(zipFileName, unzipPath);
-                        System.out.println("csvFiles-----"+csvFiles.size());
+//                        System.out.println("csvFiles-----"+csvFiles.size());
 //                        System.out.println(csvFiles);
                         String abort="0";
                         int progress = 0;
@@ -382,9 +531,16 @@ public class DbBackupService {
                         for (String csvName : csvFiles) {
                             csvFullName = unzipPath+csvName;
                             tableName = csvName.replace(".txt", "");
-                            System.out.println("csvFullName = "+csvName);
-                            java.util.List<String> lstData = Utility.loadFromFile(csvFullName);
-                            retCnt += restoreProcess(tableName, lstData, progress+1, csvFiles.size());
+//                            System.out.println("csvFullName = "+csvName);
+                            String[] pk = parsePrimaryKey(tableName);
+//                            System.out.print("  PrimaryKey = ");
+//                            for (int a=0; a<pk.length; a++) {
+//                                System.out.print(pk[a]+",");
+//                            }
+//                            System.out.println("");
+                              java.util.List<String> lstData = Utility.loadFromFile(csvFullName);
+//                              System.out.println("read count="+lstData.size());
+                              retCnt += restoreProcess(tableName, pk, lstData, progress+1, csvFiles.size());
                             Utility.deleteFile(csvFullName);
                             webConfigDao.setConfig("restore_progress", String.valueOf((100.0*progress)/csvFiles.size()), String.valueOf(csvFiles.size()));
                             progress++;
@@ -416,7 +572,7 @@ public class DbBackupService {
         return retMap;
     }
     
-    public int restoreProcess(String tableName, java.util.List<String> lstData, int index, int total) {
+    public int restoreProcess(String tableName, String[] pkey, java.util.List<String> lstData, int index, int total) {
         int retCnt = 0;
         int execResult;
         String sql, abort;
@@ -429,14 +585,19 @@ public class DbBackupService {
         boolean passHeader = true;
         int idx = 0;
         for (String strRow : lstData) {
+            execResult = 0;
             if (passHeader) {
                 passHeader=false;
                 continue; //跳過 Header
             }
-            sql = generateUpdateSql(tableName, "ID", strHeader, strRow);
-            execResult = dbBackupDao.execSql(sql);
-            if (execResult==0) {
-                sql = generateInsertSql(tableName, "ID", strHeader, strRow);
+            if (pkey.length>0) {
+                sql = generateUpdateSql(tableName, pkey, strHeader, strRow);
+                //            System.out.println("------>sql-564 = \n"+sql);
+                execResult = dbBackupDao.execSql(sql);
+            } 
+            if (execResult<=0) {
+                sql = generateInsertSql(tableName, strHeader, strRow);
+//                System.out.println("------>sql-569 = \n"+sql);
                 execResult = dbBackupDao.execSql(sql);
             }
             retCnt += execResult;
@@ -455,53 +616,69 @@ public class DbBackupService {
         return retCnt;
     }
     
-    public String generateUpdateSql(String tableName, String primary, String headStr, String rowStr) {
+    public String generateUpdateSql(String tableName, String[] primary, String headStr, String rowStr) {
         String header, data;
-        String primaryVal = "";
-        String[] arrHead = headStr.split(",");
-        String[] arrData = rowStr.split(",");
-        StringBuffer sbData = new StringBuffer();
+        boolean ispkey;
+        String[] arrHead = headStr.split(spliteDELIMITER);
+        String[] arrData = rowStr.split(spliteDELIMITER);
+//        System.out.println("pass-1.1="+arrHead.length+","+arrData.length+","+primary.length);
+        java.util.List<Map<String, String>> primaryVal = new java.util.ArrayList<Map<String, String>>();
+        java.util.List<String> sbData = new java.util.ArrayList<String> ();
         for (int a=0; a<arrHead.length; a++) {
+            ispkey = false;
             header = arrHead[a];
-            data = arrData[a]; 
+            data = arrData[a];
+//            System.out.println("pass-1.2="+a+"/"+header);
             if (header.length()>0) {
                 header = quotedTrim(header).toUpperCase();
-                if (header.equals(primary.toUpperCase())) {
+                if (arrayIndexOf(header, primary)>=0) {
+                    java.util.Map<String, String> map = new java.util.HashMap<String, String>();
+                    map.put("field", header);
                     if (data.equals("[null]")) {
-                        primaryVal = "null";
+                        map.put("value", "null");
                     } else {
-                        primaryVal = quotedReplace(arrData[a]);
+                        map.put("value", quotedReplace(noInjection(arrData[a])));
                     }
-                } else {
-//                    String.format("  %s=%s,", header.toUpperCase(), quotedReplace(arrData[a]));
-                    if (a<arrHead.length-1) {
+                    primaryVal.add(map);
+                    ispkey = true;
+                } 
+                
+                if ((ispkey==false)||(arrHead.length==primary.length)) {
+                    if (sbData.size()==0) {
                         if (data.equals("[null]")) {
-                            sbData.append(String.format("    %s=null,\n", header));
+                            sbData.add(String.format(" %s=null", header));
                         } else {
-                            sbData.append(String.format("    %s=%s,\n", header, quotedReplace(arrData[a])));
+                            sbData.add(String.format(" %s=%s", header, quotedReplace(noInjection(arrData[a]))));
                         }
                     } else {
                         if (data.equals("[null]")) {
-                            sbData.append(String.format("    %s=null\n", header));
+                            sbData.add(String.format(",\n    %s=null", header));
                         } else {
-                            sbData.append(String.format("    %s=%s\n", header, quotedReplace(arrData[a])));
+                            sbData.add(String.format(",\n    %s=%s", header, quotedReplace(noInjection(arrData[a]))));
                         }
                     }
                 }
             }
         }
-        if (primaryVal.length()>0) {
-            sbData.append(String.format("Where (%s=%s)", primary, primaryVal));
+        if (primaryVal.size()>0) {
+            sbData.add(String.format("\nWhere (1=1)", primary, primaryVal));
+            for (Map<String, String> item: primaryVal) {
+                sbData.add(String.format("\n  and (%s=%s)", item.get("field"), item.get("value")));
+            }
         }
-        String ret = String.format("Update %s \nSet", tableName.toUpperCase())+sbData.toString();
+        StringBuffer strBuf = new StringBuffer();
+       for (String str : sbData) {
+           strBuf.append(str);
+       }
+        String ret = String.format("Update %s \nSet", tableName.toUpperCase())+strBuf.toString();
         return ret; 
     }
     
     
-    public String generateInsertSql(String tableName, String primary, String headStr, String rowStr) {
+    public String generateInsertSql(String tableName, String headStr, String rowStr) {
         String header, data;
-        String[] arrHead = headStr.split(",");
-        String[] arrData = rowStr.split(",");
+        String[] arrHead = headStr.split(spliteDELIMITER);
+        String[] arrData = rowStr.split(spliteDELIMITER);
         StringBuffer sbHead = new StringBuffer();
         StringBuffer sbData = new StringBuffer();
         sbHead.append(tableName+"(");
@@ -516,14 +693,14 @@ public class DbBackupService {
                     if (data.equals("[null]")) {
                         sbData.append("null ,");
                     } else {
-                        sbData.append(quotedReplace(arrData[a])+", ");
+                        sbData.append(quotedReplace(noInjection(arrData[a]))+", ");
                     }
                 } else {
                     sbHead.append(header.toUpperCase()+")");
                     if (data.equals("[null]")) {
                         sbData.append("null)");
                     } else {
-                        sbData.append(quotedReplace(arrData[a])+")");
+                        sbData.append(quotedReplace(noInjection(arrData[a]))+")");
                     }
                 }
                 
@@ -563,6 +740,15 @@ public class DbBackupService {
         }
         return str;
     }
+    
+    public String noInjection(String str) {
+        if (str!=null) {
+            return (str.replaceAll("\'", "\'\'"));
+        } else {
+            return str;
+        }
+    }
+
     
     public String extractFileName(String fName) {
         java.io.File f = new java.io.File(fName);

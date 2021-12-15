@@ -60,7 +60,7 @@ public class DbBackupControll {
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name="mode", example="0", value="0.完整備份/1.系統備份/2.資料備份", dataType="Integer", paramType="path", required=true)
+        @ApiImplicitParam(name="mode", example="0", value="0.完整備份/1.系統參數備份/2.資料備份", dataType="Integer", paramType="path", required=true)
     })
     @RequestMapping(value = "/dbbackup/all/{mode}", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupAll(@RequestHeader("Authorization") String jwt,
@@ -129,7 +129,7 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.06 寫入系統資料備份設定", notes="", position=6)
+    @ApiOperation(value="12.06 寫入資料備份設定", notes="", position=6)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -149,7 +149,7 @@ public class DbBackupControll {
     }
     
     //===
-    @ApiOperation(value="12.07 讀取系統資料備份設定", notes="", position=7)
+    @ApiOperation(value="12.07 讀取資料備份設定", notes="", position=7)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=BackupSettingDto.class)
     })
@@ -166,7 +166,7 @@ public class DbBackupControll {
     }
     
     //===
-    @ApiOperation(value="12.08 還原系統資料備份檔", notes="", position=8)
+    @ApiOperation(value="12.08 還原資料備份檔", notes="", position=8)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -183,7 +183,7 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.09 取得還原系統資料進度", notes="", position=9)
+    @ApiOperation(value="12.09 取得資料還原進度", notes="", position=9)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }")
     })
@@ -199,7 +199,7 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.10 放棄還原系統資料", notes="", position=10)
+    @ApiOperation(value="12.10 放棄資料還原process", notes="", position=10)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }")
     })
@@ -217,7 +217,7 @@ public class DbBackupControll {
         }
     }
     //===
-    @ApiOperation(value="12.11 Backup Initiate", notes="", position=99)
+    @ApiOperation(value="12.11 Backup Initiate", notes="回復全部狀態值", position=99)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -244,7 +244,7 @@ public class DbBackupControll {
 //            Utility.saveToFile(fileName, lst, false);
 //            Utility.saveToFile(fileName, lst2, true);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
-            retMap.put("count", 1234);
+            retMap.put("status", 0);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }

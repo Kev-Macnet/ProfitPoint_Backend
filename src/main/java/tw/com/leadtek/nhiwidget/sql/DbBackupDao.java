@@ -3,6 +3,7 @@ package tw.com.leadtek.nhiwidget.sql;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -44,6 +45,17 @@ public class DbBackupDao {
         if (minUpdate.getTime()>0l) {
             sql = sql.replace("-- UPDATE_AT and (", " and (");
         }
+//        logger.info(sql);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        return listFormatDate(lst);
+    }
+    
+    public java.util.List<Map<String, Object>> findAll(String tableName, String idName) {
+        String sql;
+        sql = "Select *\n"
+                + "From %s\n"
+                + "Order By %s";
+        sql = String.format(sql, tableName, idName);
 //        logger.info(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return listFormatDate(lst);
@@ -101,9 +113,15 @@ public class DbBackupDao {
     }
     
     public int execSql(String sql) {
-        int ret =  jdbcTemplate.update(sql);
-//        logger.info("execSql------");
-//        logger.info(sql);
+        int ret = 0;
+        try {
+            ret =  jdbcTemplate.update(sql);
+        } catch(DataAccessException ex) {
+            logger.info("execSql------");
+            logger.info(sql);
+//            System.out.println("sql-122="+sql);
+            ex.printStackTrace();
+        }
         return ret;
     }
     
