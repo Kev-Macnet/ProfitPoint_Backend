@@ -318,14 +318,14 @@ public class DbBackupService {
     
     public java.util.Map<String, Object> backupDataTable(String path, String tableName, String idName, String updateName, java.util.Date update, int indexProgress, int totalProgress) {
         long rowCount = 0;
-        long step = 2000;
+        long step = 20000;
         String abort;
         double progress1, progress2;
         progress1 = 100.0*(indexProgress-1)/totalProgress;
         java.util.List<String> lstData = new java.util.LinkedList<String>();
         java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idName);
 //        System.out.println(mapRange);
-        mapRange.put("max_id", 4100l); //shunxian test! test! test!
+//        mapRange.put("max_id", 4100l); //shunxian test! test! test!
         long minId = mapRange.get("min_id");
         long maxId = mapRange.get("max_id");
         long start = minId;
