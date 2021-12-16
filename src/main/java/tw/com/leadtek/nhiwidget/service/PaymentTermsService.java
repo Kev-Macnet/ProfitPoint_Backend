@@ -49,7 +49,6 @@ public class PaymentTermsService {
     
     public java.util.Map<String, Object> jwtValidate(String jwt, int roleNo) { //roleNo default=4
         java.util.Map<String, Object> validationMap = Utility.jwtValidate(jwt);
-        System.out.println(validationMap);
         if ((int)validationMap.get("status") == 200) {
             String role = findUserRole(validationMap.get("userName").toString());
             // "A: MIS主管, B: 行政主管, C: 申報主管, D: coding人員/申報人員, E: 醫護人員, Z: 原廠開發者" 

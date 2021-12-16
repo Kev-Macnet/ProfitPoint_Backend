@@ -25,8 +25,8 @@ public class DbBackupService {
     @Autowired
     private WebConfigDao webConfigDao;
     
-    String DELIMITER = ".|";
-    String spliteDELIMITER = ".\\|";
+    String DELIMITER = "^|";
+    String spliteDELIMITER = "\\^\\|";
     private String[][] tbName = {
             {"MR", "ID", "UPDATE_AT", "2"},
             {"IP_D", "ID", "UPDATE_AT", "2"},
@@ -98,7 +98,22 @@ public class DbBackupService {
             {"pt_bone_marrow_trans_fee", "pt_id", "", "1"},
             {"pt_anesthesia_fee", "pt_id", "", "1"},
             {"pt_specific_medical_fee", "pt_id", "", "1"},
-            {"pt_others_fee", "pt_id", "", "1"}
+            {"pt_others_fee", "pt_id", "", "1"},
+            //-----
+            {"USER", "ID", "", "1"},
+            {"DEPARTMENT", "ID", "", "1"},
+            {"USER_DEPARTMENT", "USER_ID,DEPARTMENT_ID", "", "1"},
+            {"CODE_CONFLICT", "ID", "", "1"},
+            {"ICD10", "ID", "", "1"},
+            {"ASSIGNED_POINT", "ID", "", "1"},
+            {"PARAMETERS", "ID", "", "1"},
+            {"MR_NOTE", "ID", "", "1"},
+            {"DEDUCTED_NOTE", "ID", "", "1"},
+            {"PAY_CODE", "ID", "UPDATE_AT", "1"},
+            {"DRG_CODE", "ID", "", "1"},
+            {"ATC", "CODE", "", "1"},
+            {"DEDUCTED", "ID", "", "1"},
+            {"CODE_THRESHOLD", "ID", "", "1"}
 //            {"", "ID", "", "1"},
         };
     
@@ -182,9 +197,6 @@ public class DbBackupService {
                 try {
                     Thread.sleep(100);
                     dbBackupKernel(mode, username, false);
-//                    retMap.put("description", mapBackup.get("description"));
-//                    retMap.put("fileNames", lstFileName);
-                    //-------------
                 } catch (Exception e) {
                     System.out.println(e.toString());
                 }
@@ -231,7 +243,6 @@ public class DbBackupService {
         Utility.deleteFile(backupPath); //((String)mapBackup.get("backupPath"));
         abort = webConfigDao.getConfigValue("backup_abort");
         if (!abort.equals("1")) {
-//            System.out.println("寫入 backup log");
             com.google.gson.Gson gson = new com.google.gson.Gson();
             dbBakupLogDao.add(username, extractFileName(zipFileName), mode, gson.toJson(mapBackup.get("description")));
             webConfigDao.setConfig("backup_progress", "100.0", "備份進度");
@@ -247,12 +258,12 @@ public class DbBackupService {
     public Map<String, Object> backupEntry(String backupPath, int mode, boolean newest) {
         //------------
         int abortValue=0;
-        java.util.Date update = Utility.detectDate("1990-01-01");
+        java.util.Date startDate = Utility.detectDate("1990-01-01");
         
         if (newest) {
             String lastDate = webConfigDao.getConfigValue("backup_last_date");
             if (lastDate.length() > 0) {
-                update = Utility.detectDate(lastDate);
+                startDate = Utility.detectDate(lastDate);
             } 
         }
         int tbMode;
@@ -267,6 +278,7 @@ public class DbBackupService {
 
         java.util.List<Map<String, Object>> lstDescription = new java.util.ArrayList<Map<String, Object>>();
         java.util.List<String> lstFileName = new java.util.ArrayList<String>();
+        String todayStr = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd HH:mm:ss");
         long rowCount = 0;
         String abort="0";
         webConfigDao.setConfig("backup_progress", "0.0", "備份進度");
@@ -280,13 +292,13 @@ public class DbBackupService {
                     break;
                 } else {
                     if (!newest) {
-                        update = new java.util.Date(0l);
+                        startDate = new java.util.Date(0l);
                     } 
                     java.util.Map<String, Object> backupResult;
                     if (tbMode==1) {
                         backupResult = backupSettingTable(backupPath, tbName[idx][0].toUpperCase(),tbName[idx][1]);
                     } else {
-                        backupResult = backupDataTable(backupPath, tbName[idx][0].toUpperCase(),tbName[idx][1], tbName[idx][2], update, progress, totalProgress);
+                        backupResult = backupDataTable(backupPath, tbName[idx][0].toUpperCase(),tbName[idx][1], tbName[idx][2], startDate, progress, totalProgress);
                     }
 
                     String fileName = backupResult.get("fileName").toString();
@@ -294,8 +306,6 @@ public class DbBackupService {
                         lstFileName.add(fileName);
                     }
                     java.util.Map<String, Object> mapDescription = new java.util.HashMap<String, Object>();
-//                    mapDescription.put("table", tbName[idx][0]);
-//                    mapDescription.put("count", backupResult.get("rowCount"));
                     mapDescription.put(tbName[idx][0], backupResult.get("rowCount"));
                     lstDescription.add(mapDescription);
                     rowCount += (long)backupResult.get("rowCount");
@@ -305,8 +315,10 @@ public class DbBackupService {
         }
 
         if (!abort.equals("1")) {
-            String todayStr = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd");
             webConfigDao.setConfig("backup_last_date", todayStr, "");
+            if ((mode==0)||(mode==2)) {
+                webConfigDao.setConfig("backup_db_last_date", todayStr, "");
+            }
         }
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         retMap.put("fileNames", lstFileName);
@@ -316,25 +328,25 @@ public class DbBackupService {
         return retMap;
     }
     
-    public java.util.Map<String, Object> backupDataTable(String path, String tableName, String idName, String updateName, java.util.Date update, int indexProgress, int totalProgress) {
+    public java.util.Map<String, Object> backupDataTable(String path, String tableName, String idField, String updateField, java.util.Date startDate, int indexProgress, int totalProgress) {
         long rowCount = 0;
-        long step = 20000;
+        long pageSize = 20000;
         String abort;
         double progress1, progress2;
         progress1 = 100.0*(indexProgress-1)/totalProgress;
         java.util.List<String> lstData = new java.util.LinkedList<String>();
-        java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idName);
-//        System.out.println(mapRange);
-//        mapRange.put("max_id", 4100l); //shunxian test! test! test!
-        long minId = mapRange.get("min_id");
-        long maxId = mapRange.get("max_id");
-        long start = minId;
+        java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idField, updateField, startDate);
+        // ---------------------------- shunxian test! test! test!
+//        pageSize = 10000;
+//        mapRange.put("count", 21000l);
+     // ---------------------------- shunxian test! test! test!
+        long stopIdx = mapRange.get("count");
+        long startIdx = 0;
         String fileName = path+tableName+".txt";
-        while (start <= maxId) {
-//            lstData.clear();
-            java.util.List<Map<String, Object>> lstRow = dbBackupDao.findData(tableName, idName, start, start+step-1, updateName, update);
+        while (startIdx <= stopIdx) {
+            java.util.List<Map<String, Object>> lstRow = dbBackupDao.findData(tableName, idField, startIdx, pageSize, updateField, startDate);
             if (lstRow.size() > 0) {
-                if (start == minId) { // 處理 Header
+                if (startIdx == 0) { // 處理 Header
                     StringBuffer title = new StringBuffer(); 
                     for (java.util.Map.Entry<String, Object> entry : lstRow.get(0).entrySet()) {
                         title.append(quotedStr(entry.getKey()) + DELIMITER);
@@ -355,23 +367,24 @@ public class DbBackupService {
                     }
                     lstData.add(buff.toString());
                 }
+                startIdx += lstRow.size();
                 lstRow.clear();
                 if (rowCount>0) {
                     Utility.saveToFile(fileName, lstData, true);
                 }
                 lstData.clear();
                 if (totalProgress>0) {
-                    progress2 = progress1 + (100.0*start/(maxId*totalProgress));
+                    progress2 = progress1 + (100.0*startIdx/(stopIdx*totalProgress));
                     webConfigDao.setConfig("backup_progress", String.valueOf(progress2), "備份進度");
                 }
+            } else {
+                break;
             }
-            start += step;
             abort = webConfigDao.getConfigValue("backup_abort");
             if (abort.equals("1")) {
                 break;
             }
         }
-//        System.out.println("lstData="+lstData.size()+", path="+path);
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         retMap.put("rowCount", rowCount);
         if (rowCount>0) {
@@ -418,7 +431,6 @@ public class DbBackupService {
             lstData.clear();
         }
 
-//        System.out.println("lstData="+lstData.size()+", path="+path);
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         retMap.put("rowCount", rowCount);
         if (rowCount>0) {
@@ -508,8 +520,6 @@ public class DbBackupService {
                     int retCnt = 0;
                     java.util.Map<String, Object> mapBackup = dbBakupLogDao.findOne(id);
                     if (!mapBackup.isEmpty()) {
-//                        System.out.println("mapBackup-----");
-//                        System.out.println(mapBackup);
                         String backupPath = getBackupPath();
                         String zipFileName = backupPath+mapBackup.get("filename").toString();
                         String unzipPath = backupPath+"unzip_"+Utility.dateFormat(new java.util.Date(), "HHmmss")+"/";
@@ -517,12 +527,8 @@ public class DbBackupService {
                         if (!fwork.exists()) { 
                             fwork.mkdirs();
                         }
-//                        System.out.println("backupPath = "+backupPath);
-//                        System.out.println("unzipPath = "+unzipPath);
                         String csvFullName, tableName;
                         java.util.List<String> csvFiles = ZipLib.unzipFile(zipFileName, unzipPath);
-//                        System.out.println("csvFiles-----"+csvFiles.size());
-//                        System.out.println(csvFiles);
                         String abort="0";
                         int progress = 0;
                         webConfigDao.setConfig("restore_busy", "1", "data還原中...");
@@ -531,16 +537,9 @@ public class DbBackupService {
                         for (String csvName : csvFiles) {
                             csvFullName = unzipPath+csvName;
                             tableName = csvName.replace(".txt", "");
-//                            System.out.println("csvFullName = "+csvName);
                             String[] pk = parsePrimaryKey(tableName);
-//                            System.out.print("  PrimaryKey = ");
-//                            for (int a=0; a<pk.length; a++) {
-//                                System.out.print(pk[a]+",");
-//                            }
-//                            System.out.println("");
-                              java.util.List<String> lstData = Utility.loadFromFile(csvFullName);
-//                              System.out.println("read count="+lstData.size());
-                              retCnt += restoreProcess(tableName, pk, lstData, progress+1, csvFiles.size());
+                            java.util.List<String> lstData = Utility.loadFromFile(csvFullName, "UTF-8");
+                            retCnt += restoreProcess(tableName, pk, lstData, progress+1, csvFiles.size());
                             Utility.deleteFile(csvFullName);
                             webConfigDao.setConfig("restore_progress", String.valueOf((100.0*progress)/csvFiles.size()), String.valueOf(csvFiles.size()));
                             progress++;
@@ -577,8 +576,8 @@ public class DbBackupService {
         int execResult;
         String sql, abort;
         String strHeader = lstData.get(0);
-//        System.out.println("len="+lstData.size());
-//        System.out.println("strHeader="+strHeader);
+        
+//      System.out.println("len="+lstData.size()+", "+tableName);
         double progress1, progress2;
         progress1 = 100.0*(index-1)/total;
         long lstSize = lstData.size();
@@ -592,16 +591,18 @@ public class DbBackupService {
             }
             if (pkey.length>0) {
                 sql = generateUpdateSql(tableName, pkey, strHeader, strRow);
-                //            System.out.println("------>sql-564 = \n"+sql);
-                execResult = dbBackupDao.execSql(sql);
+                if (sql.length()>0) {
+                    execResult = dbBackupDao.execSql(sql);
+                }
             } 
             if (execResult<=0) {
                 sql = generateInsertSql(tableName, strHeader, strRow);
-//                System.out.println("------>sql-569 = \n"+sql);
-                execResult = dbBackupDao.execSql(sql);
+                if (sql.length()>0) {
+                    execResult = dbBackupDao.execSql(sql);
+                }
             }
             retCnt += execResult;
-            if (idx++ >= 1000) {
+            if (idx++ >= 500) {
                 idx = 0;
                 progress2 = progress1 + (100.0*retCnt/(lstSize*total));
                 webConfigDao.setConfig("restore_progress", String.valueOf(progress2), 
@@ -621,57 +622,66 @@ public class DbBackupService {
         boolean ispkey;
         String[] arrHead = headStr.split(spliteDELIMITER);
         String[] arrData = rowStr.split(spliteDELIMITER);
-//        System.out.println("pass-1.1="+arrHead.length+","+arrData.length+","+primary.length);
-        java.util.List<Map<String, String>> primaryVal = new java.util.ArrayList<Map<String, String>>();
-        java.util.List<String> sbData = new java.util.ArrayList<String> ();
-        for (int a=0; a<arrHead.length; a++) {
-            ispkey = false;
-            header = arrHead[a];
-            data = arrData[a];
-//            System.out.println("pass-1.2="+a+"/"+header);
-            if (header.length()>0) {
-                header = quotedTrim(header).toUpperCase();
-                if (arrayIndexOf(header, primary)>=0) {
-                    java.util.Map<String, String> map = new java.util.HashMap<String, String>();
-                    map.put("field", header);
-                    if (data.equals("[null]")) {
-                        map.put("value", "null");
-                    } else {
-                        map.put("value", quotedReplace(noInjection(arrData[a])));
-                    }
-                    primaryVal.add(map);
-                    ispkey = true;
-                } 
-                
-                if ((ispkey==false)||(arrHead.length==primary.length)) {
-                    if (sbData.size()==0) {
+        if (arrHead.length!=arrData.length) {
+            logger.debug("Restore DB Error:"+tableName+" / "+rowStr);
+//            System.out.println("pass-1.3="+arrHead.length+","+arrData.length+","+primary.length);
+//            System.out.println("pass-1.4="+rowStr);
+            return "";
+        } else {
+//            if (tableName.equals("MR")) {
+//                tableName="MR3";
+//            }
+            java.util.List<Map<String, String>> primaryVal = new java.util.ArrayList<Map<String, String>>();
+            java.util.List<String> sbData = new java.util.ArrayList<String> ();
+            for (int a=0; a<arrHead.length; a++) {
+                ispkey = false;
+                header = arrHead[a];
+                data = arrData[a];
+    //            System.out.println("pass-1.2="+a+"/"+header);
+                if (header.length()>0) {
+                    header = quotedTrim(header).toUpperCase();
+                    if (arrayIndexOf(header, primary)>=0) {
+                        java.util.Map<String, String> map = new java.util.HashMap<String, String>();
+                        map.put("field", header);
                         if (data.equals("[null]")) {
-                            sbData.add(String.format(" %s=null", header));
+                            map.put("value", "null");
                         } else {
-                            sbData.add(String.format(" %s=%s", header, quotedReplace(noInjection(arrData[a]))));
+                            map.put("value", quotedReplace(noInjection(arrData[a])));
                         }
-                    } else {
-                        if (data.equals("[null]")) {
-                            sbData.add(String.format(",\n    %s=null", header));
+                        primaryVal.add(map);
+                        ispkey = true;
+                    } 
+                    
+                    if ((ispkey==false)||(arrHead.length==primary.length)) {
+                        if (sbData.size()==0) {
+                            if (data.equals("[null]")) {
+                                sbData.add(String.format(" %s=null", header));
+                            } else {
+                                sbData.add(String.format(" %s=%s", header, quotedReplace(noInjection(arrData[a]))));
+                            }
                         } else {
-                            sbData.add(String.format(",\n    %s=%s", header, quotedReplace(noInjection(arrData[a]))));
+                            if (data.equals("[null]")) {
+                                sbData.add(String.format(",\n    %s=null", header));
+                            } else {
+                                sbData.add(String.format(",\n    %s=%s", header, quotedReplace(noInjection(arrData[a]))));
+                            }
                         }
                     }
                 }
             }
-        }
-        if (primaryVal.size()>0) {
-            sbData.add(String.format("\nWhere (1=1)", primary, primaryVal));
-            for (Map<String, String> item: primaryVal) {
-                sbData.add(String.format("\n  and (%s=%s)", item.get("field"), item.get("value")));
+            if (primaryVal.size()>0) {
+                sbData.add(String.format("\nWhere (1=1)", primary, primaryVal));
+                for (Map<String, String> item: primaryVal) {
+                    sbData.add(String.format("\n  and (%s=%s)", item.get("field"), item.get("value")));
+                }
             }
+            StringBuffer strBuf = new StringBuffer();
+           for (String str : sbData) {
+               strBuf.append(str);
+           }
+            String ret = String.format("Update %s \nSet", tableName.toUpperCase())+strBuf.toString();
+            return ret;
         }
-        StringBuffer strBuf = new StringBuffer();
-       for (String str : sbData) {
-           strBuf.append(str);
-       }
-        String ret = String.format("Update %s \nSet", tableName.toUpperCase())+strBuf.toString();
-        return ret; 
     }
     
     
@@ -679,37 +689,47 @@ public class DbBackupService {
         String header, data;
         String[] arrHead = headStr.split(spliteDELIMITER);
         String[] arrData = rowStr.split(spliteDELIMITER);
-        StringBuffer sbHead = new StringBuffer();
-        StringBuffer sbData = new StringBuffer();
-        sbHead.append(tableName+"(");
-        sbData.append("Values(");
-        for (int a=0; a<arrHead.length; a++) {
-            header = arrHead[a];
-            data = arrData[a]; 
-            if (header.length()>0) {
-                header = quotedTrim(header);
-                if (a<arrHead.length-1) {
-                    sbHead.append(header.toUpperCase()+", ");
-                    if (data.equals("[null]")) {
-                        sbData.append("null ,");
+        if (arrHead.length!=arrData.length) {
+            logger.debug("Restore DB Error:"+tableName+" / "+rowStr);
+//            System.out.println("pass-1.1="+arrHead.length+","+arrData.length);
+//            System.out.println("pass-1.2="+rowStr);
+            return "";
+        } else {
+//            if (tableName.equals("MR")) {
+//                tableName="MR3";
+//            }
+            StringBuffer sbHead = new StringBuffer();
+            StringBuffer sbData = new StringBuffer();
+            sbHead.append(tableName+"(");
+            sbData.append("Values(");
+            for (int a=0; a<arrHead.length; a++) {
+                header = arrHead[a];
+                data = arrData[a]; 
+                if (header.length()>0) {
+                    header = quotedTrim(header);
+                    if (a<arrHead.length-1) {
+                        sbHead.append(header.toUpperCase()+", ");
+                        if (data.equals("[null]")) {
+                            sbData.append("null ,");
+                        } else {
+                            sbData.append(quotedReplace(noInjection(arrData[a]))+", ");
+                        }
                     } else {
-                        sbData.append(quotedReplace(noInjection(arrData[a]))+", ");
+                        sbHead.append(header.toUpperCase()+")");
+                        if (data.equals("[null]")) {
+                            sbData.append("null)");
+                        } else {
+                            sbData.append(quotedReplace(noInjection(arrData[a]))+")");
+                        }
                     }
-                } else {
-                    sbHead.append(header.toUpperCase()+")");
-                    if (data.equals("[null]")) {
-                        sbData.append("null)");
-                    } else {
-                        sbData.append(quotedReplace(noInjection(arrData[a]))+")");
-                    }
+                    
                 }
-                
             }
+            String ret = "Insert Into\n"+sbHead.toString()+"\n"+sbData.toString();
+            return ret;
         }
-        String ret = "Insert Into\n"+sbHead.toString()+"\n"+sbData.toString();
-        return ret; 
     }
-    
+
     
     //===
     public String quotedStr(Object obj) {
@@ -737,6 +757,14 @@ public class DbBackupService {
         if ((str.startsWith(quoted))&&(str.endsWith(quoted))) {
             str = str.substring(quoted.length(), str.length()-quoted.length());
             str = quoted2+str+quoted2;
+        }
+        return str;
+    }
+    
+    public String removeQuoted(String str) {
+        String quoted = "\"";
+        if ((str.startsWith(quoted))&&(str.endsWith(quoted))) {
+            str = str.substring(quoted.length(), str.length()-quoted.length());
         }
         return str;
     }

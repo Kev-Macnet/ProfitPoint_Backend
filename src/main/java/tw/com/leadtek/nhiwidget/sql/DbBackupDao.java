@@ -28,24 +28,18 @@ public class DbBackupDao {
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
     }
-    
-    public java.util.List<Map<String, Object>> findData(String tableName, String idName, long minId, long maxId, String updateName, java.util.Date minUpdate) {
-        long yesterday = new java.util.Date().getTime()-(86400*1000);
-        String stopUpdate = Utility.dateFormat(new java.util.Date(yesterday), "yyyy-MM-dd");
-        String startUpdate = Utility.dateFormat(minUpdate, "yyyy-MM-dd");
-//        System.out.println("stopUpdate="+stopUpdate);
+
+    // limit 語法的版本
+    public java.util.List<Map<String, Object>> findData(String tableName, String idField, long startIdx, long pageSize, String updateField, java.util.Date startDate) {
+        String strStartDate = Utility.dateFormat(startDate, "yyyy-MM-dd HH:mm:ss");
         String sql;
-        sql = "Select *\n"
-                + "From %s\n"
-                + "Where (%s between %d and %d)\n"
-                + " -- UPDATE_AT and (%s >= '%s')\n"
-                + "  and (%s <= '%s')\n"
-                + "Order By %s";
-        sql = String.format(sql, tableName, idName, minId, maxId, updateName, startUpdate, updateName, stopUpdate, idName);
-        if (minUpdate.getTime()>0l) {
-            sql = sql.replace("-- UPDATE_AT and (", " and (");
-        }
-//        logger.info(sql);
+        sql= "Select *\r\n"
+                + "From %s\r\n"
+                + "WHERE (%s>'%s')\r\n"
+                + "Order By %s\r\n"
+                + "Limit %d offset %d";
+        sql = String.format(sql, tableName, updateField, strStartDate, idField, pageSize, startIdx);
+//        System.out.println("sql-69="+sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return listFormatDate(lst);
     }
@@ -61,11 +55,13 @@ public class DbBackupDao {
         return listFormatDate(lst);
     }
 
-    public java.util.Map<String, Long> getTableIdRange(String tableName, String fieldName) {
+    public java.util.Map<String, Long> getTableIdRange(String tableName, String fieldName, String updateField, java.util.Date startDate) {
+        String strStartDate = Utility.dateFormat(startDate, "yyyy-MM-dd HH:mm:ss");
         String sql;
-        sql = "Select min(%s) AS min_id, max(%s) AS max_id \n"
-                + "From %s\n";
-        sql = String.format(sql, fieldName, fieldName, tableName);
+        sql = "Select min(%s) AS min_id, max(%s) AS max_id, count(ID) AS cnt\n"
+                + "From %s\n"
+                + "WHERE (%s>'%s')\n";
+        sql = String.format(sql, fieldName, fieldName, tableName, updateField, strStartDate);
         logger.info(sql);
         java.util.Map<String, Long> retMap = new java.util.HashMap<String, Long>();
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
@@ -73,9 +69,11 @@ public class DbBackupDao {
             java.util.Map<String, Object> map = (Map<String, Object>)lst.get(0);
             retMap.put("min_id", (long)map.get("min_id"));
             retMap.put("max_id", (long)map.get("max_id"));
+            retMap.put("count", (long)map.get("cnt"));
         } else {
             retMap.put("min_id", 0l);
             retMap.put("max_id", 0l);
+            retMap.put("count", 0l);
         }
         return retMap;
    }
@@ -117,50 +115,11 @@ public class DbBackupDao {
         try {
             ret =  jdbcTemplate.update(sql);
         } catch(DataAccessException ex) {
-            logger.info("execSql------");
+            logger.info("execSql Error -----");
             logger.info(sql);
-//            System.out.println("sql-122="+sql);
             ex.printStackTrace();
         }
         return ret;
     }
-    
-    /*
-    public int delete(long ptId) {
-        String sql;
-        sql = "Delete from PT_MEDICINE_FEE\n"
-                + "Where (PT_ID=%d)";
-        sql = String.format(sql, ptId);
-        logger.info(sql);
-        int ret =  jdbcTemplate.update(sql);
-        return ret;
-    }
-    
-    public int add(long ptId, int max_nday) {
-        String sql;
-        sql = "Insert into \n"
-                + "PT_MEDICINE_FEE(PT_ID, MAX_NDAY)\n"
-                + "Values(%d, %d)";
-        sql = String.format(sql, ptId, max_nday);
-        logger.info(sql);
-        try {
-            int ret =  jdbcTemplate.update(sql);
-            return ret;
-        } catch(DataAccessException ex) {
-            return -1;
-        }
-    }
-    
-    public int update(long ptId, int max_nday) {
-        String sql;
-        sql = "Update PT_MEDICINE_FEE\n"
-                + "Set MAX_NDAY=%d\n"
-                + "Where (PT_ID=%d)";
-        sql = String.format(sql, max_nday, ptId);
-        logger.info(sql);
-        int ret =  jdbcTemplate.update(sql);
-        return ret;
-    }
 
-    */
 }

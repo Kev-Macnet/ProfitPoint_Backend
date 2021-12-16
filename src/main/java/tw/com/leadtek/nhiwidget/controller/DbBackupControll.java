@@ -26,7 +26,7 @@ import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.sql.WebConfigDao;
 
 
-@Api(value = "系統備份與還原 API", tags = {"12 系統備份與還原"})
+@Api(value = "資料備份與還原 API", tags = {"12 資料備份與還原"})
 @RestController
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class DbBackupControll {
@@ -39,7 +39,7 @@ public class DbBackupControll {
     private WebConfigDao webConfigDao;
 
     //==== 
-    @ApiOperation(value="12.01 系統資料備份紀錄", notes="", position=1)
+    @ApiOperation(value="12.01 資料備份紀錄", notes="", position=1)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -55,7 +55,7 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.02 系統資料備份", notes="", position=2)
+    @ApiOperation(value="12.02 資料備份", notes="", position=2)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -91,7 +91,7 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.04 放棄系統資料備份", notes="", position=4)
+    @ApiOperation(value="12.04 放棄資料備份", notes="", position=4)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -110,7 +110,7 @@ public class DbBackupControll {
     }
     
     
-    @ApiOperation(value="12.05 刪除系統資料備份紀錄", notes="", position=5)
+    @ApiOperation(value="12.05 刪除資料備份紀錄", notes="", position=5)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -234,15 +234,6 @@ public class DbBackupControll {
             webConfigDao.setConfig("restore_busy", "0", "");
             webConfigDao.setConfig("restore_abort", "0", "");
             webConfigDao.setConfig("restore_progress", "0", "");
-//            java.util.List<String> lst = new java.util.ArrayList<String>();
-//            java.util.List<String> lst2 = new java.util.ArrayList<String>();
-//            lst.add("12-AAA");
-//            lst.add("34-BBB");
-//            lst2.add("56-婉轉");
-//            lst2.add("78-天真");
-//            String fileName = "d:/temp/123.txt";
-//            Utility.saveToFile(fileName, lst, false);
-//            Utility.saveToFile(fileName, lst2, true);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", 0);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
