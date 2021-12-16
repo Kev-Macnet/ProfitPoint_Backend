@@ -360,7 +360,7 @@ public class DbBackupService {
                     StringBuffer buff = new StringBuffer(); 
                     for (java.util.Map.Entry<String, Object> entry : item.entrySet()) {
                         if (entry.getValue() != null) {
-                            buff.append(quotedStr(entry.getValue()) + DELIMITER);
+                            buff.append(transEnter(quotedStr(entry.getValue())) + DELIMITER);
                         } else {
                             buff.append("[null]" + DELIMITER);
                         }
@@ -417,7 +417,7 @@ public class DbBackupService {
                 StringBuffer buff = new StringBuffer(); 
                 for (java.util.Map.Entry<String, Object> entry : item.entrySet()) {
                     if (entry.getValue() != null) {
-                        buff.append(quotedStr(entry.getValue()) + DELIMITER);
+                        buff.append(transEnter(quotedStr(entry.getValue())) + DELIMITER);
                     } else {
                         buff.append("[null]" + DELIMITER);
                     }
@@ -592,12 +592,14 @@ public class DbBackupService {
             if (pkey.length>0) {
                 sql = generateUpdateSql(tableName, pkey, strHeader, strRow);
                 if (sql.length()>0) {
+//                    System.out.println("row="+idx+", "+sql);
                     execResult = dbBackupDao.execSql(sql);
                 }
             } 
             if (execResult<=0) {
                 sql = generateInsertSql(tableName, strHeader, strRow);
                 if (sql.length()>0) {
+//                    System.out.println("row="+idx+", "+sql);
                     execResult = dbBackupDao.execSql(sql);
                 }
             }
@@ -637,7 +639,6 @@ public class DbBackupService {
                 ispkey = false;
                 header = arrHead[a];
                 data = arrData[a];
-    //            System.out.println("pass-1.2="+a+"/"+header);
                 if (header.length()>0) {
                     header = quotedTrim(header).toUpperCase();
                     if (arrayIndexOf(header, primary)>=0) {
@@ -657,13 +658,13 @@ public class DbBackupService {
                             if (data.equals("[null]")) {
                                 sbData.add(String.format(" %s=null", header));
                             } else {
-                                sbData.add(String.format(" %s=%s", header, quotedReplace(noInjection(arrData[a]))));
+                                sbData.add(String.format(" %s=%s", header, quotedReplace(untransEnter(noInjection(arrData[a])))));
                             }
                         } else {
                             if (data.equals("[null]")) {
                                 sbData.add(String.format(",\n    %s=null", header));
                             } else {
-                                sbData.add(String.format(",\n    %s=%s", header, quotedReplace(noInjection(arrData[a]))));
+                                sbData.add(String.format(",\n    %s=%s", header, quotedReplace(untransEnter(noInjection(arrData[a])))));
                             }
                         }
                     }
@@ -706,20 +707,20 @@ public class DbBackupService {
                 header = arrHead[a];
                 data = arrData[a]; 
                 if (header.length()>0) {
-                    header = quotedTrim(header);
+                    header = quotedTrim(header).toUpperCase();
                     if (a<arrHead.length-1) {
                         sbHead.append(header.toUpperCase()+", ");
                         if (data.equals("[null]")) {
                             sbData.append("null ,");
                         } else {
-                            sbData.append(quotedReplace(noInjection(arrData[a]))+", ");
+                            sbData.append(quotedReplace(untransEnter(noInjection(arrData[a])))+", ");
                         }
                     } else {
                         sbHead.append(header.toUpperCase()+")");
                         if (data.equals("[null]")) {
                             sbData.append("null)");
                         } else {
-                            sbData.append(quotedReplace(noInjection(arrData[a]))+")");
+                            sbData.append(quotedReplace(untransEnter(noInjection(arrData[a])))+")");
                         }
                     }
                     
@@ -761,17 +762,25 @@ public class DbBackupService {
         return str;
     }
     
-    public String removeQuoted(String str) {
-        String quoted = "\"";
-        if ((str.startsWith(quoted))&&(str.endsWith(quoted))) {
-            str = str.substring(quoted.length(), str.length()-quoted.length());
-        }
-        return str;
-    }
-    
     public String noInjection(String str) {
         if (str!=null) {
             return (str.replaceAll("\'", "\'\'"));
+        } else {
+            return str;
+        }
+    }
+    
+    public String transEnter(String str) {
+        if (str!=null) {
+            return (str.replaceAll("\n", "<#13>"));
+        } else {
+            return str;
+        }
+    }
+    
+    public String untransEnter(String str) {
+        if (str!=null) {
+            return (str.replaceAll("<#13>", "\n"));
         } else {
             return str;
         }
