@@ -24,9 +24,12 @@ public class DbBackupService {
     private BackupLogDao dbBakupLogDao;
     @Autowired
     private WebConfigDao webConfigDao;
-    
-    String DELIMITER = "^|";
-    String spliteDELIMITER = "\\^\\|";
+
+    boolean TRIAL = false;
+//    String DELIMITER = "^|";
+//    String spliteDELIMITER = "\\^\\|";
+    String DELIMITER = ",";
+    String spliteDELIMITER = ",";
     private String[][] tbName = {
             {"MR", "ID", "UPDATE_AT", "2"},
             {"IP_D", "ID", "UPDATE_AT", "2"},
@@ -142,7 +145,7 @@ public class DbBackupService {
     
     public java.util.List<Map<String, Object>> findAll(long id, String userName) {
         BasicJsonParser linkJsonParser = new BasicJsonParser();
-        java.util.List<Map<String, Object>> lst = dbBakupLogDao.findAll(id, userName);
+        java.util.List<Map<String, Object>> lst = dbBakupLogDao.findAllById(id, userName);
         for (Map<String, Object> item: lst) {
             item.remove("filename");
             String description = item.get("description").toString();
@@ -244,8 +247,12 @@ public class DbBackupService {
         abort = webConfigDao.getConfigValue("backup_abort");
         if (!abort.equals("1")) {
             com.google.gson.Gson gson = new com.google.gson.Gson();
-            dbBakupLogDao.add(username, extractFileName(zipFileName), mode, gson.toJson(mapBackup.get("description")));
             webConfigDao.setConfig("backup_progress", "100.0", "備份進度");
+            if (lstFileName.size()>0) {
+                dbBakupLogDao.add(username, extractFileName(zipFileName), mode, gson.toJson(mapBackup.get("description")));
+            } else {
+                dbBakupLogDao.add(username, "", mode, gson.toJson(mapBackup.get("description")));
+            }
         }
         webConfigDao.setConfig("backup_busy", "0", "");
 //        webConfigDao.setConfig("backup_abort", "0", "");
@@ -258,14 +265,15 @@ public class DbBackupService {
     public Map<String, Object> backupEntry(String backupPath, int mode, boolean newest) {
         //------------
         int abortValue=0;
-        java.util.Date startDate = Utility.detectDate("1990-01-01");
+        java.util.Date startDate = Utility.detectDate("1990-01-01"); //631152000000
         
         if (newest) {
-            String lastDate = webConfigDao.getConfigValue("backup_last_date");
+            String lastDate = webConfigDao.getConfigValue("backup_db_last_date");
             if (lastDate.length() > 0) {
                 startDate = Utility.detectDate(lastDate);
             } 
         }
+        System.out.println("startDate="+Utility.dateFormat(startDate, "yyyy/MM/dd HH:mm:ss"));
         int tbMode;
         int progress = 0;
         int totalProgress = 1;
@@ -278,7 +286,8 @@ public class DbBackupService {
 
         java.util.List<Map<String, Object>> lstDescription = new java.util.ArrayList<Map<String, Object>>();
         java.util.List<String> lstFileName = new java.util.ArrayList<String>();
-        String todayStr = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd HH:mm:ss");
+        String todayDateStr = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd");
+        String todayTimeStr = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd HH:mm:ss");
         long rowCount = 0;
         String abort="0";
         webConfigDao.setConfig("backup_progress", "0.0", "備份進度");
@@ -315,9 +324,9 @@ public class DbBackupService {
         }
 
         if (!abort.equals("1")) {
-            webConfigDao.setConfig("backup_last_date", todayStr, "");
+            webConfigDao.setConfig("backup_last_date", todayDateStr, "");
             if ((mode==0)||(mode==2)) {
-                webConfigDao.setConfig("backup_db_last_date", todayStr, "");
+                webConfigDao.setConfig("backup_db_last_date", todayTimeStr, "");
             }
         }
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
@@ -337,8 +346,10 @@ public class DbBackupService {
         java.util.List<String> lstData = new java.util.LinkedList<String>();
         java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idField, updateField, startDate);
         // ---------------------------- shunxian test! test! test!
-//        pageSize = 10000;
-//        mapRange.put("count", 21000l);
+        if (TRIAL) {
+            pageSize = 10000;
+            mapRange.put("count", 21000l);
+        }
      // ---------------------------- shunxian test! test! test!
         long stopIdx = mapRange.get("count");
         long startIdx = 0;
@@ -444,7 +455,7 @@ public class DbBackupService {
 
 
     public int saveSetting(BackupSettingDto params) {
-        webConfigDao.setConfig("backup_setting", params.toString(), "系統資料備份參數");
+        webConfigDao.setConfig("backup_setting", params.toString(), "資料備份參數");
         return 1;
     }
     
@@ -455,7 +466,7 @@ public class DbBackupService {
             BasicJsonParser linkJsonParser = new BasicJsonParser();
             retMap = linkJsonParser.parseMap(backupSetting);
         } else {
-            retMap = new java.util.HashMap<String, Object>();
+            retMap = java.util.Collections.emptyMap();
         }
         return (retMap);
     }
@@ -509,16 +520,24 @@ public class DbBackupService {
     //=== Restore ------
     public java.util.Map<String, Object> restore(long id) {
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+        java.util.Map<String, Object> mapBackup = dbBakupLogDao.findOne(id);
+        System.out.println("mapBackup.......");
+        System.out.println(mapBackup);
         String busy = webConfigDao.getConfigValue("restore_busy");
-        if (!busy.equals("1")) {
-
+        if (mapBackup.isEmpty()) {
+            retMap.put("status", "-1"); //busy
+            retMap.put("message", "無此備份紀錄。");
+        } else if (mapBackup.get("filename").toString().length()==0)  {
+            retMap.put("status", "-2"); //busy
+            retMap.put("message", "此備份紀錄內無資料無須還原。");
+        } else if (!busy.equals("1")) {
             new Thread(() -> {
                 logger.info("dbRestore...");
                 try {
                     Thread.sleep(100);
                     //-------------
                     int retCnt = 0;
-                    java.util.Map<String, Object> mapBackup = dbBakupLogDao.findOne(id);
+//                    java.util.Map<String, Object> mapBackup = dbBakupLogDao.findOne(id);
                     if (!mapBackup.isEmpty()) {
                         String backupPath = getBackupPath();
                         String zipFileName = backupPath+mapBackup.get("filename").toString();
@@ -565,7 +584,7 @@ public class DbBackupService {
             retMap.put("status", "0");  //busy
             retMap.put("message", "資料還原執行中......");
         } else {
-            retMap.put("status", "-1"); //busy
+            retMap.put("status", "-3"); //busy
             retMap.put("message", "資料還原中, 無法再進行還原。"); 
         }
         return retMap;
@@ -576,8 +595,9 @@ public class DbBackupService {
         int execResult;
         String sql, abort;
         String strHeader = lstData.get(0);
-        
-//      System.out.println("len="+lstData.size()+", "+tableName);
+        if (TRIAL) {
+            System.out.println("len="+lstData.size()+", "+tableName);
+        }
         double progress1, progress2;
         progress1 = 100.0*(index-1)/total;
         long lstSize = lstData.size();
@@ -626,13 +646,17 @@ public class DbBackupService {
         String[] arrData = rowStr.split(spliteDELIMITER);
         if (arrHead.length!=arrData.length) {
             logger.debug("Restore DB Error:"+tableName+" / "+rowStr);
-//            System.out.println("pass-1.3="+arrHead.length+","+arrData.length+","+primary.length);
-//            System.out.println("pass-1.4="+rowStr);
+            if (TRIAL) {
+                System.out.println("pass-1.3="+arrHead.length+","+arrData.length+","+primary.length);
+                System.out.println("pass-1.4="+rowStr);
+            }
             return "";
         } else {
-//            if (tableName.equals("MR")) {
-//                tableName="MR3";
-//            }
+            if (TRIAL) {
+                if (tableName.equals("MR")) {
+                    tableName="MR3";
+                }
+            }
             java.util.List<Map<String, String>> primaryVal = new java.util.ArrayList<Map<String, String>>();
             java.util.List<String> sbData = new java.util.ArrayList<String> ();
             for (int a=0; a<arrHead.length; a++) {
@@ -692,13 +716,17 @@ public class DbBackupService {
         String[] arrData = rowStr.split(spliteDELIMITER);
         if (arrHead.length!=arrData.length) {
             logger.debug("Restore DB Error:"+tableName+" / "+rowStr);
-//            System.out.println("pass-1.1="+arrHead.length+","+arrData.length);
-//            System.out.println("pass-1.2="+rowStr);
+            if (TRIAL) {
+                System.out.println("pass-1.1="+arrHead.length+","+arrData.length);
+                System.out.println("pass-1.2="+rowStr);
+            }
             return "";
         } else {
-//            if (tableName.equals("MR")) {
-//                tableName="MR3";
-//            }
+            if (TRIAL) {
+                if (tableName.equals("MR")) {
+                    tableName="MR3";
+                }
+            }
             StringBuffer sbHead = new StringBuffer();
             StringBuffer sbData = new StringBuffer();
             sbHead.append(tableName+"(");
@@ -772,6 +800,7 @@ public class DbBackupService {
     
     public String transEnter(String str) {
         if (str!=null) {
+            str = str.replaceAll(",", "<#44>");
             return (str.replaceAll("\n", "<#13>"));
         } else {
             return str;
@@ -780,6 +809,7 @@ public class DbBackupService {
     
     public String untransEnter(String str) {
         if (str!=null) {
+            str = str.replaceAll("<#44>", ",");
             return (str.replaceAll("<#13>", "\n"));
         } else {
             return str;

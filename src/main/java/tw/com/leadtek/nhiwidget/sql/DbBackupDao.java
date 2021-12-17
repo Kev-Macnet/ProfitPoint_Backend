@@ -60,15 +60,21 @@ public class DbBackupDao {
         String sql;
         sql = "Select min(%s) AS min_id, max(%s) AS max_id, count(ID) AS cnt\n"
                 + "From %s\n"
-                + "WHERE (%s>'%s')\n";
+                + "Where (%s>'%s')\n";
         sql = String.format(sql, fieldName, fieldName, tableName, updateField, strStartDate);
-        logger.info(sql);
+//        logger.info(sql);
         java.util.Map<String, Long> retMap = new java.util.HashMap<String, Long>();
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             java.util.Map<String, Object> map = (Map<String, Object>)lst.get(0);
-            retMap.put("min_id", (long)map.get("min_id"));
-            retMap.put("max_id", (long)map.get("max_id"));
+            if (map.get("min_id")!=null)
+                retMap.put("min_id", (long)map.get("min_id"));
+            else 
+                retMap.put("min_id", 0l);
+            if (map.get("max_id")!=null)
+                retMap.put("max_id", (long)map.get("max_id"));
+            else
+                retMap.put("max_id", 0l);
             retMap.put("count", (long)map.get("cnt"));
         } else {
             retMap.put("min_id", 0l);

@@ -19,7 +19,7 @@ public class BackupLogDao {
     @Autowired
     protected JdbcTemplate jdbcTemplate;
     
-    public java.util.List<Map<String, Object>> findAll(long id, String userName) {
+    public java.util.List<Map<String, Object>> findAllById(long id, String userName) {
         String sql;
         sql = "Select ID, USERNAME, FILENAME, MODE, DESCRIPTION, UPDATE_TM\r\n"
                 + "From BACKUP_LOG\r\n"
@@ -40,11 +40,12 @@ public class BackupLogDao {
     }
 
     public java.util.Map<String, Object> findOne(long id) {
-        java.util.List<Map<String, Object>> lst = findAll(id, "");
+        java.util.List<Map<String, Object>> lst = findAllById(id, "");
         if (lst.size()>0) {
             return (lst.get(0));
         } else {
-            return (new java.util.HashMap<String, Object>());
+//            return (new java.util.HashMap<String, Object>());
+            return java.util.Collections.emptyMap();
         }
 
     }
