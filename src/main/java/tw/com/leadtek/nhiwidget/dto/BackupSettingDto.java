@@ -18,6 +18,10 @@ public class BackupSettingDto {
     @ApiModelProperty(value="備份資料, 0-全部data, 1-增量與變更", example="1", required=true, position=6)
     private int add;
     
+    public BackupSettingDto() {
+        //
+    }
+    
     public BackupSettingDto(int every, int week, int month, String time, int mode, int add) {
         this.every = every;
         this.week = week;

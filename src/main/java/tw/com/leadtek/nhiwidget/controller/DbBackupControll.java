@@ -3,6 +3,9 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
+
+import org.quartz.Job;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
@@ -21,22 +25,47 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.dto.BackupSettingDto;
+import tw.com.leadtek.nhiwidget.service.DbBackupJob;
 import tw.com.leadtek.nhiwidget.service.DbBackupService; 
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.QuartzUtils;
 import tw.com.leadtek.nhiwidget.sql.WebConfigDao;
+import tw.com.leadtek.tools.Utility;
 
 
 @Api(value = "資料備份與還原 API", tags = {"12 資料備份與還原"})
 @RestController
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class DbBackupControll {
-    
+
     @Autowired
     private PaymentTermsService paymentTermsService;
     @Autowired
     private DbBackupService dbBackupService;
     @Autowired
     private WebConfigDao webConfigDao;
+    @Autowired
+    private QuartzUtils quartzUtils;
+
+    private String jobName = "profitpoint-quartz-job";
+    private Class<? extends Job> jobClass= DbBackupJob.class;
+
+
+    @PostConstruct
+    public void postConstruct() throws Exception {
+        new Thread(() -> {
+            try {
+                Thread.sleep(10000);
+                String cron = calcQuartzCron();
+                System.out.println("cron = "+cron+", "+Utility.dateFormat(new java.util.Date(), "HH:mm:ss"));
+                quartzUtils.addCronJob(jobClass, jobName, cron);
+            } catch (Exception e) {
+                //
+            }
+        }, "@Schedule-"+new java.util.Date().getTime()).start();
+    }
+
+
 
     //==== 
     @ApiOperation(value="12.01 資料備份紀錄", notes="", position=1)
@@ -136,12 +165,12 @@ public class DbBackupControll {
     @RequestMapping(value = "/dbbackup/setting", method = RequestMethod.PUT)
     public ResponseEntity<?> dbBackupSettingSave(@RequestHeader("Authorization") String jwt,
             @RequestBody BackupSettingDto params) throws Exception {
-
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = dbBackupService.saveSetting(params);
+            quartzUtils.modifyCron(jobName, calcQuartzCron());
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
@@ -216,8 +245,9 @@ public class DbBackupControll {
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
+    
     //===
-    @ApiOperation(value="12.11 Backup Initiate", notes="回復全部狀態值", position=99)
+    @ApiOperation(value="12.11 Backup Initiate", notes="回復全部狀態值", position=11)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -239,6 +269,25 @@ public class DbBackupControll {
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
-
-
+    
+    
+    private String calcQuartzCron() {
+        String ret = "0 0 2 1 1 ? *";
+        // backup_setting = {"every":0,"week":4,"month":2,"time":"03:23","mode":2,"add":0}
+        java.util.Map<String, Object> mapSetting = dbBackupService.loadSetting();
+        if (!mapSetting.isEmpty()) {
+            int every = Utility.getMapInt(mapSetting, "every"); 
+            String[] time = mapSetting.get("time").toString().split(":");
+            if ((every>0)&&(time.length==2)) {
+                if (every==1) { //每日
+                    ret = String.format("0 %s %s * * ? *", time[1], time[0]);
+                } else if (every==2) { //每周
+                    ret = String.format("0 %s %s ? 1-12 %d *", time[1], time[0], Utility.getMapInt(mapSetting, "week")+1);
+                } else if (every==3) { //每月
+                    ret = String.format("0 %s %s %d 1-12 ? *", time[1], time[0], Utility.getMapInt(mapSetting, "month"));
+                }
+            }
+        }
+        return ret;
+    }
 }

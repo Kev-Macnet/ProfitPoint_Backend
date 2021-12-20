@@ -33,6 +33,15 @@ spring:
         max-active: 8
         max-wait: -1
         max-idle: 4
+  quartz:
+    job-store-type: memory
+    scheduler-name: leadtek-scheduler
+    properties:
+      org:
+        quartz:
+          jobStore:
+          threadPool:
+            threadCount: 5
 #  datasource:
 #    hikari:
 #      data-source-class-name: com.zaxxer.hikari.HikariDataSource

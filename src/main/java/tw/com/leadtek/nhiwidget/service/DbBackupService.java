@@ -26,8 +26,6 @@ public class DbBackupService {
     private WebConfigDao webConfigDao;
 
     boolean TRIAL = false;
-//    String DELIMITER = "^|";
-//    String spliteDELIMITER = "\\^\\|";
     String DELIMITER = ",";
     String spliteDELIMITER = ",";
     private String[][] tbName = {
@@ -509,14 +507,7 @@ public class DbBackupService {
         return (retMap);
     }
     
-    public java.util.Date getBackupLastDate() {
-        String lastDate = webConfigDao.getConfigValue("backup_last_date");
-        if (lastDate.length()==0) {
-            lastDate = "1990-01-01";
-        }
-        return Utility.detectDate(lastDate);
-    }
-    
+
     //=== Restore ------
     public java.util.Map<String, Object> restore(long id) {
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
@@ -829,53 +820,5 @@ public class DbBackupService {
         return (backupPath);
     }
 
-    //===
-    public boolean isDoBackup() {
-        boolean doIt = false;
-        java.util.Map<String, Object> mapSetting = loadSetting();
-//        System.out.println("mapSetting------");
-//        System.out.println(mapSetting);
-        if (!mapSetting.isEmpty()) {
-          //{every=2, week=1, month=1, time=02:23, mode=2, add=0}
-            java.util.Date nextOnTime;
-            String strToday = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd");
-            String strTime = mapSetting.get("time").toString();
-            int every = Integer.valueOf(mapSetting.get("every").toString());
-            if (every==1) { //每日
-                nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
-                if ((nextOnTime.getTime() < new java.util.Date().getTime()) && 
-                    (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime())) {
-                    doIt = true;
-                } 
-            } else if (every==2) { //每周
-                int todayWeek = Utility.dayOfWeek(new java.util.Date());
-                int week = Integer.valueOf(mapSetting.get("week").toString());
-//                System.out.println("todayWeek="+todayWeek+", week="+week);
-                if ((week+1) == todayWeek) {
-                    nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
-//                    System.out.println("nextOnTime="+nextOnTime);
-                    if (nextOnTime.getTime() < new java.util.Date().getTime()) {
-                        if (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime()) {
-                            doIt = true;
-                        }
-                    }
-                }
-            } else if (every==3) { //每月
-                int todayDay = Utility.dayOfMonth(new java.util.Date());
-                int day = Integer.valueOf(mapSetting.get("month").toString());
-//                System.out.println("todayDay="+todayDay+", day="+day);
-                if (day == todayDay) {
-                    nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
-//                    System.out.println("nextOnTime="+nextOnTime);
-                    if (nextOnTime.getTime() < new java.util.Date().getTime()) {
-                        if (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime()) {
-                            doIt = true;
-                        }
-                    }
-                }
-            }
-        }
-        return doIt;
-    }
 
 }
