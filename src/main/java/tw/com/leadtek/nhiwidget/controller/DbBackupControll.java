@@ -25,6 +25,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.dto.BackupSettingDto;
+import tw.com.leadtek.nhiwidget.dto.DbBackupLogDto;
+import tw.com.leadtek.nhiwidget.dto.DbBackupProgressDto;
 import tw.com.leadtek.nhiwidget.service.DbBackupJob;
 import tw.com.leadtek.nhiwidget.service.DbBackupService; 
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
@@ -70,7 +72,7 @@ public class DbBackupControll {
     //==== 
     @ApiOperation(value="12.01 資料備份紀錄", notes="", position=1)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{........}", response=DbBackupLogDto.class)
     })
     @RequestMapping(value = "/dbbackup/log", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupLog(@RequestHeader("Authorization") String jwt) throws Exception {
@@ -86,7 +88,7 @@ public class DbBackupControll {
     
     @ApiOperation(value="12.02 資料備份", notes="", position=2)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{status:0, message: \"備份資料執行中\"}")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name="mode", example="0", value="0.完整備份/1.系統參數備份/2.資料備份", dataType="Integer", paramType="path", required=true)
@@ -106,7 +108,7 @@ public class DbBackupControll {
     
     @ApiOperation(value="12.03 取得資料備份進度", notes="", position=3)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=BackupSettingDto.class)
+        @ApiResponse(code = 200, message="{ ... }", response=DbBackupProgressDto.class)
     })
     @RequestMapping(value = "/dbbackup/progress", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupProgress(@RequestHeader("Authorization") String jwt) throws Exception {
@@ -122,7 +124,7 @@ public class DbBackupControll {
     
     @ApiOperation(value="12.04 放棄資料備份", notes="", position=4)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }")
     })
     @RequestMapping(value = "/dbbackup/abort", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupAbort(@RequestHeader("Authorization") String jwt) throws Exception {
@@ -143,6 +145,9 @@ public class DbBackupControll {
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name="backup_id", value="備份Id", dataType="String", paramType="path", required=true)
+     })
     @RequestMapping(value = "/dbbackup/log/{backup_id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> dbBackupDelete(@RequestHeader("Authorization") String jwt,
         @PathVariable int backup_id) throws Exception {
@@ -160,7 +165,7 @@ public class DbBackupControll {
     
     @ApiOperation(value="12.06 寫入資料備份設定", notes="", position=6)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }")
     })
     @RequestMapping(value = "/dbbackup/setting", method = RequestMethod.PUT)
     public ResponseEntity<?> dbBackupSettingSave(@RequestHeader("Authorization") String jwt,
@@ -197,8 +202,11 @@ public class DbBackupControll {
     //===
     @ApiOperation(value="12.08 還原資料備份檔", notes="", position=8)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }")
     })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name="backup_id", value="備份Id", dataType="String", paramType="path", required=true)
+     })
     @RequestMapping(value = "/dbbackup/restore/{backup_id}", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupRestore(@RequestHeader("Authorization") String jwt,
         @PathVariable int backup_id) throws Exception {
@@ -214,7 +222,7 @@ public class DbBackupControll {
     
     @ApiOperation(value="12.09 取得資料還原進度", notes="", position=9)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }")
+        @ApiResponse(code = 200, message="{ ... }", response=DbBackupProgressDto.class)
     })
     @RequestMapping(value = "/dbbackup/restore/progress", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupRestoreProgress(@RequestHeader("Authorization") String jwt) throws Exception {
