@@ -153,7 +153,7 @@ public class E2101bControll {
     }
 
     //==== 管灌飲食費設定 Tube Feeding Fee
-    @ApiOperation(value="10-2.05 管灌飲食費設定(get)", notes="")
+    @ApiOperation(value="10-2.05 管灌飲食費設定(get, 棄用!)", notes="")
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtTubeFeedingFeeDto.class)
     })
@@ -171,7 +171,7 @@ public class E2101bControll {
         }
     }
     
-    @ApiOperation(value="10-2.06 管灌飲食費設定(add)", notes="category = \"管灌飲食費\"")
+    @ApiOperation(value="10-2.06 管灌飲食費設定(add, 棄用!)", notes="category = \"管灌飲食費\"")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -201,7 +201,7 @@ public class E2101bControll {
     }
     
     
-    @ApiOperation(value="10-2.07 管灌飲食費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-2.07 管灌飲食費設定(update, 棄用!)", notes="<b>category 無法變更</b>")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -227,7 +227,7 @@ public class E2101bControll {
         }
     }
     
-    @ApiOperation(value="10-2.08 管灌飲食費設定(delete)", notes="")
+    @ApiOperation(value="10-2.08 管灌飲食費設定(delete, 棄用!)", notes="")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -252,8 +252,8 @@ public class E2101bControll {
         }
     }
     
-    //=== 營養照護費 Nutritional Fee
-    @ApiOperation(value="10-2.09 營養照護費設定(get)", notes="")
+    //=== 營養照護費 Nutritional Fee, P47
+    @ApiOperation(value="10-2.09 營養照護費設定(get)", notes="") 
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtNutritionalFeeDto.class)
     })

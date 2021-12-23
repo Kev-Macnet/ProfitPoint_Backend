@@ -145,7 +145,7 @@ public class DbBackupService {
         BasicJsonParser linkJsonParser = new BasicJsonParser();
         java.util.List<Map<String, Object>> lst = dbBakupLogDao.findAllById(id, userName);
         for (Map<String, Object> item: lst) {
-            item.remove("filename");
+//            item.remove("filename");
             String description = item.get("description").toString();
             if (description.length()>7) {
                 item.put("description", linkJsonParser.parseList(description));

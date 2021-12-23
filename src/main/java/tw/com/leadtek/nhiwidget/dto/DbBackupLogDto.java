@@ -8,6 +8,8 @@ public class DbBackupLogDto {
     private long id;
     @ApiModelProperty(value="備份人帳號", example="leadtek", position=2)
     private String username;
+    @ApiModelProperty(value="備份檔案(空白時表無備份到資料,無須還原)", example="leadtek", position=2)
+    private String filename;
     @ApiModelProperty(value="備份模式: 0-全部, 1-系統, 2-資料", example="2", position=3)
     private int mode;
     @ApiModelProperty(value="各Table備份筆數", example="[{MR: 0}, {IP_P: 0}]", position=4)
