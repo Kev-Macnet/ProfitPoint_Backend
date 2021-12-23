@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.tools;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.boot.json.BasicJsonParser;
@@ -220,7 +221,8 @@ public class Utility {
   public static boolean saveToFile(String fileName, java.util.List<String> lstData, boolean append) {
       try {
           java.io.File fp = new java.io.File(fileName);
-           java.io.BufferedWriter bwr = new java.io.BufferedWriter(new java.io.FileWriter(fp, append));
+//        java.io.BufferedWriter bwr = new java.io.BufferedWriter(new java.io.FileWriter(fp, append));
+          java.io.BufferedWriter bwr = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(fp, append), StandardCharsets.UTF_8));
            for (String str : lstData) {
                bwr.write(str+"\r\n");
            }
@@ -234,11 +236,14 @@ public class Utility {
   }
   
 
-  public static java.util.List<String> loadFromFile(String fileName) {
+  public static java.util.List<String> loadFromFile(String fileName, String cartset) {
+      if (cartset.length()==0) {
+          cartset = "UTF-8"; 
+      }
     java.util.List<String> buffer = new java.util.LinkedList<String>();
     try {
         java.io.FileInputStream fis = new java.io.FileInputStream(fileName);
-        java.io.BufferedReader isReader = new java.io.BufferedReader(new java.io.InputStreamReader(fis, "UTF-8"));
+        java.io.BufferedReader isReader = new java.io.BufferedReader(new java.io.InputStreamReader(fis, cartset));
         String str;
         while((str = isReader.readLine()) != null) {
             buffer.add(str);

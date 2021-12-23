@@ -2,6 +2,7 @@ package tw.com.leadtek.nhiwidget.service;
 
 import java.util.Map;
 
+import org.hibernate.internal.build.AllowSysOut;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.stereotype.Service;
@@ -23,11 +24,132 @@ public class DbBackupService {
     private BackupLogDao dbBakupLogDao;
     @Autowired
     private WebConfigDao webConfigDao;
+
+    boolean TRIAL = false;
+    String DELIMITER = ",";
+    String spliteDELIMITER = ",";
+    private String[][] tbName = {
+            {"MR", "ID", "UPDATE_AT", "2"},
+            {"IP_D", "ID", "UPDATE_AT", "2"},
+            {"IP_P", "ID", "UPDATE_AT", "2"},
+            {"IP_T", "ID", "UPDATE_AT", "2"},
+            {"OP_D", "ID", "UPDATE_AT", "2"},
+            {"OP_P", "ID", "UPDATE_AT", "2"},
+            {"OP_T", "ID", "UPDATE_AT", "2"},
+            {"AP_ADDITIONAL_POINT", "ID", "", "1"},
+            {"AP_OUTPATIENT_1", "ID", "", "1"},
+            {"AP_OUTPATIENT_1_CATEGORY", "ID,CATEGORY", "", "1"},
+            {"AP_OUTPATIENT_2", "ID", "", "1"},
+            {"AP_OUTPATIENT_2_CPOE", "id,cpoe", "", "1"},
+            {"AP_OUTPATIENT_3", "id,nhi_no", "", "1"},
+            {"AP_OUTPATIENT_4", "ID", "", "1"},
+            {"AP_OUTPATIENT_4_CATEGORY", "id,category", "", "1"},
+            {"AP_OUTPATIENT_4_CPOE", "id,cpoe", "", "1"},
+            {"AP_OUTPATIENT_4_TREATMENT", "id,treatment", "", "1"},
+            {"AP_OUTPATIENT_5", "id,icd_no,nhi_no", "", "1"},
+            {"AP_OUTPATIENT_5_CPOE", "id,cpoe", "", "1"},
+            {"AP_OUTPATIENT_6", "ID", "", "1"},
+            {"AP_OUTPATIENT_6_CATEGORY", "id,category", "", "1"},
+            {"AP_OUTPATIENT_6_CPOE", "id,cpoe", "", "1"},
+            {"AP_OUTPATIENT_6_PLAN", "id,plan", "", "1"},
+            {"AP_OUTPATIENT_7", "ID", "", "1"},
+            {"AP_OUTPATIENT_7_PLAN", "id,plan", "", "1"},
+            {"AP_OUTPATIENT_7_TRIAL", "id,trial", "", "1"},
+            {"AP_INPATIENT_1", "ID", "", "1"},
+            {"AP_INPATIENT_1_CATEGORY", "id,category", "", "1"},
+            {"AP_INPATIENT_2", "ID", "", "1"},
+            {"AP_INPATIENT_2_CPOE", "id,cpoe", "", "1"},
+            {"AP_INPATIENT_3", "id,nhi_no", "", "1"},
+            {"AP_INPATIENT_6", "ID", "", "1"},
+            {"AP_INPATIENT_6_CATEGORY", "id,category", "", "1"},
+            {"AP_INPATIENT_6_CPOE", "id,cpoe", "", "1"},
+            {"AP_INPATIENT_6_PLAN", "id,plan", "", "1"},
+            //----
+            {"PLAN_CONDITION", "ID", "", "1"},
+            {"PLAN_ICD_NO", "ID,ICD_NO", "", "1"},
+            {"PLAN_LESS_NDAY", "ID,ICD_NO", "", "1"},
+            {"PLAN_MORE_TIMES", "ID,ICD_NO", "", "1"},
+            {"PLAN_EXP_ICD_NO", "ID,ICD_NO", "", "1"},
+            {"PLAN_NO_EXP_ICD_NO", "ID,ICD_NO", "", "1"},
+            //----
+            {"PT_PAYMENT_TERMS", "ID", "", "1"},
+            {"pt_hospital_type", "pt_id,hospital_type", "", "1"},
+            {"pt_exclude_nhi_no", "pt_id,nhi_no", "", "1"},
+            {"pt_lim_division", "pt_id,division", "", "1"},
+            {"pt_not_allow_plan", "pt_id,plan", "", "1"},
+            {"pt_coexist_nhi_no", "pt_id,nhi_no", "", "1"},
+            {"pt_notify_nhi_no", "pt_id,nhi_no", "", "1"},
+            {"pt_include_icd_no", "pt_id,icd_no", "", "1"},
+            {"pt_drg_no", "pt_id,drg_no", "", "1"},
+            {"pt_outpatient_fee", "pt_id", "", "1"},
+            {"pt_inpatient_fee", "pt_id", "", "1"},
+            {"pt_ward_fee", "pt_id", "", "1"},
+            {"pt_surgery_fee", "pt_id", "", "1"},
+            {"pt_psychiatricward_fee", "pt_id", "", "1"},
+            {"pt_treatment_fee", "pt_id", "", "1"},
+            {"pt_tube_feeding_fee", "pt_id", "", "1"},
+            {"pt_nutritional_fee", "pt_id", "", "1"},
+            {"pt_adjustment_fee", "pt_id", "", "1"},
+            {"pt_medicine_fee", "pt_id", "", "1"},
+            {"pt_radiation_fee", "pt_id", "", "1"},
+            {"pt_injection_fee", "pt_id", "", "1"},
+            {"pt_quality_service", "pt_id", "", "1"},
+            {"pt_rehabilitation_fee", "pt_id", "", "1"},
+            {"pt_psychiatric_fee", "pt_id", "", "1"},
+            {"pt_bone_marrow_trans_fee", "pt_id", "", "1"},
+            {"pt_anesthesia_fee", "pt_id", "", "1"},
+            {"pt_specific_medical_fee", "pt_id", "", "1"},
+            {"pt_others_fee", "pt_id", "", "1"},
+            //-----
+            {"USER", "ID", "", "1"},
+            {"DEPARTMENT", "ID", "", "1"},
+            {"USER_DEPARTMENT", "USER_ID,DEPARTMENT_ID", "", "1"},
+            {"CODE_CONFLICT", "ID", "", "1"},
+            {"ICD10", "ID", "", "1"},
+            {"ASSIGNED_POINT", "ID", "", "1"},
+            {"PARAMETERS", "ID", "", "1"},
+            {"MR_NOTE", "ID", "", "1"},
+            {"DEDUCTED_NOTE", "ID", "", "1"},
+            {"PAY_CODE", "ID", "UPDATE_AT", "1"},
+            {"DRG_CODE", "ID", "", "1"},
+            {"ATC", "CODE", "", "1"},
+            {"DEDUCTED", "ID", "", "1"},
+            {"CODE_THRESHOLD", "ID", "", "1"}
+//            {"", "ID", "", "1"},
+        };
+    
+    public String[] parsePrimaryKey(String tableName) {
+        String ret="";
+        for (int a=0; a<tbName.length; a++) {
+            if (tbName[a][0].toUpperCase().equals(tableName.toUpperCase())) {
+                ret= tbName[a][1].toUpperCase();
+            }
+        }
+        return ret.split(",");
+    }
+    
+    public int arrayIndexOf(String key, String arr[]) {
+        int ret=-1;
+        key = key.toUpperCase();
+        for (int m=0; m<arr.length; m++) {
+            if (key.equals(arr[m].toUpperCase())) {
+                ret = m;
+               break;
+            }
+        }
+      return (ret);
+    }
+
     
     public java.util.List<Map<String, Object>> findAll(long id, String userName) {
-        java.util.List<Map<String, Object>> lst = dbBakupLogDao.findAll(id, userName);
+        BasicJsonParser linkJsonParser = new BasicJsonParser();
+        java.util.List<Map<String, Object>> lst = dbBakupLogDao.findAllById(id, userName);
         for (Map<String, Object> item: lst) {
             item.remove("filename");
+            String description = item.get("description").toString();
+            if (description.length()>7) {
+                item.put("description", linkJsonParser.parseList(description));
+            }
         }
         return lst;
     }
@@ -76,9 +198,6 @@ public class DbBackupService {
                 try {
                     Thread.sleep(100);
                     dbBackupKernel(mode, username, false);
-//                    retMap.put("description", mapBackup.get("description"));
-//                    retMap.put("fileNames", lstFileName);
-                    //-------------
                 } catch (Exception e) {
                     System.out.println(e.toString());
                 }
@@ -110,7 +229,7 @@ public class DbBackupService {
         webConfigDao.setConfig("backup_busy", "1", "");
         webConfigDao.setConfig("backup_abort", "0", "");
         java.util.Map<String, Object> mapBackup = backupEntry(backupPath, mode, newest);
-        java.util.List<String> lstFileName = (java.util.List)mapBackup.get("fileNames");
+        java.util.List<String> lstFileName = (java.util.List) mapBackup.get("fileNames");
         String zipFileName = zipName; //(String)mapBackup.get("zipName");
         String abort;
         if (lstFileName.size()>0) {
@@ -126,12 +245,16 @@ public class DbBackupService {
         abort = webConfigDao.getConfigValue("backup_abort");
         if (!abort.equals("1")) {
             com.google.gson.Gson gson = new com.google.gson.Gson();
-            dbBakupLogDao.add(username, extractFileName(zipFileName), mode, gson.toJson(mapBackup.get("description")));
             webConfigDao.setConfig("backup_progress", "100.0", "備份進度");
+            if (lstFileName.size()>0) {
+                dbBakupLogDao.add(username, extractFileName(zipFileName), mode, gson.toJson(mapBackup.get("description")));
+            } else {
+                dbBakupLogDao.add(username, "", mode, gson.toJson(mapBackup.get("description")));
+            }
         }
         webConfigDao.setConfig("backup_busy", "0", "");
 //        webConfigDao.setConfig("backup_abort", "0", "");
-        
+        retMap.put("count", mapBackup.get("count"));
         retMap.put("description", mapBackup.get("description"));
         retMap.put("fileNames", lstFileName);
         return retMap;
@@ -140,23 +263,15 @@ public class DbBackupService {
     public Map<String, Object> backupEntry(String backupPath, int mode, boolean newest) {
         //------------
         int abortValue=0;
-        java.util.Date update = Utility.detectDate("1990-01-01");
-        String[][] tbName = {
-                {"MR", "ID", "UPDATE_AT", "2"},
-//                {"MR_CHECKED", "ID", "UPDATE_AT", "1"},
-                {"IP_D", "ID", "UPDATE_AT", "2"},
-                {"IP_P", "ID", "UPDATE_AT", "1"},
-                {"IP_T", "ID", "UPDATE_AT", "2"},
-                {"OP_D", "ID", "UPDATE_AT", "2"},
-                {"OP_P", "ID", "UPDATE_AT", "1"},
-                {"OP_T", "ID", "UPDATE_AT", "2"}
-            };
+        java.util.Date startDate = Utility.detectDate("1990-01-01"); //631152000000
+        
         if (newest) {
-            String lastDate = webConfigDao.getConfigValue("backup_last_date");
+            String lastDate = webConfigDao.getConfigValue("backup_db_last_date");
             if (lastDate.length() > 0) {
-                update = Utility.detectDate(lastDate);
+                startDate = Utility.detectDate(lastDate);
             } 
         }
+        System.out.println("startDate="+Utility.dateFormat(startDate, "yyyy/MM/dd HH:mm:ss"));
         int tbMode;
         int progress = 0;
         int totalProgress = 1;
@@ -169,6 +284,8 @@ public class DbBackupService {
 
         java.util.List<Map<String, Object>> lstDescription = new java.util.ArrayList<Map<String, Object>>();
         java.util.List<String> lstFileName = new java.util.ArrayList<String>();
+        String todayDateStr = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd");
+        String todayTimeStr = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd HH:mm:ss");
         long rowCount = 0;
         String abort="0";
         webConfigDao.setConfig("backup_progress", "0.0", "備份進度");
@@ -182,18 +299,21 @@ public class DbBackupService {
                     break;
                 } else {
                     if (!newest) {
-                        update = new java.util.Date(0l);
+                        startDate = new java.util.Date(0l);
                     } 
-                    java.util.Map<String, Object> backupResult = backupTable(backupPath, tbName[idx][0],tbName[idx][1], tbName[idx][2], update, 
-                            progress, totalProgress);
+                    java.util.Map<String, Object> backupResult;
+                    if (tbMode==1) {
+                        backupResult = backupSettingTable(backupPath, tbName[idx][0].toUpperCase(),tbName[idx][1]);
+                    } else {
+                        backupResult = backupDataTable(backupPath, tbName[idx][0].toUpperCase(),tbName[idx][1], tbName[idx][2], startDate, progress, totalProgress);
+                    }
+
                     String fileName = backupResult.get("fileName").toString();
                     if (fileName.length()>0) {
                         lstFileName.add(fileName);
                     }
                     java.util.Map<String, Object> mapDescription = new java.util.HashMap<String, Object>();
-                    mapDescription.put("table", tbName[idx][0]);
-                    mapDescription.put("count", backupResult.get("rowCount"));
-//                    mapDescription.put("fileName", backupResult.get("fileName").toString());
+                    mapDescription.put(tbName[idx][0], backupResult.get("rowCount"));
                     lstDescription.add(mapDescription);
                     rowCount += (long)backupResult.get("rowCount");
                 }
@@ -202,8 +322,10 @@ public class DbBackupService {
         }
 
         if (!abort.equals("1")) {
-            String todayStr = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd");
-            webConfigDao.setConfig("backup_last_date", todayStr, "");
+            webConfigDao.setConfig("backup_last_date", todayDateStr, "");
+            if ((mode==0)||(mode==2)) {
+                webConfigDao.setConfig("backup_db_last_date", todayTimeStr, "");
+            }
         }
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         retMap.put("fileNames", lstFileName);
@@ -213,30 +335,30 @@ public class DbBackupService {
         return retMap;
     }
     
-    public java.util.Map<String, Object> backupTable(String path, String tableName, String idName, String updateName, java.util.Date update, 
-                                                     int indexProgress, int totalProgress) {
+    public java.util.Map<String, Object> backupDataTable(String path, String tableName, String idField, String updateField, java.util.Date startDate, int indexProgress, int totalProgress) {
         long rowCount = 0;
-        long step = 20000;
-        String delimiter = ",";
+        long pageSize = 20000;
         String abort;
         double progress1, progress2;
         progress1 = 100.0*(indexProgress-1)/totalProgress;
         java.util.List<String> lstData = new java.util.LinkedList<String>();
-        java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idName);
-        System.out.println(mapRange);
-//        mapRange.put("max_id", 30000l); //shunxian test! test! test!
-        long minId = mapRange.get("min_id");
-        long maxId = mapRange.get("max_id");
-        long start = minId;
+        java.util.Map<String, Long> mapRange = dbBackupDao.getTableIdRange(tableName, idField, updateField, startDate);
+        // ---------------------------- shunxian test! test! test!
+        if (TRIAL) {
+            pageSize = 10000;
+            mapRange.put("count", 21000l);
+        }
+     // ---------------------------- shunxian test! test! test!
+        long stopIdx = mapRange.get("count");
+        long startIdx = 0;
         String fileName = path+tableName+".txt";
-        while (start <= maxId) {
-//            lstData.clear();
-            java.util.List<Map<String, Object>> lstRow = dbBackupDao.findData(tableName, idName, start, start+step-1, updateName, update);
+        while (startIdx <= stopIdx) {
+            java.util.List<Map<String, Object>> lstRow = dbBackupDao.findData(tableName, idField, startIdx, pageSize, updateField, startDate);
             if (lstRow.size() > 0) {
-                if (start == minId) { // 處理 Header
+                if (startIdx == 0) { // 處理 Header
                     StringBuffer title = new StringBuffer(); 
                     for (java.util.Map.Entry<String, Object> entry : lstRow.get(0).entrySet()) {
-                        title.append(quotedStr(entry.getKey()) + delimiter);
+                        title.append(quotedStr(entry.getKey()) + DELIMITER);
                     }
                     lstData.add(title.toString());
                     Utility.saveToFile(fileName, lstData, false);
@@ -247,30 +369,77 @@ public class DbBackupService {
                     StringBuffer buff = new StringBuffer(); 
                     for (java.util.Map.Entry<String, Object> entry : item.entrySet()) {
                         if (entry.getValue() != null) {
-                            buff.append(quotedStr(entry.getValue()) + delimiter);
+                            buff.append(transEnter(quotedStr(entry.getValue())) + DELIMITER);
                         } else {
-                            buff.append("[null]" + delimiter);
+                            buff.append("[null]" + DELIMITER);
                         }
                     }
                     lstData.add(buff.toString());
                 }
+                startIdx += lstRow.size();
                 lstRow.clear();
                 if (rowCount>0) {
                     Utility.saveToFile(fileName, lstData, true);
                 }
                 lstData.clear();
                 if (totalProgress>0) {
-                    progress2 = progress1 + (100.0*start/(maxId*totalProgress));
+                    progress2 = progress1 + (100.0*startIdx/(stopIdx*totalProgress));
                     webConfigDao.setConfig("backup_progress", String.valueOf(progress2), "備份進度");
                 }
+            } else {
+                break;
             }
-            start += step;
             abort = webConfigDao.getConfigValue("backup_abort");
             if (abort.equals("1")) {
                 break;
             }
         }
-        System.out.println("lstData="+lstData.size()+", path="+path);
+        java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+        retMap.put("rowCount", rowCount);
+        if (rowCount>0) {
+            Utility.saveToFile(fileName, lstData, true);
+            retMap.put("fileName", fileName);
+        } else {
+            retMap.put("fileName", "");
+        }
+        return (retMap);
+    }
+    
+    
+    public java.util.Map<String, Object> backupSettingTable(String path, String tableName, String idName) {
+        long rowCount = 0;
+        java.util.List<String> lstData = new java.util.LinkedList<String>();
+        String fileName = path+tableName+".txt";
+        java.util.List<Map<String, Object>> lstRow = dbBackupDao.findAll(tableName, idName);
+        if (lstRow.size() > 0) {
+            // 處理 Header
+            StringBuffer title = new StringBuffer(); 
+            for (java.util.Map.Entry<String, Object> entry : lstRow.get(0).entrySet()) {
+                title.append(quotedStr(entry.getKey()) + DELIMITER);
+            }
+            lstData.add(title.toString());
+            Utility.saveToFile(fileName, lstData, false);
+            lstData.clear();
+            // 處理資料
+            for (Map<String, Object>item : lstRow) {
+                rowCount++;
+                StringBuffer buff = new StringBuffer(); 
+                for (java.util.Map.Entry<String, Object> entry : item.entrySet()) {
+                    if (entry.getValue() != null) {
+                        buff.append(transEnter(quotedStr(entry.getValue())) + DELIMITER);
+                    } else {
+                        buff.append("[null]" + DELIMITER);
+                    }
+                }
+                lstData.add(buff.toString());
+            }
+            lstRow.clear();
+            if (rowCount>0) {
+                Utility.saveToFile(fileName, lstData, true);
+            }
+            lstData.clear();
+        }
+
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         retMap.put("rowCount", rowCount);
         if (rowCount>0) {
@@ -282,8 +451,9 @@ public class DbBackupService {
         return (retMap);
     }
 
+
     public int saveSetting(BackupSettingDto params) {
-        webConfigDao.setConfig("backup_setting", params.toString(), "系統資料備份參數");
+        webConfigDao.setConfig("backup_setting", params.toString(), "資料備份參數");
         return 1;
     }
     
@@ -294,7 +464,7 @@ public class DbBackupService {
             BasicJsonParser linkJsonParser = new BasicJsonParser();
             retMap = linkJsonParser.parseMap(backupSetting);
         } else {
-            retMap = new java.util.HashMap<String, Object>();
+            retMap = java.util.Collections.emptyMap();
         }
         return (retMap);
     }
@@ -337,30 +507,29 @@ public class DbBackupService {
         return (retMap);
     }
     
-    public java.util.Date getBackupLastDate() {
-        String lastDate = webConfigDao.getConfigValue("backup_last_date");
-        if (lastDate.length()==0) {
-            lastDate = "1990-01-01";
-        }
-        return Utility.detectDate(lastDate);
-    }
-    
+
     //=== Restore ------
     public java.util.Map<String, Object> restore(long id) {
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
+        java.util.Map<String, Object> mapBackup = dbBakupLogDao.findOne(id);
+        System.out.println("mapBackup.......");
+        System.out.println(mapBackup);
         String busy = webConfigDao.getConfigValue("restore_busy");
-        if (!busy.equals("1")) {
-
+        if (mapBackup.isEmpty()) {
+            retMap.put("status", "-1"); //busy
+            retMap.put("message", "無此備份紀錄。");
+        } else if (mapBackup.get("filename").toString().length()==0)  {
+            retMap.put("status", "-2"); //busy
+            retMap.put("message", "此備份紀錄內無資料無須還原。");
+        } else if (!busy.equals("1")) {
             new Thread(() -> {
                 logger.info("dbRestore...");
                 try {
                     Thread.sleep(100);
                     //-------------
                     int retCnt = 0;
-                    java.util.Map<String, Object> mapBackup = dbBakupLogDao.findOne(id);
+//                    java.util.Map<String, Object> mapBackup = dbBakupLogDao.findOne(id);
                     if (!mapBackup.isEmpty()) {
-//                        System.out.println("mapBackup-----");
-//                        System.out.println(mapBackup);
                         String backupPath = getBackupPath();
                         String zipFileName = backupPath+mapBackup.get("filename").toString();
                         String unzipPath = backupPath+"unzip_"+Utility.dateFormat(new java.util.Date(), "HHmmss")+"/";
@@ -368,12 +537,8 @@ public class DbBackupService {
                         if (!fwork.exists()) { 
                             fwork.mkdirs();
                         }
-//                        System.out.println("backupPath = "+backupPath);
-//                        System.out.println("unzipPath = "+unzipPath);
                         String csvFullName, tableName;
                         java.util.List<String> csvFiles = ZipLib.unzipFile(zipFileName, unzipPath);
-                        System.out.println("csvFiles-----"+csvFiles.size());
-//                        System.out.println(csvFiles);
                         String abort="0";
                         int progress = 0;
                         webConfigDao.setConfig("restore_busy", "1", "data還原中...");
@@ -382,9 +547,9 @@ public class DbBackupService {
                         for (String csvName : csvFiles) {
                             csvFullName = unzipPath+csvName;
                             tableName = csvName.replace(".txt", "");
-                            System.out.println("csvFullName = "+csvName);
-                            java.util.List<String> lstData = Utility.loadFromFile(csvFullName);
-                            retCnt += restoreProcess(tableName, lstData, progress+1, csvFiles.size());
+                            String[] pk = parsePrimaryKey(tableName);
+                            java.util.List<String> lstData = Utility.loadFromFile(csvFullName, "UTF-8");
+                            retCnt += restoreProcess(tableName, pk, lstData, progress+1, csvFiles.size());
                             Utility.deleteFile(csvFullName);
                             webConfigDao.setConfig("restore_progress", String.valueOf((100.0*progress)/csvFiles.size()), String.valueOf(csvFiles.size()));
                             progress++;
@@ -410,37 +575,47 @@ public class DbBackupService {
             retMap.put("status", "0");  //busy
             retMap.put("message", "資料還原執行中......");
         } else {
-            retMap.put("status", "-1"); //busy
+            retMap.put("status", "-3"); //busy
             retMap.put("message", "資料還原中, 無法再進行還原。"); 
         }
         return retMap;
     }
     
-    public int restoreProcess(String tableName, java.util.List<String> lstData, int index, int total) {
+    public int restoreProcess(String tableName, String[] pkey, java.util.List<String> lstData, int index, int total) {
         int retCnt = 0;
         int execResult;
         String sql, abort;
         String strHeader = lstData.get(0);
-//        System.out.println("len="+lstData.size());
-//        System.out.println("strHeader="+strHeader);
+        if (TRIAL) {
+            System.out.println("len="+lstData.size()+", "+tableName);
+        }
         double progress1, progress2;
         progress1 = 100.0*(index-1)/total;
         long lstSize = lstData.size();
         boolean passHeader = true;
         int idx = 0;
         for (String strRow : lstData) {
+            execResult = 0;
             if (passHeader) {
                 passHeader=false;
                 continue; //跳過 Header
             }
-            sql = generateUpdateSql(tableName, "ID", strHeader, strRow);
-            execResult = dbBackupDao.execSql(sql);
-            if (execResult==0) {
-                sql = generateInsertSql(tableName, "ID", strHeader, strRow);
-                execResult = dbBackupDao.execSql(sql);
+            if (pkey.length>0) {
+                sql = generateUpdateSql(tableName, pkey, strHeader, strRow);
+                if (sql.length()>0) {
+//                    System.out.println("row="+idx+", "+sql);
+                    execResult = dbBackupDao.execSql(sql);
+                }
+            } 
+            if (execResult<=0) {
+                sql = generateInsertSql(tableName, strHeader, strRow);
+                if (sql.length()>0) {
+//                    System.out.println("row="+idx+", "+sql);
+                    execResult = dbBackupDao.execSql(sql);
+                }
             }
             retCnt += execResult;
-            if (idx++ >= 1000) {
+            if (idx++ >= 500) {
                 idx = 0;
                 progress2 = progress1 + (100.0*retCnt/(lstSize*total));
                 webConfigDao.setConfig("restore_progress", String.valueOf(progress2), 
@@ -455,84 +630,126 @@ public class DbBackupService {
         return retCnt;
     }
     
-    public String generateUpdateSql(String tableName, String primary, String headStr, String rowStr) {
+    public String generateUpdateSql(String tableName, String[] primary, String headStr, String rowStr) {
         String header, data;
-        String primaryVal = "";
-        String[] arrHead = headStr.split(",");
-        String[] arrData = rowStr.split(",");
-        StringBuffer sbData = new StringBuffer();
-        for (int a=0; a<arrHead.length; a++) {
-            header = arrHead[a];
-            data = arrData[a]; 
-            if (header.length()>0) {
-                header = quotedTrim(header).toUpperCase();
-                if (header.equals(primary.toUpperCase())) {
-                    if (data.equals("[null]")) {
-                        primaryVal = "null";
-                    } else {
-                        primaryVal = quotedReplace(arrData[a]);
+        boolean ispkey;
+        String[] arrHead = headStr.split(spliteDELIMITER);
+        String[] arrData = rowStr.split(spliteDELIMITER);
+        if (arrHead.length!=arrData.length) {
+            logger.debug("Restore DB Error:"+tableName+" / "+rowStr);
+            if (TRIAL) {
+                System.out.println("pass-1.3="+arrHead.length+","+arrData.length+","+primary.length);
+                System.out.println("pass-1.4="+rowStr);
+            }
+            return "";
+        } else {
+            if (TRIAL) {
+                if (tableName.equals("MR")) {
+                    tableName="MR3";
+                }
+            }
+            java.util.List<Map<String, String>> primaryVal = new java.util.ArrayList<Map<String, String>>();
+            java.util.List<String> sbData = new java.util.ArrayList<String> ();
+            for (int a=0; a<arrHead.length; a++) {
+                ispkey = false;
+                header = arrHead[a];
+                data = arrData[a];
+                if (header.length()>0) {
+                    header = quotedTrim(header).toUpperCase();
+                    if (arrayIndexOf(header, primary)>=0) {
+                        java.util.Map<String, String> map = new java.util.HashMap<String, String>();
+                        map.put("field", header);
+                        if (data.equals("[null]")) {
+                            map.put("value", "null");
+                        } else {
+                            map.put("value", quotedReplace(noInjection(arrData[a])));
+                        }
+                        primaryVal.add(map);
+                        ispkey = true;
+                    } 
+                    
+                    if ((ispkey==false)||(arrHead.length==primary.length)) {
+                        if (sbData.size()==0) {
+                            if (data.equals("[null]")) {
+                                sbData.add(String.format(" %s=null", header));
+                            } else {
+                                sbData.add(String.format(" %s=%s", header, quotedReplace(untransEnter(noInjection(arrData[a])))));
+                            }
+                        } else {
+                            if (data.equals("[null]")) {
+                                sbData.add(String.format(",\n    %s=null", header));
+                            } else {
+                                sbData.add(String.format(",\n    %s=%s", header, quotedReplace(untransEnter(noInjection(arrData[a])))));
+                            }
+                        }
                     }
-                } else {
-//                    String.format("  %s=%s,", header.toUpperCase(), quotedReplace(arrData[a]));
+                }
+            }
+            if (primaryVal.size()>0) {
+                sbData.add(String.format("\nWhere (1=1)", primary, primaryVal));
+                for (Map<String, String> item: primaryVal) {
+                    sbData.add(String.format("\n  and (%s=%s)", item.get("field"), item.get("value")));
+                }
+            }
+            StringBuffer strBuf = new StringBuffer();
+           for (String str : sbData) {
+               strBuf.append(str);
+           }
+            String ret = String.format("Update %s \nSet", tableName.toUpperCase())+strBuf.toString();
+            return ret;
+        }
+    }
+    
+    
+    public String generateInsertSql(String tableName, String headStr, String rowStr) {
+        String header, data;
+        String[] arrHead = headStr.split(spliteDELIMITER);
+        String[] arrData = rowStr.split(spliteDELIMITER);
+        if (arrHead.length!=arrData.length) {
+            logger.debug("Restore DB Error:"+tableName+" / "+rowStr);
+            if (TRIAL) {
+                System.out.println("pass-1.1="+arrHead.length+","+arrData.length);
+                System.out.println("pass-1.2="+rowStr);
+            }
+            return "";
+        } else {
+            if (TRIAL) {
+                if (tableName.equals("MR")) {
+                    tableName="MR3";
+                }
+            }
+            StringBuffer sbHead = new StringBuffer();
+            StringBuffer sbData = new StringBuffer();
+            sbHead.append(tableName+"(");
+            sbData.append("Values(");
+            for (int a=0; a<arrHead.length; a++) {
+                header = arrHead[a];
+                data = arrData[a]; 
+                if (header.length()>0) {
+                    header = quotedTrim(header).toUpperCase();
                     if (a<arrHead.length-1) {
+                        sbHead.append(header.toUpperCase()+", ");
                         if (data.equals("[null]")) {
-                            sbData.append(String.format("    %s=null,\n", header));
+                            sbData.append("null ,");
                         } else {
-                            sbData.append(String.format("    %s=%s,\n", header, quotedReplace(arrData[a])));
+                            sbData.append(quotedReplace(untransEnter(noInjection(arrData[a])))+", ");
                         }
                     } else {
+                        sbHead.append(header.toUpperCase()+")");
                         if (data.equals("[null]")) {
-                            sbData.append(String.format("    %s=null\n", header));
+                            sbData.append("null)");
                         } else {
-                            sbData.append(String.format("    %s=%s\n", header, quotedReplace(arrData[a])));
+                            sbData.append(quotedReplace(untransEnter(noInjection(arrData[a])))+")");
                         }
                     }
+                    
                 }
             }
+            String ret = "Insert Into\n"+sbHead.toString()+"\n"+sbData.toString();
+            return ret;
         }
-        if (primaryVal.length()>0) {
-            sbData.append(String.format("Where (%s=%s)", primary, primaryVal));
-        }
-        String ret = String.format("Update %s \nSet", tableName.toUpperCase())+sbData.toString();
-        return ret; 
     }
-    
-    
-    public String generateInsertSql(String tableName, String primary, String headStr, String rowStr) {
-        String header, data;
-        String[] arrHead = headStr.split(",");
-        String[] arrData = rowStr.split(",");
-        StringBuffer sbHead = new StringBuffer();
-        StringBuffer sbData = new StringBuffer();
-        sbHead.append(tableName+"(");
-        sbData.append("Values(");
-        for (int a=0; a<arrHead.length; a++) {
-            header = arrHead[a];
-            data = arrData[a]; 
-            if (header.length()>0) {
-                header = quotedTrim(header);
-                if (a<arrHead.length-1) {
-                    sbHead.append(header.toUpperCase()+", ");
-                    if (data.equals("[null]")) {
-                        sbData.append("null ,");
-                    } else {
-                        sbData.append(quotedReplace(arrData[a])+", ");
-                    }
-                } else {
-                    sbHead.append(header.toUpperCase()+")");
-                    if (data.equals("[null]")) {
-                        sbData.append("null)");
-                    } else {
-                        sbData.append(quotedReplace(arrData[a])+")");
-                    }
-                }
-                
-            }
-        }
-        String ret = "Insert Into\n"+sbHead.toString()+"\n"+sbData.toString();
-        return ret; 
-    }
-    
+
     
     //===
     public String quotedStr(Object obj) {
@@ -564,6 +781,33 @@ public class DbBackupService {
         return str;
     }
     
+    public String noInjection(String str) {
+        if (str!=null) {
+            return (str.replaceAll("\'", "\'\'"));
+        } else {
+            return str;
+        }
+    }
+    
+    public String transEnter(String str) {
+        if (str!=null) {
+            str = str.replaceAll(",", "<#44>");
+            return (str.replaceAll("\n", "<#13>"));
+        } else {
+            return str;
+        }
+    }
+    
+    public String untransEnter(String str) {
+        if (str!=null) {
+            str = str.replaceAll("<#44>", ",");
+            return (str.replaceAll("<#13>", "\n"));
+        } else {
+            return str;
+        }
+    }
+
+    
     public String extractFileName(String fName) {
         java.io.File f = new java.io.File(fName);
         return (f.getName());
@@ -576,53 +820,5 @@ public class DbBackupService {
         return (backupPath);
     }
 
-    //===
-    public boolean isDoBackup() {
-        boolean doIt = false;
-        java.util.Map<String, Object> mapSetting = loadSetting();
-//        System.out.println("mapSetting------");
-//        System.out.println(mapSetting);
-        if (!mapSetting.isEmpty()) {
-          //{every=2, week=1, month=1, time=02:23, mode=2, add=0}
-            java.util.Date nextOnTime;
-            String strToday = Utility.dateFormat(new java.util.Date(), "yyyy-MM-dd");
-            String strTime = mapSetting.get("time").toString();
-            int every = Integer.valueOf(mapSetting.get("every").toString());
-            if (every==1) { //每日
-                nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
-                if ((nextOnTime.getTime() < new java.util.Date().getTime()) && 
-                    (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime())) {
-                    doIt = true;
-                } 
-            } else if (every==2) { //每周
-                int todayWeek = Utility.dayOfWeek(new java.util.Date());
-                int week = Integer.valueOf(mapSetting.get("week").toString());
-//                System.out.println("todayWeek="+todayWeek+", week="+week);
-                if ((week+1) == todayWeek) {
-                    nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
-//                    System.out.println("nextOnTime="+nextOnTime);
-                    if (nextOnTime.getTime() < new java.util.Date().getTime()) {
-                        if (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime()) {
-                            doIt = true;
-                        }
-                    }
-                }
-            } else if (every==3) { //每月
-                int todayDay = Utility.dayOfMonth(new java.util.Date());
-                int day = Integer.valueOf(mapSetting.get("month").toString());
-//                System.out.println("todayDay="+todayDay+", day="+day);
-                if (day == todayDay) {
-                    nextOnTime = Utility.strToDate(strToday+" "+strTime, "yyyy-MM-dd HH:mm");
-//                    System.out.println("nextOnTime="+nextOnTime);
-                    if (nextOnTime.getTime() < new java.util.Date().getTime()) {
-                        if (getBackupLastDate().getTime() < Utility.detectDate(strToday).getTime()) {
-                            doIt = true;
-                        }
-                    }
-                }
-            }
-        }
-        return doIt;
-    }
 
 }

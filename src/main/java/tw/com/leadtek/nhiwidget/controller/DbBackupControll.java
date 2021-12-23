@@ -3,6 +3,9 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
+
+import org.quartz.Job;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
@@ -21,27 +25,54 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.dto.BackupSettingDto;
+import tw.com.leadtek.nhiwidget.dto.DbBackupLogDto;
+import tw.com.leadtek.nhiwidget.dto.DbBackupProgressDto;
+import tw.com.leadtek.nhiwidget.service.DbBackupJob;
 import tw.com.leadtek.nhiwidget.service.DbBackupService; 
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.QuartzUtils;
 import tw.com.leadtek.nhiwidget.sql.WebConfigDao;
+import tw.com.leadtek.tools.Utility;
 
 
-@Api(value = "系統備份與還原 API", tags = {"12 系統備份與還原"})
+@Api(value = "資料備份與還原 API", tags = {"12 資料備份與還原"})
 @RestController
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class DbBackupControll {
-    
+
     @Autowired
     private PaymentTermsService paymentTermsService;
     @Autowired
     private DbBackupService dbBackupService;
     @Autowired
     private WebConfigDao webConfigDao;
+    @Autowired
+    private QuartzUtils quartzUtils;
+
+    private String jobName = "profitpoint-quartz-job";
+    private Class<? extends Job> jobClass= DbBackupJob.class;
+
+
+    @PostConstruct
+    public void postConstruct() throws Exception {
+        new Thread(() -> {
+            try {
+                Thread.sleep(10000);
+                String cron = calcQuartzCron();
+                System.out.println("cron = "+cron+", "+Utility.dateFormat(new java.util.Date(), "HH:mm:ss"));
+                quartzUtils.addCronJob(jobClass, jobName, cron);
+            } catch (Exception e) {
+                //
+            }
+        }, "@Schedule-"+new java.util.Date().getTime()).start();
+    }
+
+
 
     //==== 
-    @ApiOperation(value="12.01 系統資料備份紀錄", notes="", position=1)
+    @ApiOperation(value="12.01 資料備份紀錄", notes="", position=1)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{........}", response=DbBackupLogDto.class)
     })
     @RequestMapping(value = "/dbbackup/log", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupLog(@RequestHeader("Authorization") String jwt) throws Exception {
@@ -55,12 +86,12 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.02 系統資料備份", notes="", position=2)
+    @ApiOperation(value="12.02 資料備份", notes="", position=2)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{status:0, message: \"備份資料執行中\"}")
     })
     @ApiImplicitParams({
-        @ApiImplicitParam(name="mode", example="0", value="0.完整備份/1.系統備份/2.資料備份", dataType="Integer", paramType="path", required=true)
+        @ApiImplicitParam(name="mode", example="0", value="0.完整備份/1.系統參數備份/2.資料備份", dataType="Integer", paramType="path", required=true)
     })
     @RequestMapping(value = "/dbbackup/all/{mode}", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupAll(@RequestHeader("Authorization") String jwt,
@@ -77,7 +108,7 @@ public class DbBackupControll {
     
     @ApiOperation(value="12.03 取得資料備份進度", notes="", position=3)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }", response=BackupSettingDto.class)
+        @ApiResponse(code = 200, message="{ ... }", response=DbBackupProgressDto.class)
     })
     @RequestMapping(value = "/dbbackup/progress", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupProgress(@RequestHeader("Authorization") String jwt) throws Exception {
@@ -91,9 +122,9 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.04 放棄系統資料備份", notes="", position=4)
+    @ApiOperation(value="12.04 放棄資料備份", notes="", position=4)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }")
     })
     @RequestMapping(value = "/dbbackup/abort", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupAbort(@RequestHeader("Authorization") String jwt) throws Exception {
@@ -110,10 +141,13 @@ public class DbBackupControll {
     }
     
     
-    @ApiOperation(value="12.05 刪除系統資料備份紀錄", notes="", position=5)
+    @ApiOperation(value="12.05 刪除資料備份紀錄", notes="", position=5)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name="backup_id", value="備份Id", dataType="String", paramType="path", required=true)
+     })
     @RequestMapping(value = "/dbbackup/log/{backup_id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> dbBackupDelete(@RequestHeader("Authorization") String jwt,
         @PathVariable int backup_id) throws Exception {
@@ -129,19 +163,19 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.06 寫入系統資料備份設定", notes="", position=6)
+    @ApiOperation(value="12.06 寫入資料備份設定", notes="", position=6)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }")
     })
     @RequestMapping(value = "/dbbackup/setting", method = RequestMethod.PUT)
     public ResponseEntity<?> dbBackupSettingSave(@RequestHeader("Authorization") String jwt,
             @RequestBody BackupSettingDto params) throws Exception {
-
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = dbBackupService.saveSetting(params);
+            quartzUtils.modifyCron(jobName, calcQuartzCron());
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
@@ -149,7 +183,7 @@ public class DbBackupControll {
     }
     
     //===
-    @ApiOperation(value="12.07 讀取系統資料備份設定", notes="", position=7)
+    @ApiOperation(value="12.07 讀取資料備份設定", notes="", position=7)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=BackupSettingDto.class)
     })
@@ -166,10 +200,13 @@ public class DbBackupControll {
     }
     
     //===
-    @ApiOperation(value="12.08 還原系統資料備份檔", notes="", position=8)
+    @ApiOperation(value="12.08 還原資料備份檔", notes="", position=8)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+        @ApiResponse(code = 200, message="{ ... }")
     })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name="backup_id", value="備份Id", dataType="String", paramType="path", required=true)
+     })
     @RequestMapping(value = "/dbbackup/restore/{backup_id}", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupRestore(@RequestHeader("Authorization") String jwt,
         @PathVariable int backup_id) throws Exception {
@@ -183,9 +220,9 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.09 取得還原系統資料進度", notes="", position=9)
+    @ApiOperation(value="12.09 取得資料還原進度", notes="", position=9)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }")
+        @ApiResponse(code = 200, message="{ ... }", response=DbBackupProgressDto.class)
     })
     @RequestMapping(value = "/dbbackup/restore/progress", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupRestoreProgress(@RequestHeader("Authorization") String jwt) throws Exception {
@@ -199,7 +236,7 @@ public class DbBackupControll {
         }
     }
     
-    @ApiOperation(value="12.10 放棄還原系統資料", notes="", position=10)
+    @ApiOperation(value="12.10 放棄資料還原process", notes="", position=10)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }")
     })
@@ -216,8 +253,9 @@ public class DbBackupControll {
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
+    
     //===
-    @ApiOperation(value="12.11 Backup Initiate", notes="", position=99)
+    @ApiOperation(value="12.11 Backup Initiate", notes="回復全部狀態值", position=11)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
     })
@@ -234,20 +272,30 @@ public class DbBackupControll {
             webConfigDao.setConfig("restore_busy", "0", "");
             webConfigDao.setConfig("restore_abort", "0", "");
             webConfigDao.setConfig("restore_progress", "0", "");
-//            java.util.List<String> lst = new java.util.ArrayList<String>();
-//            java.util.List<String> lst2 = new java.util.ArrayList<String>();
-//            lst.add("12-AAA");
-//            lst.add("34-BBB");
-//            lst2.add("56-婉轉");
-//            lst2.add("78-天真");
-//            String fileName = "d:/temp/123.txt";
-//            Utility.saveToFile(fileName, lst, false);
-//            Utility.saveToFile(fileName, lst2, true);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
-            retMap.put("count", 1234);
+            retMap.put("status", 0);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
-
-
+    
+    
+    private String calcQuartzCron() {
+        String ret = "0 0 2 1 1 ? *";
+        // backup_setting = {"every":0,"week":4,"month":2,"time":"03:23","mode":2,"add":0}
+        java.util.Map<String, Object> mapSetting = dbBackupService.loadSetting();
+        if (!mapSetting.isEmpty()) {
+            int every = Utility.getMapInt(mapSetting, "every"); 
+            String[] time = mapSetting.get("time").toString().split(":");
+            if ((every>0)&&(time.length==2)) {
+                if (every==1) { //每日
+                    ret = String.format("0 %s %s * * ? *", time[1], time[0]);
+                } else if (every==2) { //每周
+                    ret = String.format("0 %s %s ? 1-12 %d *", time[1], time[0], Utility.getMapInt(mapSetting, "week")+1);
+                } else if (every==3) { //每月
+                    ret = String.format("0 %s %s %d 1-12 ? *", time[1], time[0], Utility.getMapInt(mapSetting, "month"));
+                }
+            }
+        }
+        return ret;
+    }
 }
