@@ -3,6 +3,9 @@
  */
 package tw.com.leadtek.nhiwidget.controller;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -31,13 +34,17 @@ import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.DrgCodeListResponse;
 import tw.com.leadtek.nhiwidget.payload.DrgCodePayload;
-import tw.com.leadtek.nhiwidget.payload.PayCode;
+import tw.com.leadtek.nhiwidget.payload.PayCodePayload;
+import tw.com.leadtek.nhiwidget.payload.SameATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.PayCodeListResponse;
 import tw.com.leadtek.nhiwidget.payload.system.DeductedListResponse;
 import tw.com.leadtek.nhiwidget.payload.system.ICD10ListResponse;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
+import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
+import tw.com.leadtek.nhiwidget.service.ReportService;
 import tw.com.leadtek.nhiwidget.service.SystemService;
+import tw.com.leadtek.tools.DateTool;
 
 @Api(tags = "系統設定相關API", value = "系統設定相關API")
 @CrossOrigin(origins = "*", maxAge = 36000)
@@ -51,14 +58,20 @@ public class SystemController extends BaseController {
   @Autowired
   private SystemService systemService;
 
+  @Autowired
+  private ReportService reportService;
+  
+  @Autowired
+  private IntelligentService is;
+
   @ApiOperation(value = "取得DRG列表", notes = "取得DRG列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/drg")
   public ResponseEntity<DrgCodeListResponse> getDRG(
-      @ApiParam(name = "sdate", value = "生效日期，格式 yyyy/MM/dd",
-          example = "2021/03/15") @RequestParam(required = false) String sdate,
-      @ApiParam(name = "edate", value = "失效日期，格式 yyyy/MM/dd",
-          example = "2021/03/18") @RequestParam(required = false) String edate,
+      @ApiParam(name = "startDay", value = "生效日期，格式 yyyy/MM/dd",
+          example = "2021/03/15") @RequestParam(required = false) String startDay,
+      @ApiParam(name = "endDay", value = "失效日期，格式 yyyy/MM/dd",
+          example = "2021/03/18") @RequestParam(required = false) String endDay,
       @ApiParam(name = "mdc", value = "MDC分類",
           example = "1") @RequestParam(required = false) String mdc,
       @ApiParam(name = "code", value = "DRG代碼",
@@ -76,8 +89,46 @@ public class SystemController extends BaseController {
         (perPage == null) ? parametersService.getIntParameter(ParametersService.PAGE_COUNT)
             : perPage.intValue();
     int pageInt = page == null ? 0 : page.intValue();
+    
+    Date startDate = null;
+    Date endDate = null;
+    if (startDay != null && endDay != null) {
+      try {
+        SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+          startDate = sdf.parse(startDay);
+          endDate = sdf.parse(endDay);
+          if (startDate.after(endDate)) {
+            DrgCodeListResponse result = new DrgCodeListResponse();
+            result.setMessage("啟始日不可大於結束日");
+            result.setResult("failed");
+            return ResponseEntity.badRequest().body(result);
+          }
+      } catch (ParseException e) {
+        DrgCodeListResponse result = new DrgCodeListResponse();
+        result.setMessage("日期格式有誤");
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("inhCode") || column.equals("code") || column.equals("inhName")
+          || column.equals("codeType") || column.equals("statcauts")) {
+
+      } else if (column.equals("startDay")) {
+        column = "startDate";
+      } else if (column.equals("endDay")) {
+        column = "endDate";
+      } else {
+        DrgCodeListResponse result = new DrgCodeListResponse();
+        result.setMessage("orderBy無此欄位：" + column);
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
     return ResponseEntity
-        .ok(drgCalService.getDRGCode(sdate, edate, mdc, code, orderBy, asc, perPageInt, pageInt));
+        .ok(drgCalService.getDRGCode(startDate, endDate, mdc, code, column, asc, perPageInt, pageInt));
   }
 
   @ApiOperation(value = "新增一組DRG code", notes = "新增一組DRG code")
@@ -85,6 +136,7 @@ public class SystemController extends BaseController {
   public ResponseEntity<BaseResponse> newDRG(@RequestBody DrgCodePayload request) {
     logger.info("/drg new:" + request.getCode());
     logger.info(request.toString());
+    request.setId(null);
     DRG_CODE drgCode = request.toDB();
     if (drgCode == null) {
       return returnAPIResult("日期格式有誤");
@@ -142,15 +194,13 @@ public class SystemController extends BaseController {
   public ResponseEntity<ATCListResponse> getATC(
       @ApiParam(name = "code", value = "ATC代碼",
           example = "A01") @RequestParam(required = false) String code,
-      @ApiParam(name = "leng", value = "代碼碼長",
-          example = "3") @RequestParam(required = false) Integer leng,
       @ApiParam(name = "perPage", value = "每頁顯示筆數",
           example = "20") @RequestParam(required = false) Integer perPage,
       @ApiParam(name = "page", value = "第幾頁，第一頁值為0", example = "0") @RequestParam(required = false,
           defaultValue = "0") Integer page) {
     int perPageInt = (perPage == null) ? DEFAULT_PAGE_COUNT : perPage.intValue();
     int pageInt = page == null ? 0 : page.intValue();
-    return ResponseEntity.ok(systemService.getATC(code, leng, perPageInt, pageInt));
+    return ResponseEntity.ok(systemService.getATC(code, perPageInt, pageInt));
   }
 
   @ApiOperation(value = "新增一組ATC分類代碼", notes = "新增一組ATC分類代碼")
@@ -248,13 +298,30 @@ public class SystemController extends BaseController {
         (perPage == null) ? parametersService.getIntParameter(ParametersService.PAGE_COUNT)
             : perPage.intValue();
     int pageInt = page == null ? 0 : page.intValue();
+    
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("inhCode") || column.equals("code") || column.equals("inhName")
+          || column.equals("codeType") || column.equals("statcauts")) {
+
+      } else if (column.equals("startDay")) {
+        column = "startDate";
+      } else if (column.equals("endDay")) {
+        column = "endDate";
+      } else {
+        PayCodeListResponse result = new PayCodeListResponse();
+        result.setMessage("orderBy無此欄位：" + column);
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
     return ResponseEntity.ok(systemService.getPayCode(startDay, endDay, atc, codeType, code,
-        inhCode, name, inhName, orderBy, asc, perPageInt, pageInt));
+        inhCode, name, inhName, column, asc, perPageInt, pageInt));
   }
 
   @ApiOperation(value = "新增一組代碼品項", notes = "新增一組代碼品項")
   @PostMapping("/payCode")
-  public ResponseEntity<BaseResponse> newPayCode(@RequestBody PayCode request) {
+  public ResponseEntity<BaseResponse> newPayCode(@RequestBody PayCodePayload request) {
     logger.info("/payCode new:" + request.getCode());
     logger.info(request.toString());
     if (request.getCode() == null && request.getInhCode() != null) {
@@ -272,7 +339,7 @@ public class SystemController extends BaseController {
 
   @ApiOperation(value = "修改代碼品項資料", notes = "修改代碼品項資料")
   @PutMapping("/payCode")
-  public ResponseEntity<BaseResponse> updatePayCode(@RequestBody PayCode request) {
+  public ResponseEntity<BaseResponse> updatePayCode(@RequestBody PayCodePayload request) {
     // @TODO 同一代碼的終止日要往前移
     if (request.getId() == null) {
       return returnAPIResult("id 不可為空值");
@@ -410,12 +477,12 @@ public class SystemController extends BaseController {
     return returnAPIResult(systemService.deleteDeducted(idL));
   }
   
-  @ApiOperation(value = "取得核減代碼列表", notes = "取得核減代碼列表")
+  @ApiOperation(value = "取得ICD代碼列表", notes = "取得ICD代碼列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/icd10")
   public ResponseEntity<ICD10ListResponse> getICD10List(
-      @ApiParam(name = "isInfectious", value = "是否為法定傳染病",
-          example = "true") @RequestParam(required = false) Boolean isInfectious,
+      @ApiParam(value = "是否為法定傳染病",
+          example = "true") @RequestParam(required = false) Boolean infectious,
       @ApiParam(name = "infCat", value = "法定傳染病分類層級",
           example = "第一類") @RequestParam(required = false) String infCat,
       @ApiParam(name = "code", value = "ICD10代碼",
@@ -436,7 +503,7 @@ public class SystemController extends BaseController {
             : perPage.intValue();
     int pageInt = page == null ? 0 : page.intValue();
     return ResponseEntity.ok(
-        systemService.getIcd10(code, name, isInfectious, infCat, perPageInt, pageInt));
+        systemService.getIcd10(code, name, infectious, infCat, perPageInt, pageInt));
   }
 
   @ApiOperation(value = "新增ICD10代碼", notes = "新增ICD10代碼")
@@ -491,4 +558,26 @@ public class SystemController extends BaseController {
     return returnAPIResult(systemService.deleteIcd10(idL));
   }
   
+  @ApiOperation(value = "重跑job", notes = "重跑job")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/run")
+  public ResponseEntity<BaseResponse> runReport(
+      @ApiParam(value = "job name", example = "PointMR") 
+      @RequestParam(required = false) String name, 
+      @ApiParam(value = "job 參數", example = "11012") 
+      @RequestParam(required = false) String param){
+    
+    if ("PointMR".equals(name)) {
+      reportService.calculatePointMR(param);
+    } else if ("RareIcd".equals(name)) {
+      is.calculateRareICD(param);
+    } else if ("Infectious".equals(name)) {
+      is.calculateInfectious(param);
+    } else if ("HighRatio".equals(name)) {
+      is.calculateHighRatio(param);
+    } else if ("OverAmount".equals(name)) {
+      is.calculateOverAmount(param);
+    } 
+    return returnAPIResult(null);
+  }
 }

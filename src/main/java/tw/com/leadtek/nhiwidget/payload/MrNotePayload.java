@@ -11,7 +11,7 @@ import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTICE;
 
-@ApiModel("病歷資料備註/核刪註記")
+@ApiModel("病歷資料備註")
 public class MrNotePayload implements Serializable {
 
   private static final long serialVersionUID = -3311990396624265581L;
@@ -46,7 +46,7 @@ public class MrNotePayload implements Serializable {
     updateAt = mn.getUpdateAt();
   }
   
-  public MR_NOTE toDB(long mrId, boolean isMrNote) {
+  public MR_NOTE toDB(long mrId) {
     MR_NOTE result = new MR_NOTE();
     result.setActionType(actionTypeInt(actionType));
     result.setCode(code);
@@ -54,7 +54,7 @@ public class MrNotePayload implements Serializable {
     result.setId(id);
     result.setMrId(mrId);
     result.setNote(note);
-    result.setNoteType(isMrNote ? 1 : 2);
+    result.setNoteType(1);
     result.setUpdateAt(new Date());
     result.setStatus(1);
     return result;

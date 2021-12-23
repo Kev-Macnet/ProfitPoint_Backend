@@ -40,10 +40,12 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
+import tw.com.leadtek.nhiwidget.dao.DEDUCTED_NOTEDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.IP_TDao;
@@ -56,8 +58,8 @@ import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.OP_TDao;
 import tw.com.leadtek.nhiwidget.model.CodeBase;
 import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
-import tw.com.leadtek.nhiwidget.model.rdb.ASSIGNED_POINT;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DHead;
 import tw.com.leadtek.nhiwidget.model.rdb.IP;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
@@ -74,8 +76,8 @@ import tw.com.leadtek.nhiwidget.model.rdb.OP_DData;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
-import tw.com.leadtek.nhiwidget.payload.AssignedPoints;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
+import tw.com.leadtek.nhiwidget.payload.DeductedNoteListResponse;
 import tw.com.leadtek.nhiwidget.payload.MO;
 import tw.com.leadtek.nhiwidget.payload.MRCount;
 import tw.com.leadtek.nhiwidget.payload.MRCountResponse;
@@ -164,6 +166,9 @@ public class NHIWidgetXMLService {
   private MR_NOTEDao mrNoteDao;
 
   @Autowired
+  private DEDUCTED_NOTEDao deductedNoteDao;
+
+  @Autowired
   private RedisService redisService;
 
   @Autowired
@@ -171,6 +176,9 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private UserService userService;
+  
+  @Autowired
+  private IntelligentService is;
   
   public void saveOP(OP op) {
     OP_T opt = saveOPT(op.getTdata());
@@ -1166,7 +1174,9 @@ public class NHIWidgetXMLService {
         if (minPoints != null && maxPoints != null) {
           predicate.add(cb.between(root.get("totalDot"), minPoints, maxPoints));
         }
-        addPredicate(root, predicate, cb, "dataFormat", dataFormat, false, false);
+        if (!"00".equals(dataFormat)) {
+          addPredicate(root, predicate, cb, "dataFormat", dataFormat, false, false);
+        }
         if (!"00".equals(funcType)) {
           addPredicate(root, predicate, cb, "funcType", funcType, false, false);
         }
@@ -1536,6 +1546,8 @@ public class NHIWidgetXMLService {
         result.setMos(moList);
       }
       getMRNote(result);
+      result.setHint(is.getMRHint(id));
+      result.setDeducted(getDeductedNote(result.getId(), true));
       updateMRReaded(id, user);
       result.convertToADYear();
     }
@@ -1580,7 +1592,7 @@ public class NHIWidgetXMLService {
   }
 
   /**
-   * 取得該病歷的所有資料備註或核刪註記
+   * 取得該病歷的所有資訊備註
    * 
    * @param id
    * @param user
@@ -1637,19 +1649,15 @@ public class NHIWidgetXMLService {
   public void getMRNote(MRDetail mrDetail) {
     List<MR_NOTE> list = mrNoteDao.findByMrIdOrderById(mrDetail.getId());
     List<MrNotePayload> notes = new ArrayList<MrNotePayload>();
-    List<MrNotePayload> deduct = new ArrayList<MrNotePayload>();
     for (MR_NOTE note : list) {
       if (note.getStatus().intValue() == 0) {
         continue;
       }
       if (note.getNoteType() == 1) {
         notes.add(new MrNotePayload(note));
-      } else {
-        deduct.add(new MrNotePayload(note));
       }
     }
     mrDetail.setNotes(notes);
-    mrDetail.setDeducted(deduct);
   }
   
   public long getTId(java.util.Date date, boolean isIP) {
@@ -1672,14 +1680,14 @@ public class NHIWidgetXMLService {
 
   public MRDetail updateMRDetail(MRDetail mrDetail, String jwt) {
     MRDetail result = null;
-    MR mr = mrDao.getOne(mrDetail.getId());
+    MR mr = mrDao.findById(mrDetail.getId()).orElse(null);
     if (mr == null) {
       result = new MRDetail();
       result.setError("id:" + mrDetail.getId() + " 不存在");
       return result;
     }
 
-    String key = UserService.MREDIT + mrDetail.getId();
+    String key = UserService.MREDIT + mrDetail.getId().toString();
     Set<Object> sets = redisService.hkeys(key);
     if (sets != null && sets.size() > 0) {
       redisService.deleteHash(key, jwt);
@@ -1693,6 +1701,11 @@ public class NHIWidgetXMLService {
 
     mr.updateMR(mrDetail);
     String userId = jwtUtils.getUserID(jwt);
+    if (userId == null) {
+      result = new MRDetail();
+      result.setError("登入狀態有誤，請重新登入");
+      return result;
+    }
     mr.setUpdateUserId(Long.parseLong(userId));
     if (XMLConstant.DATA_FORMAT_OP.equals(mrDetail.getDataFormat())) {
       OP_D opD = opdDao.getOne(mr.getdId());
@@ -2087,7 +2100,7 @@ public class NHIWidgetXMLService {
     }
     String codes = "ICD10-CM".equals(category) ? StringUtility.formatICD(code) : code;
     System.out.println("addCodeBaseByCode:" + codes);
-    List<JsonSuggestion> query = redis.query(category, codes);
+    List<JsonSuggestion> query = redis.query(category, codes, false);
     for (JsonSuggestion jsonSuggestion : query) {
       String[] ss = jsonSuggestion.getId().split(":");
       if (ss.length > 1 && ss[1].equals(code)) {
@@ -2117,18 +2130,19 @@ public class NHIWidgetXMLService {
     mr.setObjective(sb.toString());
   }
 
-  public String newMrNote(MrNotePayload note, String mrId, boolean isMrNote, boolean isDelete) {
-    MR_NOTE mn = note.toDB(Long.parseLong(mrId), isMrNote);
+  public String newMrNote(MrNotePayload note, String mrId, boolean isDelete) {
+    MR_NOTE mn = note.toDB(Long.parseLong(mrId));
     if (isDelete) {
-      List<MR_NOTE> list = mrNoteDao.findByMrIdAndNoteAndStatusOrderById(Long.parseLong(mrId), note.getNote(), 1);
-      if (list == null || list.size() == 0) {
-        return "找不到對應的備註內容";
+      Optional<MR_NOTE> optional = mrNoteDao.findById(note.getId());
+      if (!optional.isPresent()) {
+        return "找不到對應的備註id";
       }
-      MR_NOTE oldNote = list.get(0);
+      MR_NOTE oldNote = optional.get();
       oldNote.setStatus(0);
       oldNote.setUpdateAt(new java.util.Date());
-      mrNoteDao.save(mn);
-      mn.setStatus(0);
+      mn.setNote(oldNote.getNote());
+      mn.setId(null);
+      mn.setStatus(0); 
     }
     mrNoteDao.save(mn);
     return null;
@@ -2490,7 +2504,7 @@ public class NHIWidgetXMLService {
     return null;
   }
 
-  private String[] splitBySpace(String s) {
+  public String[] splitBySpace(String s) {
     if (s == null || s.length() < 1) {
       return new String[0];
     }
@@ -2784,6 +2798,7 @@ public class NHIWidgetXMLService {
        mrDetail.setMos(old.getMos());
     }
     
+    StringBuffer sb = new StringBuffer(",");
     if (XMLConstant.DATA_FORMAT_OP.equals(mrDetail.getDataFormat())) {
       //OP_D opD = opdDao.getOne(mr.getdId());
       OP_D opD = new OP_D();
@@ -2793,12 +2808,25 @@ public class NHIWidgetXMLService {
       opD = opdDao.save(opD);
       mr.setdId(opD.getId());
       mr.setDataFormat(XMLConstant.DATA_FORMAT_OP);
-      if (result.getMos() != null) {
-        for(int i=0; i<result.getMos().size(); i++) {
+      mr.setIcdcm1(opD.getIcdCm1());
+      MRDetail.updateIcdcmOtherOP(mr, opD);
+      MRDetail.updateIcdpcsOP(mr, opD);
+      MRDetail.updateIcdAll(mr);
+      
+      if (mrDetail.getMos() != null) {
+        for(int i=0; i<mrDetail.getMos().size(); i++) {
           OP_P opp = result.getMos().get(i).toOpp(codeTableService);
           opp.setMrId(mr.getId());
           opp.setOpdId(opD.getId());
           oppDao.save(opp);
+          
+          if (opp.getDrugNo() != null) {
+            sb.append(opp.getDrugNo());
+            sb.append(",");
+          }
+        }
+        if (sb.length() > 1) {
+          mr.setCodeAll(sb.toString());
         }
       }
     } else if (XMLConstant.DATA_FORMAT_IP.equals(mrDetail.getDataFormat())) {
@@ -2814,6 +2842,14 @@ public class NHIWidgetXMLService {
           ipp.setMrId(mr.getId());
           ipp.setIpdId(ipD.getId());
           ippDao.save(ipp);
+          
+          if (ipp.getOrderCode() != null) {
+            sb.append(ipp.getOrderCode());
+            sb.append(",");
+          }
+        }
+        if (sb.length() > 1) {
+          mr.setCodeAll(sb.toString());
         }
       }
     }
@@ -2868,5 +2904,63 @@ public class NHIWidgetXMLService {
       result.setIcdCM(newMR.getIcdCM());
     }
     return result;
+  }
+  
+  public List<DEDUCTED_NOTE> getDeductedNote(long mrId, boolean ignoreDeleted) {
+    List<DEDUCTED_NOTE> notes = new ArrayList<DEDUCTED_NOTE>();
+    List<DEDUCTED_NOTE> list = deductedNoteDao.findByMrIdOrderById(mrId);
+    for (DEDUCTED_NOTE note : list) {
+      if (ignoreDeleted && note.getStatus().intValue() == 0) {
+        continue;
+      }
+      notes.add(note);
+    }
+    return notes;
+  }
+  
+  public DeductedNoteListResponse getDeductedNoteResponse(long mrId, boolean ignoreDeleted) {
+    DeductedNoteListResponse result = new DeductedNoteListResponse();
+    result.setData(getDeductedNote(mrId, ignoreDeleted));
+    return result;
+  }
+  
+  public String updateDeductedNote(DEDUCTED_NOTE note) {
+    if(note.getId() == null || note.getId() < 1) {
+      return "核刪註記id" + note.getId() + "不存在";
+    }
+    DEDUCTED_NOTE db = deductedNoteDao.findById(note.getId()).orElse(null);
+    if(db == null) {
+      return "核刪註記id" + note.getId() + "不存在";
+    }
+    deductedNoteDao.save(note);
+    return null;
+  }
+  
+  public String deleteDeductedNote(String username, long noteId) {
+    DEDUCTED_NOTE db = deductedNoteDao.findById(noteId).orElse(null);
+    if(db == null) {
+      return "核刪註記id" + noteId + "不存在";
+    }
+    db.setEditor(username);
+    db.setStatus(0);
+    db.setActionType(ACTION_TYPE.DELETED.value());
+    db.setUpdateAt(new java.util.Date());
+    deductedNoteDao.save(db);
+    return null;
+  }
+  
+  public String newDeductedNote(String mrId, DEDUCTED_NOTE note) {
+    try {
+      MR mr = mrDao.findById(Long.parseLong(mrId)).orElse(null);
+      if (mr == null) {
+        return "病歷id" + mrId + "不存在";
+      }
+    } catch (NumberFormatException e) {
+      return "病歷id" + mrId + "有誤";
+    }
+    note.setMrId(Long.parseLong(mrId));
+    note.setStatus(1);
+    deductedNoteDao.save(note);
+    return null;
   }
 }

@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.redis;
 
+import java.util.Set;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,6 +14,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.payload.MRDetail;
+import tw.com.leadtek.nhiwidget.service.RedisService;
+import tw.com.leadtek.nhiwidget.service.UserService;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = NHIWidget.class)
@@ -25,6 +29,9 @@ public class TestRedis {
   @Autowired
   private RedisTemplate<String, Object> redisTemplate;
   
+  @Autowired
+  private RedisService redisService;
+  
   public final static String USER = "USER:";
 
   @Ignore
@@ -34,6 +41,7 @@ public class TestRedis {
     srt.opsForValue().set("test-string-value", "Hello Redis");
   }
  
+  @Ignore
   @Test
   public void testHash() {
     String username = "leadtek";
@@ -44,6 +52,18 @@ public class TestRedis {
     } else {
       long usedTime = System.currentTimeMillis() - Long.parseLong((String) loginTime);
       System.out.println("used time(" + username + "):" + usedTime);
+    }
+  }
+  
+  @Test
+  public void testMREDIT() {
+    String key = UserService.MREDIT + "161613";
+    Set<Object> sets = redisService.hkeys(key);
+    if (sets != null && sets.size() > 0) {
+      System.out.println("sets not null");
+      //redisService.deleteHash(key, "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrZW5sYWkiLCJ1aWQiOjQzMCwicm9sZSI6IkEiLCJleHAiOjE2NDAwMjE4MzN9.4w9mUvevaBKfYVxAr7bT_ecBm99VauvPT_6V8Cfu43Y");
+    } else {
+       System.out.println("未找到開始編輯 token");
     }
   }
 }

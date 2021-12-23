@@ -3,6 +3,8 @@
  */
 package tw.com.leadtek.tools;
 
+import io.swagger.annotations.ApiModelProperty;
+
 public class GenClassFieldXMLTag extends GenClassField {
 
   private String xmlTag;
@@ -15,14 +17,14 @@ public class GenClassFieldXMLTag extends GenClassField {
     this.xmlTag = xmlTag;
   }
 
-  public String toJavaDeclareCode() {
+  public String toJavaDeclareCode(boolean swagger) {
     if (type != null && type.toUpperCase().equals("KEY")) {
       // 排除掉複合 KEY 的 sql，如：  PRIMARY KEY (USER_ID, DEPARTMENT_ID)
       return "";
     }
     StringBuffer sb = new StringBuffer();
     if (comment != null) {
-      addRemark(sb, comment);
+      addRemark(sb, comment, swagger);
     }
     if (isPrimaryKey()) {
       sb.append("  @Id\n");
@@ -39,7 +41,9 @@ public class GenClassFieldXMLTag extends GenClassField {
       sb.append(", length = ").append(length);
     }
     sb.append(")\n");
-    if (xmlTag == null) {
+    if (swagger) {
+     
+    } else if (xmlTag == null) {
       sb.append("  @JsonIgnore\n");
     } else {
       sb.append("  @JsonProperty(\"");
@@ -55,14 +59,14 @@ public class GenClassFieldXMLTag extends GenClassField {
     return sb.toString();
   }
 
-  public String toJavaGetSetCode() {
+  public String toJavaGetSetCode(boolean swagger) {
     if (type.toUpperCase().equals("KEY")) {
       // 排除掉複合 KEY 的 sql，如：  PRIMARY KEY (USER_ID, DEPARTMENT_ID)
       return "";
     }
     // get
     StringBuffer sb = new StringBuffer();
-    addXMLTagRemark(sb, comment, xmlTag);
+    addXMLTagRemark(sb, comment, xmlTag, false);
     sb.append("  public ");
     sb.append(GenClassField.getJavaType(type)).append(" get");
     String camelName = toCamelCase(name);
@@ -72,7 +76,7 @@ public class GenClassFieldXMLTag extends GenClassField {
     sb.append("  }\n\n");
 
     // set
-    addXMLTagRemark(sb, comment, xmlTag);
+    addXMLTagRemark(sb, comment, xmlTag, false);
     // test xml tag and json
     // if (xmlTag != null) {
     // sb.append(" @JsonProperty(\"");
@@ -89,7 +93,7 @@ public class GenClassFieldXMLTag extends GenClassField {
     return sb.toString();
   }
 
-  public static void addXMLTagRemark(StringBuffer sb, String remark, String xmlTag) {
+  public static void addXMLTagRemark(StringBuffer sb, String remark, String xmlTag, boolean swagger) {
     if (remark == null) {
       return;
     }
@@ -97,14 +101,20 @@ public class GenClassFieldXMLTag extends GenClassField {
     if (xmlTag != null) {
       s = "<" + xmlTag + "> " + remark;
     }
-    addRemark(sb, s);
+    addRemark(sb, s, swagger);
   }
 
-  public static void addRemark(StringBuffer sb, String remark) {
-    sb.append("  /**\n");
-    sb.append("   * ");
-    sb.append(remark).append("\n");
-    sb.append("   */\n");
+  public static void addRemark(StringBuffer sb, String remark, boolean swagger) {
+    if (swagger) {
+      sb.append("  @ApiModelProperty(value = \"");
+      sb.append(remark);
+      sb.append("\", required = false)\n");
+    } else {
+      sb.append("  /**\n");
+      sb.append("   * ");
+      sb.append(remark).append("\n");
+      sb.append("   */\n");
+    }
   }
 
   public static GenClassFieldXMLTag sqlToClass(String s) {

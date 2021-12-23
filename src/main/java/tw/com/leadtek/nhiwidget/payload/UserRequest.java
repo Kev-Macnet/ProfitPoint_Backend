@@ -10,8 +10,11 @@ import tw.com.leadtek.nhiwidget.model.rdb.USER;
 @ApiModel("用戶帳號")
 public class UserRequest extends USER {
   
-  @ApiModelProperty(value = "所屬部門，若有一個以上，用,區隔", example ="內科", required = true)
+  @ApiModelProperty(value = "所屬部門，若有一個以上，用,區隔", example ="骨科,急診醫學科", required = true)
   protected String departments;
+  
+  @ApiModelProperty(value = "所屬部門代碼，若有一個以上，用,區隔", example ="88,22", required = true)
+  protected String departmentId;
   
   public UserRequest() {
     
@@ -25,8 +28,14 @@ public class UserRequest extends USER {
     email = user.getEmail();
     role = user.getRole();
     status = user.getStatus();
+    inhId = user.getInhId();
     createAt = user.getCreateAt();
     updateAt = user.getUpdateAt();
+  }
+  
+  
+  public UserRequest(String message) {
+    displayName = message;
   }
 
   public String getDepartments() {
@@ -37,6 +46,14 @@ public class UserRequest extends USER {
     this.departments = departments;
   }
   
+  public String getDepartmentId() {
+    return departmentId;
+  }
+
+  public void setDepartmentId(String departmentId) {
+    this.departmentId = departmentId;
+  }
+
   public USER convertToUSER() {
     USER result = new USER();
     result.setUsername(getUsername());

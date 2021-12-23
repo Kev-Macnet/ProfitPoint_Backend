@@ -13,20 +13,28 @@ import java.util.List;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
+import tw.com.leadtek.tools.DateTool;
 
 @ApiModel("代碼品項資料")
-public class PayCode extends PAY_CODE implements Serializable {
+public class PayCodePayload extends PAY_CODE implements Serializable {
 
   private static final long serialVersionUID = 3669628497114655207L;
 
-  public final static HashMap<String, String> HOSP_LEVEL=new HashMap<String,String>(){private static final long serialVersionUID=2957738062337123409L;
+  public final static HashMap<String, String> HOSP_LEVEL = new HashMap<String, String>() {
+    private static final long serialVersionUID = 2957738062337123409L;
 
-  {put("0","基層院所");put("1","醫學中心");put("2","區域醫院");put("3","地區醫院");}};
+    {
+      put("0", "基層院所");
+      put("1", "醫學中心");
+      put("2", "區域醫院");
+      put("3", "地區醫院");
+    }
+  };
 
   @ApiModelProperty(value = "是否為二類特材", example = "false", required = false)
   protected Boolean second;
 
-  @ApiModelProperty(value = "代碼適用醫院層級", example = "1", required = false)
+  @ApiModelProperty(value = "代碼適用醫院層級", example =" [\"基層院所\",\"地區醫院\"] ", required = false)
   protected List<String> level;
 
   @ApiModelProperty(value = "生效日", example = "2021/01/01", required = false)
@@ -35,11 +43,11 @@ public class PayCode extends PAY_CODE implements Serializable {
   @ApiModelProperty(value = "終止日", example = "2021/06/30", required = false)
   protected String eday;
 
-  public PayCode() {
+  public PayCodePayload() {
 
   }
 
-  public PayCode(PAY_CODE pc) {
+  public PayCodePayload(PAY_CODE pc) {
     id = pc.getId();
     code = pc.getCode();
     name = pc.getName();
@@ -50,8 +58,14 @@ public class PayCode extends PAY_CODE implements Serializable {
     codeType = pc.getCodeType();
     atc = pc.getAtc();
     
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+    SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
     sday = sdf.format(pc.getStartDate());
+    if (pc.getEndDate() == null) {
+      try {
+        pc.setEndDate(sdf.parse(DateTool.MAX_DATE));
+      } catch (ParseException e) {
+      }
+    }
     eday = sdf.format(pc.getEndDate());
 
     level = new ArrayList<String>();

@@ -5,13 +5,15 @@ package tw.com.leadtek.nhiwidget.payload;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.model.CodeBase;
+import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.tools.DateTool;
 
@@ -279,16 +281,19 @@ public class MRDetail extends MR {
   @ApiModelProperty(value = "醫令list", required = false)
   protected List<MO> mos;
   
-  @ApiModelProperty(value = "資訊備註", required = false)
+  @ApiModelProperty(value = "資料備註", required = false)
   protected List<MrNotePayload> notes;
   
   @ApiModelProperty(value = "核刪註記", required = false)
-  protected List<MrNotePayload> deducted;
+  protected List<DEDUCTED_NOTE> deducted;
+  
+  @ApiModelProperty(value = "詳情提示，顯示於病歷詳細資料的右上角", required = false)
+  protected List<String> hint;
   
   @ApiModelProperty(value = "是否為上一次調整病歷狀態為優化完成的作者，若無人調整則值為true", example = "true", required = false)
   protected Boolean isLastEditor;
   
-  @ApiModelProperty(value = "核刪註記", required = false)
+  @ApiModelProperty(value = "錯誤訊息", required = false)
   protected String error;
   
   public MRDetail() {
@@ -1029,11 +1034,11 @@ public class MRDetail extends MR {
     this.notes = notes;
   }
 
-  public List<MrNotePayload> getDeducted() {
+  public List<DEDUCTED_NOTE> getDeducted() {
     return deducted;
   }
 
-  public void setDeducted(List<MrNotePayload> deducted) {
+  public void setDeducted(List<DEDUCTED_NOTE> deducted) {
     this.deducted = deducted;
   }
   
@@ -1051,6 +1056,14 @@ public class MRDetail extends MR {
 
   public void setIsLastEditor(Boolean isLastEditor) {
     this.isLastEditor = isLastEditor;
+  }
+  
+  public List<String> getHint() {
+    return hint;
+  }
+
+  public void setHint(List<String> hint) {
+    this.hint = hint;
   }
 
   /**
@@ -1287,6 +1300,138 @@ public class MRDetail extends MR {
     }
     if (outDate != null && outDate.length() > 0) {
       outDate = DateTool.convertChineseToADWithSlash(outDate);
+    }
+  }
+  
+  public static void updateIcdAll(MR mr) {
+    StringBuffer sb = new StringBuffer(",");
+    if (mr.getIcdcm1() != null) {
+      sb.append(mr.getIcdcm1());
+      sb.append(",");
+    }
+    if (mr.getIcdcmOthers() != null) {
+      if (sb.charAt(sb.length() - 1) == ',') {
+        sb.deleteCharAt(sb.length() - 1);
+      }
+      sb.append(mr.getIcdcmOthers());
+    }
+    if (mr.getIcdpcs() != null) {
+      if (sb.charAt(sb.length() - 1) == ',') {
+        sb.deleteCharAt(sb.length() - 1);
+      }
+      sb.append(mr.getIcdpcs());
+    }
+    if (sb.length() > 1) {
+      mr.setIcdAll(sb.toString());
+    } else {
+      mr.setIcdAll(null);
+    }
+  }
+  
+  public static void updateCodeAllIP(MR mr, List<IP_P> ippList) {
+    StringBuffer sb = new StringBuffer(",");
+    for(IP_P ipp : ippList) {
+      if (ipp.getOrderCode() != null) {
+        sb.append(ipp.getOrderCode());
+        sb.append(",");
+      }
+    }
+    if (sb.length() > 1) {
+      mr.setCodeAll(sb.toString());
+    }
+  }
+  
+  public static void updateCodeAllOP(MR mr, List<OP_P> oppList ) {
+    StringBuffer sb = new StringBuffer(",");
+    for(OP_P opp : oppList) {
+      if (opp.getDrugNo() != null) {
+        sb.append(opp.getDrugNo());
+        sb.append(",");
+      }
+    }
+    if (sb.length() > 1) {
+      mr.setCodeAll(sb.toString());
+    }
+  }
+  
+  public static void updateIcdcmOtherIP(MR mr, IP_D ipd) {
+    StringBuffer sb = new StringBuffer(",");
+    appendString(sb, ipd.getIcdCm2());
+    appendString(sb, ipd.getIcdCm3());
+    appendString(sb, ipd.getIcdCm4());
+    appendString(sb, ipd.getIcdCm5());
+    appendString(sb, ipd.getIcdCm6());
+    appendString(sb, ipd.getIcdCm7());
+    appendString(sb, ipd.getIcdCm8());
+    appendString(sb, ipd.getIcdCm9());
+    appendString(sb, ipd.getIcdCm10());
+    appendString(sb, ipd.getIcdCm11());
+    appendString(sb, ipd.getIcdCm12());
+    appendString(sb, ipd.getIcdCm13());
+    appendString(sb, ipd.getIcdCm14());
+    appendString(sb, ipd.getIcdCm15());
+    appendString(sb, ipd.getIcdCm16());
+    appendString(sb, ipd.getIcdCm17());
+    appendString(sb, ipd.getIcdCm18());
+    appendString(sb, ipd.getIcdCm19());
+    appendString(sb, ipd.getIcdCm20());
+    if (sb.length() > 1) {
+      mr.setIcdcmOthers(sb.toString());
+    }
+  }
+  
+  public static void appendString(StringBuffer sb, String s) {
+    if (s != null) {
+      sb.append(s);
+      sb.append(",");
+    }
+  }
+    
+  public static void updateIcdpcsIP(MR mr, IP_D ipd) {
+    StringBuffer sb = new StringBuffer(",");
+    appendString(sb, ipd.getIcdOpCode1());
+    appendString(sb, ipd.getIcdOpCode2());
+    appendString(sb, ipd.getIcdOpCode3());
+    appendString(sb, ipd.getIcdOpCode4());
+    appendString(sb, ipd.getIcdOpCode5());
+    appendString(sb, ipd.getIcdOpCode6());
+    appendString(sb, ipd.getIcdOpCode7());
+    appendString(sb, ipd.getIcdOpCode8());
+    appendString(sb, ipd.getIcdOpCode9());
+    appendString(sb, ipd.getIcdOpCode10());
+    appendString(sb, ipd.getIcdOpCode11());
+    appendString(sb, ipd.getIcdOpCode12());
+    appendString(sb, ipd.getIcdOpCode13());
+    appendString(sb, ipd.getIcdOpCode14());
+    appendString(sb, ipd.getIcdOpCode15());
+    appendString(sb, ipd.getIcdOpCode16());
+    appendString(sb, ipd.getIcdOpCode17());
+    appendString(sb, ipd.getIcdOpCode18());
+    appendString(sb, ipd.getIcdOpCode19());
+    appendString(sb, ipd.getIcdOpCode20());
+    if (sb.length() > 1) {
+      mr.setIcdpcs(sb.toString());
+    }
+  }
+  
+  public static void updateIcdcmOtherOP(MR mr, OP_D opd) {
+    StringBuffer sb = new StringBuffer(",");
+    appendString(sb, opd.getIcdCm2());
+    appendString(sb, opd.getIcdCm3());
+    appendString(sb, opd.getIcdCm4());
+    appendString(sb, opd.getIcdCm5());
+    if (sb.length() > 1) {
+      mr.setIcdcmOthers(sb.toString());
+    }
+  }
+  
+  public static void updateIcdpcsOP(MR mr, OP_D opd) {
+    StringBuffer sb = new StringBuffer(",");
+    appendString(sb, opd.getIcdOpCode1());
+    appendString(sb, opd.getIcdOpCode2());
+    appendString(sb, opd.getIcdOpCode3());
+    if (sb.length() > 1) {
+      mr.setIcdpcs(sb.toString());
     }
   }
 }

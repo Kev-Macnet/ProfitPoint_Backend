@@ -4,9 +4,11 @@
 package tw.com.leadtek.nhiwidget.service;
 
 import java.math.BigInteger;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -41,7 +43,7 @@ import tw.com.leadtek.tools.Utility;
 public class IntelligentService {
 
   private Logger logger = LogManager.getLogger();
-  
+
   @Autowired
   private INTELLIGENTDao intelligentDao;
 
@@ -56,10 +58,10 @@ public class IntelligentService {
 
   @Autowired
   private CodeTableService codeTableService;
-  
+
   @Autowired
   private OP_PDao oppDao;
-  
+
   @Autowired
   private IP_PDao ippDao;
 
@@ -180,7 +182,12 @@ public class IntelligentService {
     }
   }
 
-  public void calculateRareICD() {
+  /**
+   * 計算指定年月的罕見ICD次數是否超過設定值
+   * 
+   * @param chineseYm
+   */
+  public void calculateRareICD(String chineseYm) {
     List<CODE_THRESHOLD> list = ctDao.findByCodeTypeOrderByStartDateDesc(1);
     String wording1M = parameterService.getOneValueByName("RARE_ICD_1M");
     String wording6M = parameterService.getOneValueByName("RARE_ICD_6M");
@@ -190,43 +197,30 @@ public class IntelligentService {
         continue;
       }
       System.out.println("Calculate:" + ct.getCode());
-      if (ct.getOpTimesMStatus().intValue() == 1) {
-        processRareICDByMonth("10", ct, ct.getOpTimesM().intValue(), wording1M);
+      if (ct.getOpTimesMStatus().intValue() == 1 && ct.getOpTimesM() != null) {
+        processRareICDByMonth(chineseYm, "10", ct, ct.getOpTimesM().intValue(), wording1M);
       }
-      if (ct.getOpTimes6mStatus().intValue() == 1) {
-        processRareICDBy6Month("10", ct, ct.getOpTimes6m().intValue(), wording6M);
+      if (ct.getOpTimes6mStatus().intValue() == 1 && ct.getOpTimes6m() != null) {
+        processRareICDBy6Month(chineseYm, "10", ct, ct.getOpTimes6m().intValue(), wording6M);
       }
-      if (ct.getIpTimesMStatus().intValue() == 1) {
-        processRareICDByMonth("20", ct, ct.getIpTimesM().intValue(), wording1M);
+      if (ct.getIpTimesMStatus().intValue() == 1 && ct.getIpTimesM() != null) {
+        processRareICDByMonth(chineseYm, "20", ct, ct.getIpTimesM().intValue(), wording1M);
       }
-      if (ct.getIpTimes6mStatus().intValue() == 1) {
-        processRareICDBy6Month("20", ct, ct.getIpTimes6m().intValue(), wording6M);
+      if (ct.getIpTimes6mStatus().intValue() == 1 && ct.getIpTimes6m() != null) {
+        processRareICDBy6Month(chineseYm, "20", ct, ct.getIpTimes6m().intValue(), wording6M);
       }
     }
   }
 
-  private void processRareICDByMonth(String dataFormat, CODE_THRESHOLD ct, int max,
-      String wording) {
-    Calendar cal = Calendar.getInstance();
-    // cal.setTime(ct.getStartDate());
-    cal.add(Calendar.MONTH, -2);
-    Calendar calEnd = Calendar.getInstance();
-    calEnd.setTime(ct.getEndDate());
-    int lastYm = DateTool.getChineseYm(calEnd);
-    int currentYm = 0;
-    do {
-      currentYm = DateTool.getChineseYm(cal);
-      List<MR> list =
-          getMRByCode(dataFormat, String.valueOf(currentYm), ct.getCode(), max, true, false);
-      if (list != null) {
-        for (MR mr : list) {
-          String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
-          System.out.println(mr.getId() + ":" + reason);
-          insertIntelligent(mr, INTELLIGENT_REASON.RARE_ICD.value(), null, ct.getCode(), reason);
-        }
+  private void processRareICDByMonth(String chineseYm, String dataFormat, CODE_THRESHOLD ct,
+      int max, String wording) {
+    List<MR> list = getMRByCode(dataFormat, chineseYm, ct.getCode(), max, true, false);
+    if (list != null) {
+      for (MR mr : list) {
+        String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
+        insertIntelligent(mr, INTELLIGENT_REASON.RARE_ICD.value(), null, ct.getCode(), reason);
       }
-      cal.add(Calendar.MONTH, 1);
-    } while (currentYm <= lastYm);
+    }
   }
 
   /**
@@ -237,30 +231,20 @@ public class IntelligentService {
    * @param overLimit 超過前6個月平均值次數才列入智慧提示
    * @param wording
    */
-  private void processRareICDBy6Month(String dataFormat, CODE_THRESHOLD ct, int overLimit,
-      String wording) {
-    Calendar cal = Calendar.getInstance();
-    // cal.setTime(ct.getStartDate());
-    cal.add(Calendar.MONTH, -2);
-    Calendar calEnd = Calendar.getInstance();
-    calEnd.setTime(ct.getEndDate());
-    int lastYm = DateTool.getChineseYm(calEnd);
-    int currentYm = 0;
-    do {
-      currentYm = DateTool.getChineseYm(cal);
-      int avg = get6MAvgByCode(dataFormat, cal, ct.getCode(), true);
-      List<MR> list = getMRByCode(dataFormat, String.valueOf(currentYm), ct.getCode(),
-          avg + overLimit, true, false);
+  private void processRareICDBy6Month(String chineseYm, String dataFormat, CODE_THRESHOLD ct,
+      int overLimit, String wording) {
+    Calendar cal = DateTool.chineseYmToCalendar(chineseYm);
+    System.out.println("processRareICDBy6Month chineseYm=" + chineseYm + "," + cal);
+    int avg = get6MAvgByCode(dataFormat, cal, ct.getCode(), true);
+    List<MR> list = getMRByCode(dataFormat, String.valueOf(chineseYm), ct.getCode(),
+        avg + overLimit, true, false);
+    if (list != null) {
       int over = list.size() - avg;
-      if (list != null) {
-        for (MR mr : list) {
-          String reason = (wording != null) ? String.format(wording, ct.getCode(), over) : null;
-          System.out.println(mr.getId() + ":" + reason);
-          insertIntelligent(mr, INTELLIGENT_REASON.RARE_ICD.value(), null, ct.getCode(), reason);
-        }
+      for (MR mr : list) {
+        String reason = (wording != null) ? String.format(wording, ct.getCode(), over) : null;
+        insertIntelligent(mr, INTELLIGENT_REASON.RARE_ICD.value(), null, ct.getCode(), reason);
       }
-      cal.add(Calendar.MONTH, 1);
-    } while (currentYm <= lastYm);
+    }
   }
 
   /**
@@ -312,6 +296,52 @@ public class IntelligentService {
     return null;
   }
 
+  /**
+   * 取得符合ICD或支付標準代碼的病歷
+   * 
+   * @param dataFormat 10:門診，20:住院
+   * @param applYm 申報民國年月
+   * @param code 代碼
+   * @param max 數值門檻
+   * @param isICD true:ICD代碼，false:支付標準代碼/藥品/衛材/醫令
+   * @param countEvery true:每一筆病歷的醫令
+   * @return
+   */
+  private List<MR> getMRByCode(String dataFormat, String[] applYm, String code, int max,
+      boolean isICD, boolean isAsc) {
+    Specification<MR> spec = new Specification<MR>() {
+
+      private static final long serialVersionUID = 1012L;
+
+      public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (dataFormat != null) {
+          predicate.add(cb.equal(root.get("dataFormat"), dataFormat));
+        }
+        if (applYm != null) {
+          Predicate[] pre = new Predicate[applYm.length];
+          for (int i=0; i<applYm.length; i++) {
+            String ym = applYm[i];
+            pre[i] = cb.equal(root.get("applYm"), ym);
+          }          
+           predicate.add(cb.or(pre));
+        }
+        String parameterName = isICD ? "icdAll" : "codeAll";
+        predicate.add(cb.like(root.get(parameterName), "%," + code + ",%"));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        if (isAsc) {
+          query.orderBy(cb.asc(root.get("mrDate")));
+        } else {
+          query.orderBy(cb.desc(root.get("mrDate")));
+        }
+        return query.getRestriction();
+      }
+    };
+    return mrDao.findAll(spec);
+  }
+
   public boolean insertIntelligent(MR mr, int conditionCode, String reasonCode, String code,
       String reason) {
     List<INTELLIGENT> list = intelligentDao.findByMrIdAndConditionCode(mr.getId(), conditionCode);
@@ -341,6 +371,11 @@ public class IntelligentService {
     return false;
   }
 
+  /**
+   * 計算指定年月的法定傳染病病歷.
+   * 
+   * @param applYm
+   */
   public void calculateInfectious(String applYm) {
     String wording = parameterService.getOneValueByName("INFECTIOUS");
     List<String> infectious = codeTableService.getInfectious();
@@ -349,146 +384,173 @@ public class IntelligentService {
       if (list != null) {
         for (MR mr : list) {
           String reason = (wording != null) ? String.format(wording, inf) : null;
-          // System.out.println(mr.getId() + ":" + reason);
           insertIntelligent(mr, INTELLIGENT_REASON.INFECTIOUS.value(), null, inf, reason);
         }
       }
     }
   }
 
-  public void calculateHighRatio() {
+  /**
+   * 計算指定年月應用比例偏高的病歷
+   * @param chineseYm
+   */
+  public void calculateHighRatio(String chineseYm) {
     List<CODE_THRESHOLD> list = ctDao.findByCodeTypeOrderByStartDateDesc(2);
     String wordingHighRatioSingle = parameterService.getOneValueByName("HIGH_RATIO_SINGLE");
     String wordingHighRatioTotal = parameterService.getOneValueByName("HIGH_RATIO_TOTAL");
     String wordingHighRatio6M = parameterService.getOneValueByName("HIGH_RATIO_6M");
     String wordingHighRatio1M = parameterService.getOneValueByName("HIGH_RATIO_1M");
-    
-    calculateHighRatioAndOverAmount(list, wordingHighRatioSingle, wordingHighRatioTotal,
+
+    calculateHighRatioAndOverAmount(chineseYm, list, wordingHighRatioSingle, wordingHighRatioTotal,
         wordingHighRatio6M, wordingHighRatio1M, INTELLIGENT_REASON.HIGH_RATIO.value());
   }
 
   /**
-   * 單一就診紀錄使用數量超過 max 次
+   * 單一病患幾天內申報數超過 max 次
+   * 
    * @param dataFormat
    * @param ct
    * @param max
    * @param wording
    */
-  private void processHighRatioSingle(String dataFormat, CODE_THRESHOLD ct, int max,
+  private void processPatient(String chineseYm, String dataFormat, CODE_THRESHOLD ct,
+      int max, String wording, int conditionCode) {
+    Calendar cal = DateTool.chineseYmToCalendar(chineseYm);
+    int day = "10".equals(dataFormat) ? ct.getOpTimesDay() : ct.getIpTimesDay();
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+    
+    Calendar firstCal = DateTool.chineseYmToCalendar(chineseYm);
+    firstCal.set(Calendar.DAY_OF_MONTH, 1);
+    firstCal.add(Calendar.DAY_OF_YEAR, - day);
+    int diffMonth = cal.get(Calendar.YEAR) * 12 + cal.get(Calendar.MONTH) - (firstCal.get(Calendar.YEAR) * 12 +  firstCal.get(Calendar.MONTH));
+    if (diffMonth == 0) {
+      diffMonth = 1;
+    }
+    String[] lastNMonth = getLastNMonth(cal, diffMonth);
+    List<MR> list = getMRByCode(dataFormat, lastNMonth, ct.getCode(), 0, false, false);
+    HashMap<String, Integer> patientCount = new HashMap<String, Integer>();
+    HashMap<String, Long> patientLastTime = new HashMap<String, Long>();
+    HashMap<String, MR> patientMR = new HashMap<String, MR>();
+    long maxDay = day * 86400000;
+    if (list != null) {
+      for (MR mr : list) {
+        Integer count = patientCount.get(mr.getRocId());
+        String compare = mr.getCodeAll();
+        int appearCount = countStringAppear(compare, ct.getCode());
+        if (count == null) {
+          patientCount.put(mr.getRocId(), new Integer(appearCount));
+          patientLastTime.put(mr.getRocId(),mr.getMrDate().getTime());
+          patientMR.put(mr.getRocId(), mr);
+        } else {
+          Long lastTime = patientLastTime.get(mr.getRocId());
+          if (lastTime.longValue() - mr.getMrDate().getTime() <  maxDay) {
+            int total = count.intValue() + appearCount;
+            patientCount.put(mr.getRocId(), new Integer(total));
+            if (total > max) {
+              String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
+              System.out.println(mr.getId() + ":" + reason);
+              insertIntelligent(mr, conditionCode, null, ct.getCode(), reason);  
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /**
+   * 單一就診紀錄使用數量超過 max 次
+   * 
+   * @param dataFormat
+   * @param ct
+   * @param max
+   * @param wording
+   */
+  private void processHighRatioSingle(String chineseYm, String dataFormat, CODE_THRESHOLD ct,
+      int max, String wording, int conditionCode) {
+    List<MR> list = getMRByCode(dataFormat, chineseYm, ct.getCode(), max, false, true);
+    if (list != null) {
+      for (MR mr : list) {
+        String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
+        System.out.println(mr.getId() + ":" + reason);
+        insertIntelligent(mr, conditionCode, null, ct.getCode(), reason);
+      }
+    }
+  }
+
+  /**
+   * 單月申報總數量是否高於上限
+   * 
+   * @param dataFormat 10:門急診，20:住院
+   * @param ct
+   * @param max 上限
+   * @param wording 提示訊息
+   */
+  private void processHighRatio1M(String chineseYm, String dataFormat, CODE_THRESHOLD ct, int max,
       String wording, int conditionCode) {
-    Calendar cal = Calendar.getInstance();
-    // cal.setTime(ct.getStartDate());
-    cal.add(Calendar.MONTH, -2);
-    Calendar calEnd = Calendar.getInstance();
-    calEnd.setTime(ct.getEndDate());
-    int lastYm = DateTool.getChineseYm(calEnd);
-    int currentYm = 0;
-    do {
-      currentYm = DateTool.getChineseYm(cal);
-      List<MR> list =
-          getMRByCode(dataFormat, String.valueOf(currentYm), ct.getCode(), max, false, true);
+    int count = 0;
+    if (XMLConstant.DATA_FORMAT_IP.equals(dataFormat)) {
+      count = ippDao.countOrderByDrugNoAndApplYm(chineseYm, ct.getCode()).intValue();
+    } else {
+      count = oppDao.countOrderByDrugNoAndApplYm(chineseYm, ct.getCode()).intValue();
+    }
+    if (count > max) {
+      List<MR> list = getMRByCode(dataFormat, chineseYm, ct.getCode(), 0, false, false);
       if (list != null) {
-        System.out.println(ct.getCode() + "-" + currentYm + ",size=" + list.size());
         for (MR mr : list) {
           String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
           System.out.println(mr.getId() + ":" + reason);
           insertIntelligent(mr, conditionCode, null, ct.getCode(), reason);
         }
       }
-      cal.add(Calendar.MONTH, 1);
-    } while (currentYm <= lastYm);
-
+    }
   }
 
-  /**
-   * 單月申報總數量是否高於上限
-   * @param dataFormat 10:門急診，20:住院
-   * @param ct
-   * @param max 上限
-   * @param wording 提示訊息
-   */
-  private void processHighRatio1M(String dataFormat, CODE_THRESHOLD ct, int max, String wording, int conditionCode) {
-    Calendar cal = Calendar.getInstance();
-    //cal.setTime(ct.getStartDate());
-    cal.add(Calendar.MONTH, -2);
-    Calendar calEnd = Calendar.getInstance();
-    calEnd.setTime(ct.getEndDate());
-    int lastYm = DateTool.getChineseYm(calEnd);
-    int currentYm = 0;
-    do {
-      currentYm = DateTool.getChineseYm(cal);
-      int count = 0;
-      if (XMLConstant.DATA_FORMAT_IP.equals(dataFormat)) {
-        count = ippDao.countOrderByDrugNoAndApplYm(String.valueOf(currentYm), ct.getCode()).intValue();
-      } else {
-        count = oppDao.countOrderByDrugNoAndApplYm(String.valueOf(currentYm), ct.getCode()).intValue();
-      }
-      if (count > max) {
-        List<MR> list =
-            getMRByCode(dataFormat, String.valueOf(currentYm), ct.getCode(), 0, false, false);
-        if (list != null) {
-          for (MR mr : list) {
-              String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
-              System.out.println(mr.getId() + ":" + reason);
-              insertIntelligent(mr, conditionCode, null, ct.getCode(), reason);
-          }
-        }
-      }
-      cal.add(Calendar.MONTH, 1);
-    } while (currentYm <= lastYm);
-  }
-  
   /**
    * 單月總量高於前六個月平均用量值後提示
+   * 
    * @param dataFormat 10:門急診，20:住院
    * @param ct
    * @param max 上限
    * @param wording 提示訊息
    */
-  private void processHighRatio6M(String dataFormat, CODE_THRESHOLD ct, int max, String wording, int conditionCode) {
-    Calendar cal = Calendar.getInstance();
-    //cal.setTime(ct.getStartDate());
-    cal.add(Calendar.MONTH, -2);
-    Calendar calEnd = Calendar.getInstance();
-    calEnd.setTime(ct.getEndDate());
-    int lastYm = DateTool.getChineseYm(calEnd);
-    int currentYm = 0;
-    do {
+  private void processHighRatio6M(String chineseYm, String dataFormat, CODE_THRESHOLD ct, int max, String wording,
+      int conditionCode) {
+      Calendar cal = DateTool.chineseYmToCalendar(chineseYm);
       String[] m6 = getLast6M(cal);
-      currentYm = DateTool.getChineseYm(cal);
       int count6M = 0;
       int count1M = 0;
       if (XMLConstant.DATA_FORMAT_IP.equals(dataFormat)) {
         count6M = ippDao
             .countOrderByDrugNoAnd6ApplYm(m6[0], m6[1], m6[2], m6[3], m6[4], m6[5], ct.getCode())
             .intValue();
-        count1M = ippDao.countOrderByDrugNoAndApplYm(String.valueOf(currentYm), ct.getCode()).intValue();
+        count1M =
+            ippDao.countOrderByDrugNoAndApplYm(chineseYm, ct.getCode()).intValue();
       } else {
         count6M = oppDao
             .countOrderByDrugNoAnd6ApplYm(m6[0], m6[1], m6[2], m6[3], m6[4], m6[5], ct.getCode())
             .intValue();
-        count1M = oppDao.countOrderByDrugNoAndApplYm(String.valueOf(currentYm), ct.getCode()).intValue();
+        count1M =
+            oppDao.countOrderByDrugNoAndApplYm(chineseYm, ct.getCode()).intValue();
       }
-      int avg6m = (int)(count6M / 6);
-      
+      int avg6m = (int) (count6M / 6);
+
       if (count1M > (avg6m + max)) {
         List<MR> list =
-            getMRByCode(dataFormat, String.valueOf(currentYm), ct.getCode(), 0, false, false);
+            getMRByCode(dataFormat, chineseYm, ct.getCode(), 0, false, false);
         if (list != null) {
           for (MR mr : list) {
-              String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
-              System.out.println(mr.getId() + ":" + reason);
-              insertIntelligent(mr, conditionCode, null, ct.getCode(), reason);
+            String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
+            System.out.println(mr.getId() + ":" + reason);
+            insertIntelligent(mr, conditionCode, null, ct.getCode(), reason);
           }
         }
       }
-      cal.add(Calendar.MONTH, 1);
-    } while (currentYm <= lastYm);
   }
 
 
   /**
    * 取得code在就醫月份前六個月出現的平均值
+   * 
    * @param dataFormat
    * @param cal
    * @param code
@@ -518,15 +580,15 @@ public class IntelligentService {
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
         return query.getRestriction();
-      } 
+      }
     };
     int total = (int) mrDao.count(spec);
-    return (int)(total / 6);
+    return (int) (total / 6);
   }
 
   public void testCount() {
-   long count =  oppDao.countOrderByDrugNoAndApplYm("11011", "09099C");
-   System.out.println("count=" + count);
+    long count = oppDao.countOrderByDrugNoAndApplYm("11011", "09099C");
+    System.out.println("count=" + count);
   }
 
   /**
@@ -550,8 +612,18 @@ public class IntelligentService {
     } while (index > -1);
     return result;
   }
-  
-  public void calculateHighRatioAndOverAmount(List<CODE_THRESHOLD> list, String wordingSingle, 
+
+  /**
+   * 計算應用比例偏高及醫令
+   * 
+   * @param list
+   * @param wordingSingle
+   * @param wordingTotal
+   * @param wording6M
+   * @param wording1M
+   * @param conditonCode
+   */
+  public void calculateHighRatioAndOverAmount(String chineseYm, List<CODE_THRESHOLD> list, String wordingSingle,
       String wordingTotal, String wording6M, String wording1M, int conditonCode) {
     for (CODE_THRESHOLD ct : list) {
       // if (ct.getCode().equals("0QSQ04Z")) {
@@ -560,51 +632,91 @@ public class IntelligentService {
       }
       if (ct.getOpTimesStatus().intValue() == 1) {
         // 單一就診紀錄使用數量超過 n 次
-        processHighRatioSingle("10", ct, ct.getOpTimes().intValue(), wordingSingle, conditonCode);
+        processHighRatioSingle(chineseYm, "10", ct, ct.getOpTimes().intValue(), wordingSingle, conditonCode);
       }
       if (ct.getIpTimesStatus().intValue() == 1) {
-        processHighRatioSingle("20", ct, ct.getIpTimes().intValue(), wordingSingle, conditonCode);
+        processHighRatioSingle(chineseYm, "20", ct, ct.getIpTimes().intValue(), wordingSingle, conditonCode);
       }
       if (ct.getOpTimesMStatus().intValue() == 1) {
         // 單月申報總數量是否高於上限
-        processHighRatio1M(XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimesM().intValue(), wording1M, conditonCode);
+        processHighRatio1M(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimesM().intValue(), wording1M,
+            conditonCode);
       }
       if (ct.getIpTimesMStatus().intValue() == 1) {
         // 單月申報總數量是否高於上限
-        processHighRatio1M(XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimesM().intValue(), wording1M, conditonCode);
+        processHighRatio1M(chineseYm, XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimesM().intValue(), wording1M,
+            conditonCode);
       }
       if (ct.getIpTimes6mStatus().intValue() == 1) {
-        processHighRatio6M(XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimes6m().intValue(), wording6M, conditonCode);
+        processHighRatio6M(chineseYm, XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimes6m().intValue(), wording6M,
+            conditonCode);
       }
       if (ct.getOpTimes6mStatus().intValue() == 1) {
-        processHighRatio6M(XMLConstant.DATA_FORMAT_OP, ct, ct.getIpTimes6m().intValue(), wording6M, conditonCode);
+        processHighRatio6M(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getIpTimes6m().intValue(), wording6M,
+            conditonCode);
+      }
+      if (ct.getOpTimesDStatus().intValue() == 1) {
+        processPatient(chineseYm, "10", ct, ct.getOpTimesD(), wordingTotal, conditonCode);
+      }
+      if (ct.getIpTimesDStatus().intValue() == 1) {
+        processPatient(chineseYm, "20", ct, ct.getIpTimesD(), wordingTotal, conditonCode);
       }
     }
   }
-  
+
   /**
    * 計算 特別用量藥品、衛材
    */
-  public void calculateOverAmount() {
+  public void calculateOverAmount(String chineseYm) {
     List<CODE_THRESHOLD> list = ctDao.findByCodeTypeOrderByStartDateDesc(3);
     String wordingOverAmountSingle = parameterService.getOneValueByName("OVER_AMOUNT_SINGLE");
     String wordingOverAmountTotal = parameterService.getOneValueByName("OVER_AMOUNT_TOTAL");
     String wordingOverAmount6M = parameterService.getOneValueByName("OVER_AMOUNT_6M");
     String wordingOverAmount1M = parameterService.getOneValueByName("OVER_AMOUNT_1M");
-    calculateHighRatioAndOverAmount(list, wordingOverAmountSingle, wordingOverAmountTotal,
+    calculateHighRatioAndOverAmount(chineseYm, list, wordingOverAmountSingle, wordingOverAmountTotal,
         wordingOverAmount6M, wordingOverAmount1M, INTELLIGENT_REASON.OVER_AMOUNT.value());
   }
 
   /**
    * 取得 cal 前六個月的民國年月字串
+   * 
    * @param cal
    * @return
    */
   public static String[] getLast6M(Calendar cal) {
+    Calendar temp = Calendar.getInstance();
+    temp.setTime(cal.getTime());
     String[] result = new String[6];
     for (int i = 0; i < 6; i++) {
-      cal.add(Calendar.MONTH, -1);
-      result[i] = String.valueOf(DateTool.getChineseYm(cal));
+      temp.add(Calendar.MONTH, -1);
+      result[i] = String.valueOf(DateTool.getChineseYm(temp));
+    }
+    return result;
+  }
+  
+  /**
+   * 取得 cal 前n個月的民國年月字串，含當月
+   * 
+   * @param cal
+   * @return
+   */
+  public static String[] getLastNMonth(Calendar cal, int n) {
+    Calendar temp = Calendar.getInstance();
+    temp.setTime(cal.getTime());
+    String[] result = new String[n+1];
+    result[0] = String.valueOf(DateTool.getChineseYm(temp));
+    for (int i = 0; i < n; i++) {
+      temp.add(Calendar.MONTH, -1);
+      result[i+1] = String.valueOf(DateTool.getChineseYm(temp));
+    }
+    return result;
+  }
+  
+  public List<String> getMRHint(Long mrId) {
+    List<String> result = new ArrayList<String>();
+    List<INTELLIGENT> list =  intelligentDao.findByMrId(mrId);
+    for (INTELLIGENT intelligent : list) {
+      result.add(intelligent.getReason());
     }
     return result;
   }

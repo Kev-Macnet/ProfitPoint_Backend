@@ -37,7 +37,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
-import tw.com.leadtek.nhiwidget.payload.PayCode;
+import tw.com.leadtek.nhiwidget.payload.PayCodePayload;
 import tw.com.leadtek.nhiwidget.payload.PayCodeListResponse;
 import tw.com.leadtek.nhiwidget.payload.system.DeductedListResponse;
 import tw.com.leadtek.nhiwidget.payload.system.ICD10ListResponse;
@@ -66,7 +66,7 @@ public class SystemService {
   @Autowired
   private ICD10Dao icd10Dao;
 
-  public ATCListResponse getATC(String code, Integer leng, int perPage, int page) {
+  public ATCListResponse getATC(String code, int perPage, int page) {
     List<ATC> codes = new ArrayList<ATC>();
     Specification<ATC> spec = new Specification<ATC>() {
 
@@ -76,9 +76,6 @@ public class SystemService {
         List<Predicate> predicate = new ArrayList<Predicate>();
         if (code != null) {
           predicate.add(cb.like(root.get("code"), code.toUpperCase() + "%"));
-        }
-        if (leng != null) {
-          predicate.add(cb.equal(root.get("leng"), leng));
         }
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
@@ -220,11 +217,11 @@ public class SystemService {
     result.setCount((int) payCodeDao.count(spec));
     result.setTotalPage(BaseController.countTotalPage(result.getCount(), perPage));
 
-    List<PayCode> codes = new ArrayList<PayCode>();
+    List<PayCodePayload> codes = new ArrayList<PayCodePayload>();
     Page<PAY_CODE> pages = payCodeDao.findAll(spec, PageRequest.of(page, perPage));
     if (pages != null && pages.getSize() > 0) {
       for (PAY_CODE pc : pages) {
-        codes.add(new PayCode(pc));
+        codes.add(new PayCodePayload(pc));
       }
     }
     result.setData(codes);
@@ -419,6 +416,7 @@ public class SystemService {
         list.add(p);
       }
     }
+    result.setCount((int) total);
     result.setTotalPage(Utility.getTotalPage((int) total, perPage));
     result.setData(list);
     return result;
@@ -501,16 +499,30 @@ public class SystemService {
       public Predicate toPredicate(Root<ICD10> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
         List<Predicate> predicate = new ArrayList<Predicate>();
         if (code != null) {
-          predicate.add(cb.like(root.get("code"), code.toUpperCase() + "%"));
+          // cb.upper 全轉為大寫以免因大小寫不同而搜尋不到 
+          predicate.add(cb.like(cb.upper(root.get("code")), code.toUpperCase() + "%"));
         }
         if (descChi != null) {
-          predicate.add(cb.like(root.get("descChi"), "%" + descChi + "%"));
+          predicate.add(cb.or(cb.like(root.get("descChi"), "%" + descChi + "%"), 
+              cb.like(cb.upper(root.get("descEn")), "%" + descChi.toUpperCase() + "%")));
         }
         if (isInfectious != null) {
           predicate.add(cb.equal(root.get("infectious"), isInfectious ? 1 : 0));
         }
         if (infCat != null) {
-          predicate.add(cb.equal(root.get("infCat"), infCat));
+          Integer cat = null;
+          if ("第一類".equals(infCat)) {
+            cat = new Integer(1);
+          } else if ("第二類".equals(infCat)) {
+            cat = new Integer(2);
+          } else if ("第三類".equals(infCat)) {
+            cat = new Integer(3);
+          } else if ("第四類".equals(infCat)) {
+            cat = new Integer(4);
+          } else if ("第五類".equals(infCat)) {
+            cat = new Integer(5);
+          }
+          predicate.add(cb.equal(root.get("infCat"), cat));
         }
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));

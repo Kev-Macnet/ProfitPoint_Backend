@@ -39,6 +39,7 @@ import tw.com.leadtek.nhiwidget.payload.PointsValue;
 import tw.com.leadtek.nhiwidget.payload.RareICDListResponse;
 import tw.com.leadtek.nhiwidget.payload.RareICDPayload;
 import tw.com.leadtek.nhiwidget.payload.SameATCListResponse;
+import tw.com.leadtek.nhiwidget.payload.my.WarningOrderResponse;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.tools.DateTool;
 
@@ -78,6 +79,13 @@ public class ParameterController extends BaseController {
       try {
         startDate = sdf.parse(sdate);
         endDate = sdf.parse(edate);
+        
+        if (startDate.after(endDate)) {
+          AssignedPointsListResponse result = new AssignedPointsListResponse();
+          result.setMessage("啟始日不可大於結束日");
+          result.setResult("failed");
+          return ResponseEntity.badRequest().body(result);
+        }
       } catch (ParseException e) {
         AssignedPointsListResponse result = new AssignedPointsListResponse();
         result.setMessage("日期格式有誤");
@@ -113,6 +121,13 @@ public class ParameterController extends BaseController {
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/assignedPoints")
   public ResponseEntity<BaseResponse> newAssignedPoints(@RequestBody AssignedPoints ap) {
+    if (ap.getEdate() == null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        ap.setEdate(sdf.parse(DateTool.MAX_DATE));
+      } catch (ParseException e) {
+      }
+    }
     return returnAPIResult(parameterService.newAssignedPoints(ap));
   }
 
@@ -188,6 +203,13 @@ public class ParameterController extends BaseController {
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/pointsValue")
   public ResponseEntity<BaseResponse> newPointsValue(@RequestBody PointsValue pv) {
+    if (pv.getEdate() == null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        pv.setEdate(sdf.parse(DateTool.MAX_DATE));
+      } catch (ParseException e) {
+      }
+    }
     return returnAPIResult(parameterService.newPointsValue(pv));
   }
 
@@ -220,6 +242,13 @@ public class ParameterController extends BaseController {
       try {
         startDate = sdf.parse(sdate);
         endDate = sdf.parse(edate);
+        
+        if (startDate.after(endDate)) {
+          ParameterListPayload result = new ParameterListPayload();
+          result.setMessage("啟始日不可大於結束日");
+          result.setResult("failed");
+          return ResponseEntity.badRequest().body(result);
+        }
       } catch (ParseException e) {
         ParameterListPayload result = new ParameterListPayload();
         result.setMessage("日期格式有誤");
@@ -271,20 +300,28 @@ public class ParameterController extends BaseController {
       @ApiParam(name = "sdate", value = "生效日",
           example = "2021/05/01") @RequestParam(required = true) Date sdate,
       @ApiParam(name = "edate", value = "生效訖日",
-          example = "2021/12/31") @RequestParam(required = true) Date edate) {
+          example = "2021/12/31") @RequestParam(required = false) Date edate) {
     if (value == null || value.length() == 0 || "null".equals(value.toLowerCase())) {
       return returnAPIResult("value值不可為空");
     }
-    if (edate.before(sdate)) {
+    Date endDate = edate;
+    if (endDate == null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        endDate = sdf.parse(DateTool.MAX_DATE);
+      } catch (ParseException e) {
+      }
+    }
+    if (endDate.before(sdate)) {
       return returnAPIResult("生效訖日不可小於生效日");
     }
-    if (edate.getTime() == sdate.getTime()) {
+    if (endDate.getTime() == sdate.getTime()) {
       return returnAPIResult("生效訖日不可等於生效日");
     }
     if (value == null || value.length() < 1 || "null".equals(value)) {
       return returnAPIResult("value值不可為空");
     }
-    return returnAPIResult(parameterService.newValue(name, value, sdate, edate));
+    return returnAPIResult(parameterService.newValue(name, value, sdate, endDate));
   }
 
   @ApiOperation(value = "修改參數值", notes = "修改參數值")
@@ -499,7 +536,11 @@ public class ParameterController extends BaseController {
       return returnAPIResult("生效日不可為空");
     }
     if (request.getEdate() == null) {
-      return returnAPIResult("生效訖日不可為空");
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        request.setEdate(sdf.parse(DateTool.MAX_DATE));
+      } catch (ParseException e) {
+      }
     }
     if (request.getEdate().before(request.getSdate())) {
       return returnAPIResult("生效訖日不可小於生效日");
@@ -614,6 +655,13 @@ public class ParameterController extends BaseController {
       @RequestBody HighRatioOrder request) {
     if (request.getCode() == null || request.getCode().length() < 1) {
       return returnAPIResult("code值不可為空");
+    }
+    if (request.getEdate() == null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        request.setEdate(sdf.parse(DateTool.MAX_DATE));
+      } catch (ParseException e) {
+      }
     }
     return returnAPIResult(parameterService.newHighRatioOrder(request, isOrder));
   }
@@ -785,6 +833,13 @@ public class ParameterController extends BaseController {
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/codeConflict")
   public ResponseEntity<BaseResponse> newCodeConflict(@RequestBody CodeConflictPayload request) {
+    if (request.getEdate() == null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        request.setEdate(sdf.parse(DateTool.MAX_DATE));
+      } catch (ParseException e) {
+      }
+    }
     if (request.getEdate().getTime() == request.getSdate().getTime()) {
       return returnAPIResult("訖日不可等於生效日");
     }

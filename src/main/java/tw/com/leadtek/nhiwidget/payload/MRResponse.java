@@ -12,6 +12,9 @@ import tw.com.leadtek.nhiwidget.service.CodeTableService;
 @ApiModel("病歷")
 public class MRResponse extends MR {
 
+  @ApiModelProperty(value = "科別名稱", example = "骨科", required = false)
+  protected String funcTypeC;
+  
   @ApiModelProperty(value = "病歷檢查狀態", example = "無需變更", required = false)
   protected String sStatus;
   
@@ -46,7 +49,8 @@ public class MRResponse extends MR {
     dataFormat = cts.getDesc("DATA_FORMAT", mr.getDataFormat()) ;
     deductedDot = mr.getDeductedDot();
     dId = mr.getdId();
-    funcType = cts.getDesc("FUNC_TYPE", mr.getFuncType()) ;
+    funcType = mr.getFuncType();
+    funcTypeC = cts.getDesc("FUNC_TYPE", mr.getFuncType()) ;
     id = mr.getId();
     infectious = mr.getInfectious();
     inhClinicId = mr.getInhClinicId();
@@ -176,4 +180,13 @@ public class MRResponse extends MR {
     }
     return infectious.intValue() == 1 ? "是" : "否";
   }
+
+  public String getFuncTypeC() {
+    return funcTypeC;
+  }
+
+  public void setFuncTypeC(String funcTypeC) {
+    this.funcTypeC = funcTypeC;
+  }
+  
 }

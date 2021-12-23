@@ -81,7 +81,6 @@ public class ReportController extends BaseController {
     return ResponseEntity.ok(reportService.getPeriodPoint(startDate, endDate));
   }
   
-  
   @ApiOperation(value = "取得費用業務-每周趨勢資料", notes = "取得費用業務-每周趨勢資料")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/periodPointWeekly")
@@ -167,4 +166,5 @@ public class ReportController extends BaseController {
     }
     return ResponseEntity.ok(reportService.getDrgMonthlySection(year, month));
   }
+  
 }

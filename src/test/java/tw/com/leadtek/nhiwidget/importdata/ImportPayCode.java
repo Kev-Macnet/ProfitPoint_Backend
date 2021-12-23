@@ -449,8 +449,8 @@ public class ImportPayCode {
       XSSFSheet sheet = workbook.getSheetAt(0);
       SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
       DecimalFormat df = new DecimalFormat("#");
-      //for (int j = 1; j < sheet.getPhysicalNumberOfRows(); j++) {
-         for (int j = 1; j < 3; j++) {
+      for (int j = 1; j < sheet.getPhysicalNumberOfRows(); j++) {
+      //   for (int j = 1; j < 3; j++) {
         XSSFRow row = sheet.getRow(j);
         if (row == null || row.getCell(0) == null) {
           // System.out.println("sheet:" + i + ", row=" + j + " is null");

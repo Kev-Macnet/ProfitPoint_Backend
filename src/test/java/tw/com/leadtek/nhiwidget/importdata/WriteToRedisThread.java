@@ -90,6 +90,7 @@ public class WriteToRedisThread implements Runnable {
     try {
       String json = objectMapper.writeValueAsString(cb);
       // 1. save to data
+      System.out.println("json=" + json);
       redis.opsForHash().put(RedisService.DATA_KEY, String.valueOf(cb.getId()), json);
       //System.out.println("insert data:" + cb.getId());
       // 2. save code to index for search
@@ -161,9 +162,9 @@ public class WriteToRedisThread implements Runnable {
         return false;
       }
       System.err.println("Not Found:" + searchKey);
-      pool.addTotal();
+      //pool.addTotal();
     }
-    pool.decrease();
+    //pool.decrease();
     return isFound;
   }
 

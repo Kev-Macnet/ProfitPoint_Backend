@@ -29,6 +29,10 @@ public class USER {
   @ApiModelProperty(value = "證號", example = "A123456789", required = true)
   @Column(name = "ROC_ID", length = 20)
   protected String rocId;
+  
+  @ApiModelProperty(value = "在HIS中的醫護代碼", example = "A01", required = false)
+  @Column(name = "INH_ID", length = 20)
+  protected String inhId;
 
   @ApiModelProperty(value = "帳號", example = "test", required = true)
   @Column(name = "USERNAME", length = 20)
@@ -194,6 +198,14 @@ public class USER {
 
   public void setRocId(String rocId) {
     this.rocId = rocId;
+  }
+
+  public String getInhId() {
+    return inhId;
+  }
+
+  public void setInhId(String inhId) {
+    this.inhId = inhId;
   }
   
 }

@@ -14,6 +14,8 @@ public class DateTool {
    * 日期格式
    */
   public final static String SDF = "yyyy/MM/dd";
+  
+  public final static String MAX_DATE = "2099/12/31";
 
   /**
    * 將西元年月轉成民國年月
@@ -175,5 +177,18 @@ public class DateTool {
    */
   public static int getChineseYm(Calendar cal) {
     return (cal.get(Calendar.YEAR) - 1911) * 100 + cal.get(Calendar.MONTH) + 1;
+  }
+  
+  /**
+   * 將民國年月轉成 Calendar object.
+   * @param chineseYm
+   * @return
+   */
+  public static Calendar chineseYmToCalendar(String chineseYm) {
+    Calendar cal = Calendar.getInstance();
+    // cal.setTime(ct.getStartDate());
+    cal.set(Calendar.YEAR, 1911 + Integer.parseInt(chineseYm.substring(0, 3)));
+    cal.set(Calendar.MONTH, Integer.parseInt(chineseYm.substring(2)) - 1);
+    return cal;
   }
 }

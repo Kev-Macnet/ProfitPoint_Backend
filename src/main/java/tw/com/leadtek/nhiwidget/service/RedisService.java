@@ -7,9 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import org.assertj.core.api.DurationAssert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -17,7 +23,11 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
 import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
+import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
+import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
 
@@ -39,8 +49,14 @@ public class RedisService {
   
   @Value("${jwt.expiration}")
   private String tokenExpiration;
+  
+  @Autowired
+  private ICD10Dao icd10;
 
-  public List<JsonSuggestion> query(String cat, String q) {
+  public List<JsonSuggestion> query(String cat, String q, boolean isDb) {
+    if (isDb) {
+      return queryByDb(cat, q);
+    }
     ObjectMapper mapper = new ObjectMapper();
     ZSetOperations<String, Object> zsetOp =
         (ZSetOperations<String, Object>) redisTemplate.opsForZSet();
@@ -79,10 +95,12 @@ public class RedisService {
         }
         if (string.indexOf("\"p\"") > 0) {
           OrderCode oc = mapper.readValue(string, OrderCode.class);
+          //oc.setCategory("ORDER");
+          //System.out.println("oc.code=" + oc.getCode() + ",category=" + oc.getCategory() + ", desc=" +oc.getDesc() + ", en:" + oc.getDescEn());
           if (!checkCategory(cats, oc.getCategory())) {
             continue;            
           }
-
+ 
           // 將支付點數放在 DescEn 欄位
           oc.setDescEn(String.valueOf(oc.getP()));
           json = new JsonSuggestion(oc);
@@ -91,6 +109,7 @@ public class RedisService {
           if (!checkCategory(cats, cb.getCategory())) {
             continue;            
           }
+          //System.out.println("cb.code=" + cb.getCode() + ",category=" + cb.getCategory() + ", desc=" +cb.getDesc() + ", en:" + cb.getDescEn());
           json = new JsonSuggestion(cb);
         }
         // System.out.println("name=" + cb.getCode() + "," + cb.getDesc() + "," + cb.getDescEn());
@@ -253,5 +272,42 @@ public class RedisService {
     for (Object name : names) {
       redisTemplate.opsForHash().delete(key, name);
     }
+  }
+  
+  public List<JsonSuggestion> queryByDb(String cat, String q) {
+    List<JsonSuggestion> result = new ArrayList<JsonSuggestion>();
+    
+    String[] cats = null; 
+    if (cat != null && cat.length() > 0) {
+      cats = cat.split(" ");
+    }
+    
+    String code = q.toUpperCase();
+    Specification<ICD10> spec = new Specification<ICD10>() {
+
+      private static final long serialVersionUID = 1L;
+
+      public Predicate toPredicate(Root<ICD10> root, CriteriaQuery<?> query,
+          CriteriaBuilder cb) {
+
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        predicate.add(cb.like(root.get("code"), code + "%"));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        return query.getRestriction();
+      }
+    };
+    List<ICD10> list = icd10.findAll(spec);
+    for (ICD10 icd : list) {
+      if (!checkCategory(cats, icd.getCat())) {
+        continue;            
+      }
+      JsonSuggestion json = new JsonSuggestion();
+      json.setId(icd.getId().toString());
+      json.setLabel(icd.getCode());
+      json.setValue(icd.getDescChi());
+      result.add(json);
+    }
+    return result;
   }
 }

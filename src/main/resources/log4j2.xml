@@ -39,7 +39,13 @@
 		<Logger name="org.mongodb.driver" level="INFO" />
 		<Root level="INFO">
 			<!-- <AppenderRef ref="Console" /> -->
-			<AppenderRef ref="Async" />
+			<AppenderRef ref="RollingInfoFile" />
 		</Root>
 	</Loggers>
+	<!-- 
+	<Root level="error">
+		<AppenderRef ref="Console" />
+		<AppenderRef ref="RollingInfoFile" />
+	</Root>
+	 -->
 </Configuration>

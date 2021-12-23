@@ -86,8 +86,8 @@ public class ImportDeductedCode {
 
     File file = new File(filename);
     int addCount = 0;
-    WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
-    Thread poolThread = new Thread(wtrPool);
+//    WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
+//    Thread poolThread = new Thread(wtrPool);
     try {
       ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
       ObjectMapper objectMapper = new ObjectMapper();
@@ -96,7 +96,7 @@ public class ImportDeductedCode {
       HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
       // DataFormatter formatter = new DataFormatter();
 
-      poolThread.start();
+      //poolThread.start();
       int total = 0;
       for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
         XSSFSheet sheet = workbook.getSheetAt(i);
@@ -137,33 +137,24 @@ public class ImportDeductedCode {
           if (oc.getDetailCat() != null && !oc.getDetailCat().equals(detailCategory)) {
             detailCategory = oc.getDetailCat();
           }
-          //addCodeByThread(wtrPool, collectionName, oc, false);
+          System.out.println("code=" + oc.getCode() + ", category=" + oc.getCategory());
+          addCodeByThread(null, collectionName, oc, true);
           //System.out.println("add(" + maxId + ")[" + addCount + "]" + code + ":" + oc.getDescEn());
           count++;
           total++;
-          if (wtrPool.getThreadCount() > 1000) {
-            do {
-              try {
-                Thread.sleep(2000);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-            } while (wtrPool.getThreadCount() > 1000);
-          }
         }
       }
-      wtrPool.setFinished(true);
       System.out.println("finish total:" + total);
       workbook.close();
 
-      do {
-        try {
-          Thread.sleep(200);
-          // System.out.println("elapsed:" + wtrPool.getThreadCount());
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
-      } while (wtrPool.isRunning());
+//      do {
+//        try {
+//          Thread.sleep(200);
+//          // System.out.println("elapsed:" + wtrPool.getThreadCount());
+//        } catch (InterruptedException e) {
+//          e.printStackTrace();
+//        }
+//      } while (wtrPool.isRunning());
     } catch (InvalidFormatException e) {
       logger.error("import excel failed", e);
       e.printStackTrace();
@@ -209,7 +200,8 @@ public class ImportDeductedCode {
     if (isSearch) {
       thread.setSearchKey(cb.getCode());
     }
-    pool.addThread(thread);
+    thread.run();
+    //pool.addThread(thread);
   }
 
   /**

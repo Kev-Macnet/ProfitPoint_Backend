@@ -449,51 +449,46 @@ public class DrgCalService {
     return result;
   }
 
-  public DrgCodeListResponse getDRGCode(String sdate, String edate, String mdc, String code,
+  public DrgCodeListResponse getDRGCode(Date sd, Date ed, String mdc, String code,
       String orderBy, Boolean asc, int perPage, int page) {
     List<DrgCodePayload> codes = new ArrayList<DrgCodePayload>();
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
     Specification<DRG_CODE> spec = null;
-    try {
-      Date sd = parseDateString(sdate, sdf);
-      Date ed = parseDateString(edate, sdf);
-      spec = new Specification<DRG_CODE>() {
+    spec = new Specification<DRG_CODE>() {
 
-        private static final long serialVersionUID = 1L;
+      private static final long serialVersionUID = 1L;
 
-        public Predicate toPredicate(Root<DRG_CODE> root, CriteriaQuery<?> query,
-            CriteriaBuilder cb) {
-          List<Predicate> predicate = new ArrayList<Predicate>();
-          if (sd != null) {
-            predicate.add(cb.lessThanOrEqualTo(root.get("startDate"), sd));
-          }
-          if (ed != null) {
-            predicate.add(cb.greaterThan(root.get("endDate"), ed));
-          }
-          if (mdc != null) {
-            predicate.add(cb.equal(root.get("mdc"), mdc));
-          }
-          if (code != null && code.length() > 1) {
-            predicate.add(cb.like(root.get("code"), code + "%"));
-          }
-          Predicate[] pre = new Predicate[predicate.size()];
-          query.where(predicate.toArray(pre));
-
-          if (orderBy != null && asc != null) {
-            List<Order> orderList = new ArrayList<Order>();
-            if (asc.booleanValue()) {
-              orderList.add(cb.asc(root.get(orderBy)));
-            } else {
-              orderList.add(cb.desc(root.get(orderBy)));
-            }
-            query.orderBy(orderList);
-          }
-          return query.getRestriction();
+      public Predicate toPredicate(Root<DRG_CODE> root, CriteriaQuery<?> query,
+          CriteriaBuilder cb) {
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (sd != null) {
+          predicate.add(cb.greaterThanOrEqualTo(root.get("startDate"), sd));
         }
-      };
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
+        if (ed != null) {
+          predicate.add(cb.lessThanOrEqualTo(root.get("endDate"), ed));
+        }
+        if (mdc != null) {
+          predicate.add(cb.equal(root.get("mdc"), mdc));
+        }
+        if (code != null && code.length() > 1) {
+          predicate.add(cb.like(root.get("code"), code + "%"));
+        }
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+
+        if (orderBy != null && asc != null) {
+          List<Order> orderList = new ArrayList<Order>();
+          if (asc.booleanValue()) {
+            orderList.add(cb.asc(root.get(orderBy)));
+          } else {
+            orderList.add(cb.desc(root.get(orderBy)));
+          }
+          query.orderBy(orderList);
+        }
+        return query.getRestriction();
+      }
+    };
+
     DrgCodeListResponse result = new DrgCodeListResponse();
     result.setCount((int) drgDao.count(spec));
     int totalPage = result.getCount() / perPage;
@@ -512,9 +507,6 @@ public class DrgCalService {
   }
 
   public DRG_CODE getDrgCode(DRG_CODE code) {
-    if (code.getId() != null) {
-      return getDrgCode(code.getId());
-    }
     List<DRG_CODE> list = drgDao.findByCodeAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
         code.getCode(), code.getStartDate(), code.getStartDate());
     if (list == null || list.size() == 0) {

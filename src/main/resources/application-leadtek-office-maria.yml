@@ -6,7 +6,7 @@ server:
     max-http-form-post-size: 124857600
     threads:
       max: 1000
-  max-http-header-size: 124857600
+  max-http-header-size: 40KB
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
@@ -24,7 +24,7 @@ spring:
   jackson:
     default-property-inclusion: NON_NULL
   redis:
-    host: 10.10.5.30
+    host: 10.10.5.23
     port: 6379
     database: 0
     password: Leadtek
@@ -34,7 +34,7 @@ spring:
         max-wait: -1
         max-idle: 4
   datasource:
-    url: jdbc:mariadb://${dbip:10.10.5.51}:${dbport:3306}/nwuser
+    url: jdbc:mariadb://${dbip:10.10.5.23}:${dbport:3306}/nwuser
     username: leadtek
     password: leadtek
 #  datasource:
@@ -46,7 +46,7 @@ spring:
   jpa:
 #    orm:
     mapping-resources: orm.xml
-    show-sql: true
+    show-sql: false
     hibernate:
       naming:
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
@@ -72,7 +72,7 @@ spring:
       default-schema: NHIWIDGET
       connection:
         pool_size: 100
-      show_sql: true
+      show_sql: false
       format_sql: false
       bytecode: 
         provider: javassist

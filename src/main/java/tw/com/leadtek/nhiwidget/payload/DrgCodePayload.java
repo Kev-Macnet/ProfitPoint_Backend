@@ -33,7 +33,7 @@ public class DrgCodePayload implements Serializable{
   @ApiModelProperty(value = "幾何平均住院日", example = "4", required = true)
   private Integer avgInDay;
   
-  @ApiModelProperty(value = "科別，M內科，P外科", example = "pM", required = false)
+  @ApiModelProperty(value = "科別，M內科，P外科", example = "M", required = false)
   private String dep;
   
   @ApiModelProperty(value = "下限(Lower Limit)臨界點", example = "833974", required = true)

@@ -112,7 +112,11 @@ public class JwtUtils {
   }
 
   public String getUserID(String token) {
-    String result = String.valueOf((Double)getClaimsFromToken(token).get(CLAIM_KEY_USER_ID));
+    Claims claims = getClaimsFromToken(token);
+    if (claims == null) {
+      return null;
+    }
+    String result = String.valueOf((Double) claims.get(CLAIM_KEY_USER_ID));
     if (result != null && result.endsWith(".0")) {
       result = result.substring(0, result.length() - 2);
     }

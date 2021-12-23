@@ -45,7 +45,8 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         Claims claims = jwtUtils.getClaimsFromToken(jwt);
         String username = jwtUtils.getUsernameFromClaims(claims);
         // 確認用戶是否要編輯病歷
-        boolean isEditing = request.getRequestURI().indexOf("/nhixml/mr/") >= 0 && "POST".equals(request.getMethod());
+        boolean isEditing = request.getRequestURI().indexOf("/nhixml/mr/") >= 0 && 
+            ("POST".equals(request.getMethod()) || "PUT".equals(request.getMethod()));
         if (!userService.updateUserAlive(username, jwt, isEditing)) {
           response.sendError(HttpStatus.UNAUTHORIZED.value(), "token已失效");
         }

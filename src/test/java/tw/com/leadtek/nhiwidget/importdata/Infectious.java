@@ -36,7 +36,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
+import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
 
@@ -59,6 +61,9 @@ public class Infectious {
   
   @Autowired
   private CODE_TABLEDao ctDao;
+  
+  @Autowired
+  private ICD10Dao icdDao;
 
   @Ignore
   @Test
@@ -188,6 +193,7 @@ public class Infectious {
             ct.setId(ctDB.getId());
           }
           ctDao.save(ct);
+          updateICD10(ct);
         }
         total++;
       }
@@ -200,5 +206,15 @@ public class Infectious {
       logger.error("import excel failed", e);
       e.printStackTrace();
     }
+  }
+  
+  public void updateICD10(CODE_TABLE ct) {
+    ICD10 icd = icdDao.findByCode(ct.getCode());
+    if (icd == null) {
+      return;
+    }
+    icd.setInfectious(1);
+    icd.setInfCat(ct.getParentCode());
+    icdDao.save(icd);
   }
 }

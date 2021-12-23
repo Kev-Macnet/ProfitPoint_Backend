@@ -93,11 +93,11 @@ public class BaseController {
       c.getDeclaredMethod("get" + functionName, (Class<?>[])new Class[]{});
       return true;
     } catch (ClassNotFoundException e) {
-      e.printStackTrace();
+      //e.printStackTrace();
     } catch (NoSuchMethodException e) {
-      e.printStackTrace();
+      //e.printStackTrace();
     } catch (SecurityException e) {
-      e.printStackTrace();
+      //e.printStackTrace();
     }
     return false;
   }

@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.model.rdb;
 
+import java.io.Serializable;
 import java.util.Date;
 import javax.persistence.Basic;
 import javax.persistence.Column;
@@ -11,7 +12,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -20,7 +20,10 @@ import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
 @ApiModel("支付標準代碼")
 @Table(name = "PAY_CODE")
 @Entity
-public class PAY_CODE {
+public class PAY_CODE implements Serializable {
+
+  
+  private static final long serialVersionUID = -4138986327884237230L;
 
   @ApiModelProperty(value = "存在DB的id", example = "1", required = false)
   @Id

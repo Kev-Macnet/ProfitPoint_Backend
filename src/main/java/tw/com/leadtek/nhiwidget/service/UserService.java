@@ -5,6 +5,7 @@ package tw.com.leadtek.nhiwidget.service;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,7 +26,6 @@ import tw.com.leadtek.nhiwidget.dao.USER_DEPARTMENTDao;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.model.rdb.USER_DEPARTMENT;
-import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.UserRequest;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
@@ -77,7 +77,7 @@ public class UserService {
   @Value("${jwt.afk}")
   private long afkTime;
 
-  private HashMap<Long, DEPARTMENT> departments;
+  private HashMap<Long, DEPARTMENT> departmentHash;
 
   private void retrieveData() {
     HashMap<Long, DEPARTMENT> newDepartments = new HashMap<Long, DEPARTMENT>();
@@ -85,7 +85,7 @@ public class UserService {
     for (DEPARTMENT department : departmentList) {
       newDepartments.put(department.getId(), department);
     }
-    departments = newDepartments;
+    departmentHash = newDepartments;
   }
 
   public USER newUser(UserRequest ur) {
@@ -226,7 +226,7 @@ public class UserService {
 
   public String updateDepartment(DEPARTMENT department) {
     Optional<DEPARTMENT> optional = departmentDao.findById(department.getId());
-    if (optional == null) {
+    if (!optional.isPresent()) {
       return "帳號不存在";
     }
     DEPARTMENT existDepartment = optional.get();
@@ -240,9 +240,10 @@ public class UserService {
       existDepartment.setStatus(department.getStatus());
       existDepartment.setUpdateAt(new Date());
       departmentDao.save(existDepartment);
+      departmentHash.put(department.getId(), existDepartment);
     } catch (Exception e) {
       e.printStackTrace();
-      return "更新刪除有誤";
+      return "更新帳號有誤";
     }
     return null;
   }
@@ -279,7 +280,7 @@ public class UserService {
   }
 
   public DEPARTMENT newDepartment(DEPARTMENT department) {
-    if (departments == null) {
+    if (departmentHash == null) {
       retrieveData();
     }
     DEPARTMENT existDepartment = findDepartment(department.getName());
@@ -288,7 +289,7 @@ public class UserService {
     }
     department.setUpdateAt(new Date());
     DEPARTMENT result = departmentDao.save(department);
-    departments.put(result.getId(), result);
+    departmentHash.put(result.getId(), result);
     return result;
   }
 
@@ -298,7 +299,7 @@ public class UserService {
   }
 
   public String deleteDepartment(Long id) {
-    departments.remove(id);
+    departmentHash.remove(id);
     Optional<DEPARTMENT> existDepartment = departmentDao.findById(id);
     if (!existDepartment.isPresent()) {
       return "部門id不存在";
@@ -309,7 +310,7 @@ public class UserService {
 
   //@PreAuthorize("hasAuthority('B')")
   public List<UserRequest> getAllUser(String funcType, String funcTypeC, String rocId, String name) {
-    if (departments == null) {
+    if (departmentHash == null) {
       retrieveData();
     }
     List<UserRequest> result = new ArrayList<UserRequest>();
@@ -350,11 +351,14 @@ public class UserService {
       udList = newUserDepartmentList;
     }
     for (USER user : list) {
-      String departments = getDepartmentsByUserId(user.getId(), udList);
-      if (departments.length() == 0) {
+      HashMap<String, String> departments = getDepartmentIdAndNameByUserId(user.getId(), udList);
+      if (departments == null) {
         continue;
       }
       if (rocId != null && rocId.length() > 0) {
+        if (user.getRocId() == null) {
+          continue;
+        }
         if (!user.getRocId().startsWith(rocId)) {
           continue;
         }
@@ -369,14 +373,39 @@ public class UserService {
       UserRequest ur = new UserRequest(user);
       ur.setPassword(null);
       ur.setCreateAt(null);
-      ur.setDepartments(departments);
+      ur.setDepartments(collectionToString(departments.values(), ","));
+      ur.setDepartmentId(collectionToString(departments.keySet(), ","));
       result.add(ur);
     }
     return result;
   }
 
+  public UserRequest getUserById(Long id) {
+    if (departmentHash == null) {
+      retrieveData();
+    }
+
+    Optional<USER> optional = userDao.findById(id);
+    if (!optional.isPresent()) {
+      UserRequest result = new UserRequest();
+      result.setDisplayName("user ID:" + id + "不存在");
+      return result;
+    }
+    USER user = optional.get();
+    UserRequest result = new UserRequest(user);
+    List<USER_DEPARTMENT> udList = userDepartmentDao.findByUserIdOrderByDepartmentId(id);
+    String departments = getDepartmentsByUserId(id, udList);
+    if (departments != null && departments.length() > 0) {
+      result.setDepartments(departments);
+    }
+    result.setRocId(user.getRocId());
+    result.setPassword(null);
+    result.setCreateAt(null);
+    return result;
+  }
+
   private Long getDepartmentIdByName(String name) {
-    for (DEPARTMENT dep : departments.values()) {
+    for (DEPARTMENT dep : departmentHash.values()) {
       if ((dep.getName() != null && dep.getName().equals(name)) ||
           (dep.getNhName() != null && dep.getNhName().equals(name))) {
         return dep.getId();
@@ -386,7 +415,7 @@ public class UserService {
   }
 
   private Long getDepartmentIdByCode(String code) {
-    for (DEPARTMENT dep : departments.values()) {
+    for (DEPARTMENT dep : departmentHash.values()) {
       if ((dep.getNhCode() != null && dep.getNhCode().equals(code)) || dep.getCode().equals(code)) {
         return dep.getId();
       }
@@ -395,11 +424,11 @@ public class UserService {
   }
 
   public List<DEPARTMENT> getAllDepartment(String code, String name) {
-    if (departments == null) {
+    if (departmentHash == null) {
       retrieveData();
     }
     List<DEPARTMENT> result = new ArrayList<DEPARTMENT>();
-    List<DEPARTMENT> all = new ArrayList<DEPARTMENT>(departments.values());
+    List<DEPARTMENT> all = new ArrayList<DEPARTMENT>(departmentHash.values());
     if ((code == null || code.length() == 0) && (name == null || name.length() == 0)) {
       return all;
     }
@@ -422,13 +451,52 @@ public class UserService {
 
   private String getDepartmentsByUserId(Long id, List<USER_DEPARTMENT> udList) {
     StringBuffer sb = new StringBuffer();
+    if (udList == null || udList.size() == 0) {
+      return "";
+    }
     for (USER_DEPARTMENT ud : udList) {
       if (ud.getUserId().longValue() == id) {
-        sb.append(departments.get(ud.getDepartmentId()).getName());
+        DEPARTMENT dep = departmentHash.get(ud.getDepartmentId());
+        if (dep == null) {
+          continue;
+        }
+        sb.append(dep.getName());
         sb.append(",");
       }
     }
     if (sb.length() > 1) {
+      sb.deleteCharAt(sb.length() - 1);
+    }
+    return sb.toString();
+  }
+  
+  private HashMap<String, String> getDepartmentIdAndNameByUserId(Long id, List<USER_DEPARTMENT> udList) {
+    if (udList == null || udList.size() == 0) {
+      return null;
+    }
+    HashMap<String, String> result = new HashMap<String, String>();
+    for (USER_DEPARTMENT ud : udList) {
+      if (ud.getUserId().longValue() == id) {
+        DEPARTMENT dep = departmentHash.get(ud.getDepartmentId());
+        if (dep == null) {
+          continue;
+        }
+        result.put(dep.getCode(), dep.getName());
+      }
+    }
+    return result;
+  }
+  
+  private String collectionToString(Collection<String> set, String delimiter) {
+    StringBuffer sb = new StringBuffer();
+    for (String string : set) {
+      sb.append(string);
+      sb.append(delimiter);
+    }
+    if (sb.length() == 0) {
+      return null;
+    }
+    if (sb.charAt(sb.length() - 1) == delimiter.charAt(delimiter.length() - 1)) {
       sb.deleteCharAt(sb.length() - 1);
     }
     return sb.toString();

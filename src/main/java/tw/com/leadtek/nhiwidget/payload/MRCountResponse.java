@@ -7,7 +7,7 @@ import java.io.Serializable;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-@ApiModel("首頁用病歷總數及狀態統計回覆訊息")
+@ApiModel(value = "首頁用病歷總數及狀態統計回覆訊息", description = "all:不分門急診及住院，ip:住院相關數字，op:門急診相關數字")
 public class MRCountResponse implements Serializable {
 
   private static final long serialVersionUID = -5094371256649393992L;

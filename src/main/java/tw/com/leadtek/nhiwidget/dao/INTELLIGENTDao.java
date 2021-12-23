@@ -15,4 +15,6 @@ public interface INTELLIGENTDao extends JpaRepository<INTELLIGENT, Long>, JpaSpe
   public List<Object[]> countGroupByConditionCode();
   
   public List<INTELLIGENT> findByMrIdAndConditionCode(Long mrId, int conditionCode);
+  
+  public List<INTELLIGENT> findByMrId(Long mrId);
 }

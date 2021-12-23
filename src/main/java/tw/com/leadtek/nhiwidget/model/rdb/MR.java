@@ -46,7 +46,7 @@ public class MR {
   /**
    * 就醫科別
    */
-  @ApiModelProperty(value = "就醫科別", example = "02", required = false)
+  @ApiModelProperty(value = "就醫科別代碼", example = "02", required = false)
   @Column(name = "FUNC_TYPE", length = 2)
   protected String funcType;
 

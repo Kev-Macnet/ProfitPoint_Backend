@@ -41,22 +41,23 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.IP;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP;
 import tw.com.leadtek.nhiwidget.model.xml.OutPatient;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
+import tw.com.leadtek.nhiwidget.payload.DeductedNoteListResponse;
 import tw.com.leadtek.nhiwidget.payload.MRCountResponse;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.MrNoteListResponse;
 import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
-import tw.com.leadtek.nhiwidget.payload.my.MyTodoListResponse;
-import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
@@ -474,7 +475,7 @@ public class NHIWidgetXMLController extends BaseController {
     return ResponseEntity.ok(xmlService.getMRDetail(idL, user));
   }
   
-  @ApiOperation(value = "取得指定病歷的全部資料備註/核刪註記", notes = "取得指定病歷的全部資料備註/核刪註記")
+  @ApiOperation(value = "取得指定病歷的全部資訊備註/核刪註記", notes = "取得指定病歷的全部資訊備註/核刪註記")
   @GetMapping("/nhixml/mrNote/{id}")
   public ResponseEntity<MrNoteListResponse> getMRNote(
       @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id,
@@ -498,11 +499,11 @@ public class NHIWidgetXMLController extends BaseController {
     return ResponseEntity.ok(xmlService.getMRNote(idL, user, isNote));
   }
   
-  @ApiOperation(value = "取得指定病歷的全部資料備註/核刪註記", notes = "取得指定病歷的全部資料備註/核刪註記")
+  @ApiOperation(value = "取得指定病歷的全部資訊備註", notes = "取得指定病歷的全部資訊備註")
   @GetMapping("/nhixml/note/{id}")
   public ResponseEntity<MrNoteListResponse> getAllMRNote(
       @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id,
-      @ApiParam(name = "isNote", value = "病歷id", example = "true") @RequestParam(required = true) Boolean isNote) {
+      @ApiParam(name = "isNote", value = "true:資料備註", example = "true") @RequestParam(defaultValue = "true", required = false) Boolean isNote) {
     long idL = 0;
     try {
       idL = Long.parseLong(id);
@@ -562,14 +563,14 @@ public class NHIWidgetXMLController extends BaseController {
   @ApiOperation(value = "更新指定病歷", notes = "更新指定病歷")
   @PutMapping("/nhixml/mr/{id}")
   public ResponseEntity<MRDetail> updateMRDetail(@RequestHeader("Authorization") String jwt,
-      @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id,
+      @ApiParam(name = "id", value = "病歷id", example = "146020") @PathVariable String id,
       @ApiParam(name = "mrDetail",
           value = "病歷詳細資訊") @RequestBody(required = true) MRDetail mrDetail) {
     logger.info("=========/nhixml/mr/{" + id + "} =============================");
     mrDetail.setId(Long.parseLong(id));
     String token = jwt.split(" ")[1];
     MRDetail result = xmlService.updateMRDetail(mrDetail, token);
-    if (result == null) {
+    if (result.getError() == null) {
       return ResponseEntity.ok(result);
     } else {
       return ResponseEntity.badRequest().body(result);
@@ -638,7 +639,7 @@ public class NHIWidgetXMLController extends BaseController {
     return ResponseEntity.ok(response);
   }
 
-  @ApiOperation(value = "新增病歷資訊備註/核刪註記", notes = "新增病歷資訊備註/核刪註記")
+  @ApiOperation(value = "新增病歷資訊備註", notes = "新增病歷資訊備註")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/nhixml/note")
@@ -660,7 +661,7 @@ public class NHIWidgetXMLController extends BaseController {
     request.setNote(note);
     request.setEditor(user.getUsername());
     request.setActionType("新增");
-    return returnAPIResult(xmlService.newMrNote(request, id, isNote, false));
+    return returnAPIResult(xmlService.newMrNote(request, id, false));
   }
 
   @ApiOperation(value = "修改病歷資訊備註/核刪註記", notes = "修改病歷資訊備註/核刪註記")
@@ -685,20 +686,18 @@ public class NHIWidgetXMLController extends BaseController {
     request.setNote(note);
     request.setEditor(user.getUsername());
     request.setActionType("修改");
-    return returnAPIResult(xmlService.newMrNote(request, id, isNote, false));
+    return returnAPIResult(xmlService.newMrNote(request, id, false));
   }
 
-  @ApiOperation(value = "刪除病歷資訊備註/核刪註記", notes = "刪除病歷資訊備註/核刪註記")
+  @ApiOperation(value = "刪除病歷資訊備註", notes = "刪除病歷資訊備註")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @DeleteMapping("/nhixml/note")
   public ResponseEntity<BaseResponse> deleteMrNote(
       @ApiParam(name = "id", value = "病歷id",
           example = "13220") @RequestParam(required = true) String id,
-      @ApiParam(name = "isNote", value = "是否為病歷資訊備註，true:是，false:否",
-          example = "13220") @RequestParam(required = true) Boolean isNote,
-      @ApiParam(name = "note", value = "備註內容",
-          example = "刪除測試") @RequestParam(required = false) String note) {
+      @ApiParam(name = "noteId", value = "註記id",
+      example = "8") @RequestParam(required = true) String noteId) {
     UserDetailsImpl user = getUserDetails();
     if (user == null) {
       BaseResponse br = new BaseResponse();
@@ -707,10 +706,10 @@ public class NHIWidgetXMLController extends BaseController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
     }
     MrNotePayload request = new MrNotePayload();
-    request.setNote(note);
+    request.setId(Long.parseLong(noteId));
     request.setEditor(user.getUsername());
     request.setActionType("刪除");
-    return returnAPIResult(xmlService.newMrNote(request, id, isNote, true));
+    return returnAPIResult(xmlService.newMrNote(request, id, true));
   }
 
   public String addAllFuncType(String funcType, String funcTypeC) {
@@ -751,8 +750,8 @@ public class NHIWidgetXMLController extends BaseController {
     }
     return sb.toString();
   }
-
-  @ApiOperation(value = "發送通知", notes = "發送通知")
+  
+  @ApiOperation(value = "發送一筆病歷通知", notes = "發送通知")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @PostMapping(value = "/nhixml/sendNotice/{id}")
   public ResponseEntity<BaseResponse> sendNotice(@PathVariable String id, 
@@ -773,7 +772,40 @@ public class NHIWidgetXMLController extends BaseController {
     return returnAPIResult(xmlService.sendNotice(idL, user, doctorId));
   }
   
-  @ApiOperation(value = "新增病歷", notes = "新增病歷")
+  @ApiOperation(value = "發送多筆病歷通知", notes = "發送通知")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @PostMapping(value = "/nhixml/sendNotice")
+  public ResponseEntity<BaseResponse> sendManyNotice( 
+      @ApiParam(value = "病歷id，若多筆用空格隔開", example = "1306412 1306413 1306414") 
+      @RequestParam(required = true) String id,
+      @ApiParam(name = "doctorId", value = "接收對象id，若多筆用空格隔開",
+      example = "425 426 427") @RequestParam(required = true) String doctorId) {
+    
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new BaseResponse(BaseResponse.ERROR, "無法取得登入狀態"));
+    }
+    
+    String[] ids = xmlService.splitBySpace(id);
+    if (ids == null || ids.length == 0) {
+      return returnAPIResult("病歷id有誤");
+    }
+    long idL = 0;
+    try {
+      for (String string : ids) {
+        idL = Long.parseLong(string);
+        String result = xmlService.sendNotice(idL, user, doctorId);
+        if (result != null) {
+          return returnAPIResult(result);
+        }
+      }
+    } catch (NumberFormatException e) {
+      return returnAPIResult("病歷id格式不正確");
+    }
+    return returnAPIResult(null);
+  }
+  
+  @ApiOperation(value = "測試用：新增病歷", notes = "新增病歷")
   @PostMapping("/nhixml/mrdetail")
   public ResponseEntity<MRDetail> addMRDetail(
       @ApiParam(name = "mrDetail", value = "病歷詳細資訊") @RequestBody(required = true) MRDetail mrDetail) {
@@ -783,5 +815,88 @@ public class NHIWidgetXMLController extends BaseController {
     } else {
       return ResponseEntity.badRequest().body(result);
     }
+  }
+  
+  @ApiOperation(value = "新增病歷核刪註記", notes = "新增病歷核刪註記")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @PostMapping("/nhixml/deductedNote")
+  public ResponseEntity<BaseResponse> newDeductedNote(
+      @ApiParam(value = "病歷id",
+          example = "161633") @RequestParam(required = true) String mrId,
+      @ApiParam(value = "核刪註記內容") @RequestBody(required = true) DEDUCTED_NOTE note) {
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse br = new BaseResponse();
+      br.setResult("failed");
+      br.setMessage("未登入，無法執行");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
+    }
+    
+    note.setEditor(user.getUsername());
+    note.setActionType(ACTION_TYPE.ADD.value());
+    return returnAPIResult(xmlService.newDeductedNote(mrId, note));
+  }
+  
+  @ApiOperation(value = "取得指定病歷的全部核刪註記", notes = "取得指定病歷的全部核刪註記")
+  @GetMapping("/nhixml/deductedNote")
+  public ResponseEntity<DeductedNoteListResponse> getAllDeductedNote(
+      @ApiParam(value = "病歷id", example = "161633") @RequestParam String mrId) {
+    long idL = 0;
+    try {
+      idL = Long.parseLong(mrId);
+    } catch (NumberFormatException e) {
+      DeductedNoteListResponse result = new DeductedNoteListResponse();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("id格式不正確");
+      return ResponseEntity.badRequest().body(result);
+    }
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      DeductedNoteListResponse result = new DeductedNoteListResponse();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("無法取得登入狀態");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    }
+    return ResponseEntity.ok(xmlService.getDeductedNoteResponse(idL, false));
+  }
+  
+  @ApiOperation(value = "更新指定病歷的核刪註記內容", notes = "更新指定病歷的核刪註記內容")
+  @PutMapping("/nhixml/deductedNote")
+  public ResponseEntity<BaseResponse> updateDeductedNote(
+      @ApiParam(value = "核刪註記內容") @RequestBody(required = true) DEDUCTED_NOTE note) {
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse br = new BaseResponse();
+      br.setMessage("無法取得登入狀態");
+      br.setResult(BaseResponse.ERROR);
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
+    }
+    note.setEditor(user.getUsername());
+    return returnAPIResult(xmlService.updateDeductedNote(note));
+  }
+  
+  @ApiOperation(value = "刪除核刪註記內容", notes = "刪除核刪註記內容")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
+      @ApiResponse(responseCode = "400", description = "資料不存在")})
+  @DeleteMapping("/nhixml/deductedNote")
+  public ResponseEntity<BaseResponse> deleteDeductedNote(
+      @ApiParam(value = "核刪註記id",
+      example = "8") @RequestParam(required = true) String noteId) {
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse br = new BaseResponse();
+      br.setResult("failed");
+      br.setMessage("未登入，無法執行");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
+    }
+    long noteIdL = 0;
+    try {
+      noteIdL = Long.parseLong(noteId);
+    } catch (NumberFormatException e) {
+      return returnAPIResult("noteId 格式有誤");
+    }
+    
+    return returnAPIResult(xmlService.deleteDeductedNote(user.getUsername(), noteIdL));
   }
 }

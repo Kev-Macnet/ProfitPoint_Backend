@@ -65,7 +65,7 @@ public class OrderCode extends CodeBaseLongId {
       setDescEn(descEn);
     }
     setDesc(desc);
-    this.category = "ORDER";
+    super.category = "ORDER";
   }
 
   public int getP() {

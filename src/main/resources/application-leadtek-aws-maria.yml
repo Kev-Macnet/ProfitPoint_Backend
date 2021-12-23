@@ -7,7 +7,7 @@ server:
     max-http-form-post-size: 124857600
     threads:
       max: 1000
-  max-http-header-size: 124857600
+  max-http-header-size: 40KB
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css

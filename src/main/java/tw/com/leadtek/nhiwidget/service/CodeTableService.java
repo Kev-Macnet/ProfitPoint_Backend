@@ -72,7 +72,7 @@ public class CodeTableService {
     }
     for (String string : REDIS_CAT) {
       if (string.equals(cat)) {
-        List<JsonSuggestion> list = redis.query(cat, code.toLowerCase());
+        List<JsonSuggestion> list = redis.query(cat, code.toLowerCase(), false);
         if (list.size() > 0) {
           CODE_TABLE result = new CODE_TABLE();
           result.setCat(cat);

@@ -158,8 +158,9 @@ public class ParametersService {
 
         List<Predicate> predicate = new ArrayList<Predicate>();
         if (sdate != null && edate != null) {
-          predicate.add(cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), edate),
-              cb.lessThanOrEqualTo(root.get("startDate"), sdate)));
+          // 啟始日 >= sdate,啟始日 <= edate
+          predicate.add(cb.and(cb.lessThanOrEqualTo(root.get("startDate"), edate),
+              cb.greaterThanOrEqualTo(root.get("startDate"), sdate)));
         }
         if (predicate.size() > 0) {
           Predicate[] pre = new Predicate[predicate.size()];
@@ -485,7 +486,7 @@ public class ParametersService {
     }
   }
 
-  public ParameterListPayload getParameterValue(String name, Date sDate, Date eDate, String orderBy,
+  public ParameterListPayload getParameterValue(String name, Date sdate, Date edate, String orderBy,
       Boolean asc, int perPage, int page) {
     ParameterListPayload result = new ParameterListPayload();
 
@@ -496,14 +497,18 @@ public class ParametersService {
       public Predicate toPredicate(Root<PARAMETERS> root, CriteriaQuery<?> query,
           CriteriaBuilder cb) {
 
-        if (sDate != null && eDate != null) {
-          query.where(cb.and(cb.equal(root.get("name"), name),
-              cb.between(root.get("startDate"), sDate, eDate),
-              cb.between(root.get("endDate"), sDate, eDate)));
-        } else {
-          query.where(cb.equal(root.get("name"), name));
+        List<Predicate> predicate = new ArrayList<Predicate>();
+        if (sdate != null && edate != null) {
+//          predicate.add(cb.and(cb.lessThanOrEqualTo(root.get("endDate"), edate),
+//              cb.greaterThanOrEqualTo(root.get("startDate"), sdate)));
+          // 啟始日 >= sdate,啟始日 <= edate
+          predicate.add(cb.and(cb.lessThanOrEqualTo(root.get("startDate"), edate),
+              cb.greaterThanOrEqualTo(root.get("startDate"), sdate)));
         }
-
+        predicate.add(cb.equal(root.get("name"), name));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        
         List<Order> orderList = new ArrayList<Order>();
         if (orderBy != null && asc != null) {
           if (asc.booleanValue()) {
@@ -895,6 +900,24 @@ public class ParametersService {
    * @param list
    * @param cal
    */
+  private void moveEndDateInAdvanceCodeThreshold(List<CODE_THRESHOLD> list, Date endDate) {
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(endDate);
+    cal.add(Calendar.DAY_OF_YEAR, -1);
+    for (CODE_THRESHOLD ct : list) {
+      if (ct.getStartDate().before(cal.getTime())) {
+        ct.setEndDate(cal.getTime());
+        codeThresholdDao.save(ct);
+      }
+    }
+  }
+  
+  /**
+   * 將參數的結束日往前移一天
+   * 
+   * @param list
+   * @param cal
+   */
   private void moveEndDateInAdvanceAssignedPoint(List<ASSIGNED_POINT> list, Date endDate) {
     Calendar cal = Calendar.getInstance();
     cal.setTime(endDate);
@@ -903,6 +926,24 @@ public class ParametersService {
       if (ap.getStartDate().before(cal.getTime())) {
         ap.setEndDate(cal.getTime());
         assignedPointDao.save(ap);
+      }
+    }
+  }
+  
+  /**
+   * 將參數的結束日往前移一天
+   * 
+   * @param list
+   * @param cal
+   */
+  private void moveEndDateInAdvanceCodeConflict(List<CODE_CONFLICT> list, Date endDate) {
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(endDate);
+    cal.add(Calendar.DAY_OF_YEAR, -1);
+    for (CODE_CONFLICT cc : list) {
+      if (cc.getStartDate().before(cal.getTime())) {
+        cc.setEndDate(cal.getTime());
+        codeConflictDao.save(cc);
       }
     }
   }
@@ -1288,7 +1329,6 @@ public class ParametersService {
 
     db.setUpdateAt(new Date());
     db = codeThresholdDao.save(db);
-    System.out.println("code type=" + db.getCodeType());
     return null;
   }
 
@@ -1329,15 +1369,20 @@ public class ParametersService {
    */
   public boolean checkTimeOverwrite(List<CODE_THRESHOLD> list, CODE_THRESHOLD db,
       boolean checkSameId) {
+    List<CODE_THRESHOLD> needProcessList = new ArrayList<CODE_THRESHOLD>();
     for (CODE_THRESHOLD rareIcd : list) {
       if (checkSameId) {
         if (rareIcd.getId().longValue() == db.getId()) {
           continue;
         }
       }
+      if (db.getStartDate().getTime() == rareIcd.getStartDate().getTime()) {
+        return true;
+      }
       if (db.getStartDate().getTime() >= rareIcd.getStartDate().getTime()
           && db.getStartDate().getTime() <= rareIcd.getEndDate().getTime()) {
-        return true;
+        needProcessList.add(rareIcd);
+        continue;
       }
       if (db.getEndDate().getTime() <= rareIcd.getEndDate().getTime()
           && db.getEndDate().getTime() >= rareIcd.getStartDate().getTime()) {
@@ -1348,6 +1393,7 @@ public class ParametersService {
         return true;
       }
     }
+    moveEndDateInAdvanceCodeThreshold(needProcessList, db.getStartDate());
     return false;
   }
 
@@ -1418,6 +1464,44 @@ public class ParametersService {
     return false;
   }
 
+  /**
+   * 檢查該參數設定是否有和其他時段重疊
+   * 
+   * @param list
+   * @param startDate
+   * @param endDate
+   * @param id
+   * @return true:有重疊，false:無
+   */
+  public boolean checkTimeOverwriteCodeConfilct(List<CODE_CONFLICT> list, long startDate,
+      long endDate, Long id) {
+    System.out.println("checkTimeOverwriteCodeConfilct");
+    if (list == null) {
+      return false;
+    }
+    List<CODE_CONFLICT> needProcessList = new ArrayList<CODE_CONFLICT>();
+    for (CODE_CONFLICT p : list) {
+      if (id != null && id.longValue()> 0 && p.getId().longValue() == id.longValue()) {
+        continue;
+      }
+      if (startDate == p.getStartDate().getTime()) {
+        return true;
+      }
+      if (startDate >= p.getStartDate().getTime() && startDate <= p.getEndDate().getTime()) {
+        needProcessList.add(p);
+        continue;
+      }
+      if (endDate <= p.getEndDate().getTime() && endDate >= p.getStartDate().getTime()) {
+        return true;
+      }
+      if (endDate >= p.getEndDate().getTime() && startDate <= p.getStartDate().getTime()) {
+        return true;
+      }
+    }
+    moveEndDateInAdvanceCodeConflict(needProcessList, new Date(startDate));
+    return false;
+  }
+  
   public SameATCListResponse getSameATCFromPayCode(String code, String inhCode, String atc,
       String orderBy, Boolean asc, int perPage, int page) {
     SameATCListResponse result = new SameATCListResponse();
@@ -1567,13 +1651,9 @@ public class ParametersService {
     List<CODE_CONFLICT> list =
         codeConflictDao.findByCodeAndOwnExpCode(cc.getCode(), cc.getOwnCode());
     if (list != null && list.size() > 0) {
-      for (CODE_CONFLICT code_CONFLICT : list) {
-        if (checkSameId && code_CONFLICT.getId().longValue() == cc.getId().longValue()) {
-          continue;
-        }
-        if (code_CONFLICT.getStartDate().getTime() == cc.getSdate().getTime()) {
-          return "生效日已有相同的並存設定";
-        }
+      if (checkTimeOverwriteCodeConfilct(list, cc.getSdate().getTime(),
+          cc.getEdate().getTime(), cc.getId())) {
+        return "該時段有相同的罕見ICD代碼！";
       }
     }
     codeConflictDao.save(cc.toDB());

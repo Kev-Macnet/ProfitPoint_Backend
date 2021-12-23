@@ -10,6 +10,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -130,6 +131,25 @@ public class UserController extends BaseController {
     }
   }
 
+  @ApiOperation(value = "取得指定id帳號資訊", notes = "取得指定id帳號資訊")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/user/{id}")
+  public ResponseEntity<UserRequest> getUserById(
+      @ApiParam(name = "id", value = "user id", example = "1") @PathVariable String id) {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    Object obj = authentication.getPrincipal();
+    if (obj instanceof String) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new UserRequest("無法其他帳號資訊"));
+    }
+    UserDetailsImpl userDetail = (UserDetailsImpl) obj;
+    Long idL = 0L;
+    idL = Long.parseLong(id);
+    if (userDetail.getId().longValue() != idL.longValue()) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new UserRequest("無法其他帳號資訊"));
+    }
+    return ResponseEntity.ok(userService.getUserById(idL));
+  }
+  
   @ApiOperation(value = "取得所有帳號", notes = "取得所有帳號")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/user")
@@ -141,12 +161,14 @@ public class UserController extends BaseController {
       @RequestParam(required = false) String funcTypec,
       @ApiParam(name = "rocId", value = "醫護代碼", example = "00") @RequestParam(required = false) String rocId,
       @ApiParam(name = "name", value = "醫護名稱",
-      example = "王小明") @RequestParam(required = false) String name) {
+      example = "王小明") @RequestParam(required = false) String name,
+      @ApiParam(value = "帳號角色，E:醫護人員，D:申報人員，F:使用者清單",
+      example = "E") @RequestParam(required = false) String role) {
     // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     // System.out.println("currentPrincipalName:" + authentication.getName());
     // UserDetailsImpl userDetail = (UserDetailsImpl) authentication.getPrincipal();
     // System.out.println(userDetail.getEmail());
-	  String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
+      String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
     return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeChinese, rocId, name));
   }
 

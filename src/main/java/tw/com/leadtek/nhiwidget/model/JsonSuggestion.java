@@ -27,7 +27,7 @@ public class JsonSuggestion {
   
   public JsonSuggestion(CodeBaseLongId cb) {
     if (cb.getCategory() != null) {
-      this.id = cb.getCategory() + ":" + cb.getCode();
+      this.id = cb.getCategory() + ":" + cb.getCode().toUpperCase();
     } else {
       this.id = cb.getCode();
     }

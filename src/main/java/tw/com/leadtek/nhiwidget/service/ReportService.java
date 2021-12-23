@@ -110,7 +110,9 @@ public class ReportService {
     result.setCurrent(pointMonthlyDao.findByYm(year * 100 + month));
     result.setLastM(pointMonthlyDao.findByYm(lastM));
     result.setLastY(pointMonthlyDao.findByYm((year - 1) * 100 + month));
-    result.calculateDifference();
+    if (result.getCurrent() != null) {
+      result.calculateDifference();
+    }
 
     return result;
   }
@@ -138,6 +140,10 @@ public class ReportService {
     return result;
   }
 
+  /**
+   * 計算指定年月的單月健保點數總表
+   * @param ym
+   */
   public void calculatePointMR(String ym) {
     String chineseYM = ymToROCYM(ym);
     String adYM = ymToADYM(ym);
@@ -506,6 +512,37 @@ public class ReportService {
       return pointWeeklyDao.save(pw);
     }
     return null;
+  }
+  
+  public void calculatePointWeekly(Calendar startCal) {
+    Calendar cal = Calendar.getInstance();
+    cal.set(Calendar.YEAR, startCal.get(Calendar.YEAR));
+    cal.set(Calendar.MONTH, startCal.get(Calendar.MONTH));
+    cal.set(Calendar.DAY_OF_YEAR, startCal.get(Calendar.DAY_OF_YEAR));
+
+    if (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
+      cal.add(Calendar.DAY_OF_YEAR, Calendar.SUNDAY - cal.get(Calendar.DAY_OF_WEEK));
+    }
+    List<Object[]> list = mrDao.findDRGAllFuncType();
+    List<String> funcTypes = new ArrayList<String>();
+    for (Object[] obj : list) {
+      funcTypes.add((String) obj[0]);
+    }
+    //funcTypes.add(0, ReportService.FUNC_TYPE_ALL);
+    
+    do {
+      Date start = cal.getTime();
+      cal.add(Calendar.DAY_OF_YEAR, 6);
+      Date end = cal.getTime();
+
+      POINT_WEEKLY pw = calculatePointByWeek(start, end);
+      if (pw == null || pw.getIp().longValue() + pw.getOp().longValue() == 0) {
+        break;
+      }
+      calculateDRGPointByWeek(start, end, funcTypes);
+      System.out.println("year=" + pw.getPyear() + "," + pw.getPweek() + "," + pw.getStartDate() + "," + pw.getEndDate());
+      cal.add(Calendar.DAY_OF_YEAR, 1);
+    } while (true);
   }
 
   public void calculateDRGPointByWeek(Date sdate, Date edate, List<String> funcTypes) {
