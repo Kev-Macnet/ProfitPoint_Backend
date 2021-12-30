@@ -7,13 +7,13 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 
-@ApiModel("用戶帳號")
+@ApiModel("用戶帳號Response")
 public class UserRequest extends USER {
   
-  @ApiModelProperty(value = "所屬部門，若有一個以上，用,區隔", example ="骨科,急診醫學科", required = true)
+  @ApiModelProperty(value = "所屬部門，若有一個以上，用逗號區隔", example ="骨科，急診醫學科", required = true)
   protected String departments;
   
-  @ApiModelProperty(value = "所屬部門代碼，若有一個以上，用,區隔", example ="88,22", required = true)
+  @ApiModelProperty(value = "所屬部門代碼，若有一個以上，用逗號區隔", example ="88，22", required = true)
   protected String departmentId;
   
   public UserRequest() {

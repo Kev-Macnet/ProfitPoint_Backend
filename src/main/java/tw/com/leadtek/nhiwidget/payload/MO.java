@@ -56,7 +56,7 @@ public class MO implements Serializable {
   @ApiModelProperty(value = "點數", required = false)
   private Integer totalDot;
   
-  @ApiModelProperty(value = "費用狀態，N:健保計價申報 ...", required = false)
+  @ApiModelProperty(value = "費用狀態，註記用。N:健保計價申報，Y:自費計價 ...", required = false)
   private String payBy;
   
   @ApiModelProperty(value = "申報狀態，0:不申報，1:要申報", required = false)

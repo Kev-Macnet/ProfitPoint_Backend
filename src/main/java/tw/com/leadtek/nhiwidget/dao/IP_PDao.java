@@ -55,7 +55,7 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
    * @return [醫令代碼]
    */
   @Query(value = "SELECT DISTINCT(ORDER_CODE) FROM IP_P " + 
-      "WHERE ORDER_CODE IN (SELECT CODE FROM PAY_CODE) AND PAY_CODE_TYPE IS NULL", nativeQuery = true)
+      "WHERE ORDER_CODE IN (SELECT CODE FROM PAY_CODE) ", nativeQuery = true)
   public List<Object[]> findDistinctOrderCode();
   
   @Transactional

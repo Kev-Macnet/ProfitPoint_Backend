@@ -213,7 +213,7 @@ public class TestXML {
    * 匯入XML tag定義檔，至用到的常數
    */
   //@Ignore
-  @Test
+  //@Test
   public void readExcel() {
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\inpatient.xlsx", "IP");
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\outpatient.xlsx", "OP");
@@ -743,20 +743,21 @@ public class TestXML {
   /**
    * 更新IP_P, OP_P 醫令的標準代碼類別代碼
    */
-  @Ignore
+  //@Ignore
   @Test
   public void updateCodeTypeCode() {
+    System.out.println("updateCodeTypeCode");
     // 1. 先將 OP_P.DRUG_NO 長度=10 的列為藥品類
     // UPDATE OP_P SET PAY_CODE_TYPE = '7' WHERE LENGTH(DRUG_NO) = 10 
     // 2. 再將 OP_P.DRUG_NO 長度>10 的列為不分類
     // UPDATE OP_P SET PAY_CODE_TYPE = '20' WHERE LENGTH(DRUG_NO) > 10
     // 3. 其餘找 OP_P.DRUG_NO = PAY_CODE.CODE 的 CODE_TYPE
    
-    List<Object[]> codeList = payCodeDao.findAllPayCodeAndTypeCode();
-    HashMap<String, String> payCodeType = new HashMap<String, String>();
-    for (Object[] objects : codeList) {
-      payCodeType.put((String)objects[0], (String) objects[1]);
-    }
+//    List<Object[]> codeListOP = payCodeDao.findOPAllPayCodeAndTypeCode();
+//    HashMap<String, String> payCodeType = new HashMap<String, String>();
+//    for (Object[] objects : codeListOP) {
+//      payCodeType.put((String)objects[0], (String) objects[1]);
+//    }
 //    
     List<String> codes = new ArrayList<String>();
 //    List<Object[]> oppDrugNo = oppDao.findDistinctDrugNo();
@@ -781,6 +782,13 @@ public class TestXML {
     // 6. 再將 IP_P.ORDER_CODE 長度>10 的列為不分類
     // UPDATE IP_P SET PAY_CODE_TYPE = '20' WHERE LENGTH(ORDER_CODE) > 10
     // 7. 其餘找 IP_P.ORDER_CODE = PAY_CODE.CODE 的 CODE_TYPE
+    
+    List<Object[]> codeListIP = payCodeDao.findIPAllPayCodeAndTypeCode();
+    System.out.println("codeListIP size=" + codeListIP.size());
+    HashMap<String, String> payCodeType = new HashMap<String, String>();
+    for (Object[] objects : codeListIP) {
+      payCodeType.put((String)objects[0], (String) objects[1]);
+    }
     
     codes = new ArrayList<String>();
     List<Object[]> ippOrderCode = ippDao.findDistinctOrderCode();

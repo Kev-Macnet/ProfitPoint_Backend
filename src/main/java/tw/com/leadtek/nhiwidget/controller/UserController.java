@@ -35,6 +35,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -71,7 +72,8 @@ public class UserController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),
       @ApiResponse(responseCode = "400", description = "已有相同的名稱")})
   @PostMapping("/auth/user")
-  public ResponseEntity<BaseResponse> newUser(@RequestBody UserRequest request) {
+  public ResponseEntity<BaseResponse> newUser(
+      @ApiParam(value = "帳號內容") @RequestBody(required = true) UserRequest request) {
     // public boolean addSynonym(Synonym synonym, List<SynonymField> details) {
     logger.info("/newUser:" + request.getUsername() + "," + request);
     USER result = userService.newUser(request);
@@ -118,7 +120,7 @@ public class UserController extends BaseController {
   @PutMapping("/user/{id}")
   public ResponseEntity<BaseResponse> updateUser(
       @ApiParam(name = "id", value = "帳號id", example = "1") @PathVariable String id,
-      @RequestBody UserRequest request, Principal principal) {
+      @RequestBody UserRequest request) {
     String updateId = HtmlUtils.htmlEscape(id, "UTF-8");
     try {
       Long lid = Long.parseLong(updateId);
@@ -139,13 +141,13 @@ public class UserController extends BaseController {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     Object obj = authentication.getPrincipal();
     if (obj instanceof String) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new UserRequest("無法其他帳號資訊"));
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new UserRequest("未登入，無法取得資訊"));
     }
     UserDetailsImpl userDetail = (UserDetailsImpl) obj;
     Long idL = 0L;
     idL = Long.parseLong(id);
     if (userDetail.getId().longValue() != idL.longValue()) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new UserRequest("無法其他帳號資訊"));
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new UserRequest("未登入，無法取得資訊"));
     }
     return ResponseEntity.ok(userService.getUserById(idL));
   }
@@ -159,17 +161,19 @@ public class UserController extends BaseController {
       example = "不分科") @RequestParam(required = false) String funcTypeC,
       @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...", example = "家醫科") 
       @RequestParam(required = false) String funcTypec,
-      @ApiParam(name = "rocId", value = "醫護代碼", example = "00") @RequestParam(required = false) String rocId,
+      @ApiParam(name = "rocId", value = "醫護代碼rocId或inhId都可", example = "00") @RequestParam(required = false) String rocId,
+      @ApiParam(name = "inhId", value = "醫護代碼rocId或inhId都可", example = "00") @RequestParam(required = false) String inhId,
       @ApiParam(name = "name", value = "醫護名稱",
       example = "王小明") @RequestParam(required = false) String name,
-      @ApiParam(value = "帳號角色，E:醫護人員，D:申報人員，F:使用者清單",
-      example = "E") @RequestParam(required = false) String role) {
+      @ApiParam(value = "帳號權限，E:醫護人員，D:申報人員，U:使用者清單",
+      example = "E") @RequestParam(required = false, defaultValue = "E") String role) {
     // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     // System.out.println("currentPrincipalName:" + authentication.getName());
     // UserDetailsImpl userDetail = (UserDetailsImpl) authentication.getPrincipal();
     // System.out.println(userDetail.getEmail());
+      String id = (rocId == null) ? inhId : rocId;
       String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
-    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeChinese, rocId, name));
+    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeChinese, id, name, role));
   }
 
   @ApiOperation(value = "更換密碼", notes = "更換密碼")
@@ -198,7 +202,7 @@ public class UserController extends BaseController {
   @ApiOperation(value = "登出", notes = "登出，將 session 清空")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "登出成功")})
   @ApiImplicitParams({
-      @ApiImplicitParam(name="Authorization", dataType="String", paramType="header", required=true)
+      @ApiImplicitParam(name="Authorization", dataType="string", paramType="header", required=true)
   })
   @PostMapping("/user/logout")
   public ResponseEntity<BaseResponse> logout(HttpServletRequest request, @RequestHeader("Authorization") String jwt) {
@@ -233,7 +237,7 @@ public class UserController extends BaseController {
     // .collect(Collectors.toList());
 
     return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getRole(), userDetails.getUsername(),
-        userDetails.getDisplayName(), userDetails.getId()));
+        userDetails.getDisplayName(), userDetails.getId(), userService.needChangePassword(userDetails.getId())));
   }
 
   /**

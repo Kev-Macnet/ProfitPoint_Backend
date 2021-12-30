@@ -58,6 +58,8 @@ import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.MrNoteListResponse;
 import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
+import tw.com.leadtek.nhiwidget.payload.mr.HomepageParameters;
+import tw.com.leadtek.nhiwidget.payload.mr.SearchMRParameters;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
@@ -261,10 +263,15 @@ public class NHIWidgetXMLController extends BaseController {
           example = "2021/03/15") @RequestParam(required = false) String sdate,
       @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
           example = "2021/03/18") @RequestParam(required = false) String edate,
-      @ApiParam(name = "applY", value = "申報年，格式西元年 yyyy",
+      @ApiParam(name = "indate", value = "住院日期，格式 yyyy/MM/dd",
+          example = "2021/03/15") @RequestParam(required = false) String indate,
+      @ApiParam(name = "outdate", value = "出院日期，格式 yyyy/MM/dd",
+          example = "2021/03/18") @RequestParam(required = false) String outdate,
+      @ApiParam(name = "applY", value = "統計月份年，格式西元年 yyyy",
           example = "2021") @RequestParam(required = false) String applY,
-      @ApiParam(name = "applM", value = "申報月，格式 M",
+      @ApiParam(name = "applM", value = "統計月份月，格式 M",
           example = "8") @RequestParam(required = false) String applM,
+      @ApiParam(value = "不包含其他條件", example = "false") @RequestParam(required = false) Boolean notOthers,
       @ApiParam(name = "minPoints", value = "最小申報點數",
           example = "175") @RequestParam(required = false) Integer minPoints,
       @ApiParam(name = "maxPoints", value = "最大申報點數",
@@ -283,7 +290,7 @@ public class NHIWidgetXMLController extends BaseController {
           example = "王小明") @RequestParam(required = false) String pharName,
       @ApiParam(name = "pharId", value = "藥師代碼",
           example = "A123456789") @RequestParam(required = false) String pharId,
-      @ApiParam(name = "patientName", value = "病患名稱",
+      @ApiParam(name = "patientName", value = "病患姓名",
           example = "王小明") @RequestParam(required = false) String patientName,
       @ApiParam(name = "patientId", value = "病患身分證字號",
           example = "A123456789") @RequestParam(required = false) String patientId,
@@ -291,22 +298,25 @@ public class NHIWidgetXMLController extends BaseController {
           example = "A123456789") @RequestParam(required = false) String applId,
       @ApiParam(name = "applName", value = "標記人員名稱",
           example = "A123456789") @RequestParam(required = false) String applName,
-      @ApiParam(name = "inhMrId", value = "病歷編號",
+      @ApiParam(name = "inhMrId", value = "病歷號碼",
           example = "11003191") @RequestParam(required = false) String inhMrId,
       @ApiParam(name = "inhClinicId", value = "就醫記錄編號",
           example = "11003190002") @RequestParam(required = false) String inhClinicId,
+      @ApiParam(value = "不包含DRG條件", example = "false") @RequestParam(required = false) Boolean notDRG,
       @ApiParam(name = "drg", value = "DRGs代碼",
           example = "048201") @RequestParam(required = false) String drg,
-      @ApiParam(name = "drgSection", value = "DRG落點區間",
-          example = "B1") @RequestParam(required = false) String drgSection,
-      @ApiParam(name = "orderCode", value = "支付標準代碼",
+      @ApiParam(name = "drgSection", value = "DRG落點區間，多筆請用空格隔開",
+          example = "B1 B2") @RequestParam(required = false) String drgSection,
+      @ApiParam(value = "不包含醫令條件", example = "false") @RequestParam(required = false) Boolean notOrderCode,
+      @ApiParam(name = "orderCode", value = "支付標準代碼，多筆用空格隔開",
           example = "00156A") @RequestParam(required = false) String orderCode,
-      @ApiParam(name = "drugUse", value = "用量",
+      @ApiParam(name = "drugUse", value = "用量，多筆用空格隔開，未填請帶 0",
           example = "1") @RequestParam(required = false) String drugUse,
       @ApiParam(name = "inhCode", value = "院內碼",
           example = "03001K") @RequestParam(required = false) String inhCode,
       @ApiParam(name = "inhCodeDrugUse", value = "院內碼用量",
           example = "03001K") @RequestParam(required = false) String inhCodeDrugUse,
+      @ApiParam(value = "不包含ICD條件", example = "false") @RequestParam(required = false) Boolean notICD,
       @ApiParam(name = "icdAll", value = "不分區ICD碼",
           example = "V20.0") @RequestParam(required = false) String icdAll,
       @ApiParam(name = "icdCMMajor", value = "主診斷ICD",
@@ -315,21 +325,22 @@ public class NHIWidgetXMLController extends BaseController {
           example = "V20.0") @RequestParam(required = false) String icdCMSec,
       @ApiParam(name = "icdPCS", value = "處置ICD",
           example = "V20.0") @RequestParam(required = false) String icdPCS,
-      @ApiParam(name = "qrObject",
-          value = "品質獎勵計畫收案對象") @RequestParam(required = false) String qrObject,
-      @ApiParam(name = "qrSdate",
-          value = "品質獎勵計畫收案啟始日") @RequestParam(required = false) String qrSdate,
-      @ApiParam(name = "qrEdate",
-          value = "品質獎勵計畫收案結束日") @RequestParam(required = false) String qrEdate,
+//      @ApiParam(name = "qrObject",
+//          value = "品質獎勵計畫收案對象") @RequestParam(required = false) String qrObject,
+//      @ApiParam(name = "qrSdate",
+//          value = "品質獎勵計畫收案啟始日") @RequestParam(required = false) String qrSdate,
+//      @ApiParam(name = "qrEdate",
+//          value = "品質獎勵計畫收案結束日") @RequestParam(required = false) String qrEdate,
+      @ApiParam(value = "不包含資料狀態", example = "false") @RequestParam(required = false) Boolean notStatus,
       @ApiParam(name = "status",
           value = "病歷狀態：-3:疾病分類完成, -2:待確認，-1:疑問標示，0:待處理，1:無需變更，2:優化完成，3:評估不調整",
           example = "1") @RequestParam(required = false) String status,
+      @ApiParam(value = "不包含被核刪條件", example = "false") @RequestParam(required = false) Boolean notDeducted,
       @ApiParam(name = "deductedCode",
           value = "核刪代碼") @RequestParam(required = false) String deductedCode,
       @ApiParam(name = "deductedOrder",
           value = "核刪醫令") @RequestParam(required = false) String deductedOrder,
-      @ApiParam(name = "notApplStatus",
-          value = "不包含申報狀態") @RequestParam(required = false) Boolean notApplStatus,
+      @ApiParam(value = "不包含申報狀態") @RequestParam(required = false) Boolean notApplStatus,
       @ApiParam(name = "applThisMonth",
           value = "本月申報") @RequestParam(required = false) Boolean applThisMonth,
       @ApiParam(name = "applNextMonth",
@@ -339,6 +350,11 @@ public class NHIWidgetXMLController extends BaseController {
           value = "自費項目") @RequestParam(required = false) Boolean ownExpItem,
       @ApiParam(name = "all", value = "全站/其他搜尋/關鍵字",
           example = "0") @RequestParam(required = false) String all,
+      @ApiParam(name = "orderBy",
+          value = "排序欄位名稱，status:資料狀態，sdate:就醫日期-起，edate:就醫日期-迄，inhMrId:病歷號碼，inhClinicId:就醫記錄編號，patientName:病患姓名，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，totalDot:病歷點數，drgFixed:DRG定額，drgSection:DRG落點，applId:負員人員代碼，applName:負責人員",
+          example = "code") @RequestParam(required = false) String orderBy,
+      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小",
+          example = "true") @RequestParam(required = false) Boolean asc,
       @ApiParam(name = "perPage", value = "每頁顯示筆數",
           example = "20") @RequestParam(required = false) Integer perPage,
       @ApiParam(name = "page", value = "第幾頁，第一頁值為0", example = "0") @RequestParam(required = false,
@@ -349,25 +365,20 @@ public class NHIWidgetXMLController extends BaseController {
         return ResponseEntity.badRequest().body(returnMRError("最大申報點數未帶入"));
       }
     }
+    SearchMRParameters smrp = new SearchMRParameters();
+    smrp.setBasic(applY, applM, sdate, edate, indate, outdate, inhMrId, inhClinicId, dataFormat);
+    smrp.setOthers(notOthers, minPoints, maxPoints, funcType, funcTypec, prsnId, prsnName, pharName, pharId, patientName, patientId);
+    smrp.setICD(notICD, icdAll, icdCMMajor, icdCMSec, icdPCS);
+    smrp.setOrder(notOrderCode, orderCode, drugUse, inhCode, inhCodeDrugUse);
+    smrp.setApplStatus(notApplStatus, applThisMonth, applNextMonth, NoAppl, ownExpItem);
+    smrp.setDRG(notDRG, drg, drgSection);
+    smrp.setDeducted(notDeducted, deductedCode, deductedOrder);
+    smrp.setStatus(notStatus, status);
+    smrp.setAll(all, orderBy, asc, perPage, page);
+    
     int iPerPage = (perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
         : perPage.intValue();
     int iPage = (page == null) ? 0 : page.intValue();
-
-    String startDate = (sdate == null) ? "2010/01/01" : sdate;
-    String endDate = edate;
-    if (endDate == null) {
-      SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-      endDate = sdf.format(new Date());
-    }
-    String applYM = null;
-    if (applY != null && applY.length() == 4) {
-      int applYMInteger = 0;
-      int year = Integer.parseInt(applY) - 1911;
-      if (applM != null) {
-        applYMInteger = year * 100 + Integer.parseInt(applM);
-        applYM = String.valueOf(applYMInteger);
-      }
-    }
 
     funcType = addAllFuncType(funcType, funcTypec);
     if (funcType != null && funcType.startsWith("error:")) {
@@ -379,13 +390,16 @@ public class NHIWidgetXMLController extends BaseController {
     }
     logService.updateLogSearch("system", allMatch, sdate, edate, minPoints, maxPoints, dataFormat,
         funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-        orderCode, inhCode, drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSec, icdPCS, qrObject,
-        qrSdate, qrEdate, status, deductedCode, deductedOrder);
+        orderCode, inhCode, drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSec, icdPCS, null,
+        null, null, status, deductedCode, deductedOrder);
 
+    String startDate = sdate;
+    String endDate = edate;
+    String applYM = applY + applM;
     Map<String, Object> list = xmlService.getMR(allMatch, startDate, endDate, applYM, minPoints,
         maxPoints, dataFormat, funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId,
         drg, drgSection, orderCode, inhCode, drugUse, inhCodeDrugUse, icdAll, icdCMMajor, icdCMSec,
-        icdPCS, qrObject, qrSdate, qrEdate, status, deductedCode, deductedOrder, all, patientName,
+        icdPCS, null, null, null, status, deductedCode, deductedOrder, all, patientName,
         patientId, pharId, iPerPage, iPage);
     if (list.size() == 0) {
       return ResponseEntity.badRequest().body(returnMRError("無符合條件資料"));
@@ -618,24 +632,24 @@ public class NHIWidgetXMLController extends BaseController {
   @ApiOperation(value = "取得指定日期區間的病歷總數", notes = "取得指定日期區間的病歷總數")
   @GetMapping("/nhixml/mrCount")
   public ResponseEntity<MRCountResponse> selectMRCountByMrDate(
+      @ApiParam(name = "applY", value = "申報年，格式西元年 yyyy",
+        example = "2021") @RequestParam(required = false) String applY,
+      @ApiParam(name = "applM", value = "申報月，格式 M",
+        example = "8") @RequestParam(required = false) String applM,
       @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
           example = "2021/03/15") @RequestParam String sdate,
       @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
           example = "2021/03/18") @RequestParam String edate,
-      @ApiParam(name = "dataFormat", value = "資料格式，門急診:10，住院:20，不分: 00",
+      @ApiParam(name = "dataFormat", value = "就醫類別，門急診:10，住院:20，不分: 00",
           example = "10") @RequestParam(required = false) String dataFormat,
       @ApiParam(name = "funcType", value = "科別，00:不分科，01:家醫科，02:內科，03:外科...",
           example = "03") @RequestParam(required = false) String funcType,
-      @ApiParam(name = "prsnId", value = "醫護代碼",
-          example = "A123456789") @RequestParam(required = false) String prsnId,
-      @ApiParam(name = "applId", value = "標記人員代碼",
-          example = "A123456789") @RequestParam(required = false) String applId) {
+      @ApiParam(name = "prsnName", value = "醫護姓名",
+          example = "A123456789") @RequestParam(required = false) String prsnName) {
     logger.info("=========/nhixml/mr/{" + sdate + "} =============================");
-    if (dataFormat == null) {
-      dataFormat = "00";
-    }
+    HomepageParameters hp = new HomepageParameters(applY, applM, sdate, edate, dataFormat, funcType, prsnName);
     MRCountResponse response =
-        xmlService.getMRCount(sdate, edate, dataFormat, funcType, prsnId, applId);
+        xmlService.getHomePageMRCount(hp);
     return ResponseEntity.ok(response);
   }
 

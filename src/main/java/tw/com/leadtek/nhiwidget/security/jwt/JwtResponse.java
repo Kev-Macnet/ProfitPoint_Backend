@@ -27,17 +27,21 @@ public class JwtResponse {
   @ApiModelProperty(value = "用戶登入時間", example = "16664407545315", required = true)
   private long loginTime;
   
+  @ApiModelProperty(value = "是否為首次登入或變更密碼，若是則跳更改密碼對話框", example = "false", required = true)
+  private Boolean changePassword;
+  
   public JwtResponse() {
     
   }
 
-  public JwtResponse(String token, String role, String username, String displayName, long id) {
+  public JwtResponse(String token, String role, String username, String displayName, long id, boolean changePassword) {
     this.id = id;
     this.token = token;
     this.role = role;
     this.username = username;
     this.displayName = displayName;
     this.loginTime = System.currentTimeMillis();
+    this.changePassword = changePassword;
   }
 
   public String getRole() {
@@ -87,6 +91,14 @@ public class JwtResponse {
   public void setLoginTime(long loginTime) {
     this.loginTime = loginTime;
   }
-  
+
+  public Boolean getChangePassword() {
+    return changePassword;
+  }
+
+  public void setChangePassword(Boolean changePassword) {
+    this.changePassword = changePassword;
+  }
+
 }
 

@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.dao.DEPARTMENTDao;
 import tw.com.leadtek.nhiwidget.dao.USERDao;
 import tw.com.leadtek.nhiwidget.dao.USER_DEPARTMENTDao;
@@ -41,7 +42,7 @@ public class UserService {
 
   private Logger logger = LogManager.getLogger();
 
-  public final static String USER = "USER:";
+  public final static String USER_PREFIX = "USER:";
   
   public final static String EDITING = "EDITING";
   
@@ -101,7 +102,15 @@ public class UserService {
       ur.setDisplayName(ur.getUsername());
     }
     user = ur.convertToUSER();
-    user.setPassword(encoder.encode(user.getPassword()));
+    user.setInhId(user.getUsername());
+    if (user.getPassword() == null && user.getEmail() != null) {
+      String newPassword = generateCommonLangPassword();
+      emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(), "系統隨機產生密碼:" + newPassword);
+      user.setPassword(encoder.encode(newPassword));
+    } else {
+      user.setPassword(encoder.encode(user.getPassword()));
+    }
+    user.setStatus(USER.STATUS_CHANGE_PASSWORD);
     user.setCreateAt(new Date());
     user.setUpdateAt(new Date());
     user = userDao.save(user);
@@ -254,6 +263,7 @@ public class UserService {
       return false;
     }
     existUser.setPassword(encoder.encode(password));
+    existUser.setStatus(USER.STATUS_ACTIVE);
     userDao.save(existUser);
     return true;
   }
@@ -308,14 +318,20 @@ public class UserService {
     return null;
   }
 
-  //@PreAuthorize("hasAuthority('B')")
-  public List<UserRequest> getAllUser(String funcType, String funcTypeC, String rocId, String name) {
+  public List<UserRequest> getAllUser(String funcType, String funcTypeC, String rocId, String name, String role) {
     if (departmentHash == null) {
       retrieveData();
     }
     List<UserRequest> result = new ArrayList<UserRequest>();
 
-    List<USER> list = userDao.findAll();
+    List<USER> list = null;
+    if (ROLE_TYPE.APPL.getRole().equals(role)) {
+      list = userDao.findApplUser();
+    } else if ("U".equals(role)) {
+      list = userDao.findAccount();
+    } else {
+      list = userDao.findByRole(ROLE_TYPE.DOCTOR.getRole());
+    }
     List<USER_DEPARTMENT> udList = userDepartmentDao.findAll();
     if ((funcTypeC != null && !"不分科".equals(funcTypeC))
         || (funcType != null && !"00".equals(funcType))) {
@@ -364,8 +380,7 @@ public class UserService {
         }
       }
       if (name != null && name.length() > 0) {
-        if ((user.getDisplayName() == null || !user.getDisplayName().startsWith(name)) &&
-            user.getUsername() == null || user.getUsername().startsWith(name)) {
+        if ((user.getDisplayName() == null || !user.getDisplayName().startsWith(name))) {
           continue;
         }
       }
@@ -514,6 +529,8 @@ public class UserService {
     emailService.sendMail("忘記密碼-重設新密碼", existUser.getEmail(), "系統隨機產生密碼:" + newPassword);
     existUser.setPassword(encoder.encode(newPassword));
     existUser.setUpdateAt(new Date());
+    // 下次登入需變更密碼
+    existUser.setStatus(-1);
     userDao.save(existUser);
     return null;
   }
@@ -535,7 +552,7 @@ public class UserService {
   }
 
   public void loginLog(String username, String jwt) {
-    String key = USER + username;
+    String key = USER_PREFIX + username;
     Set<Object> sets = redisService.hkeys(key);
     if (sets != null && sets.size() > 0) {
       deleteAndSaveUserLogout(key, sets);
@@ -579,7 +596,7 @@ public class UserService {
 
   public void logoutLog(String username, String jwt) {
     // 儲存 DB logout 時間由 logService.setLogout 處理
-    String key = USER + username;
+    String key = USER_PREFIX + username;
     Object loginTime = redisService.hget(key, jwt);
     if (loginTime != null) {
       redisService.deleteHash(key, jwt);
@@ -587,7 +604,7 @@ public class UserService {
   }
 
   public boolean updateUserAlive(String username, String jwt, boolean isEditing) {
-    String key = USER + username;
+    String key = USER_PREFIX + username;
     Set<Object> sets = redisService.hkeys(key);
     if (sets == null || sets.size() == 0) {
       // @TODO 暫時先放行
@@ -644,5 +661,16 @@ public class UserService {
       return user.getId();
     }
     return -1;
+  }
+  
+  public boolean needChangePassword(long userId) {
+    USER user = userDao.findById(userId).orElse(null);
+    if (user != null) {
+      if (user.getStatus() == null) {
+        return false;
+      }
+      return user.getStatus() == USER.STATUS_CHANGE_PASSWORD;
+    }
+    return false;
   }
 }

@@ -229,7 +229,7 @@ public class ImportPayCode {
     if (row.getCell(0).getCellType() == CellType.NUMERIC) {
       code = String.valueOf(df.format(row.getCell(3).getNumericCellValue()));
     } else if (row.getCell(0).getStringCellValue().length() > 0) {
-      code = row.getCell(0).getStringCellValue();
+      code = row.getCell(0).getStringCellValue().trim();
     } else {
       System.err.println("error!");
       return null;

@@ -182,7 +182,7 @@ public class SystemService {
         if (atc != null) {
           predicate.add(cb.equal(root.get("atc"), atc));
         }
-        if (codeType != null) {
+        if (codeType != null && codeType.length() > 0) {
           predicate.add(cb.equal(root.get("codeType"), codeType));
         }
         if (code != null && code.length() > 1) {

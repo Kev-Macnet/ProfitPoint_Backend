@@ -9,6 +9,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import javax.persistence.Tuple;
+import javax.persistence.TupleElement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Ignore;
@@ -34,10 +36,12 @@ import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
-import tw.com.leadtek.nhiwidget.model.rdb.POINT_WEEKLY;
+import tw.com.leadtek.nhiwidget.payload.MO;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
+import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
+import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -76,6 +80,12 @@ public class TestDrgCalService {
 
   @Autowired
   private IntelligentService is;
+  
+  @Autowired
+  private NHIWidgetXMLService nhiService;
+  
+  @Autowired
+  private CodeTableService codeTableService;
   
   /**
    * 計算所有住院病歷的 DRG 代碼、區間、定額
@@ -284,7 +294,7 @@ public class TestDrgCalService {
     }
   }
   
-  //@Ignore
+  @Ignore
   @Test
   public void calculateRareIcd() {
 //    is.calculateRareICD();
@@ -294,11 +304,219 @@ public class TestDrgCalService {
     //is.calculateHighRatio();
     //is.calculateOverAmount();
     //is.testCount();
-    System.out.println("start");
-    logger.error("java.version = ${java:version}, os = ${java:os}");
-    logger.error("${jndi:${lower:rmi}://10.10.5.30:8081/user}");
-    logger.error("${jndi:ldap://127.0.0.1:1389/badClassName}");
-    System.out.println("end");
+  }
+  
+  /**
+   * 測試門診點數計算邏輯是否有誤
+   */
+  @Ignore
+  @Test
+  public void calculateOPApplyPoints() {
+    Calendar cal = Calendar.getInstance();
+    cal.set(Calendar.YEAR, 2018);
     
+    List<MR> list = mrDao.findByDataFormatAndMrDateBetween("10", new java.sql.Date(cal.getTimeInMillis()), new java.sql.Date(System.currentTimeMillis()));
+    //MR mr = mrDao.findById(1285853L).orElse(null);
+    for (MR mr : list) {
+      //System.out.println("mr id=" + mr.getId() + ", did=" + mr.getdId());
+      List<OP_D> opdList = opdDao.findByMrId(mr.getId());
+      OP_D opd = opdList.get(0);
+   
+      NHIWidgetXMLService.initialOP_DDot(opd);
+      int drugDot = opd.getDrugDot().intValue();
+      int treatDot = opd.getTreatDot().intValue();
+      int metrDot = opd.getMetrDot().intValue();
+      int diagDot = opd.getDiagDot().intValue();
+      int dsvcDot = opd.getDsvcDot().intValue();
+      MRDetail mrDetail = new MRDetail(mr);
+      
+      mrDetail.setOPDData(opd, codeTableService);
+
+      List<OP_P> oppList = oppDao.findByOpdIdOrderByOrderSeqNo(opd.getId());
+      List<MO> moList = new ArrayList<MO>();
+      for (OP_P op_P : oppList) {
+        MO mo = new MO();
+        mo.setOPPData(op_P, codeTableService);
+        moList.add(mo);
+      }
+      mrDetail.setMos(moList);
+      
+      nhiService.updateOPPByMrDetail(mr, opd, mrDetail, false);
+      
+      if (drugDot != opd.getDrugDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", drugDot " + drugDot + " != " + opd.getDrugDot());
+       // break;
+      }
+      if (treatDot != opd.getTreatDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", treatDot " + treatDot + " != " + opd.getTreatDot());
+       // break;
+      }
+      if (metrDot != opd.getMetrDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", metrDot " + metrDot + " != " + opd.getMetrDot());
+       // break;
+      }
+      if (diagDot != opd.getDiagDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", diagDot " + diagDot + " != " + opd.getDiagDot());
+      //  break;
+      }
+      if (dsvcDot != opd.getDsvcDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", dsvcDot " + dsvcDot + " != " + opd.getDsvcDot());
+       // break;
+      }
+      
+    }
+  }
+  
+  /**
+   * 測試住院點數計算邏輯是否有誤
+   */
+  @Ignore
+  @Test
+  public void calculateIPApplyPoints() {
+    Calendar cal = Calendar.getInstance();
+    cal.set(Calendar.YEAR, 2018);
+    
+    //List<MR> list = mrDao.findByDataFormatAndMrDateBetween("20", new java.sql.Date(cal.getTimeInMillis()), new java.sql.Date(System.currentTimeMillis()));
+    MR mr = mrDao.findById(23043L).orElse(null);
+    //for (MR mr : list) {
+      //System.out.println("mr id=" + mr.getId() + ", did=" + mr.getdId());
+      List<IP_D> ipdList = ipdDao.findByMrId(mr.getId());
+      IP_D ipd = ipdList.get(0);
+   
+      int orderQty = ipd.getOrderQty().intValue();
+      int totalP = ipd.getApplDot();
+      //NHIWidgetXMLService.initialOP_DDot(opd);
+      // 診察費點數
+      int diagDot = ipd.getDiagDot().intValue();
+      // 病房費點數
+      int roomDot = ipd.getRoomDot().intValue();
+      // 管灌膳食費點數
+      int mealDot = ipd.getMealDot().intValue();
+      // 檢查費點數
+      int aminDot = ipd.getAminDot().intValue();
+      // 放射線診療費點數
+      int radoDot = ipd.getRadoDot().intValue();
+      // 治療處置費點數
+      int thrpDot = ipd.getThrpDot().intValue();
+      // 手術費點數
+      int sgryDot = ipd.getSgryDot().intValue();
+      // 復健治療費點數
+      int phscDot = ipd.getPhscDot().intValue();
+      // 血液血漿費點數
+      int blodDot = ipd.getBlodDot().intValue();
+      // 血液透析費點數
+      int hdDot = ipd.getHdDot().intValue();
+      // 麻醉費點數
+      int aneDot = ipd.getAneDot().intValue();
+      // 特殊材料費點數
+      int metrDot = ipd.getMetrDot().intValue();
+      // 藥費點數
+      int drugDot = ipd.getDrugDot().intValue();
+      // 藥事服務費點數
+      int dsvcDot = ipd.getDsvcDot().intValue();
+      // 精神科治療費點數
+      int nrtpDot = ipd.getNrtpDot().intValue();
+      // 注射技術費點數
+      int injtDot = ipd.getInjtDot().intValue();
+      // 嬰兒費點數
+      int babyDot = ipd.getBabyDot().intValue();
+      MRDetail mrDetail = new MRDetail(mr);
+      
+      mrDetail.setIPDData(ipd, codeTableService);
+
+      List<IP_P> ippList = ippDao.findByIpdIdOrderByOrderSeqNo(ipd.getId());
+      List<MO> moList = new ArrayList<MO>();
+      for (IP_P ip_P : ippList) {
+        MO mo = new MO();
+        mo.setIPPData(ip_P, codeTableService);
+        moList.add(mo);
+      }
+      mrDetail.setMos(moList);
+      nhiService.updateIPPByMrDetail(mr, ipd, mrDetail, false);
+      
+      if (diagDot != ipd.getDiagDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", diagDot " + diagDot + " != " + ipd.getDiagDot());
+       // break;
+      }
+      if (roomDot != ipd.getRoomDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", roomDot " + roomDot + " != " + ipd.getRoomDot());
+      //  break;
+      }
+      if (mealDot != ipd.getMealDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", mealDot " + mealDot + " != " + ipd.getMealDot());
+      //  break;
+      }
+      if (aminDot != ipd.getAminDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", aminDot " + aminDot + " != " + ipd.getAminDot());
+      //  break;
+      }
+      if (radoDot != ipd.getRadoDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", radoDot " + radoDot + " != " + ipd.getRadoDot());
+      //  break;
+      }
+      if (thrpDot != ipd.getThrpDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", thrpDot " + thrpDot + " != " + ipd.getThrpDot());
+      //  break;
+      }
+      if (sgryDot != ipd.getSgryDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", sgryDot " + sgryDot + " != " + ipd.getSgryDot());
+      //  break;
+      }
+      if (phscDot != ipd.getPhscDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", phscDot " + phscDot + " != " + ipd.getPhscDot());
+      //  break;
+      }
+      if (blodDot != ipd.getBlodDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", blodDot " + blodDot + " != " + ipd.getBlodDot());
+      //  break;
+      }
+      if (hdDot != ipd.getHdDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", hdDot " + hdDot + " != " + ipd.getHdDot());
+      // break;
+      }
+      if (aneDot != ipd.getAneDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", aneDot " + aneDot + " != " + ipd.getAneDot());
+      //  break;
+      }
+      if (metrDot != ipd.getMetrDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", metrDot " + metrDot + " != " + ipd.getMetrDot());
+      //  break;
+      }
+      if (drugDot != ipd.getDrugDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", drugDot " + drugDot + " != " + ipd.getDrugDot());
+      //  break;
+      }
+      if (dsvcDot != ipd.getDsvcDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", dsvcDot " + dsvcDot + " != " + ipd.getDsvcDot());
+      //  break;
+      }
+      if (nrtpDot != ipd.getNrtpDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", nrtpDot " + nrtpDot + " != " + ipd.getNrtpDot());
+      //  break;
+      }
+      if (injtDot != ipd.getInjtDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", injtDot " + injtDot + " != " + ipd.getInjtDot());
+      //  break;
+      }
+      if (babyDot != ipd.getBabyDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() +", babyDot " + babyDot + " != " + ipd.getBabyDot());
+      //  break;
+      }
+      if (orderQty != ipd.getOrderQty().intValue()) {
+        System.out.println("order quantity changed:" + orderQty + "-" + ipd.getOrderQty().intValue());
+      }
+      if (totalP != ipd.getApplDot().intValue()) {
+        System.out.println("MR id=" + mr.getId() + " total points changed:" + totalP + "-" + ipd.getApplDot().intValue());
+      }
+    //}
+    
+  }
+  
+  @Test
+  public void testGroupBy() {
+//    List<Tuple> list = nhiService.groupByStatus(null, null, "11011", null, null, null);    
+//    for (Tuple tuple : list) {
+//      System.out.println(tuple.get(0) + "," + tuple.get(1));
+//    }
   }
 }

@@ -2453,4 +2453,15 @@ public class IP_D {
     this.mrId = mrId;
   }
   
+  public void calculateTotalDot() {
+    medDot = diagDot.intValue() + roomDot.intValue() + mealDot.intValue() + aminDot.intValue() + radoDot.intValue() + 
+        thrpDot.intValue() + sgryDot.intValue() + phscDot.intValue() + blodDot.intValue() + hdDot.intValue() + 
+        aneDot.intValue() + metrDot.intValue() + drugDot.intValue() + dsvcDot.intValue() + nrtpDot.intValue() + 
+        injtDot.intValue() + babyDot.intValue();
+  }
+  
+  public void calculateTotalApplDot() {
+    applDot = medDot.intValue() - partDot.intValue() + nonApplDot.intValue(); 
+  }
+  
 }

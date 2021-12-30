@@ -9,7 +9,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.payload.BasePageResponse;
 
-@ApiModel("我的清單-比對警示")
+@ApiModel("我的清單-比對警示Response")
 public class WarningOrderResponse extends BasePageResponse implements Serializable {
 
   private static final long serialVersionUID = 5238081242884342782L;

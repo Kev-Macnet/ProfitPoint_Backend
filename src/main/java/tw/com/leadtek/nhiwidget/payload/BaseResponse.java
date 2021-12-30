@@ -7,7 +7,7 @@ import java.io.Serializable;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-@ApiModel("回覆訊息")
+@ApiModel("基本回覆訊息")
 public class BaseResponse implements Serializable {
 
   private static final long serialVersionUID = -7241762696516780045L;
@@ -16,8 +16,8 @@ public class BaseResponse implements Serializable {
 
   public final static String ERROR = "error";
 
-  @ApiModelProperty(value = "結果", example = SUCCESS, required = true)
-  protected String result = SUCCESS;
+  @ApiModelProperty(value = "結果", example = "success or error", required = true)
+  protected String result = "success";
 
   @ApiModelProperty(value = "訊息", example = "錯誤訊息", required = false)
   protected String message;

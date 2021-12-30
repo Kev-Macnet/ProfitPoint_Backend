@@ -1282,4 +1282,11 @@ public class OP_D {
     this.mrId = mrId;
   }
 
+  public void calculateTotalDot() {
+    totalDot = drugDot.intValue() + treatDot.intValue() + metrDot.intValue() + diagDot.intValue() + dsvcDot.intValue();
+  }
+  
+  public void calculateTotalApplDot() {
+    totalApplDot = totalDot - partDot;
+  }
 }

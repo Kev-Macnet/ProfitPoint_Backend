@@ -9,7 +9,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.payload.BasePageResponse;
 
-@ApiModel("我的清單-醫師查看清單")
+@ApiModel("我的清單-醫師查看清單Resonse")
 public class DoctorListResponse extends BasePageResponse implements Serializable {
 
   private static final long serialVersionUID = 5667626839257792203L;

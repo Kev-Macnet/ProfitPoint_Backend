@@ -19,6 +19,12 @@ import io.swagger.annotations.ApiModelProperty;
 @Entity
 public class USER {
 
+  public final static int STATUS_ACTIVE = 1;
+  
+  public final static int STATUS_INACTIVE = 0;
+  
+  public final static int STATUS_CHANGE_PASSWORD = -1;
+  
   @ApiModelProperty(value = "序號", example = "1", required = false)
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,11 +52,11 @@ public class USER {
   @Column(name = "PASSWORD", length = 64)
   protected String password;
 
-  @ApiModelProperty(value = "email", example = "test@test.gmail.com", required = false)
+  @ApiModelProperty(value = "email address", required = false)
   @Column(name = "EMAIL", length = 30)
   protected String email;
 
-  @ApiModelProperty(value = "A: MIS主管, B: 行政主管, C: 申報主管, D: coding人員/申報人員, E: 醫護人員, Z: 原廠開發者", example = "A", required = false)
+  @ApiModelProperty(value = "A: MIS主管, B: 行政主管, C: 申報主管, D: coding人員或申報人員, E: 醫護人員, Z: 原廠開發者", example = "A", required = false)
   @Column(name = "ROLE")
   protected String role;
   
@@ -71,6 +77,8 @@ public class USER {
   @ApiModelProperty(hidden = true)
   @Column(name = "UPDATE_AT", nullable = false)
   protected Date updateAt;
+  
+  public USER() {}
 
   /**
    * 序號

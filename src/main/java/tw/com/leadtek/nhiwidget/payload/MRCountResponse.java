@@ -14,12 +14,18 @@ public class MRCountResponse implements Serializable {
 
   @ApiModelProperty(value = "不分門急診及住院", required = true)
   private MRCount all;
-  
+
   @ApiModelProperty(value = "住院相關數字", required = true)
   private MRCount ip;
-  
+
   @ApiModelProperty(value = "門急診相關數字", required = true)
   private MRCount op;
+
+  public MRCountResponse() {
+    all = new MRCount();
+    ip = new MRCount();
+    op = new MRCount();
+  }
 
   public MRCount getAll() {
     return all;
@@ -45,4 +51,21 @@ public class MRCountResponse implements Serializable {
     this.op = op;
   }
   
+  public void refreshAll() {
+    all.setTotalMr(ip.getTotalMr().intValue() + op.getTotalMr().intValue());
+    all.setApplSum(ip.getApplSum().intValue() + op.getApplSum().intValue());
+    all.setDayCount(
+        ip.getDayCount().intValue() > op.getDayCount().intValue() ? ip.getDayCount().intValue()
+            : op.getDayCount().intValue());
+    all.setApplDot(ip.getApplDot().intValue() + op.getApplDot().intValue());
+    all.setClassified(ip.getClassified().intValue() + op.getClassified().intValue());
+    all.setNoChange(ip.getNoChange().intValue() + op.getNoChange().intValue());
+    all.setWaitConfirm(ip.getWaitConfirm().intValue() + op.getWaitConfirm().intValue());
+    all.setWaitProcess(ip.getWaitProcess().intValue() + op.getWaitProcess().intValue());
+    all.setQuestionMark(ip.getQuestionMark().intValue() + op.getQuestionMark().intValue());
+    all.setOptimized(ip.getOptimized().intValue() + op.getOptimized().intValue());
+    
+    all.setDrg(ip.getDrg().intValue() + op.getDrg().intValue());
+  }
+
 }

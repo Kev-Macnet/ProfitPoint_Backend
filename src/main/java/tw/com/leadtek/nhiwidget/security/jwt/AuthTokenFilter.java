@@ -26,6 +26,9 @@ import tw.com.leadtek.nhiwidget.service.UserService;
 public class AuthTokenFilter extends OncePerRequestFilter {
 
   protected Logger logger = LogManager.getLogger();
+  
+  private final static String[] NEED_AUTH_URL = {"/user", "/nhixml", "/intelligent", "/my", "/report",
+      "/department", "/sys", "/payment", "/plan", "/additional","/dbbackup" , "/api" , "/p/"};
 
   @Autowired
   private JwtUtils jwtUtils;
@@ -62,10 +65,8 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-      } else if (request.getRequestURI().startsWith("/auth")) {
-        // white list
-      } else {
-        //response.sendError(HttpStatus.UNAUTHORIZED.value(), "未登入");
+      } else if (isNeedAuthURL(request.getRequestURI())) {
+        response.sendError(HttpStatus.UNAUTHORIZED.value(), "未登入");
       }
     } catch (Exception e) {
       logger.error("Cannot set user authentication: {}", e);
@@ -87,5 +88,14 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     }
 
     return null;
+  }
+  
+  private boolean isNeedAuthURL(String url) {
+    for (String string : NEED_AUTH_URL) {
+      if (url.startsWith(string)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

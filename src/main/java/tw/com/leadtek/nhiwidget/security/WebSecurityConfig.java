@@ -88,12 +88,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .antMatchers(HttpMethod.GET, "/", "/*.html", "/favicon.ico", "/**/*.html", "/**/*.css",
             "/**/*.js", "/**/*.png", "/**/*.jpg", "/**/*.svg", "/fonts/*").permitAll()
         .antMatchers("/**").permitAll()
-        .antMatchers("/swagger-ui.html").permitAll()
+        .antMatchers("/swagger-ui/**").permitAll()
         .antMatchers("/resources/**").permitAll().antMatchers("/webjars/**").permitAll()
         .antMatchers("/swagger-resources/**").permitAll().antMatchers("/v3/**").permitAll()
         .anyRequest().authenticated();
 
-    http.addFilterBefore(authenticationJwtTokenFilter(),
+    //    http.addFilterBefore(authenticationJwtTokenFilter(),
+//        UsernamePasswordAuthenticationFilter.class);
+    http.addFilterAfter(authenticationJwtTokenFilter(),
         UsernamePasswordAuthenticationFilter.class);
     http.cors();
   }

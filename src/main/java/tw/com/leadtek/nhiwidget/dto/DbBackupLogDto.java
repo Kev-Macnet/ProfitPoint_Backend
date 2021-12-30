@@ -12,7 +12,7 @@ public class DbBackupLogDto {
     private String filename;
     @ApiModelProperty(value="備份模式: 0-全部, 1-系統, 2-資料", example="2", position=3)
     private int mode;
-    @ApiModelProperty(value="各Table備份筆數", example="[{MR: 0}, {IP_P: 0}]", position=4)
+    @ApiModelProperty(value="各Table備份筆數", example="MR: 0, IP_P: 0", position=4)
     private String description;
     @ApiModelProperty(value="備份時間(timestamp)", example="1625932800000", position=5)
     private long update_tm;
