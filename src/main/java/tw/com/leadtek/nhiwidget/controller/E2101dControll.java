@@ -559,7 +559,7 @@ public class E2101dControll {
     }
     
     
-    //==== 其他費用設定 Others fee
+    //==== 不分類費用設定 Others fee
     @ApiOperation(value="10-4.21 不分類設定(get)", notes="", position=21)
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtOthersFeeDto.class)
