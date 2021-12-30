@@ -72,7 +72,7 @@ public class DbBackupControll {
     //==== 
     @ApiOperation(value="12.01 資料備份紀錄", notes="", position=1)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{........}", response=DbBackupLogDto.class)
+        @ApiResponse(code = 200, message="{........}", response=DbBackupLogDto.class, responseContainer = "List")
     })
     @RequestMapping(value = "/dbbackup/log", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupLog(@RequestHeader("Authorization") String jwt) throws Exception {
