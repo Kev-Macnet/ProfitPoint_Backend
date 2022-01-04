@@ -253,7 +253,7 @@ public class E2101bControll {
     }
     
     //=== 營養照護費 Nutritional Fee, P47
-    @ApiOperation(value="10-2.09 營養照護費設定(get)", notes="") 
+    @ApiOperation(value="10-2.09 管灌飲食費及營養照護費設定(get)", notes="") 
     @ApiResponses({
         @ApiResponse(code = 200, message="{ ... }", response=PtNutritionalFeeDto.class)
     })
@@ -271,7 +271,7 @@ public class E2101bControll {
         }
     }
     
-    @ApiOperation(value="10-2.10 營養照護費設定(add)", notes="category = \"營養照護費\"")
+    @ApiOperation(value="10-2.10 管灌飲食費及營養照護費設定(add)", notes="category = \"管灌飲食費及營養照護費\"")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -300,7 +300,7 @@ public class E2101bControll {
         }
     }
     
-    @ApiOperation(value="10-2.11 營養照護費設定(update)", notes="<b>category 無法變更</b>")
+    @ApiOperation(value="10-2.11 管灌飲食費及營養照護費設定(update)", notes="<b>category 無法變更</b>")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })
@@ -326,7 +326,7 @@ public class E2101bControll {
         }
     }
     
-    @ApiOperation(value="10-2.12 營養照護費設定(delete)", notes="")
+    @ApiOperation(value="10-2.12 管灌飲食費及營養照護費設定(delete)", notes="")
     @ApiResponses(value={
         @ApiResponse(code = 200, message="{ status:0 }")
     })

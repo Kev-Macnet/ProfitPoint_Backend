@@ -16,7 +16,7 @@ public class PtNutritionalFeeService {
     @Autowired
     private PtNutritionalFeeDao ptNutritionalFeeDao;
     
-    private String Category = "營養照護費"; 
+    private String Category = "管灌飲食費及營養照護費"; 
     
     public java.util.Map<String, Object> findNutritionalFee(long ptId) {
         java.util.Map<String, Object> retMap;

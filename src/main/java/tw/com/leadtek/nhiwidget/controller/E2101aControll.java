@@ -127,8 +127,8 @@ public class E2101aControll {
                 {"手術費","/payment/surgeryfee/"},
                 
                 {"治療處置費","/payment/treatmentfee/"},
-                {"管灌飲食費","/payment/tubefeedingfee/"},
-                {"營養照護費","/payment/nutritionalfee/"},
+//                {"管灌飲食費","/payment/tubefeedingfee/"},
+                {"管灌飲食費及營養照護費","/payment/nutritionalfee/"}, //營養照護費
                 {"調劑費","/payment/adjustmentfee/"},
                 {"藥費","/payment/medicinefee/"},
                 
