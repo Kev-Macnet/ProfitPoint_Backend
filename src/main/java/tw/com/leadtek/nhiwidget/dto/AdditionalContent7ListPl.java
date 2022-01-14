@@ -8,8 +8,8 @@ public class AdditionalContent7ListPl {
     private String nhi_no;
     @ApiModelProperty(value="照護計畫清單", required=true, position=3)
     private java.util.List<String> plan;
-    @ApiModelProperty(value="試辦計畫清單", required=true, position=4)
-    private java.util.List<String> trial;
+//    @ApiModelProperty(value="試辦計畫清單", required=true, position=4)
+//    private java.util.List<String> trial;
 
     public String getNhi_no() {
         return nhi_no;
@@ -23,12 +23,12 @@ public class AdditionalContent7ListPl {
     public void setPlan(java.util.List<String> plan) {
         this.plan = plan;
     }
-    public java.util.List<String> getTrial() {
-        return trial;
-    }
-    public void setTrial(java.util.List<String> trial) {
-        this.trial = trial;
-    }
+//    public java.util.List<String> getTrial() {
+//        return trial;
+//    }
+//    public void setTrial(java.util.List<String> trial) {
+//        this.trial = trial;
+//    }
 
 }
 

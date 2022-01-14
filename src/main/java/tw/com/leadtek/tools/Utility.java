@@ -22,7 +22,7 @@ public class Utility {
       int status;
       java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
       if (jwt.length()>20) {
-          jwt = jwt.replace("Bearer", "");
+          jwt = jwt.replace("Bearer ", "");
           String arrJwt[] = jwt.split("\\.");
           if (arrJwt.length==3) {
               String jwtBody = "";

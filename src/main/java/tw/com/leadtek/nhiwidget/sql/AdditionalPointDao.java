@@ -627,10 +627,9 @@ public class AdditionalPointDao extends BaseSqlDao {
     }
     
     //=== Outpatient7
-    public long addOutpatient_7(long ap_id, int enable, String nhi_no,  
-            java.util.List<String> trials, java.util.List<String> plans) {
+    public long addOutpatient_7(long ap_id, int enable, String nhi_no, java.util.List<String> plans) {
         long newId = 0;
-        if ((ap_id>0)&&((plans.size()>0)||(trials.size()>0))) {
+        if ((ap_id>0)&&(plans.size()>0)) {
             String sql, s1;
             sql = "Insert into \n"
                     + "AP_OUTPATIENT_7(ID, ENABLE, AP_ID, NHI_NO)\n"
@@ -650,9 +649,9 @@ public class AdditionalPointDao extends BaseSqlDao {
             }
         }
         if (newId > 0) {
-            for (String trial : trials) {
-                addOutpatient_7_trial(newId, trial);
-            }
+//            for (String trial : trials) {
+//                addOutpatient_7_trial(newId, trial);
+//            }
             for (String plan : plans) {
                 addOutpatient_7_plan(newId, plan);
             }
@@ -660,6 +659,7 @@ public class AdditionalPointDao extends BaseSqlDao {
         return newId;
     }
     
+    /*
     private int addOutpatient_7_trial(long id, String trial) {
         String sql;
         sql = "Insert into \n"
@@ -669,6 +669,7 @@ public class AdditionalPointDao extends BaseSqlDao {
         int ret = jdbcTemplate.update(sql);
         return ret;
     }
+    */
     
     private int addOutpatient_7_plan(long id, String plan) {
         String sql;

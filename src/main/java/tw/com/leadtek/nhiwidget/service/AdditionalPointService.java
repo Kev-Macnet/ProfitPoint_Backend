@@ -257,7 +257,7 @@ public class AdditionalPointService {
             AdditionalContent7Pl out7 = params.getOutpatient_7();
             if (out7 != null) {
                 for (AdditionalContent7ListPl item : out7.getData()) {
-                    additionalPointDao.addOutpatient_7(newId, out7.getEnable(), item.getNhi_no(), item.getTrial(), item.getPlan());
+                    additionalPointDao.addOutpatient_7(newId, out7.getEnable(), item.getNhi_no(), item.getPlan());
                 }
             }
             //--
@@ -352,7 +352,7 @@ public class AdditionalPointService {
                 if (out7 != null) {
                     additionalPointDao.delOutpatient_7(id);
                     for (AdditionalContent7ListPl item : out7.getData()) {
-                        additionalPointDao.addOutpatient_7(id, out7.getEnable(), item.getNhi_no(), item.getTrial(), item.getPlan());
+                        additionalPointDao.addOutpatient_7(id, out7.getEnable(), item.getNhi_no(), item.getPlan());
                     }
                 }
                 //--

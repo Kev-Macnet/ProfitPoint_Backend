@@ -23,13 +23,13 @@ public class AdditionalConditionPl {
     @ApiModelProperty(value="門診支付代碼項目", required=false, position=7)
     private AdditionalContent3Pl outpatient_3;
     @ApiModelProperty(value="門診醫令數量*醫令單價", required=false, position=8)
-    AdditionalContent4Pl outpatient_4;
+    private AdditionalContent4Pl outpatient_4;
     @ApiModelProperty(value="門診主診斷", required=false, position=9)
-    AdditionalContent5Pl outpatient_5;
+    private AdditionalContent5Pl outpatient_5;
     @ApiModelProperty(value="門診照護計畫", required=false, position=10)
-    AdditionalContent6Pl outpatient_6;
+    private AdditionalContent6Pl outpatient_6;
     @ApiModelProperty(value="門診試辦計畫", required=false, position=11)
-    AdditionalContent7Pl outpatient_7;
+    private AdditionalContent7Pl outpatient_7;
     //-----住院
     @ApiModelProperty(value="住院案件分類", required=false, position=12)
     private AdditionalContent1Pl inpatient_1;
@@ -38,7 +38,7 @@ public class AdditionalConditionPl {
     @ApiModelProperty(value="住院支付代碼項目", required=false, position=14)
     private AdditionalContent3Pl inpatient_3;
     @ApiModelProperty(value="住院照護計畫", required=false, position=15)
-    AdditionalContent6Pl inpatient_6;
+    private AdditionalContent6Pl inpatient_6;
     public int getActive() {
         return active;
     }
