@@ -86,9 +86,8 @@ public class AdditionalPointControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
-//            System.out.println("/additional/add");
-//            System.out.println(params);
             long newId = additionalPointService.addAdditionalCondition(params);
+            additionalPointService.correctEndDate(Utility.detectDate(params.getStart_date()));
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             if (newId>0) {
                 retMap.put("status", 0);
@@ -115,6 +114,7 @@ public class AdditionalPointControll {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = additionalPointService.updateAdditionalCondition(id, params);
+            additionalPointService.correctEndDate(Utility.detectDate(params.getStart_date()));
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             return new ResponseEntity<>(retMap, HttpStatus.OK);

@@ -415,4 +415,31 @@ public class AdditionalPointService {
         return additionalPointDao.updateAdditionalPointActive(id, state);
     }
     
+    
+    public void correctEndDate(java.util.Date date) {
+        int syear =  Integer.valueOf(Utility.dateFormat(date, "yyyy"));
+        java.util.List<Map<String, Object>> calcMap = new java.util.LinkedList<Map<String, Object>>(); 
+        java.util.List<Map<String, Object>> lstAddPoint = additionalPointDao.findAdditionalPoint(syear, syear-1911);
+        for (Map<String, Object> item : lstAddPoint) {
+            if (item.get("end_date")!=null && item.get("start_date")!=null) {
+                calcMap.add(item);
+            }
+        }
+        int idx = 1;
+        long nextStartDate, endDate;
+        java.util.Map<String, Object> nxetMap;
+        for (Map<String, Object> item : calcMap) {
+            if (idx<(calcMap.size()-0)) {
+                nxetMap = calcMap.get(idx);
+                nextStartDate = (long)nxetMap.get("start_date");
+                endDate = (long)item.get("end_date");
+                java.util.Date prevDay = new java.util.Date(nextStartDate-(86400*1000));
+                if (nextStartDate<endDate) {
+                    additionalPointDao.updateAdditionalPointEndDate((long)item.get("id"), prevDay);
+                }
+                idx++;
+            }
+        }
+    }
+    
 }
