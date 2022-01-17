@@ -442,4 +442,26 @@ public class AdditionalPointService {
         }
     }
     
+    
+    public long fillStartAndEndNull(java.util.Date date) {
+        long ret = 0;
+        int syear =  Integer.valueOf(Utility.dateFormat(date, "yyyy"));
+        java.util.Date date2199 = new java.util.Date(7258032000l*1000); // 2199-12-31
+//        System.out.println("date2199="+Utility.dateFormat(date2199, "yyyy-MM-dd"));
+        java.util.List<Map<String, Object>> lstAddPoint = additionalPointDao.findAdditionalPoint(syear, syear-1911);
+        for (Map<String, Object> item : lstAddPoint) {
+            if (item.get("start_date")==null) {
+                additionalPointDao.updateAdditionalPointStartDate((long)item.get("id"), date2199);
+                ret++;
+            }
+            /*
+            if (item.get("end_date")==null) {
+                additionalPointDao.updateAdditionalPointEndDate((long)item.get("id"), date2199);
+                ret++;
+            }
+            */
+        }
+        return ret;
+    }
+    
 }

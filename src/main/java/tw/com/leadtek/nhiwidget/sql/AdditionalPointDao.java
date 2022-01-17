@@ -1023,12 +1023,23 @@ public class AdditionalPointDao extends BaseSqlDao {
         sql = "Select ID, SYEAR, START_DATE, END_DATE\r\n"
                 + "From AP_ADDITIONAL_POINT\r\n"
                 + "Where (SYEAR=%d) or (SYEAR=%d)\r\n"
-                + "   and(END_DATE is not NULL)\n"
                 + "Order By START_DATE";
         
         sql = String.format(sql, syear1, syear2);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
+    }
+    
+    
+    public int updateAdditionalPointStartDate(long ap_id, java.util.Date startDate) {
+        String strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
+        String sql;
+        sql = "UPDATE AP_ADDITIONAL_POINT\r\n"
+                + "SET START_DATE='%s'\r\n"
+                + "WHERE (ID=%d)";
+        sql = String.format(sql, strStart, ap_id);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
     }
     
     public int updateAdditionalPointEndDate(long ap_id, java.util.Date endDate) {

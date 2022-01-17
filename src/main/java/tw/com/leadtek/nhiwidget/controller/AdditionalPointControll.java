@@ -50,6 +50,9 @@ public class AdditionalPointControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            //shunxian 2022
+            additionalPointService.fillStartAndEndNull(new java.util.Date());
+            
             java.util.Date da1 = Utility.detectDate(params.getStart_date());
             java.util.Date da2 = Utility.detectDate(params.getEnd_date());
             String sortField = params.getSort_field();
@@ -87,6 +90,7 @@ public class AdditionalPointControll {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             long newId = additionalPointService.addAdditionalCondition(params);
+            additionalPointService.fillStartAndEndNull(new java.util.Date());
             additionalPointService.correctEndDate(Utility.detectDate(params.getStart_date()));
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             if (newId>0) {
@@ -114,6 +118,7 @@ public class AdditionalPointControll {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = additionalPointService.updateAdditionalCondition(id, params);
+            additionalPointService.fillStartAndEndNull(new java.util.Date());
             additionalPointService.correctEndDate(Utility.detectDate(params.getStart_date()));
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
