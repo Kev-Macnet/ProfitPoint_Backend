@@ -1,6 +1,8 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 
+import javax.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +46,7 @@ public class AdditionalPointControll {
     })
     @RequestMapping(value = "/additional/list", method = RequestMethod.POST)
     public ResponseEntity<?> additionalConditionList(@RequestHeader("Authorization") String jwt,
-            @RequestBody AdditionalSearchPl params) throws Exception {
+            @Valid @RequestBody AdditionalSearchPl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
@@ -83,11 +85,17 @@ public class AdditionalPointControll {
     })
     @RequestMapping(value = "/additional/add", method = RequestMethod.POST)
     public ResponseEntity<?> addPlanCondition(@RequestHeader("Authorization") String jwt,
-            @RequestBody AdditionalConditionPl params) throws Exception {
-        
+            @Valid @RequestBody AdditionalConditionPl params) throws Exception {
+        java.util.Date startDate = Utility.detectDate(params.getStart_date());
+        java.util.Date endDate = Utility.detectDate(params.getEnd_date());
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else if (startDate==null || endDate==null) {
+            java.util.Map<String, Object> errMap = new java.util.HashMap<String, Object>();
+            errMap.put("status", -2);
+            errMap.put("message", "起訖日期務必輸入。");
+            return new ResponseEntity<>(errMap, HttpStatus.BAD_REQUEST);
         } else {
             long newId = additionalPointService.addAdditionalCondition(params);
             additionalPointService.fillStartAndEndNull(new java.util.Date());
@@ -111,11 +119,18 @@ public class AdditionalPointControll {
     @RequestMapping(value = "/additional/{id}", method = RequestMethod.PUT)
     public ResponseEntity<?> updatePlanCondition(@RequestHeader("Authorization") String jwt,
             @PathVariable long id,
-            @RequestBody AdditionalConditionPl params) throws Exception {
+            @Valid @RequestBody AdditionalConditionPl params) throws Exception {
         
+        java.util.Date startDate = Utility.detectDate(params.getStart_date());
+        java.util.Date endDate = Utility.detectDate(params.getEnd_date());
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+        } else if (startDate==null || endDate==null) {
+            java.util.Map<String, Object> errMap = new java.util.HashMap<String, Object>();
+            errMap.put("status", -2);
+            errMap.put("message", "起訖日期務必輸入。");
+            return new ResponseEntity<>(errMap, HttpStatus.BAD_REQUEST);
         } else {
             int status = additionalPointService.updateAdditionalCondition(id, params);
             additionalPointService.fillStartAndEndNull(new java.util.Date());

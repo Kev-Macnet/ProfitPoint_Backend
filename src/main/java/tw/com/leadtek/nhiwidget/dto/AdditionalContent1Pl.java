@@ -1,12 +1,16 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
+
 import io.swagger.annotations.ApiModelProperty;
 
 public class AdditionalContent1Pl {
     @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=true, position=1)
+    @Positive(message = "The 'enable' is required.")
     private int enable;
     @ApiModelProperty(value="案件分類", required=true, position=2)
-//    @ApiModelProperty(value="案件分類", example="[\"ca001\", \"ca002\"]", required=true, position=2)
+    @NotNull(message = "The 'category' is required.")
     private java.util.List<String> category;
     
     public int getEnable() {

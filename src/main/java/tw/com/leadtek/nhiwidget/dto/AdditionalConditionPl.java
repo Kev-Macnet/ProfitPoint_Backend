@@ -1,5 +1,9 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Positive;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -8,8 +12,10 @@ import io.swagger.annotations.ApiModelProperty;
 @ApiModel(value = "總額外點數條件參數")
 public class AdditionalConditionPl {
     @ApiModelProperty(value="是否啟用(1|0),更新API不支援此參數", example="1", required=true, position=1)
+    @Positive(message = "The 'active' is required.")
     private int active;
     @ApiModelProperty(value="年度", example="110", required=true, position=2)
+    @Positive(message = "The 'syear' is required.")
     private int syear;
     @ApiModelProperty(value="生效日(timestamp)", example="1625932800000", required=true, position=3)
     private String start_date;
@@ -17,28 +23,29 @@ public class AdditionalConditionPl {
     private String end_date;
     //-----門診
     @ApiModelProperty(value="門診案件分類", required=false, position=5)
-    private AdditionalContent1Pl outpatient_1;
+    @Valid private AdditionalContent1Pl outpatient_1;
     @ApiModelProperty(value="門診醫令類別", required=false, position=6)
-    private AdditionalContent2Pl outpatient_2;
+    @Valid private AdditionalContent2Pl outpatient_2;
     @ApiModelProperty(value="門診支付代碼項目", required=false, position=7)
-    private AdditionalContent3Pl outpatient_3;
+    @Valid private AdditionalContent3Pl outpatient_3;
     @ApiModelProperty(value="門診醫令數量*醫令單價", required=false, position=8)
-    private AdditionalContent4Pl outpatient_4;
+    @Valid private AdditionalContent4Pl outpatient_4;
     @ApiModelProperty(value="門診主診斷", required=false, position=9)
-    private AdditionalContent5Pl outpatient_5;
+    @Valid private AdditionalContent5Pl outpatient_5;
     @ApiModelProperty(value="門診照護計畫", required=false, position=10)
-    private AdditionalContent6Pl outpatient_6;
+    @Valid private AdditionalContent6Pl outpatient_6;
     @ApiModelProperty(value="門診試辦計畫", required=false, position=11)
-    private AdditionalContent7Pl outpatient_7;
+    @Valid private AdditionalContent7Pl outpatient_7;
     //-----住院
     @ApiModelProperty(value="住院案件分類", required=false, position=12)
-    private AdditionalContent1Pl inpatient_1;
+    @Valid private AdditionalContent1Pl inpatient_1;
     @ApiModelProperty(value="住院醫令類別", required=false, position=13)
-    private AdditionalContent2Pl inpatient_2;
+    @Valid private AdditionalContent2Pl inpatient_2;
     @ApiModelProperty(value="住院支付代碼項目", required=false, position=14)
-    private AdditionalContent3Pl inpatient_3;
+    @Valid private AdditionalContent3Pl inpatient_3;
     @ApiModelProperty(value="住院照護計畫", required=false, position=15)
-    private AdditionalContent6Pl inpatient_6;
+    @Valid private AdditionalContent6Pl inpatient_6;
+    
     public int getActive() {
         return active;
     }
