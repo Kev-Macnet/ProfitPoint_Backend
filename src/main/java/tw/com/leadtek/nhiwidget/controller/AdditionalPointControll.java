@@ -95,7 +95,7 @@ public class AdditionalPointControll {
             return new ResponseEntity<>(errMap, HttpStatus.BAD_REQUEST);
         } else {
             if (endDate==null) {
-                params.setEnd_date("4102358400l000"); //2099-12-31
+                params.setEnd_date("4102358400000"); //2099-12-31
             }
             long newId = additionalPointService.addAdditionalCondition(params);
             additionalPointService.fillStartAndEndNull(new java.util.Date());
@@ -133,7 +133,7 @@ public class AdditionalPointControll {
             return new ResponseEntity<>(errMap, HttpStatus.BAD_REQUEST);
         } else {
             if (endDate==null) {
-                params.setEnd_date("4102358400l000"); //2099-12-31
+                params.setEnd_date("4102358400000"); //2099-12-31
             }
             int status = additionalPointService.updateAdditionalCondition(id, params);
             additionalPointService.fillStartAndEndNull(new java.util.Date());

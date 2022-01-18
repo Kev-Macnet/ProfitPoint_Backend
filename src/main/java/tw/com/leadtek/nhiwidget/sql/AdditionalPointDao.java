@@ -207,7 +207,7 @@ public class AdditionalPointDao extends BaseSqlDao {
                 + "    END_DATE='%s'\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, syear, strStart, strEnd, id);
-        System.out.println("sql-210="+sql);
+//        System.out.println("sql-210="+sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }

@@ -67,7 +67,12 @@ public class AdditionalPointService {
                 mapContent.put("enable", out2.get(0).get("enable"));
                 mapContent.put("data", out2);
                 for (Map<String, Object> item : out2) {
-                    item.put("cpoe", additionalPointDao.findOutpatientField((long)item.get("id"), 2, "cpoe"));
+                    java.util.List<String> lstCope = additionalPointDao.findOutpatientField((long)item.get("id"), 2, "cpoe");
+                    if (lstCope.size()>0) {
+                        item.put("cpoe", lstCope.get(0));
+                    } else {
+                        item.put("cpoe", "");
+                    }
                     item.remove("id");
                     item.remove("ap_id");
                     item.remove("enable");
@@ -161,7 +166,12 @@ public class AdditionalPointService {
                 mapContent.put("enable", inp2.get(0).get("enable"));
                 mapContent.put("data", inp2);
                 for (Map<String, Object> item : inp2) {
-                    item.put("cpoe", additionalPointDao.findInpatientField((long)item.get("id"), 2, "cpoe"));
+                    java.util.List<String> lstCope = additionalPointDao.findInpatientField((long)item.get("id"), 2, "cpoe");
+                    if (lstCope.size()>0) {
+                        item.put("cpoe", lstCope.get(0));
+                    } else {
+                        item.put("cpoe", "");
+                    }
                     item.remove("id");
                     item.remove("ap_id");
                     item.remove("enable");
@@ -211,7 +221,9 @@ public class AdditionalPointService {
             AdditionalContent2Pl out2 = params.getOutpatient_2();
             if (out2 != null) {
                 for (AdditionalContent2ListPl item : out2.getData()) {
-                    additionalPointDao.addOutpatient_2(newId, out2.getEnable(), item.getNhi_no(), item.getCpoe());
+                    java.util.List<String> lstCope = new java.util.ArrayList<String>();
+                    lstCope.add(item.getCpoe());
+                    additionalPointDao.addOutpatient_2(newId, out2.getEnable(), item.getNhi_no(), lstCope);
                 }
             }
             AdditionalContent3Pl out3 = params.getOutpatient_3();
@@ -259,7 +271,9 @@ public class AdditionalPointService {
             AdditionalContent2Pl inp2 = params.getInpatient_2();
             if (inp2 != null) {
                 for (AdditionalContent2ListPl item : inp2.getData()) {
-                    additionalPointDao.addInpatient_2(newId, inp2.getEnable(), item.getNhi_no(), item.getCpoe());
+                    java.util.List<String> lstCope = new java.util.ArrayList<String>();
+                    lstCope.add(item.getCpoe());
+                    additionalPointDao.addInpatient_2(newId, inp2.getEnable(), item.getNhi_no(), lstCope);
                 }
             }
             
@@ -300,7 +314,9 @@ public class AdditionalPointService {
                 if (out2 != null) {
                     additionalPointDao.delOutpatient_2(id);
                     for (AdditionalContent2ListPl item : out2.getData()) {
-                        additionalPointDao.addOutpatient_2(id, out2.getEnable(), item.getNhi_no(), item.getCpoe());
+                        java.util.List<String> lstCope = new java.util.ArrayList<String>();
+                        lstCope.add(item.getCpoe());
+                        additionalPointDao.addOutpatient_2(id, out2.getEnable(), item.getNhi_no(), lstCope);
                     }
                 }
                 
@@ -356,7 +372,9 @@ public class AdditionalPointService {
                 if (inp2 != null) {
                     additionalPointDao.delInpatient_2(id);
                     for (AdditionalContent2ListPl item : inp2.getData()) {
-                        additionalPointDao.addInpatient_2(id, inp2.getEnable(), item.getNhi_no(), item.getCpoe());
+                        java.util.List<String> lstCope = new java.util.ArrayList<String>();
+                        lstCope.add(item.getCpoe());
+                        additionalPointDao.addInpatient_2(id, inp2.getEnable(), item.getNhi_no(), lstCope);
                     }
                 }
 
