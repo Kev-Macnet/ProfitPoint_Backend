@@ -52,9 +52,6 @@ public class AdditionalPointControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
-            //shunxian 2022
-            additionalPointService.fillStartAndEndNull(new java.util.Date());
-            
             java.util.Date da1 = Utility.detectDate(params.getStart_date());
             java.util.Date da2 = Utility.detectDate(params.getEnd_date());
             String sortField = params.getSort_field();
@@ -91,12 +88,15 @@ public class AdditionalPointControll {
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
-        } else if (startDate==null || endDate==null) {
+        } else if (startDate==null) {
             java.util.Map<String, Object> errMap = new java.util.HashMap<String, Object>();
             errMap.put("status", -2);
-            errMap.put("message", "起訖日期務必輸入。");
+            errMap.put("message", "起始日期務必輸入。");
             return new ResponseEntity<>(errMap, HttpStatus.BAD_REQUEST);
         } else {
+            if (endDate==null) {
+                params.setEnd_date("4102358400l000"); //2099-12-31
+            }
             long newId = additionalPointService.addAdditionalCondition(params);
             additionalPointService.fillStartAndEndNull(new java.util.Date());
             additionalPointService.correctEndDate(Utility.detectDate(params.getStart_date()));
@@ -126,12 +126,15 @@ public class AdditionalPointControll {
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
-        } else if (startDate==null || endDate==null) {
+        } else if (startDate==null) {
             java.util.Map<String, Object> errMap = new java.util.HashMap<String, Object>();
             errMap.put("status", -2);
-            errMap.put("message", "起訖日期務必輸入。");
+            errMap.put("message", "起始日期務必輸入。");
             return new ResponseEntity<>(errMap, HttpStatus.BAD_REQUEST);
         } else {
+            if (endDate==null) {
+                params.setEnd_date("4102358400l000"); //2099-12-31
+            }
             int status = additionalPointService.updateAdditionalCondition(id, params);
             additionalPointService.fillStartAndEndNull(new java.util.Date());
             additionalPointService.correctEndDate(Utility.detectDate(params.getStart_date()));

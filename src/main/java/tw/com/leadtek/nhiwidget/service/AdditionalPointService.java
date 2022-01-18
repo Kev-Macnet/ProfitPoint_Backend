@@ -38,16 +38,6 @@ public class AdditionalPointService {
             start = 0;
         }
         java.util.List<Map<String, Object>> lst = additionalPointDao.searchAdditionalPoint(0, startDate, endDate, start, pageSize, sortField, sortDirection);
-        if (totalCount==0) {
-            totalCount = additionalPointDao.searchAdditionalPointByDateRangeCount(0, startDate, endDate);
-            start = pageSize*pageIndex;
-            if (start>totalCount) {
-                start = (int)totalCount;
-            } else if (start<0) {
-                start = 0;
-            }
-            lst = additionalPointDao.searchAdditionalPointByDateRange(0, startDate, endDate, start, pageSize, sortField, sortDirection);
-        }
 
         java.util.Map<String, Object> retMap = new java.util.LinkedHashMap<String, Object>();
         retMap.put("total", totalCount);
@@ -446,20 +436,18 @@ public class AdditionalPointService {
     public long fillStartAndEndNull(java.util.Date date) {
         long ret = 0;
         int syear =  Integer.valueOf(Utility.dateFormat(date, "yyyy"));
-        java.util.Date date2199 = new java.util.Date(7258032000l*1000); // 2199-12-31
-//        System.out.println("date2199="+Utility.dateFormat(date2199, "yyyy-MM-dd"));
+        java.util.Date date2099 = new java.util.Date(4102358400l*1000); // 2099-12-31
+//        System.out.println("date2099="+Utility.dateFormat(date2099, "yyyy-MM-dd"));
         java.util.List<Map<String, Object>> lstAddPoint = additionalPointDao.findAdditionalPoint(syear, syear-1911);
         for (Map<String, Object> item : lstAddPoint) {
             if (item.get("start_date")==null) {
-                additionalPointDao.updateAdditionalPointStartDate((long)item.get("id"), date2199);
+                additionalPointDao.updateAdditionalPointStartDate((long)item.get("id"), date2099);
                 ret++;
             }
-            /*
             if (item.get("end_date")==null) {
-                additionalPointDao.updateAdditionalPointEndDate((long)item.get("id"), date2199);
+                additionalPointDao.updateAdditionalPointEndDate((long)item.get("id"), date2099);
                 ret++;
             }
-            */
         }
         return ret;
     }

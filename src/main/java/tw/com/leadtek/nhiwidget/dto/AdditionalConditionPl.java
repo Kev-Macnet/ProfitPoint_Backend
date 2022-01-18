@@ -1,6 +1,8 @@
 package tw.com.leadtek.nhiwidget.dto;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Positive;
 
@@ -12,14 +14,14 @@ import io.swagger.annotations.ApiModelProperty;
 @ApiModel(value = "總額外點數條件參數")
 public class AdditionalConditionPl {
     @ApiModelProperty(value="是否啟用(1|0),更新API不支援此參數", example="1", required=true, position=1)
-    @Positive(message = "The 'active' is required.")
+    @Min(value = 0) @Max(value = 1)
     private int active;
     @ApiModelProperty(value="年度", example="110", required=true, position=2)
-    @Positive(message = "The 'syear' is required.")
+    @Positive()
     private int syear;
     @ApiModelProperty(value="生效日(timestamp)", example="1625932800000", required=true, position=3)
     private String start_date;
-    @ApiModelProperty(value="失效日(timestamp)", example="1627488000000", required=true, position=4)
+    @ApiModelProperty(value="失效日(timestamp)", example="1627488000000", required=false, position=4)
     private String end_date;
     //-----門診
     @ApiModelProperty(value="門診案件分類", required=false, position=5)

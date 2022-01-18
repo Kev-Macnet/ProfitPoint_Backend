@@ -22,27 +22,30 @@ public class AdditionalPointDao extends BaseSqlDao {
     @Autowired
     protected JdbcTemplate jdbcTemplate;
     
+
     public long searchAdditionalPointCount(int syear, java.util.Date startDate, java.util.Date endDate) {
-        String strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
-        String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
+        String strStart, strEnd;
+        if (startDate!=null) {
+            strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
+        } else {
+            strStart = "2000/01/01";
+        }
+        if (endDate==null) {
+            endDate = new java.util.Date();
+        }
+        strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         String sql;
         sql = "Select Count(*) as CNT\n"
                 + "From AP_ADDITIONAL_POINT\n"
                 + "Where (1=1)\n"
                 + "  -- and (SYEAR=%d)\n"
-                + "  -- and (START_DATE='%s')\n"
-                + "  -- and (END_DATE='%s')";
-        sql = String.format(sql, syear, strStart, strEnd);
+                + "  and (START_DATE BETWEEN '%s' and '%s')\n"
+                + "  and (END_DATE BETWEEN '%s' and '%s')";
+        sql = String.format(sql, syear, strStart, strEnd, strStart, strEnd);
         if (syear>0) {
             sql=sql.replace("-- and (SYEAR=", " and (SYEAR=");
         }
-        if (strStart.length()>0) {
-          sql=sql.replace("-- and (START_DATE=", " and (START_DATE=");
-        }
-        if (strEnd.length()>0) {
-          sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
-        }
-
+//        System.out.println("sql-48="+sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return (long)lst.get(0).get("CNT");
@@ -54,35 +57,39 @@ public class AdditionalPointDao extends BaseSqlDao {
 
     public java.util.List<Map<String, Object>> searchAdditionalPoint(int syear, java.util.Date startDate, java.util.Date endDate, 
             int start, int pageSize, String sortField, String sortDirection) {
-        String strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
-        String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
+        String strStart, strEnd;
+        if (startDate!=null) {
+            strStart = Utility.dateFormat(startDate, "yyyy/MM/dd");
+        } else {
+            strStart = "2000/01/01";
+        }
+        if (endDate==null) {
+            endDate = new java.util.Date();
+        }
+        strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         
         String sql;
         sql = "Select ID, ACTIVE, SYEAR, START_DATE, END_DATE\n"
                 + "From AP_ADDITIONAL_POINT\n"
                 + "Where (1=1)\n"
                 + "  -- and (SYEAR=%d)\n"
-                + "  -- and (START_DATE='%s')\n"
-                + "  -- and (END_DATE='%s')\n"
+                + "  and (START_DATE BETWEEN '%s' and '%s')\n"
+                + "  and (END_DATE BETWEEN '%s' and '%s')\n"
                 + "Order By %s %s\n"
                 + "limit %d offset %d";
-        sql = String.format(sql, syear, strStart, strEnd, noInjection(sortField), noInjection(sortDirection), pageSize, start);
+        sql = String.format(sql, syear, strStart, strEnd, strStart, strEnd,
+                            noInjection(sortField), noInjection(sortDirection), pageSize, start);
         if (syear>0) {
             sql=sql.replace("-- and (SYEAR=", " and (SYEAR=");
         }
-        if (strStart.length()>0) {
-          sql=sql.replace("-- and (START_DATE=", " and (START_DATE=");
-        }
-        if (strEnd.length()>0) {
-          sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
-        }
-//        System.out.println("sql-79="+sql);
+//        System.out.println("sql-86="+sql);
         logger.trace(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         
         return Utility.listLowerCase(lst);
     }
-    
+
+    /*
     public long searchAdditionalPointByDateRangeCount(int syear, java.util.Date startDate, java.util.Date endDate) {
         String strStart, strEnd;
         if (startDate!=null) {
@@ -145,6 +152,7 @@ public class AdditionalPointDao extends BaseSqlDao {
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
     }
+    */
     
     
     public java.util.Map<String, Object> findAdditionalPoint(long ad_id) {
@@ -199,6 +207,7 @@ public class AdditionalPointDao extends BaseSqlDao {
                 + "    END_DATE='%s'\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, syear, strStart, strEnd, id);
+        System.out.println("sql-210="+sql);
         int ret = jdbcTemplate.update(sql);
         return ret;
     }

@@ -14,7 +14,7 @@ public class AdditionalSearchListDto {
     private long pages;
     
     @ApiModelProperty(value="資料", required=true, position=3)
-    private java.util.List< AdditionalSearchListData> data;
+    private java.util.List<AdditionalSearchListData> data;
 
 
     public long getPages() {

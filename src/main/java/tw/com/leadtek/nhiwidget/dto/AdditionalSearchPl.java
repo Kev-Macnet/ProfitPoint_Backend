@@ -8,16 +8,16 @@ import io.swagger.annotations.ApiModelProperty;
 
 public class AdditionalSearchPl {
     @ApiModelProperty(value="生效日", position=1, example="2021/07/11", required=true)
-    @NotEmpty(message = "The 'start_date' is required.")
+    @NotEmpty()
     private String start_date;
     @ApiModelProperty(value="失效日", position=2, example="2021/12/31", required=true)
-    @NotEmpty(message = "The 'end_date' is required.")
+    @NotEmpty()
     private String end_date;
     @ApiModelProperty(value="每頁筆數", position=3, example="10", required=true)
-    @Positive(message = "The 'pageSize' is required.")
+    @Positive()
     private int pageSize;
     @ApiModelProperty(value="頁數(由0起算)", position=4, example="2", required=true)
-    @Positive(message = "The 'pageIndex' is required.")
+    @Positive()
     private int pageIndex;
     
     @ApiModelProperty(value="排序欄位(''/START_DATE/END_DATE)", position=5, example="START_DATE", required=false)
