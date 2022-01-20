@@ -1,11 +1,14 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.NotEmpty;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "pt輸血及骨髓移植費設定參數")
 public class PtBoneMarrowTransFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="輸血及骨髓移植費", required=true)
+    @NotEmpty()
     private String category;
 
     @ApiModelProperty(value="需與以下任一支付標準代碼並存", example="0", required=false)

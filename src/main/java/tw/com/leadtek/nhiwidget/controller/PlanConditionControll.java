@@ -3,6 +3,8 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.util.Map;
 
+import javax.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +49,7 @@ public class PlanConditionControll {
     })
     @RequestMapping(value = "/plan/list", method = RequestMethod.POST)
     public ResponseEntity<?> planConditionList(@RequestHeader("Authorization") String jwt,
-            @RequestBody PlanSearchPl params) throws Exception {
+            @Valid @RequestBody PlanSearchPl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
@@ -82,7 +84,7 @@ public class PlanConditionControll {
     })
     @RequestMapping(value = "/plan/add", method = RequestMethod.POST)
     public ResponseEntity<?> addPlanCondition(@RequestHeader("Authorization") String jwt,
-            @RequestBody PlanConditionPl params) throws Exception {
+            @Valid @RequestBody PlanConditionPl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
@@ -103,7 +105,7 @@ public class PlanConditionControll {
     @RequestMapping(value = "/plan/{id}", method = RequestMethod.PUT)
     public ResponseEntity<?> updatePlanCondition(@RequestHeader("Authorization") String jwt,
             @PathVariable long id,
-            @RequestBody PlanConditionPl params) throws Exception {
+            @Valid @RequestBody PlanConditionPl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {

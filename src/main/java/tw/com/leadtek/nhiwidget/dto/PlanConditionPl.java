@@ -1,5 +1,10 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -8,15 +13,19 @@ import io.swagger.annotations.ApiModelProperty;
 @ApiModel(value = "計畫可收案病例條件參數") //Page 63
 public class PlanConditionPl {
     @ApiModelProperty(value="計畫名稱", example="星光計畫", required=true, position=2)
+    @NotEmpty()
     private String name;
     @ApiModelProperty(value="就醫科別", example="心臟科", required=true, position=3)
+    @NotEmpty()
     private String division;
     @ApiModelProperty(value="是否啟用(0.未啟動/1.使用中/2.鎖定),更新API不支援此參數", example="1", required=true, position=4)
+    @Min(value = 0) @Max(value = 2)
     private int active;
     
     @ApiModelProperty(value="開關--本院ICD碼(1|0)", example="1", required=false, position=5)
     private int icd_no_enable;
     @ApiModelProperty(value="本院ICD碼列表", required=true, position=5)
+    @NotNull()
     private java.util.List<String> icd_no;
     
     @ApiModelProperty(value="開關--就醫天數少於 n day(1|0)", example="1", required=false, position=6)

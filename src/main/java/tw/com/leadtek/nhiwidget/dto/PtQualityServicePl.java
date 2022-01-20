@@ -1,11 +1,14 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.NotEmpty;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "pt品質支付服務設定參數")
 public class PtQualityServicePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="品質支付服務", required=true, position=21)
+    @NotEmpty()
     private String category;
 
     @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=false, position=22)

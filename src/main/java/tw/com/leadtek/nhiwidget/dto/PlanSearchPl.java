@@ -1,14 +1,22 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Positive;
+
 import io.swagger.annotations.ApiModelProperty;
 
 
 public class PlanSearchPl {
     @ApiModelProperty(value="名稱搜尋關鍵字", position=1, example="星光", required=true)
+    @NotEmpty()
     private String searchName;
     @ApiModelProperty(value="每頁筆數", position=2, example="10", required=true)
+    @Positive()
     private int pageSize;
     @ApiModelProperty(value="頁數(由0起算)", position=3, example="2", required=true)
+    @Min(value = 0) @Max(value = 9999)
     private int pageIndex;
     @ApiModelProperty(value="排序欄位(''/DIVISION/PLAN_NAME)", position=4, example="DIVISION", required=false)
     private String sort_field;

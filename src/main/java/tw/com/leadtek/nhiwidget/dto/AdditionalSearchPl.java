@@ -1,5 +1,7 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Positive;
 
@@ -17,7 +19,7 @@ public class AdditionalSearchPl {
     @Positive()
     private int pageSize;
     @ApiModelProperty(value="頁數(由0起算)", position=4, example="2", required=true)
-    @Positive()
+    @Min(value = 0) @Max(value = 9999)
     private int pageIndex;
     
     @ApiModelProperty(value="排序欄位(''/START_DATE/END_DATE)", position=5, example="START_DATE", required=false)

@@ -1,14 +1,20 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "pt病房費設定參數")
 public class PtWardFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="病房費", required=true, position=21)
+    @NotEmpty()
     private String category;
 
-    @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=false, position=22)
+    @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=true, position=22)
     private int min_stay_enable;
     @ApiModelProperty(value="入住時間滿n小時，方可申報此支付標準代碼", example="48",required=false, position=23)
     private int min_stay;

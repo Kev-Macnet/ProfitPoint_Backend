@@ -1,10 +1,9 @@
 package tw.com.leadtek.nhiwidget.service;
 
+import java.util.Date;
 import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.tools.Utility;
 
@@ -100,5 +99,38 @@ public class PaymentTermsService {
         }
         return (ret);
      }
+    
+    public void correctEndDate(String category) {
+        int idx;
+        long nextStartDate, endDate;
+        java.util.Map<String, Object> nxetMap;
+        java.util.List<Map<String, Object>> lstData;
+        java.util.List<Map<String, Object>> lstFeeNo = paymentTermsDao.findByGroupFeeNoCategory(1, category);
+        for (Map<String, Object> feeNo : lstFeeNo) { //nhi_no, category
+//            System.out.println("nhi_no = "+feeNo.get("nhi_no").toString()+", "+feeNo.get("category").toString());
+            lstData = paymentTermsDao.findByFeeNoCategory(feeNo.get("nhi_no").toString(), feeNo.get("category").toString());
+            idx = 1;
+            for (Map<String, Object> item : lstData) {
+                if (idx<(lstData.size())) {
+                    nxetMap = lstData.get(idx);
+                    nextStartDate = (long)nxetMap.get("start_date");
+                    if (item.get("end_date")==null) {
+                        endDate = 4102358400000l;
+                    } else {
+                        endDate = (long)item.get("end_date");
+                    }
+                    java.util.Date prevDay = new java.util.Date(nextStartDate-(86400*1000));
+//                    System.out.println("   end_date="+Utility.dateFormat(new Date(endDate),"yyyy-MM-dd")+", "
+//                            +Utility.dateFormat(new Date(nextStartDate),"yyyy-MM-dd")+", "
+//                            +Utility.dateFormat(prevDay,"yyyy-MM-dd"));
+                    if (nextStartDate<endDate) {
+                        paymentTermsDao.updateEndDate((long)item.get("id"), prevDay);
+                    }
+                }
+                idx++;
+            }
+        }
+    }
+
 
 }

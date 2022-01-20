@@ -1,11 +1,14 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.NotEmpty;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "pt放射線診療費設定參數")
 public class PtRadiationFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="放射線診療費", required=true, position=21)
+    @NotEmpty()
     private String category;
     
     @ApiModelProperty(value="與此支付標準代碼並存時，需提示有無特別原由", example="0", required=false, position=22)

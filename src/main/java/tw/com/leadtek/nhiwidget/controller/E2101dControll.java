@@ -1,6 +1,7 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -57,7 +58,6 @@ public class E2101dControll {
     private PtSpecificMedicalFeeService ptSpecificMedicalFeeService;
     @Autowired
     private PtOthersFeeService ptOthersFeeService;
-    
 
     //==== 精神醫療治療費 (Psychiatric Fee)
     @ApiOperation(value="10-4.01 精神醫療治療費設定(get)", notes="", position=1)
@@ -86,13 +86,16 @@ public class E2101dControll {
     @RequestMapping(value = "/payment/psychiatricfee/add", method = RequestMethod.POST)
     public ResponseEntity<?> addPaymentPsychiatricfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
-        @RequestBody PtPsychiatricFeePl params) throws Exception {
+        @Valid @RequestBody PtPsychiatricFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = 0;
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             long ptId = ptPsychiatricFeeService.addPsychiatricFee(params);
             if (ptId<=0) {
                 status = -1;
@@ -100,6 +103,7 @@ public class E2101dControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -117,16 +121,20 @@ public class E2101dControll {
     public ResponseEntity<?> updatePaymentPsychiatricfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
-        @RequestBody PtPsychiatricFeePl params) throws Exception {
+        @Valid @RequestBody PtPsychiatricFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             int status = ptPsychiatricFeeService.updatePsychiatricFee(pt_id, params);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -185,13 +193,16 @@ public class E2101dControll {
     @RequestMapping(value = "/payment/bonemarrowtransfee/add", method = RequestMethod.POST)
     public ResponseEntity<?> addPaymentBoneMarrowTransFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
-        @RequestBody PtBoneMarrowTransFeePl params) throws Exception {
+        @Valid @RequestBody PtBoneMarrowTransFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = 0;
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             long ptId = ptBoneMarrowTransFeeService.addBoneMarrowTransFee(params);
             if (ptId<=0) {
                 status = -1;
@@ -199,6 +210,7 @@ public class E2101dControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -215,16 +227,20 @@ public class E2101dControll {
     public ResponseEntity<?> updatePaymentBoneMarrowTransFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
-        @RequestBody PtBoneMarrowTransFeePl params) throws Exception {
+        @Valid @RequestBody PtBoneMarrowTransFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             int status = ptBoneMarrowTransFeeService.updateBoneMarrowTransFee(pt_id, params);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -285,13 +301,16 @@ public class E2101dControll {
     @RequestMapping(value = "/payment/plasterbandagefee/add", method = RequestMethod.POST)
     public ResponseEntity<?> addPaymentPlasterBandageFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
-        @RequestBody PtPlasterBandageFeePl params) throws Exception {
+        @Valid @RequestBody PtPlasterBandageFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = 0;
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             long ptId = ptPlasterBandageFeeService.addPlasterBandageFee(params);
             if (ptId<=0) {
                 status = -1;
@@ -299,6 +318,7 @@ public class E2101dControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -315,16 +335,20 @@ public class E2101dControll {
     public ResponseEntity<?> updatePaymentPlasterBandageFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
-        @RequestBody PtPlasterBandageFeePl params) throws Exception {
+        @Valid @RequestBody PtPlasterBandageFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             int status = ptPlasterBandageFeeService.updatePlasterBandageFee(pt_id, params);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -385,13 +409,16 @@ public class E2101dControll {
     @RequestMapping(value = "/payment/anesthesiafee/add", method = RequestMethod.POST)
     public ResponseEntity<?> addPaymentAnesthesiafee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
-        @RequestBody PtAnesthesiaFeePl params) throws Exception {
-        System.out.println("jwt="+jwt);
+        @Valid @RequestBody PtAnesthesiaFeePl params) throws Exception {
+        
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = 0;
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             long ptId = ptAnesthesiaFeeService.addAnesthesiaFee(params);
             if (ptId<=0) {
                 status = -1;
@@ -399,6 +426,7 @@ public class E2101dControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -415,16 +443,20 @@ public class E2101dControll {
     public ResponseEntity<?> updatePaymentAnesthesiafee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
-        @RequestBody PtAnesthesiaFeePl params) throws Exception {
+        @Valid @RequestBody PtAnesthesiaFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             int status = ptAnesthesiaFeeService.updateAnesthesiaFee(pt_id, params);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -485,13 +517,16 @@ public class E2101dControll {
     @RequestMapping(value = "/payment/specificmedicalfee/add", method = RequestMethod.POST)
     public ResponseEntity<?> addPaymentSpecificMedicalfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
-        @RequestBody PtSpecificMedicalFeePl params) throws Exception {
+        @Valid @RequestBody PtSpecificMedicalFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = 0;
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             long ptId = ptSpecificMedicalFeeService.addSpecificMedicalFee(params);
             if (ptId<=0) {
                 status = -1;
@@ -499,6 +534,7 @@ public class E2101dControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -515,16 +551,20 @@ public class E2101dControll {
     public ResponseEntity<?> updatePaymentSpecificMedicalfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
-        @RequestBody PtSpecificMedicalFeePl params) throws Exception {
+        @Valid @RequestBody PtSpecificMedicalFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             int status = ptSpecificMedicalFeeService.updateSpecificMedicalFee(pt_id, params);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -585,13 +625,16 @@ public class E2101dControll {
     @RequestMapping(value = "/payment/othersfee/add", method = RequestMethod.POST)
     public ResponseEntity<?> addPaymentOthersfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
-        @RequestBody PtOthersFeePl params) throws Exception {
+        @Valid @RequestBody PtOthersFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = 0;
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             long ptId = ptOthersFeeService.addOthersFee(params);
             if (ptId<=0) {
                 status = -1;
@@ -599,6 +642,7 @@ public class E2101dControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -615,16 +659,20 @@ public class E2101dControll {
     public ResponseEntity<?> updatePaymentWardfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
-        @RequestBody PtOthersFeePl params) throws Exception {
+        @Valid @RequestBody PtOthersFeePl params) throws Exception {
         
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            if (params.getEnd_date()<=0) {
+                params.setEnd_date(4102358400000l); // 2099-12-31
+            }
             int status = ptOthersFeeService.updateOthersFee(pt_id, params);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
+                paymentTermsService.correctEndDate(params.getCategory());
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");

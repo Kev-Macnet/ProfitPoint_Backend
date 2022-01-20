@@ -191,14 +191,13 @@ public class PaymentTermsDao extends BaseSqlDao {
     
     public java.util.Map<String, Object> findPaymentTerms(long id, String category) {
         String sql;
-//        sql= "Insert into\n"
-//                + "PT_PAYMENT_TERMS(ID, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE)\n"
-//                + "Values(0, '', '', '', '', CURRENT_DATE, '', '', 0, 0)";
         sql = "Select ID, ACTIVE, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY, OUTPATIENT_TYPE, HOSPITALIZED_TYPE\n"
                 + "From PT_PAYMENT_TERMS\n"
                 + "Where (ID=%d) and (CATEGORY='%s')";
         sql = String.format(sql, id, noInjection(category));
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+//        System.out.println("category="+category+", "+id);
+//        System.out.println(lst);
         if (lst.size()>0) {
             java.util.Map<String, Object> retMap = Utility.mapLowerCase(lst.get(0));
             retMap.put("hospital_type", filterHospitalType(id));
@@ -245,20 +244,6 @@ public class PaymentTermsDao extends BaseSqlDao {
         String strStart = Utility.dateFormat(start_date, "yyyy/MM/dd");
         String strEnd = Utility.dateFormat(end_date, "yyyy/MM/dd");
         String sql;
-        /*
-        sql = "Update PT_PAYMENT_TERMS\n"
-                + "Set FEE_NO=%s, \n"
-                + "    FEE_NAME=%s, \n"
-                + "    NHI_NO=%s, \n"
-                + "    NHI_NAME=%s, \n"
-                + "    START_DATE='%s', \n"
-                + "    END_DATE='%s', \n"
-                + " --   CATEGORY='%s', \n"
-                + "    HOSPITAL_TYPE=%d, \n"
-                + "    OUTPATIENT_TYPE=%d, \n"
-                + "    HOSPITALIZED_TYPE=%d\n"
-                + "Where (ID=%d)and(CATEGORY='%s')";
-                */
         sql = "Update PT_PAYMENT_TERMS\n"
                 + "Set FEE_NO=%s, \n"
                 + "    FEE_NAME=%s, \n"
@@ -272,6 +257,7 @@ public class PaymentTermsDao extends BaseSqlDao {
         sql = String.format(sql, quotedNotNull(fee_no), quotedNotNull(fee_name), 
                 quotedNotNull(nhi_no), quotedNotNull(nhi_name), strStart, strEnd, 
                 outpatient_type, hospitalized_type, id, noInjection(category));
+//        System.out.println("sql-275="+sql);
         int ret = jdbcTemplate.update(sql);
         //----
         if (ret > 0) {
@@ -664,5 +650,52 @@ public class PaymentTermsDao extends BaseSqlDao {
     }
 
     //===
+    public java.util.List<Map<String, Object>> findByGroupFeeNoCategory(int lim, String category) {
+        String sql;
+        sql = "Select *\r\n"
+                + "FROM (Select NHI_NO, CATEGORY, Count(*) as CNT\r\n"
+                + "      From PT_PAYMENT_TERMS\r\n"
+                + "      Where (NHI_NO IS NOT null)\r\n"
+                + "       -- and (CATEGORY='%s')"
+                + "      Group By NHI_NO, CATEGORY)\r\n"
+                + "Where (CNT>%d)\n"
+                + "Order By 2";
+        sql = String.format(sql, noInjection(category), lim);
+        if (category.length()>0) {
+            sql = sql.replace("-- and (CATEGORY", " and (CATEGORY");
+        }
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        if (lst.size()>0) {
+            return Utility.listLowerCase(lst);
+        } else {
+            return java.util.Collections.emptyList();
+        }
+    }
+    
+    public java.util.List<Map<String, Object>> findByFeeNoCategory(String feeNo, String category) {
+        String sql;
+        sql = "Select ID, START_DATE, END_DATE, NHI_NO, CATEGORY\r\n"
+                + "From PT_PAYMENT_TERMS\r\n"
+                + "Where (NHI_NO='%s')and(CATEGORY='%s')\r\n"
+                + "Order BY START_DATE";
+        sql = String.format(sql, noInjection(feeNo), noInjection(category));
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        if (lst.size()>0) {
+            return Utility.listLowerCase(lst);
+        } else {
+            return java.util.Collections.emptyList();
+        }
+    }
+    
+    public int updateEndDate(long ap_id, java.util.Date endDate) {
+        String strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
+        String sql;
+        sql = "Update PT_PAYMENT_TERMS\r\n"
+                + "Set END_DATE='%s'\r\n"
+                + "Where (ID=%d)";
+        sql = String.format(sql, strEnd, ap_id);
+        int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
 
 }

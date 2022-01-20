@@ -2,16 +2,19 @@ package tw.com.leadtek.nhiwidget.dto;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value= "pt支付條件設定Master", description = "pt支付條件設定Master")
 public class PaymentTermsPl {
-    
     @ApiModelProperty(value="分類", example="門診診察費", position=1, required=true)
     private String category;
     @ApiModelProperty(value="是否啟用(0/1),更新API不支援此參數", example="1", position=2, required=false)
+    @Min(value = 0) @Max(value = 1)
     private int active;
     
     @ApiModelProperty(value="院內碼",example="zz001", position=3, required=false)
@@ -19,25 +22,30 @@ public class PaymentTermsPl {
     @ApiModelProperty(value="院內碼名稱", example="雜支", position=4, required=false)
     private String fee_name;
     
-    @ApiModelProperty(value="支付標準代碼", example="axow-001", position=5, required=false)
+    @ApiModelProperty(value="支付標準代碼", example="axow-001", position=5, required=true)
+    @NotEmpty()
     private String nhi_no;
     @ApiModelProperty(value="支付標準代碼名稱", example="雜支", position=6, required=false)
     private String nhi_name;
 
     @ApiModelProperty(value="生效日(timestamp)", example="1625932800000", position=7, required=true)
+    @Positive()
     private long start_date;
-    @ApiModelProperty(value="失效日(timestamp)", example="1627488000000", position=8, required=true)
+    @ApiModelProperty(value="失效日(timestamp)", example="1627488000000", position=8, required=false)
     private long end_date;
 //    @Min(0)
 //    @Max(4)
 //    @ApiModelProperty(value="醫院層級(1醫學中心/2區域醫院/3地方醫院/4基層診所)", example="2", position=8, required=true)
 //    private int hospital_type;
     @ApiModelProperty(value="醫院層級(醫學中心/區域醫院/地方醫院/基層診所)", position=8, required=true)
+    @NotNull()
     private java.util.List<String> hospital_type;
     
     @ApiModelProperty(value="就醫方式(門急)(1|0)", example="1", position=9, required=true)
+    @Min(value = 0) @Max(value = 1)
     private int outpatient_type;
     @ApiModelProperty(value="就醫方式(住院)(1|0)", example="0", position=10, required=true)
+    @Min(value = 0) @Max(value = 1)
     private int hospitalized_type;
     
     public String getCategory() {

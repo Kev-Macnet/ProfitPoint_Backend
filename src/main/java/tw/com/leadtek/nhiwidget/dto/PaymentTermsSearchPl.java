@@ -1,5 +1,9 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Positive;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -19,8 +23,10 @@ public class PaymentTermsSearchPl {
     @ApiModelProperty(value="失效日", position=5, example="2021/07/29 (1627488000000)", required=false)
     private String end_date;
     @ApiModelProperty(value="每頁筆數", position=6, example="10", required=true)
+    @Positive()
     private int pageSize;
     @ApiModelProperty(value="頁數(由0起算)", position=7, example="2", required=true)
+    @Min(value = 0) @Max(value = 9999)
     private int pageIndex;
     @ApiModelProperty(value="排序欄位(''/FEE_NO/NHI_NO/CATEGORY/START_DATE/END_DATE, fee_no=院內碼, nhi_no=支付標準代碼, category=分類, start_date=生效日, end_date=失效日)", position=7, example="START_DATE", required=false)
     private String sort_field;

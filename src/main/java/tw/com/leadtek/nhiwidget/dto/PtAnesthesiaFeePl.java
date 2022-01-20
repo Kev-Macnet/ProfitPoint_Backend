@@ -1,11 +1,14 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.NotEmpty;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "pt麻醉費設定參數")
 public class PtAnesthesiaFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="麻醉費", required=true, position=21)
+    @NotEmpty()
     private String category;
     
     @ApiModelProperty(value="單一就醫紀錄上，須包含以下任一DRG代碼", example="0", required=false, position=22)

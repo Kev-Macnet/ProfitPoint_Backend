@@ -1,11 +1,14 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.NotEmpty;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "pt精神醫療治療費設定參數")
 public class PtPsychiatricFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="精神醫療治療費", required=true, position=21)
+    @NotEmpty()
     private String category;
     
     @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", required=false, position=22)

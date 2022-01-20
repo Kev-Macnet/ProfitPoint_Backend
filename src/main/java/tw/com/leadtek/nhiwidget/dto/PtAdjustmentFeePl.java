@@ -1,11 +1,14 @@
 package tw.com.leadtek.nhiwidget.dto;
 
+import javax.validation.constraints.NotEmpty;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(value = "pt調劑費設定參數")
 public class PtAdjustmentFeePl extends PaymentTermsPl {
     @ApiModelProperty(value="分類", example="調劑費", required=true, position=21)
+    @NotEmpty()
     private String category;
 
     @ApiModelProperty(value="需與以下任一支付標準代碼並存(開關)", example="0", required=false, position=22)

@@ -222,7 +222,9 @@ public class AdditionalPointService {
             if (out2 != null) {
                 for (AdditionalContent2ListPl item : out2.getData()) {
                     java.util.List<String> lstCope = new java.util.ArrayList<String>();
-                    lstCope.add(item.getCpoe());
+                    if ((item.getCpoe()!=null)&&(item.getCpoe().length()>0)) {
+                        lstCope.add(item.getCpoe());
+                    }
                     additionalPointDao.addOutpatient_2(newId, out2.getEnable(), item.getNhi_no(), lstCope);
                 }
             }
@@ -272,7 +274,9 @@ public class AdditionalPointService {
             if (inp2 != null) {
                 for (AdditionalContent2ListPl item : inp2.getData()) {
                     java.util.List<String> lstCope = new java.util.ArrayList<String>();
-                    lstCope.add(item.getCpoe());
+                    if ((item.getCpoe()!=null)&&(item.getCpoe().length()>0)) {
+                        lstCope.add(item.getCpoe());
+                    }
                     additionalPointDao.addInpatient_2(newId, inp2.getEnable(), item.getNhi_no(), lstCope);
                 }
             }
@@ -423,13 +427,13 @@ public class AdditionalPointService {
         return additionalPointDao.updateAdditionalPointActive(id, state);
     }
     
-    
+
     public void correctEndDate(java.util.Date date) {
         int syear =  Integer.valueOf(Utility.dateFormat(date, "yyyy"));
         java.util.List<Map<String, Object>> calcMap = new java.util.LinkedList<Map<String, Object>>(); 
         java.util.List<Map<String, Object>> lstAddPoint = additionalPointDao.findAdditionalPoint(syear, syear-1911);
         for (Map<String, Object> item : lstAddPoint) {
-            if (item.get("end_date")!=null && item.get("start_date")!=null) {
+            if (item.get("start_date") != null) {
                 calcMap.add(item);
             }
         }
@@ -440,7 +444,11 @@ public class AdditionalPointService {
             if (idx<(calcMap.size()-0)) {
                 nxetMap = calcMap.get(idx);
                 nextStartDate = (long)nxetMap.get("start_date");
-                endDate = (long)item.get("end_date");
+                if (item.get("end_date")==null) {
+                    endDate = 4102358400000l;
+                } else {
+                    endDate = (long)item.get("end_date");
+                }
                 java.util.Date prevDay = new java.util.Date(nextStartDate-(86400*1000));
                 if (nextStartDate<endDate) {
                     additionalPointDao.updateAdditionalPointEndDate((long)item.get("id"), prevDay);
