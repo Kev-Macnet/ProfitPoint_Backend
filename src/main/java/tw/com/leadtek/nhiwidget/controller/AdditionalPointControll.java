@@ -54,7 +54,6 @@ public class AdditionalPointControll {
         } else {
             java.util.Date da1 = Utility.detectDate(params.getStart_date());
             java.util.Date da2 = Utility.detectDate(params.getEnd_date());
-
             String sortField = params.getSort_field();
             String sortDirection = params.getSort_direction(); // ASC|DESC
             if ((sortField==null)||(sortField.length()==0)) {
