@@ -5,6 +5,7 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,8 +38,13 @@ import tw.com.leadtek.nhiwidget.payload.DrgCodePayload;
 import tw.com.leadtek.nhiwidget.payload.PayCodePayload;
 import tw.com.leadtek.nhiwidget.payload.SameATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.PayCodeListResponse;
+import tw.com.leadtek.nhiwidget.payload.system.CompareWarningPayload;
+import tw.com.leadtek.nhiwidget.payload.system.DbManagement;
 import tw.com.leadtek.nhiwidget.payload.system.DeductedListResponse;
+import tw.com.leadtek.nhiwidget.payload.system.FileManagementPayload;
 import tw.com.leadtek.nhiwidget.payload.system.ICD10ListResponse;
+import tw.com.leadtek.nhiwidget.payload.system.IntelligentConfig;
+import tw.com.leadtek.nhiwidget.payload.system.QuestionMarkPayload;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
@@ -194,13 +200,15 @@ public class SystemController extends BaseController {
   public ResponseEntity<ATCListResponse> getATC(
       @ApiParam(name = "code", value = "ATC代碼",
           example = "A01") @RequestParam(required = false) String code,
+      @ApiParam(value = "ATC分類名稱",
+          example = "氟化亞錫") @RequestParam(required = false) String note,
       @ApiParam(name = "perPage", value = "每頁顯示筆數",
           example = "20") @RequestParam(required = false) Integer perPage,
       @ApiParam(name = "page", value = "第幾頁，第一頁值為0", example = "0") @RequestParam(required = false,
           defaultValue = "0") Integer page) {
     int perPageInt = (perPage == null) ? DEFAULT_PAGE_COUNT : perPage.intValue();
     int pageInt = page == null ? 0 : page.intValue();
-    return ResponseEntity.ok(systemService.getATC(code, perPageInt, pageInt));
+    return ResponseEntity.ok(systemService.getATC(code, note, perPageInt, pageInt));
   }
 
   @ApiOperation(value = "新增一組ATC分類代碼", notes = "新增一組ATC分類代碼")
@@ -558,6 +566,71 @@ public class SystemController extends BaseController {
     return returnAPIResult(systemService.deleteIcd10(idL));
   }
   
+  @ApiOperation(value = "取得檔案管理功能設定", notes = "取得檔案管理功能設定")
+  @GetMapping("/config/fileManagement")
+  public ResponseEntity<FileManagementPayload> getFileManagement() {
+    return ResponseEntity.ok(systemService.getFileManagementPaylod());
+  }
+  
+  @ApiOperation(value = "更新檔案管理功能設定", notes = "更新檔案管理功能設定")
+  @PostMapping("/config/fileManagement")
+  public ResponseEntity<BaseResponse> updateFileManagement(
+      @RequestBody FileManagementPayload request) {
+    return returnAPIResult(systemService.updateFileManagementPaylod(request));
+  }
+  
+  @ApiOperation(value = "取得比對警示功能設定", notes = "取得比對警示功能設定")
+  @GetMapping("/config/compareWarning")
+  public ResponseEntity<CompareWarningPayload> getCompareWarning() {
+    return ResponseEntity.ok(systemService.getCompareWarningPayload());
+  }
+  
+  @ApiOperation(value = "更新比對警示功能設定", notes = "更新比對警示功能設定")
+  @PostMapping("/config/compareWarning")
+  public ResponseEntity<BaseResponse> updateCompareWarning(
+      @RequestBody CompareWarningPayload request) {
+    return returnAPIResult(systemService.updateCompareWarningPayload(request));
+  }
+  
+  @ApiOperation(value = "取得疑問提示通知功能設定", notes = "取得疑問提示通知功能設定")
+  @GetMapping("/config/questionMark")
+  public ResponseEntity<QuestionMarkPayload> getQuestionMarkPayload() {
+    return ResponseEntity.ok(systemService.getQuestionMarkPayload());
+  }
+  
+  @ApiOperation(value = "更新疑問提示通知功能設定", notes = "更新疑問提示通知功能設定")
+  @PostMapping("/config/questionMark")
+  public ResponseEntity<BaseResponse> updateQuestionMarkPayload(
+      @RequestBody QuestionMarkPayload request) {
+    return returnAPIResult(systemService.updateQuestionMarkPayload(request));
+  }
+  
+  @ApiOperation(value = "取得智能提示助理功能設定", notes = "取得智能提示助理功能設定")
+  @GetMapping("/config/intelligent")
+  public ResponseEntity<IntelligentConfig> getIntelligentConfig() {
+    return ResponseEntity.ok(systemService.getIntelligentConfig());
+  }
+  
+  @ApiOperation(value = "更新智能提示助理功能設定", notes = "更新智能提示助理功能設定")
+  @PostMapping("/config/intelligent")
+  public ResponseEntity<BaseResponse> updateIntelligentConfig(
+      @RequestBody IntelligentConfig request) {
+    return returnAPIResult(systemService.updateIntelligentConfig(request));
+  }
+  
+  @ApiOperation(value = "取得資料庫串接管理設定", notes = "取得資料庫串接管理設定")
+  @GetMapping("/config/dbManagement")
+  public ResponseEntity<DbManagement> getDbManagement() {
+    return ResponseEntity.ok(systemService.getDbManagement());
+  }
+  
+  @ApiOperation(value = "更新資料庫串接管理設定", notes = "更新資料庫串接管理設定")
+  @PostMapping("/config/dbManagement")
+  public ResponseEntity<BaseResponse> updateDbManagement(
+      @RequestBody DbManagement request) {
+    return returnAPIResult(systemService.updateDbManagement(request));
+  }
+  
   @ApiOperation(value = "重跑job", notes = "重跑job")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/run")
@@ -577,7 +650,15 @@ public class SystemController extends BaseController {
       is.calculateHighRatio(param);
     } else if ("OverAmount".equals(name)) {
       is.calculateOverAmount(param);
-    } 
+    } else if ("DRG".equals(name)) {
+      reportService.calculateDRGMonthly(param);
+    } else if ("Weekly".equals(name)) {
+      Calendar cal = Calendar.getInstance();
+      cal.set(Calendar.YEAR, 2021);
+      cal.set(Calendar.MONTH, 10);
+      cal.set(Calendar.DAY_OF_MONTH, 1);
+      reportService.calculatePointWeekly(cal);
+    }
     return returnAPIResult(null);
   }
 }

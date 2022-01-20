@@ -48,6 +48,9 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
 
   @ApiModelProperty(value = "住院單一病患申報數超過次數跳提示", example = "100", required = false)
   private Integer ipTimesD;
+  
+  @ApiModelProperty(value = "醫令類別，2:應用比例偏高醫令，3:特別用量、衛材", example = "2", required = false)
+  private Integer codeType;
 
   public HighRatioOrder() {
 
@@ -58,11 +61,17 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
     code = ct.getCode();
     sdate = ct.getStartDate();
     edate = ct.getEndDate();
-    ip = ct.getDataFormat().equals("20");
-    op = ct.getDataFormat().equals("10");
-    both = ct.getDataFormat().equals("00");
+    if ("11".equals(ct.getDataFormat())) {
+      ip = true;
+      op = true;
+      both = false;
+    } else {
+      ip = ct.getDataFormat().equals("20");
+      op = ct.getDataFormat().equals("10");
+      both = ct.getDataFormat().equals("00");
+    }
 
-    opTimesStatus = (ct.getOpTimesMStatus().intValue() == 1);
+    opTimesStatus = (ct.getOpTimesStatus().intValue() == 1);
     opTimes = ct.getOpTimes();
     opTimesDStatus = ct.getOpTimesDStatus().intValue() == 1;
     opTimesDay = ct.getOpTimesDay();
@@ -73,7 +82,7 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
     opTimes6MStatus = (ct.getOpTimes6mStatus().intValue() == 1);
     opTimes6M = ct.getOpTimes6m();
 
-    ipTimesStatus = (ct.getIpTimesMStatus().intValue() == 1);
+    ipTimesStatus = (ct.getIpTimesStatus().intValue() == 1);
     ipTimes = ct.getIpTimes();
     ipTimesDStatus = ct.getIpTimesDStatus().intValue() == 1;
     ipTimesDay = ct.getIpTimesDay();
@@ -83,22 +92,27 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
     ipTimes6MStatus = (ct.getIpTimes6mStatus().intValue() == 1);
     ipTimes6M = ct.getIpTimes6m();
     status = ct.getStatus().intValue() == 1;
+    name = ct.getDescChi();
+    codeType = ct.getCodeType().intValue();
   }
 
-  public CODE_THRESHOLD toDB() {
+  public CODE_THRESHOLD toDB(int codeType) {
     CODE_THRESHOLD result = new CODE_THRESHOLD();
     if (id != null) {
       result.setId(id);
     }
-    result.setCodeType(new Integer(CODE_TYPE_ORDER));
-    result.setCode(code);
+    result.setCodeType(new Integer(codeType));
+    result.setCode(code.toUpperCase());
     result.setDescChi(name);
 
     result.setStartDate(sdate);
     result.setEndDate(edate);
     
-    if ((both != null && both.booleanValue())|| (ip && op)) {
+    if ((both != null && both.booleanValue())) {
       result.setDataFormat("00");
+    } else if (ip && op) {
+      // 有門診數值也有住院數值，但不共用
+      result.setDataFormat("11");
     } else if (ip) {
       result.setDataFormat("20");
     } else if (op) {
@@ -248,5 +262,12 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
     this.ipTimesD = ipTimesD;
   }
 
+  public Integer getCodeType() {
+    return codeType;
+  }
+
+  public void setCodeType(Integer codeType) {
+    this.codeType = codeType;
+  }
 
 }

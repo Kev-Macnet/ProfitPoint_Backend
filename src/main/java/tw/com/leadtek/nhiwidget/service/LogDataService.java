@@ -3,6 +3,8 @@ package tw.com.leadtek.nhiwidget.service;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.text.DecimalFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.model.DrgCalculate;
+import tw.com.leadtek.nhiwidget.model.rdb.DRG_CAL;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 
@@ -121,7 +124,11 @@ public class LogDataService {
       calcICD_CM_2345(item.get("icd_cm").toString(), icdcmSet, rowData);
       StringBuffer strBuffer = new StringBuffer();
       for (int a = 0; a < field.length; a++) {
-        // System.out.println(field[a][0]+"-------->");
+        if (field[a].length > 1) {
+        System.out.println("field[" + a + "][0]=" + field[a][0]+",[1]=" + field[a][1]);
+        } else {
+          System.out.println("field[" + a + "][0]=" + field[a][0]+",size=" + field[a].length);  
+        }
         if (field[a][0].equals("gender")) {
           strBuffer.append(gender + ",");
         } else if (field[a][0].equals("MED_DOT")) {
@@ -137,7 +144,11 @@ public class LogDataService {
         } else if (field[a][0].length() > 0) {
           if (field[a].length == 2) {
             if (field[a][1].equals("ROC")) {
-              strBuffer.append(rocDateToDate(rowData.get(field[a][0]).toString()) + ",");
+              if (rowData.get(field[a][0]) == null) {
+                strBuffer.append(",");
+              } else {
+                strBuffer.append(rocDateToDate(rowData.get(field[a][0]).toString()) + ",");
+              }
             } else {
               strBuffer.append(rowData.get(field[a][0]).toString() + ",");
             }
@@ -406,15 +417,16 @@ public class LogDataService {
       execBatch(pyCommand);
       java.util.List<String> lstResult = loadFromFile(targetName);
       retMap = parseDrgResult(sn, card_seq_no, lstResult, lst_icd_cm);
-      if (retMap.get("error_message") != null) {
-        Set<String> error = (Set<String>) retMap.get("error_message");
-        if (error.size() > 0) {
-          for (String string : error) {
-            System.out.println("error_message != null -> " + string);
-          }
-          return retMap;
-        }
-      }
+      
+//      if (retMap.get("error_message") != null) {
+//        Set<String> error = (Set<String>) retMap.get("error_message");
+//        if (error.size() > 0) {
+//          for (String string : error) {
+//            System.out.println("error_message != null -> " + string);
+//          }
+//          return retMap;
+//        }
+//      }
       int wrCnt = writeDrgResult(retMap, medDot, applDot, nonApplDot, partDot, bedDay, tranCode, addChild);
       deleteFile(sourceName);
       deleteFile(targetName);
@@ -427,48 +439,73 @@ public class LogDataService {
   public int writeDrgResult(java.util.Map<String, Object> drgResult, int medDot, int applDot, int nonApplDot, int partDot,
       int bedDay, String tranCode, int addChild) {
     int ret = 0;
-    String drg_code, error;
     long mr_id = (long) drgResult.get("mr_id");
-    long appl_dot;
     String feeYM = (String) drgResult.get("fee_ym");
     logDataDao.del_DRG_CAL(mr_id);
     java.util.List<Map<String, Object>> lstDrgData = (java.util.List<Map<String, Object>>) drgResult.get("data");
     HashMap<String, DrgCalculate> drgCodes = new HashMap<String, DrgCalculate>();
     HashMap<String, Integer> drgApplDot = new HashMap<String, Integer>();
     for (Map<String, Object> item : lstDrgData) {
+      DRG_CAL drg = new DRG_CAL();
+      drg.setMrId(mr_id);
+      drg.setIcdCM1(item.get("icd_cm_1").toString());
+      drg.setIcdOPCode1(item.get("icd_op_code1").toString());
+      drg.setUpdateAt(new Date());
       if (item.get("appl_dot") != null) {
-        appl_dot = strToLong(item.get("appl_dot").toString());
+        drg.setMedDot((int)strToLong(item.get("appl_dot").toString()));
       } else {
-        appl_dot = 0;
+        drg.setMedDot(0);
       }
-      drg_code = item.get("drg_code").toString();
-      error = item.get("error_code").toString().replaceAll("00", "");
-      if ((drg_code.length() == 0) && (error.length() == 0)) {
-        error = "0(AP過期)";
+      if (item.get("mdc_code") != null) {
+        drg.setMdc((String)item.get("mdc_code"));
       }
+      String error = item.get("error_code").toString().replaceAll("0", "");
+      if (item.get("drg_code") != null && item.get("drg_code").toString().length() > 0 && 
+          !"XXX".equals(item.get("drg_code").toString()) && 
+          !"YYY".equals(item.get("drg_code").toString())) {
+        drg.setDrg(item.get("drg_code").toString());
+      } else {
+        drg.setError(error);
+        logDataDao.addDrgCal(drg);
+        continue;
+      }
+     
       // 西元年
       int adYM = Integer.parseInt(feeYM);
       int newApplDot = 0;
-      DrgCalculate drgCodeDetail = null;
-      if (drgCodes.get(drg_code) != null) {
-        drgCodeDetail = drgCodes.get(drg_code);
-      } else {
-        drgCodeDetail = drgCalService.getDRGSection(drg_code, String.valueOf(adYM - 191100), (int) appl_dot, addChild);
-        drgCodes.put(drg_code, drgCodeDetail);
+      DrgCalculate drgCodeDetail = drgCodes.get(drg.getDrg());
+      if (drgCodeDetail == null) {
+        drgCodeDetail = drgCalService.getDRGSection(drg.getDrg(), String.valueOf(adYM - 191100),
+            drg.getMedDot(), addChild);
       }
-      if (!drgCodeDetail.isStarted() && error.length() == 0) {
-        error = "C";
+      if (drgCodeDetail == null || (!drgCodeDetail.isStarted() && error.length() == 0)) {
+        drg.setError("C");
       } else {
-        if (drgApplDot.get(drg_code) != null) {
-          newApplDot = drgApplDot.get(drg_code).intValue();
+        drgCodes.put(drg.getDrg(), drgCodeDetail);
+        DecimalFormat df = new DecimalFormat("#.###");
+        drg.setRw(Double.parseDouble(df.format(drgCodeDetail.getRw())));
+        drg.setAvgInDay(drgCodeDetail.getAvgInDay());
+        drg.setUlimit(drgCodeDetail.getUlimit());
+        drg.setLlimit(drgCodeDetail.getLlimit());
+        drg.setDrgSection(drgCodeDetail.getSection());
+        drg.setDrgFix(drgCodeDetail.getFixed());
+        drg.setDrgSection(drgCodeDetail.getSection());
+        
+        if (drgApplDot.get(drg.getDrg()) != null) {
+          newApplDot = drgApplDot.get(drg.getDrg()).intValue();
         } else {
           boolean isInCase20 = checkCase20(drgCodeDetail, feeYM);
           newApplDot = drgCalService.getApplDot(drgCodeDetail, medDot, partDot, nonApplDot, mr_id, bedDay, tranCode, isInCase20);
-          drgApplDot.put(drg_code, newApplDot);
+          drgApplDot.put(drg.getDrg(), newApplDot);
         }
+        drg.setDrgDot(newApplDot);
       }
-      ret += logDataDao.add_DRG_CAL(mr_id, item.get("icd_cm_1").toString(), item.get("icd_op_code1").toString(), 
-          appl_dot, drg_code, item.get("complication").toString(), error, drgCodeDetail.getSection(), drgCodeDetail.getFixed(), newApplDot);
+      if (item.get("complication") != null) {
+        drg.setCc((String)item.get("complication"));
+      }
+//      ret += logDataDao.add_DRG_CAL(mr_id, item.get("icd_cm_1").toString(), item.get("icd_op_code1").toString(), 
+//          drg.getDrgDot(), drg_code, item.get("complication").toString(), error, drgCodeDetail.getSection(), drgCodeDetail.getFixed(), newApplDot);
+      logDataDao.addDrgCal(drg);
     }
     return ret;
   }
@@ -493,8 +530,7 @@ public class LogDataService {
       String arrWorkPath[] = workPath.split(":");
       lstData.add(arrWorkPath[0] + ":");
       lstData.add(String.format("cd \"%s\"", arrWorkPath[1]));
-      saveToFile(workPath + "DRG.BAT", lstData);
-      ret = 0;
+      ret = saveToFile(workPath + "DRG.BAT", lstData) ? 0 : 1;
     }
 
     return ret;

@@ -44,5 +44,25 @@ public class SearchSuggesstion extends BaseController {
     // }
     // return returnAPIResult(errorMessage);
   }
+  
+  @ApiOperation(value = "取得搜尋建議", notes = "取得搜尋建議")
+  @GetMapping("/q")
+  public ResponseEntity<?> getSuggestions(
+      @ApiParam(name = "term", value = "搜尋關鍵字，若有多個用空格區隔，如\"diabetes mellitus without\"", example = "l97.") @RequestParam(required = true) String term,
+      @ApiParam(name = "cat", value = "有 ICD10-PCS(處置碼), ICD10-CM(診斷碼)", example = "ICD10-CM") @RequestParam(required = false) String cat,
+      @ApiParam(value = "是否改讀DB", example = "false") @RequestParam(defaultValue = "false", required = false) Boolean isDb) {
+    //logger.info("search:" + term + ", cat=" + cat);
+    List<JsonSuggestion> result = rs.query(cat, term.toLowerCase(), isDb);
+    return ResponseEntity.ok(result);
+    // if (cfService.doesCfNameExist(request.getName())) {
+    // return returnAPIResult("表單 " + request.getName() + " 已存在");
+    // }
+    //
+    // String errorMessage = cfService.addCF(request);
+    // if (errorMessage != null && errorMessage.length() > 0) {
+    // logger.info("/cf:" + errorMessage);
+    // }
+    // return returnAPIResult(errorMessage);
+  }
 
 }

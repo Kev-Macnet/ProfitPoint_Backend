@@ -663,6 +663,7 @@ public class MR {
   }
 
   public void updateMR(MR mr) {
+    System.out.println("save mr");
     this.inhMrId = mr.getInhMrId();
     updateFuncType(mr.getFuncType());
     this.rocId = mr.getRocId();

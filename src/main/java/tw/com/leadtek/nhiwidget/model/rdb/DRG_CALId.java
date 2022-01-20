@@ -14,20 +14,24 @@ public class DRG_CALId implements Serializable {
 
   private static final long serialVersionUID = -8850461234175584481L;
 
-  private String mrId;
+  private Long mrId;
 
   private String icdCM1;
+  
+  public DRG_CALId() {
+    
+  }
 
-  public DRG_CALId(String mrId, String icdCM1) {
+  public DRG_CALId(Long mrId, String icdCM1) {
     this.mrId = mrId;
     this.icdCM1 = icdCM1;
   }
 
-  public String getMrId() {
+  public Long getMrId() {
     return mrId;
   }
 
-  public void setMrId(String mrId) {
+  public void setMrId(Long mrId) {
     this.mrId = mrId;
   }
 

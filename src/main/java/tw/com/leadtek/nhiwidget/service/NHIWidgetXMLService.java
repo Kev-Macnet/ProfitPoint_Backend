@@ -12,6 +12,7 @@ import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.DEDUCTED_NOTEDao;
+import tw.com.leadtek.nhiwidget.dao.DRG_CALDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.IP_TDao;
@@ -65,6 +67,7 @@ import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DHead;
+import tw.com.leadtek.nhiwidget.model.rdb.DRG_CAL;
 import tw.com.leadtek.nhiwidget.model.rdb.IP;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_DData;
@@ -91,6 +94,9 @@ import tw.com.leadtek.nhiwidget.payload.MRStatusCount;
 import tw.com.leadtek.nhiwidget.payload.MrNoteListResponse;
 import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
+import tw.com.leadtek.nhiwidget.payload.mr.DrgCalPayload;
+import tw.com.leadtek.nhiwidget.payload.mr.DrgListPayload;
+import tw.com.leadtek.nhiwidget.payload.mr.EditMRPayload;
 import tw.com.leadtek.nhiwidget.payload.mr.HomepageParameters;
 import tw.com.leadtek.nhiwidget.payload.mr.SearchMRParameters;
 import tw.com.leadtek.nhiwidget.payload.my.DoctorList;
@@ -188,7 +194,10 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private EntityManager em;
-  
+
+  @Autowired
+  private DRG_CALDao drgCalDao;
+
   public void saveOP(OP op) {
     OP_T opt = saveOPT(op.getTdata());
     // Map<String, Object> condition1 =
@@ -1063,7 +1072,9 @@ public class NHIWidgetXMLService {
         Path<String> pathRemark = root.get("remark");
         Path<String> pathInhClinicId = root.get("inhClinicId");
         Path<String> pathName = root.get("name");
-        predicate.add(cb.between(root.get("mrDate"), sDate, eDate));
+        if (sDate != null && eDate != null) {
+          predicate.add(cb.between(root.get("mrDate"), sDate, eDate));
+        }
         for (int i = 0; i < ss.length; i++) {
           predicate.add(cb.or(cb.like(pathRocId, ss[i] + "%"), cb.like(pathInhMrId, ss[i] + "%"),
               cb.like(pathFuncType, ss[i] + "%"), cb.like(pathPrsnId, ss[i] + "%"),
@@ -1087,9 +1098,9 @@ public class NHIWidgetXMLService {
         if (mrDb.getStatus() == null) {
           mrDb.setStatus(MR_STATUS.NO_CHANGE.value());
         }
-//        if (status < IGNORE_STATUS && mrDb.getStatus().intValue() != status) {
-//          continue;
-//        }
+        // if (status < IGNORE_STATUS && mrDb.getStatus().intValue() != status) {
+        // continue;
+        // }
         count++;
         if (count >= min && count <= max) {
           mrList.add(new MRResponse(mrDb, codeTableService));
@@ -1138,7 +1149,7 @@ public class NHIWidgetXMLService {
     Map<String, Object> result = new HashMap<String, Object>();
 
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-    //int mrStatus = status == null ? IGNORE_STATUS : Integer.parseInt(status);
+    // int mrStatus = status == null ? IGNORE_STATUS : Integer.parseInt(status);
     try {
       Date sDate = (startDate == null || startDate.length() == 0) ? null
           : new Date(sdf.parse(startDate).getTime());
@@ -1207,10 +1218,10 @@ public class NHIWidgetXMLService {
         }
       }
     }
-    mc.setTotalMr((int)total);
-    updateMRStatusCountAll(mc, sDate, eDate, applYM, minPoints, maxPoints, dataFormat, funcType, prsnId,
-        prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, status, deductedCode,
-        patientName, patientId, pharId);
+    mc.setTotalMr((int) total);
+    updateMRStatusCountAll(mc, sDate, eDate, applYM, minPoints, maxPoints, dataFormat, funcType,
+        prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, status,
+        deductedCode, patientName, patientId, pharId);
     Map<String, Object> result = new HashMap<String, Object>();
     result.put("count", (int) total);
     result.put("totalPage", Utility.getTotalPage((int) total, iPerPage));
@@ -1218,7 +1229,7 @@ public class NHIWidgetXMLService {
     result.put("mrStatus", mc);
     return result;
   }
-  
+
   private List<Predicate> searchMRPredicate(Root<MR> root, CriteriaBuilder cb, Date sDate,
       Date eDate, String applYM, Integer minPoints, Integer maxPoints, String dataFormat,
       String funcType, String prsnId, String prsnName, String applId, String applName,
@@ -1230,29 +1241,112 @@ public class NHIWidgetXMLService {
       predicate.add(cb.between(root.get("totalDot"), minPoints, maxPoints));
     }
     if (!"00".equals(dataFormat)) {
-      addPredicate(root, predicate, cb, "dataFormat", dataFormat, false, false);
+      addPredicate(root, predicate, cb, "dataFormat", dataFormat, false, false, false);
     }
     if (!"00".equals(funcType) && !"0".equals(funcType)) {
-      addPredicate(root, predicate, cb, "funcType", funcType, false, false);
+      addPredicate(root, predicate, cb, "funcType", funcType, false, false, false);
     }
-    addPredicate(root, predicate, cb, "prsnId", prsnId, false, false);
-    addPredicate(root, predicate, cb, "prsnName", prsnId, false, false);
-    addPredicate(root, predicate, cb, "applId", applId, false, false);
-    addPredicate(root, predicate, cb, "applName", applId, false, false);
-    addPredicate(root, predicate, cb, "inhMrId", inhMrId, false, false);
-    addPredicate(root, predicate, cb, "inhClinicId", inhClinicId, false, false);
-    addPredicate(root, predicate, cb, "drgCode", drg, false, false);
-    addPredicate(root, predicate, cb, "drgSection", drgSection, false, false);
-    addPredicate(root, predicate, cb, "status", status, false, true);
-    addPredicate(root, predicate, cb, "applYm", applYM, true, false);
+    addPredicate(root, predicate, cb, "prsnId", prsnId, false, false, false);
+    addPredicate(root, predicate, cb, "prsnName", prsnId, false, false, false);
+    addPredicate(root, predicate, cb, "applId", applId, false, false, false);
+    addPredicate(root, predicate, cb, "applName", applId, false, false, false);
+    addPredicate(root, predicate, cb, "inhMrId", inhMrId, false, false, false);
+    addPredicate(root, predicate, cb, "inhClinicId", inhClinicId, false, false, false);
+    addPredicate(root, predicate, cb, "drgCode", drg, false, false, false);
+    addPredicate(root, predicate, cb, "drgSection", drgSection, false, false, false);
+    addPredicate(root, predicate, cb, "status", status, false, true, false);
+    addPredicate(root, predicate, cb, "applYm", applYM, true, false, false);
     if (patientName != null && patientName.length() > 0) {
-      addPredicate(root, predicate, cb, "name", "%" + patientName, true, false);
+      addPredicate(root, predicate, cb, "name", "%" + patientName, true, false, false);
     }
     if (patientId != null && patientId.length() > 0) {
-      addPredicate(root, predicate, cb, "rocId", "%" + patientId, true, false);
+      addPredicate(root, predicate, cb, "rocId", "%" + patientId, true, false, false);
     }
     if (deductedCode != null && deductedCode.length() > 0) {
       predicate.add(cb.greaterThan(root.get("deductedDot"), 0));
+    }
+    return predicate;
+  }
+
+  public Map<String, Object> getMR(SearchMRParameters smrp) {
+    if (smrp.getAll() != null) {
+      return fullSearchMR(smrp.getPage(), smrp.getPerPage(), smrp.getAll(), null, null, null);
+    }
+    Specification<MR> spec = new Specification<MR>() {
+
+      private static final long serialVersionUID = 4L;
+
+      public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+        List<Predicate> predicate = searchMRPredicate(root, cb, smrp);
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        return query.getRestriction();
+      }
+    };
+    long total = mrDao.count(spec);
+
+    Page<MR> pages = mrDao.findAll(spec,
+        PageRequest.of(smrp.getPage().intValue(), smrp.getPerPage().intValue()));
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    // 若值為 null 不會輸出到 String
+    // objectMapper.setSerializationInclusion(Include.NON_NULL);
+    List<MRResponse> mrList = new ArrayList<MRResponse>();
+    MRCount mc = new MRCount();
+    if (pages != null && pages.getSize() > 0) {
+      for (MR mrDb : pages) {
+        updateMRStatusCount(mrDb, mc);
+        MRResponse mrr = new MRResponse(mrDb, codeTableService);
+        mrList.add(mrr);
+        try {
+          String json = objectMapper.writeValueAsString(mrr);
+        } catch (JsonProcessingException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    mc.setTotalMr((int) total);
+    updateMRStatusCountAll(mc, smrp);
+    Map<String, Object> result = new HashMap<String, Object>();
+    result.put("count", (int) total);
+    result.put("totalPage", Utility.getTotalPage((int) total, smrp.getPerPage().intValue()));
+    result.put("mr", mrList);
+    result.put("mrStatus", mc);
+    return result;
+  }
+
+  private List<Predicate> searchMRPredicate(Root<MR> root, CriteriaBuilder cb,
+      SearchMRParameters smrp) {
+    List<Predicate> predicate = new ArrayList<Predicate>();
+    predicate.add(cb.between(root.get("mrDate"), smrp.getsDate(), smrp.geteDate()));
+    if (smrp.getMinPoints() != null && smrp.getMaxPoints() != null) {
+      predicate.add(cb.between(root.get("totalDot"), smrp.getMinPoints(), smrp.getMaxPoints()));
+    }
+    if (smrp.getDataFormat() != null) {
+      addPredicate(root, predicate, cb, "dataFormat", smrp.getDataFormat(), false, false, false);
+    }
+    addPredicate(root, predicate, cb, "funcType", smrp.getFuncType(), false, false, false);
+    addPredicate(root, predicate, cb, "prsnId", smrp.getPrsnId(), false, false, false);
+    addPredicate(root, predicate, cb, "prsnName", smrp.getPrsnName(), false, false, false);
+    addPredicate(root, predicate, cb, "applId", smrp.getApplId(), false, false, false);
+    addPredicate(root, predicate, cb, "applName", smrp.getApplName(), false, false, false);
+    addPredicate(root, predicate, cb, "inhMrId", smrp.getInhMrId(), false, false, false);
+    addPredicate(root, predicate, cb, "inhClinicId", smrp.getInhClinicId(), false, false, false);
+    addPredicate(root, predicate, cb, "drgCode", smrp.getDrg(), false, false, false);
+    addPredicate(root, predicate, cb, "status", smrp.getStatus(), false, true, false);
+    addPredicate(root, predicate, cb, "applYm", smrp.getApplYM(), true, false, false);
+    // if (patientName != null && patientName.length() > 0) {
+    // addPredicate(root, predicate, cb, "name", "%" + patientName, true, false);
+    // }
+    addPredicate(root, predicate, cb, "name", smrp.getPatientName(), true, false, false);
+    // if (patientId != null && patientId.length() > 0) {
+    // addPredicate(root, predicate, cb, "rocId", "%" + patientId, true, false);
+    // }
+    addPredicate(root, predicate, cb, "rocId", smrp.getPatientId(), true, false, false);
+    addPredicate(root, predicate, cb, "drgSection", smrp.getDrgSection(), false, false, false);
+    addPredicate(root, predicate, cb, "drgCode", smrp.getDrg(), true, false, false);
+    if (smrp.getOnlyDRG() != null && smrp.getOnlyDRG().booleanValue()) {
+      predicate.add(cb.isNotNull(root.get("drgSection")));      
     }
     return predicate;
   }
@@ -1265,66 +1359,67 @@ public class NHIWidgetXMLService {
 
     int[] statusInt = stringToIntArray(status, " ");
     if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.CLASSIFIED.value())) {
-    result.setClassified(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
-        funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-        String.valueOf(MR_STATUS.CLASSIFIED.value()), deductedCode, patientName, patientId,
-        pharId));
+      result.setClassified(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
+          funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
+          String.valueOf(MR_STATUS.CLASSIFIED.value()), deductedCode, patientName, patientId,
+          pharId));
     }
-    
+
     if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.DONT_CHANGE.value())) {
-    result.setDontChange(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
-        funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-        String.valueOf(MR_STATUS.DONT_CHANGE.value()), deductedCode, patientName, patientId,
-        pharId));
+      result.setDontChange(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
+          funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
+          String.valueOf(MR_STATUS.DONT_CHANGE.value()), deductedCode, patientName, patientId,
+          pharId));
     }
-    
+
     if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.NO_CHANGE.value())) {
-    result.setNoChange(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
-        funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-       String.valueOf(MR_STATUS.NO_CHANGE.value()), deductedCode, patientName, patientId, pharId));
+      result.setNoChange(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
+          funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
+          String.valueOf(MR_STATUS.NO_CHANGE.value()), deductedCode, patientName, patientId,
+          pharId));
     }
     if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.OPTIMIZED.value())) {
-    result.setOptimized(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
-        funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-        String.valueOf(MR_STATUS.OPTIMIZED.value()), deductedCode, patientName, patientId, pharId));
+      result.setOptimized(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
+          funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
+          String.valueOf(MR_STATUS.OPTIMIZED.value()), deductedCode, patientName, patientId,
+          pharId));
     }
     if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.QUESTION_MARK.value())) {
-    result.setQuestionMark(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
-        funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-       String.valueOf(MR_STATUS.QUESTION_MARK.value()), deductedCode, patientName, patientId,
-        pharId));
+      result.setQuestionMark(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints,
+          dataFormat, funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg,
+          drgSection, String.valueOf(MR_STATUS.QUESTION_MARK.value()), deductedCode, patientName,
+          patientId, pharId));
     }
     if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.WAIT_CONFIRM.value())) {
-    result.setWaitConfirm(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
-        funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-        String.valueOf(MR_STATUS.WAIT_CONFIRM.value()), deductedCode, patientName, patientId,
-        pharId));
+      result.setWaitConfirm(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
+          funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
+          String.valueOf(MR_STATUS.WAIT_CONFIRM.value()), deductedCode, patientName, patientId,
+          pharId));
     }
     if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.WAIT_PROCESS.value())) {
-    result.setWaitProcess(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
-        funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-        String.valueOf(MR_STATUS.WAIT_PROCESS.value()), deductedCode, patientName, patientId,
-        pharId));
+      result.setWaitProcess(getMRStatusCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
+          funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
+          String.valueOf(MR_STATUS.WAIT_PROCESS.value()), deductedCode, patientName, patientId,
+          pharId));
     }
-    result.setDrg(getMRDRGCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat,
-        funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection,
-        status, deductedCode, patientName, patientId,
-        pharId));
+    result.setDrg(getMRDRGCount(sDate, eDate, applYM, minPoints, maxPoints, dataFormat, funcType,
+        prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, status,
+        deductedCode, patientName, patientId, pharId));
   }
 
-  private int getMRStatusCount(Date sDate,
-      Date eDate, String applYM, Integer minPoints, Integer maxPoints, String dataFormat,
-      String funcType, String prsnId, String prsnName, String applId, String applName,
-      String inhMrId, String inhClinicId, String drg, String drgSection, String status,
-      String deductedCode, String patientName, String patientId, String pharId) {
+  private int getMRStatusCount(Date sDate, Date eDate, String applYM, Integer minPoints,
+      Integer maxPoints, String dataFormat, String funcType, String prsnId, String prsnName,
+      String applId, String applName, String inhMrId, String inhClinicId, String drg,
+      String drgSection, String status, String deductedCode, String patientName, String patientId,
+      String pharId) {
     Specification<MR> spec = new Specification<MR>() {
 
       private static final long serialVersionUID = 2L;
 
       public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-        List<Predicate> predicate = searchMRPredicate(root, cb, sDate, eDate, applYM, minPoints, maxPoints,
-            dataFormat, funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, 
-            status, deductedCode, patientName, patientId, pharId);
+        List<Predicate> predicate = searchMRPredicate(root, cb, sDate, eDate, applYM, minPoints,
+            maxPoints, dataFormat, funcType, prsnId, prsnName, applId, applName, inhMrId,
+            inhClinicId, drg, drgSection, status, deductedCode, patientName, patientId, pharId);
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
         return query.getRestriction();
@@ -1332,20 +1427,85 @@ public class NHIWidgetXMLService {
     };
     return (int) mrDao.count(spec);
   }
-  
-  private int getMRDRGCount(Date sDate,
-      Date eDate, String applYM, Integer minPoints, Integer maxPoints, String dataFormat,
-      String funcType, String prsnId, String prsnName, String applId, String applName,
-      String inhMrId, String inhClinicId, String drg, String drgSection, String status,
-      String deductedCode, String patientName, String patientId, String pharId) {
+
+  private int getMRDRGCount(Date sDate, Date eDate, String applYM, Integer minPoints,
+      Integer maxPoints, String dataFormat, String funcType, String prsnId, String prsnName,
+      String applId, String applName, String inhMrId, String inhClinicId, String drg,
+      String drgSection, String status, String deductedCode, String patientName, String patientId,
+      String pharId) {
     Specification<MR> spec = new Specification<MR>() {
 
       private static final long serialVersionUID = 2L;
 
       public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-        List<Predicate> predicate = searchMRPredicate(root, cb, sDate, eDate, applYM, minPoints, maxPoints,
-            dataFormat, funcType, prsnId, prsnName, applId, applName, inhMrId, inhClinicId, drg, drgSection, 
-            status, deductedCode, patientName, patientId, pharId);
+        List<Predicate> predicate = searchMRPredicate(root, cb, sDate, eDate, applYM, minPoints,
+            maxPoints, dataFormat, funcType, prsnId, prsnName, applId, applName, inhMrId,
+            inhClinicId, drg, drgSection, status, deductedCode, patientName, patientId, pharId);
+        predicate.add(cb.isNotNull(root.get("drgSection")));
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        return query.getRestriction();
+      }
+    };
+    return (int) mrDao.count(spec);
+  }
+
+  private void updateMRStatusCountAll(MRCount result, SearchMRParameters smrp) {
+
+    int[] statusInt = stringToIntArray(smrp.getStatus(), " ");
+    if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.CLASSIFIED.value())) {
+      smrp.setStatus(String.valueOf(MR_STATUS.CLASSIFIED.value()));
+      result.setClassified(getMRStatusCount(smrp));
+    }
+    if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.DONT_CHANGE.value())) {
+      smrp.setStatus(String.valueOf(MR_STATUS.DONT_CHANGE.value()));
+      result.setDontChange(getMRStatusCount(smrp));
+    }
+    if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.NO_CHANGE.value())) {
+      smrp.setStatus(String.valueOf(MR_STATUS.NO_CHANGE.value()));
+      result.setNoChange(getMRStatusCount(smrp));
+    }
+    if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.OPTIMIZED.value())) {
+      smrp.setStatus(String.valueOf(MR_STATUS.OPTIMIZED.value()));
+      result.setOptimized(getMRStatusCount(smrp));
+    }
+    if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.QUESTION_MARK.value())) {
+      smrp.setStatus(String.valueOf(MR_STATUS.QUESTION_MARK.value()));
+      result.setQuestionMark(getMRStatusCount(smrp));
+    }
+    if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.WAIT_CONFIRM.value())) {
+      smrp.setStatus(String.valueOf(MR_STATUS.WAIT_CONFIRM.value()));
+      result.setWaitConfirm(getMRStatusCount(smrp));
+    }
+    if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.WAIT_PROCESS.value())) {
+      smrp.setStatus(String.valueOf(MR_STATUS.WAIT_PROCESS.value()));
+      result.setWaitProcess(getMRStatusCount(smrp));
+    }
+    result.setDrg(getMRDRGCount(smrp));
+  }
+
+  private int getMRStatusCount(SearchMRParameters smrp) {
+    Specification<MR> spec = new Specification<MR>() {
+
+      private static final long serialVersionUID = 2L;
+
+      public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+        List<Predicate> predicate = searchMRPredicate(root, cb, smrp);
+        Predicate[] pre = new Predicate[predicate.size()];
+        query.where(predicate.toArray(pre));
+        return query.getRestriction();
+      }
+    };
+    return (int) mrDao.count(spec);
+  }
+
+  private int getMRDRGCount(SearchMRParameters smrp) {
+    Specification<MR> spec = new Specification<MR>() {
+
+      private static final long serialVersionUID = 2L;
+
+      public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+        List<Predicate> predicate = searchMRPredicate(root, cb, smrp);
         predicate.add(cb.isNotNull(root.get("drgSection")));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
@@ -1377,7 +1537,7 @@ public class NHIWidgetXMLService {
   }
 
   private void addPredicate(Root<MR> root, List<Predicate> predicate, CriteriaBuilder cb,
-      String paramName, String params, boolean isAnd, boolean isInteger) {
+      String paramName, String params, boolean isAnd, boolean isInteger, boolean isNot) {
     if (params == null || params.length() == 0) {
       return;
     }
@@ -1425,8 +1585,8 @@ public class NHIWidgetXMLService {
     return new ArrayList<MR>();
   }
 
-  public MRCountResponse getMRCount(String applYM, String startDate, String endDate, String dataFormat,
-      String funcType, String prsnId) {
+  public MRCountResponse getMRCount(String applYM, String startDate, String endDate,
+      String dataFormat, String funcType, String prsnId) {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
     MRCount ipMR = new MRCount();
     MRCount opMR = new MRCount();
@@ -1683,33 +1843,86 @@ public class NHIWidgetXMLService {
    * @param isEdit
    * @return
    */
-  public String editMRDetail(long id, String jwt, boolean isEdit) {
+  public EditMRPayload editMRDetail(long id, String jwt, boolean isEdit, Integer actionId) {
+    EditMRPayload result = new EditMRPayload();
+    result.setResult(BaseResponse.SUCCESS);
+    
     MR mr = mrDao.findById(id).orElse(null);
     if (mr == null) {
-      return "病歷id:" + id + "不存在";
+      result.setMessage("病歷id:" + id + "不存在");
+      result.setResult(BaseResponse.ERROR);;
+      return result;
     }
-    String key = UserService.MREDIT + id;
-    String userKey = UserService.USER_PREFIX + jwtUtils.getUsernameFromToken(jwt);
+    String key = UserService.MREDIT + id + "*";
+    String currentUser = jwtUtils.getUsernameFromToken(jwt);
+    String userKey = UserService.USER_PREFIX + currentUser;
+    //System.out.println("key=" + key);
     Set<Object> sets = redisService.hkeys(key);
     if (sets != null && sets.size() > 0) {
       if (isEdit) {
         for (Object object : sets) {
+          //System.out.println("not null:" + object);
           String user = jwtUtils.getUsernameFromToken((String) object);
           if (user == null) {
             redisService.deleteHash(key, (String) object);
+          } else if (user.equals(currentUser)){
+            // 同一人
+            String values = (String) redisService.hget(key, (String) object);
+            //System.out.println("same user:" + values);
+            String[] ss = values.split(",");
+            System.out.println("redis values(edit):" + values + ", ss length=" + ss.length);
+            result.setActionId(ss.length);
+            values = values + "," + ss.length;
+            //System.out.println("save " + key + ":" + jwt + "," + values);
+            redisService.putHash(key, jwt, values);
+            return result;
           } else {
-            return "病歷id:" + id + " " + user + " 正在編輯";
+            result.setMessage("病歷id:" + id + " " + user + " 正在編輯");
+            result.setResult(BaseResponse.ERROR);;
+            return result;
           }
         }
       } else {
-        redisService.deleteHash(key, jwt);
-        redisService.deleteHash(userKey, UserService.EDITING);
-        return null;
+        // 取消編輯
+        result.setActionId(actionId);
+        for (Object object : sets) {
+          String user = jwtUtils.getUsernameFromToken((String) object);
+          if (user == null) {
+            redisService.deleteHash(key, (String) object);
+          } else if (user.equals(currentUser)){
+            // 同一人
+            String values = (String) redisService.hget(key, (String) object);
+            String[] ss = values.split(",");
+            if (ss.length == 2) {
+              // 只有一筆編輯
+              redisService.deleteHash(key, jwt);
+              redisService.deleteHash(userKey, UserService.EDITING);
+              return result;
+            } else {
+              StringBuffer sb = new StringBuffer(ss[0]);
+              for(int i=1; i<ss.length ;i++) {
+                //System.out.println("ss[" + i + "]=" + ss[i]);
+                if (!ss[i].equals(actionId.toString())) {
+                  sb.append(",");
+                  sb.append(ss[i]);
+                }
+              }
+              redisService.putHash(key, jwt, sb.toString());
+              return result;
+            }
+          }
+        }
       }
+    } else if (!isEdit) {
+      // 取消編輯但無相關編輯資料
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("無相關編輯資料");
+      return result;
     }
-    redisService.putHash(key, jwt, String.valueOf(System.currentTimeMillis()));
+    redisService.putHash(key, jwt, String.valueOf(System.currentTimeMillis() + ",1"));
     redisService.putHash(userKey, UserService.EDITING, String.valueOf(id));
-    return null;
+    result.setActionId(1);
+    return result;
   }
 
   /**
@@ -1747,8 +1960,8 @@ public class NHIWidgetXMLService {
       return "病歷id:" + id + "不存在";
     }
     mr.setStatus(status);
-    mr.setApplName(user.getUsername());
-    mr.setApplId(userService.findUserById(user.getId()).getRocId());
+    mr.setApplName(user.getDisplayName());
+    mr.setApplId(userService.findUserById(user.getId()).getInhId());
     mrDao.save(mr);
 
     MY_MR myMr = myMrDao.findByMrId(id);
@@ -1789,17 +2002,46 @@ public class NHIWidgetXMLService {
       List<IP_T> list = iptDao.findByFeeYmOrderById(chineseYm);
       if (list != null && list.size() > 0) {
         return list.get(0).getId();
+      } else {
+        IP_T ipt = createIPT(chineseYm);
+        return ipt.getId();
       }
     } else {
       List<OP_T> list = optDao.findByFeeYmOrderById(chineseYm);
       if (list != null && list.size() > 0) {
         return list.get(0).getId();
+      } else {
+        OP_T opt = createOPT(chineseYm);
+        return opt.getId();
       }
     }
-    return 1;
+  }
+  
+  private IP_T createIPT(String chineseYm) {
+    IP_T ipt = new IP_T();
+    ipt.setDataFormat("20");
+    ipt.setHospId("1532011154");
+    ipt.setFeeYm(chineseYm);
+    ipt.setApplMode("2");
+    ipt.setApplType("1");
+    ipt.setApplDate(chineseYm + "01");
+    ipt.setUpdateAt(new java.util.Date());
+    return iptDao.save(ipt);
+  }
+  
+  private OP_T createOPT(String chineseYm) {
+    OP_T opt = new OP_T();
+    opt.setDataFormat("10");
+    opt.setHospId("1532011154");
+    opt.setFeeYm(chineseYm);
+    opt.setApplMode("2");
+    opt.setApplType("2");
+    opt.setApplDate(chineseYm + "01");
+    opt.setUpdateAt(new java.util.Date());
+    return optDao.save(opt);
   }
 
-  public MRDetail updateMRDetail(MRDetail mrDetail, String jwt) {
+  public MRDetail updateMRDetail(MRDetail mrDetail, String jwt, Integer actionId) {
     MRDetail result = null;
     MR mr = mrDao.findById(mrDetail.getId()).orElse(null);
     if (mr == null) {
@@ -1807,26 +2049,52 @@ public class NHIWidgetXMLService {
       result.setError("id:" + mrDetail.getId() + " 不存在");
       return result;
     }
-
-    String key = UserService.MREDIT + mrDetail.getId().toString();
-    Set<Object> sets = redisService.hkeys(key);
-    if (sets != null && sets.size() > 0) {
-      redisService.deleteHash(key, jwt);
-    } else {
-      result = new MRDetail();
-      result.setError("未找到開始編輯 token");
-      return result;
-    }
-    String userKey = UserService.USER_PREFIX + jwtUtils.getUsernameFromToken(jwt);
-    redisService.deleteHash(userKey, UserService.EDITING);
-
-    mr.updateMR(mrDetail);
     String userId = jwtUtils.getUserID(jwt);
-    if (userId == null) {
+    String currentUser = jwtUtils.getUsernameFromToken(jwt);
+    if (userId == null || currentUser == null) {
       result = new MRDetail();
       result.setError("登入狀態有誤，請重新登入");
       return result;
     }
+
+    String userKey = UserService.USER_PREFIX + jwtUtils.getUsernameFromToken(jwt);
+    // 不加 * hkeys 有時會找不到
+    String key = UserService.MREDIT + mrDetail.getId().toString() + "*";
+    Set<Object> sets = redisService.hkeys(key);
+    if (sets != null && sets.size() > 0) {
+      for (Object object : sets) {
+        String user = jwtUtils.getUsernameFromToken((String) object);
+        if (user == null) {
+          redisService.deleteHash(key, (String) object);
+        } else if (user.equals(currentUser)){
+          // 同一人
+          String values = (String) redisService.hget(key, (String) object);
+          String[] ss = values.split(",");
+          if (ss.length == 2) {
+            // 只有一筆編輯
+            redisService.deleteHash(key, jwt);
+            redisService.deleteHash(userKey, UserService.EDITING);
+            break;
+          } else {
+            StringBuffer sb = new StringBuffer(ss[0]);
+            for(int i=1; i<ss.length ;i++) {
+              if (!ss[i].equals(actionId.toString())) {
+                sb.append(",");
+                sb.append(ss[i]);
+              }
+            }
+            redisService.putHash(key, jwt, sb.toString());
+            break;
+          }
+        }
+      }
+    } else {
+      result = new MRDetail();
+      result.setError("未開始編輯無法儲存");
+      return result;
+    }
+
+    mr.updateMR(mrDetail);
     mr.setUpdateUserId(Long.parseLong(userId));
     boolean needCalculate = false;
     if (XMLConstant.DATA_FORMAT_OP.equals(mrDetail.getDataFormat())) {
@@ -1865,7 +2133,7 @@ public class NHIWidgetXMLService {
             logService.makeCondition(new String[][] {{"ID", Long.toString(ipD.getId())}});
         row1 = logService.findOne("IP_D", condition1);
       }
-
+      
       ipD.setFuncType(mr.getFuncType());
       ipD.setRocId(mrDetail.getRocId());
       ipD.setName(mrDetail.getName());
@@ -1875,6 +2143,7 @@ public class NHIWidgetXMLService {
       ipD.setApplDot(mrDetail.getApplDot());
       ipD.setNonApplDot(mrDetail.getOwnExpense());
       needCalculate = updateIPPByMrDetail(mr, ipD, mrDetail, true);
+      updateIPDByMrDetail(ipD, mrDetail, mr);
       ipdDao.save(ipD);
       Map<String, Object> condition2 =
           logService.makeCondition(new String[][] {{"ID", Long.toString(ipD.getId())}});
@@ -1996,9 +2265,18 @@ public class NHIWidgetXMLService {
         if (index > -1) {
           moList.remove(index);
           if (opp.getApplStatus() == 1) {
+            if (opd.getCasePayCode() != null) {
+              // 二、論病例計酬、呼吸照護之居家照護、乳癌案件、肺結核案件、南投縣信義鄉暨仁愛鄉精神疾病醫療給付效益提昇計畫：加總醫令類別 4 且醫令代碼長度不為 10 碼及12
+              // 碼之點數。
+              if (ORDER_TYPE.NO_PAY.value().equals(opp.getOrderType())
+                  && opp.getDrugNo().length() != 12 && opp.getDrugNo().length() != 10) {
+                treatDot = treatDot - opp.getTotalDot();
+              }
+            }
             if (ORDER_TYPE.DRUG.value().equals(opp.getOrderType())) {
               drugDot = drugDot - opp.getTotalDot();
-            } else if (ORDER_TYPE.TREAT.value().equals(opp.getOrderType())) {
+            } else if (ORDER_TYPE.TREAT.value().equals(opp.getOrderType())
+                && opd.getCasePayCode() == null) {
               treatDot = treatDot - opp.getTotalDot();
             } else if (ORDER_TYPE.METERIAL.value().equals(opp.getOrderType())) {
               metrDot = metrDot - opp.getTotalDot();
@@ -2009,6 +2287,9 @@ public class NHIWidgetXMLService {
             } else if ("7".equals(opp.getPayCodeType())) {
               // 7 為藥費
               drugDot = drugDot - opp.getTotalDot();
+            } else if ("20".equals(opp.getPayCodeType()) && opp.getDrugNo().length() == 12) {
+              // 不分類且支付代碼為12碼列為特殊材料費
+              metrDot = metrDot - opp.getTotalDot();
             }
           }
           break;
@@ -2067,6 +2348,156 @@ public class NHIWidgetXMLService {
     return result;
   }
 
+  private void updateIPDByMrDetail(IP_D ipD, MRDetail mrDetail, MR mr) {
+    ipD.setRocId(mrDetail.getRocId());
+    ipD.setName(mrDetail.getName());
+    ipD.setPrsnId(mrDetail.getPrsnId());
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+    ipD.setInDate(mrDetail.getInDate());
+    ipD.setOutDate(mrDetail.getOutDate());
+    ipD.setIdBirthYmd(DateTool.removeSlashForChineseYear(mrDetail.getBirthday()));
+    ipD.setPayType(removeDash(mrDetail.getPayType()));
+    if (mrDetail.getIcdCM() != null) {
+      if (mrDetail.getIcdCM().size() >= 1) {
+        if (!ipD.getIcdCm1().equals(mrDetail.getIcdCM().get(0).getCode()) &&
+            (ipD.getTwDrgCode() != null || mrDetail.getTwDrgCode() != null) &&
+            "0".equals(ipD.getTwDrgsSuitMark())) {
+          // 主診斷碼有異動且為 DRG 案件
+          updateDrgList(mrDetail.getIcdCM().get(0).getCode(), ipD, mr);
+        }
+        ipD.setIcdCm1(mrDetail.getIcdCM().get(0).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 2) {
+        ipD.setIcdCm2(mrDetail.getIcdCM().get(1).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 3) {
+        ipD.setIcdCm3(mrDetail.getIcdCM().get(2).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 4) {
+        ipD.setIcdCm4(mrDetail.getIcdCM().get(3).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 5) {
+        ipD.setIcdCm5(mrDetail.getIcdCM().get(4).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 6) {
+        ipD.setIcdCm6(mrDetail.getIcdCM().get(5).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 7) {
+        ipD.setIcdCm7(mrDetail.getIcdCM().get(6).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 8) {
+        ipD.setIcdCm8(mrDetail.getIcdCM().get(7).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 9) {
+        ipD.setIcdCm9(mrDetail.getIcdCM().get(8).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 10) {
+        ipD.setIcdCm10(mrDetail.getIcdCM().get(9).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 11) {
+        ipD.setIcdCm11(mrDetail.getIcdCM().get(10).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 12) {
+        ipD.setIcdCm12(mrDetail.getIcdCM().get(11).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 13) {
+        ipD.setIcdCm13(mrDetail.getIcdCM().get(12).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 14) {
+        ipD.setIcdCm14(mrDetail.getIcdCM().get(13).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 15) {
+        ipD.setIcdCm15(mrDetail.getIcdCM().get(14).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 16) {
+        ipD.setIcdCm16(mrDetail.getIcdCM().get(15).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 17) {
+        ipD.setIcdCm17(mrDetail.getIcdCM().get(16).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 18) {
+        ipD.setIcdCm18(mrDetail.getIcdCM().get(17).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 19) {
+        ipD.setIcdCm19(mrDetail.getIcdCM().get(18).getCode());
+      }
+      if (mrDetail.getIcdCM().size() >= 20) {
+        ipD.setIcdCm20(mrDetail.getIcdCM().get(19).getCode());
+      }
+    }
+    if (mrDetail.getIcdOP() != null) {
+      if (mrDetail.getIcdOP().size() >= 1) {
+        ipD.setIcdOpCode1(mrDetail.getIcdOP().get(0).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 2) {
+        ipD.setIcdOpCode2(mrDetail.getIcdOP().get(1).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 3) {
+        ipD.setIcdOpCode3(mrDetail.getIcdOP().get(2).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 4) {
+        ipD.setIcdOpCode4(mrDetail.getIcdOP().get(3).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 5) {
+        ipD.setIcdOpCode5(mrDetail.getIcdOP().get(4).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 6) {
+        ipD.setIcdOpCode6(mrDetail.getIcdOP().get(5).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 7) {
+        ipD.setIcdOpCode7(mrDetail.getIcdOP().get(6).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 8) {
+        ipD.setIcdOpCode8(mrDetail.getIcdOP().get(7).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 9) {
+        ipD.setIcdOpCode9(mrDetail.getIcdOP().get(8).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 10) {
+        ipD.setIcdOpCode10(mrDetail.getIcdOP().get(9).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 11) {
+        ipD.setIcdOpCode11(mrDetail.getIcdOP().get(10).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 12) {
+        ipD.setIcdOpCode12(mrDetail.getIcdOP().get(11).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 13) {
+        ipD.setIcdOpCode13(mrDetail.getIcdOP().get(12).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 14) {
+        ipD.setIcdOpCode14(mrDetail.getIcdOP().get(13).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 15) {
+        ipD.setIcdOpCode15(mrDetail.getIcdOP().get(14).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 16) {
+        ipD.setIcdOpCode16(mrDetail.getIcdOP().get(15).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 17) {
+        ipD.setIcdOpCode17(mrDetail.getIcdOP().get(16).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 18) {
+        ipD.setIcdOpCode18(mrDetail.getIcdOP().get(17).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 19) {
+        ipD.setIcdOpCode19(mrDetail.getIcdOP().get(18).getCode());
+      }
+      if (mrDetail.getIcdOP().size() >= 20) {
+        ipD.setIcdOpCode20(mrDetail.getIcdOP().get(19).getCode());
+      }
+    }
+    ipD.setApplCauseMark(mrDetail.getApplCauseMark());
+    if (mrDetail.getFuncType() != null && mrDetail.getFuncType().length() > 0) {
+      if (mrDetail.getFuncType().indexOf('-') > -1) {
+        ipD.setFuncType(mrDetail.getFuncType().substring(0, mrDetail.getFuncType().indexOf('-')));
+      } else {
+        ipD.setFuncType(mrDetail.getFuncType());
+      }
+    }
+    ipD.setUpdateAt(new java.util.Date());
+  }
+
   /**
    * 
    * @param ipdId
@@ -2083,6 +2514,7 @@ public class NHIWidgetXMLService {
     int orderQty = 0;
     // 診察費點數
     int diagDot = ipd.getDiagDot().intValue();
+    //System.out.println("initial diagDot=" + diagDot);
     // 病房費點數
     int roomDot = ipd.getRoomDot().intValue();
     // 管灌膳食費點數
@@ -2115,6 +2547,7 @@ public class NHIWidgetXMLService {
     int injtDot = ipd.getInjtDot().intValue();
     // 嬰兒費點數
     int babyDot = ipd.getBabyDot().intValue();
+    int applDot = 0;
 
     for (IP_P ipp : ippList) {
       int index = -1;
@@ -2123,10 +2556,11 @@ public class NHIWidgetXMLService {
         if (mo.getOrderCode().startsWith(ipp.getOrderCode())) {
           int applStatus = mo.getApplStatus();
           boolean dirty = false;
-          String startTime = removeSlash(mo.getStartTime());
-          String endTime = removeSlash(mo.getEndTime());
+//          String startTime = removeSlash(mo.getStartTime());
+//          String endTime = removeSlash(mo.getEndTime());
 
-          if (ipp.getStartTime().equals(startTime) && ipp.getEndTime().equals(endTime)) {
+          //if (ipp.getStartTime().equals(startTime) && ipp.getEndTime().equals(endTime)) {
+          if (ipp.getOrderSeqNo().intValue() == mo.getOrderSeqNo().intValue()) {
             // 確認是同一筆醫令
             index = i;
             dirty = updateIpp(ipp, mo);
@@ -2142,61 +2576,105 @@ public class NHIWidgetXMLService {
             }
           }
         }
-        if (index > -1) {
-          // System.out.println("index=" + index + "," + ipp.getApplStatus());
-          if (ipp.getApplStatus().intValue() == 1) {
-            orderQty++;
-            // System.out.println(ipp.getOrderCode() + "=" + ipp.getPayCodeType());
-            if ("2".equals(ipp.getPayCodeType())) {
-              // 2 為住院診察費
-              diagDot -= ipp.getTotalDot().intValue();
-            } else if (ORDER_TYPE.NO_MED.value().equals(ipp.getOrderType())) {
-              // 不計入醫療費用點數合計欄位項目
-              continue;
-            } else if ("3".equals(ipp.getPayCodeType())) {
-              // 3 為病房費
-              roomDot -= ipp.getTotalDot().intValue();
-            } else if ("5".equals(ipp.getPayCodeType())) {
-              // 5 為管灌飲食費及營養照護費
-              mealDot -= ipp.getTotalDot().intValue();
-            } else if ("8".equals(ipp.getPayCodeType())) {
-              // 8 為放射線診療費
-              radoDot -= ipp.getTotalDot().intValue();
-            } else if ("12".equals(ipp.getPayCodeType())) {
-              // 12 為復健治療費
-              phscDot -= ipp.getTotalDot().intValue();
-            } else if ("14".equals(ipp.getPayCodeType())) {
-              // 12 為輸血及骨髓移植費
-              blodDot -= ipp.getTotalDot().intValue();
-            } else if ("16".equals(ipp.getPayCodeType())) {
-              // 16 為麻醉費
-              aneDot -= ipp.getTotalDot().intValue();
-            } else if ("17".equals(ipp.getPayCodeType())) {
-              // 17 為手術費
-              sgryDot -= ipp.getTotalDot().intValue();
-            } else if ("18".equals(ipp.getPayCodeType()) || "15".equals(ipp.getPayCodeType())) {
-              // 18 為治療處置費, 15為石膏繃帶費
-              thrpDot -= ipp.getTotalDot().intValue();
-            } else if ("19".equals(ipp.getPayCodeType())) {
-              // 19 為特定診療檢查費
-              aminDot -= ipp.getTotalDot().intValue();
-            } else if (ORDER_TYPE.METERIAL.value().equals(ipp.getOrderType())) {
-              // 特殊材料費點數
-              metrDot -= ipp.getTotalDot().intValue();
-            } else if (ORDER_TYPE.DRUG.value().equals(ipp.getOrderType())) {
-              // 藥費點數
-              drugDot -= ipp.getTotalDot().intValue();
-            } else if ("6".equals(ipp.getPayCodeType())) {
-              // 6 為調劑費(藥事服務費)
-              dsvcDot -= ipp.getTotalDot().intValue();
-            } else if ("9".equals(ipp.getPayCodeType())) {
-              // 9 為注射
-              injtDot -= ipp.getTotalDot().intValue();
+        if (index < 0) {
+          continue;
+        }
+//        if ("2".equals(ipp.getPayCodeType())) {
+//          System.out.println("index=" + index + "," + ipp.getApplStatus() + "," + ipp.getOrderCode() + "," + ipp.getTotalDot());
+//        }
+        
+        if (ipp.getApplStatus().intValue() == 1) {
+          orderQty++;
+          //System.out.println(ipp.getOrderCode() + "-" + orderQty +"," + mo.getOrderSeqNo());
+          if ("4".equals(ipd.getCaseType())) {
+            // 試辦計畫
+            if ("9".equals(ipd.getPayType())) {
+              // 呼吸照護
+              // if (ORDER_TYPE.TREAT.value().equals(ipp.getOrderType())) {
+              if (!ORDER_TYPE.NO_PAY.value().equals(ipp.getOrderType())) {
+                applDot += ipp.getTotalDot().intValue();
+              }
+            } else {
+              if (ipp.getOrderCode().startsWith("P")) {
+                thrpDot -= ipp.getTotalDot().intValue();
+                break;
+              }
+            }
+          } else if ("9".equals(ipd.getPayType())) {
+            // 呼吸照護
+            if (!ORDER_TYPE.NO_PAY.value().equals(ipp.getOrderType())) {
+              applDot += ipp.getTotalDot().intValue();
             }
           }
-          moList.remove(index);
-          break;
+          if ("2".equals(ipp.getPayCodeType())) { 
+              //&& ORDER_TYPE.NO_PAY.value().equals(ipp.getOrderType())) {
+            // 2 為住院診察費
+            diagDot -= ipp.getTotalDot().intValue();
+            //System.out.println("diagDot = " + diagDot + ","+ ipp.getOrderCode() + "," + ipp.getTotalDot() );
+          } else if (ORDER_TYPE.NO_MED.value().equals(ipp.getOrderType())) {
+            // 不計入醫療費用點數合計欄位項目
+            
+          } else if ("3".equals(ipp.getPayCodeType())) {
+            // 3 為病房費
+            roomDot -= ipp.getTotalDot().intValue();
+          } else if ("5".equals(ipp.getPayCodeType())) {
+            // 5 為管灌飲食費及營養照護費
+            mealDot -= ipp.getTotalDot().intValue();
+          } else if ("8".equals(ipp.getPayCodeType())) {
+            // 8 為放射線診療費
+            radoDot -= ipp.getTotalDot().intValue();
+          } else if ("12".equals(ipp.getPayCodeType())) {
+            // 12 為復健治療費
+            phscDot -= ipp.getTotalDot().intValue();
+          } else if ("14".equals(ipp.getPayCodeType())) {
+            // 12 為輸血及骨髓移植費
+            blodDot -= ipp.getTotalDot().intValue();
+          } else if ("16".equals(ipp.getPayCodeType())) {
+            // 16 為麻醉費
+            aneDot -= ipp.getTotalDot().intValue();
+          } else if ("17".equals(ipp.getPayCodeType())) {
+            // 17 為手術費
+            sgryDot -= ipp.getTotalDot().intValue();
+          } else if ("18".equals(ipp.getPayCodeType()) || "15".equals(ipp.getPayCodeType())) {
+            // 18 為治療處置費, 15為石膏繃帶費
+            if (ipp.getOrderCode().startsWith("58")) {
+              // 58 開頭醫令為血液透析費
+              hdDot -= ipp.getTotalDot().intValue();
+            } else {
+              thrpDot -= ipp.getTotalDot().intValue();
+            }
+          } else if ("19".equals(ipp.getPayCodeType())) {
+            // 19 為特定診療檢查費
+            aminDot -= ipp.getTotalDot().intValue();
+          } else if (ORDER_TYPE.METERIAL.value().equals(ipp.getOrderType())) { 
+            // 特殊材料費點數
+            metrDot -= ipp.getTotalDot().intValue();
+          } else if (ORDER_TYPE.DRUG.value().equals(ipp.getOrderType())) {
+            // 藥費點數
+            drugDot -= ipp.getTotalDot().intValue();
+          } else if (ipp.getOrderCode().length() == 10) {
+            // 支付代碼為10碼列為藥費
+            drugDot -= ipp.getTotalDot();
+          } else if ("6".equals(ipp.getPayCodeType())) {
+            // 6 為調劑費(藥事服務費)
+            dsvcDot -= ipp.getTotalDot().intValue();
+          } else if ("9".equals(ipp.getPayCodeType())) {
+            // 9 為注射
+            injtDot -= ipp.getTotalDot().intValue();
+          } else if ("20".equals(ipp.getPayCodeType()) && ipp.getOrderCode().length() == 12 &&
+              !ORDER_TYPE.METERIAL_OWN.value().equals(ipp.getOrderType()) && 
+              !ORDER_TYPE.METERIAL_OWN2.value().equals(ipp.getOrderType())) {
+            // 不分類且支付代碼為12碼列為特殊材料費 且非自費
+            metrDot = metrDot - ipp.getTotalDot();
+          } else if ("A".equals(ipd.getTwDrgsSuitMark()) && "G00001".equals(ipp.getOrderCode())) {
+            applDot += ipp.getTwDrgsCalcu().intValue();
+          }
         }
+        break;
+      }
+      if (index > -1) {
+        moList.remove(index);
+       // System.out.println("remove " + index + ", size=" + moList.size());
       }
     }
 
@@ -2255,9 +2733,23 @@ public class NHIWidgetXMLService {
       if (babyDot != 0) {
         ipd.setBabyDot(ipd.getBabyDot().intValue() - babyDot);
       }
+      if ("4".equals(ipd.getCaseType()) && !"9".equals(ipd.getPayType())){
+        // 試辦但非呼吸計畫
+        ipd.setDiagDot(0);
+        ipd.setRoomDot(0);
+        ipd.setPhscDot(0);
+        ipd.setAminDot(0);
+        ipd.setMetrDot(0);
+        ipd.setInjtDot(0);
+      }
       ipd.setOrderQty(orderQty);
       ipd.calculateTotalDot();
-      ipd.calculateTotalApplDot();
+      //System.out.println("g00001 = " + applDot + "," + ipd.getTwDrgsSuitMark());
+      ipd.calculateTotalApplDot(applDot);
+      if ("9".equals(ipd.getTwDrgsSuitMark())) {
+        // 當欄位IDd102(不適用Tw-DRGs案件特殊註記代碼)為「9」時，本欄費用應為「0」
+        ipd.setApplDot(0);
+      }
       mr.setApplDot(ipd.getApplDot());
       mr.setTotalDot(ipd.getMedDot());
     }
@@ -2615,7 +3107,7 @@ public class NHIWidgetXMLService {
 
   public MyTodoListResponse getMyTodoList(UserDetailsImpl user, java.util.Date sdate,
       java.util.Date edate, String dataFormat, String funcType, String funcTypec, String prsnId,
-      String prsnName, String applId, String applName, String orderBy, Boolean asc, int perPage,
+      String prsnName, String applId, String applName, Integer status, String orderBy, Boolean asc, int perPage,
       int page) {
     MyTodoListResponse result = new MyTodoListResponse();
 
@@ -2654,8 +3146,12 @@ public class NHIWidgetXMLService {
           predicate.add(cb.equal(root.get("funcTypec"), funcTypec));
         }
 
-        predicate.add(cb.or(cb.equal(root.get("status"), MR_STATUS.WAIT_PROCESS.value()),
+        if (status != null) {
+          predicate.add(cb.equal(root.get("status"), status.intValue()));
+        } else {
+          predicate.add(cb.or(cb.equal(root.get("status"), MR_STATUS.WAIT_PROCESS.value()),
             cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value())));
+        }
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
 
@@ -2691,7 +3187,7 @@ public class NHIWidgetXMLService {
   public NoticeRecordResponse getNoticeRecord(UserDetailsImpl user, String applYm,
       java.util.Date sdate, java.util.Date edate, String dataFormat, String funcType,
       String funcTypec, String prsnId, String prsnName, String applId, String applName,
-      String orderBy, Boolean asc, int perPage, int page) {
+      String block, String orderBy, Boolean asc, int perPage, int page) {
 
     NoticeRecordResponse result = new NoticeRecordResponse();
     boolean isAppl = ROLE_TYPE.APPL.getRole().equals(user.getRole());
@@ -2734,6 +3230,13 @@ public class NHIWidgetXMLService {
         if (funcTypec != null) {
           predicate.add(cb.equal(root.get("funcTypec"), funcTypec));
         }
+        if ("notify".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("noticePpl"), 0));  
+        } else if ("read".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("readedPpl"), 0));  
+        } else if ("unread".equals(block)) {
+          predicate.add(cb.equal(root.get("readedPpl"), 0));  
+        } 
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
 
@@ -3038,7 +3541,7 @@ public class NHIWidgetXMLService {
 
   public WarningOrderResponse getWarningOrderList(UserDetailsImpl user, java.util.Date sdate,
       java.util.Date edate, String dataFormat, String funcType, String funcTypec, String prsnId,
-      String prsnName, String applId, String applName, String orderBy, Boolean asc, int perPage,
+      String prsnName, String applId, String applName, String block, String orderBy, Boolean asc, int perPage,
       int page) {
     WarningOrderResponse result = new WarningOrderResponse();
 
@@ -3080,6 +3583,21 @@ public class NHIWidgetXMLService {
         if (funcTypec != null) {
           predicate.add(cb.equal(root.get("funcTypec"), funcTypec));
         }
+        if ("icd".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("changeIcd"), 0));  
+        } else if ("order".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("changeOrder"), 0));  
+        } else if ("inh".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("changeInh"), 0));  
+        } else if ("so".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("changeSo"), 0));  
+        } else if ("other".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("changeOther"), 0));  
+        } else if ("notify".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("noticeTimes"), 0));  
+        } else if ("notnotify".equals(block)) {
+          predicate.add(cb.equal(root.get("noticeTimes"), 0));  
+        } 
         predicate.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
@@ -3143,7 +3661,7 @@ public class NHIWidgetXMLService {
   public QuestionMarkResponse getQuestionMark(UserDetailsImpl user, String applYm,
       java.util.Date sdate, java.util.Date edate, String dataFormat, String funcType,
       String funcTypec, String prsnId, String prsnName, String applId, String applName,
-      String orderBy, Boolean asc, int perPage, int page) {
+      String block, String orderBy, Boolean asc, int perPage, int page) {
 
     QuestionMarkResponse result = new QuestionMarkResponse();
     // 是否為申報人員，若是則只撈自己的，若不是，則是看所有人的
@@ -3187,6 +3705,15 @@ public class NHIWidgetXMLService {
         if (funcTypec != null) {
           predicate.add(cb.equal(root.get("funcTypec"), funcTypec));
         }
+        if ("notify".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("noticeTimes"), 0));  
+        } else if ("notnotify".equals(block)) {
+          predicate.add(cb.equal(root.get("noticeTimes"), 0));  
+        } else if ("read".equals(block)) {
+          predicate.add(cb.greaterThan(root.get("readedPpl"), 0));  
+        } else if ("unread".equals(block)) {
+          predicate.add(cb.equal(root.get("readedPpl"), 0));  
+        } 
         predicate.add(cb.equal(root.get("status"), MR_STATUS.QUESTION_MARK.value()));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
@@ -3283,7 +3810,7 @@ public class NHIWidgetXMLService {
 
       if (mrDetail.getMos() != null) {
         for (int i = 0; i < mrDetail.getMos().size(); i++) {
-          OP_P opp = result.getMos().get(i).toOpp(codeTableService);
+          OP_P opp = mrDetail.getMos().get(i).toOpp(codeTableService);
           opp.setMrId(mr.getId());
           opp.setOpdId(opD.getId());
           oppDao.save(opp);
@@ -3418,8 +3945,9 @@ public class NHIWidgetXMLService {
   }
 
   public String newDeductedNote(String mrId, DEDUCTED_NOTE note) {
+    MR mr = null;
     try {
-      MR mr = mrDao.findById(Long.parseLong(mrId)).orElse(null);
+      mr = mrDao.findById(Long.parseLong(mrId)).orElse(null);
       if (mr == null) {
         return "病歷id" + mrId + "不存在";
       }
@@ -3429,6 +3957,7 @@ public class NHIWidgetXMLService {
     note.setMrId(Long.parseLong(mrId));
     note.setStatus(1);
     deductedNoteDao.save(note);
+    parameters.upsertCodeConflictForHighRisk(mr.getIcdcm1(), note.getDeductedOrder(), mr.getDataFormat());
     return null;
   }
 
@@ -3472,7 +4001,7 @@ public class NHIWidgetXMLService {
     }
     return sb.toString();
   }
-  
+
   private int[] stringToIntArray(String s, String splitter) {
     if (s == null || s.length() < 1) {
       return new int[0];
@@ -3484,27 +4013,27 @@ public class NHIWidgetXMLService {
     }
     String[] ss = s.split(splitter);
     int[] result = new int[ss.length];
-    for(int i=0;i<ss.length;i++) {
+    for (int i = 0; i < ss.length; i++) {
       result[i] = Integer.parseInt(ss[i]);
     }
     return result;
   }
-  
+
   private boolean isIntegerInArrayOrIgnore(int[] a, int value) {
     if (a == null || a.length == 0) {
       return true;
     }
-    for(int i=0;i<a.length;i++) {
+    for (int i = 0; i < a.length; i++) {
       if (a[i] == value) {
         return true;
       }
     }
     return false;
   }
-  
+
   public MRCountResponse getHomePageMRCount(HomepageParameters hp) {
     MRCountResponse result = new MRCountResponse();
-    
+
     String originalDataFormat = hp.getDataFormat();
     if (originalDataFormat == null || XMLConstant.DATA_FORMAT_OP.equals(hp.getDataFormat())) {
       hp.setDataFormat(XMLConstant.DATA_FORMAT_OP);
@@ -3516,67 +4045,68 @@ public class NHIWidgetXMLService {
       updateHomePageMRCountByDataFormat(result.getIp(), hp);
       updateMRStatusCount(result.getIp(), hp);
     }
-    
+
     result.refreshAll();
     return result;
   }
-  
+
   private void updateHomePageMRCountByDataFormat(MRCount mc, HomepageParameters hp) {
     CriteriaBuilder cb = em.getCriteriaBuilder();
     CriteriaQuery<Tuple> query = cb.createTupleQuery();
     Root<MR> root = query.from(MR.class);
-    
+
     List<Predicate> predicates = getHomePageCountPredicate(cb, query, root, hp);
-    
+
     mc.setDayCount(getCountingDays(cb, query, root, predicates, hp));
     mc.setTotalMr(getMRCount(cb, query, root, predicates, hp));
-    
+
     predicates.add(cb.greaterThan(root.get("applDot"), 0));
     retrieveMRApplyCount(cb, query, root, predicates, hp, mc);
   }
-  
+
   private void updateMRStatusCount(MRCount mc, HomepageParameters hp) {
     CriteriaBuilder cb = em.getCriteriaBuilder();
     CriteriaQuery<Tuple> query = cb.createTupleQuery();
     Root<MR> root = query.from(MR.class);
-    
+
     List<Tuple> tuples = groupByStatus(hp);
     for (Tuple tuple : tuples) {
-      int value = (tuple.get(1) instanceof Long) ? ((Long) tuple.get(1)).intValue() : ((Integer) tuple.get(1)).intValue();
-      if (((Integer)tuple.get(0)).intValue() == MR_STATUS.CLASSIFIED.value()) {
+      int value = (tuple.get(1) instanceof Long) ? ((Long) tuple.get(1)).intValue()
+          : ((Integer) tuple.get(1)).intValue();
+      if (((Integer) tuple.get(0)).intValue() == MR_STATUS.CLASSIFIED.value()) {
         mc.setClassified(value);
-      } else if (((Integer)tuple.get(0)).intValue() == MR_STATUS.DONT_CHANGE.value()) {
+      } else if (((Integer) tuple.get(0)).intValue() == MR_STATUS.DONT_CHANGE.value()) {
         mc.setDontChange(value);
-      } else if (((Integer)tuple.get(0)).intValue() == MR_STATUS.NO_CHANGE.value()) {
+      } else if (((Integer) tuple.get(0)).intValue() == MR_STATUS.NO_CHANGE.value()) {
         mc.setNoChange(value);
-      } else if (((Integer)tuple.get(0)).intValue() == MR_STATUS.OPTIMIZED.value()) {
+      } else if (((Integer) tuple.get(0)).intValue() == MR_STATUS.OPTIMIZED.value()) {
         mc.setOptimized(value);
-      } else if (((Integer)tuple.get(0)).intValue() == MR_STATUS.QUESTION_MARK.value()) {
+      } else if (((Integer) tuple.get(0)).intValue() == MR_STATUS.QUESTION_MARK.value()) {
         mc.setQuestionMark(value);
-      } else if (((Integer)tuple.get(0)).intValue() == MR_STATUS.WAIT_CONFIRM.value()) {
+      } else if (((Integer) tuple.get(0)).intValue() == MR_STATUS.WAIT_CONFIRM.value()) {
         mc.setWaitConfirm(value);
-      } else if (((Integer)tuple.get(0)).intValue() == MR_STATUS.WAIT_PROCESS.value()) {
+      } else if (((Integer) tuple.get(0)).intValue() == MR_STATUS.WAIT_PROCESS.value()) {
         mc.setWaitProcess(value);
       }
     }
   }
-  
+
   private List<Predicate> getHomePageCountPredicate(CriteriaBuilder cb, CriteriaQuery<Tuple> query,
       Root<MR> root, HomepageParameters hp) {
     List<Predicate> predicate = new ArrayList<Predicate>();
     if (hp.getApplYM() != null) {
-      addPredicate(root, predicate, cb, "applYm", hp.getApplYM(), true, false);
+      addPredicate(root, predicate, cb, "applYm", hp.getApplYM(), true, false, false);
     } else {
       predicate.add(cb.between(root.get("mrDate"), hp.getsDate(), hp.geteDate()));
     }
-    addPredicate(root, predicate, cb, "dataFormat", hp.getDataFormat(), false, false);
+    addPredicate(root, predicate, cb, "dataFormat", hp.getDataFormat(), false, false, false);
     if (!"00".equals(hp.getFuncType())) {
-      addPredicate(root, predicate, cb, "funcType", hp.getFuncType(), false, false);
+      addPredicate(root, predicate, cb, "funcType", hp.getFuncType(), false, false, false);
     }
-    addPredicate(root, predicate, cb, "prsnName", hp.getPrsnName(), false, false);
+    addPredicate(root, predicate, cb, "prsnName", hp.getPrsnName(), false, false, false);
     return predicate;
   }
-  
+
   public List<Tuple> groupByStatus(HomepageParameters hp) {
     CriteriaBuilder cb = em.getCriteriaBuilder();
     CriteriaQuery<Tuple> query = cb.createTupleQuery();
@@ -3592,15 +4122,16 @@ public class NHIWidgetXMLService {
 
   /**
    * 取得申請日數
+   * 
    * @param cb
    * @param query
    * @param predicate
    * @param hp
    * @return
    */
-  private int getCountingDays(CriteriaBuilder cb, CriteriaQuery<Tuple> query,
-      Root<MR> root, List<Predicate> predicate, HomepageParameters hp) {
-    
+  private int getCountingDays(CriteriaBuilder cb, CriteriaQuery<Tuple> query, Root<MR> root,
+      List<Predicate> predicate, HomepageParameters hp) {
+
     query.select(cb.tuple(cb.max(root.get("mrDate")), cb.min(root.get("mrDate"))));
     Predicate[] pre = new Predicate[predicate.size()];
     query.where(predicate.toArray(pre));
@@ -3608,16 +4139,35 @@ public class NHIWidgetXMLService {
     List<Tuple> list = typedQuery.getResultList();
     Tuple values = list.get(0);
     if (values.get(0) == null) {
+      // 該時段無資料
+      if (hp.getApplYM() != null) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMM");
+        try {
+          Calendar cal = Calendar.getInstance();
+          cal.setTime(sdf.parse(hp.getApplYM()));
+          cal.set(Calendar.DAY_OF_MONTH, 1);
+          java.util.Date firstDayOfMonth = cal.getTime();
+          cal.add(Calendar.MONTH, 1);
+          java.util.Date lastDayOfMonth = cal.getTime();
+          return (int) ((lastDayOfMonth.getTime() - firstDayOfMonth.getTime()) / 86400000L);
+        } catch (ParseException e) {
+          e.printStackTrace();
+        }
+      } else if (hp.geteDate() != null && hp.getsDate() != null) {
+        return (int) ((hp.geteDate().getTime() - hp.getsDate().getTime()) / 86400000L) + 1;
+      }
+      // ipMR.setDayCount((int) ((eDate.getTime() - sDate.getTime()) / 86400000L) + 1);
       return 0;
     }
     java.util.Date maxDate = (java.util.Date) values.get(0);
     java.util.Date minDate = (java.util.Date) values.get(1);
     long diff = (maxDate.getTime() - minDate.getTime()) / 86400000;
-    return (int)diff + 1;
+    return (int) diff + 1;
   }
 
   /**
    * 取得病例數
+   * 
    * @param root
    * @param cb
    * @param query
@@ -3625,12 +4175,12 @@ public class NHIWidgetXMLService {
    * @param hp
    * @return
    */
-  private int getMRCount(CriteriaBuilder cb, CriteriaQuery<Tuple> query,
-      Root<MR> root, List<Predicate> predicate, HomepageParameters hp) {
+  private int getMRCount(CriteriaBuilder cb, CriteriaQuery<Tuple> query, Root<MR> root,
+      List<Predicate> predicate, HomepageParameters hp) {
     query.select(cb.tuple(cb.count(root.get("id"))));
     Predicate[] pre = new Predicate[predicate.size()];
     query.where(predicate.toArray(pre));
-    
+
     TypedQuery<Tuple> typedQuery = em.createQuery(query);
     List<Tuple> list = typedQuery.getResultList();
     Tuple values = list.get(0);
@@ -3638,14 +4188,15 @@ public class NHIWidgetXMLService {
       return 0;
     }
     if (values.get(0) instanceof Long) {
-      return ((Long)values.get(0)).intValue();
+      return ((Long) values.get(0)).intValue();
     } else {
-      return ((Integer)values.get(0)).intValue();
+      return ((Integer) values.get(0)).intValue();
     }
   }
-  
+
   /**
    * 取得申請件數及申請點數
+   * 
    * @param root
    * @param cb
    * @param query
@@ -3653,12 +4204,12 @@ public class NHIWidgetXMLService {
    * @param hp
    * @return
    */
-  private void retrieveMRApplyCount(CriteriaBuilder cb, CriteriaQuery<Tuple> query,
-      Root<MR> root, List<Predicate> predicate, HomepageParameters hp, MRCount mrCount) {
+  private void retrieveMRApplyCount(CriteriaBuilder cb, CriteriaQuery<Tuple> query, Root<MR> root,
+      List<Predicate> predicate, HomepageParameters hp, MRCount mrCount) {
     query.select(cb.tuple(cb.count(root.get("id")), cb.sumAsLong(root.get("applDot"))));
     Predicate[] pre = new Predicate[predicate.size()];
     query.where(predicate.toArray(pre));
-    
+
     TypedQuery<Tuple> typedQuery = em.createQuery(query);
     List<Tuple> list = typedQuery.getResultList();
     Tuple values = list.get(0);
@@ -3668,9 +4219,9 @@ public class NHIWidgetXMLService {
       return;
     }
     if (values.get(0) instanceof Long) {
-      mrCount.setApplSum(((Long)values.get(0)).intValue());
+      mrCount.setApplSum(((Long) values.get(0)).intValue());
     } else {
-      mrCount.setApplSum(((Integer)values.get(0)).intValue());
+      mrCount.setApplSum(((Integer) values.get(0)).intValue());
     }
     if (values.get(1) == null) {
       mrCount.setApplDot(0);
@@ -3678,4 +4229,113 @@ public class NHIWidgetXMLService {
       mrCount.setApplDot(((Long) values.get(1)).intValue());
     }
   }
+  
+  public DrgListPayload getDrgList(long idL) {
+    DrgListPayload result = new DrgListPayload();
+    
+    List<IP_D> ipd = ipdDao.findByMrId(idL);
+    if (ipd == null || ipd.size() == 0) {
+      result.setMessage("病歷 id:" + idL + " 不存在");
+      result.setResult(BaseResponse.ERROR);
+    }
+    List<DRG_CAL> list =  drgCalDao.findByMrIdAndErrorIsNull(idL);
+    if (list == null || list.size() == 0) {
+      result.setMessage("無drg記錄");
+      return result;
+    }
+    List<DrgCalPayload> data = new ArrayList<DrgCalPayload>();
+    for (DRG_CAL drgCal : list) {
+      DrgCalPayload drg = new DrgCalPayload(drgCal);
+      
+      if (drg.getIcdCM1().equals(ipd.get(0).getIcdCm1())) {
+        drg.setSelected(true);
+      } else {
+        drg.setSelected(false);
+      }
+      data.add(drg);
+    }
+    result.setData(data);
+    return result;
+  }
+  
+  public String updateDrgList(long idL, String icd) {
+    List<IP_D> ipdList = ipdDao.findByMrId(idL);
+    if (ipdList == null || ipdList.size() == 0) {
+      return "病歷 id:" + idL + " 不存在";
+    }
+    Optional<MR> optional = mrDao.findById(idL);
+    if (!optional.isPresent()) {
+      return "病歷 id:" + idL + " 不存在";
+    }
+    MR mr = optional.get();
+    IP_D ipd = ipdList.get(0);
+    if (ipd.getIcdCm1().equals(icd)) {
+      // 主診斷未變，不處理
+      return null;
+    }
+    List<DRG_CAL> list =  drgCalDao.findByMrIdAndErrorIsNull(idL);
+    if (list == null || list.size() == 0) {
+      return "無drg記錄";
+    }
+    List<DrgCalPayload> data = new ArrayList<DrgCalPayload>();
+    for (DRG_CAL drgCal : list) {
+      if (drgCal.getIcdCM1().equals(icd)) {
+        String tmp = ipd.getIcdCm1();
+        ipd.setIcdCm1(icd);
+        if (ipd.getIcdCm2().equals(icd)) {
+          ipd.setIcdCm2(tmp);
+        } else if (ipd.getIcdCm3().equals(icd)) {
+          ipd.setIcdCm3(tmp);
+        } else if (ipd.getIcdCm4().equals(icd)) {
+          ipd.setIcdCm4(tmp);
+        } else if (ipd.getIcdCm5().equals(icd)) {
+          ipd.setIcdCm5(tmp);
+        } else if (ipd.getIcdCm6().equals(icd)) {
+          ipd.setIcdCm6(tmp);
+        } else if (ipd.getIcdCm7().equals(icd)) {
+          ipd.setIcdCm7(tmp);
+        } else if (ipd.getIcdCm8().equals(icd)) {
+          ipd.setIcdCm8(tmp);
+        } else if (ipd.getIcdCm9().equals(icd)) {
+          ipd.setIcdCm9(tmp);
+        } else if (ipd.getIcdCm10().equals(icd)) {
+          ipd.setIcdCm10(tmp);
+        }
+        ipd.setTwDrgCode(drgCal.getDrg());
+        ipd.setApplDot(drgCal.getDrgDot());
+        ipd.setUpdateAt(new java.util.Date());
+        mr.setDrgCode(drgCal.getDrg());
+        mr.setDrgFixed(drgCal.getDrgFix());
+        mr.setDrgSection(drgCal.getDrgSection());
+        mr.setApplDot(ipd.getApplDot());
+        mr.setUpdateAt(new java.util.Date());
+        ipdDao.save(ipd);
+        mrDao.save(mr);
+        break;
+      }
+    }
+    return null;
+  }
+  
+  public void updateDrgList(String icd, IP_D ipd, MR mr) {
+    List<DRG_CAL> list =  drgCalDao.findByMrIdAndErrorIsNull(mr.getId());
+    if (list == null || list.size() == 0) {
+      return;
+    }
+    for (DRG_CAL drgCal : list) {
+      if (drgCal.getIcdCM1().equals(icd)) {
+        ipd.setIcdCm1(icd);
+        ipd.setTwDrgCode(drgCal.getDrg());
+        ipd.setApplDot(drgCal.getDrgDot());
+        ipd.setUpdateAt(new java.util.Date());
+        mr.setDrgCode(drgCal.getDrg());
+        mr.setDrgFixed(drgCal.getDrgFix());
+        mr.setDrgSection(drgCal.getDrgSection());
+        mr.setApplDot(ipd.getApplDot());
+        mr.setUpdateAt(new java.util.Date());
+        return;
+      }
+    }
+  }
+  
 }

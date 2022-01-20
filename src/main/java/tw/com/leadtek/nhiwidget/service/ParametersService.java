@@ -26,13 +26,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.constant.DATA_TYPE;
+import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.dao.ASSIGNED_POINTDao;
+import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_CONFLICTDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_THRESHOLDDao;
+import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.PARAMETERSDao;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
+import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
 import tw.com.leadtek.nhiwidget.model.rdb.ASSIGNED_POINT;
+import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_CONFLICT;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_THRESHOLD;
@@ -98,7 +103,25 @@ public class ParametersService {
 
   @Autowired
   private ASSIGNED_POINTDao assignedPointDao;
-
+  
+  @Autowired
+  private ATCDao atcDao;
+  
+  @Autowired
+  private ReportService reportService;
+  
+  @Autowired
+  private MRDao mrDao;
+  
+  @Autowired
+  private IntelligentService is;
+  
+  @Autowired
+  private ParametersService parametersService;
+  
+  @Autowired
+  private RedisService redisService;
+  
   private static HashMap<String, String> parameters;
 
   public String getParameter(String name) {
@@ -242,8 +265,41 @@ public class ParametersService {
         0)) {
       return "該時段已有相關設定";
     }
-    assignedPointDao.save(ap.toDB());
+    ASSIGNED_POINT newAP = assignedPointDao.save(ap.toDB());
+    updatePointMonthlyTable(newAP);
     return null;
+  }
+  
+  private void updatePointMonthlyTable(ASSIGNED_POINT ap) {
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(ap.getStartDate());
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+    
+    Integer minPointMonthly = reportService.getMinPointMonthly();
+    if (minPointMonthly == null) {
+      return;
+    }
+    Integer maxPointMonthly = reportService.getMaxPointMonthly();
+    if (maxPointMonthly == null) {
+      return;
+    }
+    int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+    if (adYM < minPointMonthly.intValue()) {
+      adYM = minPointMonthly.intValue();
+      cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
+      cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
+    }
+    do {
+      reportService.refreshPointMonthly(String.valueOf(adYM), ap);
+      cal.add(Calendar.MONTH, 1);
+      if (ap.getEndDate().before(cal.getTime())) {
+        break;
+      }
+      adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+      if (adYM > maxPointMonthly.intValue()) {
+        break;
+      }
+    } while (true);
   }
 
   public String updateAssignedPoints(AssignedPoints ap) {
@@ -259,7 +315,8 @@ public class ParametersService {
       return "該時段已有相關設定";
     }
 
-    assignedPointDao.save(ap.toDB());
+    ASSIGNED_POINT newAP = assignedPointDao.save(ap.toDB());
+    updatePointMonthlyTable(newAP);
     return null;
   }
 
@@ -727,8 +784,8 @@ public class ParametersService {
     return result;
   }
   
-  public String getOneValueByName(String name) {
-    List<PARAMETERS> list = parametersDao.findByName(name);
+  public String getOneValueByName(String cat, String name) {
+    List<PARAMETERS> list = parametersDao.findByCatAndName(cat, name);
     if (list != null && list.size() > 0) {
       PARAMETERS p = list.get(0);
       return p.getValue();
@@ -1120,6 +1177,7 @@ public class ParametersService {
       ct.setRemark(null);
       codeTableDao.save(ct);
     }
+    recalculateInfectious(ct);
     return null;
   }
 
@@ -1199,7 +1257,8 @@ public class ParametersService {
       return "該時段有相同的罕見ICD代碼！";
     }
     db.setUpdateAt(new Date());
-    codeThresholdDao.save(db);
+    db = codeThresholdDao.save(db);
+    recalculateRareICD(db);
     return null;
   }
 
@@ -1217,6 +1276,7 @@ public class ParametersService {
     ct.setStatus(isEnable ? 1 : 0);
     ct.setUpdateAt(new Date());
     codeThresholdDao.save(ct);
+    recalculateRareICD(ct);
     return null;
   }
 
@@ -1261,10 +1321,10 @@ public class ParametersService {
         int codeType = isHighRatio ? RareICDPayload.CODE_TYPE_ORDER : RareICDPayload.CODE_TYPE_DRUG;
         predicate.add(cb.equal(root.get("codeType"), new Integer(codeType)));
         if (code != null && code.length() > 0) {
-          predicate.add(cb.equal(root.get("code"), code.toUpperCase()));
+          predicate.add(cb.like(root.get("code"), "%" + code.toUpperCase() + "%"));
         }
         if (inhCode != null && inhCode.length() > 0) {
-          predicate.add(cb.equal(root.get("inhCode"), inhCode.toUpperCase()));
+          predicate.add(cb.like(root.get("inhCode"), "%" + inhCode.toUpperCase() + "%"));
         }
 
         if (predicate.size() > 0) {
@@ -1288,6 +1348,9 @@ public class ParametersService {
       }
     };
     long total = codeThresholdDao.count(spec);
+    if (total < perPage && page > 0) {
+      page = 0;
+    }
     Page<CODE_THRESHOLD> pages = codeThresholdDao.findAll(spec, PageRequest.of(page, perPage));
     List<HighRatioOrderListPayload> list = new ArrayList<HighRatioOrderListPayload>();
     if (pages != null && pages.getTotalElements() > 0) {
@@ -1312,9 +1375,8 @@ public class ParametersService {
   }
 
   public String newHighRatioOrder(HighRatioOrder request, boolean isOrder) {
-    CODE_THRESHOLD db = request.toDB();
     int codeType = isOrder ? RareICDPayload.CODE_TYPE_ORDER : RareICDPayload.CODE_TYPE_DRUG;
-    db.setCodeType(codeType);
+    CODE_THRESHOLD db = request.toDB(codeType);
     if (db.getEndDate().before(db.getStartDate())) {
       return "失效日不可早於生效日！";
     }
@@ -1329,21 +1391,28 @@ public class ParametersService {
 
     db.setUpdateAt(new Date());
     db = codeThresholdDao.save(db);
+    recalculateHighRatioAndOverAmount(db, isOrder);
     return null;
   }
 
-  public String updateHighRatioOrder(HighRatioOrder request) {
-    CODE_THRESHOLD db = request.toDB();
+  public String updateHighRatioOrder(HighRatioOrder request, boolean isOrder) {
+    Optional<CODE_THRESHOLD> optional = codeThresholdDao.findById(request.getId());
+    if (!optional.isPresent()) {
+      return "id:" + request.getId() + "不存在";
+    }
+    CODE_THRESHOLD old = optional.get();
+    CODE_THRESHOLD db = request.toDB(old.getCodeType());
     if (db.getEndDate().before(db.getStartDate())) {
       return "失效日不可早於生效日！";
     }
     List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeAndCodeOrderByStartDateDesc(
-        RareICDPayload.CODE_TYPE_ORDER, request.getCode());
+        old.getCodeType(), request.getCode());
     if (checkTimeOverwrite(list, db, true)) {
       return "該時段有相同的應用比例偏高支付代碼";
     }
     db.setUpdateAt(new Date());
-    codeThresholdDao.save(db);
+    db = codeThresholdDao.save(db);
+    recalculateHighRatioAndOverAmount(db, isOrder);
     return null;
   }
   
@@ -1355,7 +1424,8 @@ public class ParametersService {
     CODE_THRESHOLD ct = optional.get();
     ct.setStatus(enable ? 1 : 0);
     ct.setUpdateAt(new Date());
-    codeThresholdDao.save(ct);
+    ct = codeThresholdDao.save(ct);
+    recalculateHighRatioAndOverAmount(ct, ct.getCodeType().intValue() == RareICDPayload.CODE_TYPE_ORDER);
     return null;
   }
 
@@ -1475,7 +1545,6 @@ public class ParametersService {
    */
   public boolean checkTimeOverwriteCodeConfilct(List<CODE_CONFLICT> list, long startDate,
       long endDate, Long id) {
-    System.out.println("checkTimeOverwriteCodeConfilct");
     if (list == null) {
       return false;
     }
@@ -1578,7 +1647,8 @@ public class ParametersService {
     }
     pc.setSameAtc(enable ? new Integer(1) : new Integer(0));
     pc.setUpdateAt(new Date());
-    payCodeDao.save(pc);
+    pc = payCodeDao.save(pc);
+    recalculateSameATC(pc, enable);
     return null;
   }
 
@@ -1647,16 +1717,17 @@ public class ParametersService {
     return new CodeConflictPayload(cc);
   }
 
-  public String upsertCodeConflict(CodeConflictPayload cc, boolean checkSameId) {
+  public String upsertCodeConflict(CodeConflictPayload ccp, boolean checkSameId) {
     List<CODE_CONFLICT> list =
-        codeConflictDao.findByCodeAndOwnExpCode(cc.getCode(), cc.getOwnCode());
+        codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(ccp.getCode(), ccp.getOwnCode(), new Integer(1));
     if (list != null && list.size() > 0) {
-      if (checkTimeOverwriteCodeConfilct(list, cc.getSdate().getTime(),
-          cc.getEdate().getTime(), cc.getId())) {
+      if (checkTimeOverwriteCodeConfilct(list, ccp.getSdate().getTime(),
+          ccp.getEdate().getTime(), ccp.getId())) {
         return "該時段有相同的罕見ICD代碼！";
       }
     }
-    codeConflictDao.save(cc.toDB());
+    CODE_CONFLICT cc = codeConflictDao.save(ccp.toDB());
+    recalculateCodeConflict(cc);
     return null;
   }
 
@@ -1666,18 +1737,19 @@ public class ParametersService {
     if (!optional.isPresent()) {
       return "id: " + id + " 不存在";
     }
-    CODE_CONFLICT pc = optional.get();
-    if (pc.getStatus() == 0 && !enable) {
+    CODE_CONFLICT cc = optional.get();
+    if (cc.getStatus() == 0 && !enable) {
       // 都是 disable 狀態，不處理
       return null;
     }
-    if (pc.getStatus().intValue() == 1 && enable) {
+    if (cc.getStatus().intValue() == 1 && enable) {
       // 都是 enable 狀態，不處理
       return null;
     }
-    pc.setStatus(enable ? new Integer(1) : new Integer(0));
-    pc.setUpdateAt(new Date());
-    codeConflictDao.save(pc);
+    cc.setStatus(enable ? new Integer(1) : new Integer(0));
+    cc.setUpdateAt(new Date());
+    cc = codeConflictDao.save(cc);
+    recalculateCodeConflict(cc);
     return null;
   }
 
@@ -1686,8 +1758,351 @@ public class ParametersService {
     if (!optional.isPresent()) {
       return "id不存在";
     }
+    CODE_CONFLICT cc = optional.get();
+    cc.setStatus(0);
+    recalculateCodeConflict(cc);
     codeConflictDao.deleteById(new Long(id));
     return null;
   }
 
+  public String upsertCodeConflictForHighRisk(String code, String ownExpCode, String dataFormat) {
+    List<CODE_CONFLICT> list =
+        codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(code, ownExpCode, new Integer(2));
+    if (list != null && list.size() > 0) {
+      for (CODE_CONFLICT codeConflict : list) {
+        if ("00".equals(codeConflict.getDataFormat())) {
+          // 不需處理
+          return null;
+        }
+        if (codeConflict.getDataFormat().equals(dataFormat)) {
+          // 不需處理
+          return null;
+        }
+        codeConflict.setDataFormat("00");
+        codeConflict = codeConflictDao.save(codeConflict);
+        recalculateHighRisk(codeConflict, dataFormat);
+        return null;
+      }
+    }
+    CODE_CONFLICT cc = initialCodeConflictForHighRisk(code, ownExpCode, dataFormat);
+    codeConflictDao.save(cc);
+    recalculateHighRisk(cc, dataFormat);
+    return null;
+  }
+  
+  private CODE_CONFLICT initialCodeConflictForHighRisk(String code, String ownExpCode, String dataFormat) {
+    CODE_CONFLICT cc = new CODE_CONFLICT();
+    try {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      cc.setStartDate(sdf.parse("2010/01/01"));
+      cc.setEndDate(sdf.parse("2099/12/31"));
+    } catch (ParseException e) {
+    }
+    
+    cc.setCode(code);
+    cc.setCodeType(new Integer(2));
+    cc.setDataFormat(dataFormat);
+    List<JsonSuggestion> queryList = redisService.query("ICD10-CM", code.toLowerCase(), false);
+    for (JsonSuggestion jsonSuggestion : queryList) {
+      if (jsonSuggestion.getId().equals(code.toLowerCase())) {
+        cc.setDescChi(jsonSuggestion.getValue());
+        break;
+      }
+    }
+    cc.setOwnExpCode(ownExpCode);
+    
+    queryList = redisService.query(null, ownExpCode.toLowerCase(), false);
+    for (JsonSuggestion jsonSuggestion : queryList) {
+      if (jsonSuggestion.getLabel().equals(ownExpCode.toLowerCase())) {
+        cc.setOwnExpDesc(jsonSuggestion.getValue());
+        break;
+      }
+    }
+    cc.setQuantityNh(0);
+    cc.setQuantityOwn(0);
+    return cc;
+  }
+
+  public void recalculateRareICD(CODE_THRESHOLD ct) {
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(ct.getStartDate());
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+    
+    String minYm = mrDao.getMinYm();
+    if (minYm == null) {
+      return;
+    }
+    int min = Integer.parseInt(minYm) + 191100;
+    String maxYm = mrDao.getMaxYm();
+    if (maxYm == null) {
+      return;
+    }
+    int max = Integer.parseInt(maxYm) + 191100;
+    int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+    if (adYM < min) {
+      adYM = min;
+      cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
+      cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
+    }
+    String wording1M = parametersService.getOneValueByName("INTELLIGENT", "RARE_ICD_1M");
+    String wording6M = parametersService.getOneValueByName("INTELLIGENT", "RARE_ICD_6M");
+    do {
+      is.calculateRareICD(String.valueOf(adYM - 191100), ct, wording1M, wording6M);
+      cal.add(Calendar.MONTH, 1);
+      if (ct.getEndDate().before(cal.getTime())) {
+        break;
+      }
+      adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+      if (adYM > max) {
+        break;
+      }
+    } while (true);
+  }
+  
+  public void recalculateInfectious(CODE_TABLE ct) {
+    Thread thread = new Thread(new Runnable() {
+      
+      @Override
+      public void run() {
+        Calendar cal = Calendar.getInstance();
+        
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        
+        String minYm = mrDao.getMinYm();
+        if (minYm == null) {
+          return;
+        }
+        int min = Integer.parseInt(minYm) + 191100;
+        String maxYm = mrDao.getMaxYm();
+        if (maxYm == null) {
+          return;
+        }
+        int max = Integer.parseInt(maxYm) + 191100;
+        int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+        if (adYM < min  || adYM > min) {
+          adYM = min;
+          cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
+          cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
+        }
+        String wording = parametersService.getOneValueByName("INTELLIGENT", "INFECTIOUS");
+        do {
+          is.calculateInfectious(String.valueOf(adYM - 191100), ct, wording);
+          cal.add(Calendar.MONTH, 1);
+          adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+          if (adYM > max) {
+            break;
+          }
+        } while (true);
+        logger.info("recalculateInfectious " + ct.getCode() + " done");
+      }
+    });
+    thread.start();
+  }
+  
+  /**
+   * 重新計算符合特別用量藥材、衛品及應用比例偏高醫令
+   * @param ct
+   */
+  public void recalculateHighRatioAndOverAmount(CODE_THRESHOLD ct, boolean isOrder) {
+    String wordingHighRatioSingle = parametersService.getOneValueByName("INTELLIGENT", isOrder ? "HIGH_RATIO_SINGLE" : "OVER_AMOUNT_SINGLE");
+    String wordingHighRatioTotal = parametersService.getOneValueByName("INTELLIGENT", isOrder ? "HIGH_RATIO_TOTAL" : "OVER_AMOUNT_TOTAL");
+    String wordingHighRatio6M = parametersService.getOneValueByName("INTELLIGENT", isOrder ? "HIGH_RATIO_6M" : "OVER_AMOUNT_6M");
+    String wordingHighRatio1M = parametersService.getOneValueByName("INTELLIGENT", isOrder ? "HIGH_RATIO_1M" : "OVER_AMOUNT_1M");
+  
+    Thread thread = new Thread(new Runnable() {
+      
+      @Override
+      public void run() {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(ct.getStartDate());
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        
+        String minYm = mrDao.getMinYm();
+        if (minYm == null) {
+          return;
+        }
+        int min = Integer.parseInt(minYm) + 191100;
+        String maxYm = mrDao.getMaxYm();
+        if (maxYm == null) {
+          return;
+        }
+        int max = Integer.parseInt(maxYm) + 191100;
+        int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+        if (adYM < min ) {
+          adYM = min;
+          cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
+          cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
+        }
+        do {
+          System.out.println(isOrder ?  "recalculateHighRatio :" : "recalculateOverAmount :" + adYM);
+          is.calculateHighRatioAndOverAmount(String.valueOf(adYM - 191100), ct, wordingHighRatioSingle, wordingHighRatioTotal,
+              wordingHighRatio6M, wordingHighRatio1M, isOrder ? INTELLIGENT_REASON.HIGH_RATIO.value() : INTELLIGENT_REASON.OVER_AMOUNT.value());
+          cal.add(Calendar.MONTH, 1);
+          adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+          if (adYM > max) {
+            break;
+          }
+        } while (true);
+        logger.info("recalculateHighRatio " + ct.getCode() + " done");
+      }
+    });
+    thread.start();
+  }
+  
+  /**
+   * 重新計算健保項目對應自費項目並存病歷
+   * @param cc
+   */
+  public void recalculateCodeConflict(CODE_CONFLICT cc) {
+    String wording = parametersService.getOneValueByName("INTELLIGENT", "CODE_CONFLICT");
+  
+    Thread thread = new Thread(new Runnable() {
+      
+      @Override
+      public void run() {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(cc.getStartDate());
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        
+        String minYm = mrDao.getMinYm();
+        if (minYm == null) {
+          return;
+        }
+        int min = Integer.parseInt(minYm) + 191100;
+        String maxYm = mrDao.getMaxYm();
+        if (maxYm == null) {
+          return;
+        }
+        int max = Integer.parseInt(maxYm) + 191100;
+        int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+        if (adYM < min ) {
+          adYM = min;
+          cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
+          cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
+        }
+        do {
+          is.calculateCodeConflict(String.valueOf(adYM - 191100), cc, wording);
+          cal.add(Calendar.MONTH, 1);
+          adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+          if (adYM > max) {
+            break;
+          }
+        } while (true);
+        logger.info("recalculateCodeConflict " + cc.getCode() + " done");
+      }
+    });
+    thread.start();
+  }
+  
+  /**
+   * 重新計算健保項目對應自費項目並存病歷
+   * @param cc
+   */
+  public void recalculateSameATC(PAY_CODE payCode, boolean enable) {
+    if (!"1".equals(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "SAME_ATC"))) {
+      return;
+    }
+    int atcLen = "5".equals(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "SAME_ATC_LENGTH")) ? 5 : 7;
+  
+    String atc = payCode.getAtc();
+    System.out.println("atcLen=" + atcLen + ",atc=" + atc);
+    List<PAY_CODE> payCodeList = null;
+    if (atcLen == 5) {
+      atc = payCode.getAtc().substring(0, atcLen);
+      payCodeList = payCodeDao.findByATCLen5(atc + "%");
+    } else {
+      payCodeList = payCodeDao.findByATCLen7(payCode.getAtc());
+    }
+    
+    if (payCodeList.size() < 2) {
+      return;
+    }
+    
+    List<String> payCodes = new ArrayList<String>();
+    for (PAY_CODE p : payCodeList) {
+      payCodes.add(p.getCode());
+    }
+    
+    if (!enable) {
+      is.calculateSameATCDisable(payCodes, atc);
+      return;
+    }
+    List<ATC> atcList = atcDao.findByCode(atc);
+    String atcName = "";
+    if (atcList != null && atcList.size() > 0) {
+      atcName = atcList.get(0).getNote();
+    }
+    String wording = parametersService.getOneValueByName("INTELLIGENT", "SAME_ATC");
+    String reason = (wording != null) ? String.format(wording, atc, atcName) : null;
+    String atcCode = atc;
+    Thread thread = new Thread(new Runnable() {
+      
+      @Override
+      public void run() {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        
+        String minYm = mrDao.getMinYm();
+        if (minYm == null) {
+          return;
+        }
+        int min = Integer.parseInt(minYm) + 191100;
+        String maxYm = mrDao.getMaxYm();
+        if (maxYm == null) {
+          return;
+        }
+        int max = Integer.parseInt(maxYm) + 191100;
+        int adYM = min;
+          cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
+          cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
+        do {
+          is.calculateSameATC(String.valueOf(adYM - 191100), payCodes, atcCode, reason);
+          cal.add(Calendar.MONTH, 1);
+          adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+          if (adYM > max) {
+            break;
+          }
+        } while (true);
+        logger.info("recalculateSameATC " + payCode.getCode() + " done");
+      }
+    });
+    thread.start();
+  }
+  
+  public void recalculateHighRisk(CODE_CONFLICT cc, String dataFormat) {
+    String wording = parametersService.getOneValueByName("INTELLIGENT", "HIGH_RISK");
+    
+    Thread thread = new Thread(new Runnable() {
+      
+      @Override
+      public void run() {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        
+        String minYm = mrDao.getMinYm();
+        if (minYm == null) {
+          return;
+        }
+        int min = Integer.parseInt(minYm) + 191100;
+        String maxYm = mrDao.getMaxYm();
+        if (maxYm == null) {
+          return;
+        }
+        int max = Integer.parseInt(maxYm) + 191100;
+        int adYM = min;
+        cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
+        cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
+        do {
+          is.calculateCodeConflict(String.valueOf(adYM - 191100), cc, wording);
+          cal.add(Calendar.MONTH, 1);
+          adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+          if (adYM > max) {
+            break;
+          }
+        } while (true);
+        logger.info("recalculateCodeConflict " + cc.getCode() + " done");
+      }
+    });
+    thread.start();
+  }
 }

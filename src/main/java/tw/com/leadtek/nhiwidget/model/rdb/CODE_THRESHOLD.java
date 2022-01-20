@@ -308,7 +308,7 @@ public class CODE_THRESHOLD {
   }
 
   /**
-   * 適用就醫方式，00:門急診及住院均適用，10:門急診，20:住院
+   * 適用就醫方式，00:門急診及住院均適用，10:門急診，20:住院，11:門診住院各有各的設定
    */
   public String getDataFormat() {
     return dataFormat;

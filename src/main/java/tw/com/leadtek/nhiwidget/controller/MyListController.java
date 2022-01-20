@@ -65,6 +65,8 @@ public class MyListController extends BaseController {
       example = "A123456789") @RequestParam(required = false) String applId,
     @ApiParam(name = "applName", value = "負責人員姓名",
       example = "王小明") @RequestParam(required = false) String applName,
+    @ApiParam(value = "病歷狀態，0:待處理，-1:疑問標示",
+      example = "0") @RequestParam(required = false) Integer status,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，status:資料狀態，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
@@ -140,7 +142,7 @@ public class MyListController extends BaseController {
       }
     }
     return ResponseEntity.ok(xmlService.getMyTodoList(user, startDate, endDate, dataFormat, 
-        funcType, funcTypec, prsnId, prsnName, applId, applName, column, asc, perPageInt, page));
+        funcType, funcTypec, prsnId, prsnName, applId, applName, status, column, asc, perPageInt, page));
   }
   
   @ApiOperation(value = "取得我的清單-比對警示", notes = "取得我的清單-比對警示")
@@ -166,6 +168,8 @@ public class MyListController extends BaseController {
       example = "A123456789") @RequestParam(required = false) String applId,
     @ApiParam(name = "applName", value = "負責人員姓名",
       example = "王小明") @RequestParam(required = false) String applName,
+    @ApiParam(value = "取得異動病歷，icd:取得ICD碼有異動的病歷，order:取得支付標準代碼有異動的病歷，inh:取得院內碼有異動的病歷，so:取得S.O.異動病歷，other:取得其他資訊有異動病歷，notify:取得已通知病歷，notnotify:取得未通知病歷",
+      example = "icd") @RequestParam(required = false) String block,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
@@ -242,7 +246,7 @@ public class MyListController extends BaseController {
       }
     }
     return ResponseEntity.ok(xmlService.getWarningOrderList(user, startDate, endDate, dataFormat, 
-        funcType, funcTypec, prsnId, prsnName, applId, applName, column, asc, perPageInt, page));
+        funcType, funcTypec, prsnId, prsnName, applId, applName, block, column, asc, perPageInt, page));
   }
   
   @ApiOperation(value = "取得我的清單-疑問標示", notes = "取得我的清單-疑問標示")
@@ -270,6 +274,8 @@ public class MyListController extends BaseController {
       example = "A123456789") @RequestParam(required = false) String applId,
     @ApiParam(name = "applName", value = "負責人員姓名",
       example = "王小明") @RequestParam(required = false) String applName,
+    @ApiParam(value = "取得疑問標示上方區塊病歷，notify:已通知，notnotify:未通知，read:已讀取，unread:未讀取",
+      example = "notify") @RequestParam(required = false) String block,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
@@ -343,7 +349,7 @@ public class MyListController extends BaseController {
     }
     return ResponseEntity.ok(xmlService.getQuestionMark(user, applYm,
         startDate, endDate, dataFormat, funcType, funcTypec, prsnId, prsnName, 
-        applId, applName, column, asc, perPageInt, page));
+        applId, applName, block, column, asc, perPageInt, page));
   }
   
   @ApiOperation(value = "取得我的清單-通知記錄", notes = "取得我的清單-比對警示")
@@ -371,6 +377,8 @@ public class MyListController extends BaseController {
       example = "A123456789") @RequestParam(required = false) String applId,
     @ApiParam(name = "applName", value = "負責人員姓名",
       example = "王小明") @RequestParam(required = false) String applName,
+    @ApiParam(value = "通知記錄清單上方區塊病歷，notify:已通知，read:已讀取，unread:未讀取",
+      example = "notify") @RequestParam(required = false) String block,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，status:資料狀態，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
@@ -439,7 +447,7 @@ public class MyListController extends BaseController {
     }
     return ResponseEntity.ok(xmlService.getNoticeRecord(user, applYm,
         startDate, endDate, dataFormat, funcType, funcTypec, prsnId, prsnName, 
-        applId, applName, column, asc, perPageInt, page));
+        applId, applName, block, column, asc, perPageInt, page));
   }
   
   @ApiOperation(value = "取得我的清單-醫師查看清單", notes = "取得我的清單-醫師查看清單")

@@ -38,14 +38,13 @@ public class RareICDListPayload extends StartEndPayload implements Serializable 
 
   public RareICDListPayload(CODE_THRESHOLD ct) {
     id = ct.getId();
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
     code = ct.getCode();
     sdate = ct.getStartDate();
     edate = ct.getEndDate();
     ip = false;
     op = false;
  
-    if ("00".equals(ct.getDataFormat())) {
+    if ("00".equals(ct.getDataFormat()) || "11".equals(ct.getDataFormat())) {
       ip = true;
       op = true;
     } else if ("10".equals(ct.getDataFormat())) {

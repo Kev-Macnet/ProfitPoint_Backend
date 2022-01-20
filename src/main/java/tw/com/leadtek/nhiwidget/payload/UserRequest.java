@@ -60,7 +60,9 @@ public class UserRequest extends USER {
     result.setDisplayName(getDisplayName());
     result.setEmail(getEmail());
     result.setId(getId());
-    result.setPassword(getPassword());
+    if (getPassword() != null && getPassword().length() > 0) {
+      result.setPassword(getPassword());
+    }
     result.setStatus(getStatus());
     result.setCreateAt(getCreateAt());
     result.setUpdateAt(getUpdateAt());

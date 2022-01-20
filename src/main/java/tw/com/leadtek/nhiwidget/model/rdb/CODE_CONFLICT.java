@@ -98,6 +98,13 @@ public class CODE_CONFLICT {
   @Column(name = "END_DATE")
   @JsonIgnore
   private Date endDate;
+  
+  /**
+   * CODE類別，1: 醫令/健保碼，2: ICD 診斷碼
+   */
+  @Column(name = "CODE_TYPE")
+  @JsonIgnore
+  private Integer codeType;
 
   /**
    * 更新日期
@@ -301,4 +308,12 @@ public class CODE_CONFLICT {
     updateAt = UPDATE_AT;
   }
 
+  public Integer getCodeType() {
+    return codeType;
+  }
+
+  public void setCodeType(Integer codeType) {
+    this.codeType = codeType;
+  }
+  
 }

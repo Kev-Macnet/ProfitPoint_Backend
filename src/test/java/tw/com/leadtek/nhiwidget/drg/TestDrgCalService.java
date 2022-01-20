@@ -8,6 +8,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.persistence.Tuple;
 import javax.persistence.TupleElement;
@@ -28,6 +29,7 @@ import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.OP_TDao;
+import tw.com.leadtek.nhiwidget.importdata.ImportJsonFile;
 import tw.com.leadtek.nhiwidget.model.DrgCalculate;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
@@ -43,6 +45,8 @@ import tw.com.leadtek.nhiwidget.service.DrgCalService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
+import tw.com.leadtek.tools.HttpClientUtil;
+import tw.com.leadtek.tools.SendHTTP;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = NHIWidget.class)
@@ -183,20 +187,20 @@ public class TestDrgCalService {
   //@Ignore
   //@Test
   public void calculateDRGMonthly() {
-    for (int i = 1; i < 10; i++) {
-      reportService.calculateDRGMonthly("1080" + i);
-    }
-    for (int i = 10; i < 13; i++) {
-      reportService.calculateDRGMonthly("108" + i);
-    }
-    for (int i = 1; i < 10; i++) {
-      reportService.calculateDRGMonthly("1090" + i);
-    }
-    for (int i = 10; i < 13; i++) {
-      reportService.calculateDRGMonthly("109" + i);
-    }
-    for (int i = 1; i < 10; i++) {
-      reportService.calculateDRGMonthly("1100" + i);
+//    for (int i = 1; i < 10; i++) {
+//      reportService.calculateDRGMonthly("1080" + i);
+//    }
+//    for (int i = 10; i < 13; i++) {
+//      reportService.calculateDRGMonthly("108" + i);
+//    }
+//    for (int i = 1; i < 10; i++) {
+//      reportService.calculateDRGMonthly("1090" + i);
+//    }
+//    for (int i = 10; i < 13; i++) {
+//      reportService.calculateDRGMonthly("109" + i);
+//    }
+    for (int i = 11; i < 13; i++) {
+      reportService.calculateDRGMonthly("110" + i);
     }
   }
 
@@ -204,7 +208,11 @@ public class TestDrgCalService {
   @Test
   public void calculateWeekly() {
     // start date : 2019/01/01
-  
+    Calendar cal = Calendar.getInstance();
+    cal.set(Calendar.YEAR, 2021);
+    cal.set(Calendar.MONTH, 10);
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+    reportService.calculatePointWeekly(cal);
   }
   
   @Ignore
@@ -258,7 +266,7 @@ public class TestDrgCalService {
     java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
     cal.add(Calendar.MONTH, -14);
     java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
-    List<MR> list = mrDao.findByDataFormatAndMrDateBetween("10", startDate, endDate);
+    List<MR> list = mrDao.findByDataFormatAndMrDateBetweenOrderById("10", startDate, endDate);
     for (MR mr : list) {
       List<OP_D> opdList = opdDao.findByMrId(mr.getId());
       for (OP_D opd : opdList) {
@@ -280,7 +288,7 @@ public class TestDrgCalService {
     java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
     cal.add(Calendar.MONTH, -14);
     java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
-    List<MR> list = mrDao.findByDataFormatAndMrDateBetween("20", startDate, endDate);
+    List<MR> list = mrDao.findByDataFormatAndMrDateBetweenOrderById("20", startDate, endDate);
     for (MR mr : list) {
       List<IP_D> ipdList = ipdDao.findByMrId(mr.getId());
       for (IP_D ipd : ipdList) {
@@ -315,11 +323,14 @@ public class TestDrgCalService {
     Calendar cal = Calendar.getInstance();
     cal.set(Calendar.YEAR, 2018);
     
-    List<MR> list = mrDao.findByDataFormatAndMrDateBetween("10", new java.sql.Date(cal.getTimeInMillis()), new java.sql.Date(System.currentTimeMillis()));
-    //MR mr = mrDao.findById(1285853L).orElse(null);
+    List<MR> list = mrDao.findByDataFormatAndMrDateBetweenOrderById("10", new java.sql.Date(cal.getTimeInMillis()), new java.sql.Date(System.currentTimeMillis()));
+    //MR mr = mrDao.findById(710890L).orElse(null);
     for (MR mr : list) {
       //System.out.println("mr id=" + mr.getId() + ", did=" + mr.getdId());
       List<OP_D> opdList = opdDao.findByMrId(mr.getId());
+      if (opdList.size() == 0) {
+        continue;
+      }
       OP_D opd = opdList.get(0);
    
       NHIWidgetXMLService.initialOP_DDot(opd);
@@ -376,14 +387,18 @@ public class TestDrgCalService {
     Calendar cal = Calendar.getInstance();
     cal.set(Calendar.YEAR, 2018);
     
-    //List<MR> list = mrDao.findByDataFormatAndMrDateBetween("20", new java.sql.Date(cal.getTimeInMillis()), new java.sql.Date(System.currentTimeMillis()));
-    MR mr = mrDao.findById(23043L).orElse(null);
-    //for (MR mr : list) {
+    List<MR> list = mrDao.findByDataFormatAndMrDateBetweenOrderById("20", new java.sql.Date(cal.getTimeInMillis()), new java.sql.Date(System.currentTimeMillis()));
+    //MR mr = mrDao.findById(1446L).orElse(null);
+    for (MR mr : list) {
       //System.out.println("mr id=" + mr.getId() + ", did=" + mr.getdId());
       List<IP_D> ipdList = ipdDao.findByMrId(mr.getId());
       IP_D ipd = ipdList.get(0);
    
       int orderQty = ipd.getOrderQty().intValue();
+      if (ipd.getApplDot() == null) {
+        System.out.println("mr id:" + mr.getId() + " applDot is null");
+        continue;
+      }
       int totalP = ipd.getApplDot();
       //NHIWidgetXMLService.initialOP_DDot(opd);
       // 診察費點數
@@ -506,12 +521,47 @@ public class TestDrgCalService {
         System.out.println("order quantity changed:" + orderQty + "-" + ipd.getOrderQty().intValue());
       }
       if (totalP != ipd.getApplDot().intValue()) {
-        System.out.println("MR id=" + mr.getId() + " total points changed:" + totalP + "-" + ipd.getApplDot().intValue());
+        System.out.println("MR id=" + mr.getId() + " appl points changed:" + totalP + "-" + ipd.getApplDot().intValue());
       }
-    //}
+    }
     
   }
   
+  // @Ignore
+  @Test
+  public void calculateAllDRG() {
+    String serverIP = "127.0.0.1";
+    List<IP_D> ipds = ipdDao.findAllWithDRG(1306013);
+    System.out.println("ipds size=" + ipds.size());
+    String token = ImportJsonFile.signin(serverIP, "8081");
+    if (token == null) {
+      System.err.println("login failed");
+      return;
+    }
+    for (IP_D ip_D : ipds) {
+      StringBuffer sb = new StringBuffer("/api/drg/");
+      sb.append(ip_D.getRocId());
+      sb.append("/");
+      sb.append(ip_D.getInDate());
+      System.out.println("MR id=" + ip_D.getMrId() + "=" + sb.toString());
+
+      // Map<String, String> param = new HashMap<String, String>();
+      // param.put("Authorization", "Bearer " + token);
+      try {
+        SendHTTP send = new SendHTTP();
+        send.setServerIP("127.0.0.1");
+        send.setPort("8081");
+        String response = send.postAPI(token, sb.toString(), null);
+        if (response.indexOf(":500,") > 0 || response.indexOf(":401,") > 0) {
+          break;
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+  
+  @Ignore
   @Test
   public void testGroupBy() {
 //    List<Tuple> list = nhiService.groupByStatus(null, null, "11011", null, null, null);    

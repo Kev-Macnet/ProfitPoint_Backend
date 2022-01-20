@@ -82,21 +82,18 @@ public class DrgRestController {
     @ApiImplicitParams({
        @ApiImplicitParam(name="id_card", value="身分證號", example="C120***370", dataType="String", paramType="path", required=true),
        @ApiImplicitParam(name="in_date", value="住院日(民國年)", example="1100112", dataType="String", paramType="path", required=true)
-//        @ApiImplicitParam(name="id_card", value="身分證號", example="H101***617", dataType="String", paramType="path", required=true),
-//        @ApiImplicitParam(name="in_date", value="住院日(民國年)", example="1071110", dataType="String", paramType="path", required=true)
     })
     @RequestMapping(value = "/api/drg/{id_card}/{in_date}", method = RequestMethod.POST)
     public ResponseEntity<?> calculateDrg(HttpServletRequest request,
-        @RequestHeader("Authorization") String jwt,
-        @PathVariable String id_card,
+        @RequestHeader("Authorization") String jwt, @PathVariable String id_card,
         @PathVariable String in_date) throws Exception {
-        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
-        if ((int)jwtValidation.get("status") != 200) {
-            return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
-        } else {
-            java.util.Map<String, Object> retMap = logDataService.drgProcess(id_card, in_date);
-            return new ResponseEntity<>(retMap, HttpStatus.OK);
-        }
+      // java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
+      // if ((int)jwtValidation.get("status") != 200) {
+      // return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
+      // } else {
+      java.util.Map<String, Object> retMap = logDataService.drgProcess(id_card, in_date);
+      return new ResponseEntity<>(retMap, HttpStatus.OK);
+      // }
     }
     
     //===

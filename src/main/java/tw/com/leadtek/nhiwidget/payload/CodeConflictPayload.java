@@ -63,6 +63,7 @@ public class CodeConflictPayload extends CodeConflictListPayload implements Seri
     result.setQuantityOwn(quantityOwn);
     result.setStartDate(sdate);
     result.setStatus(status.booleanValue() ? 1 : 0);
+    result.setCodeType(1);
     result.setUpdateAt(new Date());
     return result;
   }

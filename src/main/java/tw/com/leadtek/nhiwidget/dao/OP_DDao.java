@@ -97,8 +97,8 @@ public interface OP_DDao extends JpaRepository<OP_D, Long> {
    * @return [門急診點數, 住院點數]
    */
   @Query(value ="SELECT * FROM " + 
-      "(SELECT SUM(OP_D.T_DOT) AS OP_POINT FROM MR, OP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND OP_D.MR_ID = MR.ID)," + 
+      "(SELECT SUM(OP_D.T_DOT) AS OP_POINT FROM MR, OP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND OP_D.MR_ID = MR.ID) OP," + 
       "(SELECT (SUM(IP_D.APPL_DOT) + SUM(IP_D.PART_DOT)) AS IP_POINT FROM MR, IP_D " + 
-      "WHERE MR_DATE >= ?3 AND MR_DATE <= ?4 AND IP_D.MR_ID = MR.ID)", nativeQuery = true)
+      "WHERE MR_DATE >= ?3 AND MR_DATE <= ?4 AND IP_D.MR_ID = MR.ID) IP", nativeQuery = true)
   public List<Object[]> findAllPoint(Date sdate1, Date edate1, Date sdate2, Date edate2);
 }

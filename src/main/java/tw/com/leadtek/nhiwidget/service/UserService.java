@@ -43,14 +43,14 @@ public class UserService {
   private Logger logger = LogManager.getLogger();
 
   public final static String USER_PREFIX = "USER:";
-  
+
   public final static String EDITING = "EDITING";
-  
+
   /**
    * 存放用戶正在編輯的病歷id
    */
   public final static String MREDIT = "MREDIT:";
-  
+
   @Autowired
   private USERDao userDao;
 
@@ -68,13 +68,13 @@ public class UserService {
 
   @Autowired
   private RedisService redisService;
-  
+
   @Autowired
   private LogDataDao logDataDao;
-  
+
   @Autowired
   private JwtUtils jwtUtils;
-  
+
   @Value("${jwt.afk}")
   private long afkTime;
 
@@ -104,8 +104,10 @@ public class UserService {
     user = ur.convertToUSER();
     user.setInhId(user.getUsername());
     if (user.getPassword() == null && user.getEmail() != null) {
+      logger.info("sendEail:" + user.getEmail());
       String newPassword = generateCommonLangPassword();
-      emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(), "系統隨機產生密碼:" + newPassword);
+      emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
+          "系統隨機產生密碼:" + newPassword);
       user.setPassword(encoder.encode(newPassword));
     } else {
       user.setPassword(encoder.encode(user.getPassword()));
@@ -120,7 +122,7 @@ public class UserService {
 
   public String updateUser(UserRequest ur) {
     Optional<USER> optional = userDao.findById(ur.getId());
-    if (optional == null) {
+    if (!optional.isPresent()) {
       return "帳號不存在";
     }
     USER existUser = optional.get();
@@ -193,7 +195,7 @@ public class UserService {
     }
     return null;
   }
-  
+
   public USER findUserById(long id) {
     Optional<USER> optional = userDao.findById(id);
     if (optional.isPresent()) {
@@ -204,13 +206,13 @@ public class UserService {
 
   public String deleteUser(Long id) {
     Optional<USER> optional = userDao.findById(id);
-    if (optional == null) {
+    if (!optional.isPresent()) {
       return "帳號不存在";
     }
     USER existUser = optional.get();
     try {
       userDao.deleteById(existUser.getId());
-      userDepartmentDao.deleteByUserId(existUser.getId());
+      userDepartmentDao.removeByUserId(existUser.getId());
     } catch (Exception e) {
       e.printStackTrace();
       return "帳號刪除有誤";
@@ -318,7 +320,8 @@ public class UserService {
     return null;
   }
 
-  public List<UserRequest> getAllUser(String funcType, String funcTypeC, String rocId, String name, String role) {
+  public List<UserRequest> getAllUser(String funcType, String funcTypeC, String rocId, String name,
+      String role, String keyword) {
     if (departmentHash == null) {
       retrieveData();
     }
@@ -332,64 +335,56 @@ public class UserService {
     } else {
       list = userDao.findByRole(ROLE_TYPE.DOCTOR.getRole());
     }
+    // 與查詢相關的部門id array
+    List<Long> depId = getDepartmentIds(funcType, funcTypeC);
     List<USER_DEPARTMENT> udList = userDepartmentDao.findAll();
-    if ((funcTypeC != null && !"不分科".equals(funcTypeC))
-        || (funcType != null && !"00".equals(funcType))) {
-      List<Long> depId = new ArrayList<Long>();
-      if (funcType != null) {
-        String[] s = funcType.split(" ");
-        for (String string : s) {
-          Long id = getDepartmentIdByCode(string);
-          if (id != null) {
-            depId.add(id);
-          }
-        }
-      } else if (funcTypeC != null) {
-        String[] s = funcTypeC.split(" ");
-        for (String string : s) {
-          Long id = getDepartmentIdByName(string);
-          if (id != null) {
-            depId.add(id);
-          }
+    
+    List<USER_DEPARTMENT> newUserDepartmentList = new ArrayList<USER_DEPARTMENT>();
+    for (USER_DEPARTMENT ud : udList) {
+      for (Long id : depId) {
+        if (ud.getDepartmentId().longValue() == id.longValue()) {
+          newUserDepartmentList.add(ud);
         }
       }
-      if (depId.size() == 0) {
-        return result;
-      }
-      List<USER_DEPARTMENT> newUserDepartmentList = new ArrayList<USER_DEPARTMENT>();
-      for (USER_DEPARTMENT ud : udList) {
-        for (Long id : depId) {
-          if (ud.getDepartmentId().longValue() == id.longValue()) {
-            newUserDepartmentList.add(ud);
-          }
-        }
-      }
-      udList = newUserDepartmentList;
     }
+    udList = newUserDepartmentList;
+    boolean isAllDepartment = "不分科".equals(funcTypeC) || "00".equals(funcType) || (funcTypeC == null && funcType == null);
+    HashMap<String, String> departments = null;
     for (USER user : list) {
-      HashMap<String, String> departments = getDepartmentIdAndNameByUserId(user.getId(), udList);
-      if (departments == null) {
-        continue;
+      departments = getDepartmentIdAndNameByUserId(user.getId(), udList);
+      if (departments == null || departments.size() == 0) {
+        if (!isAllDepartment) {
+          // 該user不在指定的部門別
+          continue;
+        }
       }
       if (rocId != null && rocId.length() > 0) {
-        if (user.getRocId() == null) {
-          continue;
-        }
-        if (!user.getRocId().startsWith(rocId)) {
-          continue;
-        }
-      }
-      if (name != null && name.length() > 0) {
-        if ((user.getDisplayName() == null || !user.getDisplayName().startsWith(name))) {
+        if ((user.getInhId() == null || user.getInhId().toUpperCase().indexOf(rocId.toUpperCase()) < 0) && 
+         (user.getRocId() == null || user.getRocId().indexOf(rocId.toUpperCase()) < 0)) {
           continue;
         }
       }
-    
+      if (name != null && name.length () > 0) {
+        if (user.getDisplayName() == null
+            || user.getDisplayName().indexOf(name.toUpperCase()) < 0) {
+          continue;
+        }
+      }
+      if (keyword != null && keyword.length() > 0) {
+        if ((user.getInhId() == null || user.getInhId().indexOf(keyword.toUpperCase()) < 0)
+            && (user.getDisplayName() == null
+                || user.getDisplayName().indexOf(keyword.toUpperCase()) < 0)) {
+          continue;
+        }
+      }
+
       UserRequest ur = new UserRequest(user);
       ur.setPassword(null);
       ur.setCreateAt(null);
-      ur.setDepartments(collectionToString(departments.values(), ","));
-      ur.setDepartmentId(collectionToString(departments.keySet(), ","));
+      if (departments != null) {
+        ur.setDepartments(collectionToString(departments.values(), ","));
+        ur.setDepartmentId(collectionToString(departments.keySet(), ","));
+      }
       result.add(ur);
     }
     return result;
@@ -421,8 +416,8 @@ public class UserService {
 
   private Long getDepartmentIdByName(String name) {
     for (DEPARTMENT dep : departmentHash.values()) {
-      if ((dep.getName() != null && dep.getName().equals(name)) ||
-          (dep.getNhName() != null && dep.getNhName().equals(name))) {
+      if ((dep.getName() != null && dep.getName().equals(name))
+          || (dep.getNhName() != null && dep.getNhName().equals(name))) {
         return dep.getId();
       }
     }
@@ -484,8 +479,9 @@ public class UserService {
     }
     return sb.toString();
   }
-  
-  private HashMap<String, String> getDepartmentIdAndNameByUserId(Long id, List<USER_DEPARTMENT> udList) {
+
+  private HashMap<String, String> getDepartmentIdAndNameByUserId(Long id,
+      List<USER_DEPARTMENT> udList) {
     if (udList == null || udList.size() == 0) {
       return null;
     }
@@ -501,7 +497,7 @@ public class UserService {
     }
     return result;
   }
-  
+
   private String collectionToString(Collection<String> set, String delimiter) {
     StringBuffer sb = new StringBuffer();
     for (String string : set) {
@@ -560,9 +556,10 @@ public class UserService {
     redisService.putHash(key, jwt, String.valueOf(System.currentTimeMillis()));
     removeMrEditKey(username);
   }
-  
+
   /**
    * 同一帳號，重複登入，需把之前尚在編輯病歷的記錄移除，以免無法再次編輯
+   * 
    * @param username
    */
   public void removeMrEditKey(String username) {
@@ -578,7 +575,7 @@ public class UserService {
       }
     }
   }
-  
+
   public void deleteAndSaveUserLogout(String key, Set<Object> names) {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     for (Object object : names) {
@@ -609,7 +606,7 @@ public class UserService {
     if (sets == null || sets.size() == 0) {
       // @TODO 暫時先放行
       return true;
-      //return false;
+      // return false;
     } else {
       Object usedTime = redisService.hget(key, jwt);
       if (usedTime == null) {
@@ -627,7 +624,7 @@ public class UserService {
     }
     return true;
   }
-  
+
   /**
    * 檢查已登入 user 的token，是否超過30分鐘未使用，是則刪掉在 redis的 JWT並儲存 logout時間
    */
@@ -642,19 +639,23 @@ public class UserService {
         }
       }
     }
-    
+
     Set<String> mr = redisService.keys("MREDIT*");
     for (String key : mr) {
       Set<Object> names = redisService.hkeys(key);
       for (Object name : names) {
-        long lastUsedTimeL = Long.parseLong((String) redisService.hget(key, (String) name));
+        String value = (String) redisService.hget(key, (String) name);
+        if (value.indexOf(',') > 0) {
+          value = value.split(",")[0];
+        }
+        long lastUsedTimeL = Long.parseLong(value);
         if (System.currentTimeMillis() - lastUsedTimeL > afkTime) {
-          redisService.deleteHash(key, (String)name);
+          redisService.deleteHash(key, (String) name);
         }
       }
     }
   }
-  
+
   public long getUserIdByName(String name) {
     USER user = findUser(name);
     if (user != null) {
@@ -662,7 +663,7 @@ public class UserService {
     }
     return -1;
   }
-  
+
   public boolean needChangePassword(long userId) {
     USER user = userDao.findById(userId).orElse(null);
     if (user != null) {
@@ -672,5 +673,31 @@ public class UserService {
       return user.getStatus() == USER.STATUS_CHANGE_PASSWORD;
     }
     return false;
+  }
+
+  private List<Long> getDepartmentIds(String funcType, String funcTypeC) {
+    if ("不分科".equals(funcTypeC) || "00".equals(funcType)
+        || (funcType == null && funcTypeC == null)) {
+      return new ArrayList<Long>(departmentHash.keySet());
+    }
+    List<Long> result = new ArrayList<Long>();
+    if (funcType != null) {
+      String[] s = funcType.split(" ");
+      for (String string : s) {
+        Long id = getDepartmentIdByCode(string);
+        if (id != null) {
+          result.add(id);
+        }
+      }
+    } else if (funcTypeC != null) {
+      String[] s = funcTypeC.split(" ");
+      for (String string : s) {
+        Long id = getDepartmentIdByName(string);
+        if (id != null) {
+          result.add(id);
+        }
+      }
+    }
+    return result;
   }
 }

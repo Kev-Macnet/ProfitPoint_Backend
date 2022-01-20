@@ -31,7 +31,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   public List<Object[]> findDRGCodeNotNull();
   
   // fot Test
-  @Query(value = "SELECT * FROM IP_D WHERE TW_DRG_CODE IS NOT NULL AND TW_DRGS_SUIT_MARK='0' AND ID > ?1 AND IN_DATE >= '1090101' ORDER BY ID", nativeQuery = true)
+  @Query(value = "SELECT * FROM IP_D WHERE TW_DRG_CODE IS NOT NULL AND TW_DRGS_SUIT_MARK='0' AND MR_ID > ?1 AND IN_DATE >= '1100101' ORDER BY ID", nativeQuery = true)
   public List<IP_D> findAllWithDRG(long maxId);
   
   /**

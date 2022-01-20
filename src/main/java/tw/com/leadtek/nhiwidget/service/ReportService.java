@@ -205,21 +205,45 @@ public class ReportService {
       pm.setDrgActualPoint(getLongValue(obj[13]));
       pm.setUpdateAt(new Date());
 
-      updateAssignedPoint(pm, adYM);
-      if (pm.getAssignedAll() != null) {
-        pm.setRemaining(pm.getAssignedAll() - pm.getChronic());
-      } else {
-        pm.setRemaining(0L);
-      }
+      updateAssignedPoint(pm, adYM, null);
     }
     pointMonthlyDao.save(pm);
   }
+  
+  /**
+   * 取得最舊一筆的 POINT_MONTHLY 資料
+   * @return yyyyMM
+   */
+  public Integer getMinPointMonthly() {
+    return pointMonthlyDao.getMinYm();
+  }
+  
+  /**
+   * 取得最新一筆的 POINT_MONTHLY 資料
+   * @return yyyyMM
+   */
+  public Integer getMaxPointMonthly() {
+    return pointMonthlyDao.getMaxYm();
+  }
+  
+  public boolean refreshPointMonthly(String adYM, ASSIGNED_POINT ap) {
+    POINT_MONTHLY pm = pointMonthlyDao.findByYm(Integer.parseInt(adYM));
+    if (pm == null) {
+      return false;
+    }
+    updateAssignedPoint(pm, adYM, ap);
+    return true;
+  }
 
-  private void updateAssignedPoint(POINT_MONTHLY pm, String adYM) {
-    ASSIGNED_POINT ap = getAssignedPoint(adYM);
+  public void updateAssignedPoint(POINT_MONTHLY pm, String adYM, ASSIGNED_POINT ap) {
     if (ap == null) {
+      ap = getAssignedPoint(adYM);
+    }
+    if (ap == null) {
+      pm.setRemaining(0L);
       return;
     }
+   
     pm.setAssignedOpAll(ap.getWmOpPoints());
     pm.setAssignedIp(ap.getWmIpPoints());
     pm.setAssignedAll(ap.getWmp());
@@ -230,6 +254,8 @@ public class ReportService {
         cutPointNumber(((double) pm.getTotalOp() * (double) 100) / (double) pm.getAssignedOpAll()));
     pm.setRateIp(
         cutPointNumber(((double) pm.getTotalIp() * (double) 100) / (double) pm.getAssignedIp()));
+    pm.setRemaining(pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll() - pm.getChronic().longValue());
+    pointMonthlyDao.save(pm);
   }
 
   /**
@@ -503,8 +529,9 @@ public class ReportService {
       if (object[0] == null || object[1] == null) {
         return null;
       }
-      pw.setOp(((long) (int) object[0]));
-      pw.setIp(((long) (int) object[1]));
+      
+      pw.setOp(getLongValue(object[0]));
+      pw.setIp(getLongValue(object[1]));
       // @TESTDATA
       pw.setOwnExpIp(pw.getIp().longValue() / 5);
       pw.setOwnExpOp(pw.getOp().longValue() / 5);
@@ -566,9 +593,9 @@ public class ReportService {
       elapseFuncType.remove(funcType);
       DRG_WEEKLY drgWeekly = selectOrCreateDrgWeekly(s, e, funcType);
       drgWeekly.setDrgQuantity(((BigInteger) obj[1]).longValue());
-      drgWeekly.setDrgPoint(((long) (int) obj[2]));
+      drgWeekly.setDrgPoint(getLongValue(obj[2]));
       drgWeekly.setNondrgQuantity(((BigInteger) obj[4]).longValue());
-      drgWeekly.setNondrgPoint(((long) (int) obj[5]));
+      drgWeekly.setNondrgPoint(getLongValue(obj[5]));
       drgWeeklyAll.setDrgQuantity(drgWeeklyAll.getDrgQuantity() + drgWeekly.getDrgQuantity());
       drgWeeklyAll.setDrgPoint(drgWeeklyAll.getDrgPoint() + drgWeekly.getDrgPoint());
       drgWeeklyAll
@@ -609,7 +636,7 @@ public class ReportService {
       drgWeekly.setDrgQuantity(0L);
       drgWeekly.setDrgPoint(0L);
       drgWeekly.setNondrgQuantity(((BigInteger) obj[1]).longValue());
-      drgWeekly.setNondrgPoint(((long) (int) obj[2]));
+      drgWeekly.setNondrgPoint(getLongValue(obj[2]));
       drgWeekly.setSectionA(0L);
       drgWeekly.setSectionB1(0L);
       drgWeekly.setSectionB2(0L);
@@ -715,22 +742,24 @@ public class ReportService {
       if (list != null && list.size() > 0) {
         for (Object[] obj : list) {
           String section = (String) obj[0];
+          long appl = getLongValue(obj[2]);
+          long actual = getLongValue(obj[3]);
           if ("A".equals(section)) {
             pm.setSectionA(((BigInteger) obj[1]).longValue());
-            pm.setSectionAAppl(((long) (int) obj[2]));
-            pm.setSectionAActual(((long) (int) obj[3]));
+            pm.setSectionAAppl(appl);
+            pm.setSectionAActual(actual);
           } else if ("B1".equals(section)) {
             pm.setSectionB1(((BigInteger) obj[1]).longValue());
-            pm.setSectionB1Appl(((long) (int) obj[2]));
-            pm.setSectionB1Actual(((long) (int) obj[3]));
+            pm.setSectionB1Appl(appl);
+            pm.setSectionB1Actual(actual);
           } else if ("B2".equals(section)) {
             pm.setSectionB2(((BigInteger) obj[1]).longValue());
-            pm.setSectionB2Appl(((long) (int) obj[2]));
-            pm.setSectionB2Actual(((long) (int) obj[3]));
+            pm.setSectionB2Appl(appl);
+            pm.setSectionB2Actual(actual);
           } else if ("C".equals(section)) {
             pm.setSectionC(((BigInteger) obj[1]).longValue());
-            pm.setSectionCAppl(((long) (int) obj[2]));
-            pm.setSectionCActual(((long) (int) obj[3]));
+            pm.setSectionCAppl(appl);
+            pm.setSectionCActual(actual);
           }
         }
 
@@ -783,6 +812,7 @@ public class ReportService {
 
   public DRGMonthlyPayload getDrgMonthly(int year, int month) {
     DRGMonthlyPayload result = new DRGMonthlyPayload(pointMonthlyDao.findByYm(year * 100 + month));
+    
     result.getFuncTypes().add(FUNC_TYPE_ALL_NAME);
     java.sql.Date lastDay = getLastDayOfMonth(year, month);
     addQuantityAndPoint(result, FUNC_TYPE_ALL, FUNC_TYPE_ALL_NAME, lastDay);
@@ -810,7 +840,7 @@ public class ReportService {
     List<DRG_WEEKLY> list =
         drgWeeklyDao.findByFuncTypeAndEndDateLessThanEqualOrderByEndDateDesc(funcType, lastDay);
     if (list != null && list.size() > 0) {
-      int count = 1;
+      int count = 0;
       for (DRG_WEEKLY dw : list) {
         String name = dw.getPyear() + " w" + dw.getPweek();
         payload.getQuantityList(funcType, funcTypeName).add(name, dw.getDrgQuantity(),
@@ -916,7 +946,7 @@ public class ReportService {
     List<DRG_WEEKLY> list =
         drgWeeklyDao.findByFuncTypeAndEndDateLessThanEqualOrderByEndDateDesc(funcType, lastDay);
     if (list != null && list.size() > 0) {
-      int count = 1;
+      int count = 0;
       NameValueList nvlA = new NameValueList();
       NameValueList nvlB1 = new NameValueList();
       NameValueList nvlB2 = new NameValueList();

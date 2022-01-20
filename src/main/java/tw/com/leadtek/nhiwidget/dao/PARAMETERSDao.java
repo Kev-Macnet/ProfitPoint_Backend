@@ -14,6 +14,8 @@ public interface PARAMETERSDao extends JpaRepository<PARAMETERS, Long>, JpaSpeci
 
   public List<PARAMETERS> findByName(String name);
   
+  public List<PARAMETERS> findByCatAndName(String cat, String name);
+  
   public List<PARAMETERS> findByCatOrderByName(String cat);
   
   public List<PARAMETERS> findByCatAndStartDate(String cat, Date startDate);

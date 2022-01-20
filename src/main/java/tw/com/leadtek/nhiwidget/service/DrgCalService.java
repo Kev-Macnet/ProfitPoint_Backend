@@ -144,8 +144,8 @@ public class DrgCalService {
   }
 
   public double getFixedWithoutRW(Date date, boolean isM, boolean isMDC15, int addChild) {
-    System.out.println("SPR=" + (Integer) parameters.getParameterValueBetween("SPR", date) + ","
-        + getHospAdd(date, isM, isMDC15, addChild));
+//    System.out.println("SPR=" + (Integer) parameters.getParameterValueBetween("SPR", date) + ","
+//        + getHospAdd(date, isM, isMDC15, addChild));
     return ((double) ((Integer) parameters.getParameterValueBetween("SPR", date))
         * (double) getHospAdd(date, isM, isMDC15, addChild));
   }
@@ -275,14 +275,14 @@ public class DrgCalService {
     }
 
     if (realMedDot < drg.getLlimit()) {
-      System.out.println("drg:" + drg.getCode() + ",realMedDot　＜=" + realMedDot + ",margin="
-          + margin + ",x=" + x + ",j=" + j + ",g=" + g + ",h=" + h + ",partDot=" + partDot
-          + ",nonApplDot=" + nonApplDot);
+//      System.out.println("drg:" + drg.getCode() + ",realMedDot　＜=" + realMedDot + ",margin="
+//          + margin + ",x=" + x + ",j=" + j + ",g=" + g + ",h=" + h + ",partDot=" + partDot
+//          + ",nonApplDot=" + nonApplDot);
       return realMedDot + x + h - g - partDot + nonApplDot;
     } else {
-      System.out.println("drg:" + drg.getCode() + ",realMedDot　>=" + realMedDot + ",margin="
-          + margin + ",x=" + x + ",j=" + j + ",g=" + g + ",h=" + h + ",partDot=" + partDot
-          + ",nonApplDot=" + nonApplDot);
+//      System.out.println("drg:" + drg.getCode() + ",realMedDot　>=" + realMedDot + ",margin="
+//          + margin + ",x=" + x + ",j=" + j + ",g=" + g + ",h=" + h + ",partDot=" + partDot
+//          + ",nonApplDot=" + nonApplDot);
       if (payByDay) {
         return (int) Math.round(((double) drg.getFixed() / (double) drg.getAvgInDay()) * bedDay) - g
             - partDot + nonApplDot;

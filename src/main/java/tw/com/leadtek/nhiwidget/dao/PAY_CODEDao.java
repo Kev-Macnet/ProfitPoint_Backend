@@ -32,4 +32,10 @@ public interface PAY_CODEDao extends JpaRepository<PAY_CODE, Long>, JpaSpecifica
       + "(SELECT DISTINCT (ORDER_CODE) FROM IP_P WHERE ORDER_CODE IN (SELECT CODE FROM PAY_CODE))" + 
       "AND ct.CAT ='PAY_CODE_TYPE' AND ct.DESC_CHI = pc.CODE_TYPE", nativeQuery = true)
   public List<Object[]> findIPAllPayCodeAndTypeCode();
+  
+  @Query(value ="SELECT * FROM PAY_CODE WHERE ATC LIKE ?1 AND SAME_ATC=1", nativeQuery = true)
+  public List<PAY_CODE> findByATCLen5(String atc);
+  
+  @Query(value ="SELECT * FROM PAY_CODE WHERE ATC = ?1 AND SAME_ATC=1", nativeQuery = true)
+  public List<PAY_CODE> findByATCLen7(String atc);
 }

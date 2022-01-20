@@ -235,9 +235,11 @@ public class SendHTTP {
       if (token != null) {
         post.setHeader("Authorization", "Bearer " + token);
       }
+		if (requestBody != null) {
       StringEntity stringEntity = new StringEntity(requestBody, "UTF-8");
       stringEntity.setContentType("application/json");
       post.setEntity(stringEntity);
+		}
       CloseableHttpResponse response = client.execute(post);
       String responseBody = EntityUtils.toString(response.getEntity(), "UTF-8");
       System.out.println("responseBody=" + responseBody);
