@@ -57,7 +57,7 @@ public class TestRedis {
   
   @Test
   public void testMREDIT() {
-    String key = UserService.MREDIT + "161613";
+    String key = UserService.MREDIT + "1190188";
     Set<Object> sets = redisService.hkeys(key);
     if (sets != null && sets.size() > 0) {
       System.out.println("sets not null");

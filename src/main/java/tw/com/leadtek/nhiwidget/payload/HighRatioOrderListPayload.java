@@ -62,7 +62,7 @@ public class HighRatioOrderListPayload extends RareICDListPayload implements Ser
     } else {
       average = false;
     }
-    if ("00".equals(ct.getDataFormat())) {
+    if ("00".equals(ct.getDataFormat()) || "11".equals(ct.getDataFormat())) {
       ip = true;
       op = true;
     } else if ("10".equals(ct.getDataFormat())) {

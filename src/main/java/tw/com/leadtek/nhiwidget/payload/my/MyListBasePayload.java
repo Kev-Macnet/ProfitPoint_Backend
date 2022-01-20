@@ -53,6 +53,9 @@ public class MyListBasePayload implements Serializable {
   @ApiModelProperty(value = "負責人員姓名", example = "陳小春", required = false)
   protected String applName;
   
+  @ApiModelProperty(value = "門急診或住院，10:門急診，20:住院", example = "10", required = false)
+  protected String dataFormat;
+  
   public MyListBasePayload() {
     
   }
@@ -70,6 +73,7 @@ public class MyListBasePayload implements Serializable {
     prsnName = mr.getPrsnName();
     applId = mr.getApplId();
     applName = mr.getApplName();
+    dataFormat = mr.getDataFormat();
   }
 
   public Long getMrId() {
@@ -168,6 +172,14 @@ public class MyListBasePayload implements Serializable {
     this.applName = applName;
   }
   
+  public String getDataFormat() {
+    return dataFormat;
+  }
+
+  public void setDataFormat(String dataFormat) {
+    this.dataFormat = dataFormat;
+  }
+
   public static String removeDot(String s) {
     if (s == null) {
       return null;

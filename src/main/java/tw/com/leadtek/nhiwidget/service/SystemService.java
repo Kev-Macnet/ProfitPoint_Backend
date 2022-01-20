@@ -29,18 +29,25 @@ import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.DEDUCTEDDao;
 import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
+import tw.com.leadtek.nhiwidget.dao.PARAMETERSDao;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED;
 import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
+import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
-import tw.com.leadtek.nhiwidget.payload.PayCodePayload;
 import tw.com.leadtek.nhiwidget.payload.PayCodeListResponse;
+import tw.com.leadtek.nhiwidget.payload.PayCodePayload;
+import tw.com.leadtek.nhiwidget.payload.system.CompareWarningPayload;
+import tw.com.leadtek.nhiwidget.payload.system.DbManagement;
 import tw.com.leadtek.nhiwidget.payload.system.DeductedListResponse;
+import tw.com.leadtek.nhiwidget.payload.system.FileManagementPayload;
 import tw.com.leadtek.nhiwidget.payload.system.ICD10ListResponse;
+import tw.com.leadtek.nhiwidget.payload.system.IntelligentConfig;
+import tw.com.leadtek.nhiwidget.payload.system.QuestionMarkPayload;
 import tw.com.leadtek.tools.Utility;
 
 @Service
@@ -65,8 +72,11 @@ public class SystemService {
 
   @Autowired
   private ICD10Dao icd10Dao;
+  
+  @Autowired
+  private PARAMETERSDao parametersDao;
 
-  public ATCListResponse getATC(String code, int perPage, int page) {
+  public ATCListResponse getATC(String code, String note, int perPage, int page) {
     List<ATC> codes = new ArrayList<ATC>();
     Specification<ATC> spec = new Specification<ATC>() {
 
@@ -76,6 +86,9 @@ public class SystemService {
         List<Predicate> predicate = new ArrayList<Predicate>();
         if (code != null) {
           predicate.add(cb.like(root.get("code"), code.toUpperCase() + "%"));
+        }
+        if (note != null && note.length() > 0) {
+          predicate.add(cb.like(root.get("note"),  "%" + note.toUpperCase() + "%"));
         }
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
@@ -560,7 +573,11 @@ public class SystemService {
       redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(cb.getId()),
           cb.getCode().toLowerCase());
     } else {
-      cb.setId((long) icd10.getRedisId());
+      ICD10 old = icd10Dao.findById(icd10.getId()).orElse(null);
+      if (old == null) {
+        return "ICD10 不存在";
+      }
+      cb.setId((long) old.getRedisId());
     }
     try {
       ObjectMapper objectMapper = new ObjectMapper();
@@ -588,4 +605,186 @@ public class SystemService {
     return null;
   }
 
+  public FileManagementPayload getFileManagementPaylod() {
+    return new FileManagementPayload(parametersDao.findByCatOrderByName("FILE_MANAGEMENT"));
+  }
+  
+  public String updateFileManagementPaylod(FileManagementPayload payload) {
+    List<PARAMETERS> list = parametersDao.findByCatOrderByName("FILE_MANAGEMENT");
+    for (PARAMETERS p : list) {
+      if (p.getName().equals("IS_DAILY_INPUT")) {
+        if (payload.getDailyInput() != null) {
+          p.setValue(payload.getDailyInput().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("INPUT_TIME")) {
+        if (payload.getInputTime() != null) {
+          p.setValue(payload.getInputTime());
+        }
+      } else if (p.getName().equals("INPUT_BY_FILE")) {
+        if (payload.getInputByFile() != null) {
+          p.setValue(payload.getInputByFile().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("INPUT_BY_BUTTON")) {
+        if (payload.getInputByButton() != null) {
+          p.setValue(payload.getInputByButton().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("IS_DAILY_OUTPUT")) {
+        if (payload.getDailyOutput() != null) {
+          p.setValue(payload.getDailyOutput().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("OUTPUT_TIME")) {
+        if (payload.getOutputTime() != null) {
+          p.setValue(payload.getOutputTime());
+        }
+      } else if (p.getName().equals("OUTPUT_BY_FILE")) {
+        if (payload.getOutputByFile() != null) {
+          p.setValue(payload.getOutputByFile().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("OUTPUT_BY_BUTTON")) {
+        if (payload.getOutputByButton() != null) {
+          p.setValue(payload.getOutputByButton().booleanValue() ? "1" : "0");
+        }
+      }
+      p.setUpdateAt(new Date());
+      parametersDao.save(p);
+    }
+    return null;
+  }
+  
+  public CompareWarningPayload getCompareWarningPayload() {
+    return new CompareWarningPayload(parametersDao.findByCatOrderByName("COMPARE_WARNING"));
+  }
+  
+  public String updateCompareWarningPayload(CompareWarningPayload payload) {
+    List<PARAMETERS> list = parametersDao.findByCatOrderByName("COMPARE_WARNING");
+    for (PARAMETERS p : list) {
+      if (p.getName().equals("COMPARE_BY")) {
+        if (payload.getCompareBy() != null) {
+          p.setValue(payload.getCompareBy().toString());
+        }
+      } else if (p.getName().equals("COMPARE_FUNC_TYPE")) {
+        if (payload.getFuncType() != null) {
+          p.setValue(payload.getFuncType());
+        }
+      } else if (p.getName().equals("COMPARE_DOCTOR")) {
+        if (payload.getDoctor() != null) {
+          p.setValue(payload.getDoctor());
+        }
+      } else if (p.getName().equals("ROLLBACK_HOUR")) {
+        if (payload.getRollbackHour() != null) {
+          p.setValue(payload.getRollbackHour().toString());
+        }
+      }
+      p.setUpdateAt(new Date());
+      parametersDao.save(p);
+    }
+    return null;
+  }
+  
+  public QuestionMarkPayload getQuestionMarkPayload() {
+    return new QuestionMarkPayload(parametersDao.findByCatOrderByName("QUESTION_MARK"));
+  }
+  
+  public String updateQuestionMarkPayload(QuestionMarkPayload payload) {
+    List<PARAMETERS> list = parametersDao.findByCatOrderByName("QUESTION_MARK");
+    for (PARAMETERS p : list) {
+      if (p.getName().equals("MARK_BY")) {
+        if (payload.getMarkBy() != null) {
+          p.setValue(payload.getMarkBy().toString());
+        }
+      } else if (p.getName().equals("MARK_FUNC_TYPE")) {
+        if (payload.getFuncType() != null) {
+          p.setValue(payload.getFuncType());
+        }
+      } else if (p.getName().equals("MARK_DOCTOR")) {
+        if (payload.getDoctor() != null) {
+          p.setValue(payload.getDoctor());
+        }
+      }
+      p.setUpdateAt(new Date());
+      parametersDao.save(p);
+    }
+    return null;
+  }
+  
+  public IntelligentConfig getIntelligentConfig() {
+    return new IntelligentConfig(parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG"));
+  }
+  
+  public String updateIntelligentConfig(IntelligentConfig payload) {
+    List<PARAMETERS> list = parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG");
+    for (PARAMETERS p : list) {
+      if (p.getName().equals("VIOLATE")) {
+        if (payload.getViolate() != null) {
+          p.setValue(payload.getViolate().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("RARE_ICD")) {
+        if (payload.getRareIcd() != null) {
+          p.setValue(payload.getRareIcd().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("HIGH_RATIO")) {
+        if (payload.getHighRatio() != null) {
+          p.setValue(payload.getHighRatio().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("OVER_AMOUNT")) {
+        if (payload.getOverAmount() != null) {
+          p.setValue(payload.getOverAmount().booleanValue() ? "1" : "0");
+        }
+      }  else if (p.getName().equals("INH_OWN_EXIST")) {
+        if (payload.getInhOwnExist() != null) {
+          p.setValue(payload.getInhOwnExist().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("INFECTIOUS")) {
+        if (payload.getInfectious() != null) {
+          p.setValue(payload.getInfectious().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("SAME_ATC")) {
+        if (payload.getSameAtc() != null) {
+          p.setValue(payload.getSameAtc().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("SAME_ATC_LENGTH")) {
+        if (payload.getSameAtcLen5() != null) {
+          p.setValue(payload.getSameAtcLen5().booleanValue() ? "5" : "7");
+        }
+      } else if (p.getName().equals("PILOT_PROJECT")) {
+        if (payload.getPilotProject() != null) {
+          p.setValue(payload.getOverAmount().booleanValue() ? "1" : "0");
+        }
+      } else if (p.getName().equals("HIGH_RISK")) {
+        if (payload.getHighRisk() != null) {
+          p.setValue(payload.getHighRisk().booleanValue() ? "1" : "0");
+        }
+      }
+      
+      p.setUpdateAt(new Date());
+      parametersDao.save(p);
+    }
+    return null;
+  }
+  
+  public DbManagement getDbManagement() {
+    return new DbManagement(parametersDao.findByCatOrderByName("DB_MANAGEMENT"));
+  }
+  
+  public String updateDbManagement(DbManagement payload) {
+    List<PARAMETERS> list = parametersDao.findByCatOrderByName("DB_MANAGEMENT");
+    for (PARAMETERS p : list) {
+      if (p.getName().equals("ADD_USER_BY")) {
+        if (payload.getAddUserBy() != null) {
+          p.setValue(payload.getAddUserBy().toString());
+        }
+      } else if (p.getName().equals("ADD_FUNC_CODE_BY")) {
+        if (payload.getAddFuncCodeBy() != null) {
+          p.setValue(payload.getAddFuncCodeBy().toString());
+        }
+      } else if (p.getName().equals("ADD_PAY_CODE_BY")) {
+        if (payload.getAddPayCodeBy() != null) {
+          p.setValue(payload.getAddPayCodeBy().toString());
+        }
+      }
+      p.setUpdateAt(new Date());
+      parametersDao.save(p);
+    }
+    return null;
+  }
 }

@@ -5,10 +5,12 @@ package tw.com.leadtek.nhiwidget.payload.system;
 
 import java.io.Serializable;
 import java.util.List;
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.payload.BasePageResponse;
 
+@ApiModel("ICD10代碼列表")
 public class ICD10ListResponse extends BasePageResponse implements Serializable {
 
   private static final long serialVersionUID = -6833536754792443369L;

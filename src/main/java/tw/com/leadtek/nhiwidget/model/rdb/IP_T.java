@@ -110,7 +110,7 @@ public class IP_T {
   @Column(name = "CASE_GEN_DOT")
   @JsonProperty("CASE_GEN_DOT")
   @JacksonXmlProperty(localName = "t9")
-  private String caseGenDot;
+  private Integer caseGenDot;
 
   /**
    * 論病例計酬案件申請件數
@@ -150,7 +150,7 @@ public class IP_T {
   @Column(name = "CASE_SPEC_DAYS")
   @JsonProperty("CASE_SPEC_DAYS")
   @JacksonXmlProperty(localName = "t14")
-  private String caseSpecDays;
+  private Integer caseSpecDays;
 
   /**
    * 特定案件醫療費用點數
@@ -310,6 +310,34 @@ public class IP_T {
   @Column(name = "UPDATE_AT", nullable = false)
   @JsonIgnore
   private Date updateAt;
+  
+  public IP_T() {
+    caseGenDays = 0;
+    caseGenDot = 0;
+    caseGenQty = 0;
+    casePayDays = 0;
+    casePayDot = 0;
+    casePayQty = 0;
+    caseSpecDays = 0;
+    caseSpecDot = 0;
+    caseSpecQty = 0;
+    applDays = 0;
+    applDot = 0;
+    applQty = 0;
+    drgDays = 0;
+    drgDots = 0;
+    drgQty = 0;
+    expDays = 0;
+    expDot = 0;
+    expQty = 0;
+    nonExpDot = 0;
+    partAmt = 0;
+    partDays = 0;
+    partQty = 0;
+    planDays = 0;
+    planDot = 0;
+    planQty = 0;
+  }
 
   /**
    * 序號
@@ -440,14 +468,14 @@ public class IP_T {
   /**
    * <t9> 一般案件醫療費用點數
    */
-  public String getCaseGenDot() {
+  public Integer getCaseGenDot() {
     return caseGenDot;
   }
 
   /**
    * <t9> 一般案件醫療費用點數
    */
-  public void setCaseGenDot(String CASE_GEN_DOT) {
+  public void setCaseGenDot(Integer CASE_GEN_DOT) {
     caseGenDot = CASE_GEN_DOT;
   }
 
@@ -510,14 +538,14 @@ public class IP_T {
   /**
    * <t14> 特定案件日數
    */
-  public String getCaseSpecDays() {
+  public Integer getCaseSpecDays() {
     return caseSpecDays;
   }
 
   /**
    * <t14> 特定案件日數
    */
-  public void setCaseSpecDays(String CASE_SPEC_DAYS) {
+  public void setCaseSpecDays(Integer CASE_SPEC_DAYS) {
     caseSpecDays = CASE_SPEC_DAYS;
   }
 

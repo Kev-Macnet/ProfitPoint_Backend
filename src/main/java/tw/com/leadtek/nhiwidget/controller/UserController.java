@@ -74,8 +74,6 @@ public class UserController extends BaseController {
   @PostMapping("/auth/user")
   public ResponseEntity<BaseResponse> newUser(
       @ApiParam(value = "帳號內容") @RequestBody(required = true) UserRequest request) {
-    // public boolean addSynonym(Synonym synonym, List<SynonymField> details) {
-    logger.info("/newUser:" + request.getUsername() + "," + request);
     USER result = userService.newUser(request);
     if (result != null) {
       return returnIDResult(result.getId().toString());
@@ -103,7 +101,7 @@ public class UserController extends BaseController {
   @ApiOperation(value = "刪除帳號", notes = "刪除帳號")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @DeleteMapping("/user/{id}")
-  public ResponseEntity<?> deleteSynonym(
+  public ResponseEntity<?> deleteUser(
       @ApiParam(name = "id", value = "帳號id", example = "1") @PathVariable String id) {
     logger.info("/user/{id}: delete:" + id);
     String deleteId = HtmlUtils.htmlEscape(id, "UTF-8");
@@ -161,19 +159,21 @@ public class UserController extends BaseController {
       example = "不分科") @RequestParam(required = false) String funcTypeC,
       @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...", example = "家醫科") 
       @RequestParam(required = false) String funcTypec,
-      @ApiParam(name = "rocId", value = "醫護代碼rocId或inhId都可", example = "00") @RequestParam(required = false) String rocId,
-      @ApiParam(name = "inhId", value = "醫護代碼rocId或inhId都可", example = "00") @RequestParam(required = false) String inhId,
+      @ApiParam(name = "rocId", value = "醫護代碼rocId或inhId都可") @RequestParam(required = false) String rocId,
+      @ApiParam(name = "inhId", value = "醫護代碼rocId或inhId都可") @RequestParam(required = false) String inhId,
       @ApiParam(name = "name", value = "醫護名稱",
-      example = "王小明") @RequestParam(required = false) String name,
+        example = "王小明") @RequestParam(required = false) String name,
       @ApiParam(value = "帳號權限，E:醫護人員，D:申報人員，U:使用者清單",
-      example = "E") @RequestParam(required = false, defaultValue = "E") String role) {
+        example = "E") @RequestParam(required = false, defaultValue = "E") String role,
+      @ApiParam(value = "關鍵字查詢",
+        example = "test") @RequestParam(required = false) String keyword) {
     // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     // System.out.println("currentPrincipalName:" + authentication.getName());
     // UserDetailsImpl userDetail = (UserDetailsImpl) authentication.getPrincipal();
     // System.out.println(userDetail.getEmail());
       String id = (rocId == null) ? inhId : rocId;
       String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
-    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeChinese, id, name, role));
+    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeChinese, id, name, role, keyword));
   }
 
   @ApiOperation(value = "更換密碼", notes = "更換密碼")
@@ -228,6 +228,11 @@ public class UserController extends BaseController {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
             loginRequest.getUsername(), loginRequest.getPassword()));
 
+    USER user = userService.findUser(loginRequest.getUsername());
+    if (user != null && user.getStatus().intValue() == 0) {
+      JwtResponse jwt = new JwtResponse();
+      return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN); 
+    }
     SecurityContextHolder.getContext().setAuthentication(authentication);
     String jwt = jwtUtils.generateJwtToken(authentication);
     logService.setLogin(jwt);

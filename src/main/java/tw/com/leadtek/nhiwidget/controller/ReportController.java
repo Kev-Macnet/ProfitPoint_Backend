@@ -120,7 +120,14 @@ public class ReportController extends BaseController {
       result.setMessage("月份超過範圍");
       return ResponseEntity.badRequest().body(result);
     }
-    return ResponseEntity.ok(reportService.getDrgMonthly(year, month));
+    DRGMonthlyPayload result = reportService.getDrgMonthly(year, month);
+    if (result == null) {
+      result = new DRGMonthlyPayload();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("無資料");
+      return ResponseEntity.badRequest().body(result);
+    }
+    return ResponseEntity.ok(result);
   }
   
   @ApiOperation(value = "取得DRG各科分配比例月報表", notes = "取得DRG分配比例月報表")

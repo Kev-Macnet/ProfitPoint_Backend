@@ -2460,8 +2460,23 @@ public class IP_D {
         injtDot.intValue() + babyDot.intValue();
   }
   
-  public void calculateTotalApplDot() {
-    applDot = medDot.intValue() - partDot.intValue() + nonApplDot.intValue(); 
+  public void calculateTotalApplDot(int g00001) {
+    //亞急性呼吸照護病房定額申報費用<亞急性呼吸照護病房合計點數
+    //則：[申請點數]欄位=(定額申報費用-部分負擔點數)+1/3*(合計點數-定額申報費用)
+    
+    
+    if ("A".equals(twDrgsSuitMark)) {
+      //欄位IDd102(不適用Tw-DRGs案件特殊註記代碼)為「A:因住院30日內切帳申報(如部分負擔代碼，且出院(或未出院)之非DRG案件或>30天未出院之非DRG案件)」者，
+      //申請費用點數＝點數清單段欄位IDd83－醫令代碼G00001-點數清單段欄位IDd84(部分負擔點數) +欄位IDd112點數。 
+      applDot = medDot.intValue() - partDot.intValue() + nonApplDot.intValue() - g00001;
+    //} else if ("6".equals(twDrgsSuitMark) && !"4".equals(payType)) {
+      // 試辦計畫且非一般疾病
+    } else if ("A".equals(twDrgsSuitMark) || ("6".equals(twDrgsSuitMark) && "9".equals(payType))) {
+      // A: 因住院 30 日內切帳申報 ，試辦計畫、 安寧療護 案件且為呼吸照護案件
+      applDot = g00001;
+    } else {
+      applDot = medDot.intValue() - partDot.intValue() + nonApplDot.intValue();
+    }
   }
   
 }

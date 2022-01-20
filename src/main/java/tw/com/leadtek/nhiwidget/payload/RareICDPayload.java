@@ -89,6 +89,11 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
     ipTimes6M = rareIcd.getIpTimes6m();
     status = rareIcd.getStatus().intValue() == 1;
 
+    if ("11".equals(rareIcd.getDataFormat())) {
+      both = true;
+      ip = false;
+      op = false;
+    }
     if (rareIcd.getDataFormat().equals("00")) {
       if ((opTimesM != null && ipTimesM != null) && (opTimesM.intValue() == ipTimesM.intValue())
           && (opTimes6M != null && ipTimes6M != null) && opTimes6M.intValue() == ipTimes6M.intValue()) {
@@ -107,14 +112,16 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
     if (id != null) {
       result.setId(id);
     }
-    result.setCodeType(new Integer(1));
+    result.setCodeType(new Integer(CODE_TYPE_ICD));
     result.setCode(code);
     result.setDescChi(name);
 
     result.setStartDate(sdate);
     result.setEndDate(edate);
-    if ((both != null && both.booleanValue())|| (ip && op)) {
+    if ((both != null && both.booleanValue())) {
       result.setDataFormat("00");
+    } else if ((ip && op)) {
+      result.setDataFormat("11");
     } else if (ip) {
       result.setDataFormat("20");
     } else if (op) {

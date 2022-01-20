@@ -136,12 +136,7 @@ public class CodeTableService {
     return null;
   }
   
-  public List<String> getInfectious(){
-    List<String> result = new ArrayList<String>();
-    List<CODE_TABLE> list = ctDao.findByCat("INFECTIOUS");
-    for (CODE_TABLE code_TABLE : list) {
-      result.add(code_TABLE.getCode());
-    }
-    return result;
+  public List<CODE_TABLE> getInfectious(){
+    return ctDao.findByCat("INFECTIOUS");
   }
 }

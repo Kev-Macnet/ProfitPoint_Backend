@@ -43,6 +43,7 @@ public class EMailService {
   private MailContent mail;
   
   public void sendMail(String mailSubject, String mailToList, String content) {
+    logger.info("mailHost:" + mailHost + ",fromEmail:" + fromEmail);
     Properties props = new Properties();
     props.put("mail.smtp.host", mailHost);
     props.put("mail.smtp.auth", "true");

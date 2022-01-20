@@ -17,6 +17,7 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -600,6 +601,7 @@ public class GenerateSqlByClass {
 
   public static void main(String[] args) {
     GenerateSqlByClass gen = new GenerateSqlByClass("NWUSER");
+    
     // gen.generateSQL();
 
     // gen.generateClassBySQL("D:\\Users\\2268\\2020\\健保點數申報\\src\\NWUSER-ALL-HANA.sql",
@@ -628,5 +630,13 @@ public class GenerateSqlByClass {
       e.printStackTrace();
     }
     return false;
+  }
+  
+  public static void testSub() {
+    int adYM = 201901;
+      System.out.println("year =" + String.valueOf(adYM).substring(0, 4) + ", month=" + String.valueOf(adYM).substring(4, 6));
+     // cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 3)));
+     // cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(3, 5)) -1);
+    
   }
 }

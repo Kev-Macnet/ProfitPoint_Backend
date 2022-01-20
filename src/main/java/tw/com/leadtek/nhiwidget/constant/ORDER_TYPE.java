@@ -15,6 +15,8 @@ public enum ORDER_TYPE {
   ON_BEHALF_OF("7"),// 代檢及轉檢
   DONATION("8"),    //器官捐贈
   DSVC("9"),        // 藥事服務費
+  METERIAL_OWN("E"), // 自費特材項目 未支付
+  METERIAL_OWN2("F"), // 自費特材項目 不符給付規定
   NO_MED("K");      // 不計入醫療費用點數合計欄位項目
   
   private String value;

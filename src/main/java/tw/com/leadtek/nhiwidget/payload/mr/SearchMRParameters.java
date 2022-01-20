@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.payload.mr;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import tw.com.leadtek.tools.DateTool;
@@ -83,6 +84,11 @@ public class SearchMRParameters extends HomepageParameters {
    * 就醫記錄編號
    */
   private String inhClinicId;
+  
+  /**
+   * 不包含DRG條件
+   */
+  private Boolean onlyDRG;
   
   /**
    * 不包含DRG條件
@@ -636,23 +642,37 @@ public class SearchMRParameters extends HomepageParameters {
   public void setPrsnName(String prsnName) {
     this.prsnName = prsnName;
   }
+  
+  public Boolean getOnlyDRG() {
+    return onlyDRG;
+  }
+
+  public void setOnlyDRG(Boolean onlyDRG) {
+    this.onlyDRG = onlyDRG;
+  }
 
   public void setBasic(String applY, String applM, String sdate, String edate, String indate, String outdate,
       String inhMrId, String inhClinicId, String dataFormat) {
      
     initialApplYM(applY, applM);
-    
-    this.sdate = (sdate == null) ? "2010/01/01" : sdate;
+
+    SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
     this.edate = edate;
-    if (edate == null) {
-      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
-      this.edate  = sdf.format(new Date());
+    this.sdate = (sdate == null) ? "2010/01/01" : sdate;
+    try {
+      sDate = new java.sql.Date(sdf.parse(this.sdate).getTime());
+      if (edate == null) {
+        this.edate  = sdf.format(new Date());
+      }
+      eDate = new java.sql.Date(sdf.parse(this.edate).getTime());
+    } catch (ParseException e) {
+      e.printStackTrace();
     }
     this.indate = indate;
     this.outdate = outdate;
     this.inhMrId = inhMrId;
     this.inhClinicId = inhClinicId;
-    if (dataFormat == null || dataFormat.indexOf(' ') > 0) {
+    if (dataFormat == null || "00".equals(dataFormat) || dataFormat.indexOf(',') > 0 || dataFormat.indexOf(' ') > 0) {
       this.dataFormat = null; 
     } else {
       this.dataFormat = dataFormat;
@@ -706,10 +726,11 @@ public class SearchMRParameters extends HomepageParameters {
     this.ownExpItem = ownExpItem;
   }
   
-  public void setDRG(Boolean notDRG, String drg, String drgSection) {
+  public void setDRG(Boolean notDRG, String drg, String drgSection, Boolean onlyDRG) {
     this.notDRG = notDRG;
     this.drg = drg;
     this.drgSection = drgSection;
+    this.onlyDRG = onlyDRG;
   }
   
   public void setDeducted(Boolean notDeducted, String deductedCode, String deductedOrder) {
@@ -727,7 +748,8 @@ public class SearchMRParameters extends HomepageParameters {
     this.all = all;
     this.orderBy = orderBy;
     this.asc = asc;
-    this.perPage = perPage;
+    this.perPage = (perPage == null || perPage < 1) ? 20 : perPage;
     this.page = page;
   }
+  
 }

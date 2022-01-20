@@ -666,7 +666,7 @@ public class ParameterController extends BaseController {
     return returnAPIResult(parameterService.newHighRatioOrder(request, isOrder));
   }
 
-  @ApiOperation(value = "修改應用比例偏高醫令", notes = "修改應用比例偏高醫令")
+  @ApiOperation(value = "修改應用比例偏高醫令或特別用量藥材、衛品", notes = "修改應用比例偏高醫令或特別用量藥材、衛品")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/highRatioOrder")
@@ -674,13 +674,14 @@ public class ParameterController extends BaseController {
     if (request == null || request.getId() == null) {
       return returnAPIResult("id未帶入");
     }
-    return returnAPIResult(parameterService.updateHighRatioOrder(request));
+    boolean isOrder = (request.getCodeType() == null) ? true : (request.getCodeType().intValue() == RareICDPayload.CODE_TYPE_ORDER);
+    return returnAPIResult(parameterService.updateHighRatioOrder(request, isOrder));
   }
   
   @ApiOperation(value = "修改應用比例偏高醫令狀態", notes = "修改應用比例偏高醫令狀態")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
-  @PutMapping("/highRatioOrder/status/{id}")
+  @PutMapping("/highRatioOrder/{id}")
   public ResponseEntity<BaseResponse> updateHighRatioOrderStatus(@PathVariable String id,
       @ApiParam(name = "enable", value = "是否啟用，true/false",
           example = "true") @RequestParam(required = true) Boolean enable) {

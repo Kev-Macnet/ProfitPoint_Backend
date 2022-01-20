@@ -1,6 +1,5 @@
 package tw.com.leadtek.nhiwidget.sql;
 
-import java.sql.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +9,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import tw.com.leadtek.nhiwidget.dao.DRG_CALDao;
+import tw.com.leadtek.nhiwidget.model.rdb.DRG_CAL;
 import tw.com.leadtek.tools.Utility;
 
 
@@ -20,6 +21,9 @@ public class LogDataDao {
 
   @Autowired
   protected JdbcTemplate jdbcTemplate;
+  
+  @Autowired
+  protected DRG_CALDao drgCalDao;
 
   public java.util.List<Map<String, Object>> find_IP_D(String idCard, String in_date) {
     String sql;
@@ -86,6 +90,10 @@ public class LogDataDao {
     int ret = jdbcTemplate.update(sql);
     return ret;
   }
+  
+  public void addDrgCal(DRG_CAL drg) {
+    drgCalDao.save(drg);
+  }
 
   public int del_DRG_CAL(long mr_id) {
     String sql;
@@ -102,7 +110,7 @@ public class LogDataDao {
     if (drg_code.length() > 0) {
       String sql;
       sql = "Select RW \r\n" + "From DRG_CODE \r\n" + "Where (CODE='%s')\r\n"
-          + "  and ('%s' >= START_DAY)\r\n" + "  and ('%s' <= END_DAY)";
+          + "  and ('%s' >= START_DATE)\r\n" + "  and ('%s' <= END_DATE)";
       sql = String.format(sql, drg_code, transDateStr(in_date), transDateStr(out_date));
       logger.info(sql);
       java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());

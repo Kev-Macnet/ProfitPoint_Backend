@@ -95,7 +95,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     //    http.addFilterBefore(authenticationJwtTokenFilter(),
 //        UsernamePasswordAuthenticationFilter.class);
-    http.addFilterAfter(authenticationJwtTokenFilter(),
+    http.addFilterBefore(authenticationJwtTokenFilter(),
         UsernamePasswordAuthenticationFilter.class);
     http.cors();
   }

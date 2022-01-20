@@ -73,7 +73,7 @@ public class HomepageParameters {
     if (sdate != null && edate != null) {
       SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
        try {
-        sDate = new Date(sdf.parse(sdate).getTime());
+         sDate = new Date(sdf.parse(sdate).getTime());
          eDate = new Date(sdf.parse(edate).getTime());
       } catch (ParseException e) {
         e.printStackTrace();

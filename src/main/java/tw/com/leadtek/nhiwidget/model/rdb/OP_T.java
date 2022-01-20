@@ -372,6 +372,43 @@ public class OP_T {
   @JsonIgnore
   private Date updateAt;
 
+  public OP_T() {
+    applDot = 0;
+    applQty = 0;
+    chrDot = 0;
+    chrQty = 0;
+    dentDot = 0;
+    dentGenDot = 0;
+    dentGenQty = 0;
+    dentProDot = 0;
+    dentProQty = 0;
+    dentQty = 0;
+    herbDot = 0;
+    herbGenDot = 0;
+    herbGenQty = 0;
+    herbProDot = 0;
+    herbProQty = 0;
+    herbQty = 0;
+    homeCareDot = 0;
+    homeCareQty = 0;
+    medicGenQty = 0;
+    medicGenDot = 0;
+    medicDiaDot = 0;
+    medicDiaQty = 0;
+    medicDot = 0;
+    medicProDot = 0;
+    medicProQty = 0;
+    medicQty = 0;
+    medicTubDot = 0;
+    medicTubQty = 0;
+    partAmt = 0;
+    partQty = 0;
+    preCareDot = 0;
+    preCareQty = 0;
+    psycDot = 0;
+    psycQty = 0;
+  }
+  
   /**
    * 序號
    */

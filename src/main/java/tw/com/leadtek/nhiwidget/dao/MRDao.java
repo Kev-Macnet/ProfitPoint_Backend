@@ -18,7 +18,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
 
   public List<MR> findByMrDateBetween(Date startDate, Date endDate);
   
-  public List<MR> findByDataFormatAndMrDateBetween(String dataFormat, Date startDate, Date endDate);
+  public List<MR> findByDataFormatAndMrDateBetweenOrderById(String dataFormat, Date startDate, Date endDate);
   
   public List<MR> findByStatusAndMrDateBetween(Integer status, Date startDate, Date endDate);
   
@@ -169,4 +169,25 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
       "WHERE APPL_YM = ?1 AND DRG_SECTION IS NOT NULL AND MR.ID = IP_D.MR_ID " + 
       "AND MR.FUNC_TYPE = ?2 GROUP BY DRG_SECTION ", nativeQuery = true)
   public List<Object[]> findDRGCountAndDotByApplYmGroupByDrgSection(String ym, String funcType);
+  
+  @Query(value = "SELECT MIN(APPL_YM) FROM MR", nativeQuery = true)
+  public String getMinYm();
+  
+  @Query(value = "SELECT MAX(APPL_YM) FROM MR", nativeQuery = true)
+  public String getMaxYm();
+  
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE MR SET STATUS=?1 WHERE ID=?2", nativeQuery = true)
+  public void updateMrStauts(Integer status, Long id);
+  
+  /**
+   * 取得被智能提示助理標示需確認的病歷
+   * @param conditionCode
+   * @param reasonCode
+   * @return
+   */
+  @Query(value = "SELECT * FROM MR WHERE ID IN (SELECT MR_ID FROM INTELLIGENT WHERE CONDITION_CODE=?1 "
+      + " AND REASON_CODE LIKE ?2)", nativeQuery = true)
+  public List<MR> getIntelligentMR(Integer conditionCode, String reasonCode);
 }
