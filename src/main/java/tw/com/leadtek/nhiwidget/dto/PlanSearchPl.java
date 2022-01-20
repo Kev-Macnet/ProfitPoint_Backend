@@ -9,8 +9,7 @@ import io.swagger.annotations.ApiModelProperty;
 
 
 public class PlanSearchPl {
-    @ApiModelProperty(value="名稱搜尋關鍵字", position=1, example="星光", required=true)
-    @NotEmpty()
+    @ApiModelProperty(value="名稱搜尋關鍵字", position=1, example="星光", required=false)
     private String searchName;
     @ApiModelProperty(value="每頁筆數", position=2, example="10", required=true)
     @Positive()
