@@ -407,18 +407,22 @@ public class AdditionalPointService {
     public int deleteAdditionalCondition(long id) {
         int ret=0;
         if (id > 0) {
-            ret += additionalPointDao.delOutpatient_1(id);
-            ret += additionalPointDao.delOutpatient_2(id);
-            ret += additionalPointDao.delOutpatient_3(id);
-            ret += additionalPointDao.delOutpatient_4(id);
-            ret += additionalPointDao.delOutpatient_5(id);
-            ret += additionalPointDao.delOutpatient_6(id);
-            ret += additionalPointDao.delOutpatient_7(id);
-            ret += additionalPointDao.delInpatient_1(id);
-            ret += additionalPointDao.delInpatient_2(id);
-            ret += additionalPointDao.delInpatient_3(id);
-            ret += additionalPointDao.delInpatient_6(id);
-            ret += additionalPointDao.deleteAdditionalPoint(id);
+            java.util.Map<String, Object> mapPt = additionalPointDao.findAdditionalPoint(id);
+//            System.out.println(mapPt);
+            if ((long)mapPt.get("end_date") > new java.util.Date().getTime()) {
+                ret += additionalPointDao.delOutpatient_1(id);
+                ret += additionalPointDao.delOutpatient_2(id);
+                ret += additionalPointDao.delOutpatient_3(id);
+                ret += additionalPointDao.delOutpatient_4(id);
+                ret += additionalPointDao.delOutpatient_5(id);
+                ret += additionalPointDao.delOutpatient_6(id);
+                ret += additionalPointDao.delOutpatient_7(id);
+                ret += additionalPointDao.delInpatient_1(id);
+                ret += additionalPointDao.delInpatient_2(id);
+                ret += additionalPointDao.delInpatient_3(id);
+                ret += additionalPointDao.delInpatient_6(id);
+                ret += additionalPointDao.deleteAdditionalPoint(id);
+            }
         }
         return ret;
     }

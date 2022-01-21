@@ -148,7 +148,7 @@ public class AdditionalPointControll {
     
     @ApiOperation(value="14.04 刪除總額外點數條件", notes="", position=4)
     @ApiResponses({
-        @ApiResponse(code = 200, message="{ ... }")
+        @ApiResponse(code = 200, message="{ status: >=1.刪除成功 0.刪除失敗}")
     })
     @RequestMapping(value = "/additional/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deletePlanCondition(@RequestHeader("Authorization") String jwt,
