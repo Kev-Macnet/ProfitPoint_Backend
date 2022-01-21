@@ -31,7 +31,7 @@ public class AdditionalPointDao extends BaseSqlDao {
             strStart = "2000/01/01";
         }
         if (endDate==null) {
-            endDate = new java.util.Date();
+            endDate = new java.util.Date(4102358400000l); //2099-12-31
         }
         strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         String sql;
@@ -64,7 +64,7 @@ public class AdditionalPointDao extends BaseSqlDao {
             strStart = "2000/01/01";
         }
         if (endDate==null) {
-            endDate = new java.util.Date();
+            endDate = new java.util.Date(4102358400000l); //2099-12-31
         }
         strEnd = Utility.dateFormat(endDate, "yyyy/MM/dd");
         
