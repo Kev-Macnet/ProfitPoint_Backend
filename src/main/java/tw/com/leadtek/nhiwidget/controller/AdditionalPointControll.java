@@ -100,7 +100,11 @@ public class AdditionalPointControll {
             }
             long newId = additionalPointService.addAdditionalCondition(params);
             additionalPointService.fillStartAndEndNull(new java.util.Date());
-            additionalPointService.correctEndDate(Utility.detectDate(params.getStart_date()));
+            int syear = params.getSyear();
+            if (syear<1911) {
+                syear += 1911;
+            }
+            additionalPointService.correctEndDate(syear);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             if (newId>0) {
                 retMap.put("status", 0);
@@ -138,7 +142,11 @@ public class AdditionalPointControll {
             }
             int status = additionalPointService.updateAdditionalCondition(id, params);
             additionalPointService.fillStartAndEndNull(new java.util.Date());
-            additionalPointService.correctEndDate(Utility.detectDate(params.getStart_date()));
+            int syear = params.getSyear();
+            if (syear<1911) {
+                syear += 1911;
+            }
+            additionalPointService.correctEndDate(syear);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
@@ -206,9 +214,10 @@ public class AdditionalPointControll {
                 if (syear<1911) {
                     syear += 1911;
                 }
-                String syearStr = String.format("%d-%02d-%02d", syear, 6, 1);
+//                String syearStr = String.format("%d-%02d-%02d", syear, 6, 1);
 //                System.out.println("syearStr = "+syearStr);
-                additionalPointService.correctEndDate(Utility.detectDate(syearStr));
+//                additionalPointService.correctEndDate(Utility.detectDate(syearStr));
+                additionalPointService.correctEndDate(syear);
             }
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);

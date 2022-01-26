@@ -438,8 +438,8 @@ public class AdditionalPointService {
     }
     
 
-    public void correctEndDate(java.util.Date date) {
-        int syear =  Integer.valueOf(Utility.dateFormat(date, "yyyy"));
+    public void correctEndDate(int syear) {
+//        int syear =  Integer.valueOf(Utility.dateFormat(date, "yyyy"));
         java.util.List<Map<String, Object>> calcMap = new java.util.LinkedList<Map<String, Object>>(); 
         java.util.List<Map<String, Object>> lstAddPoint = additionalPointDao.findAdditionalPoint(syear, syear-1911);
         for (Map<String, Object> item : lstAddPoint) {
