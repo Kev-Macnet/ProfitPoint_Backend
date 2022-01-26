@@ -20,6 +20,8 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   
   public List<MR> findByDataFormatAndMrDateBetweenOrderById(String dataFormat, Date startDate, Date endDate);
   
+  public List<MR> findByDataFormatAndMrDateBetweenAndIcdAllIsNullOrderById(String dataFormat, Date startDate, Date endDate);
+  
   public List<MR> findByStatusAndMrDateBetween(Integer status, Date startDate, Date endDate);
   
   /**
@@ -190,4 +192,16 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "SELECT * FROM MR WHERE ID IN (SELECT MR_ID FROM INTELLIGENT WHERE CONDITION_CODE=?1 "
       + " AND REASON_CODE LIKE ?2)", nativeQuery = true)
   public List<MR> getIntelligentMR(Integer conditionCode, String reasonCode);
+  
+  /**
+   * 取得相同核刪條件的病歷
+   * @param order
+   * @param icdcm
+   * @param dataFormat
+   * @param mrId
+   * @return
+   */
+  @Query(value = "SELECT MR.* FROM MR,  DEDUCTED_NOTE dn WHERE MR.ID = dn.ID AND DEDUCTED_ORDER=?1 "
+      + "AND MR.ICDCM1 =?2 AND dn.STATUS = 1 AND MR.DATA_FORMAT =?3 AND MR.ID <> ?4", nativeQuery = true)
+  public List<MR> getSameDeductedOrderMR(String order, String icdcm, String dataFormat, Long mrId);
 }

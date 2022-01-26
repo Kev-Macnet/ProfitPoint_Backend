@@ -702,16 +702,26 @@ public class SearchMRParameters extends HomepageParameters {
   
   public void setICD(Boolean notICD, String icdAll, String icdCMMajor, String icdCMSec, String icdPCS) {
     this.notICD = notICD;
-    this.icdAll = icdAll;
-    this.icdCMMajor = icdCMMajor;
-    this.icdCMSec = icdCMSec;
-    this.icdPCS = icdPCS;
+    if (icdAll != null) {
+      this.icdAll = "%," + icdAll;
+    }
+    if (icdCMMajor != null) {
+      this.icdCMMajor = "%," +icdCMMajor;
+    }
+    if (icdCMSec != null) {
+      this.icdCMSec = "%," + icdCMSec;  
+    }
+    if (icdPCS != null) {
+      this.icdPCS = "%," + icdPCS;
+    }
   }
   
   public void setOrder(Boolean notOrderCode, String orderCode, String drugUse, String inhCode,
       String inhCodeDrugUse) {
     this.notOrderCode = notOrderCode;
-    this.orderCode = orderCode;
+    if (orderCode != null) {
+      this.orderCode = "%," + orderCode;
+    }
     this.drugUse = drugUse;
     this.inhCode = inhCode;
     this.inhCodeDrugUse = inhCodeDrugUse;
@@ -746,7 +756,17 @@ public class SearchMRParameters extends HomepageParameters {
   
   public void setAll(String all, String orderBy, Boolean asc, Integer perPage, Integer page) {
     this.all = all;
-    this.orderBy = orderBy;
+    if ("sdate".equals(orderBy)) {
+      this.orderBy = "mrDate";
+    } else if ("edate".equals(orderBy)) {
+      this.orderBy = "mrEndDate";
+    } else if ("patientName".equals(orderBy)) {
+      this.orderBy = "name";
+    } else if ("funcTypec".equals(orderBy)) {
+      this.orderBy = "funcType";
+    } else {
+      this.orderBy = orderBy;
+    }
     this.asc = asc;
     this.perPage = (perPage == null || perPage < 1) ? 20 : perPage;
     this.page = page;

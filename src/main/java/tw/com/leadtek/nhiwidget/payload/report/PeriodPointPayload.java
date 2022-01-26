@@ -58,6 +58,21 @@ public class PeriodPointPayload extends BaseResponse implements Serializable {
   @ApiModelProperty(value = "累計申報住院點數", required = true)
   private Long applPointIp;
   
+  @ApiModelProperty(value = "申請總點數", required = true)
+  private Long applNoPartPointAll;
+  
+  @ApiModelProperty(value = "申請門急診點數", required = true)
+  private Long applNoPartPointOpAll;
+  
+  @ApiModelProperty(value = "申請門診點數", required = true)
+  private Long applNoPartPointOp;
+  
+  @ApiModelProperty(value = "申請急診點數", required = true)
+  private Long applNoPartPointEm;
+  
+  @ApiModelProperty(value = "申請住院點數", required = true)
+  private Long applNoPartPointIp;
+  
   @ApiModelProperty(value = "全部部分負擔金額", required = true)
   private Long partPointAll;
   
@@ -400,6 +415,46 @@ public class PeriodPointPayload extends BaseResponse implements Serializable {
 
   public void setOwnExpByOrderType(PointQuantityList ownExpByOrderType) {
     this.ownExpByOrderType = ownExpByOrderType;
+  }
+
+  public Long getApplNoPartPointAll() {
+    return applNoPartPointAll;
+  }
+
+  public void setApplNoPartPointAll(Long applNoPartPointAll) {
+    this.applNoPartPointAll = applNoPartPointAll;
+  }
+
+  public Long getApplNoPartPointOpAll() {
+    return applNoPartPointOpAll;
+  }
+
+  public void setApplNoPartPointOpAll(Long applNoPartPointOpAll) {
+    this.applNoPartPointOpAll = applNoPartPointOpAll;
+  }
+
+  public Long getApplNoPartPointOp() {
+    return applNoPartPointOp;
+  }
+
+  public void setApplNoPartPointOp(Long applNoPartPointOp) {
+    this.applNoPartPointOp = applNoPartPointOp;
+  }
+
+  public Long getApplNoPartPointEm() {
+    return applNoPartPointEm;
+  }
+
+  public void setApplNoPartPointEm(Long applNoPartPointEm) {
+    this.applNoPartPointEm = applNoPartPointEm;
+  }
+
+  public Long getApplNoPartPointIp() {
+    return applNoPartPointIp;
+  }
+
+  public void setApplNoPartPointIp(Long applNoPartPointIp) {
+    this.applNoPartPointIp = applNoPartPointIp;
   }
  
 }

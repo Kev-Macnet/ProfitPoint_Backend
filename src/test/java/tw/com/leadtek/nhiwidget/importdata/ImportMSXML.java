@@ -138,4 +138,9 @@ public class ImportMSXML {
     }
     System.out.println("update " + count + " records.");
   }
+  
+  @Test
+  public void updateMRICDAll() {
+    
+  }
 }

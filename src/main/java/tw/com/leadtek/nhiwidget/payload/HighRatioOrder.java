@@ -51,6 +51,13 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
   
   @ApiModelProperty(value = "醫令類別，2:應用比例偏高醫令，3:特別用量、衛材", example = "2", required = false)
   private Integer codeType;
+  
+  @ApiModelProperty(value = "院內碼", required = false)
+  protected String inhCode;
+
+  @ApiModelProperty(value = "院內名稱", required = false)
+  protected String inhName;
+
 
   public HighRatioOrder() {
 
@@ -94,6 +101,8 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
     status = ct.getStatus().intValue() == 1;
     name = ct.getDescChi();
     codeType = ct.getCodeType().intValue();
+    inhCode = ct.getInhCode();
+    inhName = ct.getInhDesc();
   }
 
   public CODE_THRESHOLD toDB(int codeType) {
@@ -179,6 +188,8 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
     result.setIpTimes6m(ipTimes6M);
 
     result.setStatus((status != null && status) ? 1 : 0);
+    result.setInhCode(inhCode);
+    result.setInhDesc(inhName);
     return result;
   }
 

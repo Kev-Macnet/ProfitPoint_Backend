@@ -503,7 +503,8 @@ public class SystemService {
     return null;
   }
 
-  public ICD10ListResponse getIcd10(String code, String descChi, Boolean isInfectious, String infCat, int perPage, int page) {
+  public ICD10ListResponse getIcd10(String code, String descChi, Boolean isInfectious, 
+      String infCat, int perPage, int page, String orderBy, Boolean asc) {
     List<ICD10> codes = new ArrayList<ICD10>();
     Specification<ICD10> spec = new Specification<ICD10>() {
 
@@ -539,6 +540,19 @@ public class SystemService {
         }
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
+        
+        List<Order> orderList = new ArrayList<Order>();
+        if (orderBy != null && asc != null) {
+          if (asc.booleanValue()) {
+            orderList.add(cb.asc(root.get(orderBy)));
+          } else {
+            orderList.add(cb.desc(root.get(orderBy)));
+          }
+          query.orderBy(orderList);
+        } else {
+          orderList.add(cb.asc(root.get("code")));
+          query.orderBy(orderList);
+        }
         return query.getRestriction();
       }
     };
@@ -577,17 +591,21 @@ public class SystemService {
       if (old == null) {
         return "ICD10 不存在";
       }
-      cb.setId((long) old.getRedisId());
+      if (old.getRedisId() != null) {
+        cb.setId((long) old.getRedisId());
+      }
     }
-    try {
-      ObjectMapper objectMapper = new ObjectMapper();
-      objectMapper.setSerializationInclusion(Include.NON_NULL);
-      String json = objectMapper.writeValueAsString(cb);
-      // 1. save to data
-      redisService.putHash("ICD10-data", String.valueOf(cb.getId()), json);
-      // 2. save code to index for search
-    } catch (JsonProcessingException e) {
-      logger.error("saveIcd10", e);
+    if (cb.getId() != null) {
+      try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setSerializationInclusion(Include.NON_NULL);
+        String json = objectMapper.writeValueAsString(cb);
+        // 1. save to data
+        redisService.putHash("ICD10-data", String.valueOf(cb.getId()), json);
+        // 2. save code to index for search
+      } catch (JsonProcessingException e) {
+        logger.error("saveIcd10", e);
+      }
     }
     icd10Dao.save(icd10);
     return null;

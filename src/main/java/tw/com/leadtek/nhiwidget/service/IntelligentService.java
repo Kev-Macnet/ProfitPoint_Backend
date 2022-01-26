@@ -872,17 +872,26 @@ public class IntelligentService {
     return result;
   }
   
-  public void calculateCodeConflict(String chineseYm, CODE_CONFLICT cc, String wording) {
-    if ("00".equals(cc.getDataFormat())) {
-      processCodeConflict(chineseYm, XMLConstant.DATA_FORMAT_OP, cc, wording);
-      processCodeConflict(chineseYm, XMLConstant.DATA_FORMAT_IP, cc, wording);
+  public void calculateCodeConflict(String chineseYm, CODE_CONFLICT cc, String wording, 
+      boolean isEnable, String dataFormat) {
+    if ("00".equals(dataFormat)) {
+      processCodeConflict(chineseYm, XMLConstant.DATA_FORMAT_OP, cc, wording, isEnable);
+      processCodeConflict(chineseYm, XMLConstant.DATA_FORMAT_IP, cc, wording, isEnable);
     } else {
-      processCodeConflict(chineseYm, cc.getDataFormat(), cc, wording);
+      processCodeConflict(chineseYm, dataFormat, cc, wording, isEnable);
     }
   }
   
+  /**
+   * 
+   * @param chineseYm
+   * @param dataFormat
+   * @param cc
+   * @param wording
+   * @param isEnable 給高風險組合用
+   */
   private void processCodeConflict(String chineseYm, String dataFormat, CODE_CONFLICT cc,
-      String wording) {
+      String wording, boolean isEnable) {
     if (cc.getCodeType().intValue() == 1) {
       List<MR> list = getMRBy2PayCode(dataFormat, chineseYm, cc.getCode(),
           cc.getQuantityNh().intValue(), cc.getOwnExpCode(), cc.getQuantityOwn().intValue());
@@ -901,7 +910,7 @@ public class IntelligentService {
       if (list != null) {
         for (MR mr : list) {
           insertIntelligent(mr, INTELLIGENT_REASON.HIGH_RISK.value(), cc.getCode(), reason,
-              cc.getStatus().intValue() == 1);
+              isEnable);
         }
       }
     }

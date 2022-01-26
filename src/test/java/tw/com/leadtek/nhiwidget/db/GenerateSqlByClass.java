@@ -601,15 +601,15 @@ public class GenerateSqlByClass {
 
   public static void main(String[] args) {
     GenerateSqlByClass gen = new GenerateSqlByClass("NWUSER");
-    
+    gen.testSub();
     // gen.generateSQL();
 
     // gen.generateClassBySQL("D:\\Users\\2268\\2020\\健保點數申報\\src\\NWUSER-ALL-HANA.sql",
     // "tw.com.leadtek.nhiwidget.model.rdb", "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
 
-    gen.generateClassByDB(GenerateDocumentFromDB.HANA, "NWUSER", "10.10.5.31", 30041, "NWUSER",
-        "Leadtek2021", "tw.com.leadtek.nhiwidget.model.rdb",
-        "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
+//    gen.generateClassByDB(GenerateDocumentFromDB.HANA, "NWUSER", "10.10.5.31", 30041, "NWUSER",
+//        "Leadtek2021", "tw.com.leadtek.nhiwidget.model.rdb",
+//        "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
     
     // findDeclaredMethod("tw.com.leadtek.nhiwidget.payload.my.MyOrderPayload", "applId");
 //    logger.error("java.version = ${java:version}, os = ${java:os}");
@@ -638,5 +638,10 @@ public class GenerateSqlByClass {
      // cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 3)));
      // cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(3, 5)) -1);
     
+      String s = ",123,";
+      String[] ss = s.split(",");
+      for(int i=0;i<ss.length;i++) {
+        System.out.println(i +":" + ss[i]);
+      }
   }
 }

@@ -35,9 +35,8 @@ import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.DrgCodeListResponse;
 import tw.com.leadtek.nhiwidget.payload.DrgCodePayload;
-import tw.com.leadtek.nhiwidget.payload.PayCodePayload;
-import tw.com.leadtek.nhiwidget.payload.SameATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.PayCodeListResponse;
+import tw.com.leadtek.nhiwidget.payload.PayCodePayload;
 import tw.com.leadtek.nhiwidget.payload.system.CompareWarningPayload;
 import tw.com.leadtek.nhiwidget.payload.system.DbManagement;
 import tw.com.leadtek.nhiwidget.payload.system.DeductedListResponse;
@@ -83,7 +82,8 @@ public class SystemController extends BaseController {
       @ApiParam(name = "code", value = "DRG代碼",
           example = "00502") @RequestParam(required = false) String code,
       @ApiParam(name = "orderBy",
-          value = "排序欄位名稱，mdc:MDC分類，serial:流水號，code:DRG代碼，rw:RW，avgInDay:平均住院日，startDay:生效日，endDay:失效日",
+          value = "排序欄位名稱，mdc:MDC分類，serial:流水號，code:DRG代碼，rw:RW，avgInDay:平均住院日，"
+              + "llimit:下限臨界值，ulimit:上限臨界值， startDay:生效日，endDay:失效日，dep:科別",
           example = "code") @RequestParam(required = false) String orderBy,
       @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小",
           example = "true") @RequestParam(required = false) Boolean asc,
@@ -120,7 +120,9 @@ public class SystemController extends BaseController {
     String column = orderBy;
     if (column != null) {
       if (column.equals("inhCode") || column.equals("code") || column.equals("inhName")
-          || column.equals("codeType") || column.equals("statcauts")) {
+          || column.equals("codeType") || column.equals("statcauts") || column.equals("serial") 
+          || column.equals("rw") || column.equals("avgInDay") || column.equals("mdc")
+          || column.equals("llimit") || column.equals("ulimit") || column.equals("dep")) {
 
       } else if (column.equals("startDay")) {
         column = "startDate";
@@ -380,29 +382,29 @@ public class SystemController extends BaseController {
     return returnAPIResult(null);
   }
 
-  @ApiOperation(value = "取得減核代碼大分類", notes = "取得減核代碼大分類")
+  @ApiOperation(value = "取得核刪代碼大分類", notes = "取得減核代碼大分類")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/deductedCat")
   public ResponseEntity<List<String>> getDeductedCat() {
     return ResponseEntity.ok(systemService.getDeductedCat());
   }
 
-  @ApiOperation(value = "取得減核代碼中分類", notes = "取得減核代碼中分類")
+  @ApiOperation(value = "取得核刪代碼中分類", notes = "取得減核代碼中分類")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/deductedCat/{l1}")
   public ResponseEntity<List<String>> getDeductedCat(@PathVariable String l1) {
     return ResponseEntity.ok(systemService.getDeductedCat(l1));
   }
 
-  @ApiOperation(value = "取得減核代碼小分類", notes = "取得減核代碼小分類")
+  @ApiOperation(value = "取得核刪代碼小分類", notes = "取得減核代碼小分類")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/deductedCat/{l1}/{l2}")
   public ResponseEntity<List<String>> getDeductedCat(@PathVariable String l1,
       @PathVariable String l2) {
     return ResponseEntity.ok(systemService.getDeductedCat(l1, l2));
   }
-
-  @ApiOperation(value = "取得核減代碼列表", notes = "取得核減代碼列表")
+  
+  @ApiOperation(value = "取得核刪代碼列表", notes = "取得核減代碼列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/deducted")
   public ResponseEntity<DeductedListResponse> getDuductedList(
@@ -498,7 +500,7 @@ public class SystemController extends BaseController {
       @ApiParam(name = "name", value = "ICD10項目名稱",
           example = "維生素B1 (硫胺素)缺乏") @RequestParam(required = false) String name,
       @ApiParam(name = "orderBy",
-          value = "排序欄位名稱，code:ICD10代碼，name:ICD10項目名稱，isInfectious:是否為法定傳染病，infCat:分類層級",
+          value = "排序欄位名稱，cat:代碼類別，code:ICD10代碼，name:ICD10項目名稱(中文)，enName:ICD10項目名稱(英文)，isInfectious:是否為法定傳染病，infCat:分類層級",
           example = "code") @RequestParam(required = false) String orderBy,
       @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小",
           example = "true") @RequestParam(required = false) Boolean asc,
@@ -510,8 +512,26 @@ public class SystemController extends BaseController {
         (perPage == null) ? parametersService.getIntParameter(ParametersService.PAGE_COUNT)
             : perPage.intValue();
     int pageInt = page == null ? 0 : page.intValue();
+    
+    String column = orderBy;
+    if (column != null) {
+      if ("name".equals(column)) {
+        column = "descChi";
+      } else if ("enName".equals(column)) {
+        column = "descEn";
+      } else if ("isInfectious".equals(column)) {
+        column = "infectious";
+      } else if (column.equals("code") || column.equals("infCat") || column.equals("cat")) {
+        
+      } else {
+        ICD10ListResponse result = new ICD10ListResponse();
+        result.setMessage("orderBy無此欄位：" + column);
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
     return ResponseEntity.ok(
-        systemService.getIcd10(code, name, infectious, infCat, perPageInt, pageInt));
+        systemService.getIcd10(code, name, infectious, infCat, perPageInt, pageInt, column, asc));
   }
 
   @ApiOperation(value = "新增ICD10代碼", notes = "新增ICD10代碼")

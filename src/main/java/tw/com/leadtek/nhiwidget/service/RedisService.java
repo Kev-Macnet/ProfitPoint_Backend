@@ -58,8 +58,8 @@ public class RedisService {
       return queryByDb(cat, q);
     }
     ObjectMapper mapper = new ObjectMapper();
-    ZSetOperations<String, Object> zsetOp =
-        (ZSetOperations<String, Object>) redisTemplate.opsForZSet();
+//    ZSetOperations<String, Object> zsetOp =
+//        (ZSetOperations<String, Object>) redisTemplate.opsForZSet();
 
     String[] ss = q.split(" ");
     String[] cats = null; 
@@ -67,7 +67,7 @@ public class RedisService {
       cats = cat.split(" ");
     }
     HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
-    Set<String> rangeSet = (Set<String>) (Set<?>) zsetOp.range(INDEX_KEY + ss[0], 0, -1);
+    Set<String> rangeSet = (Set<String>) (Set<?>) redisTemplate.opsForZSet().range(INDEX_KEY + ss[0], 0, -1);
     List<String> values = hashOp.multiGet(DATA_KEY, rangeSet);
     List<JsonSuggestion> result = new ArrayList<JsonSuggestion>();
     int count = 0;

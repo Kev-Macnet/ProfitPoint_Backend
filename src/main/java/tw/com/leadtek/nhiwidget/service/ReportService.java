@@ -345,6 +345,12 @@ public class ReportService {
       result.setPointIp(result.getApplPointIp() + result.getPartPointIp());
       result.setPointOp(result.getApplPointOp() + result.getPartPointOp());
       result.setPointOpAll(result.getApplPointOpAll() + result.getPartPointOpAll());
+      
+      result.setApplNoPartPointAll(result.getApplPointAll() - result.getPartPointAll());
+      result.setApplNoPartPointEm(result.getApplPointEm() - result.getPartPointEm());
+      result.setApplNoPartPointIp(result.getApplPointIp() - result.getPartPointIp());
+      result.setApplNoPartPointOp(result.getApplPointOp() -result .getPartPointOp());
+      result.setApplNoPartPointOpAll(result.getApplPointOpAll() - result.getPartPointOpAll());
     }
 
     result.setApplByFuncType(getApplPointGroupByFuncType(s, e));
@@ -802,14 +808,6 @@ public class ReportService {
     return null;
   }
 
-  private List<String> convertFuncTypeToName(List<String> funcTypes) {
-    List<String> result = new ArrayList<String>();
-    for (int i = 0; i < funcTypes.size(); i++) {
-      result.add(codeTableService.getDesc("FUNC_TYPE", funcTypes.get(i)));
-    }
-    return result;
-  }
-
   public DRGMonthlyPayload getDrgMonthly(int year, int month) {
     DRGMonthlyPayload result = new DRGMonthlyPayload(pointMonthlyDao.findByYm(year * 100 + month));
     
@@ -823,7 +821,7 @@ public class ReportService {
     DRGMonthlyPayload result = new DRGMonthlyPayload(pointMonthlyDao.findByYm(year * 100 + month));
     List<String> funcTypes = getAllDRGFuncTypes(String.valueOf((year - 1911) * 100 + month));
     funcTypes.add(0, FUNC_TYPE_ALL);
-    List<String> funcTypeName = convertFuncTypeToName(funcTypes);
+    List<String> funcTypeName = codeTableService.convertFuncTypeToName(funcTypes);
     result.setFuncTypes(funcTypeName);
     java.sql.Date lastDay = getLastDayOfMonth(year, month);
 
@@ -859,7 +857,7 @@ public class ReportService {
         new DRGMonthlySectionPayload(pointMonthlyDao.findByYm(year * 100 + month));
     List<String> funcTypes = getAllDRGFuncTypes(String.valueOf((year - 1911) * 100 + month));
     funcTypes.add(0, FUNC_TYPE_ALL);
-    List<String> funcTypeNames = convertFuncTypeToName(funcTypes);
+    List<String> funcTypeNames = codeTableService.convertFuncTypeToName(funcTypes);
     result.setFuncTypes(funcTypeNames);
 
     java.sql.Date lastDay = getLastDayOfMonth(year, month);

@@ -139,4 +139,31 @@ public class CodeTableService {
   public List<CODE_TABLE> getInfectious(){
     return ctDao.findByCat("INFECTIOUS");
   }
+  
+  public List<String> convertFuncTypeToName(List<String> funcTypes) {
+    List<String> result = new ArrayList<String>();
+    for (int i = 0; i < funcTypes.size(); i++) {
+      result.add(getDesc("FUNC_TYPE", funcTypes.get(i)));
+    }
+    return result;
+  }
+  
+  public String convertFuncTypecToFuncType(String funcTypec) {
+    if (funcTypec == null || funcTypec.length() == 0) {
+      return null;
+    }
+    if (funcTypec.indexOf(' ') > 0) {
+      String[] ss = funcTypec.split(" ");
+      StringBuffer sb = new StringBuffer();
+      for (String s : ss) {
+        sb.append(getCodeByDesc("FUNC_TYPE", s));
+        sb.append(' ');
+      }
+      if (sb.charAt(sb.length() - 1) == ' ') {
+        sb.deleteCharAt(sb.length() - 1);
+      }
+      return sb.toString();
+    }
+    return getCodeByDesc("FUNC_TYPE", funcTypec);
+  }
 }

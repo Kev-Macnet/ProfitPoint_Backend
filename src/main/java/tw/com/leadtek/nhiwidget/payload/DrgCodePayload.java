@@ -51,7 +51,7 @@ public class DrgCodePayload implements Serializable{
   @ApiModelProperty(value = "個案數<20註記", example = "true:個案數<20實報實銷，false:否", required = false)
   private Boolean case20;
   
-  @ApiModelProperty(value = "是否導入，1:有，0:否", example = "1", required = false)
+  @ApiModelProperty(value = "是否導入(實施)，1:有，0:否", example = "1", required = false)
   private Boolean started;
   
   @ApiModelProperty(value = "是否為論件計酬，1:是，0:否", example = "0", required = false)

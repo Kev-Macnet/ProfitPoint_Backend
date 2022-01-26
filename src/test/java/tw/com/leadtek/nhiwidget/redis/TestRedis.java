@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.redis;
 
+import java.util.List;
 import java.util.Set;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -14,6 +15,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.service.RedisService;
 import tw.com.leadtek.nhiwidget.service.UserService;
@@ -55,6 +57,7 @@ public class TestRedis {
     }
   }
   
+  @Ignore
   @Test
   public void testMREDIT() {
     String key = UserService.MREDIT + "1190188";
@@ -64,6 +67,21 @@ public class TestRedis {
       //redisService.deleteHash(key, "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrZW5sYWkiLCJ1aWQiOjQzMCwicm9sZSI6IkEiLCJleHAiOjE2NDAwMjE4MzN9.4w9mUvevaBKfYVxAr7bT_ecBm99VauvPT_6V8Cfu43Y");
     } else {
        System.out.println("未找到開始編輯 token");
+    }
+  }
+  
+  @Test
+  public void testSuggestion() {
+    String code = "A53.9";
+    List<JsonSuggestion> queryList = redisService.query(null, code.toLowerCase(), false);
+    if (queryList != null) {
+      for (JsonSuggestion jsonSuggestion : queryList) {
+        System.out.println(jsonSuggestion.getId() + ":" + jsonSuggestion.getValue());
+        if (jsonSuggestion.getId().equals(code.toUpperCase())) {
+          System.out.println(jsonSuggestion.getValue());
+          break;
+        }
+      }
     }
   }
 }

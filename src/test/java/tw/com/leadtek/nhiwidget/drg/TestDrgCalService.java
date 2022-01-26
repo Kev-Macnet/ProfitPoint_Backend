@@ -258,25 +258,40 @@ public class TestDrgCalService {
     iptDao.save(ipt);
   }
   
-  @Ignore
+  //@Ignore
   @Test
   public void initOPMRICD() {
     Calendar cal = Calendar.getInstance();
-    cal.add(Calendar.YEAR, 1);
-    java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
-    cal.add(Calendar.MONTH, -14);
+//    cal.add(Calendar.YEAR, 1);
+//    java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
+//    cal.add(Calendar.MONTH, -14);
+//    java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
+    
+    java.sql.Date endDate  = new java.sql.Date(cal.getTimeInMillis());
+    System.out.println("endDate=" + endDate);
+    cal.add(Calendar.YEAR, -5);
     java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
-    List<MR> list = mrDao.findByDataFormatAndMrDateBetweenOrderById("10", startDate, endDate);
+    System.out.println("startDate=" + startDate);
+    
+    List<MR> list = mrDao.findByDataFormatAndMrDateBetweenAndIcdAllIsNullOrderById("10", startDate, endDate);
+    System.out.println("op list size=" + list.size());
     for (MR mr : list) {
-      List<OP_D> opdList = opdDao.findByMrId(mr.getId());
-      for (OP_D opd : opdList) {
-        mr.setIcdcm1(opd.getIcdCm1());
-        MRDetail.updateIcdcmOtherOP(mr, opd);
-        MRDetail.updateIcdpcsOP(mr, opd);
-        MRDetail.updateIcdAll(mr);
+      if (mr.getIcdAll() == null || mr.getCodeAll() == null) {
+        List<OP_D> opdList = opdDao.findByMrId(mr.getId());
+        for (OP_D opd : opdList) {
+          mr.setIcdcm1(opd.getIcdCm1());
+          System.out.println("icdCm1:" + mr.getIcdcm1() + "," + opd.getIcdCm1());
+          MRDetail.updateIcdcmOtherOP(mr, opd);
+          System.out.println("icdOther:" + mr.getIcdcmOthers());
+          MRDetail.updateIcdpcsOP(mr, opd);
+          System.out.println("icdOp:" + mr.getIcdpcs());
+          MRDetail.updateIcdAll(mr);
+          System.out.println("icdAll:" + mr.getIcdAll());
+        }
+        MRDetail.updateCodeAllOP(mr, oppDao.findByMrId(mr.getId()));
+        System.out.println("code:" + mr.getCodeAll());
+        mrDao.save(mr);
       }
-      MRDetail.updateCodeAllOP(mr, oppDao.findByMrId(mr.getId()));
-      mrDao.save(mr);
     }
   }
 
@@ -284,21 +299,36 @@ public class TestDrgCalService {
   @Test
   public void initIPMRICD() {
     Calendar cal = Calendar.getInstance();
-    cal.add(Calendar.YEAR, 1);
-    java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
-    cal.add(Calendar.MONTH, -14);
+//    cal.add(Calendar.YEAR, 1);
+//    java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
+//    cal.add(Calendar.MONTH, -14);
+//    java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
+    
+    java.sql.Date endDate  = new java.sql.Date(cal.getTimeInMillis());
+    System.out.println("endDate=" + endDate);
+    cal.add(Calendar.YEAR, -5);
     java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
+    System.out.println("startDate=" + startDate);
+    
     List<MR> list = mrDao.findByDataFormatAndMrDateBetweenOrderById("20", startDate, endDate);
+    System.out.println("ip list size=" + list.size());
     for (MR mr : list) {
-      List<IP_D> ipdList = ipdDao.findByMrId(mr.getId());
-      for (IP_D ipd : ipdList) {
-        mr.setIcdcm1(ipd.getIcdCm1());
-        MRDetail.updateIcdcmOtherIP(mr, ipd);
-        MRDetail.updateIcdpcsIP(mr, ipd);
-        MRDetail.updateIcdAll(mr);
+      if (mr.getIcdAll() == null || mr.getCodeAll() == null) {
+        List<IP_D> ipdList = ipdDao.findByMrId(mr.getId());
+        for (IP_D ipd : ipdList) {
+          mr.setIcdcm1(ipd.getIcdCm1());
+          MRDetail.updateIcdcmOtherIP(mr, ipd);
+          MRDetail.updateIcdpcsIP(mr, ipd);
+          MRDetail.updateIcdAll(mr);
+        }
+        MRDetail.updateCodeAllIP(mr, ippDao.findByMrId(mr.getId()));
+        if (mr.getCodeAll().length() > 4000) {
+          mr.setCodeAll(mr.getCodeAll().substring(0, 4000));
+        }
+//        System.out.println("icdcmOther=" + mr.getIcdcmOthers().length() + ", icdpcs=" + mr.getIcdpcs().length() + ", icdall=" 
+//        + mr.getIcdAll().length() + ", codeAll=" + mr.getCodeAll().length());
+        mrDao.save(mr);
       }
-      MRDetail.updateCodeAllIP(mr, ippDao.findByMrId(mr.getId()));
-      mrDao.save(mr);
     }
   }
   
@@ -527,7 +557,7 @@ public class TestDrgCalService {
     
   }
   
-  // @Ignore
+  @Ignore
   @Test
   public void calculateAllDRG() {
     String serverIP = "127.0.0.1";

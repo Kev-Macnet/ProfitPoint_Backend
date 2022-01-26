@@ -19,7 +19,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
-import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentResponse;
 import tw.com.leadtek.nhiwidget.payload.my.DoctorListResponse;
 import tw.com.leadtek.nhiwidget.payload.my.MyTodoListResponse;
 import tw.com.leadtek.nhiwidget.payload.my.NoticeRecordResponse;
@@ -453,6 +452,8 @@ public class MyListController extends BaseController {
   @ApiOperation(value = "取得我的清單-醫師查看清單", notes = "取得我的清單-醫師查看清單")
   @GetMapping("/doctor")
   public ResponseEntity<DoctorListResponse> getDoctorList(
+      @ApiParam(value = "取得已讀取或未讀取的病歷，read:取得已讀取的病歷，unread:取得未讀取的病歷",
+         example = "read") @RequestParam(required = false) String block,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
@@ -489,7 +490,7 @@ public class MyListController extends BaseController {
       result.setResult(BaseResponse.ERROR);
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
-    return ResponseEntity.ok(xmlService.getDoctorList(user, column, asc, perPageInt, page));
+    return ResponseEntity.ok(xmlService.getDoctorList(user, block, column, asc, perPageInt, page));
   }
   
 }

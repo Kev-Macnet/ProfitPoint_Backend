@@ -27,6 +27,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.constant.DATA_TYPE;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.ASSIGNED_POINTDao;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_CONFLICTDao;
@@ -41,6 +42,8 @@ import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_CONFLICT;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_THRESHOLD;
+import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.payload.AssignedPoints;
@@ -1780,13 +1783,13 @@ public class ParametersService {
         }
         codeConflict.setDataFormat("00");
         codeConflict = codeConflictDao.save(codeConflict);
-        recalculateHighRisk(codeConflict, dataFormat);
+        recalculateHighRisk(codeConflict, true, dataFormat);
         return null;
       }
     }
     CODE_CONFLICT cc = initialCodeConflictForHighRisk(code, ownExpCode, dataFormat);
     codeConflictDao.save(cc);
-    recalculateHighRisk(cc, dataFormat);
+    recalculateHighRisk(cc, true, dataFormat);
     return null;
   }
   
@@ -1803,10 +1806,13 @@ public class ParametersService {
     cc.setCodeType(new Integer(2));
     cc.setDataFormat(dataFormat);
     List<JsonSuggestion> queryList = redisService.query("ICD10-CM", code.toLowerCase(), false);
-    for (JsonSuggestion jsonSuggestion : queryList) {
-      if (jsonSuggestion.getId().equals(code.toLowerCase())) {
-        cc.setDescChi(jsonSuggestion.getValue());
-        break;
+    //List<JsonSuggestion> queryList = redisService.query(null, code.toLowerCase(), false);
+    if (queryList != null) {
+      for (JsonSuggestion jsonSuggestion : queryList) {
+        if (jsonSuggestion.getId().indexOf(":" + code.toUpperCase()) > 0) {
+          cc.setDescChi(jsonSuggestion.getValue());
+          break;
+        }
       }
     }
     cc.setOwnExpCode(ownExpCode);
@@ -1820,9 +1826,46 @@ public class ParametersService {
     }
     cc.setQuantityNh(0);
     cc.setQuantityOwn(0);
+    cc.setStatus(1);
+    cc.setUpdateAt(new Date());
     return cc;
   }
 
+  public void deleteCodeConflictForHighRisk(DEDUCTED_NOTE dn) {
+    Optional<MR> optional = mrDao.findById(dn.getMrId());
+    if (!optional.isPresent()) {
+      return;
+    }
+    MR mr = optional.get();
+    
+    List<MR> sameDeductedOrderMR = mrDao.getSameDeductedOrderMR(dn.getDeductedOrder(), mr.getIcdcm1(), mr.getDataFormat(), mr.getId());
+    if (sameDeductedOrderMR != null && sameDeductedOrderMR.size() > 0) {
+      // 仍有相同核刪條件的病歷，故不處理
+      return;
+    }
+    List<CODE_CONFLICT> list =
+        codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(mr.getIcdcm1(), dn.getDeductedOrder(), new Integer(2));
+    if (list != null && list.size() > 0) {
+      for (CODE_CONFLICT codeConflict : list) {
+        if ("00".equals(codeConflict.getDataFormat())) {
+          if (mr.getDataFormat().equals(XMLConstant.DATA_FORMAT_IP)) {
+            codeConflict.setDataFormat(XMLConstant.DATA_FORMAT_OP);
+          } else if (mr.getDataFormat().equals(XMLConstant.DATA_FORMAT_OP)) {
+            codeConflict.setDataFormat(XMLConstant.DATA_FORMAT_IP);
+          }
+          recalculateHighRisk(codeConflict, false, mr.getDataFormat());
+          return;
+        }
+        if (codeConflict.getDataFormat().equals(mr.getDataFormat())) {
+          codeConflict.setStatus(new Integer(0));
+          codeConflictDao.save(codeConflict);
+          recalculateHighRisk(codeConflict, false, mr.getDataFormat());
+          return;
+        }
+      }
+    }
+  }
+  
   public void recalculateRareICD(CODE_THRESHOLD ct) {
     Calendar cal = Calendar.getInstance();
     cal.setTime(ct.getStartDate());
@@ -1981,7 +2024,7 @@ public class ParametersService {
           cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
         }
         do {
-          is.calculateCodeConflict(String.valueOf(adYM - 191100), cc, wording);
+          is.calculateCodeConflict(String.valueOf(adYM - 191100), cc, wording, cc.getStatus().intValue() == 1, cc.getDataFormat());
           cal.add(Calendar.MONTH, 1);
           adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
           if (adYM > max) {
@@ -2069,7 +2112,7 @@ public class ParametersService {
     thread.start();
   }
   
-  public void recalculateHighRisk(CODE_CONFLICT cc, String dataFormat) {
+  public void recalculateHighRisk(CODE_CONFLICT cc, boolean isEnable, String dataFormat) {
     String wording = parametersService.getOneValueByName("INTELLIGENT", "HIGH_RISK");
     
     Thread thread = new Thread(new Runnable() {
@@ -2093,13 +2136,16 @@ public class ParametersService {
         cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
         cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
         do {
-          is.calculateCodeConflict(String.valueOf(adYM - 191100), cc, wording);
+          is.calculateCodeConflict(String.valueOf(adYM - 191100), cc, wording, isEnable, dataFormat);
           cal.add(Calendar.MONTH, 1);
           adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
           if (adYM > max) {
             break;
           }
         } while (true);
+        if (cc.getStatus().intValue() == 0 && cc.getCodeType().intValue() == 2) {
+          codeConflictDao.deleteById(cc.getId());
+        }
         logger.info("recalculateCodeConflict " + cc.getCode() + " done");
       }
     });

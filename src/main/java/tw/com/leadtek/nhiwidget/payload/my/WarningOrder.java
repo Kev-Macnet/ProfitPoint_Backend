@@ -46,7 +46,7 @@ public class WarningOrder extends MyListBasePayload implements Serializable {
   public WarningOrder(MY_MR mr) {
     super(mr);
     status = MR_STATUS.toStatusString(mr.getStatus());
-    noticeStatus = (mr.getNoticeDate() == null) ? "已通知" : "未通知";
+    noticeStatus = (mr.getNoticeDate() == null) ?  "未通知" : "已通知";
     changeIcd = mr.getChangeIcd().intValue() == 1 ? CHANGED : NOCHANGE;
     changeInh = mr.getChangeInh().intValue() == 1 ? CHANGED : NOCHANGE;
     changeOrder = mr.getChangeOrder().intValue() == 1 ? CHANGED : NOCHANGE;

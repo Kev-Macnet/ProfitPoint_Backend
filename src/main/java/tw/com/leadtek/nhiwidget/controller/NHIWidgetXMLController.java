@@ -61,6 +61,7 @@ import tw.com.leadtek.nhiwidget.payload.mr.EditMRPayload;
 import tw.com.leadtek.nhiwidget.payload.mr.HomepageParameters;
 import tw.com.leadtek.nhiwidget.payload.mr.SearchMRParameters;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
+import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
@@ -84,6 +85,10 @@ public class NHIWidgetXMLController extends BaseController {
 
   @Autowired
   private UserService userService;
+  
+  @Autowired
+  private CodeTableService codeTableService;
+
 
   @ApiOperation(value = "上傳申報檔XML檔案", notes = "上傳申報檔XML檔案")
   @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "申報檔XML檔案",
@@ -378,6 +383,9 @@ public class NHIWidgetXMLController extends BaseController {
     smrp.setDeducted(notDeducted, deductedCode, deductedOrder);
     smrp.setStatus(notStatus, status);
     smrp.setAll(all, orderBy, asc, perPage, page);
+    if (smrp.getFuncTypec() != null) {
+      smrp.setFuncType(codeTableService.convertFuncTypecToFuncType(smrp.getFuncTypec()));
+    }
     
     int iPerPage = (perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
         : perPage.intValue();
@@ -654,9 +662,9 @@ public class NHIWidgetXMLController extends BaseController {
       @ApiParam(name = "applM", value = "申報月，格式 M",
         example = "8") @RequestParam(required = false) String applM,
       @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
-          example = "2021/03/15") @RequestParam String sdate,
+          example = "2021/03/15") @RequestParam(required = false) String sdate,
       @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
-          example = "2021/03/18") @RequestParam String edate,
+          example = "2021/03/18") @RequestParam(required = false) String edate,
       @ApiParam(name = "dataFormat", value = "就醫類別，門急診:10，住院:20，不分: 00",
           example = "10") @RequestParam(required = false) String dataFormat,
       @ApiParam(name = "funcType", value = "科別，00:不分科，01:家醫科，02:內科，03:外科...",
@@ -931,6 +939,25 @@ public class NHIWidgetXMLController extends BaseController {
     }
     note.setEditor(user.getUsername());
     return returnAPIResult(xmlService.updateDeductedNote(note));
+  }
+  
+  @ApiOperation(value = "更新指定病歷的核刪註記內容", notes = "更新指定病歷的核刪註記內容")
+  @PutMapping("/nhixml/deductedNotes")
+  public ResponseEntity<BaseResponse> updateDeductedNotes(
+      @ApiParam(value = "核刪註記內容") @RequestBody(required = true) List<DEDUCTED_NOTE> notes) {
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse br = new BaseResponse();
+      br.setMessage("無法取得登入狀態");
+      br.setResult(BaseResponse.ERROR);
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
+    }
+    String response = null;
+    for (DEDUCTED_NOTE note : notes) {
+      note.setEditor(user.getUsername());
+      response = xmlService.updateDeductedNote(note);
+    }
+    return returnAPIResult(response);
   }
   
   @ApiOperation(value = "刪除核刪註記內容", notes = "刪除核刪註記內容")
