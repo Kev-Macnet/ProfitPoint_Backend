@@ -48,6 +48,12 @@ public class AdditionalPointService {
         return retMap;
     }
     
+    public java.util.Map<String, Object> findOneMaster(long ap_id) {
+        java.util.Map<String, Object> retMap = additionalPointDao.findAdditionalPoint(ap_id);
+        return retMap;
+    }
+        
+    
     public java.util.Map<String, Object> findOne(long ap_id) {
         java.util.Map<String, Object> retMap = additionalPointDao.findAdditionalPoint(ap_id);
         if (!retMap.isEmpty()) {

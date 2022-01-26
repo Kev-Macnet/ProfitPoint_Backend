@@ -200,6 +200,16 @@ public class AdditionalPointControll {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
             int status = additionalPointService.updateActive(id, state);
+            java.util.Map<String, Object> adMap = additionalPointService.findOneMaster(id);
+            if (!adMap.isEmpty()) {
+                int syear = Integer.valueOf(adMap.get("syear").toString());
+                if (syear<1911) {
+                    syear += 1911;
+                }
+                String syearStr = String.format("%d-%02d-%02d", syear, 6, 1);
+//                System.out.println("syearStr = "+syearStr);
+                additionalPointService.correctEndDate(Utility.detectDate(syearStr));
+            }
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>=1) {
