@@ -65,17 +65,19 @@ public class PtRehabilitationFeeDao {
     public int update(long ptId, int exclude_nhi_no_enable, int patient_nday_enable, int patient_nday_days, int patient_nday_times, 
             int include_icd_no_enable, int coexist_nhi_no_enable, int min_coexist_enable, int min_coexist, int lim_division_enable) {
         String sql;
-        sql = "Update PT_REHABILITATION_FEE\r\n"
-                + "Set EXCLUDE_NHI_NO=%d, \r\n"
-                + "    PATIENT_NDAY=%d, \r\n"
+        sql = "UPDATE PT_REHABILITATION_FEE\r\n"
+                + "SET EXCLUDE_NHI_NO_ENABLE=%d, \r\n"
+                + "    PATIENT_NDAY_ENABLE=%d, \r\n"
                 + "    PATIENT_NDAY_DAYS=%d, \r\n"
                 + "    PATIENT_NDAY_TIMES=%d, \r\n"
-                + "    INCLUDE_ICD_NO=%d, \r\n"
-                + "    COEXIST_NHI_NO=%d, \r\n"
+                + "    INCLUDE_ICD_NO_ENABLE=%d, \r\n"
+                + "    COEXIST_NHI_NO_ENABLE=%d, \r\n"
+                + "    MIN_COEXIST_ENABLE=%d, \r\n"
                 + "    MIN_COEXIST=%d, \r\n"
-                + "    LIM_DIVISION=%d\r\n"
-                + "Where (PT_ID=%d)";
-        sql = String.format(sql, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, include_icd_no_enable, coexist_nhi_no_enable, min_coexist_enable, min_coexist, lim_division_enable, ptId);
+                + "    LIM_DIVISION_ENABLE=%d\r\n"
+                + "WHERE (PT_ID=%d)";
+        sql = String.format(sql, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, include_icd_no_enable, 
+                coexist_nhi_no_enable, min_coexist_enable, min_coexist, lim_division_enable, ptId);
         logger.info(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;

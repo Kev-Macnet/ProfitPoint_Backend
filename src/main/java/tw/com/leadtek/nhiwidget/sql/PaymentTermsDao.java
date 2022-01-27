@@ -257,7 +257,6 @@ public class PaymentTermsDao extends BaseSqlDao {
         sql = String.format(sql, quotedNotNull(fee_no), quotedNotNull(fee_name), 
                 quotedNotNull(nhi_no), quotedNotNull(nhi_name), strStart, strEnd, 
                 outpatient_type, hospitalized_type, id, noInjection(category));
-//        System.out.println("sql-275="+sql);
         int ret = jdbcTemplate.update(sql);
         //----
         if (ret > 0) {
