@@ -398,6 +398,8 @@ public class MyListController extends BaseController {
         column = "startDate";
       } else if (column.equals("edate")) {
         column = "endDate";
+      } else if (column.equals("noticeTimes")) {
+        column = "seq";
       } else if (!findDeclaredMethod("tw.com.leadtek.nhiwidget.model.rdb.MR_NOTICE", column)) {
         NoticeRecordResponse result = new NoticeRecordResponse();
         result.setMessage("orderBy無此欄位：" + column);

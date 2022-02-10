@@ -70,8 +70,8 @@ public class IntelligentService {
 
   public IntelligentResponse getIntelligent(UserDetailsImpl user, Date sDate, Date eDate,
       Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
-      String prsnName, String code, String inhCode, String icd, String orderBy, Boolean asc,
-      int perPage, int page) {
+      String prsnName, String code, String inhCode, String icd, Integer reason, String orderBy, 
+      Boolean asc, int perPage, int page) {
     IntelligentResponse result = new IntelligentResponse();
 
     Specification<INTELLIGENT> spec = new Specification<INTELLIGENT>() {
@@ -100,6 +100,9 @@ public class IntelligentService {
         addPredicate(root, predicate, cb, "code", code, true, false);
         addPredicate(root, predicate, cb, "inhCode", inhCode, true, false);
         addPredicate(root, predicate, cb, "icd", icd, true, false);
+        if (reason != null) {
+          addPredicate(root, predicate, cb, "conditionCode", reason.toString(), true, true);
+        }
         predicate.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));

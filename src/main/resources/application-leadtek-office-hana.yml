@@ -110,8 +110,9 @@ jwt:
 mail:
   host: 59.120.139.196
   port: 25
-  fromEmail: monitor@leadtek.com.tw
+  fromEmail: ProfitPoint@leadtek.com.tw
   password: z5z8tah5
+serverUrl: "http://59.120.139.62:8082/#/login?redir=warehouse/"
 swagger:
   enable: true
   application-name: 健保申保最佳化系統 API

@@ -21,6 +21,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tw.com.leadtek.tools.GenClassFieldXMLTag;
@@ -601,7 +602,7 @@ public class GenerateSqlByClass {
 
   public static void main(String[] args) {
     GenerateSqlByClass gen = new GenerateSqlByClass("NWUSER");
-    gen.testSub();
+    gen.testNormalDistribution();
     // gen.generateSQL();
 
     // gen.generateClassBySQL("D:\\Users\\2268\\2020\\健保點數申報\\src\\NWUSER-ALL-HANA.sql",
@@ -643,5 +644,13 @@ public class GenerateSqlByClass {
       for(int i=0;i<ss.length;i++) {
         System.out.println(i +":" + ss[i]);
       }
+  }
+  
+  public static void testNormalDistribution() {
+    NormalDistribution nd = new NormalDistribution(12063.788732, 4631.872188);
+    System.out.println(nd.getSupportUpperBound() + "," + nd.getSupportLowerBound());
+    System.out.println("mean=" + nd.getMean() + ", numericalMean=" + nd.getNumericalMean() + ", numericalVariance=" + nd.getNumericalVariance() );
+    double x = 22070;
+    System.out.println(nd.cumulativeProbability(x));
   }
 }

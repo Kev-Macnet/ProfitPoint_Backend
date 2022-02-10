@@ -12,12 +12,12 @@ public interface USERDao extends JpaRepository<USER, Long> {
 
   public List<USER> findByUsername(String username);
     
-  public List<USER> findByRole(String Role);
+  public List<USER> findByRoleOrderByDisplayName(String Role);
 
-  @Query(value = "SELECT * FROM USER WHERE ROLE IN ('C', 'D')", nativeQuery = true)
+  @Query(value = "SELECT * FROM USER WHERE ROLE IN ('C', 'D') ORDER BY DISPLAY_NAME", nativeQuery = true)
   public List<USER> findApplUser();
   
-  @Query(value = "SELECT * FROM USER WHERE PASSWORD IS NOT NULL", nativeQuery = true)
+  @Query(value = "SELECT * FROM USER WHERE PASSWORD IS NOT NULL ORDER BY DISPLAY_NAME", nativeQuery = true)
   public List<USER> findAccount();
   
 }

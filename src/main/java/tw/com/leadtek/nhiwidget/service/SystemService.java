@@ -88,7 +88,7 @@ public class SystemService {
           predicate.add(cb.like(root.get("code"), code.toUpperCase() + "%"));
         }
         if (note != null && note.length() > 0) {
-          predicate.add(cb.like(root.get("note"),  "%" + note.toUpperCase() + "%"));
+          predicate.add(cb.like(cb.upper(root.get("note")),  "%" + note.toUpperCase() + "%"));
         }
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
@@ -313,7 +313,7 @@ public class SystemService {
 
   public List<String> getDeductedCat() {
     List<String> result = new ArrayList<String>();
-    List<CODE_TABLE> list = codeTableDao.findByCat("DEDUCTED_L1");
+    List<CODE_TABLE> list = codeTableDao.findByCatOrderByCode("DEDUCTED_L1");
     if (list == null || list.size() == 0) {
       return null;
     }
@@ -325,7 +325,7 @@ public class SystemService {
 
   public List<String> getDeductedCat(String l1) {
     List<String> result = new ArrayList<String>();
-    List<CODE_TABLE> list = codeTableDao.findByCat("DEDUCTED_L2");
+    List<CODE_TABLE> list = codeTableDao.findByCatOrderByCode("DEDUCTED_L2");
     if (list == null || list.size() == 0) {
       return null;
     }
@@ -349,7 +349,7 @@ public class SystemService {
 
   public List<String> getDeductedCat(String l1, String l2) {
     List<String> result = new ArrayList<String>();
-    List<CODE_TABLE> list = codeTableDao.findByCat("DEDUCTED_L3");
+    List<CODE_TABLE> list = codeTableDao.findByCatOrderByCode("DEDUCTED_L3");
     if (list == null || list.size() == 0) {
       return null;
     }

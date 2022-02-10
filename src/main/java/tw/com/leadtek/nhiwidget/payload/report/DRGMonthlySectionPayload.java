@@ -113,7 +113,9 @@ public class DRGMonthlySectionPayload extends DRGReportPayload implements Serial
     this.applPointDrg = pm.getDrgApplPoint();
     this.pointDrg = pm.getDrgActualPoint();
     this.rateDrg = ReportService.cutPointNumber(((double) quantityDrg * (double) 100) / (double) quantityIp);
-    this.ratePointDrg = ReportService.cutPointNumber(((double) applPointDrg * (double) 100) / (double) pm.getTotalIp());
+    if (pm.getTotalIp() != null) {
+      this.ratePointDrg = ReportService.cutPointNumber(((double) applPointDrg * (double) 100) / (double) pm.getTotalIp());
+    }
     this.pointIp = pm.getTotalIp();
     this.diffDrg = applPointDrg - pointDrg;
     funcTypes = new ArrayList<String>();

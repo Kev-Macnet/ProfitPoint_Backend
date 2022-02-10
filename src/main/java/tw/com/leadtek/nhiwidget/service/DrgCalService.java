@@ -507,6 +507,9 @@ public class DrgCalService {
   }
 
   public DRG_CODE getDrgCode(DRG_CODE code) {
+    if (code.getId() != null) {
+      return drgDao.findById(code.getId()).orElse(null);
+    }
     List<DRG_CODE> list = drgDao.findByCodeAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
         code.getCode(), code.getStartDate(), code.getStartDate());
     if (list == null || list.size() == 0) {

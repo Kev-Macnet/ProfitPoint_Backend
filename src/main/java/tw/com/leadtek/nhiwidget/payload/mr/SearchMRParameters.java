@@ -706,7 +706,7 @@ public class SearchMRParameters extends HomepageParameters {
       this.icdAll = "%," + icdAll;
     }
     if (icdCMMajor != null) {
-      this.icdCMMajor = "%," +icdCMMajor;
+      this.icdCMMajor = icdCMMajor;
     }
     if (icdCMSec != null) {
       this.icdCMSec = "%," + icdCMSec;  

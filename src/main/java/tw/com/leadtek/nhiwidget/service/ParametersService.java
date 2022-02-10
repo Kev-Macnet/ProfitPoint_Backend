@@ -774,7 +774,7 @@ public class ParametersService {
     return result;
   }
 
-  public List<String> getPayCodeCategory() {
+  public List<String> getPayCodeCategoryOld() {
     List<PARAMETERS> list = parametersDao.findByName("PAY_CODE_CAT");
     List<String> result = new ArrayList<String>();
     if (list != null && list.size() > 0) {
@@ -782,6 +782,17 @@ public class ParametersService {
       String[] ss = p.getValue().split(" ");
       for (String string : ss) {
         result.add(string);
+      }
+    }
+    return result;
+  }
+  
+  public List<String> getPayCodeCategory() {
+    List<CODE_TABLE> list = codeTableDao.findByCatOrderByCode("PAY_CODE_TYPE");
+    List<String> result = new ArrayList<String>();
+    if (list != null && list.size() > 0) {
+      for (CODE_TABLE ct : list) {
+        result.add(ct.getDescChi());
       }
     }
     return result;
@@ -1324,10 +1335,10 @@ public class ParametersService {
         int codeType = isHighRatio ? RareICDPayload.CODE_TYPE_ORDER : RareICDPayload.CODE_TYPE_DRUG;
         predicate.add(cb.equal(root.get("codeType"), new Integer(codeType)));
         if (code != null && code.length() > 0) {
-          predicate.add(cb.like(root.get("code"), "%" + code.toUpperCase() + "%"));
+          predicate.add(cb.like(root.get("code"), code.toUpperCase() + "%"));
         }
         if (inhCode != null && inhCode.length() > 0) {
-          predicate.add(cb.like(root.get("inhCode"), "%" + inhCode.toUpperCase() + "%"));
+          predicate.add(cb.like(root.get("inhCode"), inhCode.toUpperCase() + "%"));
         }
 
         if (predicate.size() > 0) {

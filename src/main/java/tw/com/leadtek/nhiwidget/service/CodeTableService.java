@@ -137,7 +137,7 @@ public class CodeTableService {
   }
   
   public List<CODE_TABLE> getInfectious(){
-    return ctDao.findByCat("INFECTIOUS");
+    return ctDao.findByCatOrderByCode("INFECTIOUS");
   }
   
   public List<String> convertFuncTypeToName(List<String> funcTypes) {

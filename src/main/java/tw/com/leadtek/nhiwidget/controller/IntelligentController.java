@@ -64,10 +64,13 @@ public class IntelligentController extends BaseController {
         example = "") @RequestParam(required = false) String inhCode,
       @ApiParam(name = "icd", value = "搜尋診斷碼",
         example = "") @RequestParam(required = false) String icd,
+      @ApiParam(name = "reason", value = "智能提示原由，1:違反支付準則項目-支付準則條件，2:罕見ICD應用，3:應用比例偏高醫令，"
+          + "4:特別用量藥材、衛材，6:健保項目對應自費項目並存，7:法定傳染病，8:同性質藥物開立，9:相關計畫疑似可收案病例，10:高風險診斷碼與健保碼組合",
+        example = "1") @RequestParam(required = false) Integer reason,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，status:資料狀態，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
-          + "totalDot:病歷點數，applId:負責人員代碼，applName:負責人員，reason:原由",
+          + "totalDot:病歷點數，applId:負責人員代碼，applName:負責人員，reason:原由，detail:詳細資訊",
       example = "sdate") @RequestParam(required = false) String orderBy,
       @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
           example = "true") @RequestParam(required = false) Boolean asc,
@@ -126,6 +129,6 @@ public class IntelligentController extends BaseController {
     }
     return ResponseEntity.ok(
         intelligentService.getIntelligent(user, startDate, endDate, minPoints, maxPoints, funcType,
-            funcTypec, prsnId, prsnName, code, inhCode, icd, column, asc, perPageInt, page));
+            funcTypec, prsnId, prsnName, code, inhCode, icd, reason, column, asc, perPageInt, page));
   }
 }

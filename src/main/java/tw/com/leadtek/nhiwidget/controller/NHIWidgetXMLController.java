@@ -808,7 +808,7 @@ public class NHIWidgetXMLController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("病歷id格式不正確");
     }
-    return returnAPIResult(xmlService.sendNotice(idL, user, doctorId));
+    return returnAPIResult(xmlService.sendNotice(id, user, doctorId));
   }
   
   @ApiOperation(value = "發送多筆病歷通知", notes = "發送通知")
@@ -829,17 +829,9 @@ public class NHIWidgetXMLController extends BaseController {
     if (ids == null || ids.length == 0) {
       return returnAPIResult("病歷id有誤");
     }
-    long idL = 0;
-    try {
-      for (String string : ids) {
-        idL = Long.parseLong(string);
-        String result = xmlService.sendNotice(idL, user, doctorId);
-        if (result != null) {
-          return returnAPIResult(result);
-        }
-      }
-    } catch (NumberFormatException e) {
-      return returnAPIResult("病歷id格式不正確");
+    String result = xmlService.sendNotice(id, user, doctorId);
+    if (result != null) {
+      return returnAPIResult(result);
     }
     return returnAPIResult(null);
   }

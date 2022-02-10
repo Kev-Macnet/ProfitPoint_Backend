@@ -93,6 +93,7 @@ mail:
   port: 25
   fromEmail: monitor@leadtek.com.tw
   password: z5z8tah5
+serverUrl: "http://192.168.2.171:80/#/warehouse/"
 swagger:
   enable: false
   application-name: 健保申保最佳化系統 API

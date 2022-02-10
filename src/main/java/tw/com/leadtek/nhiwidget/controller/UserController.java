@@ -184,6 +184,9 @@ public class UserController extends BaseController {
     if (cp.getOldPassword() == null || cp.getNewPassword() == null) {
       return returnAPIResult("新舊密碼不可為空值");
     }
+    if (cp.getNewPassword().length() < 6 || cp.getNewPassword().length() > 10) {
+      return returnAPIResult("新密碼長度應為6-10碼");
+    }
     if (cp.getOldPassword().equals(cp.getNewPassword())) {
       return returnAPIResult("新舊密碼不可重複");
     }

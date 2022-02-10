@@ -78,8 +78,6 @@ public class MRCount extends MRStatusCount implements Serializable {
     this.totalMr = totalMr;
   }
 
- 
-
   public Integer getDrg() {
     return drg;
   }

@@ -23,13 +23,18 @@ import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.persistence.criteria.SetJoin;
+import javax.persistence.criteria.Subquery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.ExampleMatcher.GenericPropertyMatchers;
@@ -200,6 +205,9 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private EMailService emailService;
+  
+  @Value("${serverUrl}")
+  private String serverUrl;
 
   public void saveOP(OP op) {
     OP_T opt = saveOPT(op.getTdata());
@@ -923,7 +931,7 @@ public class NHIWidgetXMLService {
   }
 
   public List<CODE_TABLE> getCodeTable(String cat) {
-    List<CODE_TABLE> list = "ALL".equals(cat) ? ctDao.findAll() : ctDao.findByCat(cat);
+    List<CODE_TABLE> list = "ALL".equals(cat) ? ctDao.findAll() : ctDao.findByCatOrderByCode(cat);
     if (list == null || list.size() == 0) {
       return new ArrayList<CODE_TABLE>();
     }
@@ -1086,6 +1094,7 @@ public class NHIWidgetXMLService {
         Path<String> codeName = root.get("codeAll");
         Path<String> subjective = root.get("subjective");
         Path<String> objective = root.get("objective");
+        Path<String> drg = root.get("drgCode");
         if (sDate != null && eDate != null) {
           predicate.add(cb.between(root.get("mrDate"), sDate, eDate));
         }
@@ -1095,7 +1104,8 @@ public class NHIWidgetXMLService {
               cb.like(pathApplId, ss[i] + "%"), cb.like(pathRemark, ss[i] + "%"),
               cb.like(pathInhClinicId, ss[i] + "%"), cb.like(pathName, ss[i] + "%"),
               cb.like(icdName, "%," + ss[i] + "%"), cb.like(codeName, "%," + ss[i] + "%"),
-              cb.like(subjective, "%," + ss[i] + "%"), cb.like(objective, "%," + ss[i] + "%")));
+              cb.like(subjective, "%," + ss[i] + "%"), cb.like(objective, "%," + ss[i] + "%"),
+              cb.like(drg, "%," + ss[i] + "%")));
         }
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
@@ -1202,7 +1212,7 @@ public class NHIWidgetXMLService {
 
     Specification<MR> spec = new Specification<MR>() {
 
-      private static final long serialVersionUID = 1L;
+      private static final long serialVersionUID = 2L;
 
       public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
         List<Predicate> predicate = searchMRPredicate(root, cb, sDate, eDate, applYM, minPoints,
@@ -1293,7 +1303,8 @@ public class NHIWidgetXMLService {
       private static final long serialVersionUID = 4L;
 
       public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-        List<Predicate> predicate = searchMRPredicate(root, cb, smrp);
+        List<Predicate> predicate = searchMRPredicate(root, query, cb, smrp);
+        
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
 
@@ -1343,10 +1354,12 @@ public class NHIWidgetXMLService {
     return result;
   }
 
-  private List<Predicate> searchMRPredicate(Root<MR> root, CriteriaBuilder cb,
+  private List<Predicate> searchMRPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb,
       SearchMRParameters smrp) {
     List<Predicate> predicate = new ArrayList<Predicate>();
-    predicate.add(cb.between(root.get("mrDate"), smrp.getsDate(), smrp.geteDate()));
+    if (smrp.getsDate() != null && smrp.geteDate() != null) {
+      predicate.add(cb.between(root.get("mrDate"), smrp.getsDate(), smrp.geteDate()));
+    }
     boolean notOthers = smrp.getNotOthers() == null ? false : smrp.getNotOthers().booleanValue();
 
     if (smrp.getMinPoints() != null && smrp.getMaxPoints() != null) {
@@ -1376,10 +1389,10 @@ public class NHIWidgetXMLService {
     addPredicate(root, predicate, cb, "name", smrp.getPatientName(), true, false, notOthers);
     addPredicate(root, predicate, cb, "rocId", smrp.getPatientId(), true, false, notOthers);
     if (smrp.getNotDRG() != null && smrp.getNotDRG().booleanValue()) {
-      addPredicate(root, predicate, cb, "drgCode", smrp.getDrg(), true, false, true);
+      addPredicate(root, predicate, cb, "drgCode", smrp.getDrg(), false, false, true);
       addPredicate(root, predicate, cb, "drgSection", smrp.getDrgSection(), true, false, true);
     } else {
-      addPredicate(root, predicate, cb, "drgCode", smrp.getDrg(), true, false, false);
+      addPredicate(root, predicate, cb, "drgCode", smrp.getDrg(), false, false, false);
       addPredicate(root, predicate, cb, "drgSection", smrp.getDrgSection(), false, false, false);
     }
     if (smrp.getOnlyDRG() != null && smrp.getOnlyDRG().booleanValue()) {
@@ -1387,17 +1400,60 @@ public class NHIWidgetXMLService {
     }
     boolean notOrderCode =
         smrp.getNotOrderCode() == null ? false : smrp.getNotOrderCode().booleanValue();
+    System.out.println("orderCode=" + smrp.getOrderCode());
     addPredicate(root, predicate, cb, "codeAll", smrp.getOrderCode(), true, false, notOrderCode);
-    // addPredicate(root, predicate, cb, "inhCode", smrp.getInhCode(), true, false, notOrderCode);
+    if (smrp.getDrugUse() != null && smrp.getDrugUse().length() > 0 && smrp.getOrderCode() != null) {
+      String orderCode = smrp.getOrderCode().startsWith("%,") ? smrp.getOrderCode().substring(2) : smrp.getOrderCode();
+      Subquery<OP_P> oppSubquery = query.subquery(OP_P.class);
+      Root<OP_P> oppRoot = oppSubquery.from(OP_P.class);
+      
+      oppSubquery.select(oppRoot.get("mrId")).distinct(true);
+      List<Predicate> oppPredicate = new ArrayList<Predicate>();
+      addPredicate(oppRoot, oppPredicate, cb, "drugNo", orderCode, true, false, notOrderCode);
+      addPredicate(oppRoot, oppPredicate, cb, "totalQ", smrp.getDrugUse(), true, true, notOrderCode);
+        
+      Predicate[] pre = new Predicate[oppPredicate.size()];
+      oppSubquery.where(oppPredicate.toArray(pre));
+      
+      Subquery<IP_P> ippSubquery = query.subquery(IP_P.class);
+      Root<IP_P> ippRoot = ippSubquery.from(IP_P.class);
+      
+      ippSubquery.select(ippRoot.get("mrId")).distinct(true);
+      List<Predicate> ippPredicate = new ArrayList<Predicate>();
+      addPredicate(ippRoot, ippPredicate, cb, "orderCode", orderCode, true, false, notOrderCode);
+      addPredicate(ippRoot, ippPredicate, cb, "totalQ", smrp.getDrugUse(), true, true, notOrderCode);
+        
+      Predicate[] ippPre = new Predicate[ippPredicate.size()];
+      ippSubquery.where(ippPredicate.toArray(ippPre));
+      
+      predicate.add(cb.or(cb.in(root.get("id")).value(oppSubquery), cb.in(root.get("id")).value(ippSubquery)));
+    }
 
     boolean notIcd = smrp.getNotICD() == null ? false : smrp.getNotICD().booleanValue();
     // System.out.println("icdAll:" + smrp.getIcdAll() + ", icdCMMajor=" + smrp.getIcdCMMajor() + ",
     // icdCMSec=" +
     // smrp.getIcdCMSec() + ",pcs=" + smrp.getIcdPCS());
-    addPredicate(root, predicate, cb, "icdAll", smrp.getIcdAll(), false, false, notIcd);
+    addPredicate(root, predicate, cb, "icdAll", smrp.getIcdAll(), true, false, notIcd);
     addPredicate(root, predicate, cb, "icdcm1", smrp.getIcdCMMajor(), false, false, notIcd);
-    addPredicate(root, predicate, cb, "icdcmOthers", smrp.getIcdCMSec(), false, false, notIcd);
-    addPredicate(root, predicate, cb, "icdpcs", smrp.getIcdPCS(), false, false, notIcd);
+    addPredicate(root, predicate, cb, "icdcmOthers", smrp.getIcdCMSec(), true, false, notIcd);
+    addPredicate(root, predicate, cb, "icdpcs", smrp.getIcdPCS(), true, false, notIcd);
+    
+    if (smrp.getDeductedCode() != null || smrp.getDeductedOrder() != null) {
+      Subquery<DEDUCTED_NOTE> subquery = query.subquery(DEDUCTED_NOTE.class);
+      Root<DEDUCTED_NOTE> deductedNoteRoot = subquery.from(DEDUCTED_NOTE.class);
+      
+      subquery.select(deductedNoteRoot.get("mrId")).distinct(true);
+      List<Predicate> predicateDeductedNote = new ArrayList<Predicate>();
+      if (smrp.getDeductedCode() != null) {
+        addPredicate(deductedNoteRoot, predicateDeductedNote, cb, "code", smrp.getDeductedCode(), false, false, false);
+      }
+      if (smrp.getDeductedOrder() != null) {
+        addPredicate(deductedNoteRoot, predicateDeductedNote, cb, "deductedOrder", smrp.getDeductedOrder(), false, false, false);
+      }
+      Predicate[] pre = new Predicate[predicateDeductedNote.size()];
+      subquery.where(predicateDeductedNote.toArray(pre));
+      predicate.add(cb.in(root.get("id")).value(subquery));
+    }
     return predicate;
   }
 
@@ -1464,7 +1520,7 @@ public class NHIWidgetXMLService {
       String pharId) {
     Specification<MR> spec = new Specification<MR>() {
 
-      private static final long serialVersionUID = 2L;
+      private static final long serialVersionUID = 5L;
 
       public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
         List<Predicate> predicate = searchMRPredicate(root, cb, sDate, eDate, applYM, minPoints,
@@ -1485,7 +1541,7 @@ public class NHIWidgetXMLService {
       String pharId) {
     Specification<MR> spec = new Specification<MR>() {
 
-      private static final long serialVersionUID = 2L;
+      private static final long serialVersionUID = 6L;
 
       public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
         List<Predicate> predicate = searchMRPredicate(root, cb, sDate, eDate, applYM, minPoints,
@@ -1503,6 +1559,7 @@ public class NHIWidgetXMLService {
   private void updateMRStatusCountAll(MRCount result, SearchMRParameters smrp) {
 
     int[] statusInt = stringToIntArray(smrp.getStatus(), " ");
+    boolean isOriginalStatusNull =  (statusInt == null || statusInt.length == 0);
     if (isIntegerInArrayOrIgnore(statusInt, MR_STATUS.CLASSIFIED.value())) {
       smrp.setStatus(String.valueOf(MR_STATUS.CLASSIFIED.value()));
       result.setClassified(getMRStatusCount(smrp));
@@ -1531,32 +1588,38 @@ public class NHIWidgetXMLService {
       smrp.setStatus(String.valueOf(MR_STATUS.WAIT_PROCESS.value()));
       result.setWaitProcess(getMRStatusCount(smrp));
     }
+    if (isOriginalStatusNull) {
+      smrp.setStatus(null);
+    }
     result.setDrg(getMRDRGCount(smrp));
   }
 
   private int getMRStatusCount(SearchMRParameters smrp) {
     Specification<MR> spec = new Specification<MR>() {
 
-      private static final long serialVersionUID = 2L;
+      private static final long serialVersionUID = 7L;
 
       public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-        List<Predicate> predicate = searchMRPredicate(root, cb, smrp);
+        List<Predicate> predicate = searchMRPredicate(root, query, cb, smrp);
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
         return query.getRestriction();
       }
     };
+     
     return (int) mrDao.count(spec);
   }
 
   private int getMRDRGCount(SearchMRParameters smrp) {
     Specification<MR> spec = new Specification<MR>() {
 
-      private static final long serialVersionUID = 2L;
+      private static final long serialVersionUID = 8L;
 
       public Predicate toPredicate(Root<MR> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-        List<Predicate> predicate = searchMRPredicate(root, cb, smrp);
-        predicate.add(cb.isNotNull(root.get("drgSection")));
+        List<Predicate> predicate = searchMRPredicate(root, query, cb, smrp);
+        if (smrp.getOnlyDRG() == null || !smrp.getOnlyDRG().booleanValue()) {
+          predicate.add(cb.isNotNull(root.get("drgSection")));
+        }
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
         return query.getRestriction();
@@ -1586,7 +1649,7 @@ public class NHIWidgetXMLService {
     return new HashMap<String, Object>();
   }
 
-  private void addPredicate(Root<MR> root, List<Predicate> predicate, CriteriaBuilder cb,
+  private void addPredicate(Root<?> root, List<Predicate> predicate, CriteriaBuilder cb,
       String paramName, String params, boolean isAnd, boolean isInteger, boolean isNot) {
     if (params == null || params.length() == 0) {
       return;
@@ -1611,6 +1674,7 @@ public class NHIWidgetXMLService {
       String[] ss = params.split(" ");
       List<Predicate> predicates = new ArrayList<Predicate>();
       for (int i = 0; i < ss.length; i++) {
+        System.out.println("name=" + paramName + "[" + i + "]=" + ss[i]);
         if (isInteger) {
           if (isNot) {
             predicates.add(cb.notEqual(root.get(paramName), ss[i]));
@@ -1618,10 +1682,19 @@ public class NHIWidgetXMLService {
             predicates.add(cb.equal(root.get(paramName), ss[i]));
           }
         } else {
-          if (isNot) {
-            predicates.add(cb.notLike(root.get(paramName), ss[i] + "%"));
+          if (i > 0 && (paramName.equals("icdAll") || paramName.equals("icdcmOthers") || 
+              paramName.equals("icdpcs") || paramName.equals("codeAll"))) {
+            if (isNot) {
+              predicates.add(cb.notLike(root.get(paramName), "%," +  ss[i] + "%"));
+            } else {
+              predicates.add(cb.like(root.get(paramName), "%," +  ss[i] + "%"));
+            }
           } else {
-            predicates.add(cb.like(root.get(paramName), ss[i] + "%"));
+            if (isNot) {
+              predicates.add(cb.notLike(root.get(paramName), ss[i] + "%"));
+            } else {
+              predicates.add(cb.like(root.get(paramName), ss[i] + "%"));
+            }
           }
         }
       }
@@ -3534,55 +3607,55 @@ public class NHIWidgetXMLService {
     return (int) myMrDao.count(spec);
   }
 
-  public String sendNotice(long mrId, UserDetailsImpl user, String doctorId) {
-    MR mr = mrDao.findById(mrId).orElse(null);
-    if (mr == null) {
-      return "病歷id:" + mrId + "不存在";
-    }
-    String[] ids = splitBySpace(doctorId);
-    if (ids == null || ids.length == 0) {
-      return "接收人員id有誤";
-    }
-  
-    String receiver = getAllUserName(ids);
-    
-    MY_MR myMr = myMrDao.findByMrId(mrId);
-    if (myMr == null) {
-      myMr = new MY_MR(mr);
-      myMr.setPrsnUserId(userService.getUserIdByName(mr.getPrsnName()));
-      myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
-    }
-    myMr.setApplUserId(user.getId());
-    myMr.setNoticeName(receiver);
-    myMr.setNoticePpl(ids.length);
-    myMr.setNoticeSeq(myMr.getNoticeSeq().intValue() + 1);
-    myMr.setNoticeTimes(myMr.getNoticeTimes().intValue() + 1);
-    myMr.setNoticeDate(new java.util.Date());
-    myMr.setReadedPpl(0);
-    myMr.setReadedName(null);
-    myMr.setStatus(MR_STATUS.QUESTION_MARK.value());
-    myMrDao.save(myMr);
-    
-    List<MR> mrList = new ArrayList<MR>();
-    mrList.add(mr);
-    
-    String[] receiverName = receiver.split(",");
-    List<String> receiverList = getAllUserEmail(ids);
-    String sender = user.getDisplayName() == null ? user.getUsername() : user.getDisplayName();
-    for(int i=0;i<receiverList.size();i++) {
-      sendNotic("病歷狀態確認通知", receiverList.get(i) , generateNoticeEmailContent(mrList, receiverName[i+1], sender, myMr.getNoticeTimes().intValue()));
-    }
-
-    MR_NOTICE notice = new MR_NOTICE(myMr);
-    StringBuffer sb = new StringBuffer(",");
-    for (String string : ids) {
-      sb.append(string);
-      sb.append(",");
-    }
-    notice.setReceiveUserId(sb.toString());
-    mrNoticeDao.save(notice);
-    return null;
-  }
+//  public String sendNotice(long mrId, UserDetailsImpl user, String doctorId) {
+//    MR mr = mrDao.findById(mrId).orElse(null);
+//    if (mr == null) {
+//      return "病歷id:" + mrId + "不存在";
+//    }
+//    String[] ids = splitBySpace(doctorId);
+//    if (ids == null || ids.length == 0) {
+//      return "接收人員id有誤";
+//    }
+//  
+//    String receiver = getAllUserName(ids);
+//    
+//    MY_MR myMr = myMrDao.findByMrId(mrId);
+//    if (myMr == null) {
+//      myMr = new MY_MR(mr);
+//      myMr.setPrsnUserId(userService.getUserIdByName(mr.getPrsnName()));
+//      myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
+//    }
+//    myMr.setApplUserId(user.getId());
+//    myMr.setNoticeName(receiver);
+//    myMr.setNoticePpl(ids.length);
+//    myMr.setNoticeSeq(myMr.getNoticeSeq().intValue() + 1);
+//    myMr.setNoticeTimes(myMr.getNoticeTimes().intValue() + 1);
+//    myMr.setNoticeDate(new java.util.Date());
+//    myMr.setReadedPpl(0);
+//    myMr.setReadedName(null);
+//    myMr.setStatus(MR_STATUS.QUESTION_MARK.value());
+//    myMrDao.save(myMr);
+//    
+//    List<MR> mrList = new ArrayList<MR>();
+//    mrList.add(mr);
+//    
+//    String[] receiverName = receiver.split(",");
+//    List<String> receiverList = getAllUserEmail(ids);
+//    String sender = user.getDisplayName() == null ? user.getUsername() : user.getDisplayName();
+//    for(int i=0;i<receiverList.size();i++) {
+//      sendNotic("病歷狀態確認通知", receiverList.get(i) , generateNoticeEmailContent(mrList, receiverName[i+1], sender, myMr.getNoticeTimes().intValue()));
+//    }
+//
+//    MR_NOTICE notice = new MR_NOTICE(myMr);
+//    StringBuffer sb = new StringBuffer(",");
+//    for (String string : ids) {
+//      sb.append(string);
+//      sb.append(",");
+//    }
+//    notice.setReceiveUserId(sb.toString());
+//    mrNoticeDao.save(notice);
+//    return null;
+//  }
 
   public String sendNotice(String mrIds, UserDetailsImpl user, String doctorId) {
     String[] mrids = splitBySpace(mrIds);
@@ -3594,6 +3667,9 @@ public class NHIWidgetXMLService {
     if (ids == null || ids.length == 0) {
       return "接收人員id有誤";
     }
+    List<MR> mrList = new ArrayList<MR>();
+    // <MR_ID, noticeTime>
+    HashMap<Long, Integer> noticeTimes = new HashMap<Long, Integer>();
     String receiver = getAllUserName(ids);
     for (String s : mrids) {
       Long mrId = Long.parseLong(s);
@@ -3601,6 +3677,7 @@ public class NHIWidgetXMLService {
       if (mr == null) {
         return "病歷id:" + s + "不存在";
       }
+      mrList.add(mr);
       MY_MR myMr = myMrDao.findByMrId(mrId);
       if (myMr == null) {
         myMr = new MY_MR(mr);
@@ -3612,6 +3689,7 @@ public class NHIWidgetXMLService {
       myMr.setNoticePpl(ids.length);
       myMr.setNoticeSeq(myMr.getNoticeSeq().intValue() + 1);
       myMr.setNoticeTimes(myMr.getNoticeTimes().intValue() + 1);
+      noticeTimes.put(mr.getId(), myMr.getNoticeTimes());
       myMr.setNoticeDate(new java.util.Date());
       myMr.setReadedPpl(0);
       myMr.setReadedName(null);
@@ -3626,6 +3704,13 @@ public class NHIWidgetXMLService {
       }
       notice.setReceiveUserId(sb.toString());
       mrNoticeDao.save(notice);
+    }
+    
+    String[] receiverName = receiver.split(",");
+    List<String> receiverList = getAllUserEmail(ids);
+    String sender = user.getDisplayName() == null ? user.getUsername() : user.getDisplayName();
+    for(int i=0;i<receiverList.size();i++) {
+      sendNotic("病歷狀態確認通知", receiverList.get(i) , generateNoticeEmailContent(mrList, receiverName[i+1], sender, noticeTimes));
     }
     return null;
   }
@@ -4263,6 +4348,14 @@ public class NHIWidgetXMLService {
 
     predicates.add(cb.greaterThan(root.get("applDot"), 0));
     retrieveMRApplyCount(cb, query, root, predicates, hp, mc);
+    
+    //test
+//    CriteriaQuery<OP_P> cq = cb.createQuery(OP_P.class);
+//    Metamodel m = em.getMetamodel();
+//    EntityType<OP_P> opp = m.entity(OP_P.class);
+//
+//    Root<OP_P> oppRoot = cq.from(OP_P.class);
+//    Join<OP_P, MR> owner = oppRoot.join(opp.getIdType());
   }
 
   private void updateMRStatusCount(MRCount mc, HomepageParameters hp) {
@@ -4539,27 +4632,39 @@ public class NHIWidgetXMLService {
     }
   }
   
-  public String generateNoticeEmailContent(List<MR> list, String username, String senderName, int noticeTimes) {
+  public String generateNoticeEmailContent(List<MR> list, String username, String senderName, HashMap<Long, Integer> noticeTimes) {
     SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
     
     StringBuffer sb = new StringBuffer(username);
     sb.append("您好：<p>");
     sb.append(senderName).append("通知您以下就醫紀錄有待確認項目，請再登入系統查看註記欄位中詳細資訊。<p>");
     sb.append("共有").append(list.size()).append("筆資料：<br>");
-    sb.append("<table class=\"MsoTableGrid\"  border=1 cellspacing=0 cellpadding=0 style='border-collapse:collapse;border:none;mso-border-alt:solid><tr style='border:solid'>");
+    sb.append("<table class=\"MsoTableGrid\" border=1 cellspacing=0 cellpadding=5 style='border-collapse:collapse;border:none;mso-border-alt:solid'><tr style='border:solid'>");
     sb.append("<th>就醫日期-起</th><th>就醫日期-訖</th><th>就醫記錄編號</th><th>科別代碼</th><th>科別</th><th>醫護代碼</th><th>醫護名</th><th>負責人員</th><th>通知次數</th></tr>");
     for (MR mr : list) {
       sb.append("<tr style='border:solid'><td>");
       sb.append(sdf.format(mr.getMrDate()));
       sb.append("</td><td>");
       if (mr.getMrEndDate() != null) {
-        sb.append(sdf.format(mr.getMrDate()));
+        sb.append(sdf.format(mr.getMrEndDate()));
       } else {
-        sb.append(" ");
+        sb.append(sdf.format(mr.getMrDate()));
       }
-      sb.append("</td><td>");
-      sb.append(mr.getInhClinicId());
-      sb.append("</td><td>");
+      sb.append("</td><td><a href=\"");
+      sb.append(serverUrl);
+      if (XMLConstant.DATA_FORMAT_OP.equals(mr.getDataFormat())){
+        sb.append("outpatient-order/");
+      } else {
+        sb.append("inpatient-order/");
+      }
+      sb.append(mr.getId());
+      sb.append("\">");
+      if (mr.getInhClinicId() != null && mr.getInhClinicId().length() > 0) {
+        sb.append(mr.getInhClinicId());
+      } else {
+        sb.append(mr.getId());
+      }
+      sb.append("</a></td><td>");
       sb.append(mr.getFuncType());
       sb.append("</td><td>");
       sb.append(codeTableService.getDesc("FUNC_TYPE", mr.getFuncType()));
@@ -4570,7 +4675,7 @@ public class NHIWidgetXMLService {
       sb.append("</td><td>");
       sb.append(mr.getApplName());
       sb.append("</td><td>");
-      sb.append(noticeTimes);
+      sb.append(noticeTimes.get(mr.getId()));
       sb.append("</td></tr>");
     }
     sb.append("</table>");
@@ -4582,7 +4687,6 @@ public class NHIWidgetXMLService {
       public void run() {
         emailService.sendMail(subject, receiverMail, content);
       }
-
     });
     thread.start();
   }

@@ -333,7 +333,7 @@ public class UserService {
     } else if ("U".equals(role)) {
       list = userDao.findAccount();
     } else {
-      list = userDao.findByRole(ROLE_TYPE.DOCTOR.getRole());
+      list = userDao.findByRoleOrderByDisplayName(ROLE_TYPE.DOCTOR.getRole());
     }
     // 與查詢相關的部門id array
     List<Long> depId = getDepartmentIds(funcType, funcTypeC);
@@ -371,9 +371,9 @@ public class UserService {
         }
       }
       if (keyword != null && keyword.length() > 0) {
-        if ((user.getInhId() == null || user.getInhId().indexOf(keyword.toUpperCase()) < 0)
+        if ((user.getInhId() == null || user.getInhId().toUpperCase().indexOf(keyword.toUpperCase()) < 0)
             && (user.getDisplayName() == null
-                || user.getDisplayName().indexOf(keyword.toUpperCase()) < 0)) {
+                || user.getDisplayName().toUpperCase().indexOf(keyword.toUpperCase()) < 0)) {
           continue;
         }
       }
