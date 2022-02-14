@@ -30,7 +30,7 @@ public class PtQualityServiceService {
                         master.put(entry.getKey(), entry.getValue());
                     }
                 }
-                master.put("lst_co_nhi_no", paymentTermsDao.filterCoexistNhiNo(ptId));
+                master.put("lst_co_nhi_no", paymentTermsDao.filterCoexistNhiNoTimes(ptId));
             }
             retMap = master;
         } else {
@@ -48,11 +48,11 @@ public class PtQualityServiceService {
                                                     params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
         if (ptId>0) {
             if (params.getLst_co_nhi_no() != null) {
-                paymentTermsDao.addCoexistNhiNo(ptId, params.getLst_co_nhi_no());
+                paymentTermsDao.addCoexistNhiNoTimes(ptId, params.getLst_co_nhi_no());
             }
 
             ptQualityServiceDao.add(ptId, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
-                    params.getCoexist_nhi_no_enable()|0, params.getMin_coexist_enable()|0, params.getMin_coexist()|0, 
+                    params.getCoexist_nhi_no_enable()|0,  
                     params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0);
         }
         return ptId;
@@ -68,11 +68,11 @@ public class PtQualityServiceService {
                                                   params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
             if (ret>0) {
                 if (params.getLst_co_nhi_no() != null) {
-                    paymentTermsDao.deleteCoexistNhiNo(ptId);
-                    paymentTermsDao.addCoexistNhiNo(ptId, params.getLst_co_nhi_no());
+                    paymentTermsDao.deleteCoexistNhiNoTimes(ptId);
+                    paymentTermsDao.addCoexistNhiNoTimes(ptId, params.getLst_co_nhi_no());
                 }
                 ptQualityServiceDao.update(ptId, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
-                        params.getCoexist_nhi_no_enable()|0, params.getMin_coexist_enable()|0, params.getMin_coexist()|0, 
+                        params.getCoexist_nhi_no_enable()|0, 
                         params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0);
             }
         }
@@ -84,7 +84,7 @@ public class PtQualityServiceService {
         if (ptId > 0) {
             ret += paymentTermsDao.deletePaymentTerms(ptId, this.Category);
             if (ret>0) {
-                ret += paymentTermsDao.deleteCoexistNhiNo(ptId);
+                ret += paymentTermsDao.deleteCoexistNhiNoTimes(ptId);
                 ret += ptQualityServiceDao.delete(ptId);
             }
         }

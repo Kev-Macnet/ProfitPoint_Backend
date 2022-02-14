@@ -52,6 +52,8 @@ public class PtRehabilitationFeeService {
                                                     params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
         if (ptId>0) {
             if (params.getLst_nhi_no() != null) {
+//                java.util.List<String> lstNhiNo = new java.util.ArrayList<>();
+//                lstNhiNo.add(params.getLst_nhi_no());
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
             if (params.getLst_co_nhi_no() != null) {
@@ -66,8 +68,8 @@ public class PtRehabilitationFeeService {
 
             ptRehabilitationFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0, 
                     params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
-                    params.getInclude_icd_no_enable()|0, params.getCoexist_nhi_no_enable()|0, 
-                    params.getMin_coexist_enable()|0, params.getMin_coexist()|0, params.getLim_division_enable()|0);
+                    params.getInclude_icd_no_enable()|0, params.getCoexist_nhi_no_enable()|0, params.getMin_coexist()|0, 
+                    params.getLim_division_enable()|0);
         }
         return ptId;
     }
@@ -83,6 +85,8 @@ public class PtRehabilitationFeeService {
             if (ret>0) {
                 if (params.getLst_nhi_no() != null) {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
+//                    java.util.List<String> lstNhiNo = new java.util.ArrayList<>();
+//                    lstNhiNo.add(params.getLst_nhi_no());
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
                 if (params.getLst_co_nhi_no() != null) {
@@ -99,8 +103,8 @@ public class PtRehabilitationFeeService {
                 }
                 ptRehabilitationFeeDao.update(ptId, params.getExclude_nhi_no_enable()|0, 
                         params.getPatient_nday_enable()|0, params.getPatient_nday_days()|0, params.getPatient_nday_times()|0, 
-                        params.getInclude_icd_no_enable()|0, params.getCoexist_nhi_no_enable()|0, 
-                        params.getMin_coexist_enable()|0, params.getMin_coexist()|0, params.getLim_division_enable()|0);
+                        params.getInclude_icd_no_enable()|0, params.getCoexist_nhi_no_enable()|0, params.getMin_coexist()|0, 
+                        params.getLim_division_enable()|0);
             }
         }
         return ret;

@@ -13,9 +13,9 @@ public class PtRehabilitationFeePl extends PaymentTermsPl {
     
     @ApiModelProperty(value="不可與此支付標準代碼並存單一就醫紀錄一併申報", example="0", required=false, position=22)
     private int exclude_nhi_no_enable;
-    @ApiModelProperty(value="exclude_nhi_no 清單", required=false)
-    private java.util.List<String> lst_nhi_no;
-
+    @ApiModelProperty(value="exclude_nhi_no", required=false)
+    private java.util.List<String> lst_nhi_no; //<------- 改成String (?)
+//    private String nhi_no;
     @ApiModelProperty(value="同患者限定每 days 天 <= times 次", example="0", required=false, position=23)
     private int patient_nday_enable;
     @ApiModelProperty(value="每 days 天", example="3", required=false, position=24)
@@ -32,9 +32,10 @@ public class PtRehabilitationFeePl extends PaymentTermsPl {
     private int coexist_nhi_no_enable;
     @ApiModelProperty(value="coexist_nhi_no 清單", required=false, position=29)
     private java.util.List<String> lst_co_nhi_no;
-    
+    /*
     @ApiModelProperty(value="1.啟用/0.關閉", example="1", required=false, position=30)
     private int min_coexist_enable;
+    */
     @ApiModelProperty(value="coexist_nhi_no 大於等於n次方可申報", example="5", required=false, position=31)
     private int min_coexist;
     
@@ -55,6 +56,7 @@ public class PtRehabilitationFeePl extends PaymentTermsPl {
     public void setExclude_nhi_no_enable(int exclude_nhi_no_enable) {
         this.exclude_nhi_no_enable = exclude_nhi_no_enable;
     }
+    
     public java.util.List<String> getLst_nhi_no() {
         return lst_nhi_no;
     }
@@ -103,12 +105,7 @@ public class PtRehabilitationFeePl extends PaymentTermsPl {
     public void setLst_co_nhi_no(java.util.List<String> lst_co_nhi_no) {
         this.lst_co_nhi_no = lst_co_nhi_no;
     }
-    public int getMin_coexist_enable() {
-        return min_coexist_enable;
-    }
-    public void setMin_coexist_enable(int min_coexist_enable) {
-        this.min_coexist_enable = min_coexist_enable;
-    }
+    
     public int getMin_coexist() {
         return min_coexist;
     }

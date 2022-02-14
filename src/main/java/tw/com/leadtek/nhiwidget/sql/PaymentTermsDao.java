@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import tw.com.leadtek.nhiwidget.dto.ptNhiNoTimes;
 import tw.com.leadtek.tools.Utility;
 
 
@@ -694,6 +695,49 @@ public class PaymentTermsDao extends BaseSqlDao {
                 + "Where (ID=%d)";
         sql = String.format(sql, strEnd, ap_id);
         int ret = jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    //=== CoexistNhiNoTimes
+    public int deleteCoexistNhiNoTimes(long ptId) {
+        String sql;
+        sql = "Delete from PT_COEXIST_NHI_NO_TIMES\n"
+                + "WHERE (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        int ret =  jdbcTemplate.update(sql);
+        return ret;
+    }
+    
+    public java.util.List<Map<String, Object>> filterCoexistNhiNoTimes(long ptId) {
+        String sql;
+        sql = "Select NHI_NO, TIMES\n"
+                + "From PT_COEXIST_NHI_NO_TIMES\n"
+                + "Where (PT_ID=%d)";
+        sql = String.format(sql, ptId);
+        java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+//        java.util.List<String> retList = new java.util.ArrayList<String>();
+//        for (Map<String, Object> item : lst) {
+//            retList.add(item.get("NHI_NO").toString());
+//        }
+        return Utility.listLowerCase(lst);
+    }
+    
+    public int addCoexistNhiNoTimes(long ptId, java.util.List<ptNhiNoTimes> lstNhiNo) {
+        int ret = 0;
+        if (lstNhiNo!=null) {
+            String sql;
+            sql = "Insert into \n"
+                    + "PT_COEXIST_NHI_NO_TIMES (PT_ID, NHI_NO, TIMES)\n"
+                    + "Values(%d, '%s', %d)";
+            for (ptNhiNoTimes nhiNo : lstNhiNo) {
+                String s1=String.format(sql, ptId, noInjection(nhiNo.getNhi_no()), nhiNo.getTimes());
+                try {
+                    ret += jdbcTemplate.update(s1);
+                } catch(DataAccessException ex) {
+                    //
+                }
+            }
+        }
         return ret;
     }
 

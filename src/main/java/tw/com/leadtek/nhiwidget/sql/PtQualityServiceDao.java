@@ -47,35 +47,34 @@ public class PtQualityServiceDao {
     
     // interval_nday_enable, interval_nday, coexist_nhi_no_enable, min_coexist_enable, min_coexist, every_nday_enable, every_nday_days, every_nday_times
     public int add(long ptId, int interval_nday_enable, int interval_nday, int coexist_nhi_no_enable, 
-            int min_coexist_enable, int min_coexist, int every_nday_enable, int every_nday_days, int every_nday_times) {
+             int every_nday_enable, int every_nday_days, int every_nday_times) {
         String sql;
         sql = "Insert into \r\n"
-                + "PT_QUALITY_SERVICE(PT_ID, INTERVAL_NDAY_ENABLE, INTERVAL_NDAY, COEXIST_NHI_NO_ENABLE, MIN_COEXIST_ENABLE, MIN_COEXIST, EVERY_NDAY_ENABLE, EVERY_NDAY_DAYS, EVERY_NDAY_TIMES)\r\n"
-                + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d)";
-        sql = String.format(sql, ptId, interval_nday_enable, interval_nday, coexist_nhi_no_enable, min_coexist_enable, min_coexist, every_nday_enable, every_nday_days, every_nday_times);
-        logger.trace(sql);
+                + "PT_QUALITY_SERVICE(PT_ID, INTERVAL_NDAY_ENABLE, INTERVAL_NDAY, COEXIST_NHI_NO_ENABLE, EVERY_NDAY_ENABLE, EVERY_NDAY_DAYS, EVERY_NDAY_TIMES)\r\n"
+                + "Values(%d, %d, %d, %d, %d, %d, %d)";
+        sql = String.format(sql, ptId, interval_nday_enable, interval_nday, coexist_nhi_no_enable, every_nday_enable, every_nday_days, every_nday_times);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
         } catch(DataAccessException ex) {
+            logger.trace(sql);
+            ex.printStackTrace();
             return -1;
         }
     }
     
     public int update(long ptId, int interval_nday_enable, int interval_nday, int coexist_nhi_no_enable, 
-            int min_coexist_enable, int min_coexist, int every_nday_enable, int every_nday_days, int every_nday_times) {
+            int every_nday_enable, int every_nday_days, int every_nday_times) {
         String sql;
         sql = "Update PT_QUALITY_SERVICE\r\n"
                 + "Set INTERVAL_NDAY_ENABLE=%d, \r\n"
                 + "    INTERVAL_NDAY=%d, \r\n"
                 + "    COEXIST_NHI_NO_ENABLE=%d, \r\n"
-                + "    MIN_COEXIST_ENABLE=%d, \r\n"
-                + "    MIN_COEXIST=%d, \r\n"
                 + "    EVERY_NDAY_ENABLE=%d, \r\n"
                 + "    EVERY_NDAY_DAYS=%d, \r\n"
                 + "    EVERY_NDAY_TIMES=%d\r\n"
                 + "Where (PT_ID=%d)";
-        sql = String.format(sql, interval_nday_enable, interval_nday, coexist_nhi_no_enable, min_coexist_enable, min_coexist, every_nday_enable, every_nday_days, every_nday_times, ptId);
+        sql = String.format(sql, interval_nday_enable, interval_nday, coexist_nhi_no_enable, every_nday_enable, every_nday_days, every_nday_times, ptId);
         logger.trace(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
