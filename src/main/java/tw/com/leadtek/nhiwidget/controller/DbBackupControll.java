@@ -7,7 +7,11 @@ import javax.annotation.PostConstruct;
 
 import org.quartz.Job;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -278,6 +282,54 @@ public class DbBackupControll {
         }
     }
     
+    
+    @ApiOperation(value="12.12 下載備份檔", notes="", position=12)
+    @ApiResponses({
+        @ApiResponse(code = 200, message="{ ... }") //, response=PtTreatmentFeeDto.class)
+    })
+    @ApiImplicitParams({
+        @ApiImplicitParam(name="backup_id", value="備份Id", dataType="String", paramType="path", required=true)
+     })
+    @RequestMapping(value = "/dbbackup/download/{backup_id}", method = RequestMethod.POST, produces = {MediaType.APPLICATION_OCTET_STREAM_VALUE})
+    public ResponseEntity<InputStreamResource> dbBackupDownload(@RequestHeader("Authorization") String jwt,
+        @PathVariable int backup_id) throws Exception {
+        
+        java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
+        if ((int)jwtValidation.get("status") != 200) {
+            byte[] retMessage = String.format("{status:%d, message=\"%s\"}",-1, "權限不足").getBytes("UTF-8");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .contentLength(retMessage.length)
+                    .contentType(MediaType.parseMediaType("text/plain"))
+                    .cacheControl(CacheControl.noCache())
+                    .header("Content-Disposition", "attachment;filename=" + "download-error.txt")
+                    .body(new InputStreamResource(new java.io.ByteArrayInputStream(retMessage)));
+
+        } else {
+            String fullFileName = dbBackupService.getFilename(backup_id);
+            System.out.println("fullFileName="+fullFileName);
+            if (fullFileName.length()>0) {
+                java.io.File myfile = new java.io.File(fullFileName);
+//                System.out.println("name="+myfile.getName());
+                HttpHeaders responseHeaders = new HttpHeaders();
+                responseHeaders.add("Access-Control-Expose-Headers", "Content-Disposition,mytest");
+                responseHeaders.set("Content-Disposition", "attachment;filename=" + myfile.getName());
+                return ResponseEntity.ok()
+                     .contentLength(myfile.length())
+                     .contentType(MediaType.parseMediaType("application/octet-stream"))
+                     .cacheControl(CacheControl.noCache())
+                     .headers(responseHeaders) 
+                     .body(new InputStreamResource(new java.io.FileInputStream(myfile)));
+            } else {
+                byte[] retMessage = String.format("{status:%d, message=\"%s\"}",-2, "檔案不存在").getBytes("UTF-8");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .contentLength(retMessage.length)
+                        .contentType(MediaType.parseMediaType("text/plain"))
+                        .cacheControl(CacheControl.noCache())
+                        .header("Content-Disposition", "attachment;filename=" + "download-error.txt")
+                        .body(new InputStreamResource(new java.io.ByteArrayInputStream(retMessage)));
+            }
+        }
+    }
     
     private String calcQuartzCron() {
         String ret = "0 0 2 1 1 ? *";

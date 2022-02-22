@@ -168,6 +168,19 @@ public class DbBackupService {
         return ret;
     }
     
+    public String getFilename(long backupId) {
+        String ret = "";
+        java.util.Map<String, Object> mapBackup = dbBakupLogDao.findOne(backupId);
+        if (!mapBackup.isEmpty()) {
+            String fileName = getBackupPath()+mapBackup.get("filename").toString();
+            java.io.File f = new java.io.File(fileName);
+            if (f.exists()) {
+                ret = fileName; 
+            }
+        }
+        return ret;
+    }
+    
     public int setBackupAbort() {
         int ret = -1;
         String busy = webConfigDao.getConfigValue("backup_busy");
@@ -219,7 +232,7 @@ public class DbBackupService {
         if (!fwork.exists()) { 
             fwork.mkdirs();
         }
-        backupPath = backupPath+Utility.dateFormat(new java.util.Date(), "HHmmss")+"\\";
+        backupPath = backupPath+Utility.dateFormat(new java.util.Date(), "HHmmss")+"/";
         fwork = new java.io.File(backupPath);
         if (!fwork.exists()) { 
             fwork.mkdirs();
@@ -271,7 +284,7 @@ public class DbBackupService {
                 startDate = Utility.detectDate(lastDate);
             } 
         }
-        System.out.println("startDate="+Utility.dateFormat(startDate, "yyyy/MM/dd HH:mm:ss"));
+        logger.info("startDate="+Utility.dateFormat(startDate, "yyyy/MM/dd HH:mm:ss"));
         int tbMode;
         int progress = 0;
         int totalProgress = 1;
@@ -815,8 +828,8 @@ public class DbBackupService {
     
     public String getBackupPath() {
         java.io.File fcurrent = new java.io.File("");
-      String currentPath = fcurrent.getAbsolutePath()+"\\";
-      String backupPath = currentPath+"backup_data\\";
+        String currentPath = fcurrent.getAbsolutePath()+"/";
+        String backupPath = currentPath+"backup_data/";
         return (backupPath);
     }
 
