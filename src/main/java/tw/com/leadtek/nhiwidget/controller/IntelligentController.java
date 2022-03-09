@@ -107,6 +107,10 @@ public class IntelligentController extends BaseController {
         column = "applDot";
       } else if (column.equals("funcTypeC")) {
         column = "funcType";
+      } else if (column.equals("detail")) {
+        column = "reason";
+      } else if (column.equals("reason")) {
+        column = "conditionCode";
       } else if (!findDeclaredMethod("tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT", column)) {
         IntelligentResponse result = new IntelligentResponse();
         result.setMessage("orderBy無此欄位：" + column);

@@ -627,7 +627,7 @@ public class PaymentTermsDao extends BaseSqlDao {
     //===
     public java.util.Map<String, Object> findUser(String userName) {
         String sql;
-        sql = "Select ID, USERNAME, DISPLAY_NAME, EMAIL, STATUS, \"ROLE\"\n"
+        sql = "Select ID, USERNAME, DISPLAY_NAME, EMAIL, STATUS, ROLE \n"
                 + "From USER\n"
                 + "Where (USERNAME='%s')";
         sql = String.format(sql, noInjection(userName));

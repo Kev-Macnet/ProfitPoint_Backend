@@ -77,7 +77,11 @@ public class DrgCodePayload implements Serializable{
     result.setEndDay(sdf.format(drg.getEndDate()));
     result.setCase20(drg.getCase20().intValue() == 1);
     result.setStarted(drg.getStarted().intValue() == 1);
-    result.setPr(drg.getPr().intValue() == 1);
+    if (drg.getPr() == null || drg.getPr().intValue() != 1) {
+      result.setPr(false);
+    } else {
+      result.setPr(true);
+    }
     return result;
   }
   

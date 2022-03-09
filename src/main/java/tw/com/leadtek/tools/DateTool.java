@@ -30,12 +30,18 @@ public class DateTool {
   }
 
   /**
-   * 將民國年月日轉成西元年月日
+   * 將民國年月日轉成西元年月日, 若只有年月，會自動改為yyyMM01
    * 
-   * @param year ex:20210223
+   * @param date ex:1110214
    * @return Date
    */
   public static Date convertChineseToYear(String date) {
+    if (date == null) {
+      return null;
+    }
+    if (date.length() == 5) {
+      date = date + "01";
+    }
     int minguo = Integer.parseInt(date);
     int dateInt = 19110000 + minguo;
     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
@@ -190,5 +196,27 @@ public class DateTool {
     cal.set(Calendar.YEAR, 1911 + Integer.parseInt(chineseYm.substring(0, 3)));
     cal.set(Calendar.MONTH, Integer.parseInt(chineseYm.substring(2)) - 1);
     return cal;
+  }
+  
+  public static Date stringToDate(String s) {
+    if (s == null) {
+      return null;
+    }
+    SimpleDateFormat sdf = null;
+    if (s.indexOf('/') > 0) {
+      sdf = new SimpleDateFormat(SDF); 
+    } else if (s.indexOf('-') > 0) {
+      sdf = new SimpleDateFormat("yyyy-MM-dd");
+      if (s.indexOf('T') > 0) {
+        s = s.substring(0, s.indexOf('T'));
+      }
+    }
+    Date result = null;
+    try {
+      result = sdf.parse(s);
+    } catch (ParseException e) {
+      e.printStackTrace();
+    }
+    return result;
   }
 }

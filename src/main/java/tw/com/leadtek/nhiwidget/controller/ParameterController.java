@@ -7,6 +7,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,6 +25,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.payload.AssignedPoints;
 import tw.com.leadtek.nhiwidget.payload.AssignedPointsListResponse;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -39,7 +41,9 @@ import tw.com.leadtek.nhiwidget.payload.PointsValue;
 import tw.com.leadtek.nhiwidget.payload.RareICDListResponse;
 import tw.com.leadtek.nhiwidget.payload.RareICDPayload;
 import tw.com.leadtek.nhiwidget.payload.SameATCListResponse;
+import tw.com.leadtek.nhiwidget.payload.my.MyTodoListResponse;
 import tw.com.leadtek.nhiwidget.payload.my.WarningOrderResponse;
+import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.tools.DateTool;
 
@@ -606,6 +610,19 @@ public class ParameterController extends BaseController {
       @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
           example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
 
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      HighRatioOrderListResponse result = new HighRatioOrderListResponse();
+      result.setMessage("無法取得登入狀態");
+      result.setResult(BaseResponse.ERROR);
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    }
+    if (ROLE_TYPE.DOCTOR.getRole().equals(user.getRole())) {
+      HighRatioOrderListResponse result = new HighRatioOrderListResponse();
+      result.setMessage("無權限");
+      result.setResult(BaseResponse.ERROR);
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
+    }
     String codeS = (code == null) ? null : HtmlUtils.htmlEscape(code);
     int perPageInt =
         (perPage == null) ? parameterService.getIntParameter(ParametersService.PAGE_COUNT)
@@ -653,9 +670,7 @@ public class ParameterController extends BaseController {
       @ApiParam(name = "isOrder", value = "是否為應用比例偏高醫令，true:是，false:否，為特別用量藥品、衛材",
           example = "true") @RequestParam(required = false, defaultValue = "true") Boolean isOrder,
       @RequestBody HighRatioOrder request) {
-    if (request.getCode() == null || request.getCode().length() < 1) {
-      return returnAPIResult("code值不可為空");
-    }
+
     if (request.getEdate() == null) {
       SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
       try {

@@ -169,18 +169,18 @@ public class MyListController extends BaseController {
       example = "王小明") @RequestParam(required = false) String applName,
     @ApiParam(value = "取得異動病歷，icd:取得ICD碼有異動的病歷，order:取得支付標準代碼有異動的病歷，inh:取得院內碼有異動的病歷，so:取得S.O.異動病歷，other:取得其他資訊有異動病歷，notify:取得已通知病歷，notnotify:取得未通知病歷",
       example = "icd") @RequestParam(required = false) String block,
-      @ApiParam(name = "orderBy",
+    @ApiParam(name = "orderBy",
       value = "排序欄位名稱，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"
           + "inhClinicId:就醫記錄編號，funcType:科別代碼，funcTypec:科別，prsnId:醫護代碼，prsnName:醫護姓名，"
           + "changeIcd:ICD碼異動，changeOrder:支付標準代碼異動，changeInh:院內碼異動，changeSo:S.O.異動，"
           + "changeOther:其他資訊異動，noticeTimes:通知狀態， applId:負責人員代碼，applName:負責人員，status:資料狀態",
       example = "sdate") @RequestParam(required = false) String orderBy,
-      @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
-          example = "true") @RequestParam(required = false) Boolean asc,
-      @ApiParam(name = "perPage", value = "每頁顯示筆數",
-          example = "20") @RequestParam(required = false) Integer perPage,
-      @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
-          example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
+    @ApiParam(name = "asc", value = "排序方式，true:由小至大，false:由大至小，空值表示不排序",
+      example = "true") @RequestParam(required = false) Boolean asc,
+    @ApiParam(name = "perPage", value = "每頁顯示筆數",
+      example = "20") @RequestParam(required = false) Integer perPage,
+    @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
+      example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
     int perPageInt = (perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
         : perPage.intValue();
 

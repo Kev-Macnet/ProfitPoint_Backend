@@ -31,8 +31,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     return UserDetailsImpl.build(user);
   }
 
-  public UserDetails build(String username, String role, Long id) {
-    return new UserDetailsImpl(id, username, null, null, null, UserDetailsImpl.getAuthority(role),
+  public UserDetails build(String username, String role, Long id, String displayName) {
+    return new UserDetailsImpl(id, username, displayName, null, null, UserDetailsImpl.getAuthority(role),
         role);
   }
 }

@@ -14,7 +14,7 @@ public enum INTELLIGENT_REASON {
   INFECTIOUS(7),    // 法定傳染病
   SAME_ATC(8),      // 同性質藥物開立
   PILOT_PROJECT(9), // 相關計畫疑似可收案病例
-  HIGH_RISK(10);    // 高風險診斷碼與健保碼組合
+  HIGH_RISK(10);    // 高風險診斷碼與健保碼組合(被核刪過的診斷碼與醫令組合)
 
   private int value;
   

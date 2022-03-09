@@ -95,26 +95,11 @@ public class PayCodePayload extends PAY_CODE implements Serializable {
     result.setRedisId(redisId);
     result.setUpdateAt(new Date());
 
-    SimpleDateFormat sdf = null;
-    if (sday != null && sday.indexOf('/') > 0) {
-      sdf = new SimpleDateFormat("yyyy/MM/dd"); 
-    } else if (sday.indexOf('-') > 0) {
-      sdf = new SimpleDateFormat("yyyy-MM-dd");
-      if (sday.indexOf('T') > 0) {
-        sday = sday.substring(0, sday.indexOf('T'));
-      }
-      if (eday.indexOf('T') > 0) {
-        eday = eday.substring(0, eday.indexOf('T'));
-      }
+    result.setStartDate(DateTool.stringToDate(sday));
+    if (eday == null) {
+      eday = DateTool.MAX_DATE;
     }
-        
-    try {
-      result.setStartDate(sdf.parse(sday));
-      result.setEndDate(sdf.parse(eday));
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
-
+    result.setEndDate(DateTool.stringToDate(eday));
     StringBuffer sb = new StringBuffer();
     if (level != null && level.size() > 0) {
       for (String string : level) {

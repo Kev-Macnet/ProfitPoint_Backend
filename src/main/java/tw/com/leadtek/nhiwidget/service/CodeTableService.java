@@ -105,6 +105,21 @@ public class CodeTableService {
     }
   }
   
+  public static CodeBase getCodeBase(CodeTableService cts, String cat, String code) {
+    if (code == null || code.length() == 0) {
+      return null;
+    }
+    String codes = "ICD10-CM".equals(cat) ? StringUtility.formatICD(code) : code;
+    CODE_TABLE ct = cts.getCodeTable(cat, codes);
+    if (ct == null) {
+      return new CodeBase(code);
+    } else {
+      CodeBase cb = new CodeBase(ct);
+      cb.setCode(code);
+      return cb;
+    }
+  }
+  
   public static String getDesc(CodeTableService cts, String cat, String code) {
     if (code == null) { 
       return null;
@@ -126,14 +141,14 @@ public class CodeTableService {
     }
     HashMap<String, CODE_TABLE> codeMap = codes.get(cat);
     if (codeMap == null) {
-      return null;
+      return "unknown";
     }
     for (CODE_TABLE ct : codeMap.values()) {
       if (ct.getDescChi() != null && ct.getDescChi().equals(desc)) {
         return ct.getCode();
       }
     }
-    return null;
+    return "unknown";
   }
   
   public List<CODE_TABLE> getInfectious(){

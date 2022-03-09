@@ -40,7 +40,7 @@ import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePoint;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePointQuantity;
-import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
+import tw.com.leadtek.nhiwidget.payload.report.NameValueList2;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
@@ -568,12 +568,12 @@ public class ReportService {
       cal.add(Calendar.DAY_OF_YEAR, 6);
       Date end = cal.getTime();
 
-      POINT_WEEKLY pw = calculatePointByWeek(start, end);
-      if (pw == null || pw.getIp().longValue() + pw.getOp().longValue() == 0) {
-        break;
-      }
+//      POINT_WEEKLY pw = calculatePointByWeek(start, end);
+//      if (pw == null || pw.getIp().longValue() + pw.getOp().longValue() == 0) {
+//        break;
+//      }
       calculateDRGPointByWeek(start, end, funcTypes);
-      System.out.println("year=" + pw.getPyear() + "," + pw.getPweek() + "," + pw.getStartDate() + "," + pw.getEndDate());
+      //System.out.println("year=" + pw.getPyear() + "," + pw.getPweek() + "," + pw.getStartDate() + "," + pw.getEndDate());
       cal.add(Calendar.DAY_OF_YEAR, 1);
     } while (true);
   }
@@ -610,18 +610,23 @@ public class ReportService {
 
       List<Object[]> sectionList = mrDao.countDRGPointByFuncTypeGroupByDRGSection(s, e, funcType);
       for (Object[] obj2 : sectionList) {
+        long point =  (obj2[2] instanceof Integer) ? ((Integer) obj2[2]).longValue() : ((BigInteger) obj2[2]).longValue();
         if ("A".equals((String) obj2[0])) {
-          drgWeekly.setSectionA(((BigInteger) obj[1]).longValue());
+          drgWeekly.setSectionA(((BigInteger) obj2[1]).longValue());
           drgWeeklyAll.setSectionA(drgWeeklyAll.getSectionA() + drgWeekly.getSectionA());
+          drgWeekly.setPointA(point);
         } else if ("B1".equals((String) obj2[0])) {
-          drgWeekly.setSectionB1(((BigInteger) obj[1]).longValue());
+          drgWeekly.setSectionB1(((BigInteger) obj2[1]).longValue());
           drgWeeklyAll.setSectionB1(drgWeeklyAll.getSectionB1() + drgWeekly.getSectionB1());
+          drgWeekly.setPointB1(point);
         } else if ("B2".equals((String) obj2[0])) {
-          drgWeekly.setSectionB2(((BigInteger) obj[1]).longValue());
+          drgWeekly.setSectionB2(((BigInteger) obj2[1]).longValue());
           drgWeeklyAll.setSectionB2(drgWeeklyAll.getSectionB2() + drgWeekly.getSectionB2());
+          drgWeekly.setPointB2(point);
         } else if ("C".equals((String) obj2[0])) {
-          drgWeekly.setSectionC(((BigInteger) obj[1]).longValue());
+          drgWeekly.setSectionC(((BigInteger) obj2[1]).longValue());
           drgWeeklyAll.setSectionC(drgWeeklyAll.getSectionC() + drgWeekly.getSectionC());
+          drgWeekly.setPointC(point);
         }
       }
       drgWeeklyDao.save(drgWeekly);
@@ -945,16 +950,16 @@ public class ReportService {
         drgWeeklyDao.findByFuncTypeAndEndDateLessThanEqualOrderByEndDateDesc(funcType, lastDay);
     if (list != null && list.size() > 0) {
       int count = 0;
-      NameValueList nvlA = new NameValueList();
-      NameValueList nvlB1 = new NameValueList();
-      NameValueList nvlB2 = new NameValueList();
-      NameValueList nvlC = new NameValueList();
+      NameValueList2 nvlA = new NameValueList2();
+      NameValueList2 nvlB1 = new NameValueList2();
+      NameValueList2 nvlB2 = new NameValueList2();
+      NameValueList2 nvlC = new NameValueList2();
       for (DRG_WEEKLY dw : list) {
         String name = dw.getPyear() + " w" + dw.getPweek();
-        nvlA.add(name, dw.getSectionA());
-        nvlB1.add(name, dw.getSectionB1());
-        nvlB2.add(name, dw.getSectionB2());
-        nvlC.add(name, dw.getSectionC());
+        nvlA.add(name, dw.getSectionA(), dw.getPointA() == null ? 0 : dw.getPointA());
+        nvlB1.add(name, dw.getSectionB1(), dw.getPointB1() == null ? 0 : dw.getPointB1());
+        nvlB2.add(name, dw.getSectionB2(), dw.getPointB2() == null ? 0 : dw.getPointB2());
+        nvlC.add(name, dw.getSectionC(), dw.getPointC() == null ? 0 : dw.getPointC());
         count++;
         if (count >= 52) {
           break;

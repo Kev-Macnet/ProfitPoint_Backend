@@ -176,7 +176,7 @@ public class NHIWidgetXMLController extends BaseController {
   public ResponseEntity<List<CODE_TABLE>> getCT(@ApiParam(name = "cat",
       value = "代碼表類型，FUNC_TYPE:就診科別，PAY_TYPE:給付類別，OP_CASE_TYPE:門診案件分類，IP_CASE_TYPE:住院案件分類, PAY_STATUS:費用狀態, IP_TW_DRGS_SUIT_MARK:不適用Tw-DRGs案件特殊註記",
       example = "FUNC_TYPE") @PathVariable String cat) {
-    logger.info("=========/nhixml/code/{" + cat + "} =============================");
+
     String catReal = HtmlUtils.htmlEscape(cat, "UTF-8").toUpperCase();
     List<CODE_TABLE> list = xmlService.getCodeTable(catReal);
     if (list.size() == 0) {
@@ -205,7 +205,6 @@ public class NHIWidgetXMLController extends BaseController {
       @RequestParam(required = false) String rocID, @RequestParam(required = false) Integer drugFee,
       @RequestParam(required = false) String prsnID, @RequestParam(required = false) String icdOP,
       @RequestParam(required = false) String status, @RequestParam(required = false) String all) {
-    logger.info("=========/nhixml/search/{" + funcType + "} =============================");
 
     SearchReq req = new SearchReq(ym, funcType, name, caseType, order, funcDate, icdCM, applyPoints,
         rocID, drugFee, prsnID, icdOP, status, all);
@@ -220,10 +219,10 @@ public class NHIWidgetXMLController extends BaseController {
    */
   private String checkOP(OutPatient op) {
     StringBuffer sb = new StringBuffer();
-    if (!XMLConstant.DATA_FORMAT_OP.equals(op.getTdata().getDATA_FORMAT())) {
-      sb.append("t1 資料格式有誤，應為" + XMLConstant.DATA_FORMAT_OP + "," + op.getTdata().getDATA_FORMAT());
-      sb.append("\r\n");
-    }
+//    if (!XMLConstant.DATA_FORMAT_OP.equals(op.getTdata().getDATA_FORMAT())) {
+//      sb.append("t1 資料格式有誤，應為" + XMLConstant.DATA_FORMAT_OP + "," + op.getTdata().getDATA_FORMAT());
+//      sb.append("\r\n");
+//    }
 
     return sb.toString();
   }
@@ -244,7 +243,7 @@ public class NHIWidgetXMLController extends BaseController {
           example = "2021/03/18") @RequestParam String edate,
       @ApiParam(name = "status", value = "病歷狀態：-2:待確認，-1:疑問標示，0:無需變更，1:優化完成，2:評估不調整",
           example = "0") @RequestParam(required = false) Integer status) {
-    logger.info("=========/nhixml/mr/{" + sdate + "} =============================");
+
     List<MR> list = xmlService.getMRByMrDateBetween(sdate, edate, status);
     if (list.size() == 0) {
       return ResponseEntity.badRequest().body(new ArrayList<MR>());
@@ -365,7 +364,7 @@ public class NHIWidgetXMLController extends BaseController {
           example = "20") @RequestParam(required = false) Integer perPage,
       @ApiParam(name = "page", value = "第幾頁，第一頁值為0", example = "0") @RequestParam(required = false,
           defaultValue = "0") Integer page) {
-    logger.info("=========/nhixml/mr/{" + sdate + "} =============================");
+
     if (minPoints != null) {
       if (maxPoints == null) {
         return ResponseEntity.badRequest().body(returnMRError("最大申報點數未帶入"));
@@ -452,7 +451,6 @@ public class NHIWidgetXMLController extends BaseController {
   // @ApiParam(name = "page", value = "第幾頁，第一頁值為0", example = "00") @RequestParam(required = false,
   // defaultValue = "0") Integer page)
   // {
-  // logger.info("=========/nhixml/mr/{" + sdate + "} =============================");
   // List<MR> list = xmlService.dwSearch(sdate, edate, dataFormat, funcType,
   // prsnId, prsnName, applId, applName, status, perPage, page);
   // if (list.size() == 0) {
@@ -482,7 +480,9 @@ public class NHIWidgetXMLController extends BaseController {
   @ApiOperation(value = "取得指定病歷", notes = "取得指定病歷")
   @GetMapping("/nhixml/mr/{id}")
   public ResponseEntity<MRDetail> getMRDetail(
-      @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id) {
+      @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id,
+      @ApiParam(name = "isRaw", value = "是否取得最新資料", example = "true") 
+        @RequestParam(defaultValue = "false", required = false) Boolean isRaw) {
     long idL = 0;
     try {
       idL = Long.parseLong(id);
@@ -497,7 +497,7 @@ public class NHIWidgetXMLController extends BaseController {
       result.setError("無法取得登入狀態");
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
-    return ResponseEntity.ok(xmlService.getMRDetail(idL, user));
+    return ResponseEntity.ok(xmlService.getMRDetail(idL, user, isRaw));
   }
   
   @ApiOperation(value = "取得指定病歷的全部資訊備註/核刪註記", notes = "取得指定病歷的全部資訊備註/核刪註記")
@@ -552,7 +552,6 @@ public class NHIWidgetXMLController extends BaseController {
   @PostMapping("/nhixml/mr/{id}")
   public ResponseEntity<EditMRPayload> editMRDetail(@RequestHeader("Authorization") String token,
       @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id) {
-    logger.info("=========/nhixml/mr/{" + id + "} =============================");
     long idL = 0;
     try {
       idL = Long.parseLong(id);
@@ -578,7 +577,6 @@ public class NHIWidgetXMLController extends BaseController {
       @RequestHeader("Authorization") String token,
       @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id,
       @ApiParam(value = "開始編輯時取得的actionId", example = "1") @RequestParam(required = false) Integer actionId) {
-    logger.info("=========/nhixml/mr/{" + id + "} =============================");
     long idL = 0;
     try {
       idL = Long.parseLong(id);
@@ -605,7 +603,7 @@ public class NHIWidgetXMLController extends BaseController {
       @ApiParam(name = "mrDetail",
           value = "病歷詳細資訊") @RequestBody(required = true) MRDetail mrDetail, 
       @ApiParam(value = "開始編輯時取得的actionId", example = "1") @RequestParam(required = false) Integer actionId) {
-    logger.info("=========/nhixml/mr/{" + id + "} =============================");
+
     mrDetail.setId(Long.parseLong(id));
     String token = jwt.split(" ")[1];
     MRDetail result = xmlService.updateMRDetail(mrDetail, token, actionId);
@@ -671,7 +669,6 @@ public class NHIWidgetXMLController extends BaseController {
           example = "03") @RequestParam(required = false) String funcType,
       @ApiParam(name = "prsnName", value = "醫護姓名",
           example = "A123456789") @RequestParam(required = false) String prsnName) {
-    logger.info("=========/nhixml/mr/{" + sdate + "} =============================");
     HomepageParameters hp = new HomepageParameters(applY, applM, sdate, edate, dataFormat, funcType, prsnName);
     MRCountResponse response =
         xmlService.getHomePageMRCount(hp);
@@ -895,7 +892,7 @@ public class NHIWidgetXMLController extends BaseController {
     return returnAPIResult(result);
   }
   
-  @ApiOperation(value = "取得指定病歷的全部核刪註記", notes = "取得指定病歷的全部核刪註記")
+  @ApiOperation(value = "取得指定病歷的全部核刪註記(含已被刪除的註記)", notes = "取得指定病歷的全部核刪註記，用於檢視編輯記錄")
   @GetMapping("/nhixml/deductedNote")
   public ResponseEntity<DeductedNoteListResponse> getAllDeductedNote(
       @ApiParam(value = "病歷id", example = "161633") @RequestParam String mrId) {

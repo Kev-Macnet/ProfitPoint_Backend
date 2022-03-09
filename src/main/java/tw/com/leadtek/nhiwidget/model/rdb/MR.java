@@ -3,7 +3,9 @@
  */
 package tw.com.leadtek.nhiwidget.model.rdb;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -17,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
+import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.tools.DateTool;
 
 @ApiModel("病歷")
@@ -243,6 +246,10 @@ public class MR {
   @Column(name = "CODE_ALL")
   protected String codeAll;
   
+  @ApiModelProperty(value = "院內碼", required = false)
+  @Column(name = "INH_CODE")
+  protected String inhCode;
+  
   @ApiModelProperty(value = "上次異動病歷狀態的user ID", required = false)
   @Column(name = "UPDATE_USER_ID")
   @JsonIgnore
@@ -294,7 +301,9 @@ public class MR {
     this.prsnId = opd.getPrsnId();
     this.dataFormat = XMLConstant.DATA_FORMAT_OP;
 
-    if (opd.getFuncDate() != null && opd.getFuncDate().length() > 0) {
+    if (opd.getFuncEndDate() != null && opd.getFuncEndDate().length() > 0) {
+      this.mrDate = DateTool.convertChineseToYear(opd.getFuncEndDate());
+    } else if (opd.getFuncDate() != null && opd.getFuncDate().length() > 0) {
       this.mrDate = DateTool.convertChineseToYear(opd.getFuncDate());
     }
     this.totalDot = opd.getTotalDot();
@@ -696,11 +705,21 @@ public class MR {
     this.drgSection = mr.getDrgSection();
     this.applYm = mr.getApplYm();
     this.updateAt = new Date();
-    icdcm1 = mr.getIcdcm1();
-    icdcmOthers = mr.getIcdcmOthers();
-    icdpcs = mr.getIcdpcs();
-    icdAll = mr.getIcdAll();
-    codeAll = mr.getCodeAll();
+    if (mr.getIcdcm1() != null) {
+      icdcm1 = mr.getIcdcm1();
+    }
+    if (mr.getIcdcmOthers() != null) {
+      icdcmOthers = mr.getIcdcmOthers();
+    }
+    if (mr.getIcdpcs() != null) {
+      icdpcs = mr.getIcdpcs();
+    }
+    if (mr.getIcdAll() != null) {
+      icdAll = mr.getIcdAll();
+    }
+    if (mr.getCodeAll() != null) {
+      codeAll = mr.getCodeAll();
+    }
   }
 
   public String getIcdcm1() {
@@ -742,5 +761,183 @@ public class MR {
   public void setCodeAll(String codeAll) {
     this.codeAll = codeAll;
   }
+
+  public String getInhCode() {
+    return inhCode;
+  }
+
+  public void setInhCode(String inhCode) {
+    this.inhCode = inhCode;
+  }
   
+  public void updateMR(IP_D ipd, List<FILE_DIFF> diffList, CodeTableService codeTableService) {
+    if (diffList != null && !ipd.getFuncType().equals(this.funcType)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "funcType", ipd.getFuncType());
+      diffList.add(fd);
+      
+      FILE_DIFF fd2 = new FILE_DIFF(id, "funcTypeC", codeTableService.getDesc("FUNC_TYPE", ipd.getFuncType()));
+      diffList.add(fd2);
+    } else {
+      this.funcType = ipd.getFuncType();
+    }
+    
+    if (diffList != null && !ipd.getRocId().equals(this.rocId)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "rocId", ipd.getRocId());
+      diffList.add(fd);
+    } else {
+      this.rocId = ipd.getRocId();
+    }
+    
+    if (diffList != null && !ipd.getName().equals(this.name)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "name", ipd.getName());
+      diffList.add(fd);
+    } else {
+      this.name = ipd.getName();
+    }
+    
+    if (diffList != null && ipd.getPrsnId() != null && !ipd.getPrsnId().equals(this.prsnId)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "prsnId", ipd.getPrsnId());
+      diffList.add(fd);
+    } else {
+      this.prsnId = ipd.getPrsnId();
+    }
+    
+    this.dataFormat = XMLConstant.DATA_FORMAT_IP;
+    if (ipd.getInDate() != null && ipd.getInDate().length() > 0) {
+      Date newDate = DateTool.convertChineseToYear(ipd.getInDate());
+      if (diffList != null && this.mrDate != null && this.mrDate.getTime() != newDate.getTime()) {
+        SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+        FILE_DIFF fd = new FILE_DIFF(id, "inDate", sdf.format(newDate));
+        diffList.add(fd);        
+      } else {
+        this.mrDate = newDate;
+      }
+    }
+    if (ipd.getOutDate() != null && ipd.getOutDate().length() > 0) {
+      Date newDate = DateTool.convertChineseToYear(ipd.getInDate());
+      if (diffList != null && this.mrEndDate != null && this.mrEndDate.getTime() != newDate.getTime()) {
+        SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+        FILE_DIFF fd = new FILE_DIFF(id, "outDate", sdf.format(newDate));
+        diffList.add(fd);        
+      } else {
+        this.mrEndDate = newDate;
+      }
+    }
+    
+    if (ipd.getApplDot() != null && this.applDot != null) {
+      if (diffList != null && this.applDot.intValue() != ipd.getApplDot().intValue()) {
+        FILE_DIFF fd = new FILE_DIFF(id, "applDot", ipd.getApplDot().toString());
+        diffList.add(fd);     
+      } else {
+        this.applDot = ipd.getApplDot();
+      }
+    } else {
+      this.applDot = ipd.getApplDot();
+    }
+    
+    if (ipd.getNonApplDot() != null) {
+      this.totalDot += ipd.getNonApplDot();
+    }
+    if (ipd.getPartDot() != null) {
+      this.totalDot += ipd.getPartDot();
+    }
+    
+    if (diffList != null && ipd.getTwDrgCode() != null && !ipd.getTwDrgCode().equals(drgCode)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "drgCode", ipd.getTwDrgCode());
+      diffList.add(fd); 
+    } else {
+      this.drgCode = ipd.getTwDrgCode();
+    }
+
+    if (diffList != null && ipd.getNonApplDot() != null && ipd.getNonApplDot().intValue() != this.ownExpense.intValue()) {
+      FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", ipd.getNonApplDot().toString());
+      diffList.add(fd);
+    } else {
+      this.ownExpense = ipd.getNonApplDot();
+    }
+    
+    this.updateAt = new Date();
+  }
+
+  public void updateMR(OP_D opd, List<FILE_DIFF> diffList, CodeTableService codeTableService) {
+    if (diffList != null && !opd.getFuncType().equals(this.funcType)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "funcType", opd.getFuncType());
+      diffList.add(fd);
+      
+      FILE_DIFF fd2 = new FILE_DIFF(id, "funcTypeC", codeTableService.getDesc("FUNC_TYPE", opd.getFuncType()));
+      diffList.add(fd2);
+    } else {
+      this.funcType = opd.getFuncType();
+    }
+    
+    if (diffList != null && !opd.getRocId().equals(this.rocId)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "rocId", opd.getRocId());
+      diffList.add(fd);
+    } else {
+      this.rocId = opd.getRocId();
+    }
+    
+    if (diffList != null && !opd.getName().equals(this.name)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "name", opd.getName());
+      diffList.add(fd);
+    } else {
+      this.name = opd.getName();
+    }
+    
+    if (diffList != null && opd.getPrsnId() != null && !opd.getPrsnId().equals(this.prsnId)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "prsnId", opd.getPrsnId());
+      diffList.add(fd);
+    } else {
+      this.prsnId = opd.getPrsnId();
+    }
+    this.dataFormat = XMLConstant.DATA_FORMAT_OP;
+
+    if (opd.getFuncEndDate() != null && opd.getFuncEndDate().length() > 0) {
+      Date newDate = DateTool.convertChineseToYear(opd.getFuncEndDate());
+      if (this.mrDate != null && this.mrDate.getTime() != newDate.getTime()) {
+        SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+        FILE_DIFF fd = new FILE_DIFF(id, "outDate", sdf.format(newDate));
+        diffList.add(fd);        
+      } else {
+        this.mrEndDate = newDate;
+      }
+    } else if (opd.getFuncDate() != null && opd.getFuncDate().length() > 0) {
+      Date newDate = DateTool.convertChineseToYear(opd.getFuncDate());
+      if (this.mrDate != null && this.mrDate.getTime() != newDate.getTime()) {
+        SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+        FILE_DIFF fd = new FILE_DIFF(id, "inDate", sdf.format(newDate));
+        diffList.add(fd);        
+      } else {
+        this.mrDate = newDate;
+      }
+    }
+    
+    if (diffList != null && opd.getTotalDot() != null && opd.getTotalDot().intValue() != this.totalDot.intValue()) {
+      FILE_DIFF fd = new FILE_DIFF(id, "totalDot", opd.getTotalDot().toString());
+      diffList.add(fd);
+    } else {
+      this.totalDot = opd.getTotalDot();
+    }
+    
+    if (diffList != null && opd.getPrsnId() != null && !opd.getPrsnId().equals(this.prsnId)) {
+      FILE_DIFF fd = new FILE_DIFF(id, "prsnId", opd.getPrsnId());
+      diffList.add(fd);
+    } else {
+      this.prsnId = opd.getPrsnId();
+    }
+    
+    if (diffList != null && opd.getTotalApplDot() != null && opd.getTotalApplDot().intValue() != this.applDot) {
+      FILE_DIFF fd = new FILE_DIFF(id, "applDot", opd.getTotalApplDot().toString());
+      diffList.add(fd);
+    } else {
+      this.applDot = opd.getTotalApplDot();
+    }
+    if (diffList != null && (opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()) != this.ownExpense) {
+      FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", String.valueOf(opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()));
+      diffList.add(fd);
+    } else {
+      this.ownExpense = totalDot - applDot;
+    }
+    this.updateAt = new Date();
+  }
 }

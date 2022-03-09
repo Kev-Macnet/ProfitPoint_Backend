@@ -6,16 +6,17 @@ package tw.com.leadtek.nhiwidget.dao;
 import java.sql.Date;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 
-public interface OP_DDao extends JpaRepository<OP_D, Long> {
+public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExecutor<OP_D> {
 
   public List<OP_D> findByOptId(Long optId);
   
   public List<OP_D> findByMrId(Long mrId);
   
-  @Query(value = "SELECT SEQ_NO, ID, ROC_ID, FUNC_DATE, MR_ID FROM OP_D WHERE OPT_ID= ?1 ", nativeQuery = true)
+  @Query(value = "SELECT SEQ_NO, ID, ROC_ID, FUNC_DATE, MR_ID, ID_BIRTH_YMD FROM OP_D WHERE OPT_ID= ?1 ", nativeQuery = true)
   public List<Object[]> findByOptIdSimple(Long optId);
   
   @Query(value = "SELECT * FROM OP_D WHERE ID IN (SELECT D_ID FROM MR WHERE DATA_FORMAT = ?1 AND MR_DATE BETWEEN ?2 AND ?3) ", nativeQuery = true)
@@ -101,4 +102,14 @@ public interface OP_DDao extends JpaRepository<OP_D, Long> {
       "(SELECT (SUM(IP_D.APPL_DOT) + SUM(IP_D.PART_DOT)) AS IP_POINT FROM MR, IP_D " + 
       "WHERE MR_DATE >= ?3 AND MR_DATE <= ?4 AND IP_D.MR_ID = MR.ID) IP", nativeQuery = true)
   public List<Object[]> findAllPoint(Date sdate1, Date edate1, Date sdate2, Date edate2);
+  
+  /**
+   * 取得指定申報年月的所有OPD
+   * @param applYm
+   * @return
+   */
+  @Query(value = "SELECT * FROM OP_D WHERE MR_ID IN ("
+      + "SELECT id FROM mr WHERE APPL_YM =?1) ORDER BY CASE_TYPE , SEQ_NO", nativeQuery = true)
+  public List<OP_D> findByApplYM(String applYm);
+  
 }

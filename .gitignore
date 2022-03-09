@@ -12,7 +12,7 @@ bin
 src/main/resources/static
 ERROR
 DL
-UPLOAD
+download/
 gradle
 gradlew*
 bin/

@@ -215,6 +215,7 @@ public class ParametersService {
         list.add(ap);
       }
     }
+    result.setCount((int)total);
     result.setTotalPage(Utility.getTotalPage((int) total, perPage));
     result.setData(list);
     return result;
@@ -672,7 +673,7 @@ public class ParametersService {
       return "生效日重複";
     }
     list = parametersDao.findByNameOrderByStartDateDesc(name);
-    if (checkTimeOverwrite(list, startDate.getTime(), endDate.getTime(), 0)) {
+    if (checkTimeOverlap(list, startDate.getTime(), endDate.getTime(), 0)) {
       return "該時段有相同的參數設定";
     }
     // list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan(name, startDate,
@@ -718,7 +719,7 @@ public class ParametersService {
     }
     PARAMETERS p = optional.get();
     List<PARAMETERS> list = parametersDao.findByNameOrderByStartDateDesc(p.getName());
-    if (checkTimeOverwrite(list, pv.getSdate().getTime(), pv.getEdate().getTime(), pv.getId())) {
+    if (checkTimeOverlap(list, pv.getSdate().getTime(), pv.getEdate().getTime(), pv.getId())) {
       return "該時段有相同的參數設定";
     }
     p.setEndDate(pv.getEdate());
@@ -1037,22 +1038,58 @@ public class ParametersService {
       return "日期格式有誤";
     }
 
-    List<PARAMETERS> list = parametersDao.findByNameAndStartDate("SPR", sDate);
+    List<PARAMETERS> list = parametersDao.findByNameOrderByStartDateDesc("SPR");
     if (list != null && list.size() > 0) {
       for (PARAMETERS p : list) {
-        if (p.getId().longValue() != values.getId().longValue()) {
+        if (p.getId().longValue() == values.getId().longValue()) {
+          continue;
+        }
+        if (p.getStartDate().getTime() <= sDate.getTime()
+            && p.getEndDate().getTime() >= sDate.getTime()) {
+          return "生效日已有存在的DRG相關參數設定";
+        } else if (p.getStartDate().getTime() >= sDate.getTime()
+            && p.getEndDate().getTime() <= eDate.getTime()) {
+          return "生效日已有存在的DRG相關參數設定";
+        } else if (p.getStartDate().getTime() <= eDate.getTime()
+            && p.getEndDate().getTime() >= eDate.getTime()) {
           return "生效日已有存在的DRG相關參數設定";
         }
       }
     }
-    list = parametersDao.findByNameAndStartDateGreaterThanAndEndDateLessThan("SPR", sDate, eDate);
-    if (list != null && list.size() > 0) {
-      for (PARAMETERS p : list) {
-        if (p.getId().longValue() != values.getId().longValue()) {
-          return "生效日內已有存在的DRG相關參數設定";
-        }
-      }
-    }
+//    List<PARAMETERS> list = parametersDao.findByNameAndStartDate("SPR", sDate);
+//    if (list != null && list.size() > 0) {
+//      for (PARAMETERS p : list) {
+//        if (p.getId().longValue() != values.getId().longValue()) {
+//          return "生效日已有存在的DRG相關參數設定";
+//        }
+//      }
+//    }
+//    list = parametersDao.findByNameAndStartDateGreaterThanAndEndDateLessThan("SPR", sDate, eDate);
+//    if (list != null && list.size() > 0) {
+//      for (PARAMETERS p : list) {
+//        if (p.getId().longValue() != values.getId().longValue()) {
+//          return "生效日內已有存在的DRG相關參數設定";
+//        }
+//      }
+//    }
+//    
+//    list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan("SPR", eDate, eDate);
+//    if (list != null && list.size() > 0) {
+//      for (PARAMETERS p : list) {
+//        if (p.getId().longValue() != values.getId().longValue()) {
+//          return "生效日內已有存在的DRG相關參數設定";
+//        }
+//      }
+//    }
+//    
+//    list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan("SPR", sDate, sDate);
+//    if (list != null && list.size() > 0) {
+//      for (PARAMETERS p : list) {
+//        if (p.getId().longValue() != values.getId().longValue()) {
+//          return "生效日內已有存在的DRG相關參數設定";
+//        }
+//      }
+//    }
 
     Optional<PARAMETERS> optional = parametersDao.findById(values.getId());
     if (optional.isPresent()) {
@@ -1358,6 +1395,9 @@ public class ParametersService {
           orderList.add(cb.desc(root.get("startDate")));
           query.orderBy(orderList);
         }
+        // 需再加個 order by id，否則一有更新，資料顯示順序會和未更新時不一樣
+        orderList.add(cb.desc(root.get("id")));
+
         return query.getRestriction();
       }
     };
@@ -1390,6 +1430,12 @@ public class ParametersService {
 
   public String newHighRatioOrder(HighRatioOrder request, boolean isOrder) {
     int codeType = isOrder ? RareICDPayload.CODE_TYPE_ORDER : RareICDPayload.CODE_TYPE_DRUG;
+    if (request.getInhCode() != null) {
+      request.setInhCode(request.getInhCode().toUpperCase());
+    }
+    if (request.getCode() != null) {
+      request.setCode(request.getCode().toUpperCase());
+    }
     CODE_THRESHOLD db = request.toDB(codeType);
     if (db.getEndDate().before(db.getStartDate())) {
       return "失效日不可早於生效日！";
@@ -1397,8 +1443,13 @@ public class ParametersService {
     if (db.getEndDate().getTime() == db.getStartDate().getTime()) {
       return "失效日不可等於生效日！";
     }
-    List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeAndCodeOrderByStartDateDesc(
+    List<CODE_THRESHOLD> list = null;
+    if (request.getCode() == null) {
+      list = codeThresholdDao.findByCodeTypeAndInhCodeOrderByStartDateDesc(new Integer(codeType), request.getInhCode().toUpperCase());
+    } else {
+      list = codeThresholdDao.findByCodeTypeAndCodeOrderByStartDateDesc(
         new Integer(codeType), request.getCode().toUpperCase());
+    }
     if (checkTimeOverwrite(list, db, false)) {
       return isOrder ? "該時段有相同的應用比例偏高醫令！" : "該時段有相同的特別用量藥品、衛品！";
     }
@@ -1410,6 +1461,12 @@ public class ParametersService {
   }
 
   public String updateHighRatioOrder(HighRatioOrder request, boolean isOrder) {
+    if (request.getInhCode() != null) {
+      request.setInhCode(request.getInhCode().toUpperCase());
+    }
+    if (request.getCode() != null) {
+      request.setCode(request.getCode().toUpperCase());
+    }
     Optional<CODE_THRESHOLD> optional = codeThresholdDao.findById(request.getId());
     if (!optional.isPresent()) {
       return "id:" + request.getId() + "不存在";
@@ -1419,14 +1476,22 @@ public class ParametersService {
     if (db.getEndDate().before(db.getStartDate())) {
       return "失效日不可早於生效日！";
     }
-    List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeAndCodeOrderByStartDateDesc(
-        old.getCodeType(), request.getCode());
+    List<CODE_THRESHOLD> list = null;
+    if (request.getCode() == null) {
+      list = codeThresholdDao.findByCodeTypeAndInhCodeOrderByStartDateDesc(old.getCodeType(), request.getInhCode());
+    } else {
+      list = codeThresholdDao.findByCodeTypeAndCodeOrderByStartDateDesc(old.getCodeType(), request.getCode());
+    }
     if (checkTimeOverwrite(list, db, true)) {
       return "該時段有相同的應用比例偏高支付代碼";
     }
+    is.removeOldHighRatioMR(old, INTELLIGENT_REASON.HIGH_RATIO.value(), true);
     db.setUpdateAt(new Date());
     db = codeThresholdDao.save(db);
-    recalculateHighRatioAndOverAmount(db, isOrder);
+
+    if (db.getStatus() != null && db.getStatus().intValue() == 1) {
+      recalculateHighRatioAndOverAmount(db, isOrder);
+    }
     return null;
   }
   
@@ -1439,6 +1504,10 @@ public class ParametersService {
     ct.setStatus(enable ? 1 : 0);
     ct.setUpdateAt(new Date());
     ct = codeThresholdDao.save(ct);
+    if (!enable) {
+      is.removeOldHighRatioMR(ct, INTELLIGENT_REASON.HIGH_RATIO.value(), true);
+      return null;
+    }
     recalculateHighRatioAndOverAmount(ct, ct.getCodeType().intValue() == RareICDPayload.CODE_TYPE_ORDER);
     return null;
   }
@@ -1490,7 +1559,7 @@ public class ParametersService {
    * @param id
    * @return true:有重疊，false:無
    */
-  public boolean checkTimeOverwrite(List<PARAMETERS> list, long startDate, long endDate, long id) {
+  public boolean checkTimeOverlap(List<PARAMETERS> list, long startDate, long endDate, long id) {
     List<PARAMETERS> needProcessList = new ArrayList<PARAMETERS>();
     for (PARAMETERS p : list) {
       if (id > 0 && p.getId().longValue() == id) {
@@ -1500,8 +1569,12 @@ public class ParametersService {
         return true;
       }
       if (startDate >= p.getStartDate().getTime() && startDate <= p.getEndDate().getTime()) {
-        needProcessList.add(p);
-        continue;
+        if (id == 0) {
+          needProcessList.add(p);
+          continue;
+        } else {
+          return true;
+        }
       }
       if (endDate <= p.getEndDate().getTime() && endDate >= p.getStartDate().getTime()) {
         return true;
@@ -1608,7 +1681,8 @@ public class ParametersService {
         if (atc != null && atc.length() > 0) {
           predicate.add(cb.like(root.get("atc"), atc.toUpperCase() + "%"));
         } else {
-          predicate.add(cb.isNotNull(root.get("atc")));
+//          predicate.add(cb.isNotNull(root.get("atc")));
+          predicate.add(cb.greaterThanOrEqualTo(cb.length(root.get("atc")), 5));
         }
 
         if (predicate.size() > 0) {
@@ -1651,6 +1725,9 @@ public class ParametersService {
       return "id: " + id + " 不存在";
     }
     PAY_CODE pc = optional.get();
+    if (pc.getSameAtc() == null) {
+      pc.setSameAtc(0);
+    }
     if (pc.getSameAtc().intValue() == 0 && !enable) {
       // 都是 disable 狀態，不處理
       return null;
@@ -1705,6 +1782,8 @@ public class ParametersService {
           orderList.add(cb.desc(root.get("startDate")));
           orderList.add(cb.asc(root.get("inhCode")));
         }
+        // 需再加個 order by id，否則一有更新，資料顯示順序會和未更新時不一樣
+        orderList.add(cb.desc(root.get("id")));
         query.orderBy(orderList);
         return query.getRestriction();
       }
@@ -1814,6 +1893,7 @@ public class ParametersService {
     }
     
     cc.setCode(code);
+    // 1: 醫令/健保碼，2: ICD 診斷碼
     cc.setCodeType(new Integer(2));
     cc.setDataFormat(dataFormat);
     List<JsonSuggestion> queryList = redisService.query("ICD10-CM", code.toLowerCase(), false);
@@ -1868,9 +1948,9 @@ public class ParametersService {
           return;
         }
         if (codeConflict.getDataFormat().equals(mr.getDataFormat())) {
-          codeConflict.setStatus(new Integer(0));
-          codeConflictDao.save(codeConflict);
+          // 已無相同核刪條件病歷，故將該高風險診斷碼與健保碼組合刪除
           recalculateHighRisk(codeConflict, false, mr.getDataFormat());
+          codeConflictDao.deleteById(codeConflict.getId());
           return;
         }
       }
@@ -1988,7 +2068,7 @@ public class ParametersService {
           cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) -1);
         }
         do {
-          System.out.println(isOrder ?  "recalculateHighRatio :" : "recalculateOverAmount :" + adYM);
+          //System.out.println(isOrder ?  "recalculateHighRatio :" : "recalculateOverAmount :" + adYM);
           is.calculateHighRatioAndOverAmount(String.valueOf(adYM - 191100), ct, wordingHighRatioSingle, wordingHighRatioTotal,
               wordingHighRatio6M, wordingHighRatio1M, isOrder ? INTELLIGENT_REASON.HIGH_RATIO.value() : INTELLIGENT_REASON.OVER_AMOUNT.value());
           cal.add(Calendar.MONTH, 1);
@@ -2056,10 +2136,12 @@ public class ParametersService {
     if (!"1".equals(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "SAME_ATC"))) {
       return;
     }
+    if (payCode.getAtc() == null) {
+      return;
+    }
     int atcLen = "5".equals(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "SAME_ATC_LENGTH")) ? 5 : 7;
   
     String atc = payCode.getAtc();
-    System.out.println("atcLen=" + atcLen + ",atc=" + atc);
     List<PAY_CODE> payCodeList = null;
     if (atcLen == 5) {
       atc = payCode.getAtc().substring(0, atcLen);
@@ -2123,13 +2205,20 @@ public class ParametersService {
     thread.start();
   }
   
+  /**
+   * 計算所有病歷是否有因核刪而記錄的高風險ICD碼與醫令組合
+   * @param cc
+   * @param isEnable
+   * @param dataFormat
+   */
   public void recalculateHighRisk(CODE_CONFLICT cc, boolean isEnable, String dataFormat) {
-    String wording = parametersService.getOneValueByName("INTELLIGENT", "HIGH_RISK");
+    String wording = parametersService.getOneValueByName("INTELLIGENT", "HIGH_RISK_WORDING");
     
     Thread thread = new Thread(new Runnable() {
       
       @Override
       public void run() {
+        is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), true);
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.DAY_OF_MONTH, 1);
         
@@ -2158,6 +2247,7 @@ public class ParametersService {
           codeConflictDao.deleteById(cc.getId());
         }
         logger.info("recalculateCodeConflict " + cc.getCode() + " done");
+        is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), false);
       }
     });
     thread.start();

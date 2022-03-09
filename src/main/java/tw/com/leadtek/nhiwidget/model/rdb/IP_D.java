@@ -151,7 +151,7 @@ public class IP_D {
   @Column(name = "E_BED_DAY")
   @JsonProperty("E_BED_DAY")
   @JacksonXmlProperty(localName = "d14")
-  private Integer eBedDay;
+  private Integer ebedDay;
 
   /**
    * 慢性病床天數
@@ -159,7 +159,7 @@ public class IP_D {
   @Column(name = "S_BED_DAY")
   @JsonProperty("S_BED_DAY")
   @JacksonXmlProperty(localName = "d15")
-  private Integer sBedDay;
+  private Integer sbedDay;
 
   /**
    * 病患來源 
@@ -1116,29 +1116,29 @@ public class IP_D {
   /**
    * <d14> 急性病床天數
    */
-  public Integer getEBedDay() {
-    return eBedDay;
+  public Integer getEbedDay() {
+    return ebedDay;
   }
 
   /**
    * <d14> 急性病床天數
    */
-  public void setEBedDay(Integer E_BED_DAY) {
-    eBedDay = E_BED_DAY;
+  public void setEbedDay(Integer E_BED_DAY) {
+    ebedDay = E_BED_DAY;
   }
 
   /**
    * <d15> 慢性病床天數
    */
-  public Integer getSBedDay() {
-    return sBedDay;
+  public Integer getSbedDay() {
+    return sbedDay;
   }
 
   /**
    * <d15> 慢性病床天數
    */
-  public void setSBedDay(Integer S_BED_DAY) {
-    sBedDay = S_BED_DAY;
+  public void setSbedDay(Integer S_BED_DAY) {
+    sbedDay = S_BED_DAY;
   }
 
   /**

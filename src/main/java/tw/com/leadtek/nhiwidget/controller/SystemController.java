@@ -3,12 +3,18 @@
  */
 package tw.com.leadtek.nhiwidget.controller;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,9 +25,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -44,6 +54,7 @@ import tw.com.leadtek.nhiwidget.payload.system.FileManagementPayload;
 import tw.com.leadtek.nhiwidget.payload.system.ICD10ListResponse;
 import tw.com.leadtek.nhiwidget.payload.system.IntelligentConfig;
 import tw.com.leadtek.nhiwidget.payload.system.QuestionMarkPayload;
+import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
@@ -98,23 +109,25 @@ public class SystemController extends BaseController {
     
     Date startDate = null;
     Date endDate = null;
-    if (startDay != null && endDay != null) {
-      try {
-        SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
-          startDate = sdf.parse(startDay);
-          endDate = sdf.parse(endDay);
-          if (startDate.after(endDate)) {
-            DrgCodeListResponse result = new DrgCodeListResponse();
-            result.setMessage("啟始日不可大於結束日");
-            result.setResult("failed");
-            return ResponseEntity.badRequest().body(result);
-          }
-      } catch (ParseException e) {
+    try {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      if (startDay != null) {
+        startDate = sdf.parse(startDay);
+      }
+      if (endDay != null) {
+        endDate = sdf.parse(endDay);
+      }
+      if (startDate != null && endDate != null && startDate.after(endDate)) {
         DrgCodeListResponse result = new DrgCodeListResponse();
-        result.setMessage("日期格式有誤");
+        result.setMessage("啟始日不可大於結束日");
         result.setResult("failed");
         return ResponseEntity.badRequest().body(result);
       }
+    } catch (ParseException e) {
+      DrgCodeListResponse result = new DrgCodeListResponse();
+      result.setMessage("日期格式有誤");
+      result.setResult("failed");
+      return ResponseEntity.badRequest().body(result);
     }
     
     String column = orderBy;
@@ -350,11 +363,21 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "修改代碼品項資料", notes = "修改代碼品項資料")
   @PutMapping("/payCode")
   public ResponseEntity<BaseResponse> updatePayCode(@RequestBody PayCodePayload request) {
-    // @TODO 同一代碼的終止日要往前移
     if (request.getId() == null) {
       return returnAPIResult("id 不可為空值");
     }
+    if (request.getEndDate() == null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        request.setEndDate(sdf.parse(DateTool.MAX_DATE));
+      } catch (ParseException e) {
+        e.printStackTrace();
+      }
+    }
     PAY_CODE pc = request.toDB();
+    if (systemService.isTimeOverlapPayCode(pc)) {
+      return returnAPIResult("該時段有相同的代碼品項資料");
+    }
     PAY_CODE oldPayCode = systemService.getPayCode(pc);
     if (oldPayCode == null) {
       return returnAPIResult("代碼品項 code " + request.getCode() + " 不存在");
@@ -674,11 +697,101 @@ public class SystemController extends BaseController {
       reportService.calculateDRGMonthly(param);
     } else if ("Weekly".equals(name)) {
       Calendar cal = Calendar.getInstance();
-      cal.set(Calendar.YEAR, 2021);
-      cal.set(Calendar.MONTH, 10);
+      cal.set(Calendar.YEAR, 2018);
+      cal.set(Calendar.MONTH, 1);
       cal.set(Calendar.DAY_OF_MONTH, 1);
       reportService.calculatePointWeekly(cal);
     }
     return returnAPIResult(null);
   }
+  
+  @ApiOperation(value = "取得申報檔匯出進度", notes = "取得申報檔匯出進度")
+  @GetMapping("/filesStatus")
+  public ResponseEntity<BaseResponse> downloadFiles(){
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse result = new BaseResponse();
+      result.setMessage("無法取得登入狀態");
+      result.setResult("error");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    }
+
+    BaseResponse response = new BaseResponse();
+    response.setResult("success");
+    response.setMessage(systemService.getDownloadFiles(user.getId()));
+    return ResponseEntity.status(HttpStatus.OK).body(response);
+  }
+  
+  @ApiOperation(value = "匯出申報檔", notes = "匯出申報檔")
+  @GetMapping("/downloadXML")
+  public ResponseEntity<BaseResponse> downloadXML(@ApiParam(value = "資料格式，10:門急診，20:住院",
+        example = "10") @RequestParam(required = true) String dataFormat,
+      @ApiParam(value = "申報年，格式西元年 yyyy",
+        example = "2021") @RequestParam(required = false) String applY,
+      @ApiParam(value = "統計月份月，格式 M",
+        example = "1") @RequestParam(required = true) String applM,
+      @ApiParam(value = "申報日期，格式yyyy-MM-dd 或 yyyy/MM/dd",
+        example = "2022-02-24") @RequestParam(required = true) String applDate,
+      @ApiParam(value = "申報類別，1:送核，2:補報",
+        example = "1") @RequestParam(required = true) String applCategory,
+      @ApiParam(value = "申報方式，1:書面 2: 媒體 3: 連線",
+        example = "2") @RequestParam(required = true) String applMethod,
+      @ApiParam(value = "醫事類別:門診西醫、門診牙醫、門診中醫、住診西醫、門診洗腎",
+        example = "門診西醫") @RequestParam(required = true) String applMedic,
+      HttpServletResponse response) throws UnsupportedEncodingException {
+
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse result = new BaseResponse();
+      result.setMessage("無法取得登入狀態");
+      result.setResult("error");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    }
+
+    String filename = systemService.getDownloadXMLFilename(dataFormat, applY, applM);
+    try {
+      int progress = systemService.downloadXML(dataFormat, applY, applM, applDate, applCategory,
+          applMethod, applMedic, user.getId(), response);
+     
+      // 配置檔案下載
+      logger.info("downloadXML/" + filename + ":" + progress);
+      response.setCharacterEncoding("BIG5");
+    } catch (UnsupportedEncodingException e) {
+      logger.error("downloadSampleFile-", e);
+    } catch (IOException e) {
+      logger.error("downloadSampleFile-", e);
+    }
+
+    return null;
+  }
+  
+  @ApiOperation(value = "上傳XML申報檔", notes = "上傳XML申報檔")
+  @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "自定義表單檔案",
+      dataType = "file", required = true, example = "111-0.xml")})
+  @PostMapping(value = "/uploadXML")
+  public ResponseEntity<BaseResponse> uploadXML(
+      @ApiParam(name = "file", value = "自定義表單檔案", example = "111-0.xml") @RequestPart("file") MultipartFile file) {
+    logger.info("/uploadXML:" + file.getOriginalFilename() + "," + file.getSize());
+    if (file.isEmpty()) {
+      return ResponseEntity.ok(new BaseResponse("error", "error file"));
+    }
+
+    try {
+      String dirPath = systemService.checkDownloadDir();
+      String filepath =  (System.getProperty("os.name").toLowerCase().startsWith("windows")) ? dirPath + "\\" + file.getOriginalFilename() :
+        dirPath + "/" + file.getOriginalFilename();
+      File saveFile = new File(filepath);
+      file.transferTo(saveFile);
+      systemService.importFileThread(saveFile);
+    } catch (IOException e) {
+      logger.error("uploadXML-", e);
+    }
+//    if (result.get("success") != null) {
+//      return ResponseEntity.ok(result.get("success"));
+//    } else {
+//      return returnAPIResult(result.get("error"));
+//    }
+    return returnAPIResult(null);
+  }
+
 }

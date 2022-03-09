@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.GenClassFieldXMLTag;
 
 /**
@@ -601,12 +602,14 @@ public class GenerateSqlByClass {
   }
 
   public static void main(String[] args) {
-    GenerateSqlByClass gen = new GenerateSqlByClass("NWUSER");
-    gen.testNormalDistribution();
+    //GenerateSqlByClass gen = new GenerateSqlByClass("NWUSER");
+    testSub();
+    //gen.testNormalDistribution();
     // gen.generateSQL();
 
-    // gen.generateClassBySQL("D:\\Users\\2268\\2020\\健保點數申報\\src\\NWUSER-ALL-HANA.sql",
-    // "tw.com.leadtek.nhiwidget.model.rdb", "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
+    // 改用 generateClassByDB
+//     gen.generateClassBySQL("D:\\Users\\2268\\2020\\健保點數申報\\src\\NWUSER-ALL-HANA.sql",
+//     "tw.com.leadtek.nhiwidget.model.rdb", "D:\\Users\\2268\\2020\\健保點數申報\\src\\generateClass");
 
 //    gen.generateClassByDB(GenerateDocumentFromDB.HANA, "NWUSER", "10.10.5.31", 30041, "NWUSER",
 //        "Leadtek2021", "tw.com.leadtek.nhiwidget.model.rdb",
@@ -639,7 +642,7 @@ public class GenerateSqlByClass {
      // cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 3)));
      // cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(3, 5)) -1);
     
-      String s = ",123,";
+      String s = ",I10,K21.0,I25.10,I50.20,";
       String[] ss = s.split(",");
       for(int i=0;i<ss.length;i++) {
         System.out.println(i +":" + ss[i]);
@@ -652,5 +655,20 @@ public class GenerateSqlByClass {
     System.out.println("mean=" + nd.getMean() + ", numericalMean=" + nd.getNumericalMean() + ", numericalVariance=" + nd.getNumericalVariance() );
     double x = 22070;
     System.out.println(nd.cumulativeProbability(x));
+    
+    Date date = DateTool.convertChineseToYear("11001");
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(date);
+    cal.add(Calendar.DAY_OF_MONTH, -90);
+    Date firstDay = cal.getTime();
+    cal.add(Calendar.DAY_OF_MONTH, 90);
+    cal.add(Calendar.MONTH, 1);
+    cal.add(Calendar.DAY_OF_MONTH, -1);
+    cal.set(Calendar.HOUR_OF_DAY, 23);
+    cal.set(Calendar.MINUTE, 59);
+    cal.set(Calendar.SECOND, 59);
+    Date lastDay = cal.getTime();
+    System.out.println("firstDay=" + firstDay);
+    System.out.println("lastDay=" + lastDay);
   }
 }

@@ -47,7 +47,7 @@ public class RedisService {
   public static final String DATA_KEY = "ICD10-data";
   public static final String INDEX_KEY = "ICD10-index:";
   
-  @Value("${jwt.expiration}")
+  @Value("${project.jwt.expiration}")
   private String tokenExpiration;
   
   @Autowired
@@ -68,6 +68,12 @@ public class RedisService {
     }
     HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
     Set<String> rangeSet = (Set<String>) (Set<?>) redisTemplate.opsForZSet().range(INDEX_KEY + ss[0], 0, -1);
+    
+    //test
+//    for (String string : rangeSet) {
+//      System.out.println("rangeSet from:" + INDEX_KEY + ss[0] + "=" + string);
+//    }
+    
     List<String> values = hashOp.multiGet(DATA_KEY, rangeSet);
     List<JsonSuggestion> result = new ArrayList<JsonSuggestion>();
     int count = 0;
@@ -208,6 +214,7 @@ public class RedisService {
     }
   }
 
+  // @TODO 要改為讀取 redis 中的一個key
   public int getMaxId() {
     String key = RedisService.DATA_KEY;
     HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();

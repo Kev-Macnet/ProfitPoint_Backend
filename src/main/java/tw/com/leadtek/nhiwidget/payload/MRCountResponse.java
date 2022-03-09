@@ -64,7 +64,7 @@ public class MRCountResponse implements Serializable {
     all.setWaitProcess(ip.getWaitProcess().intValue() + op.getWaitProcess().intValue());
     all.setQuestionMark(ip.getQuestionMark().intValue() + op.getQuestionMark().intValue());
     all.setOptimized(ip.getOptimized().intValue() + op.getOptimized().intValue());
-    
+    all.setDontChange(ip.getDontChange().intValue() + op.getDontChange().intValue());
     all.setDrg(ip.getDrg().intValue() + op.getDrg().intValue());
   }
 

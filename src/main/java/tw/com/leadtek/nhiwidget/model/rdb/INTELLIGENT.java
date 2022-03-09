@@ -137,6 +137,13 @@ public class INTELLIGENT {
   @Column(name = "DATA_FORMAT", length = 2)
   @JsonIgnore
   private String dataFormat;
+  
+  /**
+   * 院內碼
+   */
+  @Column(name = "ROC_ID", length = 12)
+  @JsonIgnore
+  private String rocId;
 
   /**
    * 更新日期
@@ -383,6 +390,14 @@ public class INTELLIGENT {
 
   public void setDataFormat(String dataFormat) {
     this.dataFormat = dataFormat;
+  }
+
+  public String getRocId() {
+    return rocId;
+  }
+
+  public void setRocId(String rocId) {
+    this.rocId = rocId;
   }
   
 }

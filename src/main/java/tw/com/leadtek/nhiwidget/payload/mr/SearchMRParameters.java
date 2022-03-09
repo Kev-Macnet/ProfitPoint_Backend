@@ -692,6 +692,10 @@ public class SearchMRParameters extends HomepageParameters {
     }
     
     this.funcTypec = funcTypec;
+    if ("不分科".equals(funcTypec)) {
+      this.funcType = null;
+      this.funcTypec = null;
+    }
     this.prsnId = prsnId;
     this.prsnName = prsnName;
     this.pharId = pharId;

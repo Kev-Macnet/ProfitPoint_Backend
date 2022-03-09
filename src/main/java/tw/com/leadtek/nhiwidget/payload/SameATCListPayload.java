@@ -42,7 +42,7 @@ public class SameATCListPayload implements Serializable {
     code = pc.getCode();
     name = pc.getName();
     if (pc.getSameAtc() == null) {
-      status = true;
+      status = false;
     } else {
       status = pc.getSameAtc().intValue() == 1;
     }

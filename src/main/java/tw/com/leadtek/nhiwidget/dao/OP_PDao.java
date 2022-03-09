@@ -74,4 +74,14 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
   public Long countOrderByDrugNoAnd6ApplYm(String applYm1, String applYm2, String applYm3,
       String applYm4, String applYm5, String applYm6, String drugNo);
   
+  /**
+   * 取得指定申報年月的所有OPP
+   * @param applYm
+   * @param drugNo
+   * @return
+   */
+  @Query(value = "SELECT * FROM OP_P WHERE MR_ID IN ("
+      + "SELECT id FROM mr WHERE APPL_YM =?1) ORDER BY OPD_ID , ORDER_SEQ_NO DESC", nativeQuery = true)
+  public List<OP_P> findByApplYM(String applYm);
+  
 }

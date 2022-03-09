@@ -17,6 +17,9 @@ public class PlanConditionService {
     @Autowired
     private PlanConditionDao planConditionDao;
     
+    @Autowired
+    private IntelligentService is;
+    
     public java.util.Map<String, Object> findList(String searchName, int pageSize, int pageIndex,
             String sortField, String sortDirection) {
         long totalCount = planConditionDao.findListCount(searchName);
@@ -111,7 +114,7 @@ public class PlanConditionService {
                     cnt += planConditionDao.addNoExpIcdNo(new_id, icdNo);
                 }
             }
-            
+            is.calculatePilotProject(new_id, true);
         }
         return new_id;
     }

@@ -75,7 +75,7 @@ public class UserService {
   @Autowired
   private JwtUtils jwtUtils;
 
-  @Value("${jwt.afk}")
+  @Value("${project.jwt.afk}")
   private long afkTime;
 
   private HashMap<Long, DEPARTMENT> departmentHash;
@@ -333,7 +333,7 @@ public class UserService {
     } else if ("U".equals(role)) {
       list = userDao.findAccount();
     } else {
-      list = userDao.findByRoleOrderByDisplayName(ROLE_TYPE.DOCTOR.getRole());
+      list = userDao.findDoctor();
     }
     // 與查詢相關的部門id array
     List<Long> depId = getDepartmentIds(funcType, funcTypeC);
@@ -517,9 +517,6 @@ public class UserService {
     USER existUser = findUser(username);
     if (existUser == null) {
       return "帳號不存在";
-    }
-    if (existUser.getEmail() != null && !existUser.getEmail().equals(email)) {
-      return "email不正確";
     }
     String newPassword = generateCommonLangPassword();
     emailService.sendMail("忘記密碼-重設新密碼", existUser.getEmail(), "系統隨機產生密碼:" + newPassword);

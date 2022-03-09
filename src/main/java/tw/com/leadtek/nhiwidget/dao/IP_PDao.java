@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
@@ -87,4 +88,14 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
       nativeQuery = true)
   public Long countOrderByDrugNoAnd6ApplYm(String applYm1, String applYm2, String applYm3,
       String applYm4, String applYm5, String applYm6, String orderCode);
+  
+  /**
+   * 取得指定申報年月的所有OPP
+   * @param applYm
+   * @param drugNo
+   * @return
+   */
+  @Query(value = "SELECT * FROM IP_P WHERE MR_ID IN ("
+      + "SELECT id FROM mr WHERE APPL_YM =?1) ORDER BY IPD_ID , ORDER_SEQ_NO DESC", nativeQuery = true)
+  public List<IP_P> findByApplYM(String applYm);
 }

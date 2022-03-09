@@ -47,6 +47,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
       if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
         Claims claims = jwtUtils.getClaimsFromToken(jwt);
         String username = jwtUtils.getUsernameFromClaims(claims);
+        String displayName= jwtUtils.getDisplaynameFromClaims(claims);
         // 確認用戶是否要編輯病歷
 //        boolean isEditing = request.getRequestURI().indexOf("/nhixml/mr/") >= 0 && 
 //            ("POST".equals(request.getMethod()) || "PUT".equals(request.getMethod())) ||
@@ -57,10 +58,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         boolean isEditing = true;
         if (!userService.updateUserAlive(username, jwt, isEditing)) {
           response.sendError(HttpStatus.UNAUTHORIZED.value(), "token已失效");
+          return;
         }
         // UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         UserDetails userDetails =
-            userDetailsService.build(username, jwtUtils.getRoleFromClaims(claims), jwtUtils.getUserIdFromClaims(claims));
+            userDetailsService.build(username, jwtUtils.getRoleFromClaims(claims), jwtUtils.getUserIdFromClaims(claims), displayName);
         // for (GrantedAuthority authority : userDetails.getAuthorities()) {
         // logger.info("authority:" + authority.getAuthority());
         // }
@@ -72,6 +74,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authentication);
       } else if (isNeedAuthURL(request.getRequestURI())) {
         response.sendError(HttpStatus.UNAUTHORIZED.value(), "未登入");
+        return;
       }
     } catch (Exception e) {
       logger.error("Cannot set user authentication: {}", e);

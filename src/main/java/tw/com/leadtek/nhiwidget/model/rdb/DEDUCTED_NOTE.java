@@ -12,6 +12,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -154,7 +156,7 @@ public class DEDUCTED_NOTE implements Serializable{
 
   @ApiModelProperty(value = "編輯人員姓名", required = false)
   @Column(name = "EDITOR", length = 20)
-  @JsonIgnore
+  //@JsonIgnore
   private String editor;
 
   @ApiModelProperty(value = "是否有效，1:有效，0:無效(被刪除)", required = false)
@@ -164,9 +166,17 @@ public class DEDUCTED_NOTE implements Serializable{
 
   @ApiModelProperty(value = "更新日期", required = false)
   @Column(name = "UPDATE_AT")
-  //@JsonFormat(pattern = "yyyy/MM/dd HH:mm:ss", timezone = "GMT+8")
-  @JsonIgnore
+  @JsonFormat(pattern = "yyyy/MM/dd HH:mm:ss", timezone = "GMT+8")
+  //@JsonIgnore
   private Date updateAt;
+  
+  @ApiModelProperty(value = "修改記錄", required = false)
+  @Transient
+  private String record;
+  
+  @ApiModelProperty(value = "狀態", required = false)
+  @Transient
+  private String modifyStatus;
 
   /**
    * 序號
@@ -642,6 +652,22 @@ public class DEDUCTED_NOTE implements Serializable{
    */
   public void setUpdateAt(Date UPDATE_AT) {
     updateAt = UPDATE_AT;
+  }
+
+  public String getRecord() {
+    return record;
+  }
+
+  public void setRecord(String record) {
+    this.record = record;
+  }
+
+  public String getModifyStatus() {
+    return modifyStatus;
+  }
+
+  public void setModifyStatus(String modifyStatus) {
+    this.modifyStatus = modifyStatus;
   }
 
 }

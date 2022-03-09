@@ -1,3 +1,4 @@
+# front end : replace 59.120.139.60 to 59.120.139.62
 server:
   port: ${port:8081}
   tomcat:
@@ -77,17 +78,26 @@ spring:
       bytecode: 
         provider: javassist
         use_reflection_optimizer: true
-jwt:
-  secret: leadtek_NHIWidget
-# jwt expire time: 8 hours
-  expiration: 28800000
-# away from keyboard 時間，超過30分則刪除 jwt
-  afk: 1800000
-mail:
-  host: 59.120.139.196
-  port: 25
-  fromEmail: monitor@leadtek.com.tw
-  password: z5z8tah5
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+project:
+  jwt:
+    secret: leadtek_NHIWidget
+  # jwt expire time: 8 hours
+    expiration: 28800000
+  # away from keyboard 時間，超過30分則刪除 jwt
+    afk: 1800000
+  mail:
+    host: 59.120.139.196
+    port: 25
+    fromEmail: monitor@leadtek.com.tw
+    password: z5z8tah5
+  serverUrl: "http://59.120.139.62:8081/#/login?redir=warehouse/"
+  apiUrl: "http://59.120.139.62:8081/"
+  hospId: 1532011154
+  isMask: true
 swagger:
   enable: true
   application-name: 健保申保最佳化系統 API

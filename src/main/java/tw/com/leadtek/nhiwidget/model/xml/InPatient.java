@@ -7,23 +7,25 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import tw.com.leadtek.nhiwidget.model.rdb.IP_T;
 
 @JacksonXmlRootElement(localName = "inpatient")
 public class InPatient {
 
   @JsonProperty("tdata")
   @JacksonXmlElementWrapper(useWrapping = false)
-  private InPatientT tdata;
+  //private InPatientT tdata;
+  private IP_T tdata;
 
   @JsonProperty("ddata")
   @JacksonXmlElementWrapper(useWrapping = false)
   private List<InPatientDData> ddata;
 
-  public InPatientT getTdata() {
+  public IP_T getTdata() {
     return tdata;
   }
 
-  public void setTdata(InPatientT tdata) {
+  public void setTdata(IP_T tdata) {
     this.tdata = tdata;
   }
 

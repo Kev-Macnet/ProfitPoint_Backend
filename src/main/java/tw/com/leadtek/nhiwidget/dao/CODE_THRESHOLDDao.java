@@ -13,4 +13,6 @@ public interface CODE_THRESHOLDDao extends JpaRepository<CODE_THRESHOLD, Long>, 
   public List<CODE_THRESHOLD> findByCodeTypeOrderByStartDateDesc(Integer codeType);
   
   public List<CODE_THRESHOLD> findByCodeTypeAndCodeOrderByStartDateDesc(Integer codeType, String code);
+  
+  public List<CODE_THRESHOLD> findByCodeTypeAndInhCodeOrderByStartDateDesc(Integer codeType, String code);
 }

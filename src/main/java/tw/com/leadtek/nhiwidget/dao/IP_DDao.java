@@ -16,7 +16,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   public List<IP_D> findByMrId(Long mrid);
   
-  @Query(value =  "SELECT SEQ_NO ,ID ,ROC_ID, IN_DATE, MR_ID FROM IP_D WHERE IPT_ID=?1 ", nativeQuery = true)
+  @Query(value =  "SELECT SEQ_NO ,ID ,ROC_ID, IN_DATE, MR_ID, ID_BIRTH_YMD FROM IP_D WHERE IPT_ID=?1 ", nativeQuery = true)
   public List<Object[]> findByIptIdSimple(Long iptId);
   
   @Query(value = "SELECT * FROM IP_D WHERE ID IN (SELECT D_ID FROM MR WHERE DATA_FORMAT = ?1 AND MR_DATE BETWEEN ?2 AND ?3) ", nativeQuery = true)
@@ -82,4 +82,13 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
       "(SELECT (SUM(IP_D.MED_DOT) - SUM(IP_D.PART_DOT)) AS IP_POINT FROM MR, IP_D " + 
       "WHERE MR_DATE >= ?3 AND MR_DATE <= ?4 AND IP_D.MR_ID = MR.ID)", nativeQuery = true)
   public List<Object[]> findDRGAllPoint(Date sdate1, Date edate1, Date sdate2, Date edate2);
+  
+  /**
+   * 取得指定申報年月的所有OPD
+   * @param applYm
+   * @return
+   */
+  @Query(value = "SELECT * FROM IP_D WHERE MR_ID IN ("
+      + "SELECT id FROM mr WHERE APPL_YM =?1) ORDER BY CASE_TYPE , SEQ_NO", nativeQuery = true)
+  public List<IP_D> findByApplYM(String applYm);
 }

@@ -28,16 +28,16 @@ public class EMailService {
   
   private Logger logger = LogManager.getLogger();
 
-  @Value("${mail.host}")
+  @Value("${project.mail.host}")
   private String mailHost;
 
-  @Value("${mail.port}")
+  @Value("${project.mail.port}")
   private String mailPort;
   
-  @Value("${mail.fromEmail}")
+  @Value("${project.mail.fromEmail}")
   private String fromEmail;
   
-  @Value("${mail.password}")
+  @Value("${project.mail.password}")
   private String password;
   
   private MailContent mail;

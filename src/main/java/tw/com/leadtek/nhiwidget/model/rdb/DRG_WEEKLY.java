@@ -97,7 +97,7 @@ public class DRG_WEEKLY {
   @Column(name = "SECTION_A")
   @JsonIgnore
   private Long sectionA;
-
+  
   /**
    * DRG B1區件數
    */
@@ -120,6 +120,30 @@ public class DRG_WEEKLY {
   private Long sectionC;
 
   /**
+   * DRG A區點數
+   */
+  @Column(name = "POINT_A")
+  private Long pointA;
+  
+  /**
+   * DRG B1區點數
+   */
+  @Column(name = "POINT_B1")
+  private Long pointB1;
+  
+  /**
+   * DRG B2區點數
+   */
+  @Column(name = "POINT_B2")
+  private Long pointB2;
+  
+  /**
+   * DRG C區點數
+   */
+  @Column(name = "POINT_C")
+  private Long pointC;
+  
+  /**
    * 更新時間
    */
   @Column(name = "UPDATE_AT")
@@ -135,6 +159,10 @@ public class DRG_WEEKLY {
     this.sectionB1 = 0L;
     this.sectionB2 = 0L;
     this.sectionC = 0L;
+    this.pointA = 0L;
+    this.pointB1 = 0L;
+    this.pointB2 = 0L;
+    this.pointC = 0L;
     this.updateAt = new Date();
   }
   
@@ -346,6 +374,38 @@ public class DRG_WEEKLY {
    */
   public void setUpdateAt(Date UPDATE_AT) {
     updateAt = UPDATE_AT;
+  }
+
+  public Long getPointA() {
+    return pointA;
+  }
+
+  public void setPointA(Long pointA) {
+    this.pointA = pointA;
+  }
+
+  public Long getPointB1() {
+    return pointB1;
+  }
+
+  public void setPointB1(Long pointB1) {
+    this.pointB1 = pointB1;
+  }
+
+  public Long getPointB2() {
+    return pointB2;
+  }
+
+  public void setPointB2(Long pointB2) {
+    this.pointB2 = pointB2;
+  }
+
+  public Long getPointC() {
+    return pointC;
+  }
+
+  public void setPointC(Long pointC) {
+    this.pointC = pointC;
   }
 
 }

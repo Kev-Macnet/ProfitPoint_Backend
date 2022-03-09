@@ -386,8 +386,8 @@ public class ImportSASData {
     ipD.setOutDate(ss[IPDTE_OUT_DATE]);
     ipD.setApplStartDate(ss[IPDTE_APPL_START_DATE]);
     ipD.setApplEndDate(ss[IPDTE_APPL_END_DATE]);
-    ipD.setEBedDay(Integer.parseInt(ss[IPDTE_E_BED_DAY]));
-    ipD.setSBedDay(Integer.parseInt(ss[IPDTE_S_BED_DAY]));
+    ipD.setEbedDay(Integer.parseInt(ss[IPDTE_E_BED_DAY]));
+    ipD.setSbedDay(Integer.parseInt(ss[IPDTE_S_BED_DAY]));
     ipD.setCaseDrgCode(ss[IPDTE_CASE_DRG_CODE]);
     ipD.setTranCode(ss[IPDTE_TRAN_CODE]);
     ipD.setIcdCm1(ss[IPDTE_ICD_CM_1]);

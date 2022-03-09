@@ -204,4 +204,34 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "SELECT MR.* FROM MR,  DEDUCTED_NOTE dn WHERE MR.ID = dn.ID AND DEDUCTED_ORDER=?1 "
       + "AND MR.ICDCM1 =?2 AND dn.STATUS = 1 AND MR.DATA_FORMAT =?3 AND MR.ID <> ?4", nativeQuery = true)
   public List<MR> getSameDeductedOrderMR(String order, String icdcm, String dataFormat, Long mrId);
+  
+  /**
+   * 應用比例偏高：取得單月某院內碼使用總數量
+   * @param applYm
+   * @param inhCode
+   * @return
+   */
+  @Query(value = "SELECT COUNT(1) FROM MR WHERE APPL_YM =?1 AND DATA_FORMAT = ?2 AND INH_CODE LIKE ?3", nativeQuery = true)
+  public Long countByApplYmAndDataFormatAndInhCode(String applYm, String dataFormat, String inhCode);
+  
+  /**
+   * 應用比例偏高：取得六個月院內碼使用總數量
+   * 
+   * @param applYm
+   * @param inhCode
+   * @return
+   */
+  @Query(
+      value = "SELECT COUNT(1) FROM MR WHERE (APPL_YM = ?1 OR APPL_YM = ?2 OR APPL_YM = ?3 "
+          + "OR APPL_YM = ?4 OR APPL_YM = ?5 OR APPL_YM = ?6 ) AND DATA_FORMAT = ?7 AND INH_CODE LIKE ?8",
+      nativeQuery = true)
+  public Long countBy6ApplYmAndDataFormatAndInhCode(String applYm1, String applYm2, String applYm3,
+      String applYm4, String applYm5, String applYm6, String dataFormat, String inhCode);
+  
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE MR SET STATUS=?1 WHERE STATUS=?2 AND ID IN "
+      + "(SELECT MR_ID FROM INTELLIGENT WHERE CONDITION_CODE=?3 AND REASON_CODE=?4 AND REASON=?5)", nativeQuery = true)
+  public void updateMrStatusByIntelligent(int newStatus, int oldStatus, int conditionCode, String reasonCode, String reason);
+  
 }

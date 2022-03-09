@@ -42,6 +42,8 @@ public class JwtUtils {
   private static final String CLAIM_KEY_ROLE = "role";
 
   private static final String CLAIM_KEY_USER_IP = "uip";
+  
+  private static final String CLAIM_KEY_DISPLAY_NAME = "dis";
 
   private static final SecretKey KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
@@ -53,7 +55,7 @@ public class JwtUtils {
 
   private String jwtSecret;
 
-  @Value("${jwt.expiration}")
+  @Value("${project.jwt.expiration}")
   private Long jwtExpirationMs;
 
   public String generateJwtToken(Authentication authentication) {
@@ -70,6 +72,7 @@ public class JwtUtils {
     claims.put(CLAIM_KEY_USERNAME, userPrincipal.getUsername());
     claims.put(CLAIM_KEY_USER_ID, userPrincipal.getId());
     claims.put(CLAIM_KEY_ROLE, userPrincipal.getRole());
+    claims.put(CLAIM_KEY_DISPLAY_NAME, userPrincipal.getDisplayName());
     // claims.put(CLAIM_KEY_USER_IP, clientIP);
     return Jwts.builder().setClaims(claims)
         .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs)).signWith(KEY)
@@ -100,8 +103,12 @@ public class JwtUtils {
     return claims.getSubject();
   }
   
-  public Long getUserIdFromClaims(Claims claims)  throws ExpiredJwtException, SignatureException {
+  public Long getUserIdFromClaims(Claims claims) throws ExpiredJwtException, SignatureException {
     return ((Double) claims.get(CLAIM_KEY_USER_ID)).longValue();
+  }
+  
+  public String getDisplaynameFromClaims(Claims claims) throws ExpiredJwtException, SignatureException {
+    return (String) claims.get(CLAIM_KEY_DISPLAY_NAME);
   }
   
   /**

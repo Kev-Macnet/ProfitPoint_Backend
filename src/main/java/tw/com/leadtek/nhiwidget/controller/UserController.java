@@ -88,10 +88,8 @@ public class UserController extends BaseController {
   @PutMapping("/auth/forgetPassword")
   public ResponseEntity<BaseResponse> forgetPassword(
       @ApiParam(name = "username", value = "登入帳號",
-          example = "test") @RequestParam(required = true) String username,
-      @ApiParam(name = "email", value = "email",
-          example = "test@test.com") @RequestParam(required = true) String email) {
-    String result = userService.forgetPassword(username, email);
+          example = "test") @RequestParam(required = true) String username) {
+    String result = userService.forgetPassword(username, null);
     if (result == null) {
       return returnAPIResult(null);
     } else
@@ -232,7 +230,7 @@ public class UserController extends BaseController {
             loginRequest.getUsername(), loginRequest.getPassword()));
 
     USER user = userService.findUser(loginRequest.getUsername());
-    if (user != null && user.getStatus().intValue() == 0) {
+    if (user != null && user.getStatus() != null && user.getStatus().intValue() == 0) {
       JwtResponse jwt = new JwtResponse();
       return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN); 
     }

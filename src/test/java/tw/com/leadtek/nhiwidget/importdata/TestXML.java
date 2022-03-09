@@ -116,37 +116,6 @@ public class TestXML {
     return sb.toString();
   }
 
-//  private void outputFile(Object obj, String filename) {
-//    StringWriter stringWriter = new StringWriter();
-//    XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newFactory();
-//    try {
-//      XMLStreamWriter sw = xmlOutputFactory.createXMLStreamWriter(stringWriter);
-//      XmlMapper xmlMapper = new XmlMapper();
-//      // 空的 tag 不輸出
-//      xmlMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-//      xmlMapper.enable(SerializationFeature.INDENT_OUTPUT);
-//      sw.writeStartDocument("Big5", "1.0");
-//      xmlMapper.writeValue(sw, obj);
-//      sw.writeEndDocument();
-//      String xml = stringWriter.toString();
-//
-//      BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(
-//          "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\醫療費用點數申報格式與說明_版1090813\\上傳格式作業說明\\"
-//              + filename),
-//          "UTF-8"));
-//      bw.write(xml);
-//      bw.close();
-//    } catch (UnsupportedEncodingException e) {
-//      e.printStackTrace();
-//    } catch (FileNotFoundException e) {
-//      e.printStackTrace();
-//    } catch (XMLStreamException e) {
-//      e.printStackTrace();
-//    } catch (IOException e) {
-//      e.printStackTrace();
-//    }
-//  }
-
   public void TestSimpleXML() {
     ObjectMapper xmlMapper = new XmlMapper();
     xmlMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
@@ -179,10 +148,10 @@ public class TestXML {
    */
   private String checkOP(OutPatient op) {
     StringBuffer sb = new StringBuffer();
-    if (!XMLConstant.DATA_FORMAT_OP.equals(op.getTdata().getDATA_FORMAT())) {
-      sb.append("t1 資料格式有誤，應為" + XMLConstant.DATA_FORMAT_OP + "," + op.getTdata().getDATA_FORMAT());
-      sb.append("\r\n");
-    }
+//    if (!XMLConstant.DATA_FORMAT_OP.equals(op.getTdata().getDATA_FORMAT())) {
+//      sb.append("t1 資料格式有誤，應為" + XMLConstant.DATA_FORMAT_OP + "," + op.getTdata().getDATA_FORMAT());
+//      sb.append("\r\n");
+//    }
 
     return sb.toString();
   }
@@ -197,9 +166,9 @@ public class TestXML {
     sb.append("t1 資料格式:門診");
     sb.append("\r\n");
 
-    sb.append("t2 服務機構代號:" + op.getTdata().getHOSP_ID());
+    //sb.append("t2 服務機構代號:" + op.getTdata().getHOSP_ID());
     sb.append("\r\n");
-    sb.append("t3 費用年月:" + op.getTdata().getFEE_YM());
+    //sb.append("t3 費用年月:" + op.getTdata().getFEE_YM());
     return sb.toString();
   }
 

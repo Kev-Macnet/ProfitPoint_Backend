@@ -70,9 +70,9 @@ public class HighRatioOrderListPayload extends RareICDListPayload implements Ser
     }  else if ("20".equals(ct.getDataFormat())) {
       ip = true;
     }
+    inhCode = ct.getInhCode();
     status = ct.getStatus() != null && ct.getStatus().intValue() == 1;
   }
-
 
   public String getInhCode() {
     return inhCode;

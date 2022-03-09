@@ -111,7 +111,9 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
       result.setId(id);
     }
     result.setCodeType(new Integer(codeType));
-    result.setCode(code.toUpperCase());
+    if (code != null) {
+      result.setCode(code.toUpperCase());
+    }
     result.setDescChi(name);
 
     result.setStartDate(sdate);
@@ -279,6 +281,22 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
 
   public void setCodeType(Integer codeType) {
     this.codeType = codeType;
+  }
+
+  public String getInhCode() {
+    return inhCode;
+  }
+
+  public void setInhCode(String inhCode) {
+    this.inhCode = inhCode;
+  }
+
+  public String getInhName() {
+    return inhName;
+  }
+
+  public void setInhName(String inhName) {
+    this.inhName = inhName;
   }
 
 }

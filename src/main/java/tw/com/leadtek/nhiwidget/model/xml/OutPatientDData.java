@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import tw.com.leadtek.nhiwidget.model.rdb.DHead;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 
 @JsonPropertyOrder({"dhead", "dbody"})
 //@Document(collection = "OP_d")
@@ -24,7 +25,8 @@ public class OutPatientDData implements Serializable {
   private DHead dhead;
 
   @JsonProperty("dbody")
-  private OutPatientD dbody;
+  //private OutPatientD dbody;
+  private OP_D dbody;
   
   @JsonIgnore
   private String tid;
@@ -37,11 +39,11 @@ public class OutPatientDData implements Serializable {
     this.dhead = dhead;
   }
 
-  public OutPatientD getDbody() {
+  public OP_D getDbody() {
     return dbody;
   }
 
-  public void setDbody(OutPatientD dbody) {
+  public void setDbody(OP_D dbody) {
     this.dbody = dbody;
   }
 

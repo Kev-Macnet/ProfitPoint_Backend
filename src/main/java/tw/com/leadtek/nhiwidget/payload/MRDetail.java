@@ -3,6 +3,8 @@
  */
 package tw.com.leadtek.nhiwidget.payload;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import io.swagger.annotations.ApiModel;
@@ -295,6 +297,21 @@ public class MRDetail extends MR {
   
   @ApiModelProperty(value = "錯誤訊息", required = false)
   protected String error;
+  
+  @ApiModelProperty(value = "有差異的欄位名稱", required = false)
+  protected List<String> diffFields;
+  
+  @ApiModelProperty(value = "有差異的特定治療項目位置，起始為0", required = false)
+  protected List<Integer> diffCureItems;
+  
+  @ApiModelProperty(value = "有差異的診斷代碼位置，起始為0", required = false)
+  protected List<Integer> diffIcdCM;
+  
+  @ApiModelProperty(value = "有差異的手術(處置)代碼位置，起始為0", required = false)
+  protected List<Integer> diffIcdOP;
+  
+  @ApiModelProperty(value = "有差異的醫令位置，起始為0", required = false)
+  protected List<Integer> diffMos;
   
   public MRDetail() {
     
@@ -1065,6 +1082,46 @@ public class MRDetail extends MR {
   public void setHint(List<String> hint) {
     this.hint = hint;
   }
+  
+  public List<String> getDiffFields() {
+    return diffFields;
+  }
+
+  public void setDiffFields(List<String> diffFields) {
+    this.diffFields = diffFields;
+  }
+
+  public List<Integer> getDiffCureItems() {
+    return diffCureItems;
+  }
+
+  public void setDiffCureItems(List<Integer> diffCureItems) {
+    this.diffCureItems = diffCureItems;
+  }
+
+  public List<Integer> getDiffIcdCM() {
+    return diffIcdCM;
+  }
+
+  public void setDiffIcdCM(List<Integer> diffIcdCM) {
+    this.diffIcdCM = diffIcdCM;
+  }
+
+  public List<Integer> getDiffIcdOP() {
+    return diffIcdOP;
+  }
+
+  public void setDiffIcdOP(List<Integer> diffIcdOP) {
+    this.diffIcdOP = diffIcdOP;
+  }
+
+  public List<Integer> getDiffMos() {
+    return diffMos;
+  }
+
+  public void setDiffMos(List<Integer> diffMos) {
+    this.diffMos = diffMos;
+  }
 
   /**
    * 將table OP_D 的資料寫到MRDetail object
@@ -1166,8 +1223,8 @@ public class MRDetail extends MR {
     this.outDate = ipd.getOutDate();
     this.applSDate = ipd.getApplStartDate();
     this.applEDate = ipd.getApplEndDate();
-    this.sBedDay = ipd.getSBedDay();
-    this.eBedDay = ipd.getEBedDay();
+    this.sBedDay = ipd.getSbedDay();
+    this.eBedDay = ipd.getEbedDay();
     this.patientSource = CodeTableService.getDesc(cts, "IP_PATIENT_SOURCE", ipd.getPatientSource());
     this.cardSeqNo = ipd.getCardSeqNo();
     this.twDrgCode = CodeTableService.getDesc(cts, "DRG",ipd.getTwDrgCode());
@@ -1285,6 +1342,13 @@ public class MRDetail extends MR {
     }
     if (funcEndDate != null && funcEndDate.length() > 0 ) {
       funcEndDate = DateTool.convertChineseToADWithSlash(funcEndDate);
+      if ("10".equals(dataFormat)) {
+        SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+        try {
+          mrEndDate =  sdf.parse(funcEndDate);
+        } catch (ParseException e) {
+        }
+      }
     }
     if (applSDate != null && applSDate.length() > 0) {
       applSDate = DateTool.convertChineseToADWithSlash(applSDate);
@@ -1303,7 +1367,7 @@ public class MRDetail extends MR {
     }
   }
   
-  public static void updateIcdAll(MR mr) {
+  public static boolean updateIcdAll(MR mr) {
     StringBuffer sb = new StringBuffer(",");
     if (mr.getIcdcm1() != null) {
       sb.append(mr.getIcdcm1());
@@ -1322,10 +1386,17 @@ public class MRDetail extends MR {
       sb.append(mr.getIcdpcs());
     }
     if (sb.length() > 1) {
+      if (sb.toString().equals(mr.getIcdAll())) {
+        return false;
+      }
       mr.setIcdAll(sb.toString());
     } else {
+      if (mr.getIcdAll() == null) {
+        return false;
+      }
       mr.setIcdAll(null);
     }
+    return true;
   }
   
   public static void updateCodeAllIP(MR mr, List<IP_P> ippList) {
@@ -1354,7 +1425,7 @@ public class MRDetail extends MR {
     }
   }
   
-  public static void updateIcdcmOtherIP(MR mr, IP_D ipd) {
+  public static boolean updateIcdcmOtherIP(MR mr, IP_D ipd) {
     StringBuffer sb = new StringBuffer(",");
     appendString(sb, ipd.getIcdCm2());
     appendString(sb, ipd.getIcdCm3());
@@ -1376,8 +1447,19 @@ public class MRDetail extends MR {
     appendString(sb, ipd.getIcdCm19());
     appendString(sb, ipd.getIcdCm20());
     if (sb.length() > 1) {
+      if (sb.toString().equals(mr.getIcdcmOthers())) {
+        // 未異動
+        return false;
+      }
       mr.setIcdcmOthers(sb.toString());
+    } else {
+      if (mr.getIcdcmOthers() == null) {
+        // 未異動
+        return false;
+      }
+      mr.setIcdcmOthers(null);
     }
+    return true;
   }
   
   public static void appendString(StringBuffer sb, String s) {
@@ -1387,7 +1469,7 @@ public class MRDetail extends MR {
     }
   }
     
-  public static void updateIcdpcsIP(MR mr, IP_D ipd) {
+  public static boolean updateIcdpcsIP(MR mr, IP_D ipd) {
     StringBuffer sb = new StringBuffer(",");
     appendString(sb, ipd.getIcdOpCode1());
     appendString(sb, ipd.getIcdOpCode2());
@@ -1410,8 +1492,17 @@ public class MRDetail extends MR {
     appendString(sb, ipd.getIcdOpCode19());
     appendString(sb, ipd.getIcdOpCode20());
     if (sb.length() > 1) {
+      if (sb.toString().equals(mr.getIcdpcs())) {
+        return false;
+      }
       mr.setIcdpcs(sb.toString());
+    } else {
+      if (mr.getIcdpcs() == null) {
+        return false;
+      }
+      mr.setIcdpcs(null);
     }
+    return true;
   }
   
   public static void updateIcdcmOtherOP(MR mr, OP_D opd) {

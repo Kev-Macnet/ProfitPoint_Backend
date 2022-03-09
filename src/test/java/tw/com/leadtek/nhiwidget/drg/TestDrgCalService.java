@@ -8,10 +8,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import javax.persistence.Tuple;
-import javax.persistence.TupleElement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Ignore;
@@ -40,12 +37,12 @@ import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
 import tw.com.leadtek.nhiwidget.payload.MO;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
+import tw.com.leadtek.nhiwidget.payload.intelligent.PilotProject;
 import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
-import tw.com.leadtek.tools.HttpClientUtil;
 import tw.com.leadtek.tools.SendHTTP;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -122,7 +119,7 @@ public class TestDrgCalService {
 
       int applDot =
           drgCalService.getApplDot(drg, ipd.getMedDot(), ipd.getPartDot(), ipd.getNonApplDot(),
-              mr.getId(), ipd.getEBedDay() + ipd.getSBedDay(), ipd.getTranCode(), isInCase20);
+              mr.getId(), ipd.getEbedDay() + ipd.getSbedDay(), ipd.getTranCode(), isInCase20);
       if (applDot != ipd.getApplDot().intValue()) {
         System.out.println("id=" + ipd.getId() + "," + applDot + "<>" + ipd.getApplDot() + ",Fix="
             + drg.getFixed() + ",upper=" + drg.getUlimit() + ", lower=" + drg.getLlimit());
@@ -204,12 +201,12 @@ public class TestDrgCalService {
     }
   }
 
-  @Ignore
+  //@Ignore
   @Test
   public void calculateWeekly() {
     // start date : 2019/01/01
     Calendar cal = Calendar.getInstance();
-    cal.set(Calendar.YEAR, 2021);
+    cal.set(Calendar.YEAR, 2018);
     cal.set(Calendar.MONTH, 10);
     cal.set(Calendar.DAY_OF_MONTH, 1);
     reportService.calculatePointWeekly(cal);
@@ -258,7 +255,7 @@ public class TestDrgCalService {
     iptDao.save(ipt);
   }
   
-  //@Ignore
+  @Ignore
   @Test
   public void initOPMRICD() {
     Calendar cal = Calendar.getInstance();
@@ -598,5 +595,23 @@ public class TestDrgCalService {
 //    for (Tuple tuple : list) {
 //      System.out.println(tuple.get(0) + "," + tuple.get(1));
 //    }
+  }
+  
+  @Ignore
+  @Test
+  public void testPlanCondition() {
+    PilotProject pp = is.getPilotProject(14L);
+    System.out.println("name=" + pp.getName());
+    for(int i=0;i<pp.getIcd().size();i++) {
+      System.out.println(pp.getIcd().get(i) + "," + pp.getDays() +"," + pp.getTimes());  
+    }
+    is.calculatePilotProject(14L, true);
+  }
+  
+  @Ignore
+  @Test
+  public void testPilotProject(){
+    is.calculatePilotProject(17L, true);
+    is.calculatePilotProject(18L, true);
   }
 }
