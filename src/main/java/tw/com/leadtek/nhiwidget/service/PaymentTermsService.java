@@ -101,17 +101,23 @@ public class PaymentTermsService {
      }
     
     public void correctEndDate(String category) {
-        int idx;
+        java.util.List<Map<String, Object>> lstNhiNo = paymentTermsDao.findByGroupNhiNo(category, 1);
+        for (Map<String, Object> item : lstNhiNo) { //nhi_no, category
+//            System.out.println("nhi_no = "+item.get("nhi_no").toString()+", "+item.get("category").toString());
+            correctEndDateByNhiNo(item.get("nhi_no").toString(), item.get("category").toString());
+        }
+    }
+    
+    public void correctEndDateByNhiNo(String nhiNo, String category) {
         long nextStartDate, endDate;
         java.util.Map<String, Object> nxetMap;
         java.util.List<Map<String, Object>> lstData;
-        java.util.List<Map<String, Object>> lstFeeNo = paymentTermsDao.findByGroupFeeNoCategory(1, category);
-        for (Map<String, Object> feeNo : lstFeeNo) { //nhi_no, category
-//            System.out.println("nhi_no = "+feeNo.get("nhi_no").toString()+", "+feeNo.get("category").toString());
-            lstData = paymentTermsDao.findByFeeNoCategory(feeNo.get("nhi_no").toString(), feeNo.get("category").toString());
-            idx = 1;
+        if (nhiNo.length()>0) {
+            lstData = paymentTermsDao.findByNhiNoCategory(nhiNo, category);
+            int idx = 1;
+            long dataLen = lstData.size();
             for (Map<String, Object> item : lstData) {
-                if (idx<(lstData.size())) {
+                if (idx < dataLen) {
                     nxetMap = lstData.get(idx);
                     nextStartDate = (long)nxetMap.get("start_date");
                     if (item.get("end_date")==null) {
@@ -120,9 +126,9 @@ public class PaymentTermsService {
                         endDate = (long)item.get("end_date");
                     }
                     java.util.Date prevDay = new java.util.Date(nextStartDate-(86400*1000));
-//                    System.out.println("   end_date="+Utility.dateFormat(new Date(endDate),"yyyy-MM-dd")+", "
-//                            +Utility.dateFormat(new Date(nextStartDate),"yyyy-MM-dd")+", "
-//                            +Utility.dateFormat(prevDay,"yyyy-MM-dd"));
+//                        System.out.println("   end_date="+Utility.dateFormat(new Date(endDate),"yyyy-MM-dd")+", "
+//                                +Utility.dateFormat(new Date(nextStartDate),"yyyy-MM-dd")+", "
+//                                +Utility.dateFormat(prevDay,"yyyy-MM-dd"));
                     if (nextStartDate<endDate) {
                         paymentTermsDao.updateEndDate((long)item.get("id"), prevDay);
                     }

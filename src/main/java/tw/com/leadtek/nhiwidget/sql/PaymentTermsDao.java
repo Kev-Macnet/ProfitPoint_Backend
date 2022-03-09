@@ -650,14 +650,14 @@ public class PaymentTermsDao extends BaseSqlDao {
     }
 
     //===
-    public java.util.List<Map<String, Object>> findByGroupFeeNoCategory(int lim, String category) {
+    public java.util.List<Map<String, Object>> findByGroupNhiNo(String category, int lim) {
         String sql;
         sql = "Select *\r\n"
-                + "FROM (Select NHI_NO, CATEGORY, Count(*) as CNT\r\n"
+                + "FROM (Select NHI_NO, Count(*) as CNT\r\n"
                 + "      From PT_PAYMENT_TERMS\r\n"
                 + "      Where (NHI_NO IS NOT null)\r\n"
                 + "       -- and (CATEGORY='%s')"
-                + "      Group By NHI_NO, CATEGORY)\r\n"
+                + "      Group By NHI_NO)\r\n"
                 + "Where (CNT>%d)\n"
                 + "Order By 2";
         sql = String.format(sql, noInjection(category), lim);
@@ -672,13 +672,17 @@ public class PaymentTermsDao extends BaseSqlDao {
         }
     }
     
-    public java.util.List<Map<String, Object>> findByFeeNoCategory(String feeNo, String category) {
+    public java.util.List<Map<String, Object>> findByNhiNoCategory(String nhiNo, String category) {
         String sql;
-        sql = "Select ID, START_DATE, END_DATE, NHI_NO, CATEGORY\r\n"
+        sql = "Select ID, START_DATE, END_DATE, FEE_NO, NHI_NO, CATEGORY\r\n"
                 + "From PT_PAYMENT_TERMS\r\n"
-                + "Where (NHI_NO='%s')and(CATEGORY='%s')\r\n"
+                + "Where (NHI_NO='%s')\n"
+                + "   -- and(CATEGORY='%s')\r\n"
                 + "Order BY START_DATE";
-        sql = String.format(sql, noInjection(feeNo), noInjection(category));
+        sql = String.format(sql, noInjection(nhiNo), noInjection(category));
+        if (category.length()>0) {
+            sql = sql.replace("-- and(CATEGORY=", " and(CATEGORY=");
+        }
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.listLowerCase(lst);

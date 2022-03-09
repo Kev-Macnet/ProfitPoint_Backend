@@ -97,7 +97,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -127,7 +128,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -204,7 +206,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -234,7 +237,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -311,7 +315,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -341,7 +346,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -418,7 +424,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -448,7 +455,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -525,7 +533,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status==0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -555,7 +564,8 @@ public class E2101cControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             if (status>0) {
-                paymentTermsService.correctEndDate(params.getCategory());
+//                paymentTermsService.correctEndDate(params.getCategory());
+                paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
