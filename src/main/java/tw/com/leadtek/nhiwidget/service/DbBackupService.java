@@ -828,7 +828,8 @@ public class DbBackupService {
     
     public String getBackupPath() {
         java.io.File fcurrent = new java.io.File("");
-        String currentPath = fcurrent.getAbsolutePath()+"/";
+        String separator = (System.getProperty("os.name").toLowerCase().startsWith("windows")) ? "\\" : "/" ;
+        String currentPath = fcurrent.getAbsolutePath()+separator;
         String backupPath = currentPath+"backup_data/";
         return (backupPath);
     }
