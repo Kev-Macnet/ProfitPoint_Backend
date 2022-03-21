@@ -60,8 +60,8 @@ public class IntelligentController extends BaseController {
         example = "A123456789") @RequestParam(required = false) String prsnId,
       @ApiParam(name = "prsnName", value = "醫護姓名",
         example = "王小明") @RequestParam(required = false) String prsnName,
-      @ApiParam(name = "code", value = "搜尋支付標準代碼",
-        example = "") @RequestParam(required = false) String code,
+      @ApiParam(name = "orderCode", value = "搜尋支付標準代碼",
+        example = "") @RequestParam(required = false) String orderCode,
       @ApiParam(name = "inhCode", value = "搜尋院內碼",
         example = "") @RequestParam(required = false) String inhCode,
       @ApiParam(name = "icd", value = "搜尋診斷碼",
@@ -135,6 +135,6 @@ public class IntelligentController extends BaseController {
     }
     return ResponseEntity.ok(
         intelligentService.getIntelligent(user, menu, startDate, endDate, minPoints, maxPoints, funcType,
-            funcTypec, prsnId, prsnName, code, inhCode, icd, reason, column, asc, perPageInt, page));
+            funcTypec, prsnId, prsnName, orderCode, inhCode, icd, reason, column, asc, perPageInt, page));
   }
 }

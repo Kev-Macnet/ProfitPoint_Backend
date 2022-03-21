@@ -10,6 +10,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.persistence.EntityManager;
+import javax.persistence.Tuple;
+import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaBuilder.In;
 import javax.persistence.criteria.CriteriaQuery;
@@ -42,6 +45,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentRecord;
 import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentResponse;
 import tw.com.leadtek.nhiwidget.payload.intelligent.PilotProject;
+import tw.com.leadtek.nhiwidget.payload.mr.HomepageParameters;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.Utility;
@@ -83,6 +87,9 @@ public class IntelligentService {
   
   // 存放目前是否有智能提示助理正在處理，避免同時跑造成server loading過高
   private static HashMap<Integer, Boolean> runningIntelligent = new HashMap<Integer, Boolean>();
+  
+  @Autowired
+  private EntityManager em;
 
   public IntelligentResponse getIntelligent(UserDetailsImpl user, String menu, Date sDate, Date eDate,
       Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
@@ -97,34 +104,12 @@ public class IntelligentService {
       public Predicate toPredicate(Root<INTELLIGENT> root, CriteriaQuery<?> query,
           CriteriaBuilder cb) {
 
-        List<Predicate> predicate = new ArrayList<Predicate>();
-        if (sDate != null && eDate != null) {
-          // predicate.add(cb.and(cb.between(root.get("startDate"), sDate, eDate),
-          // cb.between(root.get("endDate"), sDate, eDate)));
-          predicate.add(cb.and(cb.between(root.get("startDate"), sDate, eDate)));
-        }
-        if (minPoints != null) {
-          predicate.add(cb.greaterThanOrEqualTo(root.get("applDot"), minPoints));
-        }
-        if (maxPoints != null) {
-          predicate.add(cb.lessThanOrEqualTo(root.get("applDot"), maxPoints));
-        }
-        addPredicate(root, predicate, cb, "prsnId", prsnId, true, false);
-        addPredicate(root, predicate, cb, "funcType", funcType, true, false);
-        addPredicate(root, predicate, cb, "funcTypec", funcTypec, true, false);
-        addPredicate(root, predicate, cb, "prsnName", prsnName, true, false);
-        addPredicate(root, predicate, cb, "code", code, true, false);
-        addPredicate(root, predicate, cb, "inhCode", inhCode, true, false);
-        addPredicate(root, predicate, cb, "icd", icd, true, false);
-        // baseRule(固定條件判斷)，clincal(臨床路徑差異)，suspected(疑似職傷與異常就診記錄判斷)，drgSuggestion(DRG申報建議)
+        List<Predicate> predicate =
+            getIntelligentPredicate(cb, root, query, menu, sDate, eDate, minPoints, maxPoints,
+                funcType, funcTypec, prsnId, prsnName, code, inhCode, icd, reason);
         if (reason != null) {
-          addPredicate(root, predicate, cb, "conditionCode", reason.toString(), true, true);
-        } else if ("baseRule".equals(menu)) {
-          predicate.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.VIOLATE.value(), INTELLIGENT_REASON.HIGH_RISK.value()));
-        } else if ("clincal".equals(menu)) {
-          predicate.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.COST_DIFF.value(), INTELLIGENT_REASON.IP_DAYS.value()));
+          addPredicate(root, predicate, cb, "conditionCode", reason.toString(), true, true, false);
         }
-        predicate.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
 
@@ -153,35 +138,79 @@ public class IntelligentService {
     result.setTotalPage(Utility.getTotalPage(result.getCount(), perPage));
     result.setData(list);
 
-    List<Object[]> groupByList = intelligentDao.countGroupByConditionCode();
-    for (Object[] obj : groupByList) {
-      if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.HIGH_RATIO.value()) {
-        result.setHighRatio(((BigInteger) obj[1]).intValue());
-      } else if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.HIGH_RISK.value()) {
-        result.setHighRisk(((BigInteger) obj[1]).intValue());
-      } else if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.INFECTIOUS.value()) {
-        result.setInfectious(((BigInteger) obj[1]).intValue());
-      } else if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.INH_OWN_EXIST.value()) {
-        result.setInhOwnExist(((BigInteger) obj[1]).intValue());
-      } else if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.MATERIAL.value()) {
-        result.setMaterial(((BigInteger) obj[1]).intValue());
-      } else if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.OVER_AMOUNT.value()) {
-        result.setOverAmount(((BigInteger) obj[1]).intValue());
-      } else if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.PILOT_PROJECT.value()) {
-        result.setPilotProject(((BigInteger) obj[1]).intValue());
-      } else if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.RARE_ICD.value()) {
-        result.setRareIcd(((BigInteger) obj[1]).intValue());
-      } else if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.SAME_ATC.value()) {
-        result.setSameAtc(((BigInteger) obj[1]).intValue());
-      } else if (((Integer) obj[0]).intValue() == INTELLIGENT_REASON.VIOLATE.value()) {
-        result.setViolate(((BigInteger) obj[1]).intValue());
+    List<Tuple> tuples = groupByConditionCode(menu, sDate, eDate, minPoints, maxPoints,
+        funcType, funcTypec, prsnId, prsnName, code, inhCode, icd, reason);
+    for (Tuple tuple : tuples) {
+      int value = (tuple.get(1) instanceof Long) ? ((Long) tuple.get(1)).intValue()
+          : ((Integer) tuple.get(1)).intValue();
+      if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.VIOLATE.value()) {
+        result.setViolate(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.HIGH_RATIO.value()) {
+        result.setHighRatio(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.HIGH_RISK.value()) {
+        result.setHighRisk(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.INFECTIOUS.value()) {
+        result.setInfectious(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.INH_OWN_EXIST.value()) {
+        result.setInhOwnExist(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.MATERIAL.value()) {
+        result.setMaterial(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.OVER_AMOUNT.value()) {
+        result.setOverAmount(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.PILOT_PROJECT.value()) {
+        result.setPilotProject(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.RARE_ICD.value()) {
+        result.setRareIcd(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.SAME_ATC.value()) {
+        result.setSameAtc(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.COST_DIFF.value()) {
+        result.setCostDiff(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.ORDER_DIFF.value()) {
+        result.setOrderDiff(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.ORDER_DRUG.value()) {
+        result.setOrderDrug(value);
+      } else if (((Integer) tuple.get(0)).intValue() == INTELLIGENT_REASON.IP_DAYS.value()) {
+        result.setIpDays(value);
       }
     }
     return result;
   }
+  
+  private List<Predicate> getIntelligentPredicate( CriteriaBuilder cb, Root<INTELLIGENT> root, CriteriaQuery<?> query, 
+      String menu, Date sDate, Date eDate,
+      Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
+      String prsnName, String code, String inhCode, String icd, Integer reason){
+    List<Predicate> result = new ArrayList<Predicate>();
+    if (sDate != null && eDate != null) {
+      // predicate.add(cb.and(cb.between(root.get("startDate"), sDate, eDate),
+      // cb.between(root.get("endDate"), sDate, eDate)));
+      result.add(cb.and(cb.between(root.get("startDate"), sDate, eDate)));
+    }
+    if (minPoints != null) {
+      result.add(cb.greaterThanOrEqualTo(root.get("applDot"), minPoints));
+    }
+    if (maxPoints != null) {
+      result.add(cb.lessThanOrEqualTo(root.get("applDot"), maxPoints));
+    }
+    addPredicate(root, result, cb, "prsnId", prsnId, true, false, false);
+    addPredicate(root, result, cb, "funcType", funcType, true, false, false);
+    addPredicate(root, result, cb, "funcTypec", funcTypec, true, false, false);
+    addPredicate(root, result, cb, "prsnName", prsnName, true, false, false);
+    addPredicate(root, result, cb, "code", code, true, false, true);
+    addPredicate(root, result, cb, "inhCode", inhCode, true, false, true);
+    addPredicate(root, result, cb, "icd", icd, true, false, true);
+    // baseRule(固定條件判斷)，clincal(臨床路徑差異)，suspected(疑似職傷與異常就診記錄判斷)，drgSuggestion(DRG申報建議)
+    if ("baseRule".equals(menu)) {
+      result.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.VIOLATE.value(), INTELLIGENT_REASON.HIGH_RISK.value()));
+    } else if ("clincal".equals(menu)) {
+      result.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.COST_DIFF.value(), INTELLIGENT_REASON.IP_DAYS.value()));
+    }
+    result.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
+    return result;
+  }
 
   private void addPredicate(Root<?> root, List<Predicate> predicate, CriteriaBuilder cb,
-      String paramName, String params, boolean isAnd, boolean isInteger) {
+      String paramName, String params, boolean isAnd, boolean isInteger, boolean prefixPercent) {
     if (params == null || params.length() == 0) {
       return;
     }
@@ -189,7 +218,11 @@ public class IntelligentService {
       if (isInteger) {
         predicate.add(cb.equal(root.get(paramName), params));
       } else {
-        predicate.add(cb.like(root.get(paramName), params + "%"));
+        if (prefixPercent) {
+          predicate.add(cb.like(root.get(paramName), "%," + params + "%"));
+        } else {
+          predicate.add(cb.like(root.get(paramName), params + "%"));
+        }
       }
     } else {
       String[] ss = params.split(" ");
@@ -198,7 +231,11 @@ public class IntelligentService {
         if (isInteger) {
           predicates.add(cb.equal(root.get(paramName), ss[i]));
         } else {
-          predicates.add(cb.like(root.get(paramName), ss[i] + "%"));
+          if (prefixPercent) {
+            predicates.add(cb.like(root.get(paramName), "%," + ss[i] + "%"));
+          } else {
+            predicates.add(cb.like(root.get(paramName), ss[i] + "%"));
+          }
         }
       }
       Predicate[] pre = new Predicate[predicates.size()];
@@ -208,6 +245,23 @@ public class IntelligentService {
         predicate.add(cb.or(predicates.toArray(pre)));
       }
     }
+  }
+  
+  public List<Tuple> groupByConditionCode(String menu, Date sDate, Date eDate,
+      Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
+      String prsnName, String code, String inhCode, String icd, Integer reason) {
+    CriteriaBuilder cb = em.getCriteriaBuilder();
+    CriteriaQuery<Tuple> query = cb.createTupleQuery();
+    Root<INTELLIGENT> root = query.from(INTELLIGENT.class);
+
+    query.select(cb.tuple(root.get("conditionCode"), cb.count(root)));
+    List<Predicate> predicate = getIntelligentPredicate(cb, root, query, menu, sDate, eDate, minPoints, maxPoints,
+            funcType, funcTypec, prsnId, prsnName, code, inhCode, icd, reason);
+ 
+    Predicate[] pre = new Predicate[predicate.size()];
+    query.where(predicate.toArray(pre)).groupBy(root.get("conditionCode"));
+    TypedQuery<Tuple> typedQuery = em.createQuery(query);
+    return typedQuery.getResultList();
   }
   
   /**
@@ -1396,7 +1450,7 @@ public class IntelligentService {
         predicate.add(cb.between(root.get("mrDate"), firstDay, lastDay));
         predicate.add(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP));
         String parameterName = "icdcm1";
-        addPredicate(root, predicate, cb, parameterName, sb.toString(), false, false);
+        addPredicate(root, predicate, cb, parameterName, sb.toString(), false, false, false);
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
 

@@ -47,6 +47,18 @@ public class IntelligentResponse extends BasePageResponse implements Serializabl
   @ApiModelProperty(value = "高風險診斷碼與健保碼組合病歷數", example = "3", required = false)
   private Integer highRisk = 0;
   
+  @ApiModelProperty(value = "臨床路徑差異-費用差異", example = "3", required = false)
+  private Integer costDiff = 0;
+  
+  @ApiModelProperty(value = "臨床路徑差異-醫療行為差異", example = "3", required = false)
+  private Integer orderDiff = 0;
+  
+  @ApiModelProperty(value = "臨床路徑差異-用藥差異", example = "3", required = false)
+  private Integer orderDrug = 0;
+  
+  @ApiModelProperty(value = "臨床路徑差異-住院天數差異", example = "3", required = false)
+  private Integer ipDays = 0;
+  
   public IntelligentResponse() {
     
   }
@@ -137,6 +149,38 @@ public class IntelligentResponse extends BasePageResponse implements Serializabl
 
   public void setHighRisk(Integer highRisk) {
     this.highRisk = highRisk;
+  }
+
+  public Integer getCostDiff() {
+    return costDiff;
+  }
+
+  public void setCostDiff(Integer costDiff) {
+    this.costDiff = costDiff;
+  }
+
+  public Integer getOrderDiff() {
+    return orderDiff;
+  }
+
+  public void setOrderDiff(Integer orderDiff) {
+    this.orderDiff = orderDiff;
+  }
+
+  public Integer getOrderDrug() {
+    return orderDrug;
+  }
+
+  public void setOrderDrug(Integer orderDrug) {
+    this.orderDrug = orderDrug;
+  }
+
+  public Integer getIpDays() {
+    return ipDays;
+  }
+
+  public void setIpDays(Integer ipDays) {
+    this.ipDays = ipDays;
   }
   
 }
