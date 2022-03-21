@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
+import tw.com.leadtek.nhiwidget.dao.CODE_CONFLICTDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_THRESHOLDDao;
 import tw.com.leadtek.nhiwidget.dao.INTELLIGENTDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
@@ -73,14 +74,17 @@ public class IntelligentService {
 
   @Autowired
   private IP_PDao ippDao;
-
+  
+  @Autowired
+  private CODE_CONFLICTDao codeConflictDao;
+  
   @Autowired
   private PlanConditionService planConditionService;
   
   // 存放目前是否有智能提示助理正在處理，避免同時跑造成server loading過高
   private static HashMap<Integer, Boolean> runningIntelligent = new HashMap<Integer, Boolean>();
 
-  public IntelligentResponse getIntelligent(UserDetailsImpl user, Date sDate, Date eDate,
+  public IntelligentResponse getIntelligent(UserDetailsImpl user, String menu, Date sDate, Date eDate,
       Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
       String prsnName, String code, String inhCode, String icd, Integer reason, String orderBy,
       Boolean asc, int perPage, int page) {
@@ -112,8 +116,13 @@ public class IntelligentService {
         addPredicate(root, predicate, cb, "code", code, true, false);
         addPredicate(root, predicate, cb, "inhCode", inhCode, true, false);
         addPredicate(root, predicate, cb, "icd", icd, true, false);
+        // baseRule(固定條件判斷)，clincal(臨床路徑差異)，suspected(疑似職傷與異常就診記錄判斷)，drgSuggestion(DRG申報建議)
         if (reason != null) {
           addPredicate(root, predicate, cb, "conditionCode", reason.toString(), true, true);
+        } else if ("baseRule".equals(menu)) {
+          predicate.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.VIOLATE.value(), INTELLIGENT_REASON.HIGH_RISK.value()));
+        } else if ("clincal".equals(menu)) {
+          predicate.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.COST_DIFF.value(), INTELLIGENT_REASON.IP_DAYS.value()));
         }
         predicate.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
         Predicate[] pre = new Predicate[predicate.size()];
@@ -202,22 +211,6 @@ public class IntelligentService {
   }
   
   /**
-   * 開啟或關閉罕見ICD應用
-   * @param isEnable
-   */
-  public void calculateRareICD(boolean isEnable) {
-    List<CODE_THRESHOLD> list = ctDao.findByCodeTypeOrderByStartDateDesc(1);
-    String wording1M = parametersService.getOneValueByName("INTELLIGENT", "RARE_ICD_1M");
-    String wording6M = parametersService.getOneValueByName("INTELLIGENT", "RARE_ICD_6M");
-    for (CODE_THRESHOLD ct : list) {
-      if (ct.getStatus().intValue() == 0) {
-        continue;
-      }
-     // calculateRareICD(chineseYm, ct, wording1M, wording6M);
-    }
-  }
-
-  /**
    * 計算指定年月的罕見ICD次數是否超過設定值
    * 
    * @param chineseYm
@@ -271,15 +264,15 @@ public class IntelligentService {
    * @param wording
    */
   private void processRareICDBy6Month(String chineseYm, String dataFormat, CODE_THRESHOLD ct,
-      int overLimit, String wording) {
+      int max, String wording) {
     Calendar cal = DateTool.chineseYmToCalendar(chineseYm);
     int avg = get6MAvgByCode(dataFormat, cal, ct.getCode(), true);
     List<MR> list = getMRByCode(dataFormat, String.valueOf(chineseYm), "icdAll", ct.getCode(),
-        avg + overLimit, false);
+        avg + max, false);
     if (list != null) {
       int over = list.size() - avg;
       for (MR mr : list) {
-        String reason = (wording != null) ? String.format(wording, ct.getCode(), over) : null;
+        String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
         insertIntelligent(mr, INTELLIGENT_REASON.RARE_ICD.value(), ct.getCode(), reason,
             ct.getStatus().intValue() == 1);
       }
@@ -511,6 +504,15 @@ public class IntelligentService {
     return mrDao.findAll(spec);
   }
 
+  /**
+   * 寫入/刪除智能提示案件
+   * @param mr MR table 的病歷
+   * @param conditionCode 智能提示代碼
+   * @param reasonCode ICD診斷碼/醫令
+   * @param reason 提示文字
+   * @param enable true:新增，false:移除
+   * @return
+   */
   public boolean insertIntelligent(MR mr, int conditionCode, String reasonCode, String reason,
       boolean enable) {
     List<INTELLIGENT> list = null;
@@ -520,8 +522,7 @@ public class IntelligentService {
     } else {
       list = intelligentDao.findByMrIdAndConditionCodeAndReasonCode(mr.getId(), conditionCode, reasonCode);
     }
-    // System.out.println("insertIntelligent " + reasonCode + ",enable=" + enable + ",list size=" +
-    // list.size());
+  
     if (enable && (list == null || list.size() == 0)) {
       INTELLIGENT ig = new INTELLIGENT();
       ig.setApplDot(mr.getApplDot());
@@ -549,7 +550,7 @@ public class IntelligentService {
     } else if (list != null) {
       for (INTELLIGENT intelligent : list) {
         if (enable) {
-          if (!intelligent.getReason().equals(reason)) {
+          if (intelligent.getReason() != null && !intelligent.getReason().equals(reason)) {
             mr.setStatus(MR_STATUS.WAIT_CONFIRM.value());
             mrDao.updateMrStauts(MR_STATUS.WAIT_CONFIRM.value(), mr.getId());
             intelligent.setReason(reason);
@@ -622,7 +623,7 @@ public class IntelligentService {
     }
     return false;
   }
-
+  
   /**
    * 計算指定年月的法定傳染病病歷.
    * 
@@ -646,7 +647,7 @@ public class IntelligentService {
       }
     }
   }
-
+  
   /**
    * 計算指定年月應用比例偏高的病歷
    * 
@@ -752,12 +753,6 @@ public class IntelligentService {
       }
     }
     return null;
-  }
-
-  private void removeIntelligent(int conditionCode, String reasonCode, String reason) {
-    mrDao.updateMrStatusByIntelligent(MR_STATUS.NO_CHANGE.value(), MR_STATUS.WAIT_CONFIRM.value(),
-        conditionCode, reasonCode, reason);
-    intelligentDao.deleteIntelligent(conditionCode, reasonCode, reason);
   }
 
   /**
@@ -986,26 +981,26 @@ public class IntelligentService {
       String reason = (wordingHighRatioSingle != null)
           ? String.format(wordingHighRatioSingle, code, old.getOpTimes().intValue())
           : null;
-      removeIntelligent(INTELLIGENT_REASON.HIGH_RATIO.value(), code, reason);
+      parametersService.deleteIntelligent(conditionCode, code, reason);
     }
     if (old.getIpTimesStatus() != null && old.getIpTimesStatus().intValue() == 1) {
       String reason = (wordingHighRatioSingle != null)
           ? String.format(wordingHighRatioSingle, code, old.getIpTimes().intValue())
           : null;
-      removeIntelligent(INTELLIGENT_REASON.HIGH_RATIO.value(), code, reason);
+      parametersService.deleteIntelligent(conditionCode, code, reason);
     }
 
     if (old.getOpTimesDStatus() != null && old.getOpTimesDStatus().intValue() == 1) {
       String reason = (wordingHighRatioTotal != null)
           ? String.format(wordingHighRatioTotal, code, old.getOpTimesD().intValue())
           : null;
-      removeIntelligent(INTELLIGENT_REASON.HIGH_RATIO.value(), code, reason);
+      parametersService.deleteIntelligent(conditionCode, code, reason);
     }
     if (old.getIpTimesDStatus() != null && old.getIpTimesDStatus().intValue() == 1) {
       String reason = (wordingHighRatioTotal != null)
           ? String.format(wordingHighRatioTotal, code, old.getIpTimesD().intValue())
           : null;
-      removeIntelligent(INTELLIGENT_REASON.HIGH_RATIO.value(), code, reason);
+      parametersService.deleteIntelligent(conditionCode, code, reason);
     }
 
     if (old.getOpTimesMStatus() != null && old.getOpTimesMStatus().intValue() == 1) {
@@ -1013,26 +1008,26 @@ public class IntelligentService {
       String reason = (wordingHighRatio1M != null)
           ? String.format(wordingHighRatio1M, code, old.getOpTimesM().intValue())
           : null;
-      removeIntelligent(INTELLIGENT_REASON.HIGH_RATIO.value(), code, reason);
+      parametersService.deleteIntelligent(conditionCode, code, reason);
     }
     if (old.getIpTimesMStatus() != null && old.getIpTimesMStatus().intValue() == 1) {
       // 單月申報總數量是否高於上限
       String reason = (wordingHighRatio1M != null)
           ? String.format(wordingHighRatio1M, code, old.getIpTimesM().intValue())
           : null;
-      removeIntelligent(INTELLIGENT_REASON.HIGH_RATIO.value(), code, reason);
+      parametersService.deleteIntelligent(conditionCode, code, reason);
     }
     if (old.getIpTimes6mStatus() != null && old.getIpTimes6mStatus().intValue() == 1) {
       String reason = (wordingHighRatio6M != null)
           ? String.format(wordingHighRatio6M, code, old.getOpTimes6m().intValue())
           : null;
-      removeIntelligent(INTELLIGENT_REASON.HIGH_RATIO.value(), code, reason);
+      parametersService.deleteIntelligent(conditionCode, code, reason);
     }
     if (old.getOpTimes6mStatus() != null && old.getOpTimes6mStatus().intValue() == 1) {
       String reason = (wordingHighRatio6M != null)
           ? String.format(wordingHighRatio6M, code, old.getIpTimes6m().intValue())
           : null;
-      removeIntelligent(INTELLIGENT_REASON.HIGH_RATIO.value(), code, reason);
+      parametersService.deleteIntelligent(conditionCode, code, reason);
     }
   }
 
@@ -1141,7 +1136,7 @@ public class IntelligentService {
       }
     }
   }
-
+  
   public void calculateSameATC(String chineseYm, List<String> payCodelist, String atcCode,
       String wording) {
     List<MR> list = getMRByPayCodes(chineseYm, payCodelist);
@@ -1153,25 +1148,39 @@ public class IntelligentService {
   }
 
   public void calculateSameATCDisable(List<String> payCodeList, String atcCode) {
-    List<MR> list = mrDao.getIntelligentMR(INTELLIGENT_REASON.SAME_ATC.value(), atcCode + "%");
-    System.out.println("intelligent size:" + list.size());
-    if (list != null) {
-      for (MR mr : list) {
-        int count = 0;
-        for (String str : payCodeList) {
-          if (mr.getCodeAll().indexOf("," + str + ",") > -1) {
-            count++;
-          }
-          if (count > 1) {
-            break;
-          }
-        }
-        if (count < 2) {
-          // 不符合同性質藥物條件，因此移除
-          insertIntelligent(mr, INTELLIGENT_REASON.SAME_ATC.value(), atcCode, null, false);
-        }
+    parametersService.deleteIntelligent(INTELLIGENT_REASON.SAME_ATC.value(), atcCode, null);
+//    List<MR> list = mrDao.getIntelligentMR(INTELLIGENT_REASON.SAME_ATC.value(), atcCode + "%");
+//    if (list != null) {
+//      for (MR mr : list) {
+//        int count = 0;
+//        for (String str : payCodeList) {
+//          if (mr.getCodeAll().indexOf("," + str + ",") > -1) {
+//            count++;
+//          }
+//          if (count > 1) {
+//            break;
+//          }
+//        }
+//        if (count < 2) {
+//          // 不符合同性質藥物條件，因此移除
+//          insertIntelligent(mr, INTELLIGENT_REASON.SAME_ATC.value(), atcCode, null, false);
+//        }
+//      }
+//    }
+  }
+  
+  /**
+   * 找出符合收案條件的病歷或移除收案條件的病歷
+   */
+  public void calculatePilotProjectByThread(Long planConditionId, boolean isEnable) {
+    Thread thread = new Thread(new Runnable() {
+
+      @Override
+      public void run() {
+        calculatePilotProject(planConditionId, isEnable);
       }
-    }
+    });
+    thread.start();
   }
 
   /**
@@ -1179,15 +1188,25 @@ public class IntelligentService {
    */
   public void calculatePilotProject(Long planConditionId, boolean isEnable) {
     PilotProject pp = getPilotProject(planConditionId);
+    if (pp.getIcd() == null || pp.getIcd().size() == 0) {
+      return;
+    }
+    if (!isEnable) {
+      parametersService.deleteIntelligent(INTELLIGENT_REASON.PILOT_PROJECT.value(), planConditionId.toString(), null);
+      return;
+    }
+    parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.PILOT_PROJECT.value());
+    setIntelligentRunning(INTELLIGENT_REASON.PILOT_PROJECT.value(), true);
     String wording = parametersService.getOneValueByName("INTELLIGENT", "PILOT_PROJECT_TIPS");
     // 抓最近三個月
     Calendar cal = Calendar.getInstance();
     cal.set(Calendar.DAY_OF_MONTH, 1);
-    processPilotProject(String.valueOf(DateTool.getChineseYm(cal)), pp, wording, isEnable);
-    cal.add(Calendar.MONTH, -1);
-    processPilotProject(String.valueOf(DateTool.getChineseYm(cal)), pp, wording, isEnable);
-    cal.add(Calendar.MONTH, -1);
-    processPilotProject(String.valueOf(DateTool.getChineseYm(cal)), pp, wording, isEnable);
+    
+    for(int i=1; i<24; i++) {
+      processPilotProject(String.valueOf(DateTool.getChineseYm(cal)), pp, wording, isEnable);
+      cal.add(Calendar.MONTH, -i);
+    }
+    setIntelligentRunning(INTELLIGENT_REASON.PILOT_PROJECT.value(), false);
   }
 
   public PilotProject getPilotProject(Long planConditionId) {
@@ -1195,9 +1214,9 @@ public class IntelligentService {
     pp.setId(planConditionId);
     Map<String, Object> map = planConditionService.findOne(planConditionId);
     pp.setName((String) map.get("name"));
-
+   
     List<String> icds = (List<String>) map.get("icd_no");
-    if (icds != null) {
+    if (icds != null && icds.size() > 0) {
       int enable = (map.get("icd_no_enable") instanceof Short) ? (Short) map.get("icd_no_enable")
           : (Integer) map.get("icd_no_enable");
       if (enable == 1) {
@@ -1205,27 +1224,29 @@ public class IntelligentService {
       }
     }
 
+    if (pp.getIcd() == null) {
+      pp.setIcd(new ArrayList<String>());
+    }
     List<Map<String, Object>> daysList = (List<Map<String, Object>>) map.get("less_nday");
     if (daysList != null && daysList.size() > 0) {
       int days = 0;
-      icds = new ArrayList<String>();
       int enable =
           (map.get("less_nday_enable") instanceof Short) ? (Short) map.get("less_nday_enable")
               : (Integer) map.get("less_nday_enable");
       if (enable == 1) {
         for (Map<String, Object> map2 : daysList) {
-          icds.add((String) map2.get("icd_no"));
+          if (pp.getIcd().indexOf((String) map2.get("icd_no")) < 0) {
+            pp.getIcd().add((String) map2.get("icd_no"));
+          }
           days = (Short) map2.get("nday");
         }
-        pp.setIcd(icds);
         pp.setDays(days);
       }
     }
 
     List<Map<String, Object>> timesList = (List<Map<String, Object>>) map.get("more_times");
-    if (timesList != null) {
+    if (timesList != null && timesList.size() > 0) {
       int times = 0;
-      icds = new ArrayList<String>();
       int enable =
           (map.get("more_times_enable") instanceof Short) ? (Short) map.get("more_times_enable")
               : (Integer) map.get("more_times_enable");
@@ -1234,10 +1255,11 @@ public class IntelligentService {
           if (enable == 0) {
             break;
           }
-          icds.add((String) map2.get("icd_no"));
+          if (pp.getIcd().indexOf((String) map2.get("icd_no")) < 0) {
+            pp.getIcd().add((String) map2.get("icd_no"));
+          }
           times = (Short) map2.get("times");
         }
-        pp.setIcd(icds);
         pp.setTimes(times);
       }
     }
@@ -1259,7 +1281,7 @@ public class IntelligentService {
     logger.info("processPilotProject " + pp.getName());
     if (pp.getDays() == null && pp.getTimes() == null) {
       // 有指定的診斷碼
-
+      System.out.println("process test plan");
       List<MR> list = getMRByICD(chineseYm, pp.getIcd());
       if (list != null) {
         for (MR mr : list) {
@@ -1418,9 +1440,9 @@ public class IntelligentService {
         }
       }
     }
-    logger.info("before exclude:" + result.size());
+    //logger.info("before exclude:" + result.size());
     result = excludeCaseTypeE1(applYm, result);
-    System.out.println("after exclude:" + result.size());
+    //System.out.println("after exclude:" + result.size());
     return result;
 
   }
@@ -1494,7 +1516,6 @@ public class IntelligentService {
   }
   
   public synchronized void setIntelligentRunning(int intelligentCode, boolean isRunning) {
-    logger.info("Intelligent code:" + intelligentCode + " running=" + isRunning);
     runningIntelligent.put(new Integer(intelligentCode), new Boolean(isRunning));
   }
 }

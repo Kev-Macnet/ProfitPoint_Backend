@@ -79,6 +79,11 @@ public class XMLConstant {
    */
   public final static String APPL_MODE_CONNECT = "3";
   
+  /**
+   * 不分科科別代碼
+   */
+  public final static String FUNC_TYPE_ALL = "00";
+  
   /** 紀錄 t1 資料格式 */
   public static Map<String, String> MAP_DATA_FORMAT = new HashMap<String, String>();
   

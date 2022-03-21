@@ -487,6 +487,13 @@ public class OP_D {
   @Column(name = "MR_ID", nullable = true)
   @JsonIgnore
   private Long mrId;
+  
+  /**
+   * 自費金額
+   */
+  @Column(name = "OWN_EXPENSE")
+  @JsonIgnore
+  private Integer ownExpense;
 
   /**
    * 更新時間
@@ -1289,4 +1296,13 @@ public class OP_D {
   public void calculateTotalApplDot() {
     totalApplDot = totalDot - partDot;
   }
+
+  public Integer getOwnExpense() {
+    return ownExpense;
+  }
+
+  public void setOwnExpense(Integer ownExpense) {
+    this.ownExpense = ownExpense;
+  }
+  
 }

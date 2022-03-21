@@ -7,8 +7,11 @@ import java.sql.Date;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 
 public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExecutor<IP_D> {
 
@@ -91,4 +94,26 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   @Query(value = "SELECT * FROM IP_D WHERE MR_ID IN ("
       + "SELECT id FROM mr WHERE APPL_YM =?1) ORDER BY CASE_TYPE , SEQ_NO", nativeQuery = true)
   public List<IP_D> findByApplYM(String applYm);
+  
+  /**
+   * 修正無MR_END_DATE的 MR
+   */
+  @Query(value = "  SELECT * FROM ip_d WHERE MR_ID IN ("+ 
+      "SELECT id FROM mr WHERE MR_END_DATE IS NULL AND DATA_FORMAT ='20')", nativeQuery = true)
+  public List<IP_D> findNoMrEndDateByIpd();
+  
+  /**
+   * 修正新增的 LEAVE_DATE 欄位
+   */
+  @Query(value = "  SELECT * FROM ip_d WHERE OUT_DATE IS NOT NULL", nativeQuery = true)
+  public List<IP_D> findOutDateIsNotNull();
+  
+  /**
+   * 修正新增的 LEAVE_DATE 欄位
+   */
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE ip_d SET LEAVE_DATE=?1 WHERE ID=?2 ", nativeQuery = true)
+  public void updateLeaveDate(Date leaveDate, long id);
+  
 }

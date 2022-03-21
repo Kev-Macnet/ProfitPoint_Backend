@@ -42,6 +42,8 @@ public class IntelligentController extends BaseController {
   @ApiOperation(value = "取得智能提示助理清單", notes = "取得智能提示助理清單")
   @GetMapping("/intelligent")
   public ResponseEntity<IntelligentResponse> getIntelligent(
+      @ApiParam(value = "選單種類，有以下四種：baseRule(固定條件判斷)，clincal(臨床路徑差異)，suspected(疑似職傷與異常就診記錄判斷)，drgSuggestion(DRG申報建議)",
+        example = "baseRule") @RequestParam(required = false, defaultValue = "baseRule") String menu,
       @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
         example = "2021/03/15") @RequestParam(required = false) String sdate,
       @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
@@ -132,7 +134,7 @@ public class IntelligentController extends BaseController {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
     }
     return ResponseEntity.ok(
-        intelligentService.getIntelligent(user, startDate, endDate, minPoints, maxPoints, funcType,
+        intelligentService.getIntelligent(user, menu, startDate, endDate, minPoints, maxPoints, funcType,
             funcTypec, prsnId, prsnName, code, inhCode, icd, reason, column, asc, perPageInt, page));
   }
 }

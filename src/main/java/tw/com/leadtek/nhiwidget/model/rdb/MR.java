@@ -278,6 +278,8 @@ public class MR {
     }
     if (ipd.getOutDate() != null && ipd.getOutDate().length() > 0) {
       this.mrEndDate = DateTool.convertChineseToYear(ipd.getOutDate());
+    } else {
+      this.mrEndDate = DateTool.convertChineseToYear(ipd.getApplEndDate());
     }
     if (ipd.getApplDot() != null) {
       this.totalDot = ipd.getApplDot();
@@ -290,7 +292,7 @@ public class MR {
     }
     this.drgCode = ipd.getTwDrgCode();
     this.applDot = ipd.getApplDot();
-    this.ownExpense = ipd.getNonApplDot();
+    this.ownExpense = 0;
     this.updateAt = new Date();
   }
 
@@ -302,13 +304,16 @@ public class MR {
     this.dataFormat = XMLConstant.DATA_FORMAT_OP;
 
     if (opd.getFuncEndDate() != null && opd.getFuncEndDate().length() > 0) {
-      this.mrDate = DateTool.convertChineseToYear(opd.getFuncEndDate());
-    } else if (opd.getFuncDate() != null && opd.getFuncDate().length() > 0) {
+      this.mrEndDate = DateTool.convertChineseToYear(opd.getFuncEndDate());
+    } else {
+      this.mrEndDate = DateTool.convertChineseToYear(opd.getFuncDate());
+    }
+    if (opd.getFuncDate() != null && opd.getFuncDate().length() > 0) {
       this.mrDate = DateTool.convertChineseToYear(opd.getFuncDate());
     }
     this.totalDot = opd.getTotalDot();
     this.applDot = opd.getTotalApplDot();
-    this.ownExpense = totalDot - applDot;
+    this.ownExpense = 0;
     this.updateAt = new Date();
   }
 
@@ -814,10 +819,20 @@ public class MR {
       }
     }
     if (ipd.getOutDate() != null && ipd.getOutDate().length() > 0) {
-      Date newDate = DateTool.convertChineseToYear(ipd.getInDate());
+      Date newDate = DateTool.convertChineseToYear(ipd.getOutDate());
       if (diffList != null && this.mrEndDate != null && this.mrEndDate.getTime() != newDate.getTime()) {
         SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
         FILE_DIFF fd = new FILE_DIFF(id, "outDate", sdf.format(newDate));
+        diffList.add(fd);        
+      } else {
+        this.mrEndDate = newDate;
+      }
+    } else if (ipd.getApplEndDate() != null && ipd.getApplEndDate().length() > 0) {
+      // 若出院日，則 ApplEndDate 必為出院日，若無出院日，則一定會有 ApplEndDate
+      Date newDate = DateTool.convertChineseToYear(ipd.getApplEndDate());
+      if (diffList != null && this.mrEndDate != null && this.mrEndDate.getTime() != newDate.getTime()) {
+        SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+        FILE_DIFF fd = new FILE_DIFF(id, "applEndDate", sdf.format(newDate));
         diffList.add(fd);        
       } else {
         this.mrEndDate = newDate;
@@ -853,7 +868,8 @@ public class MR {
       FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", ipd.getNonApplDot().toString());
       diffList.add(fd);
     } else {
-      this.ownExpense = ipd.getNonApplDot();
+      //this.ownExpense = ipd.getNonApplDot();
+      this.ownExpense = 0;
     }
     
     this.updateAt = new Date();
@@ -894,12 +910,13 @@ public class MR {
 
     if (opd.getFuncEndDate() != null && opd.getFuncEndDate().length() > 0) {
       Date newDate = DateTool.convertChineseToYear(opd.getFuncEndDate());
-      if (this.mrDate != null && this.mrDate.getTime() != newDate.getTime()) {
+      if (this.mrEndDate != null && this.mrEndDate.getTime() != newDate.getTime()) {
         SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
         FILE_DIFF fd = new FILE_DIFF(id, "outDate", sdf.format(newDate));
         diffList.add(fd);        
       } else {
         this.mrEndDate = newDate;
+        this.mrDate = DateTool.convertChineseToYear(opd.getFuncDate());
       }
     } else if (opd.getFuncDate() != null && opd.getFuncDate().length() > 0) {
       Date newDate = DateTool.convertChineseToYear(opd.getFuncDate());
@@ -909,6 +926,7 @@ public class MR {
         diffList.add(fd);        
       } else {
         this.mrDate = newDate;
+        this.mrEndDate = newDate;
       }
     }
     
@@ -936,7 +954,8 @@ public class MR {
       FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", String.valueOf(opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()));
       diffList.add(fd);
     } else {
-      this.ownExpense = totalDot - applDot;
+      //this.ownExpense = totalDot - applDot;
+      this.ownExpense = 0;
     }
     this.updateAt = new Date();
   }

@@ -164,6 +164,28 @@ public class POINT_MONTHLY {
   @Column(name = "DRG_ACTUAL_POINT")
   @JsonIgnore
   private Long drgActualPoint;
+  
+  /**
+   * 不申報門急診/住院合計點數，報表健保總額累積達成率用到
+
+   */
+  @Column(name = "NO_APPL_ALL")
+  @JsonIgnore
+  private Long noApplAll;
+  
+  /**
+   * 不申報住院點數，報表健保總額累積達成率用到
+   */
+  @Column(name = "NO_APPL_IP")
+  @JsonIgnore
+  private Long noApplIp;
+  
+  /**
+   * 不申報門急診點數，報表健保總額累積達成率用到
+   */
+  @Column(name = "NO_APPL_OP")
+  @JsonIgnore
+  private Long noApplOp;
 
   /**
    * 更新時間
@@ -632,6 +654,30 @@ public class POINT_MONTHLY {
    */
   public void setUpdateAt(Date UPDATE_AT) {
     updateAt = UPDATE_AT;
+  }
+
+  public Long getNoApplAll() {
+    return noApplAll;
+  }
+
+  public void setNoApplAll(Long noApplAll) {
+    this.noApplAll = noApplAll;
+  }
+
+  public Long getNoApplIp() {
+    return noApplIp;
+  }
+
+  public void setNoApplIp(Long noApplIp) {
+    this.noApplIp = noApplIp;
+  }
+
+  public Long getNoApplOp() {
+    return noApplOp;
+  }
+
+  public void setNoApplOp(Long noApplOp) {
+    this.noApplOp = noApplOp;
   }
 
 }

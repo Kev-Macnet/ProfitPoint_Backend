@@ -15,6 +15,7 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -24,6 +25,7 @@ import java.util.List;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tw.com.leadtek.nhiwidget.service.ReportService;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.GenClassFieldXMLTag;
 
@@ -602,9 +604,10 @@ public class GenerateSqlByClass {
   }
 
   public static void main(String[] args) {
-    //GenerateSqlByClass gen = new GenerateSqlByClass("NWUSER");
-    testSub();
+    GenerateSqlByClass gen = new GenerateSqlByClass("NWUSER");
+    //testSub();
     //gen.testNormalDistribution();
+    testPercent();
     // gen.generateSQL();
 
     // 改用 generateClassByDB
@@ -670,5 +673,32 @@ public class GenerateSqlByClass {
     Date lastDay = cal.getTime();
     System.out.println("firstDay=" + firstDay);
     System.out.println("lastDay=" + lastDay);
+  }
+  
+  public static void testPercent() {
+    double e1 = 169290662;
+    double e2 = 170000000;
+    System.out.println((e1 * 100) / e2);
+    
+    System.out.println(String.format("%.0f", ((e1 * 100) / e2)));
+    DecimalFormat df = new DecimalFormat("#.##");
+    System.out.println(df.format(((e1 * 100) / e2)));
+    
+    int[] q = ReportService.getYearMonthByQuarter("2021", "Q1");
+    for(int i=0; i<q.length; i++) {
+      System.out.println(q[i]);
+    }
+    q = ReportService.getYearMonthByQuarter("2021", "Q2");
+    for(int i=0; i<q.length; i++) {
+      System.out.println(q[i]);
+    }
+    q = ReportService.getYearMonthByQuarter("2021", "Q3");
+    for(int i=0; i<q.length; i++) {
+      System.out.println(q[i]);
+    }
+    q = ReportService.getYearMonthByQuarter("2021", "Q4");
+    for(int i=0; i<q.length; i++) {
+      System.out.println(q[i]);
+    }
   }
 }

@@ -119,11 +119,11 @@ public class PlanConditionService {
         return new_id;
     }
     
-
     public int updatePlanConditionActive(long id, int state) {
-        return planConditionDao.updatePlanConditionActive(id, state);
+        int result = planConditionDao.updatePlanConditionActive(id, state);
+        is.calculatePilotProjectByThread(id, state == 1);
+        return result;
     }
-    
     
     public int updatePlanCondition(long id, PlanConditionPl params) {
         int ret=0;

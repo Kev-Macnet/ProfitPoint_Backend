@@ -910,11 +910,25 @@ public class IP_D {
   private Date updateAt;
   
   /**
+   * 出院日
+   */
+  @Column(name = "LEAVE_DATE", nullable = true)
+  @JsonIgnore
+  private Date leaveDate;
+  
+  /**
    * MR table ID
    */
   @Column(name = "MR_ID", nullable = true)
   @JsonIgnore
   private Long mrId;
+  
+  /**
+   * 自費金額
+   */
+  @Column(name = "OWN_EXPENSE")
+  @JsonIgnore
+  private Integer ownExpense;
   
   @JsonProperty("pdata")
   @JacksonXmlElementWrapper(useWrapping=false)
@@ -2477,6 +2491,22 @@ public class IP_D {
     } else {
       applDot = medDot.intValue() - partDot.intValue() + nonApplDot.intValue();
     }
+  }
+
+  public Integer getOwnExpense() {
+    return ownExpense;
+  }
+
+  public void setOwnExpense(Integer ownExpense) {
+    this.ownExpense = ownExpense;
+  }
+
+  public Date getLeaveDate() {
+    return leaveDate;
+  }
+
+  public void setLeaveDate(Date leaveDate) {
+    this.leaveDate = leaveDate;
   }
   
 }

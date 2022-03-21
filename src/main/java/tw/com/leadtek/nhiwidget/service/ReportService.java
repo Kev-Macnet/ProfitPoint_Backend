@@ -5,6 +5,7 @@ package tw.com.leadtek.nhiwidget.service;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -12,11 +13,13 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.ASSIGNED_POINTDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_MONTHLYDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_WEEKLYDao;
@@ -36,26 +39,30 @@ import tw.com.leadtek.nhiwidget.model.rdb.IP_T;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_WEEKLY;
+import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
+import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePoint;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePointQuantity;
+import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList2;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
+import tw.com.leadtek.nhiwidget.payload.report.PointPeriod;
 import tw.com.leadtek.nhiwidget.payload.report.PointQuantityList;
+import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
+import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriod;
+import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriodDetail;
+import tw.com.leadtek.nhiwidget.payload.report.VisitsVarietyPayload;
 import tw.com.leadtek.tools.DateTool;
+import tw.com.leadtek.tools.StringUtility;
 
 @Service
 public class ReportService {
 
   private Logger logger = LogManager.getLogger();
-
-  /**
-   * 全部科別的科別代碼
-   */
-  public static final String FUNC_TYPE_ALL = "00";
 
   /**
    * 全部科別的科別代碼
@@ -101,6 +108,9 @@ public class ReportService {
   @Autowired
   private DRG_WEEKLYDao drgWeeklyDao;
 
+  @Autowired
+  private ParametersService parametersService;
+
   public PointMRPayload getMonthlyReport(int year, int month) {
     int lastM = year * 100 + month - 1;
     if (month - 1 <= 0) {
@@ -142,6 +152,7 @@ public class ReportService {
 
   /**
    * 計算指定年月的單月健保點數總表
+   * 
    * @param ym
    */
   public void calculatePointMR(String ym) {
@@ -171,8 +182,8 @@ public class ReportService {
     } else {
       return;
     }
-  
-     List<Object[]> list = opdDao.findMonthlyPoint(optId, optId, iptId, optId, optId, iptId, optId,
+
+    List<Object[]> list = opdDao.findMonthlyPoint(optId, optId, iptId, optId, optId, iptId, optId,
         optId, iptId, optId, chineseYM, chineseYM, chineseYM);
     if (list != null && list.size() > 0) {
       Object[] obj = list.get(0);
@@ -209,23 +220,25 @@ public class ReportService {
     }
     pointMonthlyDao.save(pm);
   }
-  
+
   /**
    * 取得最舊一筆的 POINT_MONTHLY 資料
+   * 
    * @return yyyyMM
    */
   public Integer getMinPointMonthly() {
     return pointMonthlyDao.getMinYm();
   }
-  
+
   /**
    * 取得最新一筆的 POINT_MONTHLY 資料
+   * 
    * @return yyyyMM
    */
   public Integer getMaxPointMonthly() {
     return pointMonthlyDao.getMaxYm();
   }
-  
+
   public boolean refreshPointMonthly(String adYM, ASSIGNED_POINT ap) {
     POINT_MONTHLY pm = pointMonthlyDao.findByYm(Integer.parseInt(adYM));
     if (pm == null) {
@@ -243,7 +256,7 @@ public class ReportService {
       pm.setRemaining(0L);
       return;
     }
-   
+
     pm.setAssignedOpAll(ap.getWmOpPoints());
     pm.setAssignedIp(ap.getWmIpPoints());
     pm.setAssignedAll(ap.getWmp());
@@ -254,7 +267,8 @@ public class ReportService {
         cutPointNumber(((double) pm.getTotalOp() * (double) 100) / (double) pm.getAssignedOpAll()));
     pm.setRateIp(
         cutPointNumber(((double) pm.getTotalIp() * (double) 100) / (double) pm.getAssignedIp()));
-    pm.setRemaining(pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll() - pm.getChronic().longValue());
+    pm.setRemaining(pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll()
+        - pm.getChronic().longValue());
     pointMonthlyDao.save(pm);
   }
 
@@ -315,7 +329,7 @@ public class ReportService {
     return DateTool.convertChineseToAD(ym);
   }
 
-   public PeriodPointPayload getPeriodPoint(Date sdate, Date edate) {
+  public PeriodPointPayload getPeriodPoint(Date sdate, Date edate) {
     PeriodPointPayload result = new PeriodPointPayload();
     java.sql.Date s = new java.sql.Date(sdate.getTime());
     java.sql.Date e = new java.sql.Date(edate.getTime());
@@ -331,25 +345,25 @@ public class ReportService {
 
       result.setApplPointOpAll(getLongValue(obj[5]));
       result.setApplPointOp(getLongValue(obj[6]));
-	  result.setApplPointEm(getLongValue(obj[7]));
-	  result.setApplPointIp(getLongValue(obj[8]));
+      result.setApplPointEm(getLongValue(obj[7]));
+      result.setApplPointIp(getLongValue(obj[8]));
       result.setApplPointAll(result.getApplPointOpAll() + result.getApplPointIp());
       result.setPartPointOpAll(getLongValue(obj[9]));
       result.setPartPointOp(getLongValue(obj[10]));
       result.setPartPointEm(getLongValue(obj[11]));
       result.setPartPointIp(getLongValue(obj[12]));
-    
+
       result.setPartPointAll(result.getPartPointOpAll() + result.getPartPointIp());
       result.setPointAll(result.getApplPointAll() + result.getPartPointAll());
       result.setPointEm(result.getApplPointEm() + result.getPartPointEm());
       result.setPointIp(result.getApplPointIp() + result.getPartPointIp());
       result.setPointOp(result.getApplPointOp() + result.getPartPointOp());
       result.setPointOpAll(result.getApplPointOpAll() + result.getPartPointOpAll());
-      
+
       result.setApplNoPartPointAll(result.getApplPointAll() - result.getPartPointAll());
       result.setApplNoPartPointEm(result.getApplPointEm() - result.getPartPointEm());
       result.setApplNoPartPointIp(result.getApplPointIp() - result.getPartPointIp());
-      result.setApplNoPartPointOp(result.getApplPointOp() -result .getPartPointOp());
+      result.setApplNoPartPointOp(result.getApplPointOp() - result.getPartPointOp());
       result.setApplNoPartPointOpAll(result.getApplPointOpAll() - result.getPartPointOpAll());
     }
 
@@ -389,13 +403,13 @@ public class ReportService {
         npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
-        	npq.setPoint(0L);
+          npq.setPoint(0L);
         } else if (objects[1] instanceof BigDecimal) {
-			BigDecimal dot = (BigDecimal)objects[1];
-			npq.setPoint(dot.longValue());
-		} else {
-        npq.setPoint(((long) (int) objects[1]));
-		}
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addOp(npq);
       }
@@ -407,13 +421,13 @@ public class ReportService {
         npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
-        	npq.setPoint(0L);
+          npq.setPoint(0L);
         } else if (objects[1] instanceof BigDecimal) {
-			BigDecimal dot = (BigDecimal)objects[1];
-			npq.setPoint(dot.longValue());
-		} else {
-        npq.setPoint(((long) (int) objects[1]));
-		}
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addIp(npq);
       }
@@ -431,13 +445,13 @@ public class ReportService {
         npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
-        	npq.setPoint(0L);
+          npq.setPoint(0L);
         } else if (objects[1] instanceof BigDecimal) {
-			BigDecimal dot = (BigDecimal)objects[1];
-			npq.setPoint(dot.longValue());
-		} else {
-        npq.setPoint(((long) (int) objects[1]));
-		}
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addOp(npq);
       }
@@ -449,13 +463,13 @@ public class ReportService {
         npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
-        	npq.setPoint(0L);
+          npq.setPoint(0L);
         } else if (objects[1] instanceof BigDecimal) {
-			BigDecimal dot = (BigDecimal)objects[1];
-			npq.setPoint(dot.longValue());
-		} else {
-        npq.setPoint(((long) (int) objects[1]));
-		}
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addIp(npq);
       }
@@ -473,13 +487,13 @@ public class ReportService {
         npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
-        	npq.setPoint(0L);
+          npq.setPoint(0L);
         } else if (objects[1] instanceof BigDecimal) {
-			BigDecimal dot = (BigDecimal)objects[1];
-			npq.setPoint(dot.longValue());
-		} else {
-        npq.setPoint(((long) (int) objects[1]));
-		}
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addOp(npq);
       }
@@ -491,13 +505,13 @@ public class ReportService {
         npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
-        	npq.setPoint(0L);
+          npq.setPoint(0L);
         } else if (objects[1] instanceof BigDecimal) {
-			BigDecimal dot = (BigDecimal)objects[1];
-			npq.setPoint(dot.longValue());
-		} else {
-        npq.setPoint(((long) (int) objects[1]));
-		}
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
         npq.setQuantity(((BigInteger) objects[2]).longValue());
         result.addIp(npq);
       }
@@ -505,7 +519,7 @@ public class ReportService {
     return result;
   }
 
-  public POINT_WEEKLY calculatePointByWeek(Date sdate, Date edate) {
+  public POINT_WEEKLY calculatePointByWeek(Date sdate, Date edate, List<String> funcTypes) {
     if (!checkWeekday(sdate, Calendar.SUNDAY) || !checkWeekday(edate, Calendar.SATURDAY)) {
       logger.error("calculatePointByWeek failed");
       return null;
@@ -513,10 +527,29 @@ public class ReportService {
 
     java.sql.Date s = new java.sql.Date(sdate.getTime());
     java.sql.Date e = new java.sql.Date(edate.getTime());
+    POINT_WEEKLY pw = calculatePointByWeek(s, e, XMLConstant.FUNC_TYPE_ALL);
+    if (pw == null) {
+      return null;
+    }
+    for (String string : funcTypes) {
+      calculatePointByWeek(s, e, string);
+    }
+    return pw;
 
-    POINT_WEEKLY pw = pointWeeklyDao.findByStartDateAndEndDate(s, e);
+  }
+
+  private POINT_WEEKLY calculatePointByWeek(Date sdate, Date edate, String funcType) {
+    if (!checkWeekday(sdate, Calendar.SUNDAY) || !checkWeekday(edate, Calendar.SATURDAY)) {
+      logger.error("calculatePointByWeek failed");
+      return null;
+    }
+
+    java.sql.Date s = new java.sql.Date(sdate.getTime());
+    java.sql.Date e = new java.sql.Date(edate.getTime());
+    POINT_WEEKLY pw = pointWeeklyDao.findByStartDateAndEndDateAndFuncType(s, e, funcType);
     if (pw == null) {
       pw = new POINT_WEEKLY();
+      pw.setFuncType(funcType);
       pw.setStartDate(sdate);
       pw.setEndDate(edate);
       Calendar cal = Calendar.getInstance();
@@ -529,24 +562,29 @@ public class ReportService {
       // }
       pw.setPweek(week);
     }
-    List<Object[]> list = opdDao.findAllPoint(s, e, s, e);
+    List<Object[]> list = null;
+    if (XMLConstant.FUNC_TYPE_ALL.equals(funcType)) {
+      list = opdDao.findAllPoint(s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e);
+    } else {
+      list = opdDao.findAllPointByFuncType(s, e, funcType, s, e, funcType, s, e, s, e, funcType, s,
+          e, funcType, s, e, funcType, s, e, funcType, s, e, funcType);
+    }
+
     if (list != null && list.size() > 0) {
       Object[] object = list.get(0);
-      if (object[0] == null || object[1] == null) {
-        return null;
-      }
-      
       pw.setOp(getLongValue(object[0]));
       pw.setIp(getLongValue(object[1]));
-      // @TESTDATA
-      pw.setOwnExpIp(pw.getIp().longValue() / 5);
-      pw.setOwnExpOp(pw.getOp().longValue() / 5);
-      pw.setUpdateAt(new Date());
-      return pointWeeklyDao.save(pw);
+      pw.setEm(getLongValue(object[2]));
+      pw.setOwnExpOp(getLongValue(object[3]));
+      pw.setOwnExpIp(getLongValue(object[4]));
+      pw.setVisitsOp(getLongValue(object[5]));
+      pw.setVisitsIp(getLongValue(object[6]));
+      pw.setVisitsLeave(getLongValue(object[7]));
     }
-    return null;
+    pw.setUpdateAt(new Date());
+    return pointWeeklyDao.save(pw);
   }
-  
+
   public void calculatePointWeekly(Calendar startCal) {
     Calendar cal = Calendar.getInstance();
     cal.set(Calendar.YEAR, startCal.get(Calendar.YEAR));
@@ -556,26 +594,60 @@ public class ReportService {
     if (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
       cal.add(Calendar.DAY_OF_YEAR, Calendar.SUNDAY - cal.get(Calendar.DAY_OF_WEEK));
     }
+    Calendar calMax = parametersService.getMinMaxCalendar(new Date(), false);
     List<Object[]> list = mrDao.findDRGAllFuncType();
-    List<String> funcTypes = new ArrayList<String>();
+    List<String> funcTypesDRG = new ArrayList<String>();
     for (Object[] obj : list) {
-      funcTypes.add((String) obj[0]);
+      funcTypesDRG.add((String) obj[0]);
     }
-    //funcTypes.add(0, ReportService.FUNC_TYPE_ALL);
-    
+    // funcTypes.add(0, ReportService.FUNC_TYPE_ALL);
+    List<String> funcTypes = findAllFuncTypes(false);
     do {
       Date start = cal.getTime();
       cal.add(Calendar.DAY_OF_YEAR, 6);
       Date end = cal.getTime();
 
-//      POINT_WEEKLY pw = calculatePointByWeek(start, end);
-//      if (pw == null || pw.getIp().longValue() + pw.getOp().longValue() == 0) {
-//        break;
-//      }
+      calculatePointByWeek(start, end, funcTypes);
       calculateDRGPointByWeek(start, end, funcTypes);
-      //System.out.println("year=" + pw.getPyear() + "," + pw.getPweek() + "," + pw.getStartDate() + "," + pw.getEndDate());
       cal.add(Calendar.DAY_OF_YEAR, 1);
-    } while (true);
+    } while (cal.before(calMax));
+    logger.info("calculatePointWeekly done");
+  }
+
+  private List<String> findAllFuncTypes(boolean includeAll) {
+    List<String> result = new ArrayList<String>();
+    List<Object[]> list = mrDao.findAllFuncType();
+    for (Object[] objects : list) {
+      result.add((String) objects[0]);
+    }
+    if (includeAll) {
+      result.add(XMLConstant.FUNC_TYPE_ALL);
+    }
+    return result;
+  }
+
+  private List<String> findAllFuncTypesName(boolean includeAll) {
+    List<String> result = new ArrayList<String>();
+    List<String> funcCodes = findAllFuncTypes(includeAll);
+    for (String funcCode : funcCodes) {
+      result.add(codeTableService.getDesc("FUNC_TYPE", funcCode));
+    }
+    return result;
+  }
+
+  /**
+   * 取得DB所有科別代碼及科別中文名稱
+   * 
+   * @param includeAll
+   * @return
+   */
+  private Map<String, String> findAllFuncTypesMap(boolean includeAll) {
+    Map<String, String> result = new HashMap<String, String>();
+    List<String> funcCodes = findAllFuncTypes(includeAll);
+    for (String funcCode : funcCodes) {
+      result.put(funcCode, codeTableService.getDesc("FUNC_TYPE", funcCode));
+    }
+    return result;
   }
 
   public void calculateDRGPointByWeek(Date sdate, Date edate, List<String> funcTypes) {
@@ -592,7 +664,7 @@ public class ReportService {
       elapseFuncType.put(string, "");
     }
 
-    DRG_WEEKLY drgWeeklyAll = selectOrCreateDrgWeekly(s, e, FUNC_TYPE_ALL);
+    DRG_WEEKLY drgWeeklyAll = selectOrCreateDrgWeekly(s, e, XMLConstant.FUNC_TYPE_ALL);
     List<Object[]> list = mrDao.countDRGPointByStartDateAndEndDate(s, e, s, e, s, e);
     for (Object[] obj : list) {
       String funcType = (String) obj[0];
@@ -610,7 +682,8 @@ public class ReportService {
 
       List<Object[]> sectionList = mrDao.countDRGPointByFuncTypeGroupByDRGSection(s, e, funcType);
       for (Object[] obj2 : sectionList) {
-        long point =  (obj2[2] instanceof Integer) ? ((Integer) obj2[2]).longValue() : ((BigInteger) obj2[2]).longValue();
+        long point = (obj2[2] instanceof Integer) ? ((Integer) obj2[2]).longValue()
+            : ((BigInteger) obj2[2]).longValue();
         if ("A".equals((String) obj2[0])) {
           drgWeekly.setSectionA(((BigInteger) obj2[1]).longValue());
           drgWeeklyAll.setSectionA(drgWeeklyAll.getSectionA() + drgWeekly.getSectionA());
@@ -692,7 +765,8 @@ public class ReportService {
   public PeriodPointWeeklyPayload getPeroidPointWeekly(Date edate) {
     PeriodPointWeeklyPayload result = new PeriodPointWeeklyPayload();
     java.sql.Date e = new java.sql.Date(edate.getTime());
-    List<POINT_WEEKLY> list = pointWeeklyDao.findByEndDateLessThanEqualOrderByEndDateDesc(e);
+    List<POINT_WEEKLY> list = pointWeeklyDao
+        .findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e, XMLConstant.FUNC_TYPE_ALL);
     int count = 0;
     for (POINT_WEEKLY pw : list) {
       String name = pw.getPyear() + " w" + pw.getPweek();
@@ -731,12 +805,12 @@ public class ReportService {
     String adYM = ymToADYM(ym);
 
     DRG_MONTHLY drgMonthlyAll =
-        drgMonthlyDao.findByYmAndFuncType(Integer.parseInt(adYM), FUNC_TYPE_ALL);
+        drgMonthlyDao.findByYmAndFuncType(Integer.parseInt(adYM), XMLConstant.FUNC_TYPE_ALL);
     if (drgMonthlyAll == null) {
       drgMonthlyAll = new DRG_MONTHLY();
     }
     drgMonthlyAll.setYm(Integer.parseInt(adYM));
-    drgMonthlyAll.setFuncType(FUNC_TYPE_ALL);
+    drgMonthlyAll.setFuncType(XMLConstant.FUNC_TYPE_ALL);
 
     List<String> funcTypes = getAllDRGFuncTypes(chineseYM);
     for (String funcType : funcTypes) {
@@ -815,17 +889,17 @@ public class ReportService {
 
   public DRGMonthlyPayload getDrgMonthly(int year, int month) {
     DRGMonthlyPayload result = new DRGMonthlyPayload(pointMonthlyDao.findByYm(year * 100 + month));
-    
+
     result.getFuncTypes().add(FUNC_TYPE_ALL_NAME);
     java.sql.Date lastDay = getLastDayOfMonth(year, month);
-    addQuantityAndPoint(result, FUNC_TYPE_ALL, FUNC_TYPE_ALL_NAME, lastDay);
+    addQuantityAndPoint(result, XMLConstant.FUNC_TYPE_ALL, FUNC_TYPE_ALL_NAME, lastDay);
     return result;
   }
 
   public DRGMonthlyPayload getDrgMonthlyAllFuncType(int year, int month) {
     DRGMonthlyPayload result = new DRGMonthlyPayload(pointMonthlyDao.findByYm(year * 100 + month));
     List<String> funcTypes = getAllDRGFuncTypes(String.valueOf((year - 1911) * 100 + month));
-    funcTypes.add(0, FUNC_TYPE_ALL);
+    funcTypes.add(0, XMLConstant.FUNC_TYPE_ALL);
     List<String> funcTypeName = codeTableService.convertFuncTypeToName(funcTypes);
     result.setFuncTypes(funcTypeName);
     java.sql.Date lastDay = getLastDayOfMonth(year, month);
@@ -848,7 +922,8 @@ public class ReportService {
         String name = dw.getPyear() + " w" + dw.getPweek();
         payload.getQuantityList(funcType, funcTypeName).add(name, dw.getDrgQuantity(),
             dw.getNondrgQuantity());
-        payload.getPointList(funcType, funcTypeName).add(name, dw.getDrgPoint(), dw.getNondrgPoint());
+        payload.getPointList(funcType, funcTypeName).add(name, dw.getDrgPoint(),
+            dw.getNondrgPoint());
         count++;
         if (count >= 52) {
           break;
@@ -861,7 +936,7 @@ public class ReportService {
     DRGMonthlySectionPayload result =
         new DRGMonthlySectionPayload(pointMonthlyDao.findByYm(year * 100 + month));
     List<String> funcTypes = getAllDRGFuncTypes(String.valueOf((year - 1911) * 100 + month));
-    funcTypes.add(0, FUNC_TYPE_ALL);
+    funcTypes.add(0, XMLConstant.FUNC_TYPE_ALL);
     List<String> funcTypeNames = codeTableService.convertFuncTypeToName(funcTypes);
     result.setFuncTypes(funcTypeNames);
 
@@ -870,7 +945,7 @@ public class ReportService {
     for (int i = 0; i < funcTypes.size(); i++) {
       String funcTypeName = codeTableService.getDesc("FUNC_TYPE", funcTypes.get(i));
       DRG_MONTHLY dm = drgMonthlyDao.findByYmAndFuncType(year * 100 + month, funcTypes.get(i));
-      if (funcTypes.get(i).equals(FUNC_TYPE_ALL)) {
+      if (funcTypes.get(i).equals(XMLConstant.FUNC_TYPE_ALL)) {
         result.setActualA(dm.getSectionAActual());
         result.setActualB1(dm.getSectionB1Actual());
         result.setActualB2(dm.getSectionB2Actual());
@@ -939,7 +1014,7 @@ public class ReportService {
       }
       getDrgSectionWeekly(result, funcTypes.get(i), funcTypeName, lastDay);
     }
-  
+
 
     return result;
   }
@@ -971,15 +1046,375 @@ public class ReportService {
       payload.getWeeklyCMap().put(funcTypeName, nvlC);
     }
   }
-  
+
   public static long getLongValue(Object obj) {
-	  if (obj == null) {
-		  return 0L;
-	  }
-	  if (obj instanceof BigDecimal) {
-		  BigDecimal dot = (BigDecimal) obj;
-		  return dot.longValue();
-	  }
-	  return (long) (int) obj;
+    if (obj == null) {
+      return 0L;
+    }
+    if (obj instanceof BigDecimal) {
+      BigDecimal dot = (BigDecimal) obj;
+      return dot.longValue();
+    } else if (obj instanceof BigInteger) {
+      BigInteger dot = (BigInteger) obj;
+      return dot.longValue();
+    }
+    return (long) (int) obj;
   }
+
+  public AchievementWeekly getAchievementWeekly(Calendar cal) {
+    AchievementWeekly result = new AchievementWeekly();
+    java.sql.Date e = new java.sql.Date(cal.getTimeInMillis());
+    List<POINT_WEEKLY> list = pointWeeklyDao
+        .findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e, XMLConstant.FUNC_TYPE_ALL);
+    int count = 0;
+    for (POINT_WEEKLY pw : list) {
+      String name = pw.getPyear() + " w" + pw.getPweek();
+      result.getIp().add(name, pw.getIp());
+      result.getOp().add(name, pw.getOp() - pw.getEm());
+      result.getAll().add(name, pw.getIp() + pw.getOp());
+      result.getEm().add(name, pw.getEm());
+      result.getOpAll().add(name, pw.getOp());;
+      count++;
+      if (count >= 52) {
+        break;
+      }
+    }
+    addMonthlyData(result, cal);
+    return result;
+  }
+
+  private void addMonthlyData(AchievementWeekly aw, Calendar cal) {
+    Calendar lastMonth = Calendar.getInstance();
+    lastMonth.setTime(cal.getTime());
+    lastMonth.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+    int endYm = lastMonth.get(Calendar.YEAR) * 100 + lastMonth.get(Calendar.MONTH);
+    lastMonth.add(Calendar.WEEK_OF_YEAR, -52);
+    int startYm = lastMonth.get(Calendar.YEAR) * 100 + lastMonth.get(Calendar.MONTH);
+    List<POINT_MONTHLY> list = pointMonthlyDao.findByYmBetweenOrderByYm(startYm, endYm);
+    Calendar temp = Calendar.getInstance();
+    for (int i = 0; i < list.size(); i++) {
+      POINT_MONTHLY pm = list.get(i);
+      if (i == list.size() - 1) {
+        aw.setMonthTotal(pm.getApplAll());
+        aw.setMonthAssigned(pm.getAssignedAll());
+        DecimalFormat df = new DecimalFormat("#.##");
+        aw.setAchievementRate(
+            df.format(((double) aw.getMonthTotal() * (double) 100) / (double) aw.getMonthAssigned())
+                + "%");
+      }
+      temp.set(Calendar.YEAR, pm.getYm() / 100);
+      temp.set(Calendar.MONTH, (pm.getYm() % 100) - 1);
+      temp.set(Calendar.DAY_OF_MONTH, temp.getActualMaximum(Calendar.DAY_OF_MONTH));
+
+      String name =
+          String.valueOf(temp.get(Calendar.YEAR)) + " w" + temp.get(Calendar.WEEK_OF_YEAR);
+      aw.getAssignedAll().add(name, pm.getAssignedAll());
+      aw.getActualAll().add(name, pm.getApplAll(), (pm.getApplAll() * 100 / pm.getAssignedAll()));
+
+      aw.getAssignedOpAll().add(name, pm.getAssignedOpAll());
+      aw.getActualOpAll().add(name, pm.getApplOpAll(),
+          (pm.getApplOpAll() * 100 / pm.getAssignedOpAll()));
+
+      aw.getAssignedIp().add(name, pm.getAssignedIp());
+      aw.getActualIp().add(name, pm.getApplIp(), (pm.getApplIp() * 100 / pm.getAssignedIp()));
+    }
+  }
+
+  /**
+   * 若當週有跨月份，只算到前一月份的日期
+   * 
+   * @param cal
+   * @return
+   */
+  @Deprecated
+  public Calendar checkWeekInMonth(Calendar cal) {
+    Calendar result = Calendar.getInstance();
+    result.setTime(cal.getTime());
+    result.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+    int month = result.get(Calendar.MONTH);
+    for (int i = 1; i < 7; i++) {
+      result.add(Calendar.DAY_OF_WEEK, 1);
+      if (result.get(Calendar.MONTH) != month) {
+        result.add(Calendar.DAY_OF_WEEK, -1);
+        return result;
+      }
+    }
+    return result;
+  }
+
+  public AchievementQuarter getAchievementQuarter(String year, String quarter) {
+    AchievementQuarter result = new AchievementQuarter();
+
+    String[] years = StringUtility.splitBySpace(year);
+    String[] quarters = StringUtility.splitBySpace(quarter);
+    int[] yearMonthBetween = findOldestAndNewestYearMonth(years, quarters);
+    List<POINT_MONTHLY> list =
+        pointMonthlyDao.findByYmBetweenOrderByYm(yearMonthBetween[0], yearMonthBetween[1]);
+    for (int i = 0; i < years.length; i++) {
+      int[] yearMonth = getYearMonthByQuarter(years[i], quarters[i]);
+      for (int j = 0; j < yearMonth.length; j++) {
+        int index = -1;
+        for (int k = 0; k < list.size(); k++) {
+          POINT_MONTHLY pm = list.get(k);
+          if (pm.getYm().intValue() == yearMonth[j]) {
+            index = k;
+            calculateAchievementQuarter(result, pm, years[i] + "/" + quarters[i]);
+            break;
+          }
+        }
+        if (index > -1) {
+          list.remove(index);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private int[] findOldestAndNewestYearMonth(String[] years, String[] quarters) {
+    int min = Integer.MAX_VALUE;
+    int max = 0;
+    for (int i = 0; i < years.length; i++) {
+      int[] yearMonth = getYearMonthByQuarter(years[i], quarters[i]);
+      System.out.println(yearMonth[0] + "," + yearMonth[1] + "," + yearMonth[2]);
+      if (max < yearMonth[2]) {
+        max = yearMonth[2];
+      }
+      if (min > yearMonth[0]) {
+        min = yearMonth[0];
+      }
+    }
+    return new int[] {min, max};
+  }
+
+  private void calculateAchievementQuarter(AchievementQuarter aq, POINT_MONTHLY pm, String name) {
+    DecimalFormat df = new DecimalFormat("#.##");
+    QuarterData qdAll = getQuarterDataByName(aq.getAll(), name);
+    QuarterData qdIp = getQuarterDataByName(aq.getIp(), name);
+    QuarterData qdOp = getQuarterDataByName(aq.getOp(), name);
+
+    qdAll.setActual(qdAll.getActual() + pm.getTotalAll());
+    qdAll.setAssigned(qdAll.getAssigned() + pm.getAssignedAll());
+    qdAll.setOriginal(qdAll.getOriginal() + pm.getTotalAll() + pm.getNoApplAll());
+    qdAll
+        .setOver(qdAll.getOver() + qdAll.getActual().longValue() - qdAll.getAssigned().longValue());
+    qdAll.setPercent(Float.parseFloat(df.format(
+        (double) (qdAll.getActual().longValue() * 100) / qdAll.getAssigned().doubleValue())));
+
+    qdIp.setActual(qdIp.getActual() + pm.getTotalIp());
+    qdIp.setAssigned(qdIp.getAssigned() + pm.getAssignedIp());
+    qdIp.setOriginal(qdIp.getOriginal() + pm.getTotalIp() + pm.getNoApplIp());
+    qdIp.setOver(qdIp.getOver() + qdIp.getActual().longValue() - qdIp.getAssigned().longValue());
+    qdIp.setPercent(Float.parseFloat(df
+        .format((double) (qdIp.getActual().longValue() * 100) / qdIp.getAssigned().doubleValue())));
+
+    qdOp.setActual(qdOp.getActual() + pm.getTotalOpAll());
+    qdOp.setAssigned(qdOp.getAssigned() + pm.getAssignedOpAll());
+    qdOp.setOriginal(qdOp.getOriginal() + pm.getTotalOpAll() + pm.getNoApplOp());
+    qdOp.setOver(qdOp.getOver() + qdOp.getActual().longValue() - qdOp.getAssigned().longValue());
+    qdOp.setPercent(Float.parseFloat(df
+        .format((double) (qdOp.getActual().longValue() * 100) / qdOp.getAssigned().doubleValue())));
+  }
+
+  private QuarterData getQuarterDataByName(List<QuarterData> list, String name) {
+    if (list.size() == 0) {
+      QuarterData result = new QuarterData(name);
+      list.add(result);
+      return result;
+    }
+    for (QuarterData quarterData : list) {
+      if (quarterData.getName().equals(name)) {
+        return quarterData;
+      }
+    }
+    QuarterData result = new QuarterData(name);
+    list.add(result);
+    return result;
+  }
+
+  public static int[] getYearMonthByQuarter(String year, String quarter) {
+    int[] result = new int[3];
+    int yearInt = Integer.parseInt(year) * 100;
+    String q = quarter.toUpperCase();
+    if (q.startsWith("Q")) {
+      q = q.substring(1);
+    }
+    int quarterInt = Integer.parseInt(q);
+    for (int i = 0; i < 3; i++) {
+      result[i] = yearInt + (quarterInt - 1) * 3 + i + 1;
+    }
+
+    return result;
+  }
+
+  /**
+   * 取得圖表門急診/住院/出院人次變化資料
+   * 
+   * @param sdate
+   * @param edate
+   * @param year
+   * @param week
+   * @return
+   */
+  public VisitsVarietyPayload getVisitsVariety(java.sql.Date sdate, java.sql.Date edate,
+      String year, String week) {
+    VisitsVarietyPayload result = new VisitsVarietyPayload();
+
+    result.setFuncTypes(findAllFuncTypesName(true));
+    List<Object[]> list = mrDao.getPointPeriod(sdate, edate, sdate, edate, sdate, edate, sdate,
+        edate, sdate, edate, sdate, edate, sdate, edate, sdate, edate);
+
+    if (list != null && list.size() > 0) {
+      Object[] obj = list.get(0);
+
+      PointPeriod actual = new PointPeriod();
+      actual.setAll(getLongValue(obj[0]));
+      actual.setOpem(getLongValue(obj[1]));
+      actual.setEm(getLongValue(obj[2]));
+      actual.setIp(getLongValue(obj[3]));
+      result.setActual(actual);
+
+      PointPeriod appl = new PointPeriod();
+      appl.setAll(getLongValue(obj[4]));
+      appl.setOpem(getLongValue(obj[5]));
+      appl.setEm(getLongValue(obj[6]));
+      appl.setIp(getLongValue(obj[7]));
+      result.setAppl(appl);
+    }
+
+    java.sql.Date lastSdate = null;
+    java.sql.Date lastEdate = null;
+    int daysDiff = (int) ((edate.getTime() - sdate.getTime()) / 86400000L);
+    Calendar cal = Calendar.getInstance();
+    cal.setTimeInMillis(sdate.getTime());
+    if (daysDiff <= 30) {
+      // 30天抓上個月同區間
+      cal.add(Calendar.MONTH, -1);
+      lastSdate = new java.sql.Date(cal.getTimeInMillis());
+
+      cal.setTimeInMillis(edate.getTime());
+      cal.add(Calendar.MONTH, -1);
+      lastEdate = new java.sql.Date(cal.getTimeInMillis());
+    } else {
+      cal.add(Calendar.DAY_OF_YEAR, -1);
+      lastEdate = new java.sql.Date(cal.getTimeInMillis());
+
+      cal.add(Calendar.DAY_OF_YEAR, -daysDiff);
+      lastSdate = new java.sql.Date(cal.getTimeInMillis());
+    }
+    list = mrDao.getVisitsPeriod(sdate, edate, sdate, edate, sdate, edate, sdate, edate, sdate,
+        edate, sdate, edate, sdate, edate, sdate, edate, sdate, edate, lastSdate, lastEdate,
+        lastSdate, lastEdate, lastSdate, lastEdate, lastSdate, lastEdate, lastSdate, lastEdate);
+    if (list != null && list.size() > 0) {
+      Object[] obj = list.get(0);
+
+      VisitsPeriod vp = new VisitsPeriod();
+      VisitsPeriodDetail vpd = new VisitsPeriodDetail();
+      vpd.setAll(getLongValue(obj[0]));
+      vpd.setOpem(getLongValue(obj[1]));
+      vpd.setEm(getLongValue(obj[2]));
+      vpd.setIp(getLongValue(obj[3]));
+      vpd.setLeave(getLongValue(obj[4]));
+      vp.setTotal(vpd);
+
+      VisitsPeriodDetail vpdSurgery = new VisitsPeriodDetail();
+      vpdSurgery.setOpem(getLongValue(obj[5]));
+      vpdSurgery.setEm(getLongValue(obj[6]));
+      vpdSurgery.setIp(getLongValue(obj[7]));
+      vpdSurgery.setLeave(getLongValue(obj[8]));
+      vpdSurgery.setAll(vpdSurgery.getOpem().longValue() + vpdSurgery.getIp());
+      vp.setSurgery(vpdSurgery);
+
+      VisitsPeriodDetail vpdDiff = new VisitsPeriodDetail();
+      vpdDiff.setAll(vpd.getAll().longValue() - getLongValue(obj[9]));
+      vpdDiff.setOpem(vpd.getOpem().longValue() - getLongValue(obj[10]));
+      vpdDiff.setEm(vpd.getEm().longValue() - getLongValue(obj[11]));
+      vpdDiff.setIp(vpd.getIp().longValue() - getLongValue(obj[12]));
+      vpdDiff.setLeave(vpd.getLeave().longValue() - getLongValue(obj[13]));
+      vp.setDiff(vpdDiff);
+
+      DecimalFormat df = new DecimalFormat("#.##");
+      if (getLongValue(obj[9]) == 0) {
+        vp.setPercentAll(100f);
+      } else {
+        vp.setPercentAll(Float.parseFloat(
+            df.format(((double) vpdDiff.getAll() * (double) 100) / (double) getLongValue(obj[9]))));
+      }
+      if (getLongValue(obj[10]) == 0) {
+        vp.setPercentOpem(100f);
+      } else {
+        vp.setPercentOpem(Float.parseFloat(df
+            .format(((double) vpdDiff.getOpem() * (double) 100) / (double) getLongValue(obj[10]))));
+      }
+      if (getLongValue(obj[11]) == 0) {
+        vp.setPercentEm(100f);
+      } else {
+        vp.setPercentEm(Float.parseFloat(
+            df.format(((double) vpdDiff.getEm() * (double) 100) / (double) getLongValue(obj[11]))));
+      }
+
+      if (getLongValue(obj[12]) == 0) {
+        vp.setPercentIp(100f);
+      } else {
+        vp.setPercentIp(Float.parseFloat(
+            df.format(((double) vpdDiff.getIp() * (double) 100) / (double) getLongValue(obj[12]))));
+      }
+      if (getLongValue(obj[13]) == 0) {
+        vp.setPercentLeave(100f);
+      } else {
+        vp.setPercentLeave(Float.parseFloat(df.format(
+            ((double) vpdDiff.getLeave() * (double) 100) / (double) getLongValue(obj[13]))));
+      }
+      result.setVisitsPeriod(vp);
+    }
+    getVisitsWeekly(result, year, week);
+    return result;
+  }
+
+  private void getVisitsWeekly(VisitsVarietyPayload vvp, String year, String week) {
+    Calendar cal = Calendar.getInstance();
+    cal.set(Calendar.YEAR, Integer.parseInt(year));
+    cal.set(Calendar.WEEK_OF_YEAR, Integer.parseInt(week));
+    cal.set(Calendar.DAY_OF_WEEK, Calendar.SATURDAY);
+
+    Map<String, String> funcMap = findAllFuncTypesMap(true);
+
+    Map<String, NameValueList> opemMap = vvp.getOpemMap();
+    Map<String, NameValueList> ipMap = vvp.getIpMap();
+    Map<String, NameValueList> leaveMap = vvp.getLeaveMap();
+
+    List<POINT_WEEKLY> list = pointWeeklyDao
+        .findByEndDateLessThanEqualOrderByEndDateDesc(new java.sql.Date(cal.getTimeInMillis()));
+    // 記錄抓了幾週的資料
+    Map<String, String> weeks = new HashMap<String, String>();
+    for (POINT_WEEKLY pw : list) {
+      String name = pw.getPyear() + " w" + pw.getPweek();
+      if (weeks.get(name) == null) {
+        weeks.put(name, "");
+      }
+      NameValueList nvlOpem = opemMap.get(funcMap.get(pw.getFuncType()));
+      if (nvlOpem == null) {
+        nvlOpem = new NameValueList();
+        opemMap.put(funcMap.get(pw.getFuncType()), nvlOpem);
+      }
+      NameValueList nvlIp = ipMap.get(funcMap.get(pw.getFuncType()));
+      if (nvlIp == null) {
+        nvlIp = new NameValueList();
+        ipMap.put(funcMap.get(pw.getFuncType()), nvlIp);
+      }
+      NameValueList nvlLeave = leaveMap.get(funcMap.get(pw.getFuncType()));
+      if (nvlLeave == null) {
+        nvlLeave = new NameValueList();
+        leaveMap.put(funcMap.get(pw.getFuncType()), nvlLeave);
+      }
+
+      nvlOpem.add(name, pw.getVisitsOp());
+      nvlIp.add(name, pw.getVisitsIp());
+      nvlLeave.add(name, pw.getVisitsLeave());
+      if (weeks.keySet().size() >= 52) {
+        break;
+      }
+    }
+  }
+
 }

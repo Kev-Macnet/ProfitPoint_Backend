@@ -166,4 +166,14 @@ public class StringUtility {
     }
     return sb.toString();
   }
+  
+  public static String[] splitBySpace(String s) {
+    if (s == null || s.length() < 1) {
+      return new String[0];
+    }
+    if (s.indexOf(' ') < 0) {
+      return new String[] {s};
+    }
+    return s.split(" ");
+  }
 }

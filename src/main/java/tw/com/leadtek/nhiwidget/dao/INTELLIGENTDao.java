@@ -16,6 +16,8 @@ public interface INTELLIGENTDao extends JpaRepository<INTELLIGENT, Long>, JpaSpe
   @Query(value ="SELECT CONDITION_CODE, COUNT(1) FROM INTELLIGENT WHERE STATUS = -2 GROUP BY CONDITION_CODE", nativeQuery = true)
   public List<Object[]> countGroupByConditionCode();
   
+  public List<INTELLIGENT> findByConditionCode(int conditionCode);
+  
   /**
    * 找出相同智能提示條件下的清單，避免重複寫入
    * @param conditionCode
@@ -29,6 +31,16 @@ public interface INTELLIGENTDao extends JpaRepository<INTELLIGENT, Long>, JpaSpe
   public List<INTELLIGENT> findByRocIdAndConditionCodeAndReasonCode(String rocId, int conditionCode, String reasonCode);
   
   public List<INTELLIGENT> findByMrId(Long mrId);
+  
+  @Transactional
+  @Modifying
+  @Query(value = "DELETE FROM intelligent WHERE CONDITION_CODE=?1", nativeQuery = true)
+  public void deleteIntelligent(int conditionCode);
+  
+  @Transactional
+  @Modifying
+  @Query(value = "DELETE FROM intelligent WHERE CONDITION_CODE=?1 AND REASON_CODE=?2", nativeQuery = true)
+  public void deleteIntelligent(int conditionCode, String reasonCode);
   
   @Transactional
   @Modifying

@@ -933,7 +933,7 @@ public class SystemService {
               || (!payload.getPilotProject().booleanValue() && "0".equals(p.getValue()))) {
             continue;
           }
-          p.setValue(payload.getOverAmount().booleanValue() ? "1" : "0");
+          p.setValue(payload.getPilotProject().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.PILOT_PROJECT.value(), payload.getPilotProject());
         }
       } else if (p.getName().equals("HIGH_RISK")) {
@@ -1341,9 +1341,24 @@ public class SystemService {
           if (intelligentType.intValue() == INTELLIGENT_REASON.VIOLATE.value()) {
             // @TODO
           } else if (intelligentType.intValue() == INTELLIGENT_REASON.RARE_ICD.value()) {
-           
+            parametersService.switchRareICD(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RATIO.value()) {
+            parametersService.switchHighRatio(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RISK.value()) {
+            parametersService.switchHighRisk(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.INFECTIOUS.value()) {
+            parametersService.switchInfections(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.INH_OWN_EXIST.value()) {
+            parametersService.switchInhOwnExist(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.OVER_AMOUNT.value()) {
+            parametersService.switchOverAmount(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.PILOT_PROJECT.value()) {
+            parametersService.switchPilotProject(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.SAME_ATC.value()) {
+            parametersService.switchSameATC(needProcess.get(intelligentType));
           }
         }
+        System.out.println("recalculateAll done");
       }
     });
     thread.start();

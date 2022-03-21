@@ -92,7 +92,7 @@ public class GenClassField {
     if ("VARCHAR".equals(type) || "NVARCHAR".equals(type)) {
       return "String";
     }
-    if ("INTEGER".equals(type) || "INT".equals(type)) {
+    if ("INTEGER".equals(type) || "INT".equals(type) || "SMALLINT".equals(type)) {
       return "Integer";
     }
     if ("FLOAT".equals(type)) {

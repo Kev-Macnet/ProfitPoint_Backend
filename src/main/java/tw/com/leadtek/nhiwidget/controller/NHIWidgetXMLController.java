@@ -41,7 +41,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
-import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
@@ -66,6 +65,7 @@ import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.UserService;
+import tw.com.leadtek.tools.StringUtility;
 
 @Api(tags = "申報檔相關API", value = "申報檔相關API")
 @CrossOrigin(origins = "*", maxAge = 36000)
@@ -822,7 +822,7 @@ public class NHIWidgetXMLController extends BaseController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new BaseResponse(BaseResponse.ERROR, "無法取得登入狀態"));
     }
     
-    String[] ids = xmlService.splitBySpace(id);
+    String[] ids = StringUtility.splitBySpace(id);
     if (ids == null || ids.length == 0) {
       return returnAPIResult("病歷id有誤");
     }

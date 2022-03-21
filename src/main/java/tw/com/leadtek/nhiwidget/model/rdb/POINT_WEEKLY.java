@@ -54,6 +54,13 @@ public class POINT_WEEKLY {
   @Column(name = "END_DATE")
   @JsonIgnore
   private Date endDate;
+  
+  /**
+   * 科別代碼00為不分科(全部)
+   */
+  @Column(name = "FUNC_TYPE")
+  @JsonIgnore
+  private String funcType;
 
   /**
    * 門急診點數
@@ -61,6 +68,13 @@ public class POINT_WEEKLY {
   @Column(name = "OP")
   @JsonIgnore
   private Long op;
+  
+  /**
+   * 門急診點數
+   */
+  @Column(name = "EM")
+  @JsonIgnore
+  private Long em;
 
   /**
    * 住院點數
@@ -82,6 +96,27 @@ public class POINT_WEEKLY {
   @Column(name = "OWN_EXP_IP")
   @JsonIgnore
   private Long ownExpIp;
+  
+  /**
+   * 門急診人次
+   */
+  @Column(name = "VISITS_OP")
+  @JsonIgnore
+  private Long visitsOp;
+  
+  /**
+   * 住院人次
+   */
+  @Column(name = "VISITS_IP")
+  @JsonIgnore
+  private Long visitsIp;
+  
+  /**
+   * 出院人次
+   */
+  @Column(name = "VISITS_LEAVE")
+  @JsonIgnore
+  private Long visitsLeave;
 
   /**
    * 更新時間
@@ -90,6 +125,17 @@ public class POINT_WEEKLY {
   @JsonIgnore
   private Date updateAt;
 
+  public POINT_WEEKLY() {
+    op = 0L;
+    ip = 0L;
+    em = 0L;
+    ownExpOp = 0L;
+    ownExpIp = 0L;
+    visitsOp = 0L;
+    visitsIp = 0L;
+    visitsLeave = 0L;
+  }
+  
   /**
    * 序號
    */
@@ -228,6 +274,46 @@ public class POINT_WEEKLY {
    */
   public void setUpdateAt(Date UPDATE_AT) {
     updateAt = UPDATE_AT;
+  }
+
+  public Long getEm() {
+    return em;
+  }
+
+  public void setEm(Long em) {
+    this.em = em;
+  }
+
+  public String getFuncType() {
+    return funcType;
+  }
+
+  public void setFuncType(String funcType) {
+    this.funcType = funcType;
+  }
+
+  public Long getVisitsOp() {
+    return visitsOp;
+  }
+
+  public void setVisitsOp(Long visitsOp) {
+    this.visitsOp = visitsOp;
+  }
+
+  public Long getVisitsIp() {
+    return visitsIp;
+  }
+
+  public void setVisitsIp(Long visitsIp) {
+    this.visitsIp = visitsIp;
+  }
+
+  public Long getVisitsLeave() {
+    return visitsLeave;
+  }
+
+  public void setVisitsLeave(Long visitsLeave) {
+    this.visitsLeave = visitsLeave;
   }
 
 }

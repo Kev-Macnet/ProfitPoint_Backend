@@ -207,8 +207,8 @@ public class UserController extends BaseController {
   })
   @PostMapping("/user/logout")
   public ResponseEntity<BaseResponse> logout(HttpServletRequest request, @RequestHeader("Authorization") String jwt) {
-    request.getSession().invalidate();
     UserDetailsImpl user = getUserDetails();
+    logger.info("logout user=" + user);
     if (user == null || (jwt == null || jwt.indexOf(' ') < 0 || jwt.split(" ").length != 2)) {
       return returnAPIResult(null);
     }
@@ -216,6 +216,7 @@ public class UserController extends BaseController {
         int status = logService.setLogout(jwt.split(" ")[1]);
     }
     userService.logoutLog(user.getUsername(), jwt.split(" ")[1]);
+    request.getSession().invalidate();
     return returnAPIResult(null);
   }
   

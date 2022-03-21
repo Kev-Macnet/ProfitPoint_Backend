@@ -511,7 +511,8 @@ public class NHIWidgetXMLService {
       ipd.setCaseType(ip_dData.getDhead().getCASE_TYPE());
       ipd.setSeqNo(ip_dData.getDhead().getSEQ_NO());
       ipd.setIptId(ipt.getId());
-
+      ipd.setLeaveDate(DateTool.convertChineseToYear(ipd.getOutDate()));
+      
       updateIPDID(ipdList, ipd);
 
       // long startMR =System.currentTimeMillis();
@@ -579,6 +580,8 @@ public class NHIWidgetXMLService {
         System.out.println("changeICD=" + mr.getChangeICD());
       }
       StringBuffer sb = new StringBuffer(",");
+      // 自費金額
+      int ownExpense = 0;
       if (diffList == null) {
         for (IP_P ipp : ippListXML) {
           if (ipp.getOrderCode() != null) {
@@ -589,6 +592,10 @@ public class NHIWidgetXMLService {
           updateIPPID(ippList, ipp);
           maskIPP(ipp);
           ipp.setMrId(mr.getId());
+          // E:自費特材項目-未支付
+          if ("E".equals(ipp.getOrderType())){
+            ownExpense += ipp.getTotalDot();
+          }
           ippBatch.add(ipp);
           if (ippBatch.size() > BATCH) {
             ippDao.saveAll(ippBatch);
@@ -612,6 +619,10 @@ public class NHIWidgetXMLService {
             IP_P ippNew = ippListXML.get(j);
             if (compareIPP(mr.getId(), ippOld, ippNew, diffList, moList)) {
               isFound = true;
+              // E:自費特材項目-未支付
+              if ("E".equals(ippNew.getOrderType())){
+                ownExpense += ippNew.getTotalDot();
+              }
               break;
             }
           }
@@ -625,6 +636,10 @@ public class NHIWidgetXMLService {
             IP_P ipp = ippListXML.get(i);
             addDiff(mr.getId(), ipp.getOrderCode(), ipp.getOrderSeqNo().intValue(), ipp, diffList,
                 moList);
+            // E:自費特材項目-未支付
+            if ("E".equals(ipp.getOrderType())){
+              ownExpense += ipp.getTotalDot();
+            }
           }
         }
         if (moList.size() > 0) {
@@ -667,6 +682,7 @@ public class NHIWidgetXMLService {
           updateMyMrStatus(mr.getId().longValue(), MR_STATUS.WAIT_CONFIRM.value(), mr, userId, null, mr.getApplName());  
         }
       }
+      mr.setOwnExpense(ownExpense);
       mrDao.save(mr);
     }
     if (ippBatch.size() > 0) {
@@ -3238,6 +3254,7 @@ public class NHIWidgetXMLService {
     ipD.setPrsnId(mrDetail.getPrsnId());
     ipD.setInDate(DateTool.removeSlashForChineseYear(mrDetail.getInDate()));
     ipD.setOutDate(DateTool.removeSlashForChineseYear(mrDetail.getOutDate()));
+    ipD.setLeaveDate(DateTool.convertChineseToYear(ipD.getOutDate()));
 
     ipD.setIdBirthYmd(DateTool.removeSlashForChineseYear(mrDetail.getBirthday()));
     ipD.setPayType(removeDash(mrDetail.getPayType()));
@@ -3869,7 +3886,7 @@ public class NHIWidgetXMLService {
     ipD.setNrtpDot(mrDetail.getNrtpDot());
     ipD.setOrderQty(mrDetail.getMos().size());
     if (mrDetail.getMrEndDate() != null) {
-      ipD.setOutDate(DateTool.convertToChineseYear(sdf.format(mrDetail.getMrEndDate())));
+      ipD.setApplEndDate(DateTool.convertToChineseYear(sdf.format(mrDetail.getMrEndDate())));
     }
     ipD.setPartDot(mrDetail.getPartDot());
     if (mrDetail.getPartNo() != null && mrDetail.getPartNo().length() > 0) {
@@ -4412,12 +4429,12 @@ public class NHIWidgetXMLService {
   // }
 
   public String sendNotice(String mrIds, UserDetailsImpl user, String doctorId) {
-    String[] mrids = splitBySpace(mrIds);
+    String[] mrids = StringUtility.splitBySpace(mrIds);
     if (mrids == null || mrids.length == 0) {
       return "病歷id有誤";
     }
 
-    String[] ids = splitBySpace(doctorId);
+    String[] ids = StringUtility.splitBySpace(doctorId);
     if (ids == null || ids.length == 0) {
       return "接收人員id有誤";
     }
@@ -4468,16 +4485,6 @@ public class NHIWidgetXMLService {
           generateNoticeEmailContent(mrList, receiverName[i + 1], sender, noticeTimes));
     }
     return null;
-  }
-
-  public String[] splitBySpace(String s) {
-    if (s == null || s.length() < 1) {
-      return new String[0];
-    }
-    if (s.indexOf(' ') < 0) {
-      return new String[] {s};
-    }
-    return s.split(" ");
   }
 
   private String getAllUserName(String[] ids) {
@@ -4947,6 +4954,7 @@ public class NHIWidgetXMLService {
       }
     }
     result.setMrDate(newMR.getMrDate());
+    result.setMrEndDate(newMR.getMrEndDate());
     result.setStatus(newMR.getStatus());
     result.setTotalDot(newMR.getTotalDot());
     result.setApplDot(newMR.getApplDot());

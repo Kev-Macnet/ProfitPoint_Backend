@@ -44,6 +44,30 @@ public class IntelligentConfig extends BaseResponse {
   @ApiModelProperty(value = "高風險診斷碼與健保碼組合", required = true)
   protected Boolean highRisk;
   
+  @ApiModelProperty(value = "臨床路徑差異-AI提示", required = false)
+  protected Boolean clinicalDiff;
+  
+  @ApiModelProperty(value = "費用差異上限", required = false)
+  protected String costDiffUL;
+  
+  @ApiModelProperty(value = "費用差異下限", required = false)
+  protected String costDiffLL;
+  
+  @ApiModelProperty(value = "醫令應用高於常態值上限", required = false)
+  protected String orderUL;
+  
+  @ApiModelProperty(value = "醫令應用低於常態值下限", required = false)
+  protected String orderLL;
+  
+  @ApiModelProperty(value = "住院天數高於常態值上限", required = false)
+  protected Integer ipDays;
+  
+  @ApiModelProperty(value = "疑似職傷與異常就診記錄判斷", required = false)
+  protected Boolean suspected;
+  
+  @ApiModelProperty(value = "DRG申報建議", required = false)
+  protected Boolean drgSuggestion;
+  
   public IntelligentConfig() {
     
   }
@@ -73,7 +97,27 @@ public class IntelligentConfig extends BaseResponse {
         pilotProject = "1".equals(parameters.getValue());
       } else if (parameters.getName().equals("HIGH_RISK")) {
         highRisk = "1".equals(parameters.getValue());
-      }
+      } else if (parameters.getName().equals("CLINICAL_DIFF")) {
+        clinicalDiff = "1".equals(parameters.getValue());
+      } else if (parameters.getName().equals("COST_DIFF_UL")) {
+        costDiffUL = parameters.getValue();
+      } else if (parameters.getName().equals("COST_DIFF_LL")) {
+        costDiffLL = parameters.getValue();
+      } else if (parameters.getName().equals("ORDER_UL")) {
+        orderUL = parameters.getValue();
+      } else if (parameters.getName().equals("ORDER_LL")) {
+        orderLL = parameters.getValue();
+      } else if (parameters.getName().equals("IP_DAYS")) {
+        if (parameters.getValue() != null) {
+          ipDays = Integer.parseInt(parameters.getValue());
+        } else {
+          ipDays = 5;
+        }
+      } else if (parameters.getName().equals("SUSPECTED")) {
+        suspected = "1".equals(parameters.getValue());
+      } else if (parameters.getName().equals("DRG_SUGGESTION")) {
+        drgSuggestion = "1".equals(parameters.getValue());
+      } 
     }
   }
 
@@ -155,6 +199,70 @@ public class IntelligentConfig extends BaseResponse {
 
   public void setHighRisk(Boolean highRisk) {
     this.highRisk = highRisk;
+  }
+
+  public Boolean getClinicalDiff() {
+    return clinicalDiff;
+  }
+
+  public void setClinicalDiff(Boolean clinicalDiff) {
+    this.clinicalDiff = clinicalDiff;
+  }
+
+  public String getCostDiffUL() {
+    return costDiffUL;
+  }
+
+  public void setCostDiffUL(String costDiffUL) {
+    this.costDiffUL = costDiffUL;
+  }
+
+  public String getCostDiffLL() {
+    return costDiffLL;
+  }
+
+  public void setCostDiffLL(String costDiffLL) {
+    this.costDiffLL = costDiffLL;
+  }
+
+  public String getOrderUL() {
+    return orderUL;
+  }
+
+  public void setOrderUL(String orderUL) {
+    this.orderUL = orderUL;
+  }
+
+  public String getOrderLL() {
+    return orderLL;
+  }
+
+  public void setOrderLL(String orderLL) {
+    this.orderLL = orderLL;
+  }
+
+  public Integer getIpDays() {
+    return ipDays;
+  }
+
+  public void setIpDays(Integer ipDays) {
+    this.ipDays = ipDays;
+  }
+
+  public Boolean getSuspected() {
+    return suspected;
+  }
+
+  public void setSuspected(Boolean suspected) {
+    this.suspected = suspected;
+  }
+
+  public Boolean getDrgSuggestion() {
+    return drgSuggestion;
+  }
+
+  public void setDrgSuggestion(Boolean drgSuggestion) {
+    this.drgSuggestion = drgSuggestion;
   }
   
 }

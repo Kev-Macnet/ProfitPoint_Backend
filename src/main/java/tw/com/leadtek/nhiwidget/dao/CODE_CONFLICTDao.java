@@ -11,4 +11,6 @@ import tw.com.leadtek.nhiwidget.model.rdb.CODE_CONFLICT;
 public interface CODE_CONFLICTDao extends JpaRepository<CODE_CONFLICT, Long>, JpaSpecificationExecutor<CODE_CONFLICT> {
 
   public List<CODE_CONFLICT> findByCodeAndOwnExpCodeAndCodeType(String code, String ownExpCode, Integer codeType);
+  
+  public List<CODE_CONFLICT> findByCodeType(Integer codeType);
 }

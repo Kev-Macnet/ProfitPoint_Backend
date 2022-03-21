@@ -697,9 +697,8 @@ public class SystemController extends BaseController {
       reportService.calculateDRGMonthly(param);
     } else if ("Weekly".equals(name)) {
       Calendar cal = Calendar.getInstance();
-      cal.set(Calendar.YEAR, 2018);
-      cal.set(Calendar.MONTH, 1);
-      cal.set(Calendar.DAY_OF_MONTH, 1);
+      cal.add(Calendar.YEAR, -4);
+      cal = parametersService.getMinMaxCalendar(cal.getTime(), true);
       reportService.calculatePointWeekly(cal);
     }
     return returnAPIResult(null);

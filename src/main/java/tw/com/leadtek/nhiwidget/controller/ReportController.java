@@ -5,6 +5,7 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +20,14 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
+import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
+import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
+import tw.com.leadtek.nhiwidget.payload.report.VisitsVarietyPayload;
 import tw.com.leadtek.nhiwidget.service.ReportService;
 
 @Api(tags = "快速報告相關API", value = "快速報告相關API")
@@ -174,4 +178,55 @@ public class ReportController extends BaseController {
     return ResponseEntity.ok(reportService.getDrgMonthlySection(year, month));
   }
   
+  @ApiOperation(value = "取得健保申報總額達成趨勢資料", notes = "取得健保申報總額達成趨勢資料")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/achievementRate")
+  public ResponseEntity<AchievementWeekly> getAchievementRate(
+      @ApiParam(value = "西元年", example = "2021") @RequestParam(required = true) String year,
+      @ApiParam(value = "第幾週(week of year)", example = "16") @RequestParam(required = true) String week){
+    
+    Calendar cal = Calendar.getInstance();
+    cal.set(Calendar.YEAR, Integer.parseInt(year));
+    cal.set(Calendar.WEEK_OF_YEAR, Integer.parseInt(week));
+    cal.set(Calendar.DAY_OF_WEEK, Calendar.SATURDAY);
+
+    return ResponseEntity.ok(reportService.getAchievementWeekly(cal));
+  }
+  
+  @ApiOperation(value = "取得健保總額累積達成率", notes = "取得健保申報總額達成趨勢資料")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/achievementRateQuarter")
+  public ResponseEntity<AchievementQuarter> getAchievementRateQuarter(
+      @ApiParam(value = "西元年，若為多筆資料，用空格隔開", example = "2021 2021 2021") @RequestParam(required = true) String year,
+      @ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true) String quarter){
+    
+    return ResponseEntity.ok(reportService.getAchievementQuarter(year, quarter));
+  }
+  
+  @ApiOperation(value = "取得門急診/住院/出院人次變化", notes = "取得門急診/住院/出院人次變化")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/visitsVariety")
+  public ResponseEntity<VisitsVarietyPayload> getVisitsVariety(
+      @ApiParam(name = "sdate", value = "開始日期", example = "2021/01/01") 
+      @RequestParam(required = false) String sdate, 
+      @ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") 
+      @RequestParam(required = false) String edate,
+      @ApiParam(value = "西元年", example = "2021") @RequestParam(required = false) String year,
+      @ApiParam(value = "第幾週(week of year)", example = "16") @RequestParam(required = false) String week){
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+    java.sql.Date startDate = null;
+    java.sql.Date endDate = null;
+    try {
+      startDate = new java.sql.Date(sdf.parse(sdate).getTime());
+      endDate = new java.sql.Date(sdf.parse(edate).getTime());
+    } catch (ParseException e) {
+      VisitsVarietyPayload result = new VisitsVarietyPayload();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("日期格式不正確");
+      return ResponseEntity.badRequest().body(result);
+    }
+    return ResponseEntity.ok(reportService.getVisitsVariety(startDate, endDate, year, week));
+  }
+
 }

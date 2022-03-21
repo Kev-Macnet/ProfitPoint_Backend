@@ -10,6 +10,7 @@ import java.util.Map;
 import org.apache.commons.collections4.map.HashedMap;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
 import tw.com.leadtek.nhiwidget.service.ReportService;
 
@@ -43,9 +44,9 @@ public class DRGMonthlyPayload extends DRGReportPayload implements Serializable 
     this.diffDrg = applPointDrg - pointDrg;
     funcTypes = new ArrayList<String>();
     quantityMap = new HashedMap<String, NameValueList2>();
-    quantityMap.put(ReportService.FUNC_TYPE_ALL, new NameValueList2(ReportService.FUNC_TYPE_ALL_NAME));
+    quantityMap.put(XMLConstant.FUNC_TYPE_ALL, new NameValueList2(ReportService.FUNC_TYPE_ALL_NAME));
     pointMap = new HashedMap<String, NameValueList2>();
-    pointMap.put(ReportService.FUNC_TYPE_ALL, new NameValueList2(ReportService.FUNC_TYPE_ALL_NAME));
+    pointMap.put(XMLConstant.FUNC_TYPE_ALL, new NameValueList2(ReportService.FUNC_TYPE_ALL_NAME));
   }
 
   public NameValueList2 getQuantityList(String funcType, String funcTypeName) {
