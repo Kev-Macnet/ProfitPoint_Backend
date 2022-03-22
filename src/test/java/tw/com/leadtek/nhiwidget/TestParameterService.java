@@ -26,6 +26,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import tw.com.leadtek.nhiwidget.dao.PARAMETERSDao;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
+import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.ExcelUtil;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -34,8 +35,6 @@ import tw.com.leadtek.tools.ExcelUtil;
 public class TestParameterService {
 
   private Logger logger = LogManager.getLogger();
-
-  private final static String DATE = "yyyy/MM/dd";
 
   // private final static String FRONT_END_DATETIME = "yyyy-MM-dd HH:mm:ss";
 
@@ -113,7 +112,7 @@ public class TestParameterService {
   }
 
   private void upsert(PARAMETERS p) {
-    SimpleDateFormat sdf = new SimpleDateFormat(DATE);
+    SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
     List<PARAMETERS> list = pDao.findByName(p.getName());
     if (list != null) {
       boolean isFound = false;

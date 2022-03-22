@@ -3,10 +3,8 @@
  */
 package tw.com.leadtek.nhiwidget.controller;
 
-import java.security.Principal;
 import java.text.DecimalFormat;
 import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +33,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -74,6 +71,16 @@ public class UserController extends BaseController {
   @PostMapping("/auth/user")
   public ResponseEntity<BaseResponse> newUser(
       @ApiParam(value = "帳號內容") @RequestBody(required = true) UserRequest request) {
+    
+    if (userService.getUserCount() > 0 ) {
+      UserDetailsImpl loginUser = getUserDetails();
+      if (loginUser == null) {
+        BaseResponse result = new BaseResponse();
+        result.setResult("error");
+        result.setMessage("無法取得登入狀態");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+      }
+    }
     USER result = userService.newUser(request);
     if (result != null) {
       return returnIDResult(result.getId().toString());

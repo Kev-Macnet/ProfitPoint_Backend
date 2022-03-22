@@ -176,7 +176,7 @@ public class TestXML {
    * 匯入XML tag定義檔，至用到的常數
    */
   //@Ignore
-  //@Test
+  @Test
   public void readExcel() {
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\inpatient.xlsx", "IP");
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\outpatient.xlsx", "OP");

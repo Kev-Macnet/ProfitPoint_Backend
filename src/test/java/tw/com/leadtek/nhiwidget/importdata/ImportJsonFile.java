@@ -219,7 +219,7 @@ public class ImportJsonFile {
   public String postAPI(String api, String requestBody, String jwt) {
     System.out.println("request=" + requestBody);
     SendHTTP send = new SendHTTP();
-    send.setServerIP("10.10.5.23");
+    send.setServerIP("localhost");
     send.setPort("8081");
     String response = send.postAPI(jwt, api, requestBody);
     System.out.println(response);
@@ -233,7 +233,7 @@ public class ImportJsonFile {
     send.setPort(port);
     LoginRequest lr = new LoginRequest();
     lr.setPassword("leadtek");
-    lr.setUsername("kenlai");
+    lr.setUsername("leadtek");
 
     ObjectMapper objectMapper = new ObjectMapper();
     String requestBody = null;
@@ -278,12 +278,13 @@ public class ImportJsonFile {
   }
 
   public void addDepartmentFile() {
-    String filename = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Test\\醫療展\\department.txt";
-    String jwt = signin("10.10.5.30", "8081");
+    String filename = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\department.txt";
+    String jwt = signin("localhost", "8081");
     if (jwt == null) {
       System.out.println("token is null");
       return;
     }
+    System.out.println("jwt=" + jwt);
     try {
       BufferedReader br = new BufferedReader(
           new InputStreamReader(new FileInputStream(new File(filename)), "UTF-8"));
@@ -299,8 +300,8 @@ public class ImportJsonFile {
         department.setNhCode(ss[1]);
         department.setStatus(1);
         department.setCode(ss[1]);
-        department.setNote("醫療展demo用");
-        String response = postAPI("/department", jwt, objectMapper.writeValueAsString(department));
+        department.setNote("test");
+        String response = postAPI("/department", objectMapper.writeValueAsString(department), jwt);
         if (response.indexOf(":500") > 0) {
           break;
         }
@@ -313,8 +314,8 @@ public class ImportJsonFile {
 
   public void addUserFile() {
     // String filename = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Test\\藥師.txt";
-    String filename = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Test\\醫療展\\user.txt";
-    String jwt = signin("10.10.5.30", "8081");
+    String filename = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\user.txt";
+    String jwt = signin("localhost", "8081");
     if (jwt == null) {
       System.out.println("token is null");
       return;
@@ -336,7 +337,7 @@ public class ImportJsonFile {
         user.setUsername(ss[0]);
         user.setRole(ss[2]);
         user.setStatus(1);
-        String response = postAPI("/auth/user", jwt, objectMapper.writeValueAsString(user));
+        String response = postAPI("/auth/user", objectMapper.writeValueAsString(user), jwt);
         if (response.indexOf(":500") > 0) {
           break;
         }
@@ -348,7 +349,7 @@ public class ImportJsonFile {
   }
 
   public static void main(String[] args) {
-    ImportJsonFile ijf = new ImportJsonFile();
+    //ImportJsonFile ijf = new ImportJsonFile();
     //System.out.println(ijf.signin());
 
     // new ImportJsonFile().readFile(
@@ -356,14 +357,8 @@ public class ImportJsonFile {
     // ImportJsonFile.validateJsonDir();
 
     //ImportJsonFile.addMrDetail();
-    String values = "1641520372446,1,2,3,4";
-    String[] ss = values.split(",");
-    for(int i=0;i<ss.length;i++) {
-      System.out.println("i=" + i + ",value=" + ss[i]);
-    }
-
-    // new ImportJsonFile().addDepartmentFile();
-    // new ImportJsonFile().addUserFile();
+    new ImportJsonFile().addDepartmentFile();
+    new ImportJsonFile().addUserFile();
     // String a =
     // ",00156A,18001C,AC373441G0,AC376011G0,BC25350100,BC21914100,BC030771G0,05209A,BC25350100,";
     // String b = "BC25350100";

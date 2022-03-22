@@ -109,10 +109,11 @@ public class UserService {
       emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
           "系統隨機產生密碼:" + newPassword);
       user.setPassword(encoder.encode(newPassword));
+      user.setStatus(USER.STATUS_CHANGE_PASSWORD);
     } else {
       user.setPassword(encoder.encode(user.getPassword()));
+      user.setStatus(USER.STATUS_ACTIVE);
     }
-    user.setStatus(USER.STATUS_CHANGE_PASSWORD);
     user.setCreateAt(new Date());
     user.setUpdateAt(new Date());
     user = userDao.save(user);
@@ -654,6 +655,7 @@ public class UserService {
   }
 
   public long getUserIdByName(String name) {
+    
     USER user = findUser(name);
     if (user != null) {
       return user.getId();
@@ -696,5 +698,9 @@ public class UserService {
       }
     }
     return result;
+  }
+  
+  public long getUserCount() {
+    return userDao.count();
   }
 }

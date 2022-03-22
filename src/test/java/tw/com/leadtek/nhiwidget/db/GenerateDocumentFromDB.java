@@ -222,7 +222,7 @@ public class GenerateDocumentFromDB {
     // username : NWUSER
     // password : Leadtek2021
     GenerateDocumentFromDB gen = new GenerateDocumentFromDB(HANA, "NWUSER");
-    gen.connect("10.10.5.55", 30041, "NWUSER", "Leadtek2021");
+    gen.connect("10.10.5.55", 30041, "NWUSER", "Leadtek");
     gen.gen("NWUSER.csv");
   }
 
