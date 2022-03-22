@@ -281,6 +281,7 @@ public class MR {
     } else {
       this.mrEndDate = DateTool.convertChineseToYear(ipd.getApplEndDate());
     }
+    this.totalDot = 0;
     if (ipd.getApplDot() != null) {
       this.totalDot = ipd.getApplDot();
     }
@@ -910,7 +911,7 @@ public class MR {
 
     if (opd.getFuncEndDate() != null && opd.getFuncEndDate().length() > 0) {
       Date newDate = DateTool.convertChineseToYear(opd.getFuncEndDate());
-      if (this.mrEndDate != null && this.mrEndDate.getTime() != newDate.getTime()) {
+      if (diffList != null && this.mrEndDate != null && this.mrEndDate.getTime() != newDate.getTime()) {
         SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
         FILE_DIFF fd = new FILE_DIFF(id, "outDate", sdf.format(newDate));
         diffList.add(fd);        
@@ -920,7 +921,7 @@ public class MR {
       }
     } else if (opd.getFuncDate() != null && opd.getFuncDate().length() > 0) {
       Date newDate = DateTool.convertChineseToYear(opd.getFuncDate());
-      if (this.mrDate != null && this.mrDate.getTime() != newDate.getTime()) {
+      if (diffList != null && this.mrDate != null && this.mrDate.getTime() != newDate.getTime()) {
         SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
         FILE_DIFF fd = new FILE_DIFF(id, "inDate", sdf.format(newDate));
         diffList.add(fd);        

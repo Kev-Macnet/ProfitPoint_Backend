@@ -127,7 +127,7 @@ public class NHIWidgetXMLService {
 
   private Logger logger = LogManager.getLogger();
 
-  private final String DOCTYPE = "<?xml version=\"1.0\" encoding=\"Big5\"?>\n";
+  public final static String DOCTYPE = "<?xml version=\"1.0\" encoding=\"Big5\"?>\n";
 
   private final int IGNORE_STATUS = 100;
 
@@ -650,7 +650,11 @@ public class NHIWidgetXMLService {
         }
       }
       if (sb.length() > 1) {
-        mr.setCodeAll(sb.toString());
+        if (sb.toString().length() > 4000) {
+          mr.setCodeAll(sb.toString().substring(0, 3999));          
+        } else {
+          mr.setCodeAll(sb.toString());
+        }
       } else {
         if (mr.getCodeAll() != null) {
           mr.setCodeAll(null);
@@ -1245,9 +1249,6 @@ public class NHIWidgetXMLService {
     }
     if (index > -1) {
       list.remove(index);
-    } else {
-      System.out.println(
-          "not found:" + ipd.getIdBirthYmd() + "," + ipd.getRocId() + "," + ipd.getInDate());
     }
   }
 
@@ -1424,9 +1425,9 @@ public class NHIWidgetXMLService {
       Date sDate = (sdate == null) ? null : new Date(sdf.parse(sdate).getTime());
       Date eDate = (edate == null) ? null : new Date(sdf.parse(edate).getTime());
 
-      List<IP_D> ipdList = ipdDao.findByIDFromMR("10", sDate, eDate);
+      List<IP_D> ipdList = ipdDao.findByIDFromMR("20", sDate, eDate);
       if (ipdList != null && ipdList.size() > 0) {
-        List<IP_P> ippList = ippDao.findByIpdIDFromMR("10", sDate, eDate);
+        List<IP_P> ippList = ippDao.findByIpdIDFromMR("20", sDate, eDate);
 
         for (IP_D ip_D : ipdList) {
           IP_DData ip_Ddata = new IP_DData();

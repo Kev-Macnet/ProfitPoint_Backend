@@ -18,6 +18,7 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.payload.UserRequest;
+import tw.com.leadtek.nhiwidget.service.SystemService;
 import tw.com.leadtek.nhiwidget.service.UserService;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.ExcelUtil;
@@ -57,6 +59,10 @@ public class InitialEnvironment {
   @Autowired
   private UserService userService;
   
+  @Autowired
+  private SystemService systemService;
+
+  @Ignore
   @Test
   public void importData() {
     if(userDao.count() ==0) {
@@ -360,8 +366,9 @@ public class InitialEnvironment {
     user.setRocId("leadtek");
     user.setDisplayName("leadtek");
     user.setUsername("leadtek");
-    user.setRole("Z");
+    user.setRole("A");
     user.setStatus(1);
     userService.newUser(user);
   }
+  
 }
