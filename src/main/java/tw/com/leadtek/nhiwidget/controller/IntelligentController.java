@@ -48,6 +48,9 @@ public class IntelligentController extends BaseController {
         example = "2021/03/15") @RequestParam(required = false) String sdate,
       @ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
         example = "2021/03/18") @RequestParam(required = false) String edate,
+      @ApiParam(value = "申報西元年", example = "2021") @RequestParam(required = false) String applY,
+      @ApiParam(value = "申報月份", example = "1") @RequestParam(required = false) String applM,
+      @ApiParam(value = "資料格式，門急診:10，住院:20", example = "10") @RequestParam(required = false) String dataFormat,
       @ApiParam(name = "minPoints", value = "最小申報點數",
         example = "175") @RequestParam(required = false) Integer minPoints,
       @ApiParam(name = "maxPoints", value = "最大申報點數",
@@ -99,6 +102,8 @@ public class IntelligentController extends BaseController {
       }
     }
     
+    String applYm = getChineseYearMonth(applY, applM);
+    
     String column = orderBy;
     if (column != null) {
       if (column.equals("sdate")) {
@@ -135,6 +140,13 @@ public class IntelligentController extends BaseController {
     }
     return ResponseEntity.ok(
         intelligentService.getIntelligent(user, menu, startDate, endDate, minPoints, maxPoints, funcType,
-            funcTypec, prsnId, prsnName, orderCode, inhCode, icd, reason, column, asc, perPageInt, page));
+            funcTypec, prsnId, prsnName, orderCode, inhCode, icd, reason, applYm, dataFormat, column, asc, perPageInt, page));
+  }
+  
+  private String getChineseYearMonth(String applY, String applM) {
+    if (applY == null || applY.length() == 0 || applM == null || applM.length() == 0) {
+      return null;
+    }
+    return String.valueOf((Integer.parseInt(applY) - 1911) * 100 + Integer.parseInt(applM));
   }
 }

@@ -238,9 +238,17 @@ public class UserController extends BaseController {
             loginRequest.getUsername(), loginRequest.getPassword()));
 
     USER user = userService.findUser(loginRequest.getUsername());
-    if (user != null && user.getStatus() != null && user.getStatus().intValue() == 0) {
+    if (user == null) {
       JwtResponse jwt = new JwtResponse();
+      jwt.setResult("error");
+      jwt.setMessage("帳號不存在");
       return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN); 
+    }
+    if (user.getStatus() != null && user.getStatus().intValue() == 0) {
+      JwtResponse jwt = new JwtResponse();
+      jwt.setResult("error");
+      jwt.setMessage("帳號已停用");
+      return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
     }
     SecurityContextHolder.getContext().setAuthentication(authentication);
     String jwt = jwtUtils.generateJwtToken(authentication);

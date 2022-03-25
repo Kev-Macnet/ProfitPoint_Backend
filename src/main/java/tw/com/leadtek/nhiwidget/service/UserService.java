@@ -381,7 +381,6 @@ public class UserService {
 
       UserRequest ur = new UserRequest(user);
       ur.setPassword(null);
-      ur.setCreateAt(null);
       if (departments != null) {
         ur.setDepartments(collectionToString(departments.values(), ","));
         ur.setDepartmentId(collectionToString(departments.keySet(), ","));

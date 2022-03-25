@@ -1853,7 +1853,7 @@ public class ParametersService {
     return new CodeConflictPayload(cc);
   }
 
-  public String upsertCodeConflict(CodeConflictPayload ccp, boolean checkSameId) {
+  public String upsertCodeConflict(CodeConflictPayload ccp, boolean isUpdate) {
     List<CODE_CONFLICT> list =
         codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(ccp.getCode(), ccp.getOwnCode(), new Integer(1));
     if (list != null && list.size() > 0) {
@@ -1862,6 +1862,15 @@ public class ParametersService {
         return "該時段有相同的健保項目對應自費項目並存設定！";
       }
     }
+    if (isUpdate) {
+      Optional<CODE_CONFLICT> optional = codeConflictDao.findById(ccp.getId());
+      if (!optional.isPresent()) {
+        return "id 不存在";
+      }
+      CODE_CONFLICT ccDb = optional.get();
+      deleteIntelligent(INTELLIGENT_REASON.INH_OWN_EXIST.value(), ccDb.getCode(), null);
+    }
+    
     CODE_CONFLICT cc = codeConflictDao.save(ccp.toDB());
     recalculateCodeConflictByThread(cc);
     return null;
@@ -1983,7 +1992,7 @@ public class ParametersService {
         codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(mr.getIcdcm1(), dn.getDeductedOrder(), new Integer(2));
     if (list != null && list.size() > 0) {
       for (CODE_CONFLICT codeConflict : list) {
-        if ("00".equals(codeConflict.getDataFormat())) {
+        if (XMLConstant.FUNC_TYPE_ALL.equals(codeConflict.getDataFormat())) {
           if (mr.getDataFormat().equals(XMLConstant.DATA_FORMAT_IP)) {
             codeConflict.setDataFormat(XMLConstant.DATA_FORMAT_OP);
           } else if (mr.getDataFormat().equals(XMLConstant.DATA_FORMAT_OP)) {

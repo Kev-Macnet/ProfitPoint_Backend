@@ -96,7 +96,7 @@ public class PayCodePayload extends PAY_CODE implements Serializable {
     result.setUpdateAt(new Date());
 
     result.setStartDate(DateTool.stringToDate(sday));
-    if (eday == null) {
+    if (eday == null || eday.length() == 0) {
       eday = DateTool.MAX_DATE;
     }
     result.setEndDate(DateTool.stringToDate(eday));

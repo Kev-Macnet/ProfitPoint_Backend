@@ -18,6 +18,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class CODE_THRESHOLD {
 
   /**
+   * 門診和急診都有自己的設定
+   */
+  public final static String DATA_FORMAT_OP_IP_OWNS = "11";
+  /**
    * 序號
    */
   @Id

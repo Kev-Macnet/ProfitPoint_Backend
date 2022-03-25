@@ -7,12 +7,12 @@ import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Order;
@@ -24,24 +24,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import tw.com.leadtek.nhiwidget.controller.BaseController;
-import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_CODEDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.model.DrgCalculate;
-import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
-import tw.com.leadtek.nhiwidget.model.rdb.USER;
-import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
-import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.DrgCodeListResponse;
 import tw.com.leadtek.nhiwidget.payload.DrgCodePayload;
 import tw.com.leadtek.tools.DateTool;
@@ -511,11 +499,21 @@ public class DrgCalService {
       return drgDao.findById(code.getId()).orElse(null);
     }
     List<DRG_CODE> list = drgDao.findByCodeAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-        code.getCode(), code.getStartDate(), code.getStartDate());
+        code.getCode(), code.getEndDate(), code.getEndDate());
     if (list == null || list.size() == 0) {
       return null;
     }
-    return list.get(0);
+    for (DRG_CODE db : list) {
+      if (db.getStartDate().getTime() == code.getStartDate().getTime()
+          && db.getEndDate().getTime() == code.getEndDate().getTime()) {
+        return db;
+      }
+      if (db.getStartDate().getTime() > code.getStartDate().getTime()
+          && db.getStartDate().getTime() > code.getEndDate().getTime()) {
+        return db;
+      }
+    }
+    return null;
   }
 
   public DRG_CODE getDrgCode(Long id) {
@@ -529,7 +527,24 @@ public class DrgCalService {
   }
 
   public void saveDrgCode(DRG_CODE code) {
+    List<DRG_CODE> list = drgDao.findByCode(code.getCode());
     drgDao.save(code);
+    if (list == null || list.size() == 0) {
+      return;
+    }
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(code.getStartDate());
+    cal.add(Calendar.DAY_OF_YEAR, -1);
+    for (DRG_CODE db : list) {
+      if (db != null && db.getId().longValue() == code.getId().longValue()) {
+        continue;
+      }
+      if (db.getStartDate().getTime() < code.getEndDate().getTime()
+          && db.getEndDate().getTime() >= code.getStartDate().getTime()) {
+        db.setEndDate(cal.getTime());
+        drgDao.save(db);
+      }
+    }
   }
 
   public void deleteDrgCode(DRG_CODE code) {

@@ -111,7 +111,7 @@ public class MyListController extends BaseController {
     String dataFormat = null;
     if (isOp != null && isOp.booleanValue()) {
       if (isIp != null && isIp) {
-        // null
+        // dataFormat = null;
       } else {
         dataFormat = "10";
       }

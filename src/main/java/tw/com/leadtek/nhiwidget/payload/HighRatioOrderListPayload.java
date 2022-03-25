@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_THRESHOLD;
 
 @ApiModel("應用比例偏高醫令列表")
@@ -29,7 +30,6 @@ public class HighRatioOrderListPayload extends RareICDListPayload implements Ser
   
   public HighRatioOrderListPayload(CODE_THRESHOLD ct) {
     id = ct.getId();
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
     code = ct.getCode();
     sdate = ct.getStartDate();
     edate = ct.getEndDate();
@@ -62,12 +62,12 @@ public class HighRatioOrderListPayload extends RareICDListPayload implements Ser
     } else {
       average = false;
     }
-    if ("00".equals(ct.getDataFormat()) || "11".equals(ct.getDataFormat())) {
+    if (XMLConstant.FUNC_TYPE_ALL.equals(ct.getDataFormat()) || CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
       ip = true;
       op = true;
-    } else if ("10".equals(ct.getDataFormat())) {
+    } else if (XMLConstant.DATA_FORMAT_OP.equals(ct.getDataFormat())) {
       op = true;
-    }  else if ("20".equals(ct.getDataFormat())) {
+    }  else if (XMLConstant.DATA_FORMAT_IP.equals(ct.getDataFormat())) {
       ip = true;
     }
     inhCode = ct.getInhCode();

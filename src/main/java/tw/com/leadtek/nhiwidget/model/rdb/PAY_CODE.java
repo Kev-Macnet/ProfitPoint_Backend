@@ -61,7 +61,7 @@ public class PAY_CODE implements Serializable {
   protected Double ownExpense;
 
   @Column(name = "CODE_TYPE")
-  @ApiModelProperty(value = "費用分類，如不分類、病房費、藥費…", example = "病房費", required = false)
+  @ApiModelProperty(value = "費用分類，如不分類、病房費、藥費…", example = "病房費", required = true)
   protected String codeType;
 
   @ApiModelProperty(value = "ATC分類代碼", example = "A01", required = false)

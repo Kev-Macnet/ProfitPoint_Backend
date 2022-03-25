@@ -27,10 +27,10 @@ public class MRCount extends MRStatusCount implements Serializable {
 
   @ApiModelProperty(value = "總病歷數", required = true)
   protected Integer totalMr;
-
+  
   @ApiModelProperty(value = "DRG病歷數", required = true)
   protected Integer drg;
-  
+
   public MRCount() {
     dontChange = 0;
     questionMark = 0;
@@ -77,7 +77,7 @@ public class MRCount extends MRStatusCount implements Serializable {
   public void setTotalMr(Integer totalMr) {
     this.totalMr = totalMr;
   }
-
+  
   public Integer getDrg() {
     return drg;
   }

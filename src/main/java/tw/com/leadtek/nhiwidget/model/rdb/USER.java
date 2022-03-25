@@ -11,6 +11,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -69,6 +70,7 @@ public class USER {
    */
   @ApiModelProperty(hidden = true)
   @Column(name = "CREATE_AT", nullable = false)
+  @JsonFormat(pattern = "yyyy/MM/dd HH:mm:ss", timezone = "GMT+8")
   protected Date createAt;
 
   /**
@@ -76,6 +78,7 @@ public class USER {
    */
   @ApiModelProperty(hidden = true)
   @Column(name = "UPDATE_AT", nullable = false)
+  @JsonFormat(pattern = "yyyy/MM/dd HH:mm:ss", timezone = "GMT+8")
   protected Date updateAt;
   
   public USER() {}

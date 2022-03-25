@@ -31,6 +31,7 @@ public class MRStatusCount implements Serializable {
   @ApiModelProperty(value = "疾病分類完成病歷數", required = true)
   protected Integer classified;
   
+  
   public MRStatusCount() {
     dontChange = 0;
     questionMark = 0;

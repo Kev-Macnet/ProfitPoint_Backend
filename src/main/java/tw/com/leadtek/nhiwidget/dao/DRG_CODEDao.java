@@ -15,4 +15,5 @@ public interface DRG_CODEDao extends JpaRepository<DRG_CODE, Long>, JpaSpecifica
   
   public List<DRG_CODE> findByCodeAndStartDateAndEndDate(String code, Date d1, Date d2);
   
+  public List<DRG_CODE> findByCode(String code);
 }

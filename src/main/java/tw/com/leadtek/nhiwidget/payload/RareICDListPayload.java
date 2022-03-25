@@ -44,7 +44,7 @@ public class RareICDListPayload extends StartEndPayload implements Serializable 
     ip = false;
     op = false;
  
-    if ("00".equals(ct.getDataFormat()) || "11".equals(ct.getDataFormat())) {
+    if ("00".equals(ct.getDataFormat()) || CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
       ip = true;
       op = true;
     } else if ("10".equals(ct.getDataFormat())) {

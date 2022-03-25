@@ -5,9 +5,13 @@ package tw.com.leadtek.nhiwidget.security.jwt;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 
 @ApiModel("login成功後回傳的JWT")
-public class JwtResponse {
+public class JwtResponse extends BaseResponse {
+
+  
+  private static final long serialVersionUID = -6120521552861907461L;
 
   @ApiModelProperty(value = "JWT", example = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0IiwidWlkIjoiNWZiY2JmNmYxMjdkZWIwOGM1OGZjMjlmIiwiZXhwIjoxNjE1MjcwNTU0fQ.g6dfOms4tK5hhnDbJyYoAaXSSGH4QPopl1sLK2559EQ", required = true)
   private String token;

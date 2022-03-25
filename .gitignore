@@ -17,3 +17,4 @@ gradle
 gradlew*
 bin/
 drg_data/
+backup_data

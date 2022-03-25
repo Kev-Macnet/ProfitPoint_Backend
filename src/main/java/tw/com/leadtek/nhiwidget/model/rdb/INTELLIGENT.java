@@ -144,6 +144,13 @@ public class INTELLIGENT {
   @Column(name = "ROC_ID", length = 12)
   @JsonIgnore
   private String rocId;
+  
+  /**
+   * 院內碼
+   */
+  @Column(name = "APPL_YM", length = 5)
+  @JsonIgnore
+  private String applYm;
 
   /**
    * 更新日期
@@ -398,6 +405,14 @@ public class INTELLIGENT {
 
   public void setRocId(String rocId) {
     this.rocId = rocId;
+  }
+
+  public String getApplYm() {
+    return applYm;
+  }
+
+  public void setApplYm(String applYm) {
+    this.applYm = applYm;
   }
   
 }

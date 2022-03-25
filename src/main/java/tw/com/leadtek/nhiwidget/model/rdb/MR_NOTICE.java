@@ -231,7 +231,7 @@ public class MR_NOTICE {
     noticeDate = new Date();
     noticePpl = myMr.getNoticePpl();
     noticeName = myMr.getNoticeName();
-    status = 0;
+    status = myMr.getStatus().intValue();
     readedPpl = 0;
     ym = myMr.getYm();
     dataFormat = myMr.getDataFormat();

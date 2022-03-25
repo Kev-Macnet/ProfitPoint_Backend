@@ -68,7 +68,7 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
     code = ct.getCode();
     sdate = ct.getStartDate();
     edate = ct.getEndDate();
-    if ("11".equals(ct.getDataFormat())) {
+    if (CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
       ip = true;
       op = true;
       both = false;
@@ -123,7 +123,7 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
       result.setDataFormat("00");
     } else if (ip && op) {
       // 有門診數值也有住院數值，但不共用
-      result.setDataFormat("11");
+      result.setDataFormat(CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS);
     } else if (ip) {
       result.setDataFormat("20");
     } else if (op) {

@@ -4,6 +4,7 @@
 package tw.com.leadtek.nhiwidget.importdata;
 
 import java.util.List;
+import java.util.Optional;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -12,10 +13,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.dao.INTELLIGENTDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
+import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.tools.DateTool;
 
@@ -32,6 +36,9 @@ public class FixMrDateMrEndDate {
   
   @Autowired
   private MRDao mrDao;
+  
+  @Autowired
+  private INTELLIGENTDao intelligentDao;
   
   @Ignore
   @Test
@@ -68,12 +75,27 @@ public class FixMrDateMrEndDate {
     }
   }
   
+  @Ignore
   @Test
   public void updateIpdLeaveDate() {
     List<IP_D> list = ipdDao.findOutDateIsNotNull();
     for (IP_D ipd : list) {
       java.sql.Date leaveDate = new java.sql.Date(DateTool.convertChineseToYear(ipd.getOutDate()).getTime());
       ipdDao.updateLeaveDate(leaveDate, ipd.getId());
+    }
+  }
+  
+  @Test
+  public void updateIntelligentApplYm() {
+    List<INTELLIGENT> list = intelligentDao.findAll();
+    for (INTELLIGENT intelligent : list) {
+      if (intelligent.getApplYm() == null) {
+        Optional<MR> optional = mrDao.findById(intelligent.getMrId());
+        if (optional.isPresent()) {
+          intelligent.setApplYm(optional.get().getApplYm());
+          intelligentDao.save(intelligent);
+        }
+      }
     }
   }
 }

@@ -155,8 +155,9 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "新增一組DRG code", notes = "新增一組DRG code")
   @PostMapping("/drg")
   public ResponseEntity<BaseResponse> newDRG(@RequestBody DrgCodePayload request) {
-    logger.info("/drg new:" + request.getCode());
-    logger.info(request.toString());
+    if (request.getStartDay() == null || request.getStartDay().length() == 0) {
+      
+    }
     request.setId(null);
     DRG_CODE drgCode = request.toDB();
     if (drgCode == null) {
@@ -165,6 +166,14 @@ public class SystemController extends BaseController {
     if (drgCode.getEndDate() != null && drgCode.getStartDate() != null
         && drgCode.getEndDate().getTime() < drgCode.getStartDate().getTime()) {
       return returnAPIResult("失效日不可小於生效日");
+    }
+    if (drgCode.getEndDate() == null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      try {
+        drgCode.setEndDate(sdf.parse(DateTool.MAX_DATE));
+      } catch (ParseException e) {
+        e.printStackTrace();
+      }
     }
     DRG_CODE drg = drgCalService.getDrgCode(drgCode);
     if (drg != null) {
@@ -338,8 +347,10 @@ public class SystemController extends BaseController {
         return ResponseEntity.badRequest().body(result);
       }
     }
-    return ResponseEntity.ok(systemService.getPayCode(startDay, endDay, atc, codeType, code,
-        inhCode, name, inhName, column, asc, perPageInt, pageInt));
+    String codeUC = (code == null) ? null : code.toUpperCase();
+    String inhCodeUC = (inhCode == null) ? null : inhCode.toUpperCase();
+    return ResponseEntity.ok(systemService.getPayCode(startDay, endDay, atc, codeType, codeUC,
+        inhCodeUC, name, inhName, column, asc, perPageInt, pageInt));
   }
 
   @ApiOperation(value = "新增一組代碼品項", notes = "新增一組代碼品項")
@@ -355,7 +366,6 @@ public class SystemController extends BaseController {
     if (oldPayCode != null) {
       return returnAPIResult("代碼品項 code " + request.getCode() + " 已存在且生效日、終止日一致");
     }
-
     systemService.savePayCode(pc, true);
     return returnAPIResult(null);
   }

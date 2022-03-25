@@ -3,7 +3,6 @@
  */
 package tw.com.leadtek.nhiwidget.service;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -19,6 +18,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.xml.XMLConstants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +45,6 @@ import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentRecord;
 import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentResponse;
 import tw.com.leadtek.nhiwidget.payload.intelligent.PilotProject;
-import tw.com.leadtek.nhiwidget.payload.mr.HomepageParameters;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.Utility;
@@ -93,8 +92,8 @@ public class IntelligentService {
 
   public IntelligentResponse getIntelligent(UserDetailsImpl user, String menu, Date sDate, Date eDate,
       Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
-      String prsnName, String code, String inhCode, String icd, Integer reason, String orderBy,
-      Boolean asc, int perPage, int page) {
+      String prsnName, String code, String inhCode, String icd, Integer reason, String applYm, 
+      String dataFormat, String orderBy, Boolean asc, int perPage, int page) {
     IntelligentResponse result = new IntelligentResponse();
 
     Specification<INTELLIGENT> spec = new Specification<INTELLIGENT>() {
@@ -106,7 +105,7 @@ public class IntelligentService {
 
         List<Predicate> predicate =
             getIntelligentPredicate(cb, root, query, menu, sDate, eDate, minPoints, maxPoints,
-                funcType, funcTypec, prsnId, prsnName, code, inhCode, icd, reason);
+                funcType, funcTypec, prsnId, prsnName, code, inhCode, icd, reason, applYm, dataFormat);
         if (reason != null) {
           addPredicate(root, predicate, cb, "conditionCode", reason.toString(), true, true, false);
         }
@@ -139,7 +138,7 @@ public class IntelligentService {
     result.setData(list);
 
     List<Tuple> tuples = groupByConditionCode(menu, sDate, eDate, minPoints, maxPoints,
-        funcType, funcTypec, prsnId, prsnName, code, inhCode, icd, reason);
+        funcType, funcTypec, prsnId, prsnName, code, inhCode, icd, reason, applYm, dataFormat);
     for (Tuple tuple : tuples) {
       int value = (tuple.get(1) instanceof Long) ? ((Long) tuple.get(1)).intValue()
           : ((Integer) tuple.get(1)).intValue();
@@ -176,10 +175,10 @@ public class IntelligentService {
     return result;
   }
   
-  private List<Predicate> getIntelligentPredicate( CriteriaBuilder cb, Root<INTELLIGENT> root, CriteriaQuery<?> query, 
-      String menu, Date sDate, Date eDate,
-      Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
-      String prsnName, String code, String inhCode, String icd, Integer reason){
+  private List<Predicate> getIntelligentPredicate(CriteriaBuilder cb, Root<INTELLIGENT> root, 
+      CriteriaQuery<?> query, String menu, Date sDate, Date eDate, Integer minPoints, 
+      Integer maxPoints, String funcType, String funcTypec, String prsnId, String prsnName, 
+      String code, String inhCode, String icd, Integer reason, String applYm, String dataFormat){
     List<Predicate> result = new ArrayList<Predicate>();
     if (sDate != null && eDate != null) {
       // predicate.add(cb.and(cb.between(root.get("startDate"), sDate, eDate),
@@ -192,6 +191,7 @@ public class IntelligentService {
     if (maxPoints != null) {
       result.add(cb.lessThanOrEqualTo(root.get("applDot"), maxPoints));
     }
+    
     addPredicate(root, result, cb, "prsnId", prsnId, true, false, false);
     addPredicate(root, result, cb, "funcType", funcType, true, false, false);
     addPredicate(root, result, cb, "funcTypec", funcTypec, true, false, false);
@@ -199,6 +199,8 @@ public class IntelligentService {
     addPredicate(root, result, cb, "code", code, true, false, true);
     addPredicate(root, result, cb, "inhCode", inhCode, true, false, true);
     addPredicate(root, result, cb, "icd", icd, true, false, true);
+    addPredicate(root, result, cb, "applYm", applYm, true, false, false);
+    addPredicate(root, result, cb, "dataFormat", dataFormat, true, false, false);
     // baseRule(固定條件判斷)，clincal(臨床路徑差異)，suspected(疑似職傷與異常就診記錄判斷)，drgSuggestion(DRG申報建議)
     if ("baseRule".equals(menu)) {
       result.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.VIOLATE.value(), INTELLIGENT_REASON.HIGH_RISK.value()));
@@ -249,14 +251,15 @@ public class IntelligentService {
   
   public List<Tuple> groupByConditionCode(String menu, Date sDate, Date eDate,
       Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
-      String prsnName, String code, String inhCode, String icd, Integer reason) {
+      String prsnName, String code, String inhCode, String icd, Integer reason, String applYm,
+      String dataFormat) {
     CriteriaBuilder cb = em.getCriteriaBuilder();
     CriteriaQuery<Tuple> query = cb.createTupleQuery();
     Root<INTELLIGENT> root = query.from(INTELLIGENT.class);
 
     query.select(cb.tuple(root.get("conditionCode"), cb.count(root)));
     List<Predicate> predicate = getIntelligentPredicate(cb, root, query, menu, sDate, eDate, minPoints, maxPoints,
-            funcType, funcTypec, prsnId, prsnName, code, inhCode, icd, reason);
+            funcType, funcTypec, prsnId, prsnName, code, inhCode, icd, reason, applYm, dataFormat);
  
     Predicate[] pre = new Predicate[predicate.size()];
     query.where(predicate.toArray(pre)).groupBy(root.get("conditionCode"));
@@ -283,17 +286,29 @@ public class IntelligentService {
 
   public void calculateRareICD(String chineseYm, CODE_THRESHOLD ct, String wording1M,
       String wording6M) {
-    if (ct.getIpTimesMStatus().intValue() == 1 && ct.getIpTimesM() != null) {
-      processRareICDByMonth(chineseYm, "20", ct, ct.getIpTimesM().intValue(), wording1M);
+    if (XMLConstant.FUNC_TYPE_ALL.equals(ct.getDataFormat())
+        || XMLConstant.DATA_FORMAT_IP.equals(ct.getDataFormat())
+        || CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
+      if (ct.getIpTimesMStatus().intValue() == 1 && ct.getIpTimesM() != null) {
+        processRareICDByMonth(chineseYm, XMLConstant.DATA_FORMAT_IP, ct,
+            ct.getIpTimesM().intValue(), wording1M);
+      }
+      if (ct.getIpTimes6mStatus().intValue() == 1 && ct.getIpTimes6m() != null) {
+        processRareICDBy6Month(chineseYm, XMLConstant.DATA_FORMAT_IP, ct,
+            ct.getIpTimes6m().intValue(), wording6M);
+      }
     }
-    if (ct.getIpTimes6mStatus().intValue() == 1 && ct.getIpTimes6m() != null) {
-      processRareICDBy6Month(chineseYm, "20", ct, ct.getIpTimes6m().intValue(), wording6M);
-    }
-    if (ct.getOpTimesMStatus().intValue() == 1 && ct.getOpTimesM() != null) {
-      processRareICDByMonth(chineseYm, "10", ct, ct.getOpTimesM().intValue(), wording1M);
-    }
-    if (ct.getOpTimes6mStatus().intValue() == 1 && ct.getOpTimes6m() != null) {
-      processRareICDBy6Month(chineseYm, "10", ct, ct.getOpTimes6m().intValue(), wording6M);
+    if (XMLConstant.FUNC_TYPE_ALL.equals(ct.getDataFormat())
+        || XMLConstant.DATA_FORMAT_OP.equals(ct.getDataFormat())
+        || CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
+      if (ct.getOpTimesMStatus().intValue() == 1 && ct.getOpTimesM() != null) {
+        processRareICDByMonth(chineseYm, XMLConstant.DATA_FORMAT_OP, ct,
+            ct.getOpTimesM().intValue(), wording1M);
+      }
+      if (ct.getOpTimes6mStatus().intValue() == 1 && ct.getOpTimes6m() != null) {
+        processRareICDBy6Month(chineseYm, XMLConstant.DATA_FORMAT_OP, ct,
+            ct.getOpTimes6m().intValue(), wording6M);
+      }
     }
   }
 
@@ -598,6 +613,7 @@ public class IntelligentService {
       mrDao.updateMrStauts(MR_STATUS.WAIT_CONFIRM.value(), mr.getId());
       ig.setStatus(mr.getStatus());
       ig.setRocId(mr.getRocId());
+      ig.setApplYm(mr.getApplYm());
       ig.setUpdateAt(new Date());
       intelligentDao.save(ig);
       return true;
@@ -652,6 +668,7 @@ public class IntelligentService {
       mrDao.updateMrStauts(MR_STATUS.WAIT_CONFIRM.value(), mr.getId());
       ig.setStatus(mr.getStatus());
       ig.setRocId(mr.getRocId());
+      ig.setApplYm(mr.getApplYm());
       ig.setUpdateAt(new Date());
       intelligentDao.save(ig);
       return true;
@@ -734,7 +751,7 @@ public class IntelligentService {
     String code = ct.getCode() == null ? ct.getInhCode() : ct.getCode();
 
     Calendar cal = DateTool.chineseYmToCalendar(chineseYm);
-    int day = "10".equals(dataFormat) ? ct.getOpTimesDay() : ct.getIpTimesDay();
+    int day = XMLConstant.DATA_FORMAT_OP.equals(dataFormat) ? ct.getOpTimesDay() : ct.getIpTimesDay();
     cal.set(Calendar.DAY_OF_MONTH, 1);
 
     Calendar firstCal = DateTool.chineseYmToCalendar(chineseYm);
@@ -981,39 +998,49 @@ public class IntelligentService {
       int conditionCode) {
     
     String reasonCode = ct.getCode() == null ? ct.getInhCode() : ct.getCode();
-    List<INTELLIGENT> list = intelligentDao.findByConditionCodeAndReasonCode(conditionCode, reasonCode);
-    if (ct.getOpTimesStatus().intValue() == 1) {
-      // 單一就診紀錄使用數量超過 n 次
-      processHighRatioSingle(chineseYm, "10", ct, ct.getOpTimes().intValue(), wordingSingle,
-          conditionCode, list);
+    List<INTELLIGENT> list =
+        intelligentDao.findByConditionCodeAndReasonCode(conditionCode, reasonCode);
+    if (XMLConstant.FUNC_TYPE_ALL.equals(ct.getDataFormat())
+        || XMLConstant.DATA_FORMAT_OP.equals(ct.getDataFormat())
+        || CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
+      if (ct.getOpTimesStatus().intValue() == 1) {
+        // 單一就診紀錄使用數量超過 n 次
+        processHighRatioSingle(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimes().intValue(), wordingSingle,
+            conditionCode, list);
+      }
+      if (ct.getOpTimesMStatus().intValue() == 1) {
+        // 單月申報總數量是否高於上限
+        processHighRatio1M(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimesM().intValue(),
+            wording1M, conditionCode, list);
+      }
+      if (ct.getOpTimes6mStatus().intValue() == 1) {
+        processHighRatio6M(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimes6m().intValue(),
+            wording6M, conditionCode, list);
+      }
+      if (ct.getOpTimesDStatus().intValue() == 1) {
+        processPatient(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimesD(), wordingTotal, conditionCode, list);
+      }
     }
-    if (ct.getIpTimesStatus().intValue() == 1) {
-      processHighRatioSingle(chineseYm, "20", ct, ct.getIpTimes().intValue(), wordingSingle,
-          conditionCode, list);
-    }
-    if (ct.getOpTimesMStatus().intValue() == 1) {
-      // 單月申報總數量是否高於上限
-      processHighRatio1M(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimesM().intValue(),
-          wording1M, conditionCode, list);
-    }
-    if (ct.getIpTimesMStatus().intValue() == 1) {
-      // 單月申報總數量是否高於上限
-      processHighRatio1M(chineseYm, XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimesM().intValue(),
-          wording1M, conditionCode, list);
-    }
-    if (ct.getIpTimes6mStatus().intValue() == 1) {
-      processHighRatio6M(chineseYm, XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimes6m().intValue(),
-          wording6M, conditionCode, list);
-    }
-    if (ct.getOpTimes6mStatus().intValue() == 1) {
-      processHighRatio6M(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getIpTimes6m().intValue(),
-          wording6M, conditionCode, list);
-    }
-    if (ct.getOpTimesDStatus().intValue() == 1) {
-      processPatient(chineseYm, "10", ct, ct.getOpTimesD(), wordingTotal, conditionCode, list);
-    }
-    if (ct.getIpTimesDStatus().intValue() == 1) {
-      processPatient(chineseYm, "20", ct, ct.getIpTimesD(), wordingTotal, conditionCode, list);
+    
+    if (XMLConstant.FUNC_TYPE_ALL.equals(ct.getDataFormat())
+        || XMLConstant.DATA_FORMAT_IP.equals(ct.getDataFormat())
+        || CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
+      if (ct.getIpTimesStatus().intValue() == 1) {
+        processHighRatioSingle(chineseYm, XMLConstant.DATA_FORMAT_IP, ct,
+            ct.getIpTimes().intValue(), wordingSingle, conditionCode, list);
+      }
+      if (ct.getIpTimesMStatus().intValue() == 1) {
+        // 單月申報總數量是否高於上限
+        processHighRatio1M(chineseYm, XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimesM().intValue(),
+            wording1M, conditionCode, list);
+      }
+      if (ct.getIpTimes6mStatus().intValue() == 1) {
+        processHighRatio6M(chineseYm, XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimes6m().intValue(),
+            wording6M, conditionCode, list);
+      }
+      if (ct.getIpTimesDStatus().intValue() == 1) {
+        processPatient(chineseYm, XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimesD(), wordingTotal, conditionCode, list);
+      }
     }
   }
 
@@ -1149,7 +1176,7 @@ public class IntelligentService {
 
   public void calculateCodeConflict(String chineseYm, CODE_CONFLICT cc, String wording,
       boolean isEnable, String dataFormat) {
-    if ("00".equals(dataFormat)) {
+    if (XMLConstant.FUNC_TYPE_ALL.equals(dataFormat)) {
       processCodeConflict(chineseYm, XMLConstant.DATA_FORMAT_OP, cc, wording, isEnable);
       processCodeConflict(chineseYm, XMLConstant.DATA_FORMAT_IP, cc, wording, isEnable);
     } else {
@@ -1168,6 +1195,7 @@ public class IntelligentService {
   private void processCodeConflict(String chineseYm, String dataFormat, CODE_CONFLICT cc,
       String wording, boolean isEnable) {
     if (cc.getCodeType().intValue() == 1) {
+      // CODE_TYPE: 1: 醫令/健保碼，2: ICD 診斷碼
       List<MR> list = getMRBy2PayCode(dataFormat, chineseYm, cc.getCode(),
           cc.getQuantityNh().intValue(), cc.getOwnExpCode(), cc.getQuantityOwn().intValue());
       String reason =
@@ -1335,7 +1363,6 @@ public class IntelligentService {
     logger.info("processPilotProject " + pp.getName());
     if (pp.getDays() == null && pp.getTimes() == null) {
       // 有指定的診斷碼
-      System.out.println("process test plan");
       List<MR> list = getMRByICD(chineseYm, pp.getIcd());
       if (list != null) {
         for (MR mr : list) {

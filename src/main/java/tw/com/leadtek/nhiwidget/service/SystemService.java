@@ -412,6 +412,7 @@ public class SystemService {
       cb.setId((long) pc.getRedisId());
     }
     pc = payCodeDao.save(pc);
+  
     try {
       ObjectMapper objectMapper = new ObjectMapper();
       objectMapper.setSerializationInclusion(Include.NON_NULL);
