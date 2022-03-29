@@ -310,28 +310,46 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    */
   @Query(value = "select INH_MR_ID, ICDCM1, T_DOT from mr where INH_MR_ID = ?1", nativeQuery = true)
   public Map<String, Object> queryByInhMrID(String inhMrID);
+  /**
+   * 依照ID取得該筆病歷表
+   * @param MRID
+   * @return
+   */
+  @Query(value = "select * from mr where ID = ?1", nativeQuery = true)
+  public MR getMrByID(String MRID);
+  /**
+   * 依照診斷馬撈出該病歷
+   * @param icdcm1
+   * @return
+   */
+  @Query(value = "select * from mr where ICDCM1 = ?1", nativeQuery = true)
+  public MR getMrByIcdcm1(String icdcm1);
   
   /**
    * 費用差異--門診
    * @return
    */
   @Query(value = "select * from ( "
-  		+ "select ICDCM1, avg +2 * stddev as up, avg -2 * stddev as down from ( "
-  		+ "SELECT ICDCM1, AVG(T_DOT) AS AVG, STDDEV(T_DOT) AS STDDEV FROM MR "
+  		+ "select ID, ICDCM1, avg +2 * stddev as up, avg -2 * stddev as down from ( "
+  		+ "SELECT ID, ICDCM1, AVG(T_DOT) AS AVG, STDDEV(T_DOT) AS STDDEV FROM MR "
   		+ "WHERE MR_DATE > date_format(date_add(now(), interval -1 year), '%Y-%m-%d') "
   		+ "AND DATA_FORMAT ='10' GROUP BY ICDCM1) temp where stddev > 0) temp2 "
-  		+ "where temp2.icdcm1 = ?1", nativeQuery = true)
-  public Map<String, Object> clinic(String icdcm1);
+//  		+ "where temp2.icdcm1 = ?1", nativeQuery = true)
+        + "", nativeQuery = true)
+  public List<Map<String, Object>> clinic();
   
   /**
    * 費用差異--住院
    * @return
    */
   @Query(value = "select * from ( "
-	  		+ "select ICDCM1, avg +2 * stddev as up, avg -2 * stddev as down from ( "
-	  		+ "SELECT ICDCM1, AVG(T_DOT) AS AVG, STDDEV(T_DOT) AS STDDEV FROM MR "
-	  		+ "WHERE MR_DATE > date_format(date_add(now(), interval -1 year), '%Y-%m-%d') "
-	  		+ "AND DATA_FORMAT ='20' GROUP BY ICDCM1) temp where stddev > 0) temp2 "
-	  		+ "where temp2.icdcm1 = ?1", nativeQuery = true)
-	  public Map<String, Object> hospitalized(String icdcm1);
+	  		+ "select MR_ID, ICD_CM_1, avg +2 * stddev as up, avg -2 * stddev as down from ( "
+	  		+ "SELECT MR_ID, ICD_CM_1, AVG(APPL_DOT - DIAG_DOT - ROOM_DOT) AS AVG, STDDEV(APPL_DOT - DIAG_DOT - ROOM_DOT)*2 AS STDDEV FROM IP_D "
+	  		+ "WHERE MR_ID IN(SELECT ID FROM MR WHERE MR_DATE > date_format(date_add(now(), interval -1 year), '%Y-%m-%d') AND DATA_FORMAT ='20' GROUP BY ICD_CM_1 )) "
+//	  		+ "WHERE MR_DATE > date_format(date_add(now(), interval -1 year), '%Y-%m-%d') "
+//	  		+ "AND DATA_FORMAT ='20' GROUP BY ICDCM1) temp where stddev > 0) temp2 "
+//	  		+ "where temp2.icdcm1 = ?1", nativeQuery = true)
+            + "temp where stddev > 0) temp2"
+            + "", nativeQuery = true)
+	  public List<Map<String, Object>> hospitalized();
 }

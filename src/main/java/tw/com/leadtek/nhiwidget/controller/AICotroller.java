@@ -17,14 +17,14 @@ public class AICotroller {
 	private AIService aiService;
 
 	@ResponseBody
-	@RequestMapping(value = "/getClinicCostDiffData/{InhMrId}", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getClinicCostDiffData(@PathVariable String InhMrId) {
-		return aiService.clinicCostDiff(InhMrId);
+	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
+	public Object getClinicCostDiffData() {
+		return aiService.clinicCostDiff();
 	}
 	
 	@ResponseBody
-	@RequestMapping(value = "/getHospitalCostDiffData/{InhMrId}", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getHospitalCostDiffData(@PathVariable String InhMrId) {
-		return aiService.hospitalCostDiff(InhMrId);
+	@RequestMapping(value = "/getHospitalCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
+	public Object getHospitalCostDiffData() {
+		return aiService.hospitalCostDiff();
 	}
 }

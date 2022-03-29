@@ -1,12 +1,15 @@
 package tw.com.leadtek.nhiwidget.service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 
 @Service
 public class AIService {
@@ -15,41 +18,49 @@ public class AIService {
 	private MRDao mrDao;
 	@Autowired
 	private ParametersService parametersService;
+	@Autowired
+	private IntelligentService intelligentService;
 	/**
 	 * 計算門診費用差異
 	 * @param InhMrId
 	 * @return
 	 */
-	public Map<String, Object> clinicCostDiff(String InhMrId) {
+	public Map<String, Object> clinicCostDiff() {
 		Map<String, Object> data = new HashMap<String, Object>();
 		try {
 			String msg = "";
-			Map<String, Object> mr = mrDao.queryByInhMrID(InhMrId);
-			Map<String, Object> clinicMap = mrDao.clinic(mr.get("ICDCM1").toString());
+			List<Map<String, Object>> listClinicMap = mrDao.clinic();
 			// 設定檔上限
 			int costDiffUl = Integer
 					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "COST_DIFF_UL"));
 			// 設定檔下限
 			int costDiffll = Integer
 					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "COST_DIFF_LL"));
-
-			// 門診上下限
-			float clinicUp = (Float.parseFloat(mr.get("T_DOT").toString())
-					/ Float.parseFloat(clinicMap.get("up").toString())) * 100;
-			float clinicDown = (Float.parseFloat(mr.get("T_DOT").toString())
-					/ Float.parseFloat(clinicMap.get("down").toString())) * 100;
-
-			if (clinicUp > costDiffUl) {
-				msg = retMsg(COSTTYPE.UP.name(), InhMrId, mr.get("ICDCM1").toString(), clinicMap.get("up").toString(),
-						clinicUp);
-			} else if (clinicDown > costDiffll) {
-				msg = retMsg(COSTTYPE.DOWN.name(), InhMrId, mr.get("ICDCM1").toString(),
-						clinicMap.get("down").toString(), clinicUp);
+			for(Map<String,Object> clinicMap : listClinicMap) {
+				MR mr = mrDao.getMrByID(clinicMap.get("ID").toString());
+				// 門診上下限
+				float clinicUp = (Float.parseFloat(mr.getTotalDot().toString())
+						/ Float.parseFloat(clinicMap.get("up").toString())) * 100;
+				float clinicDown = (Float.parseFloat(mr.getTotalDot().toString())
+						/ Float.parseFloat(clinicMap.get("down").toString())) * 100;
+				double dUp = (double) clinicMap.get("up");
+				double dDown = (double) clinicMap.get("down");
+				int iUp = (int)dUp;
+				int iDown = (int)dDown;
+				if (clinicUp > costDiffUl) {
+					msg = retMsg(COSTTYPE.UP.name(), mr.getInhMrId(), mr.getIcdcm1(), iUp,
+							clinicUp);
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), mr.getIcdcm1().toString(), msg, true);
+				} else if (clinicDown > costDiffll) {
+					msg = retMsg(COSTTYPE.DOWN.name(), mr.getInhMrId(), mr.getIcdcm1(),
+							iDown, clinicUp);
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), mr.getIcdcm1().toString(), msg, true);
+				}
 			}
 
-			data.put("mr", mr);
-			data.put("clinicMap", clinicMap);
-			data.put("costDiffUl", costDiffUl);
+//			data.put("mr", mr);
+//			data.put("clinicMap", clinicMap);
+//			data.put("costDiffUl", costDiffUl);
 			data.put("msg", msg);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -62,36 +73,47 @@ public class AIService {
      * @param InhMrId
      * @return
      */
-	public Map<String, Object> hospitalCostDiff(String InhMrId) {
+	public Map<String, Object> hospitalCostDiff() {
 		Map<String, Object> data = new HashMap<String, Object>();
+
 		try {
 			String msg = "";
-			Map<String, Object> mr = mrDao.queryByInhMrID(InhMrId);
-			Map<String, Object> hospitalizedMap = mrDao.hospitalized(mr.get("ICDCM1").toString());
+//			Map<String, Object> mr = mrDao.queryByInhMrID(InhMrId);
+			List<Map<String, Object>> listHospitalizedMap = mrDao.hospitalized();
 			// 設定檔上限
 			int costDiffUl = Integer
 					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "COST_DIFF_UL"));
 			// 設定檔下限
 			int costDiffll = Integer
 					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "COST_DIFF_LL"));
-			// 住院上下限
-			float hospitalizedUp = (Float.parseFloat(mr.get("T_DOT").toString())
-					/ Float.parseFloat(hospitalizedMap.get("up").toString())) * 100;
-			float hospitalizedDown = (Float.parseFloat(mr.get("T_DOT").toString())
-					/ Float.parseFloat(hospitalizedMap.get("down").toString())) * 100;
-
-			if (hospitalizedUp > costDiffUl) {
-				msg = retMsg(COSTTYPE.UP.name(), InhMrId, mr.get("ICDCM1").toString(), hospitalizedMap.get("up").toString(),
-						hospitalizedUp);
-			} else if (hospitalizedDown > costDiffll) {
-				msg = retMsg(COSTTYPE.UP.name(), InhMrId, mr.get("ICDCM1").toString(), hospitalizedMap.get("up").toString(),
-						hospitalizedDown);
+			for(Map<String, Object> hospitalizedMap : listHospitalizedMap) {
+				
+				MR mm = mrDao.getMrByID(hospitalizedMap.get("MR_ID").toString());
+				// 住院上下限
+				float hospitalizedUp = (Float.parseFloat(mm.getTotalDot().toString())
+						/ Float.parseFloat(hospitalizedMap.get("up").toString())) * 100;
+				float hospitalizedDown = (Float.parseFloat(mm.getTotalDot().toString())
+						/ Float.parseFloat(hospitalizedMap.get("down").toString())) * 100;
+				double dUp = (double) hospitalizedMap.get("up");
+				double dDown = (double) hospitalizedMap.get("down");
+				int iUp = (int) dUp;
+				int iDown = (int) dDown;
+				if (hospitalizedUp > costDiffUl) {
+					msg = retMsg(COSTTYPE.UP.name(), mm.getInhMrId(),mm.getIcdcm1().toString(), iUp,
+							hospitalizedUp);
+					
+					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.COST_DIFF.value(), mm.getIcdcm1().toString(), msg, true);
+				} else if (hospitalizedDown > costDiffll) {
+					msg = retMsg(COSTTYPE.DOWN.name(),  mm.getInhMrId(), mm.getIcdcm1().toString(), iDown,
+							hospitalizedDown);
+					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.COST_DIFF.value(), mm.getIcdcm1().toString(), msg, true);
+				}
 			}
 
-			data.put("mr", mr);
-			data.put("hospitalMap", hospitalizedMap);
-			data.put("costDiffUl", costDiffUl);
-			data.put("msg", msg);
+//			data.put("mr", mm);
+//			data.put("hospitalMap", hospitalizedMap);
+//			data.put("costDiffUl", costDiffUl);
+			data.put("msg",msg);
 		} catch (Exception e) {
 			e.printStackTrace();
 			data.put("msg", "該病歷無近一年住院資料");
@@ -108,14 +130,19 @@ public class AIService {
 	 * @param Val2,    對比%
 	 * @return
 	 */
-	public String retMsg(String ctype, String InhMrId, String ICDM1, String Val1, float Val2) {
+	public String retMsg(String ctype, String InhMrId, String ICDM1, int Val1, float Val2) {
 		String result = "";
+	    String paraResult = "";
 		switch (ctype) {
 		case "UP":
-			result = String.format("病歷編號: %s 主診斷: %s，整筆病例點數常態值上限(%s)相比，高出%.2f%%", InhMrId, ICDM1, Val1, Val2);
+			///取得設定檔的上限word
+			paraResult = parametersService.getOneValueByName("INTELLIGENT", "COST_DIFF_UL_WORDING");
+			result = String.format(paraResult+"%", InhMrId, ICDM1, Val1, Val2);
 			break;
 		case "DOWN":
-			result = String.format("病歷編號: %s 主診斷: %s，整筆病例點數常態值下限(%s)相比，高出%.2f%%", InhMrId, ICDM1, Val1, Val2);
+			///取得設定檔的下限word
+			paraResult = parametersService.getOneValueByName("INTELLIGENT", "COST_DIFF_LL_WORDING");
+			result = String.format(paraResult+"%", InhMrId, ICDM1, Val1, Val2);
 			break;
 		default:
 			result = "";
