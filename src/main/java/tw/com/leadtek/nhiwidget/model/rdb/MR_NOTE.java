@@ -50,7 +50,7 @@ public class MR_NOTE {
   /**
    * 註記內容
    */
-  @Column(name = "NOTE", length = 120)
+  @Column(name = "NOTE", length = 300)
   private String note;
 
   /**

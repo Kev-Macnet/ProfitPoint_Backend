@@ -158,4 +158,12 @@ public class UserDetailsImpl implements UserDetails {
     UserDetailsImpl user = (UserDetailsImpl) o;
     return Objects.equals(id, user.id);
   }
+  
+  /**
+   * 是否為申報人員
+   * @return
+   */
+  public boolean isApplRole() {
+    return ROLE_TYPE.APPL.getRole().equals(role);
+  }
 }

@@ -176,7 +176,7 @@ public class TestXML {
    * 匯入XML tag定義檔，至用到的常數
    */
   //@Ignore
-  @Test
+  //@Test
   public void readExcel() {
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\inpatient.xlsx", "IP");
     // importXMLTag("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\outpatient.xlsx", "OP");
@@ -770,14 +770,6 @@ public class TestXML {
     
     // 8. 最後剩下沒有支付代碼類別的全部設為不分類
     // UPDATE IP_P SET PAY_CODE_TYPE = '20' WHERE PAY_CODE_TYPE IS NULL 
-  }
-
-
-  public static void main(String[] args) {
-    // new TestXML().test();
-    // new TestXML().TestSimpleXML();
-
-    new TestXML().readExcel();
   }
 
 }

@@ -522,8 +522,7 @@ public class UserService {
     emailService.sendMail("忘記密碼-重設新密碼", existUser.getEmail(), "系統隨機產生密碼:" + newPassword);
     existUser.setPassword(encoder.encode(newPassword));
     existUser.setUpdateAt(new Date());
-    // 下次登入需變更密碼
-    existUser.setStatus(-1);
+    existUser.setStatus(1);
     userDao.save(existUser);
     return null;
   }

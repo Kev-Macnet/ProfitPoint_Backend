@@ -270,7 +270,7 @@ public class SystemService {
           predicate.add(cb.greaterThan(root.get("endDay"), ed));
         }
         if (atc != null) {
-          predicate.add(cb.equal(root.get("atc"), atc));
+          predicate.add(cb.like(root.get("atc"), atc.toUpperCase() + "%"));
         }
         if (codeType != null && codeType.length() > 0) {
           predicate.add(cb.equal(root.get("codeType"), codeType));
@@ -644,17 +644,17 @@ public class SystemService {
           predicate.add(cb.equal(root.get("infectious"), isInfectious ? 1 : 0));
         }
         if (infCat != null) {
-          Integer cat = null;
+          String cat = null;
           if ("第一類".equals(infCat)) {
-            cat = new Integer(1);
+            cat = "1";
           } else if ("第二類".equals(infCat)) {
-            cat = new Integer(2);
+            cat = "2";
           } else if ("第三類".equals(infCat)) {
-            cat = new Integer(3);
+            cat = "3";
           } else if ("第四類".equals(infCat)) {
-            cat = new Integer(4);
+            cat = "4";
           } else if ("第五類".equals(infCat)) {
-            cat = new Integer(5);
+            cat = "5";
           }
           predicate.add(cb.equal(root.get("infCat"), cat));
         }

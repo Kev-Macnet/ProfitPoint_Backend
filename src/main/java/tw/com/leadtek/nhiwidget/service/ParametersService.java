@@ -9,9 +9,11 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -46,7 +48,6 @@ import tw.com.leadtek.nhiwidget.model.rdb.CODE_CONFLICT;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_THRESHOLD;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
-import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
@@ -134,7 +135,31 @@ public class ParametersService {
   private RedisService redisService;
   
   private static HashMap<String, String> parameters;
-
+  
+  private static final Map<String, String> DRG_SETTING_NOTE;
+  
+  static {
+    Map<String, String> map = new HashMap<String, String>();
+    map.put("SPR", "DRG SPR 標準給付額");
+    map.put("ADD_HOSP_LEVEL_1", "醫學中心基本診療加成百分比");
+    map.put("ADD_HOSP_LEVEL_2", "區域醫院基本診療加成百分比");
+    map.put("ADD_HOSP_LEVEL_3", "地區醫院基本診療加成百分比");
+    map.put("ADD_CHILD_15_6M", "兒童加成率MDC15小於6個月");
+    map.put("ADD_CHILD_15_2Y", "兒童加成率MDC15大於6個月，小於2歲");
+    map.put("ADD_CHILD_15_6Y", "兒童加成率MDC15大於2歲，小於6歲");
+    map.put("ADD_CHILD_N15M_6M", "兒童加成率非MDC15內科小於6個月");
+    map.put("ADD_CHILD_N15M_2Y", "兒童加成率非MDC15內科大於6個月，小於2歲");
+    map.put("ADD_CHILD_N15M_6Y", "兒童加成率非MDC15內科大於2歲，小於6歲");
+    map.put("ADD_CHILD_N15P_6M", "兒童加成率非MDC15外科小於6個月");
+    map.put("ADD_CHILD_N15P_2Y", "兒童加成率非MDC15外科大於6個月，小於2歲");
+    map.put("ADD_CHILD_N15P_6Y", "兒童加成率非MDC15外科大於2歲，小於6歲");
+    map.put("CMI", "CMI加成率");
+    map.put("CMI12", "CMI值大於 1.1 小於等於1.2加成率");
+    map.put("CMI13", "CMI值小於等於1.3加成率");
+    map.put("CMI14", "CMI值大於1.3加成率");
+    map.put("OL", "Outlying Islands 山地離島加成率");
+    DRG_SETTING_NOTE = Collections.unmodifiableMap(map);
+  }
   public String getParameter(String name) {
     if (parameters == null) {
       reloadParameters();
@@ -896,46 +921,42 @@ public class ParametersService {
     if (list != null && list.size() > 0) {
       moveEndDateInAdvance(list, sDate);
     }
-    saveNewParameter("SPR", String.valueOf(values.getSpr()), "DRG SPR 標準給付額", sDate, eDate,
+    saveNewParameter("SPR", String.valueOf(values.getSpr()), sDate, eDate,
         DATA_TYPE.INT.ordinal());
-    saveNewParameter("ADD_HOSP_LEVEL_1", values.getAddHospLevel1(), "醫學中心基本診療加成百分比", sDate, eDate,
+    saveNewParameter("ADD_HOSP_LEVEL_1", values.getAddHospLevel1(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_HOSP_LEVEL_2", values.getAddHospLevel2(), "區域醫院基本診療加成百分比", sDate, eDate,
+    saveNewParameter("ADD_HOSP_LEVEL_2", values.getAddHospLevel2(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_HOSP_LEVEL_3", values.getAddHospLevel3(), "地區醫院基本診療加成百分比", sDate, eDate,
+    saveNewParameter("ADD_HOSP_LEVEL_3", values.getAddHospLevel3(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_15_6M", values.getAdd15Child6m(), "兒童加成率MDC15小於6個月", sDate, eDate,
+    saveNewParameter("ADD_CHILD_15_6M", values.getAdd15Child6m(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_15_2Y", values.getAdd15Child2y(), "兒童加成率MDC15大於6個月，小於2歲", sDate,
+    saveNewParameter("ADD_CHILD_15_2Y", values.getAdd15Child2y(), sDate,
         eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_15_6Y", values.getAdd15Child6y(), "兒童加成率MDC15大於2歲，小於6歲", sDate,
+    saveNewParameter("ADD_CHILD_15_6Y", values.getAdd15Child6y(), sDate,
         eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15M_6M", values.getAddN15MChild6m(), "兒童加成率非MDC15內科小於6個月", sDate,
+    saveNewParameter("ADD_CHILD_N15M_6M", values.getAddN15MChild6m(), sDate,
         eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15M_2Y", values.getAddN15MChild2y(), "兒童加成率非MDC15內科大於6個月，小於2歲",
-        sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15M_6Y", values.getAddN15MChild6y(), "兒童加成率非MDC15內科大於2歲，小於6歲",
-        sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15P_6M", values.getAddN15PChild6m(), "兒童加成率非MDC15外科小於6個月", sDate,
+    saveNewParameter("ADD_CHILD_N15M_2Y", values.getAddN15MChild2y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    saveNewParameter("ADD_CHILD_N15M_6Y", values.getAddN15MChild6y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    saveNewParameter("ADD_CHILD_N15P_6M", values.getAddN15PChild6m(), sDate,
         eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15P_2Y", values.getAddN15PChild2y(), "兒童加成率非MDC15外科大於6個月，小於2歲",
-        sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15P_6Y", values.getAddN15PChild6y(), "兒童加成率非MDC15外科大於2歲，小於6歲",
-        sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("CMI", values.getCmi(), "CMI加成率", sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("CMI12", values.getCmi12(), "CMI值大於 1.1 小於等於1.2加成率", sDate, eDate,
+    saveNewParameter("ADD_CHILD_N15P_2Y", values.getAddN15PChild2y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    saveNewParameter("ADD_CHILD_N15P_6Y", values.getAddN15PChild6y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    saveNewParameter("CMI", values.getCmi(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    saveNewParameter("CMI12", values.getCmi12(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("CMI13", values.getCmi13(), "CMI值小於等於1.3加成率", sDate, eDate,
+    saveNewParameter("CMI13", values.getCmi13(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("CMI14", values.getCmi14(), "CMI值大於1.3加成率", sDate, eDate,
+    saveNewParameter("CMI14", values.getCmi14(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("OL", values.getOutlyingIslands(), "Outlying Islands 山地離島加成率", sDate, eDate,
+    saveNewParameter("OL", values.getOutlyingIslands(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
 
     return null;
   }
 
-  private void saveNewParameter(String name, String value, String note, Date sDate, Date eDate,
+  private void saveNewParameter(String name, String value, Date sDate, Date eDate,
       int dataType) {
     String newValue = value;
     if (dataType == DATA_TYPE.FLOAT.ordinal()) {
@@ -949,7 +970,7 @@ public class ParametersService {
       }
       newValue = df.format(d);
     }
-    PARAMETERS p = new PARAMETERS("DRG", name, newValue, dataType, note);
+    PARAMETERS p = new PARAMETERS("DRG", name, newValue, dataType, DRG_SETTING_NOTE.get(name));
     p.setEndDate(eDate);
     p.setStartDate(sDate);
     p.setUpdateAt(new Date());
@@ -1064,40 +1085,43 @@ public class ParametersService {
         }
       }
     }
-//    List<PARAMETERS> list = parametersDao.findByNameAndStartDate("SPR", sDate);
-//    if (list != null && list.size() > 0) {
-//      for (PARAMETERS p : list) {
-//        if (p.getId().longValue() != values.getId().longValue()) {
-//          return "生效日已有存在的DRG相關參數設定";
-//        }
-//      }
-//    }
-//    list = parametersDao.findByNameAndStartDateGreaterThanAndEndDateLessThan("SPR", sDate, eDate);
-//    if (list != null && list.size() > 0) {
-//      for (PARAMETERS p : list) {
-//        if (p.getId().longValue() != values.getId().longValue()) {
-//          return "生效日內已有存在的DRG相關參數設定";
-//        }
-//      }
-//    }
-//    
-//    list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan("SPR", eDate, eDate);
-//    if (list != null && list.size() > 0) {
-//      for (PARAMETERS p : list) {
-//        if (p.getId().longValue() != values.getId().longValue()) {
-//          return "生效日內已有存在的DRG相關參數設定";
-//        }
-//      }
-//    }
-//    
-//    list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan("SPR", sDate, sDate);
-//    if (list != null && list.size() > 0) {
-//      for (PARAMETERS p : list) {
-//        if (p.getId().longValue() != values.getId().longValue()) {
-//          return "生效日內已有存在的DRG相關參數設定";
-//        }
-//      }
-//    }
+    // List<PARAMETERS> list = parametersDao.findByNameAndStartDate("SPR", sDate);
+    // if (list != null && list.size() > 0) {
+    // for (PARAMETERS p : list) {
+    // if (p.getId().longValue() != values.getId().longValue()) {
+    // return "生效日已有存在的DRG相關參數設定";
+    // }
+    // }
+    // }
+    // list = parametersDao.findByNameAndStartDateGreaterThanAndEndDateLessThan("SPR", sDate,
+    // eDate);
+    // if (list != null && list.size() > 0) {
+    // for (PARAMETERS p : list) {
+    // if (p.getId().longValue() != values.getId().longValue()) {
+    // return "生效日內已有存在的DRG相關參數設定";
+    // }
+    // }
+    // }
+    //
+    // list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan("SPR", eDate,
+    // eDate);
+    // if (list != null && list.size() > 0) {
+    // for (PARAMETERS p : list) {
+    // if (p.getId().longValue() != values.getId().longValue()) {
+    // return "生效日內已有存在的DRG相關參數設定";
+    // }
+    // }
+    // }
+    //
+    // list = parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan("SPR", sDate,
+    // sDate);
+    // if (list != null && list.size() > 0) {
+    // for (PARAMETERS p : list) {
+    // if (p.getId().longValue() != values.getId().longValue()) {
+    // return "生效日內已有存在的DRG相關參數設定";
+    // }
+    // }
+    // }
 
     Optional<PARAMETERS> optional = parametersDao.findById(values.getId());
     if (optional.isPresent()) {
@@ -1105,66 +1129,83 @@ public class ParametersService {
       list = parametersDao.findByCatAndStartDateEquals("DRG", p.getStartDate());
       if (list != null && list.size() > 0) {
         DecimalFormat df = new DecimalFormat("#.###");
-        for (PARAMETERS parameters : list) {
-          parameters.setStartDate(sDate);
-          parameters.setEndDate(eDate);
-          if (parameters.getName().equals("SPR")) {
-            parameters.setValue(String.valueOf(values.getSpr()));
-          } else if (parameters.getName().equals("ADD_HOSP_LEVEL_1")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAddHospLevel1()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_HOSP_LEVEL_2")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAddHospLevel2()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_HOSP_LEVEL_3")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAddHospLevel3()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_CHILD_15_6M")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAdd15Child6m()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_CHILD_15_2Y")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAdd15Child2y()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_CHILD_15_6Y")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAdd15Child6y()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_CHILD_N15M_6M")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAddN15MChild6m()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_CHILD_N15M_2Y")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAddN15MChild2y()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_CHILD_N15M_6Y")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAddN15MChild6y()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_CHILD_N15P_6M")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAddN15PChild6m()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_CHILD_N15P_2Y")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAddN15PChild2y()) / (double) 100));
-          } else if (parameters.getName().equals("ADD_CHILD_N15P_6Y")) {
-            parameters
-                .setValue(df.format(Double.parseDouble(values.getAddN15PChild6y()) / (double) 100));
-          } else if (parameters.getName().equals("CMI")) {
-            parameters.setValue(df.format(Double.parseDouble(values.getCmi()) / (double) 100));
-          } else if (parameters.getName().equals("CMI12")) {
-            parameters.setValue(df.format(Double.parseDouble(values.getCmi12()) / (double) 100));
-          } else if (parameters.getName().equals("CMI13")) {
-            parameters.setValue(df.format(Double.parseDouble(values.getCmi13()) / (double) 100));
-          } else if (parameters.getName().equals("CMI14")) {
-            parameters.setValue(df.format(Double.parseDouble(values.getCmi14()) / (double) 100));
-          } else if (parameters.getName().equals("OL")) {
-            parameters.setValue(
-                df.format(Double.parseDouble(values.getOutlyingIslands()) / (double) 100));
-          }
-          parametersDao.save(parameters);
-        }
+
+        updateDRGValues(list, sDate, eDate, "SPR", String.valueOf(values.getSpr()),
+            DATA_TYPE.INT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_HOSP_LEVEL_1",
+            df.format(Double.parseDouble(values.getAddHospLevel1()) / (double) 100),
+            DATA_TYPE.INT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_HOSP_LEVEL_2",
+            df.format(Double.parseDouble(values.getAddHospLevel2()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_HOSP_LEVEL_3",
+            df.format(Double.parseDouble(values.getAddHospLevel3()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_CHILD_15_6M",
+            df.format(Double.parseDouble(values.getAdd15Child6m()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_CHILD_15_2Y",
+            df.format(Double.parseDouble(values.getAdd15Child2y()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_CHILD_15_6Y",
+            df.format(Double.parseDouble(values.getAdd15Child6y()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_CHILD_N15M_6M",
+            df.format(Double.parseDouble(values.getAddN15MChild6m()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_CHILD_N15M_2Y",
+            df.format(Double.parseDouble(values.getAddN15MChild2y()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_CHILD_N15M_6Y",
+            df.format(Double.parseDouble(values.getAddN15MChild6y()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_CHILD_N15P_6M",
+            df.format(Double.parseDouble(values.getAddN15PChild6m()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_CHILD_N15P_2Y",
+            df.format(Double.parseDouble(values.getAddN15PChild2y()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "ADD_CHILD_N15P_6Y",
+            df.format(Double.parseDouble(values.getAddN15PChild6y()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "CMI",
+            df.format(Double.parseDouble(values.getCmi()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "CMI12",
+            df.format(Double.parseDouble(values.getCmi12()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "CMI13",
+            df.format(Double.parseDouble(values.getCmi13()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "CMI14",
+            df.format(Double.parseDouble(values.getCmi14()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
+        updateDRGValues(list, sDate, eDate, "OL",
+            df.format(Double.parseDouble(values.getOutlyingIslands()) / (double) 100),
+            DATA_TYPE.FLOAT.ordinal());
       }
     } else {
       return "id 不存在";
     }
     return null;
+  }
+
+  private void updateDRGValues(List<PARAMETERS> list, Date sDate, Date eDate, String name,
+      String value, int dataType) {
+    for (PARAMETERS parameters : list) {
+      if (parameters.getName().equals(name)) { 
+        parameters.setValue(value);
+        parameters.setStartDate(sDate);
+        parameters.setEndDate(eDate);
+        parametersDao.save(parameters);
+        return;
+      }
+    }
+    PARAMETERS p = new PARAMETERS("DRG", name, value, dataType, DRG_SETTING_NOTE.get(name));
+    p.setEndDate(eDate);
+    p.setStartDate(sDate);
+    p.setUpdateAt(new Date());
+    parametersDao.save(p);
   }
 
   public InfectiousListResponse getInfectious(String code, String cat, String orderBy, Boolean asc,
@@ -1543,10 +1584,11 @@ public class ParametersService {
     ct.setUpdateAt(new Date());
     ct = codeThresholdDao.save(ct);
     if (!enable) {
-      System.out.println("disable codeType:" + ct.getCodeType());
       if (ct.getCodeType().intValue() == 2) {
+        waitIfIntelligentRunning(INTELLIGENT_REASON.HIGH_RATIO.value());
         is.removeOldHighRatioMR(ct, INTELLIGENT_REASON.HIGH_RATIO.value(), true);
       } else if (ct.getCodeType().intValue() == 3) {
+        waitIfIntelligentRunning(INTELLIGENT_REASON.OVER_AMOUNT.value());
         is.removeOldHighRatioMR(ct, INTELLIGENT_REASON.OVER_AMOUNT.value(), true);
       }
       return null;
@@ -2505,5 +2547,9 @@ public class ParametersService {
         }
       }
     }
+  }
+  
+  public List<PARAMETERS> getByCat(String cat) {
+    return parametersDao.findByCatOrderByName(cat);
   }
 }

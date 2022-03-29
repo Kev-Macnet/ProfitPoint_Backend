@@ -23,6 +23,7 @@ import tw.com.leadtek.nhiwidget.payload.my.DoctorListResponse;
 import tw.com.leadtek.nhiwidget.payload.my.MyTodoListResponse;
 import tw.com.leadtek.nhiwidget.payload.my.NoticeRecordResponse;
 import tw.com.leadtek.nhiwidget.payload.my.QuestionMarkResponse;
+import tw.com.leadtek.nhiwidget.payload.my.SecondFilterParameter;
 import tw.com.leadtek.nhiwidget.payload.my.WarningOrderResponse;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
@@ -181,9 +182,17 @@ public class MyListController extends BaseController {
       example = "20") @RequestParam(required = false) Integer perPage,
     @ApiParam(name = "page", value = "頁碼，第一頁值為0，第二頁值為1…",
       example = "0") @RequestParam(required = false, defaultValue = "0") Integer page) {
-    int perPageInt = (perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
-        : perPage.intValue();
-
+    
+    SecondFilterParameter sfp = new SecondFilterParameter(getUserDetails(), isOp, isIp, sdate, edate, block, page);
+    if (sfp.getMessage() != null) {
+      WarningOrderResponse result = new WarningOrderResponse();
+      result.setMessage(sfp.getMessage());
+      result.setResult("failed");
+      return ResponseEntity.badRequest().body(result);
+    }
+    
+    sfp.setPerPage((perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
+        : perPage.intValue());
     String column = orderBy;
     if (column != null) {
       if (column.equals("sdate")) {
@@ -199,53 +208,22 @@ public class MyListController extends BaseController {
         return ResponseEntity.badRequest().body(result);
       }
     }
-    UserDetailsImpl user = getUserDetails();
-    if (user == null) {
+    sfp.setOrderBy(column);
+    
+    if (sfp.getUser() == null) {
       WarningOrderResponse result = new WarningOrderResponse();
       result.setMessage("無法取得登入狀態");
       result.setResult(BaseResponse.ERROR);
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
-    if (ROLE_TYPE.DOCTOR.getRole().equals(user.getRole())) {
+    if (ROLE_TYPE.DOCTOR.getRole().equals(sfp.getUser().getRole())) {
       WarningOrderResponse result = new WarningOrderResponse();
       result.setMessage("無權限");
       result.setResult(BaseResponse.ERROR);
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
     }
-    String dataFormat = null;
-    if (isOp != null && isOp.booleanValue()) {
-      if (isIp != null && isIp) {
-        // null
-      } else {
-        dataFormat = "10";
-      }
-    } else if (isIp != null && isIp.booleanValue()) {
-      dataFormat = "20";
-    }
    
-    Date startDate = null;
-    Date endDate = null;
-
-    if (sdate != null && edate != null) {
-      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
-      try {
-        startDate = sdf.parse(sdate);
-        endDate = sdf.parse(edate);
-        if (startDate.after(endDate)) {
-          WarningOrderResponse result = new WarningOrderResponse();
-          result.setMessage("啟始日不可大於結束日");
-          result.setResult("failed");
-          return ResponseEntity.badRequest().body(result);
-        }
-      } catch (ParseException e) {
-        WarningOrderResponse result = new WarningOrderResponse();
-        result.setMessage("日期格式有誤");
-        result.setResult("failed");
-        return ResponseEntity.badRequest().body(result);
-      }
-    }
-    return ResponseEntity.ok(xmlService.getWarningOrderList(user, startDate, endDate, dataFormat, 
-        funcType, funcTypec, prsnId, prsnName, applId, applName, block, column, asc, perPageInt, page));
+    return ResponseEntity.ok(xmlService.getWarningOrderList(sfp));
   }
   
   @ApiOperation(value = "取得我的清單-疑問標示", notes = "取得我的清單-疑問標示")
@@ -351,7 +329,7 @@ public class MyListController extends BaseController {
         applId, applName, block, column, asc, perPageInt, page));
   }
   
-  @ApiOperation(value = "取得我的清單-通知記錄", notes = "取得我的清單-比對警示")
+  @ApiOperation(value = "取得我的清單-通知記錄", notes = "取得我的清單-通知記錄")
   @GetMapping("/notice")
   public ResponseEntity<NoticeRecordResponse> getNoticeRecord(
     @ApiParam(name = "applYm", value = "申報西元年月，格式 yyyyMM",

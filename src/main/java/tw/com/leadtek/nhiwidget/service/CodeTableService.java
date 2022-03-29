@@ -181,4 +181,21 @@ public class CodeTableService {
     }
     return getCodeByDesc("FUNC_TYPE", funcTypec);
   }
+  
+  public String[] convertFuncTypecToFuncTypeArray(String funcTypec) {
+    if (funcTypec == null || funcTypec.length() == 0) {
+      return null;
+    }
+    if (funcTypec.indexOf(' ') > 0) {
+      String[] ss = funcTypec.split(" ");
+      String[] result = new String[ss.length];
+      for (int i=0; i< ss.length; i++) {
+        result[i] = getCodeByDesc("FUNC_TYPE", ss[i]);
+      }
+      return result;
+    }
+    String[] result = new String[1];
+    result[0] = getCodeByDesc("FUNC_TYPE", funcTypec);
+    return result;
+  }
 }

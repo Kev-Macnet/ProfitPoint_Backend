@@ -22,6 +22,9 @@ public class RareICDListPayload extends StartEndPayload implements Serializable 
 
   @ApiModelProperty(value = "定量/每月總量提示", example = "true", required = false)
   protected Boolean amount;
+  
+  @ApiModelProperty(value = "門急與住院適用相同提示條件", example = "false", required = false)
+  protected Boolean both;
 
   @ApiModelProperty(value = "門急診", example = "true", required = false)
   protected Boolean op;
@@ -44,7 +47,9 @@ public class RareICDListPayload extends StartEndPayload implements Serializable 
     ip = false;
     op = false;
  
-    if ("00".equals(ct.getDataFormat()) || CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
+    if (CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
+      both = true;
+    } else if ("00".equals(ct.getDataFormat())) {
       ip = true;
       op = true;
     } else if ("10".equals(ct.getDataFormat())) {
@@ -106,6 +111,14 @@ public class RareICDListPayload extends StartEndPayload implements Serializable 
 
   public void setOp(Boolean op) {
     this.op = op;
+  }
+  
+  public Boolean getBoth() {
+    return both;
+  }
+
+  public void setBoth(Boolean both) {
+    this.both = both;
   }
 
   public Boolean getStatus() {

@@ -53,7 +53,11 @@ public class MrNotePayload implements Serializable {
     result.setEditor(editor);
     result.setId(id);
     result.setMrId(mrId);
-    result.setNote(note);
+    if (note != null && note.length() > 300) {
+      result.setNote(note.substring(0, 300));
+    } else {
+      result.setNote(note);
+    }
     result.setNoteType(1);
     result.setUpdateAt(new Date());
     result.setStatus(1);

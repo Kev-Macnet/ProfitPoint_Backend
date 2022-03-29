@@ -90,9 +90,9 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
     status = rareIcd.getStatus().intValue() == 1;
 
     if (CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(rareIcd.getDataFormat())) {
-      both = true;
-      ip = false;
-      op = false;
+      both = false;
+      ip = true;
+      op = true;
     }
     if (rareIcd.getDataFormat().equals("00")) {
       if ((opTimesM != null && ipTimesM != null) && (opTimesM.intValue() == ipTimesM.intValue())
