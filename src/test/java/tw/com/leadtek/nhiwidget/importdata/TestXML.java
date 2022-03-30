@@ -716,26 +716,26 @@ public class TestXML {
     // UPDATE OP_P SET PAY_CODE_TYPE = '20' WHERE LENGTH(DRUG_NO) > 10
     // 3. 其餘找 OP_P.DRUG_NO = PAY_CODE.CODE 的 CODE_TYPE
    
-//    List<Object[]> codeListOP = payCodeDao.findOPAllPayCodeAndTypeCode();
-//    HashMap<String, String> payCodeType = new HashMap<String, String>();
-//    for (Object[] objects : codeListOP) {
-//      payCodeType.put((String)objects[0], (String) objects[1]);
-//    }
-//    
+    List<Object[]> codeListOP = payCodeDao.findOPAllPayCodeAndTypeCode();
+    HashMap<String, String> payCodeType = new HashMap<String, String>();
+    for (Object[] objects : codeListOP) {
+      payCodeType.put((String)objects[0], (String) objects[1]);
+    }
+    
     List<String> codes = new ArrayList<String>();
-//    List<Object[]> oppDrugNo = oppDao.findDistinctDrugNo();
-//    for (Object[] objects : oppDrugNo) {
-//      codes.add((String)objects[0]);
-//    }
-//    for (String code : codes) {
-//      System.out.println("update " + payCodeType.get(code) + "," + code);
-//      if (payCodeType.get(code) == null) {
-//        // 20 不分類
-//        oppDao.updatePayCodeType("20", code);
-//      } else {
-//        oppDao.updatePayCodeType(payCodeType.get(code), code);
-//      }
-//    }
+    List<Object[]> oppDrugNo = oppDao.findDistinctDrugNo();
+    for (Object[] objects : oppDrugNo) {
+      codes.add((String)objects[0]);
+    }
+    for (String code : codes) {
+      System.out.println("update " + payCodeType.get(code) + "," + code);
+      if (payCodeType.get(code) == null) {
+        // 20 不分類
+        oppDao.updatePayCodeType("20", code);
+      } else {
+        oppDao.updatePayCodeType(payCodeType.get(code), code);
+      }
+    }
     
     // 4. 最後剩下沒有支付代碼類別的全部設為不分類
     // UPDATE OP_P SET PAY_CODE_TYPE = '20' WHERE PAY_CODE_TYPE IS NULL
@@ -748,7 +748,7 @@ public class TestXML {
     
     List<Object[]> codeListIP = payCodeDao.findIPAllPayCodeAndTypeCode();
     System.out.println("codeListIP size=" + codeListIP.size());
-    HashMap<String, String> payCodeType = new HashMap<String, String>();
+    payCodeType = new HashMap<String, String>();
     for (Object[] objects : codeListIP) {
       payCodeType.put((String)objects[0], (String) objects[1]);
     }

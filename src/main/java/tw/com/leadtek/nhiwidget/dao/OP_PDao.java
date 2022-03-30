@@ -83,5 +83,9 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
   @Query(value = "SELECT * FROM OP_P WHERE MR_ID IN ("
       + "SELECT id FROM mr WHERE APPL_YM =?1) ORDER BY OPD_ID , ORDER_SEQ_NO DESC", nativeQuery = true)
   public List<OP_P> findByApplYM(String applYm);
-  
+
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE OP_P SET PAY_CODE_TYPE = '20' WHERE PAY_CODE_TYPE IS NULL", nativeQuery = true)
+  public void updatePayCodeType20();
 }
