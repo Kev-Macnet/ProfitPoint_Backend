@@ -420,10 +420,9 @@ public class InitialEnvironment {
   
   @Test
   public void importPayCode() {
-//    maxId = getMaxId() + 1;
-//    System.out.println("maxid=" + maxId);
-//    importExcelToRedisNew("ICD10", FILE_PATH + "醫療服務給付項目(1100701執行).xlsx",
-//        "ORDER");
+    maxId = getMaxId() + 1;
+    System.out.println("maxid=" + maxId);
+    importExcelToRedisNew("ICD10", FILE_PATH + "醫療服務給付項目(1100701執行).xlsx", "ORDER");
     updateCodeTypeCode();
   }
   
