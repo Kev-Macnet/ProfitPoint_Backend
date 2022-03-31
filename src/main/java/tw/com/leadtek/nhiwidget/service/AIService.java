@@ -4,8 +4,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -425,6 +423,123 @@ public class AIService {
 		}
 		return data;
 	}
+	/**
+	 * 用藥差異
+	 * @param date
+	 * @return
+	 */
+	public Map<String, Object> clinicMedicine(String date) {
+		Map<String, Object> data = new HashMap<String, Object>();
+		try {
+			String dateStr = minusYear(date);
+			String msg = "";
+			String paraResult = "";
+			List<ICDCM_DRUG> icdList = icdcmDrugDao.queryByDataFormat("10");
+			MR mrModel = new MR();
+			List<MR> mrModelList = new ArrayList<MR>();
+			if (icdList.size() == 0) {
+				List<MR> mrlist = mrDao.getMrDataByDate(dateStr, "10");
+				for (MR mr : mrlist) {
+					String codeAll = mr.getCodeAll();
+					String[] split = codeAll.split(",");
+					for(String s : split) {
+						if(s.length() == 10) {
+							mrModel.setCodeAll(s);
+							mrModel.setId(mr.getdId());
+							mrModel.setIcdcm1(mr.getIcdcm1());
+							mrModel.setRocId(mr.getRocId());
+							mrModelList.add(mrModel);
+							mrModel = new MR();
+						}
+					}
+				}
+				System.out.print("getCodeAll by length 10 -> " +mrModelList.size() );
+				List<Map<String,Object>> mList = new ArrayList<Map<String,Object>>();
+				Map<String,Object> map = new HashMap<String,Object>();
+				List<MR> mrlist2 = mrDao.getMrDataGroupByIcdcm(dateStr, "10");
+				int count = 0;
+				
+				for(MR m :  mrlist2) {
+					for(MR mm : mrModelList) {
+						if (m.getIcdcm1() == mm.getIcdcm1()) {
+							map.put("CodeAll", mm.getCodeAll());
+							map.put("ICDCM", mm.getIcdcm1());
+							count++;
+							map.put("Count", count);
+							mList.add(map);
+							map = new HashMap<String,Object>();
+						}
+					}
+					count = 0;
+				}
+				System.out.print("getCodeAll by  -> " +mList.size() );
+				count = 0;
+				List<Map<String,Object>> mList2 = new ArrayList<Map<String,Object>>();
+				for(Map<String, Object> m : mList) {
+					for(Map<String, Object> m2 : mList) {
+						if(m.get("CodeAll") == m2.get("CodeAll")) {
+							count++;
+							map.put("CodeAll", m2.get("CodeAll"));
+							map.put("ICDCM", m2.get("ICDCM"));
+							map.put("Count", count);
+							mList2.add(map);
+							map = new HashMap<String,Object>();
+						}
+						
+					}
+				}
+				System.out.print("getCodeAll2 by  -> " +mList2.size() );
+				
+			}
+			
+			data.put("msg", msg);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			data.put("msg", "該病歷無近一年門診資料");
+		}
+		return data;
+	}
+	
+	/**
+	 * 住院天數差異
+	 * 
+	 * @param date
+	 * @return
+	 */
+	public Map<String, Object> hospitalDays(String date) {
+		Map<String, Object> data = new HashMap<String, Object>();
+
+		try {
+			String dateStr = minusYear2(date);
+			String msg = "";
+			List<Map<String, Object>> listHospitalizedMap = mrDao.hospitalDays(dateStr);
+			// 設定檔上限
+			int ipDays = Integer
+					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "IP_DAYS"));
+			for (Map<String, Object> map : listHospitalizedMap) {
+
+				MR mm = mrDao.getMrByID(map.get("MR_ID").toString());
+				// 住院上限
+				float hospitalizedUp = Float.parseFloat(map.get("up").toString());
+				int up = Math.round(hospitalizedUp);
+				
+				if (up > ipDays) {
+					
+					String paraResult = parametersService.getOneValueByName("INTELLIGENT", "IP_DAYS_WORDING");
+		    		msg = String.format(paraResult, mm.getInhMrId(), map.get("ICD_CM_1").toString(),mm.getName(), ipDays, (up-ipDays));
+		    		intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
+		    				"", msg, true);
+				} 
+			}
+
+			data.put("msg", msg);
+		} catch (Exception e) {
+			e.printStackTrace();
+			data.put("msg", "該病歷無近一年住院資料");
+		}
+		return data;
+	}
 
 
 	/**
@@ -476,6 +591,27 @@ public class AIService {
 
 		return result;
 	}
+	/**
+	 * 帶入日期並減二年
+	 * 
+	 * @param date
+	 * @return
+	 * @throws ParseException
+	 */
+	private String minusYear2(String date) throws ParseException {
+		String result = "";
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		Date d = sdf.parse(date);
+		Calendar currentDate = Calendar.getInstance();
+		currentDate.setTime(d);
+		currentDate.add(Calendar.YEAR, -2);
+		Date d2 = currentDate.getTime();
+		result = sdf.format(d2);
+
+		return result;
+	}
+	
+	
 	
 	
 	

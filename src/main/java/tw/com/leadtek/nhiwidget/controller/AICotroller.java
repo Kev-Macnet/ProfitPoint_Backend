@@ -52,4 +52,16 @@ public class AICotroller {
 	public Object getHospitalOperation(@RequestParam(required = true) String date) {
 		return aiService.hospitalOperaiton(date);
 	}
+
+	@ResponseBody
+	@RequestMapping(value = "/getClinicMedicine", method = { RequestMethod.GET, RequestMethod.POST })
+	public Object getClinicMedicine(@RequestParam(required = true) String date) {
+		return aiService.clinicMedicine(date);
+	};
+	
+	@ResponseBody
+	@RequestMapping(value = "/getHospitalDays", method = { RequestMethod.GET, RequestMethod.POST })
+	public Object getHospitalDays(@RequestParam(required = true) String date) {
+		return aiService.hospitalDays(date);
+	}
 }

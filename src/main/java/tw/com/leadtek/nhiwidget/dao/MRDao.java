@@ -391,4 +391,33 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ "where m.MR_DATE > ?1 and m.DATA_FORMAT = '20' "
   		+ "group by ipd.roc_id",  nativeQuery = true)
   public List<Map<String, Object>> hospitalOpepration(String date);
+  
+  /**
+   * 依照日期與資料格式
+   * @param date
+   * @param dfmt
+   * @return
+   */
+  @Query(value ="select * from mr where mr_date > ?1 and data_format = ?2 order by id", nativeQuery = true)
+  public List<MR> getMrDataByDate(String date,String dfmt);
+  
+  /**
+   * 依照日期與資料格式
+   * @param date
+   * @param dfmt
+   * @return
+   */
+  @Query(value ="select * from mr where mr_date > ?1 and data_format = ?2 group by ICDCM1 order by id", nativeQuery = true)
+  public List<MR> getMrDataGroupByIcdcm(String date,String dfmt);
+  
+  /**
+   * @param date
+   * @return
+   */
+  @Query(value ="select * from ( "
+  		+ "select ICD_CM_1, avg +2 * stddev as up , STDDEV, MR_ID from ( "
+  		+ "SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV, MR_ID FROM IP_D "
+  		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE > '2019-01-01'  AND DATA_FORMAT ='20') "
+  		+ "GROUP BY ICD_CM_1) temp where stddev > 0) temp2",  nativeQuery = true)
+  public List<Map<String,Object>> hospitalDays(String date);
 }
