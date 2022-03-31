@@ -5,6 +5,8 @@ package tw.com.leadtek.nhiwidget.dao;
 
 import java.sql.Date;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -115,5 +117,17 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   @Modifying
   @Query(value = "UPDATE ip_d SET LEAVE_DATE=?1 WHERE ID=?2 ", nativeQuery = true)
   public void updateLeaveDate(Date leaveDate, long id);
+  
+  /**
+   * 取得(診斷碼搭配手術碼的出現次數)
+   * @param date
+   * @return
+   */
+  @Query(value = "select ICDCM1, ICD_OP_CODE1, '20' as DATA_FORMAT, TOTAL from ( "
+  		+ "select m.icdcm1, ipd.ICD_OP_CODE1, count(ipd.ICD_OP_CODE1) as total from ip_d ipd "
+  		+ "join mr m on ipd.roc_id = m.roc_id and m.ICDCM1 = ipd.icd_cm_1 "
+  		+ "where m.MR_DATE > '2020-03-30'  and ipd.ICD_OP_CODE1 is not null "
+  		+ "group by m.icdcm1,ipd.ICD_OP_CODE1 order by m.icdcm1 ) temp order by TOTAL ", nativeQuery = true)
+  public List<Map<String, Object>> getHospitalOperation(String date);
   
 }
