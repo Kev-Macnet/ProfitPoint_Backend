@@ -47,4 +47,7 @@ public interface PAY_CODEDao extends JpaRepository<PAY_CODE, Long>, JpaSpecifica
   
   @Query(value ="SELECT DISTINCT(ATC) FROM PAY_CODE WHERE SAME_ATC=1", nativeQuery = true)
   public List<Object[]> findDistinctATC();
+  
+  @Query(value ="SELECT * FROM PAY_CODE WHERE 1=1 and code >1 ", nativeQuery = true)
+  public PAY_CODE findByCodeOne(String code);
 }

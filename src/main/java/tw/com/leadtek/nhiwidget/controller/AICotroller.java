@@ -60,6 +60,12 @@ public class AICotroller {
 	};
 	
 	@ResponseBody
+	@RequestMapping(value = "/getHospitalMedicine", method = { RequestMethod.GET, RequestMethod.POST })
+	public Object getHospitalMedicine(@RequestParam(required = true) String date) {
+		return aiService.hospitalMedicine(date);
+	};
+	
+	@ResponseBody
 	@RequestMapping(value = "/getHospitalDays", method = { RequestMethod.GET, RequestMethod.POST })
 	public Object getHospitalDays(@RequestParam(required = true) String date) {
 		return aiService.hospitalDays(date);

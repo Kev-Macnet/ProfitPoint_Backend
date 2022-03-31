@@ -18,7 +18,8 @@ public enum INTELLIGENT_REASON {
   COST_DIFF(11),    // 臨床路徑差異–AI提示-費用差異
   ORDER_DIFF(12),   // 臨床路徑差異–AI提示-醫療行為差異
   ORDER_DRUG(13),   // 臨床路徑差異–AI提示-用藥差異
-  IP_DAYS(14);      // 臨床路徑差異–AI提示-住院天數差異
+  IP_DAYS(14),      // 臨床路徑差異–AI提示-住院天數差異
+  DRUG_DIFF(15);    // 用藥差異
 
   private int value;
   

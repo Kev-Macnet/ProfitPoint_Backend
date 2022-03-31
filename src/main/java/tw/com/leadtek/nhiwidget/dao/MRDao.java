@@ -420,4 +420,27 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE > '2019-01-01'  AND DATA_FORMAT ='20') "
   		+ "GROUP BY ICD_CM_1) temp where stddev > 0) temp2",  nativeQuery = true)
   public List<Map<String,Object>> hospitalDays(String date);
+  
+  /**
+   * 取得主診斷碼出現次數
+   * @param date
+   * @return
+   */
+  @Query(value ="select ID, ICDCM1, count(1) as COUNT from mr where  "
+  		+ " 1=1 "
+  		+ " and mr_date > ?1 and data_format = ?2 "
+  		+ " and id in (select mr_id from op_p where length(drug_no) = 10) "
+  		+ " group by  ICDCM1 order by id", nativeQuery = true)
+  public List<Map<String,Object>> getIcdcmCount(String date, String fmt);
+  /**
+   * 取得藥用碼出現次數
+   * @param date
+   * @return
+   */
+  @Query(value =" select MR_ID, DRUG_NO, count(1) as COUNT  from op_p  where  "
+  		+ " 1=1 "
+  		+ " and MR_ID in (select id from mr where mr_date > ?1 and data_format = ?2)  "
+  		+ " and length(drug_no) = 10 "
+  		+ " group by drug_no order by mr_id", nativeQuery = true)
+  public List<Map<String,Object>> getDrugNoCount(String date, String fmt);
 }
