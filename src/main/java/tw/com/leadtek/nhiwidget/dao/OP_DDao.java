@@ -5,9 +5,12 @@ package tw.com.leadtek.nhiwidget.dao;
 
 import java.sql.Date;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 
 public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExecutor<OP_D> {
@@ -146,4 +149,15 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       "SELECT id FROM mr WHERE MR_END_DATE IS NULL AND DATA_FORMAT ='10')" + 
       "AND FUNC_END_DATE IS NOT NULL AND FUNC_DATE <> FUNC_END_DATE", nativeQuery = true)
   public List<OP_D> findNoMrEndDateByOpd();
+  /**
+   * 取得(診斷碼搭配手術碼的出現次數)
+   * @param date
+   * @return
+   */
+  @Query(value = "select ICDCM1, ICD_OP_CODE1, '10' as DATA_FORMAT, TOTAL from ( "
+  		+ "select m.icdcm1, opd.ICD_OP_CODE1, count(opd.ICD_OP_CODE1) as total from op_d opd "
+  		+ "join mr m on opd.roc_id = m.roc_id and m.ICDCM1 = opd.icd_cm_1 "
+  		+ "where m.MR_DATE > ?1 and opd.ICD_OP_CODE1 is not null "
+  		+ "group by m.icdcm1,opd.ICD_OP_CODE1 order by m.icdcm1 ) temp order by TOTAL", nativeQuery = true)
+  public List<Map<String, Object>> getClinicOperation(String date);
 }

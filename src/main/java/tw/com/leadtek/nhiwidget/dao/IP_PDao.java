@@ -5,6 +5,8 @@ package tw.com.leadtek.nhiwidget.dao;
 
 import java.sql.Date;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -103,4 +105,20 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
   @Modifying
   @Query(value = "UPDATE IP_P SET PAY_CODE_TYPE = '20' WHERE PAY_CODE_TYPE IS NULL ", nativeQuery = true)
   public void updatePayCodeType20();
+  
+  
+  /**
+ 	 * 計算住院近一年的所有主診斷碼及相關醫令出現次數，並算出平均數與標準差值，將結果寫入 ICDCM_ORDER table。若主診斷碼與醫令出現在近一年病歷次數小於30次，則上下限值存0，不予計算
+ 	 * @param dataFormat
+ 	 * @return
+ 	 */
+ 	@Query(value = "select ICDCM1 as ICDCM, ORDER_CODE, '20' as DATA_FORMAT, CAST(mrCount AS DECIMAL(10,6)) as AVERAGE, CAST(if(mrCount < 30, 0, up) AS DECIMAL(10,6)) as ULIMIT, CAST(if(mrCount < 30, 0, down) AS DECIMAL(10,6)) as LLIMIT from ( "
+ 			+ "	select  ICDCM1,ORDER_CODE, avg +2*STDDEV as up, avg -2*STDDEV as down, mrCount from ( \r\n"
+ 			+ "	select m.ICDCM1, ORDER_CODE,AVG(ip.ORDER_CODE) as AVG, STDDEV(ip.ORDER_CODE) as STDDEV, count(m.ID) as mrCount from ip_p ip "
+ 			+ "	join mr m on m.id = ip.MR_ID and m.MR_DATE > '2020-03-30' "
+ 			+ "	where ip.PAY_CODE_TYPE  in ('1','2', '3', '4', '5') "
+ 			+ "	group by m.icdcm1, ip.ORDER_CODE "
+ 			+ "	) temp "
+ 			+ "	) report where down >=0", nativeQuery = true)
+ 	public List<Map<String, Object>> calculate(String date);
 }

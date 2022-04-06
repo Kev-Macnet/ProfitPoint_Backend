@@ -327,29 +327,120 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   
   /**
    * 費用差異--門診
+   * @param date
    * @return
    */
   @Query(value = "select * from ( "
   		+ "select ID, ICDCM1, avg +2 * stddev as up, avg -2 * stddev as down from ( "
   		+ "SELECT ID, ICDCM1, AVG(T_DOT) AS AVG, STDDEV(T_DOT) AS STDDEV FROM MR "
-  		+ "WHERE MR_DATE > date_format(date_add(now(), interval -1 year), '%Y-%m-%d') "
-  		+ "AND DATA_FORMAT ='10' GROUP BY ICDCM1) temp where stddev > 0) temp2 "
-//  		+ "where temp2.icdcm1 = ?1", nativeQuery = true)
+  		+ "WHERE MR_DATE > ?1 "
+  		+ "AND DATA_FORMAT ='10' ) temp where stddev > 0) temp2 "
         + "", nativeQuery = true)
-  public List<Map<String, Object>> clinic();
+  public List<Map<String, Object>> clinic(String date);
   
   /**
    * 費用差異--住院
+   * @param date
    * @return
    */
   @Query(value = "select * from ( "
-	  		+ "select MR_ID, ICD_CM_1, avg +2 * stddev as up, avg -2 * stddev as down from ( "
-	  		+ "SELECT MR_ID, ICD_CM_1, AVG(APPL_DOT - DIAG_DOT - ROOM_DOT) AS AVG, STDDEV(APPL_DOT - DIAG_DOT - ROOM_DOT)*2 AS STDDEV FROM IP_D "
-	  		+ "WHERE MR_ID IN(SELECT ID FROM MR WHERE MR_DATE > date_format(date_add(now(), interval -1 year), '%Y-%m-%d') AND DATA_FORMAT ='20' GROUP BY ICD_CM_1 )) "
-//	  		+ "WHERE MR_DATE > date_format(date_add(now(), interval -1 year), '%Y-%m-%d') "
-//	  		+ "AND DATA_FORMAT ='20' GROUP BY ICDCM1) temp where stddev > 0) temp2 "
-//	  		+ "where temp2.icdcm1 = ?1", nativeQuery = true)
+	  		+ "select ID, MR_ID, ICD_CM_1, avg +2 * stddev as up, avg -2 * stddev as down from ( "
+	  		+ "SELECT ID, MR_ID, ICD_CM_1, AVG(APPL_DOT - DIAG_DOT - ROOM_DOT) AS AVG, STDDEV(APPL_DOT - DIAG_DOT - ROOM_DOT)*2 AS STDDEV FROM IP_D "
+	  		+ "WHERE MR_ID IN(SELECT ID FROM MR WHERE MR_DATE > ?1 AND DATA_FORMAT ='20' GROUP BY ICD_CM_1 )) "
             + "temp where stddev > 0) temp2"
             + "", nativeQuery = true)
-	  public List<Map<String, Object>> hospitalized();
+	  public List<Map<String, Object>> hospitalized(String date);
+  /**
+   * 醫療行為差異--門診
+   * @param date
+   * @return
+   */
+  @Query(value = "select * from (select m.ID, m.ROC_ID, m.ICDCM1, imo.ORDER_CODE, m.MR_DATE, count(m.ROC_ID) as count from mr m "
+  		+ " join ICDCM_ORDER imo on m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT "
+  		+ " where m.DATA_FORMAT ='10' and m.MR_DATE > ?1 group by m.ROC_ID order by m.ICDCM1) temp " , nativeQuery = true)
+  	  public List<Map<String, Object>> clinicMedBeh(String date);
+  /**
+   * 醫療行為差異--住院
+   * @param date
+   * @return
+   */
+  @Query(value = "select * from (select m.ID, m.ROC_ID, m.ICDCM1, imo.ORDER_CODE, m.MR_DATE, count(m.ROC_ID) as count from mr m "
+  		+ " join ICDCM_ORDER imo on m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT "
+  		+ " where m.DATA_FORMAT ='20' and m.MR_DATE > ?1 group by m.ROC_ID order by m.ICDCM1) temp " , nativeQuery = true)
+  	  public List<Map<String, Object>> hospitalMedBeh(String date);
+  /**
+   * 手術--門診
+   * @param date
+   * @return
+   */
+  @Query(value = "select m.ID, m.INH_MR_ID, opd.ICD_CM_1, ii.ICDOP, ii.TOTAL, ii.PERCENT from mr m "
+  		+ "join  op_d opd on  opd.roc_id = m.roc_id and m.ICDCM1 = opd.icd_cm_1 "
+  		+ "join ICDCM_ICDOP ii on ii.ICDCM = opd.icd_cm_1 and ii.ICDOP = opd.ICD_OP_CODE1 "
+  		+ "where m.MR_DATE > ?1 and m.DATA_FORMAT = '10' "
+  		+ "group by opd.roc_id",  nativeQuery = true)
+  public List<Map<String, Object>> clinicOpepration(String date);
+  
+  /**
+   * 手術--住院
+   * @param date
+   * @return
+   */
+  @Query(value = "select m.ID, m.INH_MR_ID, ipd.ICD_CM_1, ii.ICDOP, ii.TOTAL, ii.PERCENT from mr m "
+  		+ "join  ip_d ipd on  ipd.roc_id = m.roc_id and m.ICDCM1 = ipd.icd_cm_1 "
+  		+ "join ICDCM_ICDOP ii on ii.ICDCM = ipd.icd_cm_1 and ii.ICDOP = ipd.ICD_OP_CODE1 "
+  		+ "where m.MR_DATE > ?1 and m.DATA_FORMAT = '20' "
+  		+ "group by ipd.roc_id",  nativeQuery = true)
+  public List<Map<String, Object>> hospitalOpepration(String date);
+  
+  /**
+   * 依照日期與資料格式
+   * @param date
+   * @param dfmt
+   * @return
+   */
+  @Query(value ="select * from mr where mr_date > ?1 and data_format = ?2 order by id", nativeQuery = true)
+  public List<MR> getMrDataByDate(String date,String dfmt);
+  
+  /**
+   * 依照日期與資料格式
+   * @param date
+   * @param dfmt
+   * @return
+   */
+  @Query(value ="select * from mr where mr_date > ?1 and data_format = ?2 group by ICDCM1 order by id", nativeQuery = true)
+  public List<MR> getMrDataGroupByIcdcm(String date,String dfmt);
+  
+  /**
+   * @param date
+   * @return
+   */
+  @Query(value ="select * from ( "
+  		+ "select ICD_CM_1, avg +2 * stddev as up , STDDEV, MR_ID from ( "
+  		+ "SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV, MR_ID FROM IP_D "
+  		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE > '2019-01-01'  AND DATA_FORMAT ='20') "
+  		+ "GROUP BY ICD_CM_1) temp where stddev > 0) temp2",  nativeQuery = true)
+  public List<Map<String,Object>> hospitalDays(String date);
+  
+  /**
+   * 取得主診斷碼出現次數
+   * @param date
+   * @return
+   */
+  @Query(value ="select ID, ICDCM1, count(1) as COUNT from mr where  "
+  		+ " 1=1 "
+  		+ " and mr_date > ?1 and data_format = ?2 "
+  		+ " and id in (select mr_id from op_p where length(drug_no) = 10) "
+  		+ " group by  ICDCM1 order by id", nativeQuery = true)
+  public List<Map<String,Object>> getIcdcmCount(String date, String fmt);
+  /**
+   * 取得藥用碼出現次數
+   * @param date
+   * @return
+   */
+  @Query(value =" select MR_ID, DRUG_NO, count(1) as COUNT  from op_p  where  "
+  		+ " 1=1 "
+  		+ " and MR_ID in (select id from mr where mr_date > ?1 and data_format = ?2)  "
+  		+ " and length(drug_no) = 10 "
+  		+ " group by drug_no order by mr_id", nativeQuery = true)
+  public List<Map<String,Object>> getDrugNoCount(String date, String fmt);
 }
