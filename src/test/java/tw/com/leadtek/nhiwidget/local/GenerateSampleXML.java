@@ -12,6 +12,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,6 +28,7 @@ import tw.com.leadtek.nhiwidget.NHIWidget;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.IP_TDao;
+import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.OP_TDao;
@@ -35,13 +37,17 @@ import tw.com.leadtek.nhiwidget.model.rdb.IP;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_DData;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_T;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_DData;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
+import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
+import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
+import tw.com.leadtek.tools.StringUtility;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = NHIWidget.class)
@@ -78,6 +84,15 @@ public class GenerateSampleXML {
   
   @Autowired
   private ReportService reportService;
+  
+  @Autowired
+  private ParametersService parameters;
+  
+  @Autowired
+  private CodeTableService codeTableService;
+  
+  @Autowired
+  private MRDao mrDao;
   
   @Ignore
   @Test
@@ -241,5 +256,59 @@ public class GenerateSampleXML {
       System.out.println(chineseYM);
       calMin.add(Calendar.MONTH, 1);
     } while (calMin.before(calMax));
+  }
+  
+  @Test
+  public void testFunction() {
+    List<PARAMETERS> parametersList = parameters.getByCat("COMPARE_WARNING");
+    int compareBy = 0;
+    int rollbackHour = 0;
+    String[] funcType = null;
+    String[] doctors = null;
+    for (PARAMETERS p : parametersList) {
+      if ("COMPARE_BY".equals(p.getName())) {
+        compareBy = Integer.parseInt(p.getValue());
+      } else if ("COMPARE_DOCTOR".equals(p.getName())) {
+        doctors = StringUtility.splitBySpace(p.getValue());
+      } else if ("COMPARE_FUNC_TYPE".equals(p.getName())) {
+        funcType = codeTableService.convertFuncTypecToFuncTypeArray(p.getValue());
+      } else if ("ROLLBACK_HOUR".equals(p.getName())) {
+        rollbackHour = Integer.parseInt(p.getValue());
+      }
+    }
+    System.out.println("compare by=" + compareBy + ", hour=" + rollbackHour);
+    Optional<MR> optional = mrDao.findById(78072L);
+    if (optional.isPresent()) {
+      MR mr = optional.get();
+      boolean result = shouldCompareWarning(mr, compareBy, funcType, doctors, rollbackHour);
+      System.out.println("shouldCompareWarning=" + result);
+    }
+  }
+
+  private boolean shouldCompareWarning(MR mr, int compareBy, String[] funcType, String[] doctor,
+      int rollbackHour) {
+    if (compareBy == 0) {
+      // 關閉
+      return false;
+    }
+    if (compareBy == 1) {
+      // 只比對限定時間內的病歷
+      System.out
+          .println("compare time :" + mr.getMrEndDate().getTime() + " + " +  (rollbackHour * 60 * 60000) + 
+              "= " +(mr.getMrEndDate().getTime() + ((long)rollbackHour * 60L * 60000L))  + " vs " + System.currentTimeMillis());
+      return (mr.getMrEndDate().getTime() + ((long) rollbackHour * 60L * 60000L)) > System
+          .currentTimeMillis();
+    }
+    if (compareBy == 2) {
+      if (funcType == null) {
+        return false;
+      }
+      for (String func : funcType) {
+        if (mr.getFuncType().equals(func)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

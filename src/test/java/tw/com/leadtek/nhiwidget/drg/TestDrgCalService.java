@@ -42,7 +42,9 @@ import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
+import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
+import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.SendHTTP;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -87,6 +89,9 @@ public class TestDrgCalService {
   
   @Autowired
   private CodeTableService codeTableService;
+  
+  @Autowired
+  private ParametersService parametersService; 
   
   /**
    * 計算所有住院病歷的 DRG 代碼、區間、定額
@@ -155,9 +160,19 @@ public class TestDrgCalService {
   /**
    * 更新 POINT_MONTHLY table(健保點數月報表)的值 
    */
-  @Ignore
+  //@Ignore
   @Test
   public void calculatePointMonthly() {
+    Calendar cal = Calendar.getInstance();
+    cal.add(Calendar.YEAR, -4);
+    cal = parametersService.getMinMaxCalendar(cal.getTime(), true);
+    Calendar calMax = parametersService.getMinMaxCalendar(new Date(), false);
+    do {
+      System.out.println(cal.get(Calendar.YEAR) + "-" + (cal.get(Calendar.MONTH) + 1));
+      reportService.calculatePointMR(String.valueOf(DateTool.getChineseYm(cal)));
+      cal.add(Calendar.MONTH, 1);
+    } while(cal.before(calMax));
+    
 //    for (int i = 1; i < 10; i++) {
 //      reportService.calculatePointMR("1080" + i);
 //    }
@@ -173,9 +188,6 @@ public class TestDrgCalService {
 //    for (int i = 1; i < 10; i++) {
 //      reportService.calculatePointMR("1100" + i);
 //    }
-    for (int i = 11; i < 13; i++) {
-      reportService.calculatePointMR("110" + i);
-    }
   }
   
   /**
@@ -201,7 +213,7 @@ public class TestDrgCalService {
     }
   }
 
-  //@Ignore
+  @Ignore
   @Test
   public void calculateWeekly() {
     // start date : 2019/01/01

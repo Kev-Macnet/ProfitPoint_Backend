@@ -67,6 +67,7 @@ import tw.com.leadtek.nhiwidget.dao.MY_MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.OP_TDao;
+import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.model.CodeBase;
 import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
@@ -89,6 +90,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.OP_DData;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
+import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.DeductedNoteListResponse;
@@ -97,7 +99,6 @@ import tw.com.leadtek.nhiwidget.payload.MRCount;
 import tw.com.leadtek.nhiwidget.payload.MRCountResponse;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.MRResponse;
-import tw.com.leadtek.nhiwidget.payload.MRStatusCount;
 import tw.com.leadtek.nhiwidget.payload.MrNoteListResponse;
 import tw.com.leadtek.nhiwidget.payload.MrNotePayload;
 import tw.com.leadtek.nhiwidget.payload.SearchReq;
@@ -215,6 +216,9 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private FILE_DIFFDao diffDao;
+  
+  @Autowired
+  private PAY_CODEDao payCodeDao;
 
   @Value("${project.serverUrl}")
   private String serverUrl;
@@ -319,6 +323,7 @@ public class NHIWidgetXMLService {
       return;
     }
     
+    HashMap<String, String> payCodeType = getPayCodeType();
     List<PARAMETERS> parametersList = parameters.getByCat("COMPARE_WARNING");
     int compareBy = 0;
     int rollbackHour = 0;
@@ -416,6 +421,7 @@ public class NHIWidgetXMLService {
           if (opp.getDrugNo() != null) {
             sb.append(opp.getDrugNo());
             sb.append(",");
+            opp.setPayCodeType(payCodeType.get(opp.getDrugNo()));
           }
           opp.setOpdId(opd.getId());
           updateOPPID(oppList, opp);
@@ -534,6 +540,7 @@ public class NHIWidgetXMLService {
       }
     }
     
+    HashMap<String, String> payCodeType = getPayCodeType();
     List<IP_P> ippBatch = new ArrayList<IP_P>();
     for (IP_DData ip_dData : ip.getDdata()) {
       // if (count > 50) {
@@ -553,6 +560,7 @@ public class NHIWidgetXMLService {
       // long startMR =System.currentTimeMillis();
       MR mr = null;
       List<FILE_DIFF> diffList = null;
+     
       if (ipd.getMrId() != null) {
         // 已存在該病歷
         Optional<MR> optional = mrDao.findById(ipd.getMrId());
@@ -620,6 +628,7 @@ public class NHIWidgetXMLService {
           if (ipp.getOrderCode() != null) {
             sb.append(ipp.getOrderCode());
             sb.append(",");
+            ipp.setPayCodeType(payCodeType.get(ipp.getOrderCode()));
           }
           ipp.setIpdId(ipd.getId());
           updateIPPID(ippList, ipp);
@@ -662,6 +671,7 @@ public class NHIWidgetXMLService {
           if (!isFound) {
             addDiff(mr.getId(), null, ippOld.getOrderSeqNo().intValue(), (IP_P) null, diffList,
                 moList);
+            mr.setChangeOrder(1);
           }
         }
         if (ippListXML.size() > ipps.size()) {
@@ -669,6 +679,7 @@ public class NHIWidgetXMLService {
             IP_P ipp = ippListXML.get(i);
             addDiff(mr.getId(), ipp.getOrderCode(), ipp.getOrderSeqNo().intValue(), ipp, diffList,
                 moList);
+            mr.setChangeOrder(1);
             // E:自費特材項目-未支付
             if ("E".equals(ipp.getOrderType())){
               ownExpense += ipp.getTotalDot();
@@ -2662,9 +2673,10 @@ public class NHIWidgetXMLService {
     }else if ("drgCode".equals(fd.getName())) {
       result.setTwDrgCode(fd.getNewValue());
       result.setDrgCode(fd.getNewValue());
-    }else if ("ownExpense".equals(fd.getName())) {
-      result.setNonApplDot(Integer.parseInt(fd.getNewValue()));
     }
+//    else if ("ownExpense".equals(fd.getName())) {
+//      result.setNonApplDot(Integer.parseInt(fd.getNewValue()));
+//    }
   }
   
   private boolean updateDiff(MRDetail mrDetail, int oldStatus) {
@@ -3043,7 +3055,7 @@ public class NHIWidgetXMLService {
       // mrDetail.setInDate(ipD.getInDate());
       // System.out.println("ipD.indate=" + ipD.getInDate());
       ipD.setApplDot(mrDetail.getApplDot());
-      ipD.setNonApplDot(mrDetail.getOwnExpense());
+      //ipD.setNonApplDot(mrDetail.getOwnExpense());
       ipD.setTwDrgsSuitMark(mrDetail.getTwDrgsSuitMark());
       ipD.setTwDrgCode(mrDetail.getDrgCode());
       if(updateIPPByMrDetail(mr, ipD, mrDetail, true)) {
@@ -5679,7 +5691,7 @@ public class NHIWidgetXMLService {
     }
     if (compareBy == 1) {
       // 只比對限定時間內的病歷
-      return (mr.getMrEndDate().getTime() + (rollbackHour * 60 * 60000) ) > System.currentTimeMillis(); 
+      return (mr.getMrEndDate().getTime() + ((long) rollbackHour * 60L * 60000L)) > System.currentTimeMillis(); 
     }
     if (compareBy == 2) {
       if (funcType == null) {
@@ -5687,10 +5699,44 @@ public class NHIWidgetXMLService {
       }
       for (String func : funcType) {
         if (mr.getFuncType().equals(func)) {
-          return true;
+          if (doctor == null || doctor.length == 0) {
+            return true;
+          }
+          for (String doc : doctor) {
+            if (((mr.getPrsnId() != null) && mr.getPrsnId().equals(doc))
+                || (mr.getPrsnName() != null && mr.getPrsnName().equals(doc))) {
+              return true;
+            }
+          }
         }
       }
     }
     return false;
+  }
+  
+  /**
+   * 取得所有醫令代碼(支付標準代碼)及費用分類代碼
+   * @return
+   */
+  private HashMap<String, String> getPayCodeType() {
+    List<CODE_TABLE> codeTable = getCodeTable("PAY_CODE_TYPE");
+    // 費用分類名稱, 費用分類代碼
+    HashMap<String, String> payCodeType = new HashMap<String, String>();
+    for (CODE_TABLE ct : codeTable) {
+      payCodeType.put(ct.getDescChi(), ct.getCode());
+    }
+    // 醫令代碼(支付標準代碼), 費用分類代碼
+    HashMap<String, String> result = new HashMap<String, String>();
+    List<PAY_CODE> payCodeList = payCodeDao.findAll();
+    for (PAY_CODE pc : payCodeList) {
+      // 費用分類代碼
+      String payCodeTypeCode = payCodeType.get(pc.getCodeType());
+      if (payCodeTypeCode == null) {
+        // 不分類
+        payCodeTypeCode ="20";
+      }
+      result.put(pc.getCode(), payCodeTypeCode);
+    }
+    return result;
   }
 }

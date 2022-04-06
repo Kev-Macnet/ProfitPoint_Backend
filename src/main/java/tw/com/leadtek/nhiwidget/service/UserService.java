@@ -307,8 +307,11 @@ public class UserService {
   }
 
   public DEPARTMENT findDepartment(String name) {
-    Optional<DEPARTMENT> department = departmentDao.findByName(name);
-    return department.orElse(null);
+    List<DEPARTMENT> departments = departmentDao.findByName(name);
+    if (departments != null && departments.size() > 0) {
+      return departments.get(0);
+    }
+    return null;
   }
 
   public String deleteDepartment(Long id) {
@@ -517,6 +520,9 @@ public class UserService {
     USER existUser = findUser(username);
     if (existUser == null) {
       return "帳號不存在";
+    }
+    if (existUser.getStatus() == 0) {
+      return "帳號停用中，無法申請新密碼";
     }
     String newPassword = generateCommonLangPassword();
     emailService.sendMail("忘記密碼-重設新密碼", existUser.getEmail(), "系統隨機產生密碼:" + newPassword);

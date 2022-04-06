@@ -35,7 +35,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       + "(SELECT SUM(PART_DOT) AS PART_IP FROM IP_D WHERE IPT_ID=?3) c,"
       + "(SELECT SUM(T_APPL_DOT) AS APPL_OP FROM OP_D WHERE OPT_ID=?4 AND CASE_TYPE<>'02') d,"
       + "(SELECT SUM(T_APPL_DOT) AS APPL_EM FROM OP_D WHERE OPT_ID=?5 AND CASE_TYPE='02') e,"
-      + "(SELECT SUM(APPL_DOT) AS APPL_IP FROM IP_D WHERE IPT_ID=?6) f,"
+      + "(SELECT SUM(APPL_DOT) AS APPL_IP FROM MR WHERE DATA_FORMAT ='20' AND APPL_YM =?6) f,"
       + "(SELECT COUNT(1) AS PATIENT_OP FROM OP_D WHERE OPT_ID=?7 AND CASE_TYPE<>'02') g,"
       + "(SELECT COUNT(1) AS PATIENT_EM FROM OP_D WHERE OPT_ID=?8 AND CASE_TYPE='02') h ,"
       + "(SELECT COUNT(1) AS PATIENT_IP FROM IP_D WHERE IPT_ID=?9 AND OUT_DATE IS NOT NULL) i,"
@@ -44,7 +44,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       + "(SELECT COUNT(1) AS DRG_QUANTITY FROM MR WHERE DRG_SECTION IS NOT NULL AND APPL_YM=?12) l,"
       + "(SELECT SUM(MR.T_DOT) AS DRG_APPLDOT, SUM(IP_D.MED_DOT) AS DRG_ACTUAL_POINT FROM MR, IP_D WHERE "
       + "MR.DRG_SECTION IS NOT NULL AND MR.APPL_YM=?13 AND MR.ID = IP_D.MR_ID) m", nativeQuery = true)
-  public List<Object[]> findMonthlyPoint(long idOP1, long idOP2, long idIP1, long idOP3, long idOP4, long idIP2,
+  public List<Object[]> findMonthlyPoint(long idOP1, long idOP2, long idIP1, long idOP3, long idOP4, String applYM,
       long idOP5, long idOP6, long idIP3, long idOP7, String ym1, String ym2, String ym3);
   
   /**
