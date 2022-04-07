@@ -104,13 +104,15 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
 	 * @param dataFormat
 	 * @return
 	 */
-	@Query(value = "select ICDCM1 as ICDCM, DRUG_NO as ORDER_CODE, '10' as DATA_FORMAT, CAST(mrCount AS DECIMAL(10,6)) as AVERAGE, CAST(if(mrCount < 30, 0, up) AS DECIMAL(10,6)) as ULIMIT, CAST(if(mrCount < 30, 0, down) AS DECIMAL(10,6)) as LLIMIT from ( "
-			+ "select ICDCM1,DRUG_NO, avg +2*STDDEV as up, avg -2*STDDEV as down, mrCount from ( "
-			+ "select m.ICDCM1, DRUG_NO,AVG(op.DRUG_NO) as AVG, STDDEV(op.DRUG_NO) as STDDEV, count(m.ID) as mrCount from op_p op "
-			+ "join mr m on m.id = op.MR_ID and m.MR_DATE > ?1 "
-			+ "where op.PAY_CODE_TYPE  in ('1','2', '3', '4', '5') "
-			+ "group by m.icdcm1, op.DRUG_NO "
-			+ ") temp "
-			+ ") report where down >=0", nativeQuery = true)
-	public List<Map<String, Object>> calculate(String date);
+	@Query(value = "SELECT drug_no,icdcm1,AVG, AVG + 2 * STD as UP, AVG -2 * STD AS DOWN, MR_COUNT FROM ( "
+			+ "SELECT drug_no,icdcm1, COUNT(ICDCM1) AS MR_COUNT , AVG(drug_no_count) AS AVG, STDDEV(drug_no_count) STD FROM ( "
+			+ "SELECT op.DRUG_NO, count(op.DRUG_NO) AS drug_no_count , op.MR_ID, mr.ICDCM1 icdcm1 FROM op_p OP, MR "
+			+ "WHERE op.MR_ID = MR.ID "
+			+ "GROUP BY op.DRUG_NO, op.MR_ID, MR.ICDCM1 ORDER BY DRUG_NO "
+			+ ") TEMP "
+			+ "GROUP BY DRUG_NO , icdcm1 ORDER BY DRUG_NO , icdcm1 ) temp2 "
+			+ "WHERE avg > 1 AND MR_COUNT >= 30 "
+			+ "GROUP BY ICDCM1, DRUG_NO, AVG , STD, MR_COUNT ORDER BY AVG DESC "
+			+ "", nativeQuery = true)
+	public List<Map<String, Object>> calculate();
 }

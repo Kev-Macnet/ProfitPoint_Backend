@@ -12,8 +12,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
+
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
-import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 
 public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExecutor<IP_D> {
 
@@ -123,13 +123,13 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @param date
    * @return
    */
-  @Query(value = "select ICDCM1, ICD_OP_CODE1, '20' as DATA_FORMAT, TOTAL from ( "
-  		+ "select m.icdcm1, ipd.ICD_OP_CODE1, count(ipd.ICD_OP_CODE1) as total from ip_d ipd "
-  		+ "join mr m on ipd.roc_id = m.roc_id and m.ICDCM1 = ipd.icd_cm_1 "
-  		+ "where m.MR_DATE > '2020-03-30'  and ipd.ICD_OP_CODE1 is not null "
-  		+ "group by m.icdcm1,ipd.ICD_OP_CODE1 order by m.icdcm1 ) temp order by TOTAL ", nativeQuery = true)
+  @Query(value = "select * from (  "
+  		+ "select mr.ICDCM1, ip.ICD_OP_CODE1, count(ip.ICD_OP_CODE1) as IOC1COUNT , ip.ICD_OP_CODE2, count(ip.ICD_OP_CODE2) as IOC2COUNT  from ip_d ip , mr  "
+  		+ "where ip.roc_id = mr.roc_id and mr.MR_DATE >  ?1 "
+  		+ "group by ip.ICD_OP_CODE1, mr.ICDCM1, ip.ICD_OP_CODE2) temp "
+  		+ "where IOC1COUNT > 0 or IOC2COUNT > 0 "
+  		+ "order by IOC1COUNT desc", nativeQuery = true)
   public List<Map<String, Object>> getHospitalOperation(String date);
-  
   /**
    * 如果包含牙科且case_type有其條件資料
    * @param mrId
@@ -179,5 +179,6 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    */
   @Query(value = "select * from ip_d where mr_id in(?1) ", nativeQuery = true)
   public List<IP_D> getListByMrId(String mrid);
+  
   
 }

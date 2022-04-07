@@ -154,11 +154,12 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @param date
    * @return
    */
-  @Query(value = "select ICDCM1, ICD_OP_CODE1, '10' as DATA_FORMAT, TOTAL from ( "
-  		+ "select m.icdcm1, opd.ICD_OP_CODE1, count(opd.ICD_OP_CODE1) as total from op_d opd "
-  		+ "join mr m on opd.roc_id = m.roc_id and m.ICDCM1 = opd.icd_cm_1 "
-  		+ "where m.MR_DATE > ?1 and opd.ICD_OP_CODE1 is not null "
-  		+ "group by m.icdcm1,opd.ICD_OP_CODE1 order by m.icdcm1 ) temp order by TOTAL", nativeQuery = true)
+  @Query(value = "select * from (  "
+  		+ "select mr.ICDCM1, op.ICD_OP_CODE1, count(op.ICD_OP_CODE1) as IOC1COUNT , op.ICD_OP_CODE2, count(op.ICD_OP_CODE2) as IOC2COUNT  from op_d op , mr  "
+  		+ "where op.roc_id = mr.roc_id and mr.MR_DATE >  ?1 "
+  		+ "group by op.ICD_OP_CODE1, mr.ICDCM1, op.ICD_OP_CODE2) temp "
+  		+ "where IOC1COUNT > 0 or IOC2COUNT > 0 "
+  		+ "order by ipc1Count desc", nativeQuery = true)
   public List<Map<String, Object>> getClinicOperation(String date);
   
   /**
@@ -192,10 +193,9 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "select * from("
-	  		+ "select opd.MR_ID from op_d opd "
-	  		+ "join op_p opp on opd.id = opp.opd_id where opd.part_no = '007') temp", nativeQuery = true)
-	  public List<Map<String, Object>> getPartNoByOutisLand();
-  
+  		+ "select opd.MR_ID from op_d opd "
+  		+ "join op_p opp on opd.id = opp.opd_id where opd.part_no = '007') temp", nativeQuery = true)
+  public List<Map<String, Object>> getPartNoByOutisLand();
   /**
    * 由mrid取得該病例生日
    * @param mrid

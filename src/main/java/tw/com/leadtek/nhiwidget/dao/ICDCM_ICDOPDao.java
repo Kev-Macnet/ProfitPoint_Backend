@@ -19,7 +19,7 @@ public interface ICDCM_ICDOPDao extends JpaRepository<ICDCM_ICDOP, String>{
 	 * @param icdcm
 	 * @return
 	 */
-	@Query(value = "SELECT * FROM ICDCM_ICDOP WHERE DATA_FORMAT = 10 and ICDCM = ?1 order by TOTAL ", nativeQuery = true)
+	@Query(value = "SELECT * FROM ICDCM_ICDOP WHERE DATA_FORMAT = 10 and ICDCM = ?1 order by TOTAL desc ", nativeQuery = true)
 	public List<ICDCM_ICDOP> queryClinicOperation(String icdcm);
 	/**
 	 * 住院
