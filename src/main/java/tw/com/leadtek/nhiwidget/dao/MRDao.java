@@ -443,4 +443,20 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ " and length(drug_no) = 10 "
   		+ " group by drug_no order by mr_id", nativeQuery = true)
   public List<Map<String,Object>> getDrugNoCount(String date, String fmt);
+  
+
+  
+  /**
+   * 取得列在智能提示中的病歷，近一年違規且狀態為待確認
+   */
+  @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
+      + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2') ", nativeQuery = true)
+  public List<MR> getIntelligentMR(String sDate, String eDate);
+  
+  /**
+   * 取得列在智能提示中的病歷，近一年違規且狀態為待確認and FUNC_TYPEC not in
+   */
+  @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
+      + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2' AND FUNC_TYPEC NOT IN (?3)) ", nativeQuery = true)
+  public List<MR> getIntelligentMrByFuncName(String sDate, String eDate, String funcName);
 }
