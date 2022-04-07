@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
 import tw.com.leadtek.nhiwidget.service.AIService;
-import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeService;
+import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
 
 @RestController
 @RequestMapping("/auth")
@@ -25,7 +25,7 @@ public class AICotroller {
 	@Autowired
 	private AIService aiService;
 	@Autowired
-	private PtOutpatientFeeService ptOutpatientFeeService;
+	private PtOutpatientFeeServiceTask ptOutpatientFeeService;
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })

@@ -191,9 +191,11 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * 查詢離島資料
    * @return
    */
-  @Query(value = "select * from op_d opd "
-  		+ "join op_p opp on opd.id = opp.opd_id where opd.part_no = '007'", nativeQuery = true)
-  public List<Map<String, Object>> getPartNoByOutisLand();
+  @Query(value = "select * from("
+	  		+ "select opd.MR_ID from op_d opd "
+	  		+ "join op_p opp on opd.id = opp.opd_id where opd.part_no = '007') temp", nativeQuery = true)
+	  public List<Map<String, Object>> getPartNoByOutisLand();
+  
   /**
    * 由mrid取得該病例生日
    * @param mrid

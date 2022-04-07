@@ -27,7 +27,7 @@ import tw.com.leadtek.nhiwidget.sql.PtOutpatientFeeDao;
 import tw.com.leadtek.tools.DateTool;
 
 @Service
-public class PtOutpatientFeeService {
+public class PtOutpatientFeeServiceTask {
 	@Autowired
 	private PaymentTermsDao paymentTermsDao;
 	@Autowired
