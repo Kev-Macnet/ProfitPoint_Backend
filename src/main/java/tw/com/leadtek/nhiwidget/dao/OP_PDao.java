@@ -115,4 +115,26 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
 			+ "GROUP BY ICDCM1, DRUG_NO, AVG , STD, MR_COUNT ORDER BY AVG DESC "
 			+ "", nativeQuery = true)
 	public List<Map<String, Object>> calculate();
+	
+	/**
+ 	 * 由支付準則代碼和MRid查詢
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select opp.DRUG_NO, opp.MR_ID ,  sum(opp.TOTAL_Q) as TOTAL from op_p opp, op_d opd "
+ 			+ "where opp.OPD_ID = opd.id and opd.CASE_TYPE = '02' and DRUG_NO = ?1 and opp.MR_ID in (?2) "
+ 			+ "group by opp.DRUG_NO, opp.MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListByDrugNoAndMrid(String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid查詢，查詢使用次數
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select opp.DRUG_NO, opd.ROC_ID, count(opd.ROC_ID) as COUNT, opd.MR_ID from op_d opd, op_p opp "
+ 			+ "where opp.OPD_ID = opd.id and opp.DRUG_NO = ?1 and opp.MR_ID in (?2) "
+ 			+ "group by opp.DRUG_NO, opd.ROC_ID, opd.MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListCountByDrugNoAndMrid(String code, List<String> mrid);
 }

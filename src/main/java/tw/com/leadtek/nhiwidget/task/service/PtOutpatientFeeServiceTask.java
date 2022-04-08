@@ -22,16 +22,11 @@ import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
-import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
-import tw.com.leadtek.nhiwidget.sql.PtOutpatientFeeDao;
 import tw.com.leadtek.tools.DateTool;
 
 @Service
 public class PtOutpatientFeeServiceTask {
-	@Autowired
-	private PaymentTermsDao paymentTermsDao;
-	@Autowired
-	private PtOutpatientFeeDao ptOutpatientFeeDao;
+	
 	@Autowired
 	private MRDao mrDao;
 	@Autowired
@@ -56,7 +51,7 @@ public class PtOutpatientFeeServiceTask {
 		/// 違反案件數
 		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr);
 		List<MR> mrList2 = new ArrayList<MR>();
-		String mrIdListStr = "";
+		List<String> mrIdListStr = new ArrayList<String>();
 		/// 判斷支付條件準則日期，如果病歷小於該日，則不顯示
 		for (MR mr : mrList) {
 			/// 起日
@@ -68,7 +63,8 @@ public class PtOutpatientFeeServiceTask {
 
 			if (sd.before(mrSd) || ed.equals(mrEd)) {
 				mrList2.add(mr);
-				mrIdListStr += "'" + mr.getId() + "',";
+				
+				mrIdListStr.add(mr.getId().toString()) ;
 			}
 		}
 		if (params.getHospitalized_type() == 0) {
@@ -87,10 +83,7 @@ public class PtOutpatientFeeServiceTask {
 			}
 		}
 
-		if (!mrIdListStr.isEmpty()) {
-			/// 去掉最後一個,
-			mrIdListStr = mrIdListStr.substring(0, mrIdListStr.lastIndexOf(","));
-		}
+	
 		/// 1.
 		/// 住院
 		List<Map<String, Object>> hospitalListD = new ArrayList<Map<String, Object>>();
@@ -366,13 +359,12 @@ public class PtOutpatientFeeServiceTask {
 		/// 限定特定科別應用
 		if (params.getLim_division_enable() == 1) {
 			List<String> funList = params.getLst_division();
-			String funcAppend = "";
+			List<String> funcAppend = new ArrayList<String>();
 
 			for (String func : funList) {
-				funcAppend += "'" + func + "',";
+				funcAppend.add(func);
 			}
 
-			funcAppend = funcAppend.substring(0, funcAppend.lastIndexOf(","));
 
 			List<MR> mrDataList = mrDao.getIntelligentMrByFuncName(sDateStr, eDateStr, funcAppend);
 			/// 如果有非指定funcName資料
@@ -390,16 +382,12 @@ public class PtOutpatientFeeServiceTask {
 		/// 限定單一醫師、護理人員、藥師執行此醫令單月上限
 		if (params.getLim_max_enable() == 1) {
 			if (params.getOutpatient_type() == 1) {
-				String mrStrAppendList = "";
+				List<String> mrStrAppendList = new ArrayList<String>();
 				for (MR mr : mrList) {
 					/// 取出門診資料病例id
 					if (mr.getCodeAll().contains(params.getNhi_no()) && mr.getDataFormat().equals("10")) {
-
-						mrStrAppendList += "'" + mr.getId() + "',";
+						mrStrAppendList.add(mr.getId().toString());
 					}
-				}
-				if (mrStrAppendList.length() > 0) {
-					mrStrAppendList = mrStrAppendList.substring(0, mrStrAppendList.lastIndexOf(","));
 				}
 				/// 依照條件查詢出門診清單
 				List<OP_D> opdList = opdDao.getListByMrId(mrStrAppendList);
@@ -443,16 +431,12 @@ public class PtOutpatientFeeServiceTask {
 			}
 			if (params.getHospitalized_type() == 1) {
 
-				String mrStrAppendList = "";
+				List<String> mrStrAppendList = new ArrayList<String>();
 				for (MR mr : mrList) {
 					/// 取出住院資料病例id
 					if (mr.getCodeAll().contains(params.getNhi_no()) && mr.getDataFormat().equals("20")) {
-
-						mrStrAppendList += "'" + mr.getId() + "',";
+						mrStrAppendList.add(mr.getId().toString());
 					}
-				}
-				if (mrStrAppendList.length() > 0) {
-					mrStrAppendList = mrStrAppendList.substring(0, mrStrAppendList.lastIndexOf(","));
 				}
 				/// 依照條件查詢住院診清單
 				List<IP_D> ipdList = ipdDao.getListByMrId(mrStrAppendList);

@@ -5,17 +5,17 @@ import java.text.ParseException;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
 import tw.com.leadtek.nhiwidget.service.AIService;
+import tw.com.leadtek.nhiwidget.task.service.PtInpatientFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
 
 @RestController
@@ -26,6 +26,8 @@ public class AICotroller {
 	private AIService aiService;
 	@Autowired
 	private PtOutpatientFeeServiceTask ptOutpatientFeeService;
+	@Autowired
+	private PtInpatientFeeServiceTask ptInpatientFeeService;
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
@@ -86,5 +88,12 @@ public class AICotroller {
 	public void vaidOutpatientFee(HttpServletRequest request,
 	        @RequestBody PtOutpatientFeePl params) throws ParseException {
 		 ptOutpatientFeeService.vaidOutpatientFee(params);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/vaidInpatientFee", method = { RequestMethod.GET, RequestMethod.POST })
+	public void vaidInpatientFee(HttpServletRequest request,
+	        @RequestBody PtInpatientFeePl params) throws ParseException {
+		ptInpatientFeeService.validInpatienFee(params);
 	}
 }

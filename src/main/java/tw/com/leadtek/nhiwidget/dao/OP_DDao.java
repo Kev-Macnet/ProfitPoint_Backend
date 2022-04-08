@@ -173,7 +173,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id  "
   		+ "where pof.no_dentisit = 0   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
   		+ "and opd.mr_id in (?1) ", nativeQuery = true)
-  public List<Map<String, Object>> getValidByNoDentisit(String mrId);
+  public List<Map<String, Object>> getValidByNoDentisit(List<String> mrId);
   
   /**
    * 如果包含中醫且case_type有其條件資料
@@ -186,7 +186,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
   		+ "where pof.no_chi_medicine = 0   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
 	  	+ "and opd.mr_id in (?1) ", nativeQuery = true)
-	  public List<Map<String, Object>> getValidByNoChiMedicine(String mrId);
+	  public List<Map<String, Object>> getValidByNoChiMedicine(List<String> mrId);
   
   /**
    * 查詢離島資料
@@ -203,7 +203,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    */
   @Query(value = "select opd.MR_ID, opd.ID_BIRTH_YMD from op_d opd "
   		+ "join op_p opp on opd.id = opp.opd_id where opd.mr_id  in(?1) group by opd.MR_ID ", nativeQuery = true)
-  public List<Map<String, Object>> getBirthByMrId(String mridStr);
+  public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
   
   /**
    * 由func & mrid取得醫療人員人數
@@ -219,5 +219,5 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "select * from op_d where mr_id in(?1) ", nativeQuery = true)
-  public List<OP_D> getListByMrId(String mrid);
+  public List<OP_D> getListByMrId(List<String> mrid);
 }
