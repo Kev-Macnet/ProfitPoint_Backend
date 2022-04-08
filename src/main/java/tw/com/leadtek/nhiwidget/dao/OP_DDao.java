@@ -202,7 +202,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "select opd.MR_ID, opd.ID_BIRTH_YMD from op_d opd "
-  		+ "join op_p opp on opd.id = opp.opd_id where opd.mr_id  in(?1) group by opd.MR_ID ", nativeQuery = true)
+	  		+ "where opd.mr_id  in(?1) group by opd.MR_ID, opd.ID_BIRTH_YMD", nativeQuery = true)
   public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
   
   /**

@@ -14,10 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
 import tw.com.leadtek.nhiwidget.service.AIService;
 import tw.com.leadtek.nhiwidget.task.service.PtInpatientFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
+import tw.com.leadtek.nhiwidget.task.service.PtSurgeryFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtWardFeeServiceTask;
 
 @RestController
@@ -32,6 +34,8 @@ public class AICotroller {
 	private PtInpatientFeeServiceTask ptInpatientFeeService;
 	@Autowired
 	private PtWardFeeServiceTask ptWardFeeService;
+	@Autowired
+	private PtSurgeryFeeServiceTask ptSurgeryFeeService;
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
@@ -106,5 +110,12 @@ public class AICotroller {
 	public void vaidWardFeee(HttpServletRequest request,
 	        @RequestBody PtWardFeePl params) throws ParseException {
 		ptWardFeeService.validInpatienFee(params);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/vaidSurgeryFee", method = { RequestMethod.GET, RequestMethod.POST })
+	public void vaidSurgeryFee(HttpServletRequest request,
+	        @RequestBody PtSurgeryFeePl params) throws ParseException {
+		ptSurgeryFeeService.validSurgeryFee(params);
 	}
 }
