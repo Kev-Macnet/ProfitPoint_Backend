@@ -29,8 +29,8 @@ public class AICotroller {
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getClinicCostDiffData(@RequestParam(required = true) String date) {
-		return aiService.clinicCostDiff(date);
+	public Object getClinicCostDiffData(@RequestParam(required = true) String sDate1,String eDate1,String sDate2,String eDate2) {
+		return aiService.clinicCostDiff(sDate1, eDate1, sDate2, eDate2);
 	}
 	
 	@ResponseBody
