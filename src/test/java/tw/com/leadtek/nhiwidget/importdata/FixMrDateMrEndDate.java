@@ -85,6 +85,7 @@ public class FixMrDateMrEndDate {
     }
   }
   
+  @Ignore
   @Test
   public void updateIntelligentApplYm() {
     List<INTELLIGENT> list = intelligentDao.findAll();
@@ -97,5 +98,10 @@ public class FixMrDateMrEndDate {
         }
       }
     }
+  }
+  
+  @Test
+  public void fixOwnExpanse() {
+    
   }
 }

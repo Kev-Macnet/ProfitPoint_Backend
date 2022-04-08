@@ -39,7 +39,7 @@ public class DRGMonthlyPayload extends DRGReportPayload implements Serializable 
     this.applPointDrg = pm.getDrgApplPoint();
     this.pointDrg = pm.getDrgActualPoint();
     this.rateDrg = ReportService.cutPointNumber(((double) quantityDrg * (double) 100) / (double) quantityIp);
-    this.ratePointDrg = ReportService.cutPointNumber(((double) applPointDrg * (double) 100) / (double) pm.getTotalIp());
+    this.ratePointDrg = ReportService.cutPointNumber(((double) applPointDrg * (double) 100) / (double) pm.getApplIp());
     this.pointIp = pm.getTotalIp();
     this.diffDrg = applPointDrg - pointDrg;
     funcTypes = new ArrayList<String>();

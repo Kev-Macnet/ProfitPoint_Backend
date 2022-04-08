@@ -814,7 +814,7 @@ public class MR {
       if (diffList != null && this.mrDate != null && this.mrDate.getTime() != newDate.getTime()) {
         SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
         FILE_DIFF fd = new FILE_DIFF(id, "inDate", sdf.format(newDate));
-        diffList.add(fd);        
+        diffList.add(fd);
       } else {
         this.mrDate = newDate;
       }
@@ -824,7 +824,7 @@ public class MR {
       if (diffList != null && this.mrEndDate != null && this.mrEndDate.getTime() != newDate.getTime()) {
         SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
         FILE_DIFF fd = new FILE_DIFF(id, "outDate", sdf.format(newDate));
-        diffList.add(fd);        
+        diffList.add(fd);   
       } else {
         this.mrEndDate = newDate;
       }
@@ -834,7 +834,7 @@ public class MR {
       if (diffList != null && this.mrEndDate != null && this.mrEndDate.getTime() != newDate.getTime()) {
         SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
         FILE_DIFF fd = new FILE_DIFF(id, "applEndDate", sdf.format(newDate));
-        diffList.add(fd);        
+        diffList.add(fd);
       } else {
         this.mrEndDate = newDate;
       }
@@ -843,7 +843,7 @@ public class MR {
     if (ipd.getApplDot() != null && this.applDot != null) {
       if (diffList != null && this.applDot.intValue() != ipd.getApplDot().intValue()) {
         FILE_DIFF fd = new FILE_DIFF(id, "applDot", ipd.getApplDot().toString());
-        diffList.add(fd);     
+        diffList.add(fd);
       } else {
         this.applDot = ipd.getApplDot();
       }
@@ -865,13 +865,13 @@ public class MR {
       this.drgCode = ipd.getTwDrgCode();
     }
 
-    if (diffList != null && ipd.getNonApplDot() != null && ipd.getNonApplDot().intValue() != this.ownExpense.intValue()) {
-      FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", ipd.getNonApplDot().toString());
-      diffList.add(fd);
-    } else {
+//    if (diffList != null && ipd.getNonApplDot() != null && ipd.getNonApplDot().intValue() != this.getNonApplDot().intValue()) {
+//      FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", ipd.getNonApplDot().toString());
+//      diffList.add(fd);
+//    } else {
       //this.ownExpense = ipd.getNonApplDot();
       this.ownExpense = 0;
-    }
+    //}
     
     this.updateAt = new Date();
   }
@@ -914,7 +914,7 @@ public class MR {
       if (diffList != null && this.mrEndDate != null && this.mrEndDate.getTime() != newDate.getTime()) {
         SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
         FILE_DIFF fd = new FILE_DIFF(id, "outDate", sdf.format(newDate));
-        diffList.add(fd);        
+        diffList.add(fd);
       } else {
         this.mrEndDate = newDate;
         this.mrDate = DateTool.convertChineseToYear(opd.getFuncDate());
@@ -924,7 +924,7 @@ public class MR {
       if (diffList != null && this.mrDate != null && this.mrDate.getTime() != newDate.getTime()) {
         SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
         FILE_DIFF fd = new FILE_DIFF(id, "inDate", sdf.format(newDate));
-        diffList.add(fd);        
+        diffList.add(fd);
       } else {
         this.mrDate = newDate;
         this.mrEndDate = newDate;
@@ -951,13 +951,14 @@ public class MR {
     } else {
       this.applDot = opd.getTotalApplDot();
     }
-    if (diffList != null && (opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()) != this.ownExpense) {
-      FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", String.valueOf(opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()));
-      diffList.add(fd);
-    } else {
+//    if (diffList != null && (opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()) != this.ownExpense) {
+//      FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", String.valueOf(opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()));
+//      diffList.add(fd);
+//      changeOther = 1;
+//    } else {
       //this.ownExpense = totalDot - applDot;
       this.ownExpense = 0;
-    }
+    //}
     this.updateAt = new Date();
   }
 }

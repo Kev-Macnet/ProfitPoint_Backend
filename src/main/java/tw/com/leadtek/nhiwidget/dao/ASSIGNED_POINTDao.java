@@ -12,4 +12,6 @@ import tw.com.leadtek.nhiwidget.model.rdb.ASSIGNED_POINT;
 public interface ASSIGNED_POINTDao extends JpaRepository<ASSIGNED_POINT, Long>, JpaSpecificationExecutor<ASSIGNED_POINT> {
 
   public List<ASSIGNED_POINT> findAllByStartDateLessThanEqualAndEndDateGreaterThanEqual(Date d1, Date d2);
+  
+  public List<ASSIGNED_POINT> findAllByOrderByEndDateDesc();
 }

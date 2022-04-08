@@ -50,6 +50,8 @@ spring:
     url: jdbc:sap://10.10.5.31:30041/NHIWIDGET
     username: NWUSER
     password: Leadtek2021
+    testOnBorrow: true
+    validationQuery: SELECT '1' FROM DUMMY
   jpa:
     show-sql: false
     hibernate:
@@ -62,7 +64,7 @@ spring:
         id: 
           new_generator_mappings: false
           connection:
-          pool_size: 100
+          pool_size: 40
         format_sql: false
         order_inserts: true
         order_updates: true
@@ -77,7 +79,7 @@ spring:
           non_contextual_creation: true
       default-schema: NWUSER
       connection:
-        pool_size: 100
+        pool_size: 40
       show_sql: false
       format_sql: false
       bytecode: 

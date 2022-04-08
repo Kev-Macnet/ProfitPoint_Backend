@@ -38,6 +38,8 @@ spring:
     url: jdbc:mariadb://${dbip:10.10.5.23}:${dbport:3306}/nwuser
     username: leadtek
     password: leadtek
+    testOnBorrow: true
+    validationQuery: SELECT '1'
 #  datasource:
 #    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
 #    url: jdbc:sqlserver://${dbip:140.127.232.81}:${dbport:1433}; databaseName=ProjectData

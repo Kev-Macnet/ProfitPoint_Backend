@@ -183,7 +183,7 @@ public class ReportService {
       return;
     }
 
-    List<Object[]> list = opdDao.findMonthlyPoint(optId, optId, iptId, optId, optId, iptId, optId,
+    List<Object[]> list = opdDao.findMonthlyPoint(optId, optId, iptId, optId, optId, chineseYM, optId,
         optId, iptId, optId, chineseYM, chineseYM, chineseYM);
     if (list != null && list.size() > 0) {
       Object[] obj = list.get(0);
@@ -264,7 +264,7 @@ public class ReportService {
     pm.setRateAll(
         cutPointNumber(((double) pm.getTotalAll() * (double) 100) / (double) pm.getAssignedAll()));
     pm.setRateOpAll(
-        cutPointNumber(((double) pm.getTotalOp() * (double) 100) / (double) pm.getAssignedOpAll()));
+        cutPointNumber(((double) pm.getTotalOpAll() * (double) 100) / (double) pm.getAssignedOpAll()));
     pm.setRateIp(
         cutPointNumber(((double) pm.getTotalIp() * (double) 100) / (double) pm.getAssignedIp()));
     pm.setRemaining(pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll()
@@ -299,6 +299,12 @@ public class ReportService {
         assignedPointDao.findAllByStartDateLessThanEqualAndEndDateGreaterThanEqual(date, date);
     if (list != null && list.size() > 0) {
       return list.get(0);
+    } else {
+      list =
+          assignedPointDao.findAllByOrderByEndDateDesc();
+      if (list != null && list.size() > 0) {
+        return list.get(0);
+      }     
     }
     return null;
   }
@@ -1025,9 +1031,13 @@ public class ReportService {
         drgWeeklyDao.findByFuncTypeAndEndDateLessThanEqualOrderByEndDateDesc(funcType, lastDay);
     if (list != null && list.size() > 0) {
       int count = 0;
+      // A 區, 件數, 點數
       NameValueList2 nvlA = new NameValueList2();
+      // B1 區, 件數, 點數
       NameValueList2 nvlB1 = new NameValueList2();
+      // B2 區, 件數, 點數
       NameValueList2 nvlB2 = new NameValueList2();
+      // C 區, 件數, 點數
       NameValueList2 nvlC = new NameValueList2();
       for (DRG_WEEKLY dw : list) {
         String name = dw.getPyear() + " w" + dw.getPweek();
