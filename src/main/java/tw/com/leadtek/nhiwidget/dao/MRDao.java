@@ -103,9 +103,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * 取得DRG各科, 非DRG在指定日期區間的件數及點數
    */
   @Query(value ="SELECT * FROM " + 
-      "(SELECT FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(APPL_DOT) AS DRG_POINT FROM MR " + 
+      "(SELECT FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(T_DOT) AS DRG_POINT FROM MR " + 
       " WHERE DRG_SECTION IS NOT NULL AND MR_DATE >= ?1 AND MR_DATE <= ?2 GROUP BY FUNC_TYPE) DRG," + 
-      "(SELECT FUNC_TYPE AS NONDRG_FUNC_TYPE, COUNT(1) AS NONDRG_QUANTITY, SUM(APPL_DOT) AS NONDRG_POINT FROM MR " + 
+      "(SELECT FUNC_TYPE AS NONDRG_FUNC_TYPE, COUNT(1) AS NONDRG_QUANTITY, SUM(T_DOT) AS NONDRG_POINT FROM MR " + 
       " WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_DATE >= ?3 AND MR_DATE <= ?4 " + 
       " AND FUNC_TYPE IN (SELECT DISTINCT(FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL " +
       " AND MR_DATE >= ?5 AND MR_DATE <= ?6) GROUP BY FUNC_TYPE) NODRG " +
@@ -116,21 +116,21 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   /**
    * 取得DRG各科在指定日期區間的件數及點數
    */
-  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(APPL_DOT) AS DRG_POINT FROM MR " + 
+  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(T_DOT) AS DRG_POINT FROM MR " + 
       " WHERE DRG_SECTION IS NOT NULL AND MR_DATE >= ?1 AND MR_DATE <= ?2 GROUP BY FUNC_TYPE", nativeQuery = true)
   public List<Object[]> countDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
   
   /**
    * 取得非DRG各科在指定日期區間的件數及點數
    */
-  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS NONDRG_QUANTITY, SUM(APPL_DOT) AS NONDRG_POINT FROM MR " + 
+  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS NONDRG_QUANTITY, SUM(T_DOT) AS NONDRG_POINT FROM MR " + 
       " WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_DATE >= ?1 AND MR_DATE <= ?2 GROUP BY FUNC_TYPE", nativeQuery = true)
   public List<Object[]> countNonDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
   
   /**
    * 取得DRG指定科別在指定日期區間的不同區的件數及點數
    */
-  @Query(value="SELECT DRG_SECTION, COUNT(1) AS QUANTITY, SUM(APPL_DOT) AS POINT FROM MR " + 
+  @Query(value="SELECT DRG_SECTION, COUNT(1) AS QUANTITY, SUM(T_DOT) AS POINT FROM MR " + 
       "WHERE DRG_SECTION IS NOT NULL AND MR_DATE >= ?1 AND MR_DATE <= ?2 AND FUNC_TYPE =?3 GROUP BY DRG_SECTION", nativeQuery = true)
   public List<Object[]> countDRGPointByFuncTypeGroupByDRGSection(Date startDate1, Date endDate1, String funcType);
   
