@@ -158,7 +158,7 @@ public class PtOutpatientFeeServiceTask {
 		/// 2.
 		/// 開立此醫令，處方交付特約藥局調劑或未開處方者，不得申報藥事服務費(調劑費)
 		if (params.getNo_service_charge() == 1) {
-			for (MR mr : mrList) {
+			for (MR mr : mrList2) {
 				if (mr.getCodeAll().contains(params.getNhi_no())) {
 
 					PAY_CODE pc = payCodeDao.findDataByCode(params.getNhi_no());
@@ -210,7 +210,7 @@ public class PtOutpatientFeeServiceTask {
 		/// 4.
 		/// 限定假日加計使用
 		if (params.getLim_holiday() == 1) {
-            for(MR mr: mrList) {
+            for(MR mr: mrList2) {
             	if(mr.getCodeAll().contains(params.getNhi_no())) {
             		
             		Date date = mr.getMrDate();
@@ -232,7 +232,7 @@ public class PtOutpatientFeeServiceTask {
 		if (params.getExclude_nhi_no_enable() == 1) {
 			List<String> nhiNoList = params.getLst_nhi_no();
 			int count = 0;
-			for (MR mr : mrList) {
+			for (MR mr : mrList2) {
 				for (String nhiNo : nhiNoList) {
 					if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
@@ -383,7 +383,7 @@ public class PtOutpatientFeeServiceTask {
 		if (params.getLim_max_enable() == 1) {
 			if (params.getOutpatient_type() == 1) {
 				List<String> mrStrAppendList = new ArrayList<String>();
-				for (MR mr : mrList) {
+				for (MR mr : mrList2) {
 					/// 取出門診資料病例id
 					if (mr.getCodeAll().contains(params.getNhi_no()) && mr.getDataFormat().equals("10")) {
 						mrStrAppendList.add(mr.getId().toString());
@@ -432,7 +432,7 @@ public class PtOutpatientFeeServiceTask {
 			if (params.getHospitalized_type() == 1) {
 
 				List<String> mrStrAppendList = new ArrayList<String>();
-				for (MR mr : mrList) {
+				for (MR mr : mrList2) {
 					/// 取出住院資料病例id
 					if (mr.getCodeAll().contains(params.getNhi_no()) && mr.getDataFormat().equals("20")) {
 						mrStrAppendList.add(mr.getId().toString());

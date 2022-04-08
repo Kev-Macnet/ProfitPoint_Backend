@@ -142,4 +142,16 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  			+ "and ipp.ORDER_CODE = ?1 and ipp.MR_ID in (?2) "
  			+ "group by ipp.ORDER_CODE, ipd.ROC_ID, ipd.MR_ID", nativeQuery = true)
  	public List<Map<String, Object>> getListCountByOrderCodeAndMrid(String code, List<String> mrid);
+ 	/**
+ 	 * 取得民國年起迄日
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select temp.MR_ID, ipp.START_TIME / 10000 as START_TIME , ipp.END_TIME / 10000 as END_TIME from ( "
+ 			+ "select MR_ID , MAX(END_TIME) as END_TIME "
+ 			+ "from ip_p "
+ 			+ "group by MR_ID) temp, ip_p ipp "
+ 			+ "where ipp.MR_ID = temp.MR_ID and ipp.END_TIME = temp.END_TIME and ipp.MR_ID in (?1) "
+ 			+ "group by temp.MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getTimeListByMrid(List<String> mrid);
 }
