@@ -71,14 +71,14 @@ public class PtOutpatientFeeServiceTask {
 			for (MR r : mrList2) {
 				if (r.getDataFormat() != "20" && r.getCodeAll().contains(params.getNhi_no())) {
 					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用(住院)%s就醫方式", params.getNhi_no(), r.getCodeAll()), true);
+							String.format("(醫令代碼)%s不適用(住院)%s就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
 			for (MR r : mrList2) {
 				if (r.getDataFormat() != "10") {
 					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用(住院)%s就醫方式", params.getNhi_no(), r.getCodeAll()), true);
+							String.format("(醫令代碼)%s不適用(門診)就醫方式", params.getNhi_no()), true);
 				}
 			}
 		}
@@ -107,7 +107,7 @@ public class PtOutpatientFeeServiceTask {
 				for (Map<String, Object> map : hospitalListD) {
 					MR mr = mrDao.getMrByID(map.get("mr_id").toString());
 					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s與支付準則條件:不含牙科(條件敘述)疑似有出入", params.getNhi_no(), mr.getCodeAll()),
+							String.format("(醫令代碼)%s與支付準則條件:不含牙科(條件敘述)疑似有出入", params.getNhi_no()),
 							true);
 
 				}
@@ -118,7 +118,7 @@ public class PtOutpatientFeeServiceTask {
 				for (Map<String, Object> map : hospitalListC) {
 					MR mr = mrDao.getMrByID(map.get("mr_id").toString());
 					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s與支付準則條件:不含中醫(條件敘述)疑似有出入", params.getNhi_no(), mr.getCodeAll()),
+							String.format("(醫令代碼)%s與支付準則條件:不含中醫(條件敘述)疑似有出入", params.getNhi_no()),
 							true);
 
 				}
@@ -138,7 +138,7 @@ public class PtOutpatientFeeServiceTask {
 				for (Map<String, Object> map : hospitalListD) {
 					MR mr = mrDao.getMrByID(map.get("mr_id").toString());
 					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s與支付準則條件:門診不含牙科(條件敘述)疑似有出入", params.getNhi_no(), mr.getCodeAll()),
+							String.format("(醫令代碼)%s與支付準則條件:門診不含牙科(條件敘述)疑似有出入", params.getNhi_no()),
 							true);
 
 				}
@@ -149,7 +149,7 @@ public class PtOutpatientFeeServiceTask {
 				for (Map<String, Object> map : hospitalListC) {
 					MR mr = mrDao.getMrByID(map.get("mr_id").toString());
 					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s與支付準則條件:門診不含中醫(條件敘述)疑似有出入", params.getNhi_no(), mr.getCodeAll()),
+							String.format("(醫令代碼)%s與支付準則條件:門診不含中醫(條件敘述)疑似有出入", params.getNhi_no()),
 							true);
 
 				}
