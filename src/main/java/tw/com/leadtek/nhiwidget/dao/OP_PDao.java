@@ -128,6 +128,15 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  	public List<Map<String, Object>> getListByDrugNoAndMrid(String code, List<String> mrid);
  	
  	/**
+ 	 * 由支付準則代碼和MRid查詢
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  DRUG_NO, MR_ID ,  sum(TOTAL_Q) as TOTAL from op_p where DRUG_NO = ?1 and mr_id in (?2) group by DRUG_NO, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListByDrugNoAndMrid2(String code, List<String> mrid);
+ 	
+ 	/**
  	 * 由支付準則代碼和MRid查詢，查詢使用次數
  	 * @param code
  	 * @param mrid
@@ -137,4 +146,53 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  			+ "where opp.OPD_ID = opd.id and opp.DRUG_NO = ?1 and opp.MR_ID in (?2) "
  			+ "group by opp.DRUG_NO, opd.ROC_ID, opd.MR_ID", nativeQuery = true)
  	public List<Map<String, Object>> getListCountByDrugNoAndMrid(String code, List<String> mrid);
+ 	/**
+ 	 * 由支付準則代碼和MRid查詢，查詢一天之內次數
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  DRUG_NO, MR_ID ,  sum(TOTAL_Q) as TOTAL from op_p where (END_TIME - START_TIME) <= 10000  and DRUG_NO = ?1 and MR_ID in (?2) group by DRUG_NO, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListOneDayByDrugNoAndMrid(String code, List<String> mrid); 
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid和天數查詢，查詢特定天之內次數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  DRUG_NO, MR_ID ,  sum(TOTAL_Q) as TOTAL from op_p where (END_TIME - START_TIME) <= ?1 * 10000  and DRUG_NO = ?2 and MR_ID in (?3) group by DRUG_NO, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListByDrugNoAndMridAndDays(int days, String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid和天數查詢，查詢特定天之內次數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select opp.DRUG_NO, opd.ROC_ID ,  sum(opp.TOTAL_Q) as TOTAL from op_p opp, op_d opd  "
+ 			+ "where opp.OPD_ID = opd.id and  (opp.END_TIME - opp.START_TIME) <= ?1 * 10000 and DRUG_NO = ?2 and opp.MR_ID in (?3) "
+ 			+ "group by opp.DRUG_NO, opd.ROC_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListRocIdByDrugNoAndMridAndDays(int days, String code, List<String> mrid);
+ 	/**
+ 	 * 取得每月門診百分比
+ 	 * @param total
+ 	 * @param drugNo
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select APPL_YM, COUNT, (COUNT / ?1) * 100 as PERCENT from "
+ 			+ "(select  mr.APPL_YM, count(1) as COUNT from op_p,mr "
+ 			+ "where mr.id = op_p.mr_id and op_p.drug_no = ?2 and mr.id in (?3) "
+ 			+ "group by mr.APPL_YM) temp", nativeQuery = true)
+ 	public List<Map<String,Object>> getPerMonthByDrugNoAndTotal(int total, String drugNo, List<String> mrid);
+ 	/**
+ 	 * 取得總筆數by no
+ 	 * @param drugNo
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  DRUG_NO ,  sum(TOTAL_Q) as TOTAL from op_p where DRUG_NO = ?1", nativeQuery = true)
+ 	public Map<String,Object> getTotalDrugByNo(String drugNo);
 }

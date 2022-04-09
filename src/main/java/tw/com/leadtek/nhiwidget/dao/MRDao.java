@@ -462,8 +462,10 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
    *      + "1=1 AND START_DATE BETWEEN ?1 and ?2 ) ", nativeQuery = true)
    */
-  @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
-      + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2') ", nativeQuery = true)
+   @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
+        + "1=1 AND START_DATE BETWEEN ?1 and ?2 ) ", nativeQuery = true)
+//  @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
+//      + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2') ", nativeQuery = true)
   public List<MR> getIntelligentMR(String sDate, String eDate);
   
   /**
@@ -472,5 +474,21 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
       + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2' AND FUNC_TYPEC NOT IN (?3)) ", nativeQuery = true)
   public List<MR> getIntelligentMrByFuncName(String sDate, String eDate, List<String> funcName);
+  
+  /**
+   * 依照rocid & code 取得該筆病歷表
+   * @param MRID
+   * @return
+   */
+  @Query(value = "select * from mr where ROC_ID = ?1 and CODE_ALL like '%?2%'", nativeQuery = true)
+  public MR getMrByRocIdAndCode(String rocid, String code);
+  /**
+   * 依照id & code 取得該筆病歷表
+   * @param mrid
+   * @param code
+   * @return
+   */
+  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where ID in (?1) and CODE_ALL like '%?2%' group by ROC_ID ", nativeQuery = true)
+  public List<Map<String,Object>> getRocListByIdAndCode(List<String> mrid, String code);
   
 }

@@ -11,8 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
-
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
@@ -154,4 +154,34 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  			+ "where ipp.MR_ID = temp.MR_ID and ipp.END_TIME = temp.END_TIME and ipp.MR_ID in (?1) "
  			+ "group by temp.MR_ID", nativeQuery = true)
  	public List<Map<String, Object>> getTimeListByMrid(List<String> mrid);
+ 	/**
+ 	 * 由支付準則代碼和MRid查詢，查詢一天之內次數
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  ORDER_CODE, MR_ID ,  sum(TOTAL_Q) as TOTAL from ip_p where (END_TIME - START_TIME) <= 10000  and ORDER_CODE = ?1 and MR_ID in (?2) group by ORDER_CODE, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListOneDayByOrderCodeAndMrid(String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid和天數查詢，查詢特定天之內次數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  ORDER_CODE, MR_ID ,  sum(TOTAL_Q) as TOTAL from ip_p where (END_TIME - START_TIME) <= ?1 * 10000  and ORDER_CODE = ?2 and MR_ID in (?3) group by ORDER_CODE, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListByOrderCodeAndMridAndDays(int days, String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid和天數查詢，查詢特定天之內次數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select ipp.ORDER_CODE, ipd.ROC_ID ,  sum(ipp.TOTAL_Q) as TOTAL from ip_p ipp, ip_d ipd  "
+ 			+ "where ipp.IPD_ID = ipd.id and  (ipp.END_TIME - ipp.START_TIME) <= ?1 * 10000 and ipp.ORDER_CODE = ?2 and ipp.MR_ID in (?3) "
+ 			+ "group by ipp.ORDER_CODE, ipd.ROC_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListRocIdByOrderCodeAndMridAndDays(int days, String code, List<String> mrid);
 }
