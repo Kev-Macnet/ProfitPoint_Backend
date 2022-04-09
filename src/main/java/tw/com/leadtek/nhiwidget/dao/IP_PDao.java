@@ -184,4 +184,14 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  			+ "where ipp.IPD_ID = ipd.id and  (ipp.END_TIME - ipp.START_TIME) <= ?1 * 10000 and ipp.ORDER_CODE = ?2 and ipp.MR_ID in (?3) "
  			+ "group by ipp.ORDER_CODE, ipd.ROC_ID", nativeQuery = true)
  	public List<Map<String, Object>> getListRocIdByOrderCodeAndMridAndDays(int days, String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid和天數查詢，查詢超過特定天之內次數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  ORDER_CODE, MR_ID ,  sum(TOTAL_Q) as TOTAL from ip_p where (END_TIME - START_TIME) > ?1 * 10000  and ORDER_CODE = ?2 and MR_ID in (?3) group by ORDER_CODE, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListOverByOrderCodeAndMridAndDays(int days, String code, List<String> mrid);
 }

@@ -32,7 +32,7 @@ public class PtWardFeeServiceTask {
 	@Autowired
 	private IntelligentService intelligentService;
 
-	public void validInpatienFee(PtWardFeePl params) throws ParseException {
+	public void validWardFee(PtWardFeePl params) throws ParseException {
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 		Calendar calendar = Calendar.getInstance();

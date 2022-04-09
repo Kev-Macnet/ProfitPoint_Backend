@@ -13,13 +13,17 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtNutritionalFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
 import tw.com.leadtek.nhiwidget.service.AIService;
 import tw.com.leadtek.nhiwidget.task.service.PtInpatientFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtSurgeryFeeServiceTask;
+import tw.com.leadtek.nhiwidget.task.service.PtTreatmentFeeServiceTask;
+import tw.com.leadtek.nhiwidget.task.service.PtTubeFeedingFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtWardFeeServiceTask;
 
 @RestController
@@ -36,6 +40,10 @@ public class AICotroller {
 	private PtWardFeeServiceTask ptWardFeeService;
 	@Autowired
 	private PtSurgeryFeeServiceTask ptSurgeryFeeService;
+	@Autowired
+	private PtTreatmentFeeServiceTask ptTreatmentFeeService;
+	@Autowired
+	private PtTubeFeedingFeeServiceTask ptTubeFeedingFeeService;
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
@@ -109,7 +117,7 @@ public class AICotroller {
 	@RequestMapping(value = "/vaidWardFeee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void vaidWardFeee(HttpServletRequest request,
 	        @RequestBody PtWardFeePl params) throws ParseException {
-		ptWardFeeService.validInpatienFee(params);
+		ptWardFeeService.validWardFee(params);
 	}
 	
 	@ResponseBody
@@ -117,5 +125,19 @@ public class AICotroller {
 	public void vaidSurgeryFee(HttpServletRequest request,
 	        @RequestBody PtSurgeryFeePl params) throws ParseException {
 		ptSurgeryFeeService.validSurgeryFee(params);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/vaidTreatmentFee", method = { RequestMethod.GET, RequestMethod.POST })
+	public void vaidTreatmentFee(HttpServletRequest request,
+	        @RequestBody PtTreatmentFeePl params) throws ParseException {
+		ptTreatmentFeeService.validTreatmentFee(params);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/vaidTubeFeedingFee", method = { RequestMethod.GET, RequestMethod.POST })
+	public void vaidTubeFeedingFee(HttpServletRequest request,
+	        @RequestBody PtNutritionalFeePl params) throws ParseException {
+		ptTubeFeedingFeeService.validTubeFeedingFee(params);
 	}
 }
