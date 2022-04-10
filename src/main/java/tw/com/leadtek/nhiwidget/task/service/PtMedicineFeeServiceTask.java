@@ -6,27 +6,33 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
-import tw.com.leadtek.nhiwidget.dto.PtAdjustmentFeePl;
+import tw.com.leadtek.nhiwidget.dao.OP_PDao;
+import tw.com.leadtek.nhiwidget.dto.PtMedicineFeePl;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 
 @Service
-public class PtAdjustmentFeeServiceTask {
-
+public class PtMedicineFeeServiceTask {
 	@Autowired
 	private MRDao mrDao;
+	@Autowired
+	private IP_PDao ippDao;
+	@Autowired
+	private OP_PDao oppDao;
 
 	@Autowired
 	private IntelligentService intelligentService;
 
-	public void validAdjustmentFee(PtAdjustmentFeePl params) throws ParseException {
+	public void validMedicineFee(PtMedicineFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 		Calendar calendar = Calendar.getInstance();
 		Date dateObj = calendar.getTime();
@@ -66,55 +72,36 @@ public class PtAdjustmentFeeServiceTask {
 				}
 			}
 		}
-
 		/// 1.
-		/// 需與任一，並存於單一就醫紀錄，方可申報
-		if (params.getCoexist_nhi_no_enable() == 1) {
-			List<String> coList = params.getLst_co_nhi_no();
-			int count = 0;
-			for (MR mr : mrList2) {
-				for (String s : coList) {
-					/// 先判斷有相同支付標準
-					if (mr.getCodeAll().contains(params.getNhi_no())) {
-						/// 再判斷沒有符合
-						if (!mr.getCodeAll().contains(s)) {
-							if (count == 0) {
-
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-										params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報，疑似有出入",
-												params.getNhi_no(), coList.toString()),
-										true);
-							}
-							count++;
-						}
-					}
-					count = 0;
+		///每件給藥日數不得超過
+		if(params.getMax_nday_enable() ==1) {
+			List<String> mrIdList = new ArrayList<String>();
+			for(MR mr: mrList2) {
+				if(mr.getCodeAll().contains(params.getNhi_no())) {
+					mrIdList.add(mr.getId().toString());
 				}
 			}
-		}
-
-		/// 2.
-		/// 不可與 任一，並存單一就醫紀錄一併申報
-		if (params.getExclude_nhi_no_enable() == 1) {
-			List<String> nhiNoList = params.getLst_nhi_no();
-			int count = 0;
-			for (MR mr : mrList2) {
-				for (String nhiNo : nhiNoList) {
-					if (mr.getCodeAll().contains(nhiNo) && count == 0) {
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-								params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
-										params.getNhi_no(), nhiNoList.toString()),
-								true);
-						count++;
-					} else if (mr.getCodeAll().contains(nhiNo) && count > 0) {
-						continue;
-					}
+			
+			List<Map<String,Object>> ippData = ippDao.getListByDaysAndCodeAndMrid(params.getMax_nday(), params.getNhi_no(), mrIdList);
+			List<Map<String,Object>> oppData = oppDao.getListByDaysAndCodeAndMrid(params.getMax_nday(), params.getNhi_no(), mrIdList);
+			
+			if(ippData.size() > 0) {
+				for(Map<String,Object> map: ippData) {
+					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+							String.format("(醫令代碼)%s與支付準則條件:每件給藥日數不得超過%d日，疑似有出入", params.getNhi_no(),params.getMax_nday()), true);
+				}
+			}
+			
+			if(oppData.size() > 0) {
+				for(Map<String,Object> map: oppData) {
+					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+							String.format("(醫令代碼)%s與支付準則條件:每件給藥日數不得超過%d日，疑似有出入", params.getNhi_no(),params.getMax_nday()), true);
 				}
 			}
 		}
 	}
-
 	/**
 	 * 帶入日期並減一年
 	 * 

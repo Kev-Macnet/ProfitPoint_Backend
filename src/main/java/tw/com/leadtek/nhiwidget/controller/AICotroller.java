@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import tw.com.leadtek.nhiwidget.dto.PtAdjustmentFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtMedicineFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtNutritionalFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeePl;
@@ -22,6 +23,7 @@ import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
 import tw.com.leadtek.nhiwidget.service.AIService;
 import tw.com.leadtek.nhiwidget.task.service.PtAdjustmentFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtInpatientFeeServiceTask;
+import tw.com.leadtek.nhiwidget.task.service.PtMedicineFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtSurgeryFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtTreatmentFeeServiceTask;
@@ -48,6 +50,8 @@ public class AICotroller {
 	private PtTubeFeedingFeeServiceTask ptTubeFeedingFeeService;
 	@Autowired
 	private PtAdjustmentFeeServiceTask ptAdjustmentFeeServic;
+	@Autowired
+	private PtMedicineFeeServiceTask ptMedicineFeeService;
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
@@ -150,5 +154,12 @@ public class AICotroller {
 	public void vaidAdjustmentFee(HttpServletRequest request,
 	        @RequestBody PtAdjustmentFeePl params) throws ParseException {
 		ptAdjustmentFeeServic.validAdjustmentFee(params);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/validMedicineFee", method = { RequestMethod.GET, RequestMethod.POST })
+	public void validMedicineFee(HttpServletRequest request,
+	        @RequestBody PtMedicineFeePl params) throws ParseException {
+		ptMedicineFeeService.validMedicineFee(params);
 	}
 }

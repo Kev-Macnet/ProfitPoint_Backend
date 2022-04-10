@@ -195,4 +195,16 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  	 */
  	@Query(value = "select  DRUG_NO ,  sum(TOTAL_Q) as TOTAL from op_p where DRUG_NO = ?1", nativeQuery = true)
  	public Map<String,Object> getTotalDrugByNo(String drugNo);
+ 	
+ 	/**
+ 	 * 藥用計算超過天數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select DRUG_NO , TOTAL_Q, MR_ID, START_TIME, END_TIME, (END_TIME - START_TIME) / 10000 as DIFF "
+ 			+ "from op_p where (END_TIME - START_TIME) > ?1 * 10000 and DRUG_NO = ?2 and MR_ID in (?3) order by MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListByDaysAndCodeAndMrid(int days, String code, List<String> mrid);
+
 }
