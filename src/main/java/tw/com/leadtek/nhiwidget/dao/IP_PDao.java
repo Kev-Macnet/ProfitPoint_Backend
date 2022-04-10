@@ -11,8 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
+
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
-import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
@@ -194,7 +194,6 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	 */
  	@Query(value = "select  ORDER_CODE, MR_ID ,  sum(TOTAL_Q) as TOTAL from ip_p where (END_TIME - START_TIME) > ?1 * 10000  and ORDER_CODE = ?2 and MR_ID in (?3) group by ORDER_CODE, MR_ID", nativeQuery = true)
  	public List<Map<String, Object>> getListOverByOrderCodeAndMridAndDays(int days, String code, List<String> mrid);
- 	
  	/**
  	 * 藥用計算超過天數
  	 * @param days
@@ -205,5 +204,21 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	@Query(value = "select ORDER_CODE, TOTAL_Q, MR_ID, START_TIME, END_TIME, (END_TIME - START_TIME) / 10000 as DIFF "
  			+ "from ip_p where (END_TIME - START_TIME) > ?1 * 10000 and order_code = ?2 and MR_ID in (?3) order by MR_ID", nativeQuery = true)
  	public List<Map<String, Object>> getListByDaysAndCodeAndMrid(int days, String code, List<String> mrid);
-
+ 	
+ 	/**
+ 	 * 取得同drungNo的rocid筆數資料
+ 	 * @param durgNo
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select ipd.ROC_ID, ipp.START_TIME, ipp.END_TIME, ipp.MR_ID, (ipp.END_TIME- ipp.START_TIME) as DIFF from ip_p ipp, ip_d ipd "
+ 			+ "where ipp.ipd_ID = ipd.id and ipd.ROC_ID in ( "
+ 			+ "select ROC_ID from ( "
+ 			+ "select  ipd.ROC_ID, count( ipd.ROC_ID) as COUNT from ip_p ipp, ip_d ipd "
+ 			+ "where ipp.ipd_ID = ipd.id  "
+ 			+ "and ipp.ORDER_CODE = ?1 -- and ipp.mr_id in (?2) "
+ 			+ "group by ipd.ROC_ID) temp "
+ 			+ "where COUNT > 1)  "
+ 			+ "and ipp.ORDER_CODE = ?1 order by ROC_ID , END_TIME desc", nativeQuery = true)
+ 	public List<Map<String, Object>> getRocIdCount(String durgNo, List<String> mrid);
 }

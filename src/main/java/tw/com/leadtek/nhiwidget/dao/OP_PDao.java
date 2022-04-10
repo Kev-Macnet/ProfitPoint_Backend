@@ -206,5 +206,22 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  	@Query(value = "select DRUG_NO , TOTAL_Q, MR_ID, START_TIME, END_TIME, (END_TIME - START_TIME) / 10000 as DIFF "
  			+ "from op_p where (END_TIME - START_TIME) > ?1 * 10000 and DRUG_NO = ?2 and MR_ID in (?3) order by MR_ID", nativeQuery = true)
  	public List<Map<String, Object>> getListByDaysAndCodeAndMrid(int days, String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 取得同drungNo的rocid筆數資料
+ 	 * @param durgNo
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select opd.ROC_ID, opp.START_TIME, opp.END_TIME, opp.MR_ID, (opp.END_TIME- opp.START_TIME) as DIFF from op_p opp, op_d opd "
+ 			+ "where opp.OPD_ID = opd.id and opd.ROC_ID in ( "
+ 			+ "select ROC_ID from ( "
+ 			+ "select  opd.ROC_ID, count( opd.ROC_ID) as COUNT from op_p opp, op_d opd "
+ 			+ "where opp.OPD_ID = opd.id  "
+ 			+ "and opp.DRUG_NO = ?1 and opp.MR_ID in(?2) "
+ 			+ "group by opd.ROC_ID) temp "
+ 			+ "where COUNT > 1)  "
+ 			+ "and opp.DRUG_NO = ?1  order by ROC_ID , END_TIME desc", nativeQuery = true)
+ 	public List<Map<String, Object>> getRocIdCount(String durgNo, List<String> mrid);
 
 }
