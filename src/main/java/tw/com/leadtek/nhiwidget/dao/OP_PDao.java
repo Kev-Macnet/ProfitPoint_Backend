@@ -213,7 +213,7 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  	 * @param mrid
  	 * @return
  	 */
- 	@Query(value = "select opd.ROC_ID, opp.START_TIME, opp.END_TIME, opp.MR_ID, (opp.END_TIME- opp.START_TIME) as DIFF from op_p opp, op_d opd "
+ 	@Query(value = "select opd.ROC_ID, opp.START_TIME, opp.END_TIME, opp.MR_ID, (opp.END_TIME- opp.START_TIME) as DIFF, opp.TOTAL_Q from op_p opp, op_d opd "
  			+ "where opp.OPD_ID = opd.id and opd.ROC_ID in ( "
  			+ "select ROC_ID from ( "
  			+ "select  opd.ROC_ID, count( opd.ROC_ID) as COUNT from op_p opp, op_d opd "
@@ -223,5 +223,36 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  			+ "where COUNT > 1)  "
  			+ "and opp.DRUG_NO = ?1  order by ROC_ID , END_TIME desc", nativeQuery = true)
  	public List<Map<String, Object>> getRocIdCount(String durgNo, List<String> mrid);
-
+ 	
+ 	/**
+ 	 * 取得該drugNo的各病例總數
+ 	 * @param durgNo
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select * from ( "
+ 			+ "select opd.ROC_ID, count(opd.ROC_ID), sum( opp.TOTAL_Q) as TOTAL from op_p opp, op_d opd "
+ 			+ "where opp.OPD_ID = opd.ID "
+ 			+ "and opp.DRUG_NO = ?1 "
+ 			+ "and opp.MR_ID in (?2) "
+ 			+ "group by opd.ROC_ID) temp", nativeQuery = true)
+ 	public List<Map<String, Object>> getRocidTotalByDrugNoandMrid(String durgNo, List<String> mrid);
+ 	
+ 	/**
+ 	 *  取得最新一筆資料
+ 	 * @param drugNo
+ 	 * @return
+ 	 */
+ 	@Query(value = "select temp.ROC_ID, temp2.START_TIME / 10000 as START_TIME, temp2.END_TIME / 10000 as END_TIME from "
+			+ "(select ipd.ROC_ID, max(ipp.END_TIME) as END_TIME from ip_p ipp, ip_d ipd "
+			+ "where ipp.ipd_ID = ipd.ID "
+			+ "and ipp.ORDER_CODE = ?1 "
+			+ "group by ipd.ROC_ID) temp, (select ipd.ROC_ID, ipp.END_TIME, ipp.START_TIME from ip_p ipp, ip_d ipd "
+			+ "where ipp.ipd_ID = ipd.ID "
+			+ "and ipp.ORDER_CODE = ?1) temp2 "
+			+ "where temp.ROC_ID = temp2.ROC_ID and temp.END_TIME = temp2.END_TIME "
+			+ "group by temp.ROC_ID ", nativeQuery = true)
+ 	public List<Map<String, Object>> getLastRocidByOrderCode(String orderCode);
+	
+	
 }

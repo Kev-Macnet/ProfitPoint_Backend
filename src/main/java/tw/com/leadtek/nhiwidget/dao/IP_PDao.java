@@ -11,8 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
-
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
@@ -211,14 +211,28 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	 * @param mrid
  	 * @return
  	 */
- 	@Query(value = "select ipd.ROC_ID, ipp.START_TIME, ipp.END_TIME, ipp.MR_ID, (ipp.END_TIME- ipp.START_TIME) as DIFF from ip_p ipp, ip_d ipd "
+ 	@Query(value = "select ipd.ROC_ID, ipp.START_TIME, ipp.END_TIME, ipp.MR_ID, (ipp.END_TIME- ipp.START_TIME) as DIFF, ipp.TOTAL_Q from ip_p ipp, ip_d ipd "
  			+ "where ipp.ipd_ID = ipd.id and ipd.ROC_ID in ( "
  			+ "select ROC_ID from ( "
  			+ "select  ipd.ROC_ID, count( ipd.ROC_ID) as COUNT from ip_p ipp, ip_d ipd "
  			+ "where ipp.ipd_ID = ipd.id  "
- 			+ "and ipp.ORDER_CODE = ?1 -- and ipp.mr_id in (?2) "
+ 			+ "and ipp.ORDER_CODE = ?1  and ipp.mr_id in (?2) "
  			+ "group by ipd.ROC_ID) temp "
  			+ "where COUNT > 1)  "
  			+ "and ipp.ORDER_CODE = ?1 order by ROC_ID , END_TIME desc", nativeQuery = true)
  	public List<Map<String, Object>> getRocIdCount(String durgNo, List<String> mrid);
+ 	
+ 	/**
+ 	 * 取得該orderCode的各病例總數
+ 	 * @param durgNo
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select * from ( "
+ 			+ "select ipd.ROC_ID, count(ipd.ROC_ID), sum( ipp.TOTAL_Q) as TOTAL from ip_p ipp, ip_d ipd "
+ 			+ "where ipp.ipd_ID = ipd.ID "
+ 			+ "and ipp.ORDER_CODE = ?1 "
+ 			+ "and ipp.MR_ID in (?2) "
+ 			+ "group by ipd.ROC_ID) temp", nativeQuery = true)
+ 	public List<Map<String, Object>> getRocidTotalByDrugNoandMrid(String durgNo, List<String> mrid);
 }
