@@ -18,6 +18,7 @@ import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtMedicineFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtNutritionalFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtQualityServicePl;
 import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeePl;
@@ -30,6 +31,7 @@ import tw.com.leadtek.nhiwidget.task.service.PtInjectionFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtInpatientFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtMedicineFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
+import tw.com.leadtek.nhiwidget.task.service.PtPsychiatricFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtQualityServiceServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtRadiationFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtRehabilitationFeeServiceTask;
@@ -68,6 +70,8 @@ public class AICotroller {
 	private PtQualityServiceServiceTask ptQualityServiceService;
 	@Autowired
 	private PtRehabilitationFeeServiceTask ptRehabilitationFeeService;
+	@Autowired
+	private PtPsychiatricFeeServiceTask PtPsychiatricFeeServic;
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
@@ -204,6 +208,13 @@ public class AICotroller {
 	public void validRehabilitationFee(HttpServletRequest request, @RequestBody PtRehabilitationFeePl params)
 			throws ParseException {
 		ptRehabilitationFeeService.validRehabilitationFee(params);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/validPsychiatricFee", method = { RequestMethod.GET, RequestMethod.POST })
+	public void validPsychiatricFee(HttpServletRequest request, @RequestBody PtPsychiatricFeePl params)
+			throws ParseException {
+		PtPsychiatricFeeServic.validPsychiatricFee(params);
 	}
 
 }
