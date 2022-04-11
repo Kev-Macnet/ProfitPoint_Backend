@@ -11,8 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
+
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
-import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
@@ -113,7 +113,7 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	 * @return
  	 */
  	@Query(value = "select ICDCM1 as ICDCM, ORDER_CODE, '20' as DATA_FORMAT, CAST(mrCount AS DECIMAL(10,6)) as AVERAGE, CAST(if(mrCount < 30, 0, up) AS DECIMAL(10,6)) as ULIMIT, CAST(if(mrCount < 30, 0, down) AS DECIMAL(10,6)) as LLIMIT from ( "
- 			+ "	select  ICDCM1,ORDER_CODE, avg +2*STDDEV as up, avg -2*STDDEV as down, mrCount from ( \r\n"
+ 			+ "	select  ICDCM1,ORDER_CODE, avg +2*STDDEV as up, avg -2*STDDEV as down, mrCount from (  "
  			+ "	select m.ICDCM1, ORDER_CODE,AVG(ip.ORDER_CODE) as AVG, STDDEV(ip.ORDER_CODE) as STDDEV, count(m.ID) as mrCount from ip_p ip "
  			+ "	join mr m on m.id = ip.MR_ID and m.MR_DATE > '2020-03-30' "
  			+ "	where ip.PAY_CODE_TYPE  in ('1','2', '3', '4', '5') "
@@ -121,4 +121,25 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  			+ "	) temp "
  			+ "	) report where down >=0", nativeQuery = true)
  	public List<Map<String, Object>> calculate(String date);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid查詢
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  ORDER_CODE, MR_ID ,  sum(TOTAL_Q) as TOTAL from ip_p where ORDER_CODE = ?1 and mr_id in (?2) group by ORDER_CODE, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListByOrderCodeAndMrid(String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid查詢，查詢使用次數
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select ipp.ORDER_CODE, ipd.ROC_ID, count(ipd.ROC_ID) as COUNT, ipd.MR_ID from ip_d ipd, ip_p ipp "
+ 			+ "where ipp.iPD_ID = ipd.id  "
+ 			+ "and ipp.ORDER_CODE = ?1 and ipp.MR_ID in (?2) "
+ 			+ "group by ipp.ORDER_CODE, ipd.ROC_ID, ipd.MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListCountByOrderCodeAndMrid(String code, List<String> mrid);
 }

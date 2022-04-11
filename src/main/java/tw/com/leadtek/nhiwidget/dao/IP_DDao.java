@@ -12,8 +12,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
+
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
-import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 
 public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExecutor<IP_D> {
 
@@ -123,11 +123,62 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @param date
    * @return
    */
-  @Query(value = "select ICDCM1, ICD_OP_CODE1, '20' as DATA_FORMAT, TOTAL from ( "
-  		+ "select m.icdcm1, ipd.ICD_OP_CODE1, count(ipd.ICD_OP_CODE1) as total from ip_d ipd "
-  		+ "join mr m on ipd.roc_id = m.roc_id and m.ICDCM1 = ipd.icd_cm_1 "
-  		+ "where m.MR_DATE > '2020-03-30'  and ipd.ICD_OP_CODE1 is not null "
-  		+ "group by m.icdcm1,ipd.ICD_OP_CODE1 order by m.icdcm1 ) temp order by TOTAL ", nativeQuery = true)
+  @Query(value = "select * from (  "
+  		+ "select mr.ICDCM1, ip.ICD_OP_CODE1, count(ip.ICD_OP_CODE1) as IOC1COUNT , ip.ICD_OP_CODE2, count(ip.ICD_OP_CODE2) as IOC2COUNT  from ip_d ip , mr  "
+  		+ "where ip.roc_id = mr.roc_id and mr.MR_DATE >  ?1 "
+  		+ "group by ip.ICD_OP_CODE1, mr.ICDCM1, ip.ICD_OP_CODE2) temp "
+  		+ "where IOC1COUNT > 0 or IOC2COUNT > 0 "
+  		+ "order by IOC1COUNT desc", nativeQuery = true)
   public List<Map<String, Object>> getHospitalOperation(String date);
+  /**
+   * 如果包含牙科且case_type有其條件資料
+   * @param mrId
+   * @return
+   */
+  @Query(value = "select ipp.order_code, ipp.mr_id from  ip_d ipd "
+  		+ "join ip_p ipp on ipd.id = ipp.ipd_id "
+  		+ "join pt_payment_terms ppt on  ipp.order_code = ppt.nhi_no "
+  		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
+  		+ "where pof.no_dentisit = 0   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "and ipd.mr_id in (?1) ", nativeQuery = true)
+  public List<Map<String, Object>> getValidByNoDentisit(List<String> mrId);
+  
+  /**
+   * 如果包含中醫且case_type有其條件資料
+   * @param mrId
+   * @return
+   */
+  @Query(value = "select ipp.order_code, ipp.mr_id from  ip_d ipd "
+	  		+ "join ip_p ipp on ipd.id = ipp.ipd_id "
+	  		+ "join pt_payment_terms ppt on  ipp.order_code = ppt.nhi_no "
+	  		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
+	  		+ "where pof.no_chi_medicine = 0   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+	  		+ "and ipd.mr_id in (?1) ", nativeQuery = true)
+	  public List<Map<String, Object>> getValidByNoChiMedicine(List<String> mrId);
+  /**
+   * 查詢離島資料
+   * @return
+   */
+  @Query(value = "select * from  ip_d ipd "
+  		+ "join ip_p ipp on ipd.id = ipp.ipd_id where ipd.PART_NO = '007' ", nativeQuery = true)
+  public List<Map<String, Object>> getPartNoByOutisLand();
+  
+  /**
+   * 由mrid取得該病例生日
+   * @param mrid
+   * @return
+   */
+  @Query(value = "select ipd.MR_ID, ipd.ID_BIRTH_YMD from ip_d ipd "
+  		+ "join ip_p ipp on ipd.id = ipp.ipd_id where ipd.mr_id  in(?1) group by ipd.MR_ID", nativeQuery = true)
+  public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
+  
+  /**
+   * 由mrid取得ip_d 列表
+   * @param mrid
+   * @return
+   */
+  @Query(value = "select * from ip_d where mr_id in(?1) ", nativeQuery = true)
+  public List<IP_D> getListByMrId(List<String> mrid);
+  
   
 }

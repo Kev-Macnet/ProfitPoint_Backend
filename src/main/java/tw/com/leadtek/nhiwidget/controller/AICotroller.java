@@ -1,14 +1,22 @@
 package tw.com.leadtek.nhiwidget.controller;
 
+import java.text.ParseException;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.query.Param;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
 import tw.com.leadtek.nhiwidget.service.AIService;
+import tw.com.leadtek.nhiwidget.task.service.PtInpatientFeeServiceTask;
+import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
 
 @RestController
 @RequestMapping("/auth")
@@ -16,11 +24,15 @@ public class AICotroller {
 	
 	@Autowired
 	private AIService aiService;
+	@Autowired
+	private PtOutpatientFeeServiceTask ptOutpatientFeeService;
+	@Autowired
+	private PtInpatientFeeServiceTask ptInpatientFeeService;
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getClinicCostDiffData(@RequestParam(required = true) String date) {
-		return aiService.clinicCostDiff(date);
+	public Object getClinicCostDiffData(@RequestParam(required = true) String sDate1,String eDate1,String sDate2,String eDate2) {
+		return aiService.clinicCostDiff(sDate1, eDate1, sDate2, eDate2);
 	}
 	
 	@ResponseBody
@@ -69,5 +81,19 @@ public class AICotroller {
 	@RequestMapping(value = "/getHospitalDays", method = { RequestMethod.GET, RequestMethod.POST })
 	public Object getHospitalDays(@RequestParam(required = true) String date) {
 		return aiService.hospitalDays(date);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/vaidOutpatientFee", method = { RequestMethod.GET, RequestMethod.POST })
+	public void vaidOutpatientFee(HttpServletRequest request,
+	        @RequestBody PtOutpatientFeePl params) throws ParseException {
+		 ptOutpatientFeeService.vaidOutpatientFee(params);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/vaidInpatientFee", method = { RequestMethod.GET, RequestMethod.POST })
+	public void vaidInpatientFee(HttpServletRequest request,
+	        @RequestBody PtInpatientFeePl params) throws ParseException {
+		ptInpatientFeeService.validInpatienFee(params);
 	}
 }
