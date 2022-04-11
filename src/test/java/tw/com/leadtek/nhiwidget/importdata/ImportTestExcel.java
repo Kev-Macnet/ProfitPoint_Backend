@@ -4,16 +4,20 @@
 package tw.com.leadtek.nhiwidget.importdata;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +42,9 @@ import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
 import tw.com.leadtek.nhiwidget.service.CodeTableService;
+import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.tools.DateTool;
+import tw.com.leadtek.tools.ExcelUtil;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = NHIWidget.class)
@@ -74,6 +80,9 @@ public class ImportTestExcel {
   @Autowired
   private CodeTableService cts;
 
+  @Autowired
+  private NHIWidgetXMLService xmlService;
+
   private int MIN_SEQ_NO = 37000;
 
   private List<OP_D> opdSet = new ArrayList<OP_D>();
@@ -84,6 +93,7 @@ public class ImportTestExcel {
 
   private HashMap<Integer, Long> OP_DKeyID = null;
 
+  @Ignore
   @Test
   public void readExcel() {
     System.out.println("readExcel");
@@ -104,7 +114,7 @@ public class ImportTestExcel {
       int total = 0;
       String sheetName = "";
       XSSFSheet sheet = workbook.getSheetAt(0);
-      HashMap<Integer, String> columnMap = readTitleRow(sheet.getRow(0));
+      HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
       int count = 0;
 
       OP_T opT = null;
@@ -116,7 +126,7 @@ public class ImportTestExcel {
           // System.out.println("sheet:" + i + ", row=" + j + " is null");
           continue;
         }
-        HashMap<String, String> values = readCellValue(columnMap, row);
+        HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, row);
         if (values.get("d9") == null) {
           break;
         }
@@ -237,8 +247,8 @@ public class ImportTestExcel {
     }
   }
 
-  private HashMap<Integer, String> readTitleRow(XSSFRow row) {
-    HashMap<Integer, String> result = new HashMap<Integer, String>();
+  private HashMap<String, Integer> readFieldNameAndIndex(XSSFRow row) {
+    HashMap<String, Integer> result = new HashMap<String, Integer>();
     for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
       if (row.getCell(i) == null) {
         continue;
@@ -248,34 +258,7 @@ public class ImportTestExcel {
         if (cellValue.indexOf(',') > -1) {
           cellValue = cellValue.split(",")[0];
         }
-        result.put(new Integer(i), cellValue);
-        System.out.println(i + ":" + cellValue);
-      }
-    }
-    return result;
-  }
-
-  private HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap, XSSFRow row) {
-    HashMap<String, String> result = new HashMap<String, String>();
-    System.out.println("cells:" + row.getPhysicalNumberOfCells());
-    //for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
-    for (int i = 0; i < 100; i++) {
-      String cellValue = null;
-      if (row.getCell(i) == null) {
-        continue;
-      }
-      if (row.getCell(i).getCellType() == CellType.NUMERIC) {
-        cellValue = String.valueOf(row.getCell(i).getNumericCellValue());
-        // System.out.println("cell numeric before:" + cellValue);
-        if (cellValue.endsWith(".0")) {
-          cellValue = cellValue.substring(0, cellValue.length() - 2);
-        }
-        // System.out.println("cell numeric after:" + cellValue);
-      } else {
-        cellValue = row.getCell(i).getStringCellValue().trim();
-      }
-      if (cellValue != null && cellValue.length() > 0) {
-        result.put(columnMap.get(new Integer(i)), cellValue);
+        result.put(cellValue, new Integer(i));
       }
     }
     return result;
@@ -342,7 +325,7 @@ public class ImportTestExcel {
       int total = 0;
       String sheetName = "";
       XSSFSheet sheet = workbook.getSheetAt(0);
-      HashMap<Integer, String> columnMap = readTitleRow(sheet.getRow(0));
+      HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
       int count = 0;
 
       IP_T ipT = null;
@@ -354,10 +337,10 @@ public class ImportTestExcel {
           // System.out.println("sheet:" + i + ", row=" + j + " is null");
           continue;
         }
-        HashMap<String, String> values = readCellValue(columnMap, row);
-        System.out.println(values.get("t3") + "," + values.get("t6") + "," + values.get("p1")
-        + "," + values.get("d17"));
-        if (values.get("d17") == null || values.get("p1") == null ) {
+        HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, row);
+        System.out.println(values.get("t3") + "," + values.get("t6") + "," + values.get("p1") + ","
+            + values.get("d17"));
+        if (values.get("d17") == null || values.get("p1") == null) {
           break;
         }
         // start
@@ -511,4 +494,92 @@ public class ImportTestExcel {
       e.printStackTrace();
     }
   }
+
+  //@Ignore
+  @Test
+  public void importExcelData() {
+    File[] files = new File("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\羅東博愛醫院").listFiles();
+    HSSFWorkbook workbook = null;
+    for (File file : files) {
+      if (!file.getName().endsWith(".xls")) {
+        continue;
+      }
+      try {
+        System.out.println("file name=" + file.getName());
+        if (file.getName().toUpperCase().indexOf("OPD") > -1) {
+          // workbook = new HSSFWorkbook(new FileInputStream(file));
+          // if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+          // xmlService.readOpdSheet(workbook.getSheetAt(0));
+          // }
+        } else if (file.getName().toUpperCase().indexOf("IPD") > -1) {
+//          workbook = new HSSFWorkbook(new FileInputStream(file));
+//          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+//            xmlService.readIpdSheet(workbook.getSheetAt(0));
+//          }
+        }
+        if (workbook != null) {
+          workbook.close();
+        }
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    for (File file : files) {
+      if (!file.getName().endsWith(".xls")) {
+        continue;
+      }
+      try {
+        System.out.println("file name=" + file.getName());
+        if (file.getName().toUpperCase().indexOf("OPP") > -1) {
+          // workbook = new HSSFWorkbook(new FileInputStream(file));
+          // if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+          // xmlService.readOppHSSFSheet(workbook.getSheetAt(0));
+          // }
+        } else if (file.getName().toUpperCase().indexOf("IPP") > -1) {
+          workbook = new HSSFWorkbook(new FileInputStream(file));
+          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+            xmlService.readIppHSSFSheet(workbook.getSheetAt(0));
+          }
+        }
+        if (workbook != null) {
+          workbook.close();
+        }
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  public HashMap<String, Integer> getExcelFieldNumber(String sheetName) {
+    File file = new File("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\羅東博愛醫院\\麗臺HIS檔案匯出格式v2.xlsx");
+    XSSFWorkbook workbook = null;
+    try {
+      workbook = new XSSFWorkbook(file);
+      // DataFormatter formatter = new DataFormatter();
+
+      int total = 0;
+
+      XSSFSheet sheet = workbook.getSheet(sheetName);
+      return readFieldNameAndIndex(sheet.getRow(0));
+    } catch (InvalidFormatException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      if (workbook != null) {
+        try {
+          workbook.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+    return null;
+  }
+
 }

@@ -5,21 +5,23 @@ package tw.com.leadtek.nhiwidget.constant;
 
 public enum INTELLIGENT_REASON {
   UNKNOWN(0),
-  VIOLATE(1),       // 違反支付準則項目-支付準則條件
-  RARE_ICD(2),      // 罕見ICD應用
-  HIGH_RATIO(3),    // 應用比例偏高醫令
-  OVER_AMOUNT(4),   // 特別用量藥材
-  MATERIAL(5),      // 衛材
-  INH_OWN_EXIST(6), // 健保項目對應自費項目並存
-  INFECTIOUS(7),    // 法定傳染病
-  SAME_ATC(8),      // 同性質藥物開立
-  PILOT_PROJECT(9), // 相關計畫疑似可收案病例
-  HIGH_RISK(10),    // 高風險診斷碼與健保碼組合(被核刪過的診斷碼與醫令組合)
-  COST_DIFF(11),    // 臨床路徑差異–AI提示-費用差異
-  ORDER_DIFF(12),   // 臨床路徑差異–AI提示-醫療行為差異
-  ORDER_DRUG(13),   // 臨床路徑差異–AI提示-用藥差異
-  IP_DAYS(14),      // 臨床路徑差異–AI提示-住院天數差異
-  DRUG_DIFF(15);    // 用藥差異
+  VIOLATE(1),         // 違反支付準則項目-支付準則條件
+  RARE_ICD(2),        // 罕見ICD應用
+  HIGH_RATIO(3),      // 應用比例偏高醫令
+  OVER_AMOUNT(4),     // 特別用量藥材
+  MATERIAL(5),        // 衛材
+  INH_OWN_EXIST(6),   // 健保項目對應自費項目並存
+  INFECTIOUS(7),      // 法定傳染病
+  SAME_ATC(8),        // 同性質藥物開立
+  PILOT_PROJECT(9),   // 相關計畫疑似可收案病例
+  HIGH_RISK(10),      // 高風險診斷碼與健保碼組合(被核刪過的診斷碼與醫令組合)
+  COST_DIFF(11),      // 臨床路徑差異–AI提示-費用差異
+  ORDER_DIFF(12),     // 臨床路徑差異–AI提示-醫療行為差異
+  ORDER_DRUG(13),     // 臨床路徑差異–AI提示-用藥差異
+  IP_DAYS(14),        // 臨床路徑差異–AI提示-住院天數差異
+  DRUG_DIFF(15),      // 用藥差異
+  SUSPECTED(16),      // 疑似職傷與異常就診記錄判斷
+  DRG_SUGGESTION(17); // DRG申報建議
 
   private int value;
   

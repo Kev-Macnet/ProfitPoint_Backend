@@ -604,10 +604,11 @@ public class GenerateSqlByClass {
   }
 
   public static void main(String[] args) {
-    GenerateSqlByClass gen = new GenerateSqlByClass("NWUSER");
+    //GenerateSqlByClass gen = new GenerateSqlByClass("NWUSER");
     //testSub();
     //gen.testNormalDistribution();
-    testPercent();
+    //testPercent();
+    testDateTool();
     // gen.generateSQL();
 
     // 改用 generateClassByDB
@@ -700,5 +701,14 @@ public class GenerateSqlByClass {
     for(int i=0; i<q.length; i++) {
       System.out.println(q[i]);
     }
+  }
+  
+  public static void testDateTool() {
+    String s = "2021/10/8";
+    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
+    s = "2021/10/8  09:32:00 AM";
+    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
+    s = "2021/10/8 AM 09:32:00";
+    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
   }
 }

@@ -946,7 +946,77 @@ public class SystemService {
           p.setValue(payload.getHighRisk().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.HIGH_RISK.value(), payload.getHighRisk());
         }
-      }
+      } else if (p.getName().equals("CLINICAL_DIFF")) {
+        if (payload.getClinicalDiff() != null) {
+          if ((payload.getClinicalDiff().booleanValue() && "1".equals(p.getValue()))
+              || (!payload.getClinicalDiff().booleanValue() && "0".equals(p.getValue()))) {
+            continue;
+          }
+          p.setValue(payload.getClinicalDiff().booleanValue() ? "1" : "0");
+          needProcess.put(INTELLIGENT_REASON.COST_DIFF.value(), payload.getClinicalDiff());
+          needProcess.put(INTELLIGENT_REASON.ORDER_DIFF.value(), payload.getClinicalDiff());
+          needProcess.put(INTELLIGENT_REASON.ORDER_DRUG.value(), payload.getClinicalDiff());
+          needProcess.put(INTELLIGENT_REASON.IP_DAYS.value(), payload.getClinicalDiff());
+        }
+      } else if (p.getName().equals("COST_DIFF_UL")) {
+        if (payload.getCostDiffUL() != null) {
+          if (payload.getCostDiffUL().equals(p.getValue())) {
+            continue;
+          }
+          p.setValue(payload.getCostDiffUL());
+          needProcess.put(INTELLIGENT_REASON.COST_DIFF.value(), true);
+        }
+      } else if (p.getName().equals("COST_DIFF_LL")) {
+        if (payload.getCostDiffLL() != null) {
+          if (payload.getCostDiffLL().equals(p.getValue())) {
+            continue;
+          }
+          p.setValue(payload.getCostDiffLL());
+          needProcess.put(INTELLIGENT_REASON.COST_DIFF.value(), true);
+        }
+      } else if (p.getName().equals("ORDER_DIFF_UL")) {
+        if (payload.getOrderUL() != null) {
+          if (payload.getOrderUL().equals(p.getValue())) {
+            continue;
+          }
+          p.setValue(payload.getOrderUL());
+          needProcess.put(INTELLIGENT_REASON.ORDER_DIFF.value(), true);
+        }
+      } else if (p.getName().equals("ORDER_DIFF_LL")) {
+        if (payload.getOrderLL() != null) {
+          if (payload.getOrderLL().equals(p.getValue())) {
+            continue;
+          }
+          p.setValue(payload.getOrderLL());
+          needProcess.put(INTELLIGENT_REASON.ORDER_DIFF.value(), true);
+        }
+      } else if (p.getName().equals("IP_DAYS")) {
+        if (payload.getIpDays() != null) {
+          if (payload.getIpDays().intValue() == Integer.parseInt(p.getValue())) {
+            continue;
+          }
+          p.setValue(payload.getIpDays().toString());
+          needProcess.put(INTELLIGENT_REASON.IP_DAYS.value(), true);
+        }
+      } else if (p.getName().equals("SUSPECTED")) {
+        if (payload.getSuspected() != null) {
+          if ((payload.getSuspected().booleanValue() && "1".equals(p.getValue()))
+              || (!payload.getSuspected().booleanValue() && "0".equals(p.getValue()))) {
+            continue;
+          }
+          p.setValue(payload.getSuspected().booleanValue() ? "1" : "0");
+          needProcess.put(INTELLIGENT_REASON.SUSPECTED.value(), payload.getSuspected());
+        }
+      } else if (p.getName().equals("DRG_SUGGESTION")) {
+        if (payload.getDrgSuggestion() != null) {
+          if ((payload.getDrgSuggestion().booleanValue() && "1".equals(p.getValue()))
+              || (!payload.getDrgSuggestion().booleanValue() && "0".equals(p.getValue()))) {
+            continue;
+          }
+          p.setValue(payload.getDrgSuggestion().booleanValue() ? "1" : "0");
+          needProcess.put(INTELLIGENT_REASON.DRG_SUGGESTION.value(), payload.getSuspected());
+        }
+      } 
 
       p.setUpdateAt(new Date());
       parametersDao.save(p);

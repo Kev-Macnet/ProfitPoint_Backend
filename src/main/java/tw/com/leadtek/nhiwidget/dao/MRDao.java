@@ -443,4 +443,8 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ " and length(drug_no) = 10 "
   		+ " group by drug_no order by mr_id", nativeQuery = true)
   public List<Map<String,Object>> getDrugNoCount(String date, String fmt);
+  
+  public List<MR> findByApplYmAndDataFormatOrderById(String applYm, String dataFormat);
+  
+  public List<MR> findByInhClinicId(String inhClinicId); 
 }

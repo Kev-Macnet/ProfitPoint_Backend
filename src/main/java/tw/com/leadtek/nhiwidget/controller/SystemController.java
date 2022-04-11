@@ -785,13 +785,18 @@ public class SystemController extends BaseController {
       return ResponseEntity.ok(new BaseResponse("error", "error file"));
     }
 
+    String result = null;
     try {
       String dirPath = systemService.checkDownloadDir();
       String filepath =  (System.getProperty("os.name").toLowerCase().startsWith("windows")) ? dirPath + "\\" + file.getOriginalFilename() :
         dirPath + "/" + file.getOriginalFilename();
       File saveFile = new File(filepath);
       file.transferTo(saveFile);
-      systemService.importFileThread(saveFile);
+      if (saveFile.getName().endsWith(".xls")) {
+        
+      } else {
+        systemService.importFileThread(saveFile);
+      }
     } catch (IOException e) {
       logger.error("uploadXML-", e);
     }
@@ -800,7 +805,7 @@ public class SystemController extends BaseController {
 //    } else {
 //      return returnAPIResult(result.get("error"));
 //    }
-    return returnAPIResult(null);
+    return returnAPIResult(result);
   }
 
 }

@@ -254,6 +254,10 @@ public class MR {
   @Column(name = "UPDATE_USER_ID")
   @JsonIgnore
   protected Long updateUserId;
+  
+  @ApiModelProperty(value = "診別", required = false)
+  @Column(name = "CLINIC")
+  protected String clinic;
 
   /**
    * 更新時間
@@ -961,4 +965,13 @@ public class MR {
     //}
     this.updateAt = new Date();
   }
+
+  public String getClinic() {
+    return clinic;
+  }
+
+  public void setClinic(String clinic) {
+    this.clinic = clinic;
+  }
+  
 }

@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 
 /**
  * 住院總表
@@ -312,6 +313,7 @@ public class IP_T {
   private Date updateAt;
   
   public IP_T() {
+    dataFormat = XMLConstant.DATA_FORMAT_IP;
     caseGenDays = 0;
     caseGenDot = 0;
     caseGenQty = 0;

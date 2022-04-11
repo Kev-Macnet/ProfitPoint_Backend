@@ -14,6 +14,7 @@ import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 
 @Table(name = "OP_T")
 @Entity
@@ -373,6 +374,7 @@ public class OP_T {
   private Date updateAt;
 
   public OP_T() {
+    dataFormat = XMLConstant.DATA_FORMAT_OP;
     applDot = 0;
     applQty = 0;
     chrDot = 0;

@@ -14,11 +14,14 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DecimalStyle;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 import org.apache.logging.log4j.Logger;
+import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.usermodel.XSSFCell;
-import tw.com.leadtek.nhiwidget.constant.DATA_TYPE;
+import org.apache.poi.xssf.usermodel.XSSFRow;
 
 public class ExcelUtil {
 
@@ -33,11 +36,11 @@ public class ExcelUtil {
   public final static String DATA_FORMAT_DATE = "yyyy/MM/dd";
 
   public final static SimpleDateFormat SDF_DATE = new SimpleDateFormat("yyyy/MM/dd");
-   
+
   public final static String EXCEL_DATE_FORMAT_14 = "yyyy/M/d";
 
   public final static String MINGUO = "(民國年)";
-  
+
   public static Date getDate(String dataFormat, String cellValue, Logger logger) {
     if (dataFormat.indexOf(ExcelUtil.MINGUO) > -1) {
       String newDatePattern = dataFormat.replace(ExcelUtil.MINGUO, "");
@@ -61,7 +64,7 @@ public class ExcelUtil {
     }
     return null;
   }
-  
+
   /**
    * 從字串找出時間格式，若非時間則回傳空字串
    * 
@@ -180,9 +183,10 @@ public class ExcelUtil {
     }
     return null;
   }
-  
+
   /**
    * 檢查是否為日期格式，若非日期，回傳 null
+   * 
    * @param s
    * @param quote
    * @return
@@ -234,7 +238,7 @@ public class ExcelUtil {
     }
     return sb.toString();
   }
-  
+
   public String getTimeFormat(String s) {
     StringBuffer sb = new StringBuffer();
     String[] ss = s.split(":");
@@ -271,7 +275,7 @@ public class ExcelUtil {
     }
     return sb.toString();
   }
-  
+
   public static String getCellStringValue(XSSFCell cell) {
     if (cell.getCellType() == CellType.NUMERIC) {
       String number = String.valueOf(cell.getNumericCellValue());
@@ -284,4 +288,93 @@ public class ExcelUtil {
     }
   }
 
+  public static HashMap<Integer, String> readTitleRow(XSSFRow row) {
+    HashMap<Integer, String> result = new HashMap<Integer, String>();
+    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+      if (row.getCell(i) == null) {
+        continue;
+      }
+      String cellValue = row.getCell(i).getStringCellValue();
+      if (cellValue != null && cellValue.length() > 1) {
+        if (cellValue.indexOf(',') > -1) {
+          cellValue = cellValue.split(",")[0];
+        }
+        result.put(new Integer(i), cellValue);
+      }
+    }
+    return result;
+  }
+
+  public static HashMap<Integer, String> readTitleRow(HSSFRow row) {
+    HashMap<Integer, String> result = new HashMap<Integer, String>();
+    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+      if (row.getCell(i) == null) {
+        continue;
+      }
+      String cellValue = row.getCell(i).getStringCellValue();
+      if (cellValue != null && cellValue.length() > 1) {
+        if (cellValue.indexOf(',') > -1) {
+          cellValue = cellValue.split(",")[0];
+        }
+        result.put(new Integer(i), cellValue);
+      }
+    }
+    return result;
+  }
+
+  public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
+      XSSFRow row) {
+    HashMap<String, String> result = new HashMap<String, String>();
+    System.out.println("cells:" + row.getPhysicalNumberOfCells());
+    // for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+    for (int i = 0; i < 100; i++) {
+      String cellValue = null;
+      if (row.getCell(i) == null) {
+        continue;
+      }
+      if (row.getCell(i).getCellType() == CellType.NUMERIC) {
+        cellValue = String.valueOf(row.getCell(i).getNumericCellValue());
+        // System.out.println("cell numeric before:" + cellValue);
+        if (cellValue.endsWith(".0")) {
+          cellValue = cellValue.substring(0, cellValue.length() - 2);
+        }
+        // System.out.println("cell numeric after:" + cellValue);
+      } else {
+        cellValue = row.getCell(i).getStringCellValue().trim();
+      }
+      if (cellValue != null && cellValue.length() > 0) {
+        result.put(columnMap.get(new Integer(i)), cellValue);
+      }
+    }
+    return result;
+  }
+
+  public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
+      HSSFRow row) {
+    HashMap<String, String> result = new HashMap<String, String>();
+    // for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+    for (int i = 0; i < 100; i++) {
+      String cellValue = null;
+      if (row.getCell(i) == null) {
+        continue;
+      }
+      if (row.getCell(i).getCellType() == CellType.NUMERIC) {
+        if (DateUtil.isCellDateFormatted(row.getCell(i)) || row.getCell(i).getCellStyle().getDataFormatString().indexOf("yy") > -1) {
+          cellValue = ExcelUtil.SDF_DATETIME.format(row.getCell(i).getDateCellValue());
+        } else {
+          cellValue = String.valueOf(row.getCell(i).getNumericCellValue());
+          // System.out.println("cell numeric before:" + cellValue);
+        }
+        if (cellValue.endsWith(".0")) {
+          cellValue = cellValue.substring(0, cellValue.length() - 2);
+        }
+      } else {
+        cellValue = row.getCell(i).getStringCellValue().trim();
+      }
+      if (cellValue != null && cellValue.length() > 0) {
+        result.put(columnMap.get(new Integer(i)), cellValue);
+      }
+    }
+    return result;
+  }
 }
