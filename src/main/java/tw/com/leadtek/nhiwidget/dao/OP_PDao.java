@@ -253,6 +253,20 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
 			+ "where temp.ROC_ID = temp2.ROC_ID and temp.END_TIME = temp2.END_TIME "
 			+ "group by temp.ROC_ID ", nativeQuery = true)
  	public List<Map<String, Object>> getLastRocidByOrderCode(String orderCode);
+ 	/**
+ 	 * 取得相差分鐘資料
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select MR_ID,TOTAL_Q, START_TIME, END_TIME, "
+ 			+ "case when (END_TIME - START_TIME) <= 40 then (END_TIME - START_TIME) "
+ 			+ "when (END_TIME - START_TIME) > 41 and (END_TIME - START_TIME) <= 120 then (END_TIME - START_TIME) - 40 "
+ 			+ "when (END_TIME - START_TIME) > 121 and (END_TIME - START_TIME) <= 240 then (END_TIME - START_TIME) - 80 "
+ 			+ "when (END_TIME - START_TIME) > 241 and (END_TIME - START_TIME) <= 360 then (END_TIME - START_TIME) - 120 "
+ 			+ "else (END_TIME - START_TIME) "
+ 			+ "end as DIFF "
+ 			+ "from op_p where MR_ID in (?1)", nativeQuery = true)
+ 	public List<Map<String, Object>> getAllListByMrid(List<String> mrid);
 	
 	
 }

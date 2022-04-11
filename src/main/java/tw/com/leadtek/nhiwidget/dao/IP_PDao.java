@@ -11,8 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
+
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
-import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
@@ -235,4 +235,18 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  			+ "and ipp.MR_ID in (?2) "
  			+ "group by ipd.ROC_ID) temp", nativeQuery = true)
  	public List<Map<String, Object>> getRocidTotalByDrugNoandMrid(String durgNo, List<String> mrid);
+ 	/**
+ 	 * 取得相差分鐘資料
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select MR_ID,TOTAL_Q, START_TIME, END_TIME, "
+ 			+ "case when (END_TIME - START_TIME) <= 40 then (END_TIME - START_TIME) "
+ 			+ "when (END_TIME - START_TIME) > 41 and (END_TIME - START_TIME) <= 120 then (END_TIME - START_TIME) - 40 "
+ 			+ "when (END_TIME - START_TIME) > 121 and (END_TIME - START_TIME) <= 240 then (END_TIME - START_TIME) - 80 "
+ 			+ "when (END_TIME - START_TIME) > 241 and (END_TIME - START_TIME) <= 360 then (END_TIME - START_TIME) - 120 "
+ 			+ "else (END_TIME - START_TIME) "
+ 			+ "end  DIFF "
+ 			+ "from ip_p where MR_ID in (?1)", nativeQuery = true)
+ 	public List<Map<String, Object>> getAllListByMrid(List<String> mrid);
 }
