@@ -39,8 +39,6 @@ public class PtRehabilitationFeeServiceTask {
 		Date dateObj = calendar.getTime();
 		String eDateStr = sdf.format(dateObj);
 		String sDateStr = minusYear(eDateStr);
-		eDateStr = "2021-04-01";
-		sDateStr = "2021-01-01";
 		/// 違反案件數
 		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr);
 		List<MR> mrList2 = new ArrayList<MR>();
