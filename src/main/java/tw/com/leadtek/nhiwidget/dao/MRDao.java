@@ -488,7 +488,34 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param code
    * @return
    */
-  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where ID in (?1) and CODE_ALL like '%?2%' group by ROC_ID ", nativeQuery = true)
+  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where ID in (?1) and CODE_ALL like ?2 group by ROC_ID ", nativeQuery = true)
   public List<Map<String,Object>> getRocListByIdAndCode(List<String> mrid, String code);
+  /**
+   * 取得最新病例的身分號和日期
+   * @param code
+   * @return
+   */
+  @Query(value = "select ROC_ID, max(MR_DATE) as MR_DATE from mr where CODE_ALL like ?1 group by ROC_ID", nativeQuery = true)
+  public List<Map<String,Object>> getRocLastDayListByIdAndCode(String code);
+  /**
+   * 取得日期間的該準則資料
+   * @param code
+   * @param sdate
+   * @param edate
+   * @param rocid
+   * @return
+   */
+  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where  CODE_ALL like ?1 and ROC_ID = ?2 and  MR_DATE between ?3 and ?4  group by ROC_ID", nativeQuery = true)
+  public Map<String,Object> getRocCountListByCodeAndDate(String code, String rocid, String sdate, String edate);
+  /**
+   * 取得所有資料，以準則和身分號為條件
+   * @param code
+   * @param rocid
+   * @return
+   */
+  @Query(value = "select * from mr where CODE_ALL like ?1 and ROC_ID = ?2 order by MR_DATE desc", nativeQuery = true)
+  public List<MR> getAllByCodeAndRocid(String code, String rocid);
+  
+  
   
 }
