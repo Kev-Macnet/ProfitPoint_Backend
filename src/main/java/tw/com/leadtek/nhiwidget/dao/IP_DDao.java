@@ -169,9 +169,8 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "select ipd.MR_ID, ipd.ID_BIRTH_YMD from ip_d ipd "
-  		+ "join ip_p ipp on ipd.id = ipp.ipd_id where ipd.mr_id  in(?1) group by ipd.MR_ID", nativeQuery = true)
-  public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
-  
+	  		+ "where ipd.mr_id  in(?1) group by ipd.MR_ID,ipd.ID_BIRTH_YMD", nativeQuery = true)
+	  public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
   /**
    * 由mrid取得ip_d 列表
    * @param mrid
