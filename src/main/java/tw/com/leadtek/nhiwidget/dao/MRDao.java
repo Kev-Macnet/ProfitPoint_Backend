@@ -330,15 +330,15 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param date
    * @return
    */
-  @Query(value = "SELECT * FROM "
+  @Query(value = "SELECT * FROM( "
   		+ "SELECT MR.ID, MR.T_DOT , MR.ICDCM1, AI.AVG + 2 * AI.STDDEV AS UP, AI.AVG -2 * AI.STDDEV AS DOWN "
   		+ "FROM ( "
   		+ "SELECT ICDCM1, AVG(T_DOT) AS AVG, STDDEV(T_DOT) AS STDDEV "
   		+ "FROM MR "
   		+ "WHERE MR_DATE BETWEEN ?1 AND ?2 AND DATA_FORMAT ='10' GROUP BY ICDCM1) AI, MR "
-  		+ "WHERE AI.STDDEV > 0 AND MR_DATE BETWEEN '2021-01-01' AND '2021-01-31' AND MR.ICDCM1 = AI.ICDCM1 AND mr.DATA_FORMAT ='10' "
-  		+ ") TEMP WHERE T_DOT > (UP * 1.06) OR T_DOT < (DOWN * 0.94)", nativeQuery = true)
-  public List<Map<String, Object>> clinic(String sDate1, String eDate1, String sDate2, String eDate2);
+  		+ "WHERE AI.STDDEV > 0 AND MR_DATE BETWEEN ?3 AND ?4 AND MR.ICDCM1 = AI.ICDCM1 AND mr.DATA_FORMAT ='10' "
+  		+ ") TEMP WHERE T_DOT > (UP * ?5) OR T_DOT < (DOWN * ?6)", nativeQuery = true)
+  public List<Map<String, Object>> clinic(String sDate1, String eDate1, String sDate2, String eDate2, float up, float down);
   
   /**
    * 費用差異--住院
@@ -346,12 +346,15 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @return
    */
   @Query(value = "select * from ( "
-	  		+ "select ID, MR_ID, ICD_CM_1, avg +2 * stddev as up, avg -2 * stddev as down from ( "
-	  		+ "SELECT ID, MR_ID, ICD_CM_1, AVG(APPL_DOT - DIAG_DOT - ROOM_DOT) AS AVG, STDDEV(APPL_DOT - DIAG_DOT - ROOM_DOT)*2 AS STDDEV FROM IP_D "
-	  		+ "WHERE MR_ID IN(SELECT ID FROM MR WHERE MR_DATE > ?1 AND DATA_FORMAT ='20' GROUP BY ICD_CM_1 )) "
-            + "temp where stddev > 0) temp2"
-            + "", nativeQuery = true)
-	  public List<Map<String, Object>> hospitalized(String date);
+  		+ "SELECT MR.ID, MR.T_DOT , MR.ICDCM1, AI.AVG + 2 * AI.STDDEV AS UP, AI.AVG -2 * AI.STDDEV AS DOWN  "
+  		+ "FROM( "
+  		+ "SELECT ICD_CM_1, AVG(APPL_DOT - DIAG_DOT - ROOM_DOT) AS AVG,  "
+  		+ "STDDEV(APPL_DOT - DIAG_DOT - ROOM_DOT) * 2 AS STDDEV "
+  		+ "FROM IP_D WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2)   "
+  		+ "GROUP BY ICD_CM_1) AI, MR "
+  		+ "WHERE AI.STDDEV > 0 AND MR.MR_DATE BETWEEN ?3 AND ?4 AND DATA_FORMAT ='20' AND AI.ICD_CM_1 = MR.ICDCM1 "
+  		+ ")TEMP WHERE T_DOT > (UP * ?5) OR T_DOT < (DOWN * ?6)", nativeQuery = true)
+	  public List<Map<String, Object>> hospitalized(String sDate1, String eDate1, String sDate2, String eDate2, float up, float down);
   /**
    * 醫療行為差異--門診
    * @param date
@@ -445,10 +448,6 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ "group by mr.icdcm1, op.drug_no ", nativeQuery = true)
   public List<Map<String,Object>> getDrugNoCount(String date, String fmt);
   
-  public List<MR> findByApplYmAndDataFormatOrderById(String applYm, String dataFormat);
-  
-  public List<MR> findByInhClinicId(String inhClinicId); 
-
   /**
    * 取得藥用碼出現次數
    * @param date
@@ -458,6 +457,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ "where op.mr_id = mr.id and mr.mr_date > ?1  and length(drug_no) = 10 "
   		+ "group by mr.id ", nativeQuery = true)
   public List<Map<String,Object>> getIdByDrugNoCount(String date);
+  
   
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認
