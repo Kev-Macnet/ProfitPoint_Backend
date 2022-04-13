@@ -104,17 +104,17 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
 	 * @param dataFormat
 	 * @return
 	 */
-	@Query(value = "SELECT drug_no,icdcm1,AVG, AVG + 2 * STD as UP, AVG -2 * STD AS DOWN, MR_COUNT FROM ( "
+	@Query(value = "SELECT DRUG_NO,ICDCM1,AVG, AVG + 2 * STD as UP, AVG -2 * STD AS DOWN, MR_COUNT FROM ( "
 			+ "SELECT drug_no,icdcm1, COUNT(ICDCM1) AS MR_COUNT , AVG(drug_no_count) AS AVG, STDDEV(drug_no_count) STD FROM ( "
 			+ "SELECT op.DRUG_NO, count(op.DRUG_NO) AS drug_no_count , op.MR_ID, mr.ICDCM1 icdcm1 FROM op_p OP, MR "
-			+ "WHERE op.MR_ID = MR.ID "
+			+ "WHERE op.MR_ID = MR.ID  and MR.MR_DATE BETWEEN ?1 AND ?2 " 
 			+ "GROUP BY op.DRUG_NO, op.MR_ID, MR.ICDCM1 ORDER BY DRUG_NO "
 			+ ") TEMP "
 			+ "GROUP BY DRUG_NO , icdcm1 ORDER BY DRUG_NO , icdcm1 ) temp2 "
 			+ "WHERE avg > 1 AND MR_COUNT >= 30 "
 			+ "GROUP BY ICDCM1, DRUG_NO, AVG , STD, MR_COUNT ORDER BY AVG DESC "
 			+ "", nativeQuery = true)
-	public List<Map<String, Object>> calculate();
+	public List<Map<String, Object>> calculate(String sDate, String eDate);
 	
 	/**
  	 * 由支付準則代碼和MRid查詢

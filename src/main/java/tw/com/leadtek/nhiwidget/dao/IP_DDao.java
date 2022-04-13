@@ -123,13 +123,25 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @param date
    * @return
    */
-  @Query(value = "select * from (  "
-  		+ "select mr.ICDCM1, ip.ICD_OP_CODE1, count(ip.ICD_OP_CODE1) as IOC1COUNT , ip.ICD_OP_CODE2, count(ip.ICD_OP_CODE2) as IOC2COUNT  from ip_d ip , mr  "
-  		+ "where ip.roc_id = mr.roc_id and mr.MR_DATE >  ?1 "
-  		+ "group by ip.ICD_OP_CODE1, mr.ICDCM1, ip.ICD_OP_CODE2) temp "
-  		+ "where IOC1COUNT > 0 or IOC2COUNT > 0 "
+  @Query(value = "select * from (   "
+  		+ "select mr.ICDCM1, ip.ICD_OP_CODE1, count(ip.ICD_OP_CODE1) as IOC1COUNT , ip.ICD_OP_CODE2, count(ip.ICD_OP_CODE2) as IOC2COUNT  from ip_d ip , mr   "
+  		+ "where ip.roc_id = mr.roc_id and mr.MR_DATE  between ?1 and ?2 "
+  		+ "group by ip.ICD_OP_CODE1, mr.ICDCM1, ip.ICD_OP_CODE2) temp  "
+  		+ "where IOC1COUNT > 0 or IOC2COUNT > 0  "
   		+ "order by IOC1COUNT desc", nativeQuery = true)
-  public List<Map<String, Object>> getHospitalOperation(String date);
+  public List<Map<String, Object>> getHospitalOperation(String sDate, String eDate);
+  /**
+   * 取得(診斷碼搭配手術碼的出現次數)
+   * @param date
+   * @return
+   */
+  @Query(value = "select * from (   "
+  		+ "select mr.ICDCM1, ip.ICD_OP_CODE1, count(ip.ICD_OP_CODE1) as IOC1COUNT , ip.ICD_OP_CODE2, count(ip.ICD_OP_CODE2) as IOC2COUNT  from ip_d ip , mr   "
+  		+ "where ip.roc_id = mr.roc_id and mr.MR_DATE  between ?1 and ?2 "
+  		+ "group by ip.ICD_OP_CODE1, mr.ICDCM1, ip.ICD_OP_CODE2) temp  "
+  		+ "where IOC1COUNT > 0 or IOC2COUNT > 0  "
+  		+ "order by IOC2COUNT desc", nativeQuery = true)
+  public List<Map<String, Object>> getHospitalOperation2(String sDate, String eDate);
   /**
    * 如果包含牙科且case_type有其條件資料
    * @param mrId
@@ -169,8 +181,9 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "select ipd.MR_ID, ipd.ID_BIRTH_YMD from ip_d ipd "
-	  		+ "where ipd.mr_id  in(?1) group by ipd.MR_ID,ipd.ID_BIRTH_YMD", nativeQuery = true)
-	  public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
+  		+ "where ipd.mr_id  in(?1) group by ipd.MR_ID,ipd.ID_BIRTH_YMD", nativeQuery = true)
+  public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
+  
   /**
    * 由mrid取得ip_d 列表
    * @param mrid

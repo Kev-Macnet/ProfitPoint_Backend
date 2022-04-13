@@ -11,8 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
-
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
@@ -112,15 +112,16 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	 * @param dataFormat
  	 * @return
  	 */
- 	@Query(value = "select ICDCM1 as ICDCM, ORDER_CODE, '20' as DATA_FORMAT, CAST(mrCount AS DECIMAL(10,6)) as AVERAGE, CAST(if(mrCount < 30, 0, up) AS DECIMAL(10,6)) as ULIMIT, CAST(if(mrCount < 30, 0, down) AS DECIMAL(10,6)) as LLIMIT from ( "
- 			+ "	select  ICDCM1,ORDER_CODE, avg +2*STDDEV as up, avg -2*STDDEV as down, mrCount from (  "
- 			+ "	select m.ICDCM1, ORDER_CODE,AVG(ip.ORDER_CODE) as AVG, STDDEV(ip.ORDER_CODE) as STDDEV, count(m.ID) as mrCount from ip_p ip "
- 			+ "	join mr m on m.id = ip.MR_ID and m.MR_DATE > '2020-03-30' "
- 			+ "	where ip.PAY_CODE_TYPE  in ('1','2', '3', '4', '5') "
- 			+ "	group by m.icdcm1, ip.ORDER_CODE "
- 			+ "	) temp "
- 			+ "	) report where down >=0", nativeQuery = true)
- 	public List<Map<String, Object>> calculate(String date);
+ 	@Query(value = "SELECT ORDER_CODE,ICDCM1,AVG, AVG + 2 * STD as UP, AVG -2 * STD AS DOWN, MR_COUNT FROM (  "
+ 			+ "SELECT ORDER_CODE,icdcm1, COUNT(ICDCM1) AS MR_COUNT , AVG(ORDER_CODE_count) AS AVG, STDDEV(ORDER_CODE_count) STD FROM (  "
+ 			+ "SELECT ip.ORDER_CODE, count(ip.ORDER_CODE) AS ORDER_CODE_count , ip.MR_ID, mr.ICDCM1 icdcm1 FROM ip_p IP, MR  "
+ 			+ "WHERE ip.MR_ID = MR.ID  and MR.MR_DATE BETWEEN ?1 AND ?2 "
+ 			+ "GROUP BY ip.ORDER_CODE, ip.MR_ID, MR.ICDCM1 ORDER BY ORDER_CODE  "
+ 			+ ") TEMP  "
+ 			+ "GROUP BY ORDER_CODE , icdcm1 ORDER BY ORDER_CODE , icdcm1 ) temp2  "
+ 			+ "WHERE avg > 1 AND MR_COUNT >= 30  "
+ 			+ "GROUP BY ICDCM1, ORDER_CODE, AVG , STD, MR_COUNT ORDER BY AVG DESC", nativeQuery = true)
+ 	public List<Map<String, Object>> calculate(String sDate, String eDate);
  	
  	/**
  	 * 由支付準則代碼和MRid查詢

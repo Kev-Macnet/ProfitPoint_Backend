@@ -105,26 +105,26 @@ public class AICotroller {
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicMmedBehDiff", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getClinicMmedBehDiff(@RequestParam(required = true) String date) {
-		return aiService.clinicMmedBehDiff(date);
+	public Object getClinicMmedBehDiff(@RequestParam(required = true) String sDate, String eDate) {
+		return aiService.clinicMmedBehDiff(sDate, eDate);
 	}
 
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalMmedBehDiff", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getHospitalMmedBehDiff(@RequestParam(required = true) String date) {
-		return aiService.hospitalMmedBehDiff(date);
+	public Object getHospitalMmedBehDiff(@RequestParam(required = true) String sDate, String eDate) {
+		return aiService.hospitalMmedBehDiff(sDate, eDate);
 	}
 
 	@ResponseBody
 	@RequestMapping(value = "/getClinicOperation", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getClinicOperation(@RequestParam(required = true) String date) {
-		return aiService.clinicOperaiton(date);
+	public Object getClinicOperation(@RequestParam(required = true)String sDate, String eDate) {
+		return aiService.clinicOperaiton(sDate,eDate);
 	}
 
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalOperation", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getHospitalOperation(@RequestParam(required = true) String date) {
-		return aiService.hospitalOperaiton(date);
+	public Object getHospitalOperation(@RequestParam(required = true) String sDate, String eDate) {
+		return aiService.hospitalOperaiton(sDate,eDate);
 	}
 
 	@ResponseBody
