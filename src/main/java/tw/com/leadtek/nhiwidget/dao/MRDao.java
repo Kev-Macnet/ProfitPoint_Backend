@@ -360,19 +360,21 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param date
    * @return
    */
-  @Query(value = "select * from (select m.ID, m.ROC_ID, m.ICDCM1, imo.ORDER_CODE, m.MR_DATE, count(m.ROC_ID) as count from mr m  "
-  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  "
-  		+ "and m.DATA_FORMAT ='10' and m.MR_DATE > ?1 group by m.ROC_ID order by m.ICDCM1) temp" , nativeQuery = true)
-  	  public List<Map<String, Object>> clinicMedBeh(String date);
+  @Query(value = "select m.ID, imo.ICDCM, imo.ORDER_CODE, imo.ULIMIT as UP, imo.LLIMIT as DOWN from mr m  "
+  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  and m.CODE_ALL like concat('%', imo.ORDER_CODE ,'%') "
+  		+ "and m.DATA_FORMAT ='10' "
+  		+ "and m.MR_DATE  BETWEEN ?1 AND ?2 group by m.id " , nativeQuery = true)
+  	  public List<Map<String, Object>> clinicMedBeh(String sDate, String eDate);
   /**
    * 醫療行為差異--住院
    * @param date
    * @return
    */
-  @Query(value = "select * from (select m.ID, m.ROC_ID, m.ICDCM1, imo.ORDER_CODE, m.MR_DATE, count(m.ROC_ID) as count from mr m  "
-  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  "
-  		+ "and m.DATA_FORMAT ='20' and m.MR_DATE > ?1 group by m.ROC_ID order by m.ICDCM1) temp" , nativeQuery = true)
-  	  public List<Map<String, Object>> hospitalMedBeh(String date);
+  @Query(value = "select m.ID, imo.ICDCM, imo.ORDER_CODE, imo.ULIMIT as UP, imo.LLIMIT as DOWN from mr m  "
+	  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  and m.CODE_ALL like concat('%', imo.ORDER_CODE ,'%') "
+	  		+ "and m.DATA_FORMAT ='20' "
+	  		+ "and m.MR_DATE  BETWEEN ?1 AND ?2 group by m.id " , nativeQuery = true)
+  	  public List<Map<String, Object>> hospitalMedBeh(String sDate, String eDate);
   /**
    * 手術--門診
    * @param date
@@ -381,9 +383,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "select m.ID, m.INH_MR_ID, opd.ICD_CM_1, ii.ICDOP, ii.TOTAL, ii.PERCENT from mr m "
   		+ "join  op_d opd on  opd.roc_id = m.roc_id and m.ICDCM1 = opd.icd_cm_1 "
   		+ "join ICDCM_ICDOP ii on ii.ICDCM = opd.icd_cm_1 and ii.ICDOP = opd.ICD_OP_CODE1 "
-  		+ "where m.MR_DATE > ?1 and m.DATA_FORMAT = '10' "
+  		+ "where m.MR_DATE BETWEEN ?1 AND ?2 and m.DATA_FORMAT = '10' "
   		+ "group by opd.roc_id",  nativeQuery = true)
-  public List<Map<String, Object>> clinicOpepration(String date);
+  public List<Map<String, Object>> clinicOpepration(String sDate, String eDate);
   
   /**
    * 手術--住院
@@ -393,9 +395,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "select m.ID, m.INH_MR_ID, ipd.ICD_CM_1, ii.ICDOP, ii.TOTAL, ii.PERCENT from mr m "
   		+ "join  ip_d ipd on  ipd.roc_id = m.roc_id and m.ICDCM1 = ipd.icd_cm_1 "
   		+ "join ICDCM_ICDOP ii on ii.ICDCM = ipd.icd_cm_1 and ii.ICDOP = ipd.ICD_OP_CODE1 "
-  		+ "where m.MR_DATE > ?1 and m.DATA_FORMAT = '20' "
+  		+ "where m.MR_DATE BETWEEN ?1 AND ?2 and m.DATA_FORMAT = '20' "
   		+ "group by ipd.roc_id",  nativeQuery = true)
-  public List<Map<String, Object>> hospitalOpepration(String date);
+  public List<Map<String, Object>> hospitalOpepration(String sDate, String eDate);
   /**
    * 依照日期與資料格式
    * @param date
