@@ -330,15 +330,15 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param date
    * @return
    */
-  @Query(value = "SELECT * FROM ("
+  @Query(value = "SELECT * FROM( "
   		+ "SELECT MR.ID, MR.T_DOT , MR.ICDCM1, AI.AVG + 2 * AI.STDDEV AS UP, AI.AVG -2 * AI.STDDEV AS DOWN "
   		+ "FROM ( "
   		+ "SELECT ICDCM1, AVG(T_DOT) AS AVG, STDDEV(T_DOT) AS STDDEV "
   		+ "FROM MR "
   		+ "WHERE MR_DATE BETWEEN ?1 AND ?2 AND DATA_FORMAT ='10' GROUP BY ICDCM1) AI, MR "
-  		+ "WHERE AI.STDDEV > 0 AND MR_DATE BETWEEN '2021-01-01' AND '2021-01-31' AND MR.ICDCM1 = AI.ICDCM1 AND mr.DATA_FORMAT ='10' "
-  		+ ") TEMP WHERE T_DOT > (UP * 1.06) OR T_DOT < (DOWN * 0.94)", nativeQuery = true)
-  public List<Map<String, Object>> clinic(String sDate1, String eDate1, String sDate2, String eDate2);
+  		+ "WHERE AI.STDDEV > 0 AND MR_DATE BETWEEN ?3 AND ?4 AND MR.ICDCM1 = AI.ICDCM1 AND mr.DATA_FORMAT ='10' "
+  		+ ") TEMP WHERE T_DOT > (UP * ?5) OR T_DOT < (DOWN * ?6)", nativeQuery = true)
+  public List<Map<String, Object>> clinic(String sDate1, String eDate1, String sDate2, String eDate2, float up, float down);
   
   /**
    * 費用差異--住院
@@ -346,30 +346,35 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @return
    */
   @Query(value = "select * from ( "
-	  		+ "select ID, MR_ID, ICD_CM_1, avg +2 * stddev as up, avg -2 * stddev as down from ( "
-	  		+ "SELECT ID, MR_ID, ICD_CM_1, AVG(APPL_DOT - DIAG_DOT - ROOM_DOT) AS AVG, STDDEV(APPL_DOT - DIAG_DOT - ROOM_DOT)*2 AS STDDEV FROM IP_D "
-	  		+ "WHERE MR_ID IN(SELECT ID FROM MR WHERE MR_DATE > ?1 AND DATA_FORMAT ='20' GROUP BY ICD_CM_1 )) "
-            + "temp where stddev > 0) temp2"
-            + "", nativeQuery = true)
-	  public List<Map<String, Object>> hospitalized(String date);
+  		+ "SELECT MR.ID, MR.T_DOT , MR.ICDCM1, AI.AVG + 2 * AI.STDDEV AS UP, AI.AVG -2 * AI.STDDEV AS DOWN  "
+  		+ "FROM( "
+  		+ "SELECT ICD_CM_1, AVG(APPL_DOT - DIAG_DOT - ROOM_DOT) AS AVG,  "
+  		+ "STDDEV(APPL_DOT - DIAG_DOT - ROOM_DOT) * 2 AS STDDEV "
+  		+ "FROM IP_D WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2)   "
+  		+ "GROUP BY ICD_CM_1) AI, MR "
+  		+ "WHERE AI.STDDEV > 0 AND MR.MR_DATE BETWEEN ?3 AND ?4 AND DATA_FORMAT ='20' AND AI.ICD_CM_1 = MR.ICDCM1 "
+  		+ ")TEMP WHERE T_DOT > (UP * ?5) OR T_DOT < (DOWN * ?6)", nativeQuery = true)
+	  public List<Map<String, Object>> hospitalized(String sDate1, String eDate1, String sDate2, String eDate2, float up, float down);
   /**
    * 醫療行為差異--門診
    * @param date
    * @return
    */
-  @Query(value = "select * from (select m.ID, m.ROC_ID, m.ICDCM1, imo.ORDER_CODE, m.MR_DATE, count(m.ROC_ID) as count from mr m  "
-  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  "
-  		+ "and m.DATA_FORMAT ='10' and m.MR_DATE > ?1 group by m.ROC_ID order by m.ICDCM1) temp" , nativeQuery = true)
-  	  public List<Map<String, Object>> clinicMedBeh(String date);
+  @Query(value = "select m.ID, imo.ICDCM, imo.ORDER_CODE, imo.ULIMIT as UP, imo.LLIMIT as DOWN from mr m  "
+  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  and m.CODE_ALL like concat('%', imo.ORDER_CODE ,'%') "
+  		+ "and m.DATA_FORMAT ='10' "
+  		+ "and m.MR_DATE  BETWEEN ?1 AND ?2 group by m.id " , nativeQuery = true)
+  	  public List<Map<String, Object>> clinicMedBeh(String sDate, String eDate);
   /**
    * 醫療行為差異--住院
    * @param date
    * @return
    */
-  @Query(value = "select * from (select m.ID, m.ROC_ID, m.ICDCM1, imo.ORDER_CODE, m.MR_DATE, count(m.ROC_ID) as count from mr m  "
-  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  "
-  		+ "and m.DATA_FORMAT ='20' and m.MR_DATE > ?1 group by m.ROC_ID order by m.ICDCM1) temp" , nativeQuery = true)
-  	  public List<Map<String, Object>> hospitalMedBeh(String date);
+  @Query(value = "select m.ID, imo.ICDCM, imo.ORDER_CODE, imo.ULIMIT as UP, imo.LLIMIT as DOWN from mr m  "
+	  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  and m.CODE_ALL like concat('%', imo.ORDER_CODE ,'%') "
+	  		+ "and m.DATA_FORMAT ='20' "
+	  		+ "and m.MR_DATE  BETWEEN ?1 AND ?2 group by m.id " , nativeQuery = true)
+  	  public List<Map<String, Object>> hospitalMedBeh(String sDate, String eDate);
   /**
    * 手術--門診
    * @param date
@@ -378,9 +383,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "select m.ID, m.INH_MR_ID, opd.ICD_CM_1, ii.ICDOP, ii.TOTAL, ii.PERCENT from mr m "
   		+ "join  op_d opd on  opd.roc_id = m.roc_id and m.ICDCM1 = opd.icd_cm_1 "
   		+ "join ICDCM_ICDOP ii on ii.ICDCM = opd.icd_cm_1 and ii.ICDOP = opd.ICD_OP_CODE1 "
-  		+ "where m.MR_DATE > ?1 and m.DATA_FORMAT = '10' "
+  		+ "where m.MR_DATE BETWEEN ?1 AND ?2 and m.DATA_FORMAT = '10' "
   		+ "group by opd.roc_id",  nativeQuery = true)
-  public List<Map<String, Object>> clinicOpepration(String date);
+  public List<Map<String, Object>> clinicOpepration(String sDate, String eDate);
   
   /**
    * 手術--住院
@@ -390,9 +395,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "select m.ID, m.INH_MR_ID, ipd.ICD_CM_1, ii.ICDOP, ii.TOTAL, ii.PERCENT from mr m "
   		+ "join  ip_d ipd on  ipd.roc_id = m.roc_id and m.ICDCM1 = ipd.icd_cm_1 "
   		+ "join ICDCM_ICDOP ii on ii.ICDCM = ipd.icd_cm_1 and ii.ICDOP = ipd.ICD_OP_CODE1 "
-  		+ "where m.MR_DATE > ?1 and m.DATA_FORMAT = '20' "
+  		+ "where m.MR_DATE BETWEEN ?1 AND ?2 and m.DATA_FORMAT = '20' "
   		+ "group by ipd.roc_id",  nativeQuery = true)
-  public List<Map<String, Object>> hospitalOpepration(String date);
+  public List<Map<String, Object>> hospitalOpepration(String sDate, String eDate);
   /**
    * 依照日期與資料格式
    * @param date
@@ -448,7 +453,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<MR> findByApplYmAndDataFormatOrderById(String applYm, String dataFormat);
   
   public List<MR> findByInhClinicId(String inhClinicId); 
-
+  
   /**
    * 取得藥用碼出現次數
    * @param date
@@ -459,14 +464,17 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ "group by mr.id ", nativeQuery = true)
   public List<Map<String,Object>> getIdByDrugNoCount(String date);
   
+  
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認
    * 下面測試用替換
    * @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
    *      + "1=1 AND START_DATE BETWEEN ?1 and ?2 ) ", nativeQuery = true)
    */
-  @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
-      + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2') ", nativeQuery = true)
+   @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
+        + "1=1 AND START_DATE BETWEEN ?1 and ?2 ) ", nativeQuery = true)
+//  @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
+//      + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2') ", nativeQuery = true)
   public List<MR> getIntelligentMR(String sDate, String eDate);
   
   /**
@@ -475,5 +483,46 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
       + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2' AND FUNC_TYPEC NOT IN (?3)) ", nativeQuery = true)
   public List<MR> getIntelligentMrByFuncName(String sDate, String eDate, List<String> funcName);
-
+  
+  /**
+   * 依照rocid & code 取得該筆病歷表
+   * @param MRID
+   * @return
+   */
+  @Query(value = "select * from mr where ROC_ID = ?1 and CODE_ALL like '%?2%'", nativeQuery = true)
+  public MR getMrByRocIdAndCode(String rocid, String code);
+  /**
+   * 依照id & code 取得該筆病歷表
+   * @param mrid
+   * @param code
+   * @return
+   */
+  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where ID in (?1) and CODE_ALL like ?2 group by ROC_ID ", nativeQuery = true)
+  public List<Map<String,Object>> getRocListByIdAndCode(List<String> mrid, String code);
+  /**
+   * 取得最新病例的身分號和日期
+   * @param code
+   * @return
+   */
+  @Query(value = "select ROC_ID, max(MR_DATE) as MR_DATE from mr where CODE_ALL like ?1 group by ROC_ID", nativeQuery = true)
+  public List<Map<String,Object>> getRocLastDayListByIdAndCode(String code);
+  /**
+   * 取得日期間的該準則資料
+   * @param code
+   * @param sdate
+   * @param edate
+   * @param rocid
+   * @return
+   */
+  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where  CODE_ALL like ?1 and ROC_ID = ?2 and  MR_DATE between ?3 and ?4  group by ROC_ID", nativeQuery = true)
+  public Map<String,Object> getRocCountListByCodeAndDate(String code, String rocid, String sdate, String edate);
+  /**
+   * 取得所有資料，以準則和身分號為條件
+   * @param code
+   * @param rocid
+   * @return
+   */
+  @Query(value = "select * from mr where CODE_ALL like ?1 and ROC_ID = ?2 order by MR_DATE desc", nativeQuery = true)
+  public List<MR> getAllByCodeAndRocid(String code, String rocid);
+  
 }

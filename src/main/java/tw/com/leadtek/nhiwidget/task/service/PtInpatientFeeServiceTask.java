@@ -116,7 +116,7 @@ public class PtInpatientFeeServiceTask {
 		if (params.getExclude_nhi_no_enable() == 1) {
 			List<String> nhiNoList = params.getLst_nhi_no();
 			int count = 0;
-			for (MR mr : mrList) {
+			for (MR mr : mrList2) {
 				for (String nhiNo : nhiNoList) {
 					if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
@@ -169,7 +169,7 @@ public class PtInpatientFeeServiceTask {
 		/// 參與計畫之病患，不得申報
 		if (params.getNot_allow_plan_enable() == 1) {
 			List<String> planList = params.getLst_allow_plan();
-			for (MR mr : mrList) {
+			for (MR mr : mrList2) {
 				if (mr.getCodeAll().contains(params.getNhi_no())) {
 					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:參與[%s]計畫之病患，不得申報，疑似有出入", params.getNhi_no(),
@@ -184,7 +184,7 @@ public class PtInpatientFeeServiceTask {
 		if (params.getCoexist_nhi_no_enable() == 1) {
 			List<String> coList = params.getLst_co_nhi_no();
 			int count = 0;
-			for (MR mr : mrList) {
+			for (MR mr : mrList2) {
 				for (String s : coList) {
 					/// 先判斷有相同支付標準
 					if (mr.getCodeAll().contains(params.getNhi_no())) {
@@ -208,7 +208,7 @@ public class PtInpatientFeeServiceTask {
 		/// 7.
 		/// 同科別，門急診當次轉住院，單一住院就醫紀錄， 門診診察費或住院診察費支付標準代碼，不可並存
 		if (params.getNo_coexist_enable() == 1) {
-			for (MR mr : mrList) {
+			for (MR mr : mrList2) {
 				/// 先判斷有相同支付標準
 				if (mr.getCodeAll().contains(params.getNhi_no()) && mr.getDataFormat().equals("10")) {
 					String[] split = mr.getCodeAll().toString().split(",");

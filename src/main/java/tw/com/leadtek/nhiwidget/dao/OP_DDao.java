@@ -176,13 +176,25 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @param date
    * @return
    */
-  @Query(value = "select * from (  "
-  		+ "select mr.ICDCM1, op.ICD_OP_CODE1, count(op.ICD_OP_CODE1) as IOC1COUNT , op.ICD_OP_CODE2, count(op.ICD_OP_CODE2) as IOC2COUNT  from op_d op , mr  "
-  		+ "where op.roc_id = mr.roc_id and mr.MR_DATE >  ?1 "
-  		+ "group by op.ICD_OP_CODE1, mr.ICDCM1, op.ICD_OP_CODE2) temp "
-  		+ "where IOC1COUNT > 0 or IOC2COUNT > 0 "
-  		+ "order by ipc1Count desc", nativeQuery = true)
-  public List<Map<String, Object>> getClinicOperation(String date);
+  @Query(value = "select * from (   "
+  		+ "select mr.ICDCM1, op.ICD_OP_CODE1, count(op.ICD_OP_CODE1) as IOC1COUNT , op.ICD_OP_CODE2, count(op.ICD_OP_CODE2) as IOC2COUNT  from op_d op , mr   "
+  		+ "where op.roc_id = mr.roc_id and mr.MR_DATE between ?1 and ?2 "
+  		+ "group by op.ICD_OP_CODE1, mr.ICDCM1, op.ICD_OP_CODE2) temp  "
+  		+ "where IOC1COUNT > 0 or IOC2COUNT > 0  "
+  		+ "order by IOC1COUNT desc ", nativeQuery = true)
+  public List<Map<String, Object>> getClinicOperation(String sDate, String eDate);
+  /**
+   * 取得(診斷碼搭配手術碼的出現次數)
+   * @param date
+   * @return
+   */
+  @Query(value = "select * from (   "
+  		+ "select mr.ICDCM1, op.ICD_OP_CODE1, count(op.ICD_OP_CODE1) as IOC1COUNT , op.ICD_OP_CODE2, count(op.ICD_OP_CODE2) as IOC2COUNT  from op_d op , mr   "
+  		+ "where op.roc_id = mr.roc_id and mr.MR_DATE between ?1 and ?2 "
+  		+ "group by op.ICD_OP_CODE1, mr.ICDCM1, op.ICD_OP_CODE2) temp  "
+  		+ "where IOC1COUNT > 0 or IOC2COUNT > 0  "
+  		+ "order by IOC2COUNT desc ", nativeQuery = true)
+  public List<Map<String, Object>> getClinicOperation2(String sDate, String eDate);
   
   /**
    * 如果包含牙科且case_type有其條件資料
@@ -224,7 +236,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "select opd.MR_ID, opd.ID_BIRTH_YMD from op_d opd "
-  		+ "join op_p opp on opd.id = opp.opd_id where opd.mr_id  in(?1) group by opd.MR_ID ", nativeQuery = true)
+  		+ "where opd.mr_id  in(?1) group by opd.MR_ID, opd.ID_BIRTH_YMD", nativeQuery = true)
   public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
   
   /**

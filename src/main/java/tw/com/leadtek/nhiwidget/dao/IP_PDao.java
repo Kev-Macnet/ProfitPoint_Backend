@@ -11,8 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
-
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
@@ -123,15 +123,16 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	 * @param dataFormat
  	 * @return
  	 */
- 	@Query(value = "select ICDCM1 as ICDCM, ORDER_CODE, '20' as DATA_FORMAT, CAST(mrCount AS DECIMAL(10,6)) as AVERAGE, CAST(if(mrCount < 30, 0, up) AS DECIMAL(10,6)) as ULIMIT, CAST(if(mrCount < 30, 0, down) AS DECIMAL(10,6)) as LLIMIT from ( "
- 			+ "	select  ICDCM1,ORDER_CODE, avg +2*STDDEV as up, avg -2*STDDEV as down, mrCount from (  "
- 			+ "	select m.ICDCM1, ORDER_CODE,AVG(ip.ORDER_CODE) as AVG, STDDEV(ip.ORDER_CODE) as STDDEV, count(m.ID) as mrCount from ip_p ip "
- 			+ "	join mr m on m.id = ip.MR_ID and m.MR_DATE > '2020-03-30' "
- 			+ "	where ip.PAY_CODE_TYPE  in ('1','2', '3', '4', '5') "
- 			+ "	group by m.icdcm1, ip.ORDER_CODE "
- 			+ "	) temp "
- 			+ "	) report where down >=0", nativeQuery = true)
- 	public List<Map<String, Object>> calculate(String date);
+ 	@Query(value = "SELECT ORDER_CODE,ICDCM1,AVG, AVG + 2 * STD as UP, AVG -2 * STD AS DOWN, MR_COUNT FROM (  "
+ 			+ "SELECT ORDER_CODE,icdcm1, COUNT(ICDCM1) AS MR_COUNT , AVG(ORDER_CODE_count) AS AVG, STDDEV(ORDER_CODE_count) STD FROM (  "
+ 			+ "SELECT ip.ORDER_CODE, count(ip.ORDER_CODE) AS ORDER_CODE_count , ip.MR_ID, mr.ICDCM1 icdcm1 FROM ip_p IP, MR  "
+ 			+ "WHERE ip.MR_ID = MR.ID  and MR.MR_DATE BETWEEN ?1 AND ?2 "
+ 			+ "GROUP BY ip.ORDER_CODE, ip.MR_ID, MR.ICDCM1 ORDER BY ORDER_CODE  "
+ 			+ ") TEMP  "
+ 			+ "GROUP BY ORDER_CODE , icdcm1 ORDER BY ORDER_CODE , icdcm1 ) temp2  "
+ 			+ "WHERE avg > 1 AND MR_COUNT >= 30  "
+ 			+ "GROUP BY ICDCM1, ORDER_CODE, AVG , STD, MR_COUNT ORDER BY AVG DESC", nativeQuery = true)
+ 	public List<Map<String, Object>> calculate(String sDate, String eDate);
  	
  	/**
  	 * 由支付準則代碼和MRid查詢
@@ -153,4 +154,111 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  			+ "and ipp.ORDER_CODE = ?1 and ipp.MR_ID in (?2) "
  			+ "group by ipp.ORDER_CODE, ipd.ROC_ID, ipd.MR_ID", nativeQuery = true)
  	public List<Map<String, Object>> getListCountByOrderCodeAndMrid(String code, List<String> mrid);
+ 	/**
+ 	 * 取得民國年起迄日
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select temp.MR_ID, ipp.START_TIME / 10000 as START_TIME , ipp.END_TIME / 10000 as END_TIME from ( "
+ 			+ "select MR_ID , MAX(END_TIME) as END_TIME "
+ 			+ "from ip_p "
+ 			+ "group by MR_ID) temp, ip_p ipp "
+ 			+ "where ipp.MR_ID = temp.MR_ID and ipp.END_TIME = temp.END_TIME and ipp.MR_ID in (?1) "
+ 			+ "group by temp.MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getTimeListByMrid(List<String> mrid);
+ 	/**
+ 	 * 由支付準則代碼和MRid查詢，查詢一天之內次數
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  ORDER_CODE, MR_ID ,  sum(TOTAL_Q) as TOTAL from ip_p where (END_TIME - START_TIME) <= 10000  and ORDER_CODE = ?1 and MR_ID in (?2) group by ORDER_CODE, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListOneDayByOrderCodeAndMrid(String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid和天數查詢，查詢特定天之內次數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  ORDER_CODE, MR_ID ,  sum(TOTAL_Q) as TOTAL from ip_p where (END_TIME - START_TIME) <= ?1 * 10000  and ORDER_CODE = ?2 and MR_ID in (?3) group by ORDER_CODE, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListByOrderCodeAndMridAndDays(int days, String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid和天數查詢，查詢特定天之內次數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select ipp.ORDER_CODE, ipd.ROC_ID ,  sum(ipp.TOTAL_Q) as TOTAL from ip_p ipp, ip_d ipd  "
+ 			+ "where ipp.IPD_ID = ipd.id and  (ipp.END_TIME - ipp.START_TIME) <= ?1 * 10000 and ipp.ORDER_CODE = ?2 and ipp.MR_ID in (?3) "
+ 			+ "group by ipp.ORDER_CODE, ipd.ROC_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListRocIdByOrderCodeAndMridAndDays(int days, String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 由支付準則代碼和MRid和天數查詢，查詢超過特定天之內次數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select  ORDER_CODE, MR_ID ,  sum(TOTAL_Q) as TOTAL from ip_p where (END_TIME - START_TIME) > ?1 * 10000  and ORDER_CODE = ?2 and MR_ID in (?3) group by ORDER_CODE, MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListOverByOrderCodeAndMridAndDays(int days, String code, List<String> mrid);
+ 	/**
+ 	 * 藥用計算超過天數
+ 	 * @param days
+ 	 * @param code
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select ORDER_CODE, TOTAL_Q, MR_ID, START_TIME, END_TIME, (END_TIME - START_TIME) / 10000 as DIFF "
+ 			+ "from ip_p where (END_TIME - START_TIME) > ?1 * 10000 and order_code = ?2 and MR_ID in (?3) order by MR_ID", nativeQuery = true)
+ 	public List<Map<String, Object>> getListByDaysAndCodeAndMrid(int days, String code, List<String> mrid);
+ 	
+ 	/**
+ 	 * 取得同drungNo的rocid筆數資料
+ 	 * @param durgNo
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select ipd.ROC_ID, ipp.START_TIME, ipp.END_TIME, ipp.MR_ID, (ipp.END_TIME- ipp.START_TIME) as DIFF, ipp.TOTAL_Q from ip_p ipp, ip_d ipd "
+ 			+ "where ipp.ipd_ID = ipd.id and ipd.ROC_ID in ( "
+ 			+ "select ROC_ID from ( "
+ 			+ "select  ipd.ROC_ID, count( ipd.ROC_ID) as COUNT from ip_p ipp, ip_d ipd "
+ 			+ "where ipp.ipd_ID = ipd.id  "
+ 			+ "and ipp.ORDER_CODE = ?1  and ipp.mr_id in (?2) "
+ 			+ "group by ipd.ROC_ID) temp "
+ 			+ "where COUNT > 1)  "
+ 			+ "and ipp.ORDER_CODE = ?1 order by ROC_ID , END_TIME desc", nativeQuery = true)
+ 	public List<Map<String, Object>> getRocIdCount(String durgNo, List<String> mrid);
+ 	
+ 	/**
+ 	 * 取得該orderCode的各病例總數
+ 	 * @param durgNo
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select * from ( "
+ 			+ "select ipd.ROC_ID, count(ipd.ROC_ID), sum( ipp.TOTAL_Q) as TOTAL from ip_p ipp, ip_d ipd "
+ 			+ "where ipp.ipd_ID = ipd.ID "
+ 			+ "and ipp.ORDER_CODE = ?1 "
+ 			+ "and ipp.MR_ID in (?2) "
+ 			+ "group by ipd.ROC_ID) temp", nativeQuery = true)
+ 	public List<Map<String, Object>> getRocidTotalByDrugNoandMrid(String durgNo, List<String> mrid);
+ 	/**
+ 	 * 取得相差分鐘資料
+ 	 * @param mrid
+ 	 * @return
+ 	 */
+ 	@Query(value = "select MR_ID,TOTAL_Q, START_TIME, END_TIME, "
+ 			+ "case when (END_TIME - START_TIME) <= 40 then (END_TIME - START_TIME) "
+ 			+ "when (END_TIME - START_TIME) > 41 and (END_TIME - START_TIME) <= 120 then (END_TIME - START_TIME) - 40 "
+ 			+ "when (END_TIME - START_TIME) > 121 and (END_TIME - START_TIME) <= 240 then (END_TIME - START_TIME) - 80 "
+ 			+ "when (END_TIME - START_TIME) > 241 and (END_TIME - START_TIME) <= 360 then (END_TIME - START_TIME) - 120 "
+ 			+ "else (END_TIME - START_TIME) "
+ 			+ "end  DIFF "
+ 			+ "from ip_p where MR_ID in (?1)", nativeQuery = true)
+ 	public List<Map<String, Object>> getAllListByMrid(List<String> mrid);
 }
