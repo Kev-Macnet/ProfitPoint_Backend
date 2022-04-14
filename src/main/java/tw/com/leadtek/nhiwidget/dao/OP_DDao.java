@@ -53,24 +53,35 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   /**
    * 取得指定區間的病歷數、申報點數及部份負擔點數
    */
-  @Query(value = "SELECT * FROM " + 
-      "(SELECT COUNT(1) AS ALL_COUNT FROM MR WHERE MR_DATE >= ?1 AND MR_DATE <=?2) a," + 
-      "(SELECT COUNT(1) AS OP_ALL_COUNT FROM MR WHERE DATA_FORMAT ='10' AND MR_DATE >= ?3 AND MR_DATE <=?4) b," + 
-      "(SELECT COUNT(1) AS OP_COUNT FROM MR WHERE DATA_FORMAT ='10' AND FUNC_TYPE <> '22' AND MR_DATE >= ?5 AND MR_DATE <=?6) c ," + 
-      "(SELECT COUNT(1) AS OP_EM_COUNT FROM MR WHERE DATA_FORMAT ='10' AND FUNC_TYPE = '22' AND MR_DATE >= ?7 AND MR_DATE <=?8) d," + 
-      "(SELECT COUNT(1) AS IP_COUNT FROM MR WHERE DATA_FORMAT ='20' AND MR_DATE >= ?9 AND MR_DATE <=?10) e," + 
-      "(SELECT SUM(T_APPL_DOT) AS APPL_OP_ALL FROM MR, OP_D WHERE MR_DATE >= ?11 AND MR_DATE <=?12 AND OP_D.MR_ID = MR.ID) f," + 
-      "(SELECT SUM(T_APPL_DOT) AS APPL_OP FROM MR, OP_D WHERE MR_DATE >= ?13 AND MR_DATE <=?14 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE <> '22') g," + 
-      "(SELECT SUM(T_APPL_DOT) AS APPL_EM FROM MR, OP_D WHERE MR_DATE >= ?15 AND MR_DATE <=?16 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE = '22') h," + 
-      "(SELECT SUM(IP_D.APPL_DOT) AS APPL_IP FROM MR, IP_D WHERE MR_DATE >= ?17 AND MR_DATE <=?18 AND IP_D.MR_ID = MR.ID) i," + 
-      "(SELECT SUM(PART_DOT) AS PART_OP_ALL FROM MR, OP_D WHERE MR_DATE >= ?19 AND MR_DATE <=?20 AND OP_D.MR_ID = MR.ID) j," + 
-      "(SELECT SUM(PART_DOT) AS PART_OP FROM MR, OP_D WHERE MR_DATE >= ?21 AND MR_DATE <=?22 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE <> '22') k," + 
-      "(SELECT SUM(PART_DOT) AS PART_EM FROM MR, OP_D WHERE MR_DATE >= ?23 AND MR_DATE <=?24 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE = '22') l," + 
-      "(SELECT SUM(PART_DOT) AS PART_IP FROM MR, IP_D WHERE MR_DATE >= ?25 AND MR_DATE <=?26 AND IP_D.MR_ID = MR.ID) m", nativeQuery = true) 
+  @Query(value = "SELECT * FROM "
+      + "(SELECT COUNT(1) AS ALL_COUNT FROM MR WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2) a,"
+      + "(SELECT COUNT(1) AS OP_ALL_COUNT FROM MR WHERE DATA_FORMAT ='10' AND MR_END_DATE >= ?3 AND MR_END_DATE <=?4) b,"
+      + "(SELECT COUNT(1) AS OP_COUNT FROM MR WHERE DATA_FORMAT ='10' AND FUNC_TYPE <> '22' AND MR_END_DATE >= ?5 AND MR_END_DATE <=?6) c ,"
+      + "(SELECT COUNT(1) AS OP_EM_COUNT FROM MR WHERE DATA_FORMAT ='10' AND FUNC_TYPE = '22' AND MR_END_DATE >= ?7 AND MR_END_DATE <=?8) d,"
+      + "(SELECT COUNT(1) AS IP_COUNT FROM MR WHERE DATA_FORMAT ='20' AND MR_END_DATE >= ?9 AND MR_END_DATE <=?10) e,"
+      + "(SELECT SUM(T_APPL_DOT) AS APPL_OP_ALL FROM MR, OP_D WHERE MR_END_DATE >= ?11 AND MR_END_DATE <=?12 AND OP_D.MR_ID = MR.ID) f,"
+      + "(SELECT SUM(T_APPL_DOT) AS APPL_OP FROM MR, OP_D WHERE MR_END_DATE >= ?13 AND MR_END_DATE <=?14 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE <> '22') g,"
+      + "(SELECT SUM(T_APPL_DOT) AS APPL_EM FROM MR, OP_D WHERE MR_END_DATE >= ?15 AND MR_END_DATE <=?16 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE = '22') h,"
+      + "(SELECT SUM(IP_D.APPL_DOT) AS APPL_IP FROM MR, IP_D WHERE MR_END_DATE >= ?17 AND MR_END_DATE <=?18 AND IP_D.MR_ID = MR.ID) i,"
+      + "(SELECT SUM(PART_DOT) AS PART_OP_ALL FROM MR, OP_D WHERE MR_END_DATE >= ?19 AND MR_END_DATE <=?20 AND OP_D.MR_ID = MR.ID) j,"
+      + "(SELECT SUM(PART_DOT) AS PART_OP FROM MR, OP_D WHERE MR_END_DATE >= ?21 AND MR_END_DATE <=?22 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE <> '22') k,"
+      + "(SELECT SUM(PART_DOT) AS PART_EM FROM MR, OP_D WHERE MR_END_DATE >= ?23 AND MR_END_DATE <=?24 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE = '22') l,"
+      + "(SELECT SUM(PART_DOT) AS PART_IP FROM MR, IP_D WHERE MR_END_DATE >= ?25 AND MR_END_DATE <=?26 AND IP_D.MR_ID = MR.ID) m,"
+      + "(SELECT SUM(OP_D.OWN_EXPENSE) AS OWN_EXPENSE_OP_ALL FROM MR, OP_D WHERE MR_END_DATE >= ?27 AND MR_END_DATE <=?28 AND OP_D.MR_ID = MR.ID) n,"
+      + "(SELECT SUM(OP_D.OWN_EXPENSE) AS OWN_EXPENSE_OP FROM MR, OP_D WHERE MR_END_DATE >= ?29 AND MR_END_DATE <=?30 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE <> '22') o,"
+      + "(SELECT SUM(OP_D.OWN_EXPENSE) AS OWN_EXPENSE_EM FROM MR, OP_D WHERE MR_END_DATE >= ?31 AND MR_END_DATE <=?32 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE = '22') p,"
+      + "(SELECT SUM(IP_D.OWN_EXPENSE) AS OWN_EXPENSE_IP FROM MR, IP_D WHERE MR_END_DATE >= ?33 AND MR_END_DATE <=?34 AND IP_D.MR_ID = MR.ID) q,"
+      + "(SELECT SUM(NO_APPL) AS NO_APPL_OP_ALL FROM MR, OP_D WHERE MR_END_DATE >= ?35 AND MR_END_DATE <=?36 AND OP_D.MR_ID = MR.ID) r,"
+      + "(SELECT SUM(NO_APPL) AS NO_APPL_OP FROM MR, OP_D WHERE MR_END_DATE >= ?37 AND MR_END_DATE <=?38 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE <> '22') s,"
+      + "(SELECT SUM(NO_APPL) AS NO_APPL_EM FROM MR, OP_D WHERE MR_END_DATE >= ?39 AND MR_END_DATE <=?40 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE = '22') t,"
+      + "(SELECT SUM(NO_APPL) AS NO_APPL_IP FROM MR, IP_D WHERE MR_END_DATE >= ?41 AND MR_END_DATE <=?42 AND IP_D.MR_ID = MR.ID) u",
+      nativeQuery = true)
   public List<Object[]> findPeriodPoint(Date sdate1, Date edate1,Date sdate2, Date edate2,Date sdate3, Date edate3,
       Date sdate4, Date edate4, Date sdate5, Date edate5,Date sdate6, Date edate6,Date sdate7, Date edate7,
       Date sdate8, Date edate8,Date sdate9, Date edate9, Date sdate10, Date edate10,Date sdate11, Date edate11,
-      Date sdate12, Date edate12,Date sdate13, Date edate13);
+      Date sdate12, Date edate12,Date sdate13, Date edate13,Date sdate14, Date edate14,Date sdate15, Date edate15,
+      Date sdate16, Date edate16,Date sdate17, Date edate17,Date sdate18, Date edate18,Date sdate19, Date edate19,
+      Date sdate20, Date edate20,Date sdate21, Date edate21);
   
   /**
    * 門診各科申報總點數
@@ -79,7 +90,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return  [科別代碼, 申報金額, 件數]
    */
   @Query(value = "SELECT OP_D.FUNC_TYPE, SUM(T_APPL_DOT), COUNT(1) FROM MR, OP_D " + 
-      "WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND OP_D.MR_ID = MR.ID GROUP BY OP_D.FUNC_TYPE", nativeQuery = true) 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND OP_D.MR_ID = MR.ID GROUP BY OP_D.FUNC_TYPE", nativeQuery = true) 
   public List<Object[]> findApplPointGroupByFuncType(Date sdate, Date edate);
   
   /**
@@ -89,8 +100,19 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return  [科別代碼, 部分負擔金額, 件數]
    */
   @Query(value = "SELECT OP_D.FUNC_TYPE, SUM(PART_DOT), COUNT(1) FROM MR, OP_D " + 
-      "WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND OP_D.MR_ID = MR.ID GROUP BY OP_D.FUNC_TYPE", nativeQuery = true) 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND OP_D.MR_ID = MR.ID GROUP BY OP_D.FUNC_TYPE", nativeQuery = true) 
   public List<Object[]> findPartPointGroupByFuncType(Date sdate, Date edate);
+  
+  /**
+   * 門診各科自費總金額
+   * @param sdate
+   * @param edate
+   * @return  [科別代碼, 部分負擔金額, 件數]
+   */
+  @Query(value = "SELECT OP_D.FUNC_TYPE, SUM(OP_D.OWN_EXPENSE), COUNT(1) FROM MR, OP_D " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND OP_D.MR_ID = MR.ID AND "
+      + "OP_D.OWN_EXPENSE > 0 GROUP BY OP_D.FUNC_TYPE", nativeQuery = true) 
+  public List<Object[]> findOwnExpenseGroupByFuncType(Date sdate, Date edate);
   
   /**
    * 取得指定區間的(1)門急診點數,(2)住院點數(申報+部分負擔),(3)急診點數,(4)門診人次,(5)住院人次(6)出院人次

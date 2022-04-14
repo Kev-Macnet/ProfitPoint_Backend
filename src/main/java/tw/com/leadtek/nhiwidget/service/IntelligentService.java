@@ -18,7 +18,6 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
-import javax.xml.XMLConstants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1599,4 +1598,5 @@ public class IntelligentService {
   public synchronized void setIntelligentRunning(int intelligentCode, boolean isRunning) {
     runningIntelligent.put(new Integer(intelligentCode), new Boolean(isRunning));
   }
+  
 }

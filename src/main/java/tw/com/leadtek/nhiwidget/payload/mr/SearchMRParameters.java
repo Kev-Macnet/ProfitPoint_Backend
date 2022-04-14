@@ -681,7 +681,7 @@ public class SearchMRParameters extends HomepageParameters {
   
   public void setOthers(Boolean notOthers, Integer minPoints, Integer maxPoints, String funcType,
       String funcTypec, String prsnId, String prsnName, String pharName, String pharId, 
-      String patientName, String patientId) {
+      String patientName, String patientId, String applId, String applName) {
     this.notOthers = notOthers;
     this.minPoints = minPoints;
     this.maxPoints = maxPoints;
@@ -702,6 +702,8 @@ public class SearchMRParameters extends HomepageParameters {
     this.pharName = pharName;
     this.patientName = patientName;
     this.patientId = patientId;
+    this.applId = applId;
+    this.applName = applName;
   }
   
   public void setICD(Boolean notICD, String icdAll, String icdCMMajor, String icdCMSec, String icdPCS) {

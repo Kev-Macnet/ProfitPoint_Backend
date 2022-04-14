@@ -209,7 +209,7 @@ public class AIService {
 				if (count > orderDiffUl) {
 					float clinicUp = ((float) (count / orderDiffUl) * 100);
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_UL_WORDING");
-					msg = String.format(paraResult + "%", map.get("MR_ID").toString(), map.get("ICDCM1").toString(),
+					msg = String.format(paraResult + "%", map.get("ID").toString(), map.get("ICDCM1").toString(),
 							map.get("ORDER_CODE"), orderDiffUl, clinicUp);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);
@@ -274,7 +274,7 @@ public class AIService {
 				if (count > orderDiffUl) {
 					float clinicUp = ((float) (count / orderDiffUl) * 100);
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_UL_WORDING");
-					msg = String.format(paraResult + "%", map.get("MR_ID").toString(), map.get("ICDCM1").toString(),
+					msg = String.format(paraResult + "%", map.get("ID").toString(), map.get("ICDCM1").toString(),
 							map.get("ORDER_CODE"), orderDiffUl, clinicUp);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);

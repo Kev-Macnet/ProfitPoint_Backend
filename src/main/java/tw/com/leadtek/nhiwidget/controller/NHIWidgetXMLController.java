@@ -374,7 +374,7 @@ public class NHIWidgetXMLController extends BaseController {
     
     SearchMRParameters smrp = new SearchMRParameters();
     smrp.setBasic(applY, applM, sdate, edate, indate, outdate, inhMrId, inhClinicId, dataFormat);
-    smrp.setOthers(notOthers, minPoints, maxPoints, funcType, funcTypec, prsnId, prsnName, pharName, pharId, patientName, patientId);
+    smrp.setOthers(notOthers, minPoints, maxPoints, funcType, funcTypec, prsnId, prsnName, pharName, pharId, patientName, patientId, applId, applName);
     smrp.setICD(notICD, icdAll, icdCMMajor, icdCMSec, icdPCS);
     smrp.setOrder(notOrderCode, orderCode, drugUse, inhCode, inhCodeDrugUse);
     smrp.setApplStatus(notApplStatus, applThisMonth, applNextMonth, NoAppl, ownExpItem);
@@ -681,11 +681,12 @@ public class NHIWidgetXMLController extends BaseController {
   @PostMapping("/nhixml/note")
   public ResponseEntity<BaseResponse> newMrNote(
       @ApiParam(name = "id", value = "病歷id",
-          example = "13220") @RequestParam(required = true) String id,
+          example = "13220") @RequestParam(required = false) String id,
       @ApiParam(name = "isNote", value = "是否為病歷資訊備註，true:是，false:否",
-          example = "13220") @RequestParam(required = true) Boolean isNote,
+          example = "13220") @RequestParam(required = false) Boolean isNote,
       @ApiParam(name = "note", value = "備註內容",
-          example = "新增病歷資訊備註內容") @RequestParam(required = true) String note) {
+          example = "新增病歷資訊備註內容") @RequestParam(required = false) String note,
+      @ApiParam(value = "備註內容，id:帶病歷id，note:備註內容") @RequestBody(required = false) MrNotePayload notePayload) {
     UserDetailsImpl user = getUserDetails();
     if (user == null) {
       BaseResponse br = new BaseResponse();
@@ -694,10 +695,15 @@ public class NHIWidgetXMLController extends BaseController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
     }
     MrNotePayload request = new MrNotePayload();
-    request.setNote(note);
     request.setEditor(user.getUsername());
     request.setActionType("新增");
-    return returnAPIResult(xmlService.newMrNote(request, id, false));
+    if (notePayload != null) {
+      request.setNote(notePayload.getNote());
+      return returnAPIResult(xmlService.newMrNote(request, notePayload.getId().toString(), false));
+    } else {
+      request.setNote(note);
+      return returnAPIResult(xmlService.newMrNote(request, id, false));
+    }
   }
 
   @ApiOperation(value = "修改病歷資訊備註/核刪註記", notes = "修改病歷資訊備註/核刪註記")

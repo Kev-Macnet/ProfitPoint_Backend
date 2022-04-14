@@ -47,7 +47,7 @@ public class PointQuantityList implements Serializable {
         return;
       }
     }
-    all.add(npq);
+    all.add(npq.clone());
   }
 
   public List<NameCodePointQuantity> getAll() {

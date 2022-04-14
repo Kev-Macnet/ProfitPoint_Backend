@@ -286,14 +286,15 @@ public class MR {
       this.mrEndDate = DateTool.convertChineseToYear(ipd.getApplEndDate());
     }
     this.totalDot = 0;
-    if (ipd.getApplDot() != null) {
-      this.totalDot = ipd.getApplDot();
+    // 醫療+不計入+自費
+    if (ipd.getMedDot() != null) {
+      this.totalDot = ipd.getMedDot();
     }
     if (ipd.getNonApplDot() != null) {
       this.totalDot += ipd.getNonApplDot();
     }
-    if (ipd.getPartDot() != null) {
-      this.totalDot += ipd.getPartDot();
+    if (ipd.getOwnExpense() != null) {
+      this.totalDot += ipd.getOwnExpense();
     }
     this.drgCode = ipd.getTwDrgCode();
     this.applDot = ipd.getApplDot();
@@ -941,20 +942,16 @@ public class MR {
     } else {
       this.totalDot = opd.getTotalDot();
     }
-    
-    if (diffList != null && opd.getPrsnId() != null && !opd.getPrsnId().equals(this.prsnId)) {
-      FILE_DIFF fd = new FILE_DIFF(id, "prsnId", opd.getPrsnId());
-      diffList.add(fd);
-    } else {
-      this.prsnId = opd.getPrsnId();
+    if (this.applDot == null) {
+      this.applDot = new Integer(0);
     }
-    
-    if (diffList != null && opd.getTotalApplDot() != null && opd.getTotalApplDot().intValue() != this.applDot) {
+    if (diffList != null && opd.getTotalApplDot() != null && opd.getTotalApplDot().intValue() != this.applDot.intValue()) {
       FILE_DIFF fd = new FILE_DIFF(id, "applDot", opd.getTotalApplDot().toString());
       diffList.add(fd);
     } else {
       this.applDot = opd.getTotalApplDot();
     }
+    
 //    if (diffList != null && (opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()) != this.ownExpense) {
 //      FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", String.valueOf(opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()));
 //      diffList.add(fd);

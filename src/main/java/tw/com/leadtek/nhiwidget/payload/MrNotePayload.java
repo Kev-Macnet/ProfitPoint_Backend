@@ -19,10 +19,10 @@ public class MrNotePayload implements Serializable {
   @ApiModelProperty(value = "id", required = false)
   private Long id;
 
-  @ApiModelProperty(value = "用戶操作類別，新增、 編輯、刪除", example = "新增", required = true)
+  @ApiModelProperty(value = "用戶操作類別，新增、 編輯、刪除", example = "新增", required = false)
   private String actionType;
 
-  @ApiModelProperty(value = "備註內容", example = "請吳醫師補上報告分析資訊", required = true)
+  @ApiModelProperty(value = "備註內容", example = "請吳醫師補上報告分析資訊", required = false)
   private String note;
 
   @ApiModelProperty(value = "核刪醫令", example = "0107C", required = false)

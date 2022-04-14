@@ -58,7 +58,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @return [科別代碼, 申報金額, 件數]
    */
   @Query(value = "SELECT IP_D.FUNC_TYPE, SUM(IP_D.APPL_DOT), COUNT(1) FROM MR, IP_D " + 
-      "WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND IP_D.MR_ID = MR.ID GROUP BY IP_D.FUNC_TYPE", nativeQuery = true) 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_D.MR_ID = MR.ID GROUP BY IP_D.FUNC_TYPE", nativeQuery = true) 
   public List<Object[]> findApplPointGroupByFuncType(Date sdate, Date edate);
   
   /**
@@ -68,8 +68,18 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @return [科別代碼, 部分負擔金額, 件數]
    */
   @Query(value = "SELECT IP_D.FUNC_TYPE, SUM(PART_DOT), COUNT(1) FROM MR, IP_D " + 
-      "WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND IP_D.MR_ID = MR.ID GROUP BY IP_D.FUNC_TYPE", nativeQuery = true) 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_D.MR_ID = MR.ID GROUP BY IP_D.FUNC_TYPE", nativeQuery = true) 
   public List<Object[]> findPartPointGroupByFuncType(Date sdate, Date edate);
+  
+  /**
+   * 住院各科自費總金額
+   * @param sdate
+   * @param edate
+   * @return [科別代碼, 部分負擔金額, 件數]
+   */
+  @Query(value = "SELECT IP_D.FUNC_TYPE, SUM(IP_D.OWN_EXPENSE), COUNT(1) FROM MR, IP_D " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_D.MR_ID = MR.ID GROUP BY IP_D.FUNC_TYPE", nativeQuery = true) 
+  public List<Object[]> findOwnExpenseGroupByFuncType(Date sdate, Date edate);
   
   /**
    * 取得指定區間的DRG件數及點數

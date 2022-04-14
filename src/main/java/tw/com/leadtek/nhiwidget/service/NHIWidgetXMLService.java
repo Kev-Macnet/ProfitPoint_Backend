@@ -351,10 +351,11 @@ public class NHIWidgetXMLService {
         Optional<MR> optional = mrDao.findById(opd.getMrId());
         if (optional.isPresent()) {
           mr = optional.get();
-          if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value()
+          if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value() 
               && shouldCompareWarning(mr, cw)) {
             diffList = new ArrayList<FILE_DIFF>();
             clearFileDiff(mr.getId());
+            checkDiffOpd(diffList, opd);
           }
           mr.updateMR(opd, diffList, codeTableService);
           if (diffList != null && diffList.size() > 0) {
@@ -821,6 +822,7 @@ public class NHIWidgetXMLService {
   private void addDiff(Long mrId, String columnName, int seqNo, IP_P ippNew,
       List<FILE_DIFF> diffList, List<MO> moList) {
     FILE_DIFF fd = new FILE_DIFF(mrId, "mos", columnName);
+    // 因 seqNo 由 1 開始，所以要 - 1
     fd.setArrayIndex(seqNo);
     diffList.add(fd);
     if (ippNew != null) {
@@ -844,7 +846,8 @@ public class NHIWidgetXMLService {
   private void addDiff(Long mrId, String columnName, int seqNo, OP_P oppNew,
       List<FILE_DIFF> diffList, List<MO> moList) {
     FILE_DIFF fd = new FILE_DIFF(mrId, "mos", columnName);
-    fd.setArrayIndex(seqNo);
+    // 因 seqNo 由 1 開始，所以要 - 1
+    fd.setArrayIndex(seqNo - 1);
     diffList.add(fd);
     if (oppNew != null) {
       MO mo = new MO();
@@ -1868,14 +1871,13 @@ public class NHIWidgetXMLService {
       CriteriaBuilder cb, SearchMRParameters smrp) {
     List<Predicate> predicate = new ArrayList<Predicate>();
     if (smrp.getsDate() != null && smrp.geteDate() != null) {
-      predicate.add(cb.between(root.get("mrDate"), smrp.getsDate(), smrp.geteDate()));
+      predicate.add(cb.between(root.get("mrEndDate"), smrp.getsDate(), smrp.geteDate()));
     }
     boolean notOthers = smrp.getNotOthers() == null ? false : smrp.getNotOthers().booleanValue();
 
     if (smrp.getMinPoints() != null && smrp.getMaxPoints() != null) {
       if (notOthers) {
-        predicate.add(cb.lessThan(root.get("totalDot"), smrp.getMinPoints()));
-        predicate.add(cb.greaterThan(root.get("totalDot"), smrp.getMaxPoints()));
+        predicate.add(cb.or(cb.lessThan(root.get("totalDot"), smrp.getMinPoints()), cb.greaterThan(root.get("totalDot"), smrp.getMaxPoints())));
       } else {
         predicate.add(cb.between(root.get("totalDot"), smrp.getMinPoints(), smrp.getMaxPoints()));
       }
@@ -5704,6 +5706,7 @@ public class NHIWidgetXMLService {
             && shouldCompareWarning(mr, cw)) {
           diffList = new ArrayList<FILE_DIFF>();
           clearFileDiff(mr.getId());
+          checkDiffOpd(diffList, opd);
         }
         mr.updateMR(opd, diffList, codeTableService);
         if (diffList != null && diffList.size() > 0) {
@@ -5974,7 +5977,10 @@ public class NHIWidgetXMLService {
     result.setPayType(values.get("PAY_TYPE"));
     result.setFuncType(values.get("FUNC_TYPE"));
     result.setInDate(values.get("IN_DATE"));
-    result.setOutDate(values.get("OUT_DATE"));
+    if (values.get("OUT_DATE") != null && values.get("OUT_DATE").length() > 6) {
+      result.setOutDate(values.get("OUT_DATE"));
+      result.setLeaveDate(DateTool.convertChineseToYear(result.getOutDate()));      
+    }
     result.setApplStartDate(values.get("APPL_START_DATE"));
     result.setApplEndDate(values.get("APPL_END_DATE"));
     if (values.get("E_BED_DAY") != null && values.get("E_BED_DAY").length() > 0) {
@@ -6706,5 +6712,78 @@ public class NHIWidgetXMLService {
       ippDao.saveAll(ippBatch);
     }
     return true;
+  }
+  
+  public void readOpdSOPSheet(HSSFSheet sheet) {
+    // 由標題列取得各欄位名稱的位置
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
+    // 第一筆資料
+    HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(1));
+
+    String applYm = getApplYmByInhNo(values);
+    if (applYm == null) {
+      //return;
+    }
+  
+    for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+      HSSFRow row = sheet.getRow(i);
+      if (row == null) {
+        // System.out.println("sheet:" + i + ", row=" + j + " is null");
+        continue;
+      }
+      values = ExcelUtil.readCellValue(columnMap, row);
+      String ot = values.get("OBJECT_TEXT");
+      for(int j=0;j<ot.length(); j++) {
+        if (ot.charAt(j) == '\r') {
+          System.out.println("is slash r \r");
+        } if (ot.charAt(j) == '\n') {
+          System.out.println("is slash n \n");
+        } 
+      }
+      System.out.println(values.get("OBJECT_TEXT"));
+      if (values != null) {
+        break;
+      }
+    }
+  }
+  
+  public void checkDiffOpd(List<FILE_DIFF> list, OP_D newOpd) {
+    Optional<OP_D> optional = opdDao.findById(newOpd.getId());
+    if (!optional.isPresent()) {
+      return;
+    }
+    OP_D old = optional.get();
+    if (old.getCureItemNo1() == null && newOpd.getCureItemNo1() == null) {
+      return;
+    } else if (old.getCureItemNo1() == null && newOpd.getCureItemNo1() != null) {
+      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 0, newOpd.getCureItemNo1()));
+    } else if (old.getCureItemNo1() != null && !old.getCureItemNo1().equals(newOpd.getCureItemNo1())) {
+      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 0, newOpd.getCureItemNo1()));
+    }
+    
+    if (old.getCureItemNo2() == null && newOpd.getCureItemNo2() == null) {
+      return;
+    } else if (old.getCureItemNo2() == null && newOpd.getCureItemNo2() != null) {
+      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 1, newOpd.getCureItemNo2()));
+    } else if (old.getCureItemNo2() != null && !old.getCureItemNo2().equals(newOpd.getCureItemNo2())) {
+      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 1, newOpd.getCureItemNo2()));
+    }
+    
+    if (old.getCureItemNo3() == null && newOpd.getCureItemNo3() == null) {
+      return;
+    } else if (old.getCureItemNo3() == null && newOpd.getCureItemNo3() != null) {
+      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 2, newOpd.getCureItemNo3()));
+    } else if (old.getCureItemNo3() != null && !old.getCureItemNo3().equals(newOpd.getCureItemNo3())) {
+      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 2, newOpd.getCureItemNo3()));
+    }
+    
+    if (old.getCureItemNo4() == null && newOpd.getCureItemNo4() == null) {
+      return;
+    } else if (old.getCureItemNo4() == null && newOpd.getCureItemNo4() != null) {
+      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 3, newOpd.getCureItemNo4()));
+    } else if (old.getCureItemNo4() != null && !old.getCureItemNo4().equals(newOpd.getCureItemNo4())) {
+      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 3, newOpd.getCureItemNo4()));
+    }
+    
   }
 }

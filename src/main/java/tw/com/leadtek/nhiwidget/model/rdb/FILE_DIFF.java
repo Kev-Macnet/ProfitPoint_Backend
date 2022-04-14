@@ -57,6 +57,14 @@ public class FILE_DIFF {
     this.arrayIndex = -1;
     createAt = new Date();
   }
+  
+  public FILE_DIFF(Long mrId, String name, int index, String newValue) {
+    this.mrId = mrId;
+    this.name = name;
+    this.newValue = newValue;
+    this.arrayIndex = index;
+    createAt = new Date();
+  }
 
   /**
    * 序號

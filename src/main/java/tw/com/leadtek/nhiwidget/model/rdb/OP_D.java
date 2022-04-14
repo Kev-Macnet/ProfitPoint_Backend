@@ -494,6 +494,13 @@ public class OP_D {
   @Column(name = "OWN_EXPENSE")
   @JsonIgnore
   private Integer ownExpense;
+  
+  /**
+   * 不申報點數
+   */
+  @Column(name = "NO_APPL")
+  @JsonIgnore
+  private Integer noAppl;
 
   /**
    * 更新時間
@@ -1304,5 +1311,13 @@ public class OP_D {
   public void setOwnExpense(Integer ownExpense) {
     this.ownExpense = ownExpense;
   }
-  
+
+  public Integer getNoAppl() {
+    return noAppl;
+  }
+
+  public void setNoAppl(Integer noAppl) {
+    this.noAppl = noAppl;
+  }
+
 }
