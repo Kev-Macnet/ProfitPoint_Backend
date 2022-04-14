@@ -496,17 +496,16 @@ public class AIService {
 	 * @param date
 	 * @return
 	 */
-	public Map<String, Object> clinicMedicine(String date) {
+	public Map<String, Object> clinicMedicine(String sDate, String eDate) {
 		Map<String, Object> data = new HashMap<String, Object>();
 		try {
-			String dateStr = minusYear(date);
 			String msg = "";
 			String paraResult = "";
 			List<ICDCM_DRUG> icdList = icdcmDrugDao.queryByDataFormat("10");
 			/// 取得主診斷count
-			List<Map<String, Object>> icdmcList = mrDao.getIcdcmCount(dateStr, "10");
+			List<Map<String, Object>> icdmcList = mrDao.getIcdcmCountOPByDate(sDate, eDate);
 			/// 取得藥用count
-			List<Map<String, Object>> drugnoList = mrDao.getDrugNoCount(dateStr, "10");
+			List<Map<String, Object>> drugnoList = mrDao.getDrugNoCount(sDate, eDate);
 			List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
 			Map<String, Object> model = new HashMap<String, Object>();
 			List<ICDCM_DRUG> icdcmList = new ArrayList<ICDCM_DRUG>();
@@ -517,7 +516,7 @@ public class AIService {
 					for (Map<String, Object> map2 : icdmcList) {
 						if (map1.get("ICDCM1").toString().equals(map2.get("ICDCM1"))) {
 							int isDrug = 1;
-							PAY_CODE pcModel = pcDao.findByCodeOne(map1.get("DRUG_NO").toString());
+							PAY_CODE pcModel = pcDao.findDataByCode(map1.get("DRUG_NO").toString());
 
 							if (pcModel != null) {
 								if (pcModel.getCodeType() == "西藥藥品") {
@@ -590,7 +589,7 @@ public class AIService {
 					count2++;
 				}
 			}
-			List<Map<String, Object>> idList = mrDao.getIdByDrugNoCount(dateStr);
+			List<Map<String, Object>> idList = mrDao.getIdByDrugNoCount(sDate, eDate);
 			for (ICDCM_DRUG idModel : icdList) {
 				for (Map<String, Object> mapModel : dataList) {
 					for (Map<String, Object> map : idList) {
@@ -603,7 +602,7 @@ public class AIService {
 								float a = (float) math;
 								float b = (float) iModelPer;
 								float fPer = a / b;
-								int round = Math.round(fPer);
+								int round = Math.round(fPer * 100);
 								if (round < 5) {
 
 									paraResult = parametersService.getOneValueByName("INTELLIGENT",
@@ -622,7 +621,7 @@ public class AIService {
 								float a = (float) math;
 								float b = (float) iModelPer;
 								float fPer = a / b;
-								int round = Math.round(fPer);
+								int round = Math.round(fPer * 100);
 								if (round < 5) {
 
 									paraResult = parametersService.getOneValueByName("INTELLIGENT",
@@ -655,18 +654,17 @@ public class AIService {
 	 * @param date
 	 * @return
 	 */
-	public Map<String, Object> hospitalMedicine(String date) {
+	public Map<String, Object> hospitalMedicine(String sDate, String eDate) {
 		Map<String, Object> data = new HashMap<String, Object>();
 		try {
-			String dateStr = minusYear(date);
 			String msg = "";
 			String paraResult = "";
 			List<ICDCM_DRUG> icdList = icdcmDrugDao.queryByDataFormat("20");
 
 			/// 取得主診斷count
-			List<Map<String, Object>> icdmcList = mrDao.getIcdcmCount(dateStr, "20");
+			List<Map<String, Object>> icdmcList = mrDao.getIcdcmCountIPByDate(sDate,eDate);
 			/// 取得藥用count
-			List<Map<String, Object>> drugnoList = mrDao.getDrugNoCount(dateStr, "20");
+			List<Map<String, Object>> drugnoList = mrDao.getOderCodeCount(sDate,eDate);
 			List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
 			Map<String, Object> model = new HashMap<String, Object>();
 			List<ICDCM_DRUG> icdcmList = new ArrayList<ICDCM_DRUG>();
@@ -677,7 +675,7 @@ public class AIService {
 					for (Map<String, Object> map2 : icdmcList) {
 						if (map1.get("ICDCM1").toString().equals(map2.get("ICDCM1"))) {
 							int isDrug = 1;
-							PAY_CODE pcModel = pcDao.findByCodeOne(map1.get("DRUG_NO").toString());
+							PAY_CODE pcModel = pcDao.findDataByCode(map1.get("ORDER_CODE").toString());
 
 							if (pcModel != null) {
 								if (pcModel.getCodeType() == "西藥藥品") {
@@ -686,7 +684,7 @@ public class AIService {
 									isDrug = 2;
 								}
 							}
-							model.put("DRUGNO", map1.get("DRUG_NO"));
+							model.put("DRUGNO", map1.get("ORDER_CODE"));
 							model.put("DRUGNO_COUNT", map1.get("COUNT"));
 							model.put("ICDCM", map1.get("ICDCM1"));
 							model.put("IS_DRUG", isDrug);
@@ -708,7 +706,7 @@ public class AIService {
 					idModel.setTotal(t);
 					idModel.setUpdateAT(new Date());
 					idModel.setIcdcmdrugPK(
-							new ICDCM_DRUG_KEYS(m.get("ICDCM").toString(), m.get("DRUGNO").toString(), "10"));
+							new ICDCM_DRUG_KEYS(m.get("ICDCM").toString(), m.get("DRUGNO").toString(), "20"));
 					idModel.setPercent(math);
 					idModel.setIsdurug(Integer.parseInt(m.get("IS_DRUG").toString()));
 
@@ -719,7 +717,7 @@ public class AIService {
 
 			}
 			if (icdList.size() == 0) {
-				icdList = icdcmDrugDao.queryByDataFormat("10");
+				icdList = icdcmDrugDao.queryByDataFormat("20");
 			}
 			String drug11 = "";
 			String drug12 = "";
@@ -750,7 +748,7 @@ public class AIService {
 					count2++;
 				}
 			}
-			List<Map<String, Object>> idList = mrDao.getIdByDrugNoCount(dateStr);
+			List<Map<String, Object>> idList = mrDao.getIdByOderCodeCount(sDate, eDate);
 			for (ICDCM_DRUG idModel : icdList) {
 				for (Map<String, Object> mapModel : dataList) {
 					for (Map<String, Object> map : idList) {
@@ -763,7 +761,7 @@ public class AIService {
 								float a = (float) math;
 								float b = (float) iModelPer;
 								float fPer = a / b;
-								int round = Math.round(fPer);
+								int round = Math.round(fPer * 100);
 								if (round < 5) {
 
 									paraResult = parametersService.getOneValueByName("INTELLIGENT",
@@ -782,7 +780,7 @@ public class AIService {
 								float a = (float) math;
 								float b = (float) iModelPer;
 								float fPer = a / b;
-								int round = Math.round(fPer);
+								int round = Math.round(fPer * 100);
 								if (round < 5) {
 
 									paraResult = parametersService.getOneValueByName("INTELLIGENT",
@@ -815,13 +813,12 @@ public class AIService {
 	 * @param date
 	 * @return
 	 */
-	public Map<String, Object> hospitalDays(String date) {
+	public Map<String, Object> hospitalDays(String sDate, String eDate) {
 		Map<String, Object> data = new HashMap<String, Object>();
 
 		try {
-			String dateStr = minusYear2(date);
 			String msg = "";
-			List<Map<String, Object>> listHospitalizedMap = mrDao.hospitalDays(dateStr);
+			List<Map<String, Object>> listHospitalizedMap = mrDao.hospitalDays(sDate,eDate);
 			// 設定檔上限
 			int ipDays = Integer.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "IP_DAYS"));
 			for (Map<String, Object> map : listHospitalizedMap) {

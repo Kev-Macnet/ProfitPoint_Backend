@@ -89,6 +89,15 @@ public class AICotroller {
 	@Autowired
 	private PtOthersFeeServiceTask ptOthersFeeService;
 
+	/**
+	 * 費用差異-門診
+	 * 
+	 * @param sDate1
+	 * @param eDate1
+	 * @param sDate2
+	 * @param eDate2
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
 	public Object getClinicCostDiffData(@RequestParam(required = true) String sDate1, String eDate1, String sDate2,
@@ -96,55 +105,117 @@ public class AICotroller {
 		return aiService.clinicCostDiff(sDate1, eDate1, sDate2, eDate2);
 	}
 
+	/**
+	 * 費用差異-住院
+	 * 
+	 * @param sDate1
+	 * @param eDate1
+	 * @param sDate2
+	 * @param eDate2
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getHospitalCostDiffData(@RequestParam(required = true)  String sDate1, String eDate1, String sDate2,
+	public Object getHospitalCostDiffData(@RequestParam(required = true) String sDate1, String eDate1, String sDate2,
 			String eDate2) {
 		return aiService.hospitalCostDiff(sDate1, eDate1, sDate2, eDate2);
 	}
 
+	/**
+	 * 醫療行為差異-門診
+	 * 
+	 * @param sDate
+	 * @param eDate
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/getClinicMmedBehDiff", method = { RequestMethod.GET, RequestMethod.POST })
 	public Object getClinicMmedBehDiff(@RequestParam(required = true) String sDate, String eDate) {
 		return aiService.clinicMmedBehDiff(sDate, eDate);
 	}
 
+	/**
+	 * 醫療行為差異-住院
+	 * 
+	 * @param sDate
+	 * @param eDate
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalMmedBehDiff", method = { RequestMethod.GET, RequestMethod.POST })
 	public Object getHospitalMmedBehDiff(@RequestParam(required = true) String sDate, String eDate) {
 		return aiService.hospitalMmedBehDiff(sDate, eDate);
 	}
 
+	/**
+	 * 醫療行為差異-門診手術
+	 * 
+	 * @param sDate
+	 * @param eDate
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/getClinicOperation", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getClinicOperation(@RequestParam(required = true)String sDate, String eDate) {
-		return aiService.clinicOperaiton(sDate,eDate);
+	public Object getClinicOperation(@RequestParam(required = true) String sDate, String eDate) {
+		return aiService.clinicOperaiton(sDate, eDate);
 	}
 
+	/**
+	 * 醫療行為差異-住院手術
+	 * 
+	 * @param sDate
+	 * @param eDate
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalOperation", method = { RequestMethod.GET, RequestMethod.POST })
 	public Object getHospitalOperation(@RequestParam(required = true) String sDate, String eDate) {
-		return aiService.hospitalOperaiton(sDate,eDate);
+		return aiService.hospitalOperaiton(sDate, eDate);
 	}
 
+	/**
+	 * 用藥差異-門診
+	 * 
+	 * @param sDate
+	 * @param eDate
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/getClinicMedicine", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getClinicMedicine(@RequestParam(required = true) String date) {
-		return aiService.clinicMedicine(date);
+	public Object getClinicMedicine(@RequestParam(required = true) String sDate, String eDate) {
+		return aiService.clinicMedicine(sDate, eDate);
 	};
 
+	/**
+	 * 用藥差異-住院
+	 * 
+	 * @param sDate
+	 * @param eDate
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalMedicine", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getHospitalMedicine(@RequestParam(required = true) String date) {
-		return aiService.hospitalMedicine(date);
+	public Object getHospitalMedicine(@RequestParam(required = true) String sDate, String eDate) {
+		return aiService.hospitalMedicine(sDate, eDate);
 	};
-
+    /**
+     * 住院天數差異
+ 	 * @param sDate
+	 * @param eDate
+     * @return
+     */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalDays", method = { RequestMethod.GET, RequestMethod.POST })
-	public Object getHospitalDays(@RequestParam(required = true) String date) {
-		return aiService.hospitalDays(date);
+	public Object getHospitalDays(@RequestParam(required = true) String sDate, String eDate) {
+		return aiService.hospitalDays(sDate, eDate);
 	}
-
+	/**
+	 * 支付條件準則-門診診察費
+	 * 
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidOutpatientFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void vaidOutpatientFee(HttpServletRequest request, @RequestBody PtOutpatientFeePl params)
@@ -152,6 +223,12 @@ public class AICotroller {
 		ptOutpatientFeeService.vaidOutpatientFee(params);
 	}
 
+	/**
+	 * 支付條件準則-住院診察費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidInpatientFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void vaidInpatientFee(HttpServletRequest request, @RequestBody PtInpatientFeePl params)
@@ -159,106 +236,184 @@ public class AICotroller {
 		ptInpatientFeeService.validInpatienFee(params);
 	}
 
+	/**
+	 * 支付條件準則-病房費
+	 * 
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidWardFeee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void vaidWardFeee(HttpServletRequest request, @RequestBody PtWardFeePl params) throws ParseException {
 		ptWardFeeService.validWardFee(params);
 	}
 
+	/**
+	 * 支付條件準則-手術費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidSurgeryFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void vaidSurgeryFee(HttpServletRequest request, @RequestBody PtSurgeryFeePl params) throws ParseException {
 		ptSurgeryFeeService.validSurgeryFee(params);
 	}
-
+	/**
+	 * 支付條件準則-治療處置費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidTreatmentFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void vaidTreatmentFee(HttpServletRequest request, @RequestBody PtTreatmentFeePl params)
 			throws ParseException {
 		ptTreatmentFeeService.validTreatmentFee(params);
 	}
-
+	/**
+	 * 支付條件準則-管灌飲食與營養照護費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidTubeFeedingFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void vaidTubeFeedingFee(HttpServletRequest request, @RequestBody PtNutritionalFeePl params)
 			throws ParseException {
 		ptTubeFeedingFeeService.validTubeFeedingFee(params);
 	}
-
+	/**
+	 * 支付條件準則-調劑費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidAdjustmentFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void vaidAdjustmentFee(HttpServletRequest request, @RequestBody PtAdjustmentFeePl params)
 			throws ParseException {
 		ptAdjustmentFeeServic.validAdjustmentFee(params);
 	}
-
+	/**
+	 * 支付條件準則-藥費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validMedicineFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void validMedicineFee(HttpServletRequest request, @RequestBody PtMedicineFeePl params)
 			throws ParseException {
 		ptMedicineFeeService.validMedicineFee(params);
 	}
-
+	/**
+	 * 支付條件準則-放射線診療費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validRadiationFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void validRadiationFee(HttpServletRequest request, @RequestBody PtRadiationFeePl params)
 			throws ParseException {
 		ptRadiationFeeService.validRadiationFee(params);
 	}
-
+	/**
+	 * 支付條件準則-注射費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validInjectionFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void validInjectionFee(HttpServletRequest request, @RequestBody PtInjectionFeePl params)
 			throws ParseException {
 		ptInjectionFeeService.validInjectionFee(params);
 	}
-
+	
+	/**
+	 * 支付條件準則-品質支付服務費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validQualityServic", method = { RequestMethod.GET, RequestMethod.POST })
 	public void validQualityServic(HttpServletRequest request, @RequestBody PtQualityServicePl params)
 			throws ParseException {
 		ptQualityServiceService.validQualityServic(params);
 	}
-
+	/**
+	 * 支付條件準則-復健治療費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validRehabilitationFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void validRehabilitationFee(HttpServletRequest request, @RequestBody PtRehabilitationFeePl params)
 			throws ParseException {
 		ptRehabilitationFeeService.validRehabilitationFee(params);
 	}
-	
+	/**
+	 * 支付條件準則-精神醫療治療費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validPsychiatricFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void validPsychiatricFee(HttpServletRequest request, @RequestBody PtPsychiatricFeePl params)
 			throws ParseException {
 		PtPsychiatricFeeServic.validPsychiatricFee(params);
 	}
-	
+	/**
+	 * 支付條件準則-輸血及骨髓移植費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validBoneMarrowTransFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void validBoneMarrowTransFee(HttpServletRequest request, @RequestBody PtBoneMarrowTransFeePl params)
 			throws ParseException {
 		ptBoneMarrowTransFeeService.validBoneMarrowTransFee(params);
 	}
-	
+	/**
+	 * 支付條件準則-麻醉費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validAnesthesiaFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void validAnesthesiaFee(HttpServletRequest request, @RequestBody PtAnesthesiaFeePl params)
 			throws ParseException {
 		ptAnesthesiaFeeService.validAnesthesiaFee(params);
 	}
-	
+	/**
+	 * 支付條件準則-特定診療檢查費
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validSpecificMedicalFee", method = { RequestMethod.GET, RequestMethod.POST })
 	public void validSpecificMedicalFee(HttpServletRequest request, @RequestBody PtSpecificMedicalFeePl params)
 			throws ParseException {
 		ptSpecificMedicalFeeService.validSpecificMedicalFee(params);
 	}
-	
+	/**
+	 * 支付條件準則-不分類
+	 * @param request
+	 * @param params
+	 * @throws ParseException
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/validOthersFee", method = { RequestMethod.GET, RequestMethod.POST })
-	public void validOthersFee(HttpServletRequest request, @RequestBody PtOthersFeePl params)
-			throws ParseException {
+	public void validOthersFee(HttpServletRequest request, @RequestBody PtOthersFeePl params) throws ParseException {
 		ptOthersFeeService.validOthersFee(params);
 	}
 

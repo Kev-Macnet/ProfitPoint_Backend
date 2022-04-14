@@ -421,44 +421,80 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param date
    * @return
    */
-  @Query(value ="select mr.ID, ICD_CM_1,up, STDDEV from ( "
-  		+ "select ICD_CM_1, avg +2 * stddev as up , STDDEV from ( "
-  		+ "SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV FROM IP_D "
-  		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE > ?1 ) "
-  		+ "GROUP BY ICD_CM_1) temp where stddev > 0) temp2, mr "
-  		+ "where temp2.ICD_CM_1 = mr.ICDCM1 and mr. MR_DATE > ?1 and mr.DATA_FORMAT = '20'",  nativeQuery = true)
-  public List<Map<String,Object>> hospitalDays(String date);
+  @Query(value ="select * from ( "
+  		+ "select MR.ID,AI.ICD_CM_1, avg +2 * stddev as UP , STDDEV from "
+  		+ "(SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV FROM IP_D  "
+  		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2) GROUP BY ICD_CM_1) AI, MR "
+  		+ "where AI.stddev > 0 and MR.MR_DATE  between ?1 and ?2 AND DATA_FORMAT ='20' AND AI.ICD_CM_1 = MR.ICDCM1) TEMP",  nativeQuery = true)
+  public List<Map<String,Object>> hospitalDays(String sDate, String eDate);
   
   /**
-   * 取得主診斷碼出現次數
-   * @param date
+   * 取得主診斷碼出現次數 -門診
+   * @param sDate
+   * @param eDate
    * @return
    */
-  @Query(value ="select ICDCM1, count(1) as COUNT from mr where  "
-  		+ " 1=1 "
-  		+ " and mr_date > ?1 and data_format = ?2 "
-  		+ " and id in (select mr_id from op_p where length(drug_no) = 10) "
-  		+ " group by  ICDCM1 order by id", nativeQuery = true)
-  public List<Map<String,Object>> getIcdcmCount(String date, String fmt);
-  /**
-   * 取得藥用碼出現次數
-   * @param date
-   * @return
-   */
-  @Query(value ="select  mr.ICDCM1, count(mr.ICDCM1) COUNT, op.DRUG_NO from op_p op , mr "
-  		+ "where op.mr_id = mr.id and mr.mr_date > ?1 and mr.data_format = ?2  and length(drug_no) = 10   "
-  		+ "group by mr.icdcm1, op.drug_no ", nativeQuery = true)
-  public List<Map<String,Object>> getDrugNoCount(String date, String fmt);
+  @Query(value ="select ICDCM1, count(1) as COUNT from mr where   "
+  		+ "mr_date between ?1 and ?2 "
+  		+ "and id in (select mr_id from op_p where length(drug_no) = 10)  "
+  		+ "group by  ICDCM1 order by id", nativeQuery = true)
+  public List<Map<String,Object>> getIcdcmCountOPByDate(String sDate, String eDate);
   
   /**
-   * 取得藥用碼出現次數
-   * @param date
+   * 取得主診斷碼出現次數 -住院
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value ="select ICDCM1, count(1) as COUNT from mr where   "
+  		+ "mr_date between '2021-01-01' and '2021-04-01'  "
+  		+ "and id in (select mr_id from ip_p where length(order_code) = 10)  "
+  		+ "group by  ICDCM1 order by id", nativeQuery = true)
+  public List<Map<String,Object>> getIcdcmCountIPByDate(String sDate, String eDate);
+  
+  /**
+   * 取得藥用碼出現次數 -門診
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value ="select  mr.ICDCM1, count(mr.ICDCM1) COUNT, op.DRUG_NO from op_p op , mr  "
+  		+ "where op.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(drug_no) = 10    "
+  		+ "group by mr.icdcm1", nativeQuery = true)
+  public List<Map<String,Object>> getDrugNoCount(String sDate, String eDate);
+  
+  /**
+   * 取得藥用碼出現次數 -住院
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value ="select  mr.ICDCM1, count(mr.ICDCM1) COUNT, ip.ORDER_CODE from ip_p ip , mr  "
+  		+ "where ip.mr_id = mr.id and mr.mr_date between ?1 and ?2  and length(ip.order_code) = 10    "
+  		+ "group by mr.icdcm1", nativeQuery = true)
+  public List<Map<String,Object>> getOderCodeCount(String sDate, String eDate);
+  
+  /**
+   * 取得藥用碼出現次數-門診
+   * @param sDate
+   * @param eDate
    * @return
    */
   @Query(value ="select mr.id, count(mr.id) from op_p op , mr  "
-  		+ "where op.mr_id = mr.id and mr.mr_date > ?1  and length(drug_no) = 10 "
+  		+ "where op.mr_id = mr.id and mr.mr_date  between ?1 and ?2  and length(op.drug_no) = 10 "
   		+ "group by mr.id ", nativeQuery = true)
-  public List<Map<String,Object>> getIdByDrugNoCount(String date);
+  public List<Map<String,Object>> getIdByDrugNoCount(String sDate, String eDate);
+  
+  /**
+   * 取得藥用碼出現次數-住院
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value ="select mr.id, count(mr.id) from ip_p ip , mr  "
+  		+ "where ip.mr_id = mr.id and mr.mr_date  between ?1 and ?2  and length(ip.order_code) = 10 "
+  		+ "group by mr.id ", nativeQuery = true)
+  public List<Map<String,Object>> getIdByOderCodeCount(String sDate, String eDate);
   
   
   /**
