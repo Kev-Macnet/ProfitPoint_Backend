@@ -710,6 +710,8 @@ public class SystemController extends BaseController {
       cal.add(Calendar.YEAR, -4);
       cal = parametersService.getMinMaxCalendar(cal.getTime(), true);
       reportService.calculatePointWeekly(cal);
+    } else if ("CostDiff".equals(name)) {
+      is.recalculateAICostThread();
     }
     return returnAPIResult(null);
   }

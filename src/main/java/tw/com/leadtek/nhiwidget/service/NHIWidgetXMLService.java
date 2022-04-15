@@ -1871,13 +1871,24 @@ public class NHIWidgetXMLService {
       CriteriaBuilder cb, SearchMRParameters smrp) {
     List<Predicate> predicate = new ArrayList<Predicate>();
     if (smrp.getsDate() != null && smrp.geteDate() != null) {
-      predicate.add(cb.between(root.get("mrEndDate"), smrp.getsDate(), smrp.geteDate()));
+      //predicate.add(cb.between(root.get("mrEndDate"), smrp.getsDate(), smrp.geteDate()));
+      predicate.add(cb.or(
+          cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
+              cb.or(
+          cb.and(cb.greaterThanOrEqualTo(root.get("mrDate"), smrp.getsDate()),
+              cb.lessThanOrEqualTo(root.get("mrDate"), smrp.geteDate())),
+          cb.and(cb.greaterThanOrEqualTo(root.get("mrEndDate"), smrp.getsDate()),
+              cb.lessThanOrEqualTo(root.get("mrEndDate"), smrp.geteDate())))), 
+          cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
+              cb.greaterThanOrEqualTo(root.get("mrEndDate"), smrp.getsDate()),
+              cb.lessThanOrEqualTo(root.get("mrEndDate"), smrp.geteDate()))));
     }
     boolean notOthers = smrp.getNotOthers() == null ? false : smrp.getNotOthers().booleanValue();
 
     if (smrp.getMinPoints() != null && smrp.getMaxPoints() != null) {
       if (notOthers) {
-        predicate.add(cb.or(cb.lessThan(root.get("totalDot"), smrp.getMinPoints()), cb.greaterThan(root.get("totalDot"), smrp.getMaxPoints())));
+        predicate.add(cb.or(cb.lessThan(root.get("totalDot"), smrp.getMinPoints()),
+            cb.greaterThan(root.get("totalDot"), smrp.getMaxPoints())));
       } else {
         predicate.add(cb.between(root.get("totalDot"), smrp.getMinPoints(), smrp.getMaxPoints()));
       }
@@ -4039,8 +4050,22 @@ public class NHIWidgetXMLService {
       addPredicate(root, result, cb, "applName", applName, true, false, false);
     }
     if (sdate != null && edate != null) {
-      result.add(cb.and(cb.lessThanOrEqualTo(root.get("endDate"), edate),
-          cb.greaterThanOrEqualTo(root.get("startDate"), sdate)));
+//      result.add(cb.or(
+//          cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+//              cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+//          cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+//              cb.lessThanOrEqualTo(root.get("endDate"), edate))));
+      result.add(
+      cb.or(
+          cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
+              cb.or(
+          cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+              cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+          cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+              cb.lessThanOrEqualTo(root.get("endDate"), edate)))), 
+          cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
+              cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+              cb.lessThanOrEqualTo(root.get("endDate"), edate))));
     }
     if (dataFormat != null) {
       result.add(cb.equal(root.get("dataFormat"), dataFormat));
@@ -4717,8 +4742,22 @@ public class NHIWidgetXMLService {
           predicate.add(cb.equal(root.get("applName"), applName));
         }
         if (sdate != null && edate != null) {
-          predicate.add(cb.and(cb.lessThanOrEqualTo(root.get("endDate"), edate),
-              cb.greaterThanOrEqualTo(root.get("startDate"), sdate)));
+//          predicate.add(cb.or(
+//              cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+//                  cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+//              cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+//                  cb.lessThanOrEqualTo(root.get("endDate"), edate))));
+          predicate.add(
+              cb.or(
+                  cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
+                      cb.or(
+                  cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+                      cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+                  cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+                      cb.lessThanOrEqualTo(root.get("endDate"), edate)))), 
+                  cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
+                      cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+                      cb.lessThanOrEqualTo(root.get("endDate"), edate))));
         }
         if (dataFormat != null) {
           predicate.add(cb.equal(root.get("dataFormat"), dataFormat));
@@ -4891,8 +4930,22 @@ public class NHIWidgetXMLService {
           predicate.add(cb.equal(root.get("ym"), Integer.parseInt(applYm)));
         }
         if (sdate != null && edate != null) {
-          predicate.add(cb.and(cb.lessThanOrEqualTo(root.get("endDate"), edate),
-              cb.greaterThanOrEqualTo(root.get("startDate"), sdate)));
+//          predicate.add(cb.or(
+//              cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+//                  cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+//              cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+//                  cb.lessThanOrEqualTo(root.get("endDate"), edate))));
+          predicate.add(
+              cb.or(
+                  cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
+                      cb.or(
+                  cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+                      cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+                  cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+                      cb.lessThanOrEqualTo(root.get("endDate"), edate)))), 
+                  cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
+                      cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+                      cb.lessThanOrEqualTo(root.get("endDate"), edate))));
         }
         if (dataFormat != null) {
           predicate.add(cb.equal(root.get("dataFormat"), dataFormat));
@@ -5301,7 +5354,7 @@ public class NHIWidgetXMLService {
     if (hp.getApplYM() != null) {
       addPredicate(root, predicate, cb, "applYm", hp.getApplYM(), true, false, false);
     } else {
-      predicate.add(cb.between(root.get("mrDate"), hp.getsDate(), hp.geteDate()));
+      predicate.add(cb.between(root.get("mrEndDate"), hp.getsDate(), hp.geteDate()));
     }
     addPredicate(root, predicate, cb, "dataFormat", hp.getDataFormat(), false, false, false);
     if (!"00".equals(hp.getFuncType())) {

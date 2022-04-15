@@ -2332,12 +2332,8 @@ public class ParametersService {
       return;
     }
     List<ATC> atcList = atcDao.findByCode(atc);
-    String atcName = "";
-    if (atcList != null && atcList.size() > 0) {
-      atcName = atcList.get(0).getNote();
-    }
     String wording = getOneValueByName("INTELLIGENT", "SAME_ATC_WORDING");
-    String reason = (wording != null) ? String.format(wording, atc, atcName) : null;
+    String reason = (wording != null) ? String.format(wording, atc) : null;
     String atcCode = atc;
     
     Calendar calMin = getMinMaxCalendar(payCode.getStartDate(), true);
@@ -2539,7 +2535,6 @@ public class ParametersService {
         if (cc.getStatus().intValue() == 0) {
           continue;
         }
-        System.out.println("switchHighRisk :" + cc.getCode());
         if (isEnable) {
           recalculateCodeConflict(cc, INTELLIGENT_REASON.HIGH_RISK.value());
         } else {
@@ -2552,4 +2547,15 @@ public class ParametersService {
   public List<PARAMETERS> getByCat(String cat) {
     return parametersDao.findByCatOrderByName(cat);
   }
+  
+  /**
+   * 開啟或關閉AI-費用差異
+   * @param isEnable
+   */
+  public void switchCostDiff(boolean isEnable) {
+    deleteIntelligent(INTELLIGENT_REASON.COST_DIFF.value(), null, null);
+    if (isEnable) {
+      is.recalculateAICostThread();
+    }
+  }  
 }

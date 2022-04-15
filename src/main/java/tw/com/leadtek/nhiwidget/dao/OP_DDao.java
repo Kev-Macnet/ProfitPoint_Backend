@@ -120,17 +120,16 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   @Query(value ="SELECT * FROM " + 
       "(SELECT SUM(OP_D.T_DOT) AS OP_POINT FROM MR, OP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND OP_D.MR_ID = MR.ID) OP," + 
       "(SELECT (SUM(IP_D.APPL_DOT) + SUM(IP_D.PART_DOT)) AS IP_POINT FROM MR, IP_D " + 
-      "WHERE MR_END_DATE >= ?3 AND MR_END_DATE <= ?4 AND IP_D.MR_ID = MR.ID) IP," + 
-      "(SELECT SUM(OP_D.T_DOT) AS EM_POINT FROM MR, OP_D WHERE MR_DATE >= ?5 AND MR_DATE <= ?6 " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_D.MR_ID = MR.ID) IP," + 
+      "(SELECT SUM(OP_D.T_DOT) AS EM_POINT FROM MR, OP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 " + 
       "AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE='22') EM," +
-      "(SELECT SUM(OP_D.OWN_EXPENSE) AS OP_OWN_EXPENSE FROM MR, OP_D WHERE MR_DATE >= ?7 AND MR_DATE <= ?8 AND OP_D.MR_ID = MR.ID) OP_OWN," +
-      "(SELECT SUM(IP_D.OWN_EXPENSE) AS IP_OWN_EXPENSE FROM MR, IP_D WHERE MR_DATE >= ?9 AND MR_DATE <= ?10 AND IP_D.MR_ID = MR.ID) IP_OWN," +
-      "(SELECT COUNT(1) AS OP_VISITS FROM MR WHERE MR_END_DATE >= ?11 AND MR_END_DATE <= ?12 AND DATA_FORMAT ='10') OP_VISITS," + 
-      "(SELECT COUNT(1) AS IP_VISITS FROM MR WHERE MR_END_DATE >= ?13 AND MR_END_DATE <= ?14 AND DATA_FORMAT ='20') IP_VISITS," + 
-      "(SELECT COUNT(1) AS IP_LEAVE FROM IP_D WHERE LEAVE_DATE >= ?15 AND LEAVE_DATE <= ?16) IP_LEAVE", nativeQuery = true)
-  public List<Object[]> findAllPoint(Date sdate1, Date edate1, Date sdate2, Date edate2, 
-      Date sdate3, Date edate3, Date sdate4, Date edate4, Date sdate5, Date edate5, 
-      Date sdate6, Date edate6, Date sdate7, Date edate7,  Date sdate8, Date edate8);
+      "(SELECT SUM(OP_D.OWN_EXPENSE) AS OP_OWN_EXPENSE FROM MR, OP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND OP_D.MR_ID = MR.ID) OP_OWN," +
+      "(SELECT SUM(IP_D.OWN_EXPENSE) AS IP_OWN_EXPENSE FROM MR, IP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 AND IP_D.MR_ID = MR.ID) IP_OWN," +
+      "(SELECT COUNT(1) AS OP_VISITS FROM MR WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND DATA_FORMAT ='10') OP_VISITS," + 
+      "(SELECT COUNT(1) AS IP_VISITS FROM MR WHERE ((MR_DATE >= ?1 AND MR_DATE <= ?2) "
+      + "OR (MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) OR (MR_DATE <= ?1 AND MR_END_DATE >= ?2)) AND DATA_FORMAT ='20') IP_VISITS," + 
+      "(SELECT COUNT(1) AS IP_LEAVE FROM IP_D WHERE LEAVE_DATE >= ?1 AND LEAVE_DATE <= ?2) IP_LEAVE", nativeQuery = true)
+  public List<Object[]> findAllPoint(Date sdate1, Date edate1);
   
   /**
    * 取得指定區間的(1)門急診點數,(2)住院點數(申報+部分負擔),(3)急診點數,(4)門診人次,(5)住院人次(6)出院人次
@@ -139,21 +138,18 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       "(SELECT SUM(OP_D.T_DOT) AS OP_POINT FROM MR, OP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 "
       + "AND MR.FUNC_TYPE=?3 AND OP_D.MR_ID = MR.ID) OP," + 
       "(SELECT (SUM(IP_D.APPL_DOT) + SUM(IP_D.PART_DOT)) AS IP_POINT FROM MR, IP_D " + 
-      "WHERE MR_END_DATE >= ?4 AND MR_END_DATE <= ?5 AND MR.FUNC_TYPE=?6 AND IP_D.MR_ID = MR.ID) IP," + 
-      "(SELECT SUM(OP_D.T_DOT) AS EM_POINT FROM MR, OP_D WHERE MR_DATE >= ?7 AND MR_DATE <= ?8 " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND MR.FUNC_TYPE=?3 AND IP_D.MR_ID = MR.ID) IP," + 
+      "(SELECT SUM(OP_D.T_DOT) AS EM_POINT FROM MR, OP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 " + 
       "AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE='22') EM," + 
-      "(SELECT SUM(OP_D.OWN_EXPENSE) AS OP_OWN_EXPENSE FROM MR, OP_D WHERE MR_DATE >= ?9 AND MR_DATE <= ?10 "
-      + "AND MR.FUNC_TYPE=?11 AND OP_D.MR_ID = MR.ID) OP_OWN, " +
-      "(SELECT SUM(IP_D.OWN_EXPENSE) AS IP_OWN_EXPENSE FROM MR, IP_D WHERE MR_DATE >= ?12 AND MR_DATE <= ?13 "
-      + "AND MR.FUNC_TYPE=?14 AND IP_D.MR_ID = MR.ID) IP_OWN, " +
-      "(SELECT COUNT(1) AS OP_VISITS FROM MR WHERE MR_END_DATE >= ?15 AND MR_END_DATE <= ?16 AND MR.FUNC_TYPE=?17 AND DATA_FORMAT ='10') OP_VISITS," + 
-      "(SELECT COUNT(1) AS IP_VISITS FROM MR WHERE MR_END_DATE >= ?18 AND MR_END_DATE <= ?19 AND MR.FUNC_TYPE=?20 AND DATA_FORMAT ='20') IP_VISITS," + 
-      "(SELECT COUNT(1) AS IP_LEAVE FROM IP_D WHERE LEAVE_DATE >= ?21 AND LEAVE_DATE <= ?22 AND FUNC_TYPE=?23) IP_LEAVE", nativeQuery = true)
-  public List<Object[]> findAllPointByFuncType(Date sdate1, Date edate1, String funcType1,
-      Date sdate2, Date edate2, String funcType2, Date sdate3, Date edate3, 
-      Date sdate4, Date edate4, String funcType4, Date sdate5, Date edate5, String funcType5, 
-      Date sdate6, Date edate6, String funcType6, Date sdate7, Date edate7, String funcType7,
-      Date sdate8, Date edate8, String funcType8);
+      "(SELECT SUM(OP_D.OWN_EXPENSE) AS OP_OWN_EXPENSE FROM MR, OP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 "
+      + "AND MR.FUNC_TYPE=?3 AND OP_D.MR_ID = MR.ID) OP_OWN, " +
+      "(SELECT SUM(IP_D.OWN_EXPENSE) AS IP_OWN_EXPENSE FROM MR, IP_D WHERE MR_DATE >= ?1 AND MR_DATE <= ?2 "
+      + "AND MR.FUNC_TYPE=?3 AND IP_D.MR_ID = MR.ID) IP_OWN, " +
+      "(SELECT COUNT(1) AS OP_VISITS FROM MR WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND MR.FUNC_TYPE=?3 AND DATA_FORMAT ='10') OP_VISITS," + 
+      "(SELECT COUNT(1) AS IP_VISITS FROM MR WHERE ((MR_DATE >= ?1 AND MR_DATE <= ?2) " + 
+      "OR (MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) OR (MR_DATE <= ?1 AND MR_END_DATE >= ?2)) AND MR.FUNC_TYPE=?3 AND DATA_FORMAT ='20') IP_VISITS," + 
+      "(SELECT COUNT(1) AS IP_LEAVE FROM IP_D WHERE LEAVE_DATE >= ?1 AND LEAVE_DATE <= ?2 AND FUNC_TYPE=?3) IP_LEAVE", nativeQuery = true)
+  public List<Object[]> findAllPointByFuncType(Date sdate1, Date edate1, String funcType1);
   
   /**
    * 取得指定申報年月的所有OPD

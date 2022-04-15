@@ -531,7 +531,11 @@ public class ReportService {
     if (list != null && list.size() > 0) {
       for (Object[] objects : list) {
         NameCodePointQuantity npq = new NameCodePointQuantity();
-        npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
+        String name = codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]);
+        if (name == null || name.length() < 1) {
+          name = "無";
+        }
+        npq.setName(name);
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
           npq.setPoint(0L);
@@ -549,7 +553,11 @@ public class ReportService {
     if (list != null && list.size() > 0) {
       for (Object[] objects : list) {
         NameCodePointQuantity npq = new NameCodePointQuantity();
-        npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
+        String name = codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]);
+        if (name == null || name.length() < 1) {
+          name = "無";
+        }
+        npq.setName(name);
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
           npq.setPoint(0L);
@@ -573,7 +581,11 @@ public class ReportService {
     if (list != null && list.size() > 0) {
       for (Object[] objects : list) {
         NameCodePointQuantity npq = new NameCodePointQuantity();
-        npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
+        String name = codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]);
+        if (name == null || name.length() < 1) {
+          name = "無";
+        }
+        npq.setName(name);
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
           npq.setPoint(0L);
@@ -591,7 +603,11 @@ public class ReportService {
     if (list != null && list.size() > 0) {
       for (Object[] objects : list) {
         NameCodePointQuantity npq = new NameCodePointQuantity();
-        npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
+        String name = codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]);
+        if (name == null || name.length() < 1) {
+          name = "無";
+        }
+        npq.setName(name);
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
           npq.setPoint(0L);
@@ -653,10 +669,9 @@ public class ReportService {
     }
     List<Object[]> list = null;
     if (XMLConstant.FUNC_TYPE_ALL.equals(funcType)) {
-      list = opdDao.findAllPoint(s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e);
+      list = opdDao.findAllPoint(s, e);
     } else {
-      list = opdDao.findAllPointByFuncType(s, e, funcType, s, e, funcType, s, e, s, e, funcType, s,
-          e, funcType, s, e, funcType, s, e, funcType, s, e, funcType);
+      list = opdDao.findAllPointByFuncType(s, e, funcType);
     }
 
     if (list != null && list.size() > 0) {
