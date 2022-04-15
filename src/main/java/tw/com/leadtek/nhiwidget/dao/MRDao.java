@@ -360,20 +360,28 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param date
    * @return
    */
-  @Query(value = "select m.ID, imo.ICDCM, imo.ORDER_CODE, imo.ULIMIT as UP, imo.LLIMIT as DOWN from mr m  "
-  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  and m.CODE_ALL like concat('%', imo.ORDER_CODE ,'%') "
-  		+ "and m.DATA_FORMAT ='10' "
-  		+ "and m.MR_DATE  BETWEEN ?1 AND ?2 group by m.id " , nativeQuery = true)
+  @Query(value = "select MR_ID,COUNT,ORDER_CODE,ICDCM,UP,DOWN from ( "
+  		+ "select mr_id as MR_ID, COUNT, DRUG_NO as ORDER_CODE, io.icdcm as ICDCM, io.ulimit as UP, io.llimit as DOWN from ( "
+  		+ "select op_d.mr_id, count(op_d.mr_id) as COUNT, op_p.drug_no, op_d.icd_cm_1 from op_d , op_p "
+  		+ "where op_d.id = op_p.opd_id and op_d.id in (select id from mr where MR_DATE  BETWEEN ?1 AND ?2 and DATA_FORMAT ='10' ) "
+  		+ "group by op_d.mr_id, op_p.drug_no, op_d.icd_cm_1) temp , ICDCM_ORDER io "
+  		+ "where temp.drug_no = io.order_code and temp.icd_cm_1 = io.icdcm and io.data_format = '10' "
+  		+ "order by mr_id) temp2 "
+  		+ "where COUNT > UP   or COUNT < DOWN " , nativeQuery = true)
   	  public List<Map<String, Object>> clinicMedBeh(String sDate, String eDate);
   /**
    * 醫療行為差異--住院
    * @param date
    * @return
    */
-  @Query(value = "select m.ID, imo.ICDCM, imo.ORDER_CODE, imo.ULIMIT as UP, imo.LLIMIT as DOWN from mr m  "
-	  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  and m.CODE_ALL like concat('%', imo.ORDER_CODE ,'%') "
-	  		+ "and m.DATA_FORMAT ='20' "
-	  		+ "and m.MR_DATE  BETWEEN ?1 AND ?2 group by m.id " , nativeQuery = true)
+  @Query(value = "select MR_ID,COUNT,ORDER_CODE,ICDCM,UP,DOWN from ( "
+  		+ "select  temp.MR_ID, temp.COUNT, temp.ORDER_CODE, io.ICDCM, io.ulimit as UP, io.llimit as DOWN from ( "
+  		+ "select ip_d.mr_id, count(ip_d.mr_id) as COUNT, ip_p.order_code, ip_d.icd_cm_1 from ip_d , ip_p "
+  		+ "where ip_d.id = ip_p.ipd_id and ip_d.mr_id in (select id from mr where MR_DATE  BETWEEN ?1 AND ?2 and DATA_FORMAT ='20' ) "
+  		+ "group by ip_d.mr_id, ip_p.order_code, ip_d.icd_cm_1) temp , ICDCM_ORDER io "
+  		+ "where temp.order_code = io.order_code and temp.icd_cm_1 = io.icdcm and io.data_format = '20' "
+  		+ "order by mr_id) temp2 "
+  		+ "where COUNT > UP   or COUNT < DOWN " , nativeQuery = true)
   	  public List<Map<String, Object>> hospitalMedBeh(String sDate, String eDate);
   /**
    * 手術--門診
@@ -422,10 +430,11 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @return
    */
   @Query(value ="select * from ( "
-  		+ "select MR.ID,AI.ICD_CM_1, avg +2 * stddev as UP , STDDEV from "
-  		+ "(SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV FROM IP_D  "
-  		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2) GROUP BY ICD_CM_1) AI, MR "
-  		+ "where AI.stddev > 0 and MR.MR_DATE  between ?1 and ?2 AND DATA_FORMAT ='20' AND AI.ICD_CM_1 = MR.ICDCM1) TEMP",  nativeQuery = true)
+  		+ "select CO.MR_ID,AI.ICD_CM_1, avg +2 * stddev as UP , STDDEV, CO.COUNT from "
+  		+ "(SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV,(S_BED_DAY + E_BED_DAY) as COUNT  FROM IP_D  "
+  		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2) GROUP BY ICD_CM_1) AI, (select ICD_CM_1, (S_BED_DAY + E_BED_DAY) as COUNT, MR_ID from IP_D where MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2)) CO "
+  		+ "where AI.stddev > 0  AND AI.ICD_CM_1 = CO.ICD_CM_1) TEMP  "
+  		+ "where COUNT > UP ",  nativeQuery = true)
   public List<Map<String,Object>> hospitalDays(String sDate, String eDate);
   
   /**

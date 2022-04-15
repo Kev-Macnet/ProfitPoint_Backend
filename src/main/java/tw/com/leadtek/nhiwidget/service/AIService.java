@@ -204,32 +204,33 @@ public class AIService {
 			List<Map<String, Object>> clinicList = mrDao.clinicMedBeh(sDate, eDate);
 
 			// 設定檔上限
-			int orderDiffUl = Integer
-					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_UL"));
+			float orderDiffUl = Float.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_UL"));
 			// 設定檔下限
-			int orderDiffll = Integer
-					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_LL"));
+			float orderDiffll =Float.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_LL"));
 
 			for (Map<String, Object> map : clinicList) {
-				MR mm = mrDao.getMrByID(map.get("ID").toString());
+				MR mm = mrDao.getMrByID(map.get("MR_ID").toString());
+				
+				float count = Float.valueOf(map.get("COUNT").toString());
 				float up = Float.valueOf(map.get("UP").toString());
 				float down = Float.valueOf(map.get("DOWN").toString());
 				
-				if(orderDiffUl < up) {
+				if(count > up) {
 					
-				
+				    float ff =  (orderDiffUl / count) * 100;
+				   
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_UL_WORDING");
-					msg = String.format(paraResult + "%", map.get("ID").toString(), map.get("ICDCM").toString(),
-							map.get("ORDER_CODE"), orderDiffUl, up);
+					msg = String.format(paraResult + "%", map.get("MR_ID").toString(), map.get("ICDCM").toString(),
+							map.get("ORDER_CODE"), Math.round(orderDiffUl), ff);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);
 				}
-				else if(orderDiffll > down) {
+				else if(count < down) {
 					
-					
+					float ff =  (count/ orderDiffll) * 100;
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_LL_WORDING");
-					msg = String.format(paraResult + "%", map.get("ID"), map.get("ICDCM").toString(),
-							map.get("ORDER_CODE"), orderDiffUl, down);
+					msg = String.format(paraResult + "%", map.get("MR_ID"), map.get("ICDCM").toString(),
+							map.get("ORDER_CODE"), Math.round(orderDiffll), ff);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);
 				}
@@ -274,32 +275,32 @@ public class AIService {
 			List<Map<String, Object>> clinicList = mrDao.hospitalMedBeh(sDate,eDate);
 
 			// 設定檔上限
-			int orderDiffUl = Integer
-					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_UL"));
+			float orderDiffUl = Float.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_UL"));
 			// 設定檔下限
-			int orderDiffll = Integer
-					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_LL"));
+			float orderDiffll =Float.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_LL"));
 
 			for (Map<String, Object> map : clinicList) {
-				MR mm = mrDao.getMrByID(map.get("ID").toString());
+				MR mm = mrDao.getMrByID(map.get("MR_ID").toString());
+				float count = Float.valueOf(map.get("COUNT").toString());
 				float up = Float.valueOf(map.get("UP").toString());
 				float down = Float.valueOf(map.get("DOWN").toString());
 				
-				if(orderDiffUl < up) {
+				if(count > up) {
 					
-				
+				    float ff =  (orderDiffUl / count) * 100;
+				   
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_UL_WORDING");
-					msg = String.format(paraResult + "%", map.get("ID").toString(), map.get("ICDCM").toString(),
-							map.get("ORDER_CODE"), orderDiffUl, up);
+					msg = String.format(paraResult + "%", map.get("MR_ID").toString(), map.get("ICDCM").toString(),
+							map.get("ORDER_CODE"), Math.round(orderDiffUl), ff);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);
 				}
-				else if(orderDiffll > down) {
+				else if(count < down) {
 					
-					
+					float ff =  (count/ orderDiffll) * 100;
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_LL_WORDING");
-					msg = String.format(paraResult + "%", map.get("ID"), map.get("ICDCM").toString(),
-							map.get("ORDER_CODE"), orderDiffll, down);
+					msg = String.format(paraResult + "%", map.get("MR_ID"), map.get("ICDCM").toString(),
+							map.get("ORDER_CODE"), Math.round(orderDiffll), ff);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);
 				}
@@ -818,21 +819,22 @@ public class AIService {
 
 		try {
 			String msg = "";
+			int ipDays = Integer.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "IP_DAYS"));
 			List<Map<String, Object>> listHospitalizedMap = mrDao.hospitalDays(sDate,eDate);
 			// 設定檔上限
-			int ipDays = Integer.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "IP_DAYS"));
 			for (Map<String, Object> map : listHospitalizedMap) {
 
-				MR mm = mrDao.getMrByID(map.get("ID").toString());
+				MR mm = mrDao.getMrByID(map.get("MR_ID").toString());
 				// 住院上限
-				float hospitalizedUp = Float.parseFloat(map.get("up").toString());
-				int up = Math.round(hospitalizedUp);
+				float up = Float.parseFloat(map.get("UP").toString());
+				float count = Float.valueOf(map.get("COUNT").toString());
+				
 
-				if (up > ipDays) {
+				if (count > up) {
 
 					String paraResult = parametersService.getOneValueByName("INTELLIGENT", "IP_DAYS_WORDING");
 					msg = String.format(paraResult, mm.getInhMrId(), map.get("ICD_CM_1").toString(), mm.getName(),
-							ipDays, (up - ipDays));
+							ipDays, Math.round(count - ipDays));
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(), "", msg, true);
 				}
 			}
