@@ -39,7 +39,7 @@ public class PtWardFeeServiceTask {
 		Date dateObj = calendar.getTime();
 		String eDateStr = sdf.format(dateObj);
 		String sDateStr = minusYear(eDateStr);
-		
+
 		/// 違反案件數
 		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr);
 		List<MR> mrList2 = new ArrayList<MR>();
@@ -79,9 +79,11 @@ public class PtWardFeeServiceTask {
 		/// 入住時間滿 小時，方可申報此支付標準代碼
 		if (params.getMin_stay_enable() == 1) {
 			List<Map<String, Object>> ippData = ippDao.getTimeListByMrid(mrIdListStr);
+			String print = mrIdListStr.toString();
 			for (Map<String, Object> map : ippData) {
-				Date sDate = DateTool.convertChineseToYear(map.get("START_TIME").toString().substring(0,map.get("START_TIME").toString().lastIndexOf(".")));
-				Date eDate = DateTool.convertChineseToYear(map.get("END_TIME").toString().substring(0,map.get("END_TIME").toString().lastIndexOf(".")));
+				Date sDate = DateTool.convertChineseToYears(map.get("START_TIME").toString());
+				Date eDate = DateTool.convertChineseToYears(map.get("END_TIME").toString());
+					
 				long diff = hourBetween(sDate, eDate);
 				if (params.getMin_stay() > diff) {
 					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
@@ -98,8 +100,8 @@ public class PtWardFeeServiceTask {
 		if(params.getMax_stay_enable() == 1) {
 			List<Map<String, Object>> ippData = ippDao.getTimeListByMrid(mrIdListStr);
 			for (Map<String, Object> map : ippData) {
-				Date sDate = DateTool.convertChineseToYear(map.get("START_TIME").toString().substring(0,map.get("START_TIME").toString().lastIndexOf(".")));
-				Date eDate = DateTool.convertChineseToYear(map.get("END_TIME").toString().substring(0,map.get("END_TIME").toString().lastIndexOf(".")));
+				Date sDate = DateTool.convertChineseToYears(map.get("START_TIME").toString());
+				Date eDate = DateTool.convertChineseToYears(map.get("END_TIME").toString());
 				long diff = hourBetween(sDate, eDate);
 				if (params.getMax_stay() < diff) {
 					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());

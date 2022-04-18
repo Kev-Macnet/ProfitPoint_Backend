@@ -52,6 +52,30 @@ public class DateTool {
     }
     return null;
   }
+  
+  /**
+   * 將民國年月日轉成西元年月日, 若只有年月，會自動改為yyyMM01
+   * 
+   * @param date ex:11102140000
+   * @return Date, yyyyMMddHHmm
+   */
+  public static Date convertChineseToYears(String date) {
+    if (date == null) {
+      return null;
+    }
+    if (date.length() == 5) {
+      date = date + "010000";
+    }
+    long minguo = Long.valueOf(date);
+    long dateInt = Long.valueOf("191100000000") + minguo;
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
+    try {
+      return sdf.parse(String.valueOf(dateInt));
+    } catch (ParseException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
 
   /**
    * 將民國年月日轉成西元年月日
@@ -218,64 +242,5 @@ public class DateTool {
       e.printStackTrace();
     }
     return result;
-  }
-  
-  public static String convertExcelDateTimeToChinese(String s, boolean includeHourMinute) {
-    if (s == null || s.length() < 7) {
-      return null;
-    }
-    
-    StringBuffer sb = new StringBuffer(s.substring(0, 4));
-    int len = 0;
-    boolean add12Hour = false;
-    for(int i=4; i<s.length(); i++) {
-      if (s.charAt(i) == '/' || s.charAt(i) == '-' || s.charAt(i) == ' ' || s.charAt(i) == ':') {
-        if (len ==1) {
-          // 補0
-          sb.insert(sb.length() -1, '0');
-        }
-        len = 0;
-        continue;
-      } else if (s.charAt(i) == 'a' || s.charAt(i) == 'A' || s.charAt(i) == 'M' || s.charAt(i) == 'm') {
-        continue;
-      } else if (s.charAt(i) == 'p' || s.charAt(i) == 'P') {
-        add12Hour = true;
-        continue;
-      } 
-      
-      sb.append(s.charAt(i));
-      len++;
-    }
-    if (sb.length() == 7) {
-      // 補0
-      sb.insert(sb.length() -1, '0');
-    }
-    if (add12Hour && sb.length() >= 10) {
-      int hour = Integer.parseInt(sb.substring(8, 10));
-      hour += 12;
-      sb.replace(8, 10, String.valueOf(hour));
-    }
-   
-    SimpleDateFormat sdf = null;
-    if (sb.length() == 8) {
-      sdf = new SimpleDateFormat("yyyyMMdd");
-    } else if (sb.length() == 12) {
-      sdf = new SimpleDateFormat("yyyyMMddHHmm");
-    } else if (sb.length() == 14) {
-      sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-    } else {
-      System.out.println("error convertExcelDateTimeToChinese() sb=" + sb.toString() + ", len=" + sb.length());
-    }
-    try {
-      Date date = sdf.parse(sb.toString());
-      SimpleDateFormat sdf2 = (includeHourMinute) ? new SimpleDateFormat("yyyyMMddHHmm") : new SimpleDateFormat("yyyyMMdd");
-      String result = sdf2.format(date);
-      int yearAD = Integer.parseInt(result.substring(0, 4));
-      return String.valueOf(yearAD - 1911) + result.substring(4);
-    } catch (ParseException e) {
-      System.out.println("error date=" + sb.toString());
-      e.printStackTrace();
-    }
-    return "N/A";
   }
 }
