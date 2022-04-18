@@ -95,8 +95,8 @@ public class IntelligentService {
   @Autowired
   private EntityManager em;
 
-  public IntelligentResponse getIntelligent(UserDetailsImpl user, String menu, Date sDate,
-      Date eDate, Integer minPoints, Integer maxPoints, String funcType, String funcTypec,
+  public IntelligentResponse getIntelligent(UserDetailsImpl user, String menu, java.sql.Date sDate,
+      java.sql.Date eDate, Integer minPoints, Integer maxPoints, String funcType, String funcTypec,
       String prsnId, String prsnName, String code, String inhCode, String icd, Integer reason,
       String applYm, String dataFormat, String orderBy, Boolean asc, int perPage, int page) {
     IntelligentResponse result = new IntelligentResponse();
@@ -181,25 +181,12 @@ public class IntelligentService {
   }
 
   private List<Predicate> getIntelligentPredicate(CriteriaBuilder cb, Root<INTELLIGENT> root,
-      CriteriaQuery<?> query, String menu, Date sDate, Date eDate, Integer minPoints,
+      CriteriaQuery<?> query, String menu, java.sql.Date sDate,  java.sql.Date eDate, Integer minPoints,
       Integer maxPoints, String funcType, String funcTypec, String prsnId, String prsnName,
       String code, String inhCode, String icd, Integer reason, String applYm, String dataFormat) {
     List<Predicate> result = new ArrayList<Predicate>();
     if (sDate != null && eDate != null) {
-      // predicate.add(cb.and(cb.between(root.get("startDate"), sDate, eDate),
-      // cb.between(root.get("endDate"), sDate, eDate)));
-      //result.add(cb.and(cb.between(root.get("startDate"), sDate, eDate)));
-      //     cb.lessThanOrEqualTo(root.get("endDate"), edate))));
-      result.add(cb.or(
-          cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP),
-              cb.or(
-                  cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sDate),
-                      cb.lessThanOrEqualTo(root.get("startDate"), eDate)),
-                  cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sDate),
-                      cb.lessThanOrEqualTo(root.get("endDate"), eDate)))),
-          cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP),
-              cb.greaterThanOrEqualTo(root.get("endDate"), sDate),
-              cb.lessThanOrEqualTo(root.get("endDate"), eDate))));
+      addSearchDateParameter(result, cb, root, sDate, eDate);
     }
     if (minPoints != null) {
       result.add(cb.greaterThanOrEqualTo(root.get("applDot"), minPoints));
@@ -227,6 +214,20 @@ public class IntelligentService {
     }
     result.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
     return result;
+  }
+  
+  private void addSearchDateParameter(List<Predicate> predicate, CriteriaBuilder cb, Root<INTELLIGENT> root, 
+      Date sdate, Date edate) {
+    predicate.add(cb.or(
+        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
+            cb.or(
+        cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+        cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("endDate"), edate)))), 
+        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
+            cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("endDate"), edate))));
   }
 
   private void addPredicate(Root<?> root, List<Predicate> predicate, CriteriaBuilder cb,
@@ -267,7 +268,7 @@ public class IntelligentService {
     }
   }
 
-  public List<Tuple> groupByConditionCode(String menu, Date sDate, Date eDate, Integer minPoints,
+  public List<Tuple> groupByConditionCode(String menu, java.sql.Date sDate, java.sql.Date eDate, Integer minPoints,
       Integer maxPoints, String funcType, String funcTypec, String prsnId, String prsnName,
       String code, String inhCode, String icd, Integer reason, String applYm, String dataFormat) {
     CriteriaBuilder cb = em.getCriteriaBuilder();

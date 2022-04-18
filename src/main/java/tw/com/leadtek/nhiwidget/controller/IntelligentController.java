@@ -86,14 +86,14 @@ public class IntelligentController extends BaseController {
     int perPageInt = (perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
         : perPage.intValue();
 
-    Date startDate = null;
-    Date endDate = null;
+    java.sql.Date startDate = null;
+    java.sql.Date endDate = null;
 
     if (sdate != null && edate != null) {
       SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
       try {
-        startDate = sdf.parse(sdate);
-        endDate = sdf.parse(edate);
+        startDate = new java.sql.Date(sdf.parse(sdate).getTime());
+        endDate = new java.sql.Date(sdf.parse(edate).getTime());
       } catch (ParseException e) {
         IntelligentResponse result = new IntelligentResponse();
         result.setMessage("日期格式有誤");
@@ -137,6 +137,9 @@ public class IntelligentController extends BaseController {
       result.setMessage("無權限");
       result.setResult(BaseResponse.ERROR);
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
+    }
+    if ("clincal".equals(menu) && reason != null && reason.intValue() < 10) {
+      reason = new Integer(reason.intValue() + 10);
     }
     return ResponseEntity.ok(
         intelligentService.getIntelligent(user, menu, startDate, endDate, minPoints, maxPoints, funcType,

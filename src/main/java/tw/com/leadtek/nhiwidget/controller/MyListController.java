@@ -303,14 +303,14 @@ public class MyListController extends BaseController {
       dataFormat = "20";
     }
    
-    Date startDate = null;
-    Date endDate = null;
+    java.sql.Date startDate = null;
+    java.sql.Date endDate = null;
 
     if (sdate != null && edate != null) {
       SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
       try {
-        startDate = sdf.parse(sdate);
-        endDate = sdf.parse(edate);
+        startDate = new java.sql.Date(sdf.parse(sdate).getTime());
+        endDate = new java.sql.Date(sdf.parse(edate).getTime());
         if (startDate.after(endDate)) {
           QuestionMarkResponse result = new QuestionMarkResponse();
           result.setMessage("啟始日不可大於結束日");

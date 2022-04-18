@@ -1871,17 +1871,7 @@ public class NHIWidgetXMLService {
       CriteriaBuilder cb, SearchMRParameters smrp) {
     List<Predicate> predicate = new ArrayList<Predicate>();
     if (smrp.getsDate() != null && smrp.geteDate() != null) {
-      //predicate.add(cb.between(root.get("mrEndDate"), smrp.getsDate(), smrp.geteDate()));
-      predicate.add(cb.or(
-          cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
-              cb.or(
-          cb.and(cb.greaterThanOrEqualTo(root.get("mrDate"), smrp.getsDate()),
-              cb.lessThanOrEqualTo(root.get("mrDate"), smrp.geteDate())),
-          cb.and(cb.greaterThanOrEqualTo(root.get("mrEndDate"), smrp.getsDate()),
-              cb.lessThanOrEqualTo(root.get("mrEndDate"), smrp.geteDate())))), 
-          cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
-              cb.greaterThanOrEqualTo(root.get("mrEndDate"), smrp.getsDate()),
-              cb.lessThanOrEqualTo(root.get("mrEndDate"), smrp.geteDate()))));
+      addSearchMrDateParameter(predicate, cb, root,  smrp.getsDate(), smrp.geteDate());
     }
     boolean notOthers = smrp.getNotOthers() == null ? false : smrp.getNotOthers().booleanValue();
 
@@ -4679,7 +4669,7 @@ public class NHIWidgetXMLService {
   }
 
   public QuestionMarkResponse getQuestionMark(UserDetailsImpl user, String applYm,
-      java.util.Date sdate, java.util.Date edate, String dataFormat, String funcType,
+      java.sql.Date sdate, java.sql.Date edate, String dataFormat, String funcType,
       String funcTypec, String prsnId, String prsnName, String applId, String applName,
       String block, String orderBy, Boolean asc, int perPage, int page) {
 
@@ -4862,8 +4852,7 @@ public class NHIWidgetXMLService {
       predicate.add(cb.equal(root.get("applName"), sfp.getApplName()));
     }
     if (sfp.getsDate() != null && sfp.geteDate() != null) {
-      predicate.add(cb.and(cb.lessThanOrEqualTo(root.get("endDate"), sfp.geteDate()),
-          cb.greaterThanOrEqualTo(root.get("startDate"), sfp.getsDate())));
+      addSearchDateParameter(predicate, cb, root, sfp.getsDate(), sfp.geteDate());
     }
     if (sfp.getDataFormat() != null) {
       predicate.add(cb.equal(root.get("dataFormat"), sfp.getDataFormat()));
@@ -4907,7 +4896,7 @@ public class NHIWidgetXMLService {
   }
 
   public Specification<MY_MR> getQuestionMarkSpec(boolean isAppl, UserDetailsImpl user,
-      String applYm, java.util.Date sdate, java.util.Date edate, String dataFormat, String funcType,
+      String applYm, java.sql.Date sdate, java.sql.Date edate, String dataFormat, String funcType,
       String funcTypec, String prsnId, String prsnName, String applId, String applName,
       String block, String orderBy, Boolean asc, int perPage, int page, Boolean isReaded) {
     return new Specification<MY_MR>() {
@@ -4930,22 +4919,7 @@ public class NHIWidgetXMLService {
           predicate.add(cb.equal(root.get("ym"), Integer.parseInt(applYm)));
         }
         if (sdate != null && edate != null) {
-//          predicate.add(cb.or(
-//              cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
-//                  cb.lessThanOrEqualTo(root.get("startDate"), edate)),
-//              cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
-//                  cb.lessThanOrEqualTo(root.get("endDate"), edate))));
-          predicate.add(
-              cb.or(
-                  cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
-                      cb.or(
-                  cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
-                      cb.lessThanOrEqualTo(root.get("startDate"), edate)),
-                  cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
-                      cb.lessThanOrEqualTo(root.get("endDate"), edate)))), 
-                  cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
-                      cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
-                      cb.lessThanOrEqualTo(root.get("endDate"), edate))));
+          addSearchDateParameter(predicate, cb, root, sdate, edate);
         }
         if (dataFormat != null) {
           predicate.add(cb.equal(root.get("dataFormat"), dataFormat));
@@ -5347,6 +5321,34 @@ public class NHIWidgetXMLService {
       }
     }
   }
+  
+  private void addSearchMrDateParameter(List<Predicate> predicate, CriteriaBuilder cb, Root<MR> root, 
+      Date sdate, Date edate) {
+    predicate.add(cb.or(
+        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
+            cb.or(
+        cb.and(cb.greaterThanOrEqualTo(root.get("mrDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("mrDate"), edate)),
+        cb.and(cb.greaterThanOrEqualTo(root.get("mrEndDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("mrEndDate"), edate)))), 
+        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
+            cb.greaterThanOrEqualTo(root.get("mrEndDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("mrEndDate"), edate))));
+  }
+  
+  private void addSearchDateParameter(List<Predicate> predicate, CriteriaBuilder cb, Root<MY_MR> root, 
+      Date sdate, Date edate) {
+    predicate.add(cb.or(
+        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
+            cb.or(
+        cb.and(cb.greaterThanOrEqualTo(root.get("mrDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("mrDate"), edate)),
+        cb.and(cb.greaterThanOrEqualTo(root.get("mrEndDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("mrEndDate"), edate)))), 
+        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
+            cb.greaterThanOrEqualTo(root.get("mrEndDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("mrEndDate"), edate))));
+  }
 
   private List<Predicate> getHomePageCountPredicate(CriteriaBuilder cb, CriteriaQuery<Tuple> query,
       Root<MR> root, HomepageParameters hp) {
@@ -5354,7 +5356,7 @@ public class NHIWidgetXMLService {
     if (hp.getApplYM() != null) {
       addPredicate(root, predicate, cb, "applYm", hp.getApplYM(), true, false, false);
     } else {
-      predicate.add(cb.between(root.get("mrEndDate"), hp.getsDate(), hp.geteDate()));
+      addSearchMrDateParameter(predicate, cb, root, hp.getsDate(), hp.geteDate());
     }
     addPredicate(root, predicate, cb, "dataFormat", hp.getDataFormat(), false, false, false);
     if (!"00".equals(hp.getFuncType())) {
