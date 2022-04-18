@@ -109,7 +109,7 @@ public class InitialEnvironment {
    */
   private long maxId = 0;
 
-  @Ignore
+  //@Ignore
   @Test
   public void importData() {
     if(userDao.count() ==0) {
@@ -418,6 +418,7 @@ public class InitialEnvironment {
     userService.newUser(user);
   }
   
+  @Ignore
   @Test
   public void importPayCode() {
     maxId = getMaxId() + 1;

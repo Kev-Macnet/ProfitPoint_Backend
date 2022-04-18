@@ -45,6 +45,10 @@ public enum INTELLIGENT_REASON {
       case 8: return "同性質藥物開立";
       case 9: return "相關計畫疑似可收案病例";
       case 10: return "高風險診斷碼與健保碼組合";
+      case 11: return "費用差異";
+      case 12: return "醫療行為差異";
+      case 13: return "用藥差異";
+      case 14: return "住院天數差異";
     }
     return "未知";
   }

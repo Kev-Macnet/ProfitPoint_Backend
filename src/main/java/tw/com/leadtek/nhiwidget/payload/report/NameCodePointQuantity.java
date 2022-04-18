@@ -27,4 +27,13 @@ public class NameCodePointQuantity extends NameCodePoint implements Serializable
     this.quantity = quantity;
   }
   
+  public NameCodePointQuantity clone() {
+    NameCodePointQuantity result = new NameCodePointQuantity();
+    result.setCode(this.code);
+    result.setName(this.name);
+    result.setPoint(this.point);
+    result.setQuantity(this.quantity);
+    return result;
+  }
+  
 }

@@ -930,6 +930,13 @@ public class IP_D {
   @JsonIgnore
   private Integer ownExpense;
   
+  /**
+   * 不申報點數
+   */
+  @Column(name = "NO_APPL")
+  @JsonIgnore
+  private Integer noAppl;
+  
   @JsonProperty("pdata")
   @JacksonXmlElementWrapper(useWrapping=false)
   @Transient // 當做 table 時跳過此欄位
@@ -2507,6 +2514,14 @@ public class IP_D {
 
   public void setLeaveDate(Date leaveDate) {
     this.leaveDate = leaveDate;
+  }
+
+  public Integer getNoAppl() {
+    return noAppl;
+  }
+
+  public void setNoAppl(Integer noAppl) {
+    this.noAppl = noAppl;
   }
   
 }

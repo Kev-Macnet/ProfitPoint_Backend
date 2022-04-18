@@ -87,17 +87,17 @@ public class DRGMonthlySectionPayload extends DRGReportPayload implements Serial
   @ApiModelProperty(value = "C區各科差額點數")
   private List<NameCodePoint> diffCFuncType;
 
-  @ApiModelProperty(value = "A區各科案件每周趨勢圖", required = true)
-  protected Map<String, NameValueList> weeklyAMap;
+  @ApiModelProperty(value = "A區各科案件每周趨勢圖，names:年週，values:件數，values2:點數", required = true)
+  protected Map<String, NameValueList2> weeklyAMap;
 
-  @ApiModelProperty(value = "B1區各科案件每周趨勢圖", required = true)
-  protected Map<String, NameValueList> weeklyB1Map;
+  @ApiModelProperty(value = "B1區各科案件每周趨勢圖，names:年週，values:件數，values2:點數", required = true)
+  protected Map<String, NameValueList2> weeklyB1Map;
 
-  @ApiModelProperty(value = "A區各科案件每周趨勢圖", required = true)
-  protected Map<String, NameValueList> weeklyB2Map;
+  @ApiModelProperty(value = "A區各科案件每周趨勢圖，names:年週，values:件數，values2:點數", required = true)
+  protected Map<String, NameValueList2> weeklyB2Map;
 
-  @ApiModelProperty(value = "A區各科案件每周趨勢圖", required = true)
-  protected Map<String, NameValueList> weeklyCMap;
+  @ApiModelProperty(value = "A區各科案件每周趨勢圖，names:年週，values:件數，values2:點數", required = true)
+  protected Map<String, NameValueList2> weeklyCMap;
   
   public DRGMonthlySectionPayload() {
     
@@ -129,10 +129,10 @@ public class DRGMonthlySectionPayload extends DRGReportPayload implements Serial
     diffB2FuncType = new ArrayList<NameCodePoint>();
     diffCFuncType = new ArrayList<NameCodePoint>();
     
-    weeklyAMap = new HashMap<String, NameValueList>();
-    weeklyB1Map = new HashMap<String, NameValueList>();
-    weeklyB2Map = new HashMap<String, NameValueList>();
-    weeklyCMap = new HashMap<String, NameValueList>();
+    weeklyAMap = new HashMap<String, NameValueList2>();
+    weeklyB1Map = new HashMap<String, NameValueList2>();
+    weeklyB2Map = new HashMap<String, NameValueList2>();
+    weeklyCMap = new HashMap<String, NameValueList2>();
       
     //quantityMap = new HashedMap<String, NameValueList2>();
     //quantityMap.put(ReportService.FUNC_TYPE_ALL_NAME, new NameValueList2());
@@ -324,35 +324,35 @@ public class DRGMonthlySectionPayload extends DRGReportPayload implements Serial
     this.diffCFuncType = diffCFuncType;
   }
 
-  public Map<String, NameValueList> getWeeklyAMap() {
+  public Map<String, NameValueList2> getWeeklyAMap() {
     return weeklyAMap;
   }
 
-  public void setWeeklyAMap(Map<String, NameValueList> weeklyAMap) {
+  public void setWeeklyAMap(Map<String, NameValueList2> weeklyAMap) {
     this.weeklyAMap = weeklyAMap;
   }
 
-  public Map<String, NameValueList> getWeeklyB1Map() {
+  public Map<String, NameValueList2> getWeeklyB1Map() {
     return weeklyB1Map;
   }
 
-  public void setWeeklyB1Map(Map<String, NameValueList> weeklyB1Map) {
+  public void setWeeklyB1Map(Map<String, NameValueList2> weeklyB1Map) {
     this.weeklyB1Map = weeklyB1Map;
   }
 
-  public Map<String, NameValueList> getWeeklyB2Map() {
+  public Map<String, NameValueList2> getWeeklyB2Map() {
     return weeklyB2Map;
   }
 
-  public void setWeeklyB2Map(Map<String, NameValueList> weeklyB2Map) {
+  public void setWeeklyB2Map(Map<String, NameValueList2> weeklyB2Map) {
     this.weeklyB2Map = weeklyB2Map;
   }
 
-  public Map<String, NameValueList> getWeeklyCMap() {
+  public Map<String, NameValueList2> getWeeklyCMap() {
     return weeklyCMap;
   }
 
-  public void setWeeklyCMap(Map<String, NameValueList> weeklyCMap) {
+  public void setWeeklyCMap(Map<String, NameValueList2> weeklyCMap) {
     this.weeklyCMap = weeklyCMap;
   }
 }

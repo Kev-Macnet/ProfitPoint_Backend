@@ -340,32 +340,48 @@ public class ReportService {
     java.sql.Date s = new java.sql.Date(sdate.getTime());
     java.sql.Date e = new java.sql.Date(edate.getTime());
     List<Object[]> list = opdDao.findPeriodPoint(s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s,
-        e, s, e, s, e, s, e, s, e);
+        e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e);
     if (list != null && list.size() > 0) {
       Object[] obj = list.get(0);
+      // 案件數
       result.setQuantityAll(((BigInteger) obj[0]).longValue());
       result.setQuantityOpAll(((BigInteger) obj[1]).longValue());
       result.setQuantityOp(((BigInteger) obj[2]).longValue());
       result.setQuantityEm(((BigInteger) obj[3]).longValue());
       result.setQuantityIp(((BigInteger) obj[4]).longValue());
 
+      // 累計申報總點數
       result.setApplPointOpAll(getLongValue(obj[5]));
       result.setApplPointOp(getLongValue(obj[6]));
       result.setApplPointEm(getLongValue(obj[7]));
       result.setApplPointIp(getLongValue(obj[8]));
       result.setApplPointAll(result.getApplPointOpAll() + result.getApplPointIp());
+      // 部分負擔
       result.setPartPointOpAll(getLongValue(obj[9]));
       result.setPartPointOp(getLongValue(obj[10]));
       result.setPartPointEm(getLongValue(obj[11]));
       result.setPartPointIp(getLongValue(obj[12]));
-
       result.setPartPointAll(result.getPartPointOpAll() + result.getPartPointIp());
+      // 自費
+      result.setOwnExpOpAll(getLongValue(obj[13]));
+      result.setOwnExpOp(getLongValue(obj[14]));
+      result.setOwnExpEm(getLongValue(obj[15]));
+      result.setOwnExpIp(getLongValue(obj[16]));
+      result.setOwnExpAll(result.getOwnExpOpAll() + result.getOwnExpIp());
+      // 不申報
+      result.setNoApplOpAll(getLongValue(obj[17]));
+      result.setNoApplOp(getLongValue(obj[18]));
+      result.setNoApplEm(getLongValue(obj[19]));
+      result.setNoApplIp(getLongValue(obj[20]));
+      result.setNoApplAll(result.getNoApplOpAll() + result.getNoApplIp());
+      // 原始總點數    
       result.setPointAll(result.getApplPointAll() + result.getPartPointAll());
       result.setPointEm(result.getApplPointEm() + result.getPartPointEm());
       result.setPointIp(result.getApplPointIp() + result.getPartPointIp());
       result.setPointOp(result.getApplPointOp() + result.getPartPointOp());
       result.setPointOpAll(result.getApplPointOpAll() + result.getPartPointOpAll());
 
+      // 申請總點數
       result.setApplNoPartPointAll(result.getApplPointAll() - result.getPartPointAll());
       result.setApplNoPartPointEm(result.getApplPointEm() - result.getPartPointEm());
       result.setApplNoPartPointIp(result.getApplPointIp() - result.getPartPointIp());
@@ -376,28 +392,11 @@ public class ReportService {
     result.setApplByFuncType(getApplPointGroupByFuncType(s, e));
     result.setPartByFuncType(getPartPointGroupByFuncType(s, e));
     result.setPayByOrderType(getPointGroupByOrderType(s, e));
-
-    // @TESTDATA
-    addTestData(result);
+    result.setOwnExpByFuncType(getOwnExpenseGroupByFuncType(s, e));
+    result.setOwnExpByOrderType(getOwnExpenseGroupByOrderType(s, e));
     return result;
   }
 
-  private void addTestData(PeriodPointPayload ppp) {
-    ppp.setOwnExpAll(ppp.getPointAll() / 5);
-    ppp.setOwnExpEm(ppp.getPointEm() / 5);
-    ppp.setOwnExpIp(ppp.getPointIp() / 5);
-    ppp.setOwnExpOp(ppp.getPointOp() / 5);
-    ppp.setOwnExpOpAll(ppp.getPointOpAll() / 5);
-
-    ppp.setNoApplAll(ppp.getPointAll() / 50);
-    ppp.setNoApplEm(ppp.getPointEm() / 50);
-    ppp.setNoApplIp(ppp.getPointIp() / 50);
-    ppp.setNoApplOp(ppp.getPointOp() / 50);
-    ppp.setNoApplOpAll(ppp.getPointOpAll() / 50);
-
-    ppp.setOwnExpByFuncType(ppp.getPartByFuncType());
-    ppp.setOwnExpByOrderType(ppp.getPayByOrderType());
-  }
 
   public PointQuantityList getApplPointGroupByFuncType(java.sql.Date s, java.sql.Date e) {
     PointQuantityList result = new PointQuantityList();
@@ -443,7 +442,7 @@ public class ReportService {
 
   public PointQuantityList getPartPointGroupByFuncType(java.sql.Date s, java.sql.Date e) {
     PointQuantityList result = new PointQuantityList();
-    // 門急診各科申報總數
+    // 門急診各科部份負擔總數
     List<Object[]> list = opdDao.findPartPointGroupByFuncType(s, e);
     if (list != null && list.size() > 0) {
       for (Object[] objects : list) {
@@ -482,6 +481,48 @@ public class ReportService {
     }
     return result;
   }
+  
+  public PointQuantityList getOwnExpenseGroupByFuncType(java.sql.Date s, java.sql.Date e) {
+    PointQuantityList result = new PointQuantityList();
+    // 門急診各科自費總數
+    List<Object[]> list = opdDao.findOwnExpenseGroupByFuncType(s, e);
+    if (list != null && list.size() > 0) {
+      for (Object[] objects : list) {
+        NameCodePointQuantity npq = new NameCodePointQuantity();
+        npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
+        npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+          npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
+        npq.setQuantity(((BigInteger) objects[2]).longValue());
+        result.addOp(npq);
+      }
+    }
+    list = ipdDao.findOwnExpenseGroupByFuncType(s, e);
+    if (list != null && list.size() > 0) {
+      for (Object[] objects : list) {
+        NameCodePointQuantity npq = new NameCodePointQuantity();
+        npq.setName(codeTableService.getDesc("FUNC_TYPE", (String) objects[0]));
+        npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+          npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
+        npq.setQuantity(((BigInteger) objects[2]).longValue());
+        result.addIp(npq);
+      }
+    }
+    return result;
+  }
 
   public PointQuantityList getPointGroupByOrderType(java.sql.Date s, java.sql.Date e) {
     PointQuantityList result = new PointQuantityList();
@@ -490,7 +531,11 @@ public class ReportService {
     if (list != null && list.size() > 0) {
       for (Object[] objects : list) {
         NameCodePointQuantity npq = new NameCodePointQuantity();
-        npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
+        String name = codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]);
+        if (name == null || name.length() < 1) {
+          name = "無";
+        }
+        npq.setName(name);
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
           npq.setPoint(0L);
@@ -508,7 +553,11 @@ public class ReportService {
     if (list != null && list.size() > 0) {
       for (Object[] objects : list) {
         NameCodePointQuantity npq = new NameCodePointQuantity();
-        npq.setName(codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]));
+        String name = codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]);
+        if (name == null || name.length() < 1) {
+          name = "無";
+        }
+        npq.setName(name);
         npq.setCode((String) objects[0]);
         if (objects[1] == null) {
           npq.setPoint(0L);
@@ -525,6 +574,56 @@ public class ReportService {
     return result;
   }
 
+  public PointQuantityList getOwnExpenseGroupByOrderType(java.sql.Date s, java.sql.Date e) {
+    PointQuantityList result = new PointQuantityList();
+    // 門急診各科申報總數
+    List<Object[]> list = oppDao.findOwnExpensePointGroupByPayCodeType(s, e);
+    if (list != null && list.size() > 0) {
+      for (Object[] objects : list) {
+        NameCodePointQuantity npq = new NameCodePointQuantity();
+        String name = codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]);
+        if (name == null || name.length() < 1) {
+          name = "無";
+        }
+        npq.setName(name);
+        npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+          npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
+        npq.setQuantity(((BigInteger) objects[2]).longValue());
+        result.addOp(npq);
+      }
+    }
+    list = ippDao.findOwnExpenseGroupByPayCodeType(s, e);
+    if (list != null && list.size() > 0) {
+      for (Object[] objects : list) {
+        NameCodePointQuantity npq = new NameCodePointQuantity();
+        String name = codeTableService.getDesc("PAY_CODE_TYPE", (String) objects[0]);
+        if (name == null || name.length() < 1) {
+          name = "無";
+        }
+        npq.setName(name);
+        npq.setCode((String) objects[0]);
+        if (objects[1] == null) {
+          npq.setPoint(0L);
+        } else if (objects[1] instanceof BigDecimal) {
+          BigDecimal dot = (BigDecimal) objects[1];
+          npq.setPoint(dot.longValue());
+        } else {
+          npq.setPoint(((long) (int) objects[1]));
+        }
+        npq.setQuantity(((BigInteger) objects[2]).longValue());
+        result.addIp(npq);
+      }
+    }
+    return result;
+  }
+  
   public POINT_WEEKLY calculatePointByWeek(Date sdate, Date edate, List<String> funcTypes) {
     if (!checkWeekday(sdate, Calendar.SUNDAY) || !checkWeekday(edate, Calendar.SATURDAY)) {
       logger.error("calculatePointByWeek failed");
@@ -570,10 +669,9 @@ public class ReportService {
     }
     List<Object[]> list = null;
     if (XMLConstant.FUNC_TYPE_ALL.equals(funcType)) {
-      list = opdDao.findAllPoint(s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e);
+      list = opdDao.findAllPoint(s, e);
     } else {
-      list = opdDao.findAllPointByFuncType(s, e, funcType, s, e, funcType, s, e, s, e, funcType, s,
-          e, funcType, s, e, funcType, s, e, funcType, s, e, funcType);
+      list = opdDao.findAllPointByFuncType(s, e, funcType);
     }
 
     if (list != null && list.size() > 0) {
@@ -694,18 +792,22 @@ public class ReportService {
           drgWeekly.setSectionA(((BigInteger) obj2[1]).longValue());
           drgWeeklyAll.setSectionA(drgWeeklyAll.getSectionA() + drgWeekly.getSectionA());
           drgWeekly.setPointA(point);
+          drgWeeklyAll.setPointA(drgWeeklyAll.getPointA() + drgWeekly.getPointA());
         } else if ("B1".equals((String) obj2[0])) {
           drgWeekly.setSectionB1(((BigInteger) obj2[1]).longValue());
           drgWeeklyAll.setSectionB1(drgWeeklyAll.getSectionB1() + drgWeekly.getSectionB1());
           drgWeekly.setPointB1(point);
+          drgWeeklyAll.setPointB1(drgWeeklyAll.getPointB1() + drgWeekly.getPointB1());
         } else if ("B2".equals((String) obj2[0])) {
           drgWeekly.setSectionB2(((BigInteger) obj2[1]).longValue());
           drgWeeklyAll.setSectionB2(drgWeeklyAll.getSectionB2() + drgWeekly.getSectionB2());
           drgWeekly.setPointB2(point);
+          drgWeeklyAll.setPointB2(drgWeeklyAll.getPointB2() + drgWeekly.getPointB2());
         } else if ("C".equals((String) obj2[0])) {
           drgWeekly.setSectionC(((BigInteger) obj2[1]).longValue());
           drgWeeklyAll.setSectionC(drgWeeklyAll.getSectionC() + drgWeekly.getSectionC());
           drgWeekly.setPointC(point);
+          drgWeeklyAll.setPointC(drgWeeklyAll.getPointC() + drgWeekly.getPointC());
         }
       }
       drgWeeklyDao.save(drgWeekly);

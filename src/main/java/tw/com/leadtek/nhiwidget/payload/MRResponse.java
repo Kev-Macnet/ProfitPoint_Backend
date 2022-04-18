@@ -56,6 +56,7 @@ public class MRResponse extends MR {
     inhClinicId = mr.getInhClinicId();
     inhMrId = mr.getInhMrId();
     mrDate = mr.getMrDate();
+    mrEndDate = mr.getMrEndDate();
     name = mr.getName();
     notify = mr.getNotify();
     objective = mr.getObjective();

@@ -40,7 +40,7 @@ public class FixMrDateMrEndDate {
   @Autowired
   private INTELLIGENTDao intelligentDao;
   
-  @Ignore
+  //@Ignore
   @Test
   public void fixDate() {
     // 1. 處理 MR_END_DATE is null但 OP_D.FUNC_END_DATE is null
@@ -100,6 +100,7 @@ public class FixMrDateMrEndDate {
     }
   }
   
+  @Ignore
   @Test
   public void fixOwnExpanse() {
     

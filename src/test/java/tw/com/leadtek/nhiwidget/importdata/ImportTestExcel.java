@@ -505,7 +505,7 @@ public class ImportTestExcel {
         continue;
       }
       try {
-        System.out.println("file name=" + file.getName());
+       // System.out.println("file name=" + file.getName());
         if (file.getName().toUpperCase().indexOf("OPD") > -1) {
           // workbook = new HSSFWorkbook(new FileInputStream(file));
           // if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
@@ -532,18 +532,40 @@ public class ImportTestExcel {
         continue;
       }
       try {
-        System.out.println("file name=" + file.getName());
+        //System.out.println("file name=" + file.getName());
         if (file.getName().toUpperCase().indexOf("OPP") > -1) {
           // workbook = new HSSFWorkbook(new FileInputStream(file));
           // if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
           // xmlService.readOppHSSFSheet(workbook.getSheetAt(0));
           // }
         } else if (file.getName().toUpperCase().indexOf("IPP") > -1) {
-          workbook = new HSSFWorkbook(new FileInputStream(file));
-          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
-            xmlService.readIppHSSFSheet(workbook.getSheetAt(0));
-          }
+//          workbook = new HSSFWorkbook(new FileInputStream(file));
+//          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+//            xmlService.readIppHSSFSheet(workbook.getSheetAt(0));
+//          }
         }
+        if (workbook != null) {
+          workbook.close();
+        }
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+    
+    for (File file : files) {
+      if (!file.getName().endsWith(".xls")) {
+        continue;
+      }
+      try {
+        System.out.println("file name=" + file.getName());
+        if (file.getName().toUpperCase().indexOf("SOP") > -1) {
+           workbook = new HSSFWorkbook(new FileInputStream(file));
+           if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() == 3) {
+             xmlService.readOpdSOPSheet(workbook.getSheetAt(0));
+           }
+        } 
         if (workbook != null) {
           workbook.close();
         }

@@ -1427,9 +1427,11 @@ public class SystemService {
             parametersService.switchPilotProject(needProcess.get(intelligentType));
           } else if (intelligentType.intValue() == INTELLIGENT_REASON.SAME_ATC.value()) {
             parametersService.switchSameATC(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.COST_DIFF.value()) {
+            parametersService.switchCostDiff(needProcess.get(intelligentType));
           }
         }
-        System.out.println("recalculateAll done");
+        logger.info("recalculateAll done");
       }
     });
     thread.start();

@@ -461,6 +461,10 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ "group by  ICDCM1 order by id", nativeQuery = true)
   public List<Map<String,Object>> getIcdcmCountIPByDate(String sDate, String eDate);
   
+  public List<MR> findByApplYmAndDataFormatOrderById(String applYm, String dataFormat);
+  
+  public List<MR> findByInhClinicId(String inhClinicId); 
+  
   /**
    * 取得藥用碼出現次數 -門診
    * @param sDate
@@ -565,7 +569,5 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    */
   @Query(value = "select * from mr where CODE_ALL like ?1 and ROC_ID = ?2 order by MR_DATE desc", nativeQuery = true)
   public List<MR> getAllByCodeAndRocid(String code, String rocid);
-  
-  
   
 }
