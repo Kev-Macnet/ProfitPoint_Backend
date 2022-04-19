@@ -425,17 +425,19 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<MR> getMrDataGroupByIcdcm(String date,String dfmt);
   
   /**
-   * 住院天數差異
-   * @param date
+   * 住院天數差異，住院病歷的住院天數 減去 各主診斷碼算出的上限值，若超過設定檔中的天數上限
+   * @param sDate(起日)
+   * @param eDate(迄日)
+   * @param isDays(設定值)
    * @return
    */
-  @Query(value ="select * from ( "
-  		+ "select CO.MR_ID,AI.ICD_CM_1, avg +2 * stddev as UP , STDDEV, CO.COUNT from "
+  @Query(value ="select MR_ID, ICD_CM_1, UP, COUNT , (COUNT - UP) as VCOUNT from ( "
+  		+ "select CO.MR_ID,AI.ICD_CM_1, avg +2 * stddev as UP , STDDEV, AI.COUNT as COUNT  from "
   		+ "(SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV,(S_BED_DAY + E_BED_DAY) as COUNT  FROM IP_D  "
   		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2) GROUP BY ICD_CM_1) AI, (select ICD_CM_1, (S_BED_DAY + E_BED_DAY) as COUNT, MR_ID from IP_D where MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2)) CO "
   		+ "where AI.stddev > 0  AND AI.ICD_CM_1 = CO.ICD_CM_1) TEMP  "
-  		+ "where COUNT > UP ",  nativeQuery = true)
-  public List<Map<String,Object>> hospitalDays(String sDate, String eDate);
+  		+ "where  (COUNT - UP) > ?3",  nativeQuery = true)
+  public List<Map<String,Object>> hospitalDays(String sDate, String eDate, int isDays);
   
   /**
    * 取得主診斷碼出現次數 -門診
@@ -443,11 +445,29 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param eDate
    * @return
    */
-  @Query(value ="select ICDCM1, count(1) as COUNT from mr where   "
-  		+ "mr_date between ?1 and ?2 "
-  		+ "and id in (select mr_id from op_p where length(drug_no) = 10)  "
-  		+ "group by  ICDCM1 order by id", nativeQuery = true)
+  @Query(value ="select temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.DRUG_NO as DRUGNO, temp2.count as ICOUNT , (temp1.iccount / temp2.count) * 100 as PERCENT from  "
+  		+ "(select  mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, op.DRUG_NO  from op_p op , mr  "
+  		+ "where op.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(op.drug_no) = 10  and mr.code_all like concat('%', op.drug_no, '%') "
+  		+ "group by mr.icdcm1, op.DRUG_NO) temp1, (select ICDCM1, count(ICDCM1) as COUNT from mr where  mr_date between ?1 and ?2 and id in (select mr_id from op_p where length(drug_no) = 10)  "
+  		+ "group by  ICDCM1) temp2 "
+  		+ "where temp1.icdcm1 = temp2.icdcm1 "
+  		+ "order by temp1.icdcm1", nativeQuery = true)
   public List<Map<String,Object>> getIcdcmCountOPByDate(String sDate, String eDate);
+  /**
+   * 取得主診斷碼出現次數 -門診
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value ="select * from ( "
+  		+ "select temp1.ID, temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.DRUG_NO as DRUGNO, temp2.count as ICOUNT , (temp1.iccount / temp2.count) * 100 as PERCENT from  "
+  		+ "(select mr.id,  mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, op.DRUG_NO  from op_p op , mr  "
+  		+ "where op.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(op.drug_no) = 10  and mr.code_all like concat('%', op.drug_no, '%') "
+  		+ "group by mr.icdcm1, op.DRUG_NO, mr.id) temp1, (select ICDCM1, count(ICDCM1) as COUNT from mr where  mr_date between ?1 and ?2 and id in (select mr_id from op_p where length(drug_no) = 10)  "
+  		+ "group by  ICDCM1) temp2 "
+  		+ "where temp1.icdcm1 = temp2.icdcm1 "
+  		+ "order by temp1.icdcm1) temp3", nativeQuery = true)
+  public List<Map<String,Object>> getIcdcmCountOPByDate2(String sDate, String eDate);
   
   /**
    * 取得主診斷碼出現次數 -住院
@@ -455,11 +475,28 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param eDate
    * @return
    */
-  @Query(value ="select ICDCM1, count(1) as COUNT from mr where   "
-  		+ "mr_date between '2021-01-01' and '2021-04-01'  "
-  		+ "and id in (select mr_id from ip_p where length(order_code) = 10)  "
-  		+ "group by  ICDCM1 order by id", nativeQuery = true)
+  @Query(value ="select temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.ORDER_CODE as DRUGNO, temp2.count as ICOUNT , (temp1.iccount / temp2.count) * 100 as PERCENT from   "
+  		+ "(select  mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, ip.ORDER_CODE  from ip_p ip , mr   "
+  		+ "where ip.mr_id = mr.id and mr.mr_date between '2020-01-01' and '2020-01-31' and length(ip.ORDER_CODE) = 10  and mr.code_all like concat('%', ip.ORDER_CODE, '%')  "
+  		+ "group by mr.icdcm1, ip.ORDER_CODE) temp1, (select ICDCM1, count(ICDCM1) as COUNT from mr where  mr_date between '2020-01-01' and '2020-01-31' and id in (select mr_id from ip_p where length(ORDER_CODE) = 10)   "
+  		+ "group by  ICDCM1) temp2  "
+  		+ "where temp1.icdcm1 = temp2.icdcm1  "
+  		+ "order by temp1.icdcm1", nativeQuery = true)
   public List<Map<String,Object>> getIcdcmCountIPByDate(String sDate, String eDate);
+  /**
+   * 取得主診斷碼出現次數 -住院
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value ="select temp1.ID, temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.ORDER_CODE as DRUGNO, temp2.count as ICOUNT , (temp1.iccount / temp2.count) * 100 as PERCENT from   "
+  		+ "(select mr.ID, mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, ip.ORDER_CODE  from ip_p ip , mr   "
+  		+ "where ip.mr_id = mr.id and mr.mr_date between '2020-01-01' and '2020-01-31' and length(ip.ORDER_CODE) = 10  and mr.code_all like concat('%', ip.ORDER_CODE, '%')  "
+  		+ "group by mr.icdcm1, ip.ORDER_CODE, mr.ID) temp1, (select ICDCM1, count(ICDCM1) as COUNT from mr where  mr_date between '2020-01-01' and '2020-01-31' and id in (select mr_id from ip_p where length(ORDER_CODE) = 10)   "
+  		+ "group by  ICDCM1) temp2  "
+  		+ "where temp1.icdcm1 = temp2.icdcm1  "
+  		+ "order by temp1.icdcm1", nativeQuery = true)
+  public List<Map<String,Object>> getIcdcmCountIPByDate2(String sDate, String eDate);
   
   public List<MR> findByApplYmAndDataFormatOrderById(String applYm, String dataFormat);
   
@@ -569,5 +606,16 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    */
   @Query(value = "select * from mr where CODE_ALL like ?1 and ROC_ID = ?2 order by MR_DATE desc", nativeQuery = true)
   public List<MR> getAllByCodeAndRocid(String code, String rocid);
+  /**
+   * 依照以下條件取得MR資料
+   * @param icdcm
+   * @param dataformat
+   * @param sDate
+   * @param eDate
+   * @param code
+   * @return
+   */
+  @Query(value = "select * from mr where ICDCM1 = ?1 and DATA_FORMAT = ?2 and mr_date between  ?3 and  ?4  and code_all like '%?5%'", nativeQuery = true)
+  public List<MR> getDataByParams(String icdcm, String dataformat, String sDate, String eDate, String code);
   
 }

@@ -3,9 +3,9 @@ package tw.com.leadtek.nhiwidget.model.rdb;
 import java.io.Serializable;
 
 import javax.persistence.Embeddable;
+
 /**
- * 主鍵 
- * 代表複合主鍵的實體bean需要實現Serializable介面
+ * 主鍵 代表複合主鍵的實體bean需要實現Serializable介面
  */
 @Embeddable
 public class ICDCM_DRUG_KEYS implements Serializable {
@@ -23,25 +23,31 @@ public class ICDCM_DRUG_KEYS implements Serializable {
 	 */
 	private String drug;
 	/**
-	 * 資料格式
-	   10: 門急診
-	   20: 住院
+	 * 資料格式 10: 門急診 20: 住院
 	 */
-	private String dataformat;
-	
-	public ICDCM_DRUG_KEYS() {}
-	
+	private String dataFormat;
+
+	public ICDCM_DRUG_KEYS() {
+	}
+
 	public ICDCM_DRUG_KEYS(String icdcm, String drug, String dataformat) {
 		this.icdcm = icdcm;
 		this.drug = drug;
-		this.dataformat = dataformat;
+		this.dataFormat = dataformat;
 	}
-	
+
 	@Override
 	public String toString() {
-		return "ICDCM_DRUG_KEYS {icdcm="+icdcm+" ,drug="+drug+" ,dataformat="+dataformat+ "}";
-		
+		return "ICDCM_DRUG_KEYS {icdcm=" + icdcm + " ,drug=" + drug + " ,dataformat=" + dataFormat + "}";
+
 	}
+
+	@Override
+	public int hashCode() {
+		return icdcm.hashCode() + drug.hashCode() + dataFormat.hashCode();
+	}
+	
+	
 
 	public String getIcdcm() {
 		return icdcm;
@@ -59,14 +65,12 @@ public class ICDCM_DRUG_KEYS implements Serializable {
 		this.drug = drug;
 	}
 
-	public String getDataformat() {
-		return dataformat;
+	public String getDataFormat() {
+		return dataFormat;
 	}
 
-	public void setDataformat(String dataformat) {
-		this.dataformat = dataformat;
+	public void setDataFormat(String dataFormat) {
+		this.dataFormat = dataFormat;
 	}
-	
-	
 
 }
