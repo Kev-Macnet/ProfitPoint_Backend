@@ -16,7 +16,9 @@ public interface ICDCM_DRUGDao  extends JpaRepository<ICDCM_DRUG, ICDCM_DRUG_KEY
 	@Query(value = "SELECT * FROM ICDCM_DRUG WHERE DATA_FORMAT = ?1 order by PERCENT desc", nativeQuery = true)
 	public List<ICDCM_DRUG> queryByDataFormat(String dataFormat);
 	
-	@Query(value = "SELECT * FROM ICDCM_DRUG WHERE DATA_FORMAT = ?1 order by PERCENT desc limit 2", nativeQuery = true)
+	@Query(value = "(select * from icdcm_drug where data_format = ?1 and is_drug = 1 order by percent desc limit 2) "
+			+ "union "
+			+ "(select * from icdcm_drug where data_format = ?1 and is_drug = 2 order by percent desc limit 2) ", nativeQuery = true)
 	public List<ICDCM_DRUG> queryByDataFormatLimit(String dataFormat);
 	
 	@Query(value = "SELECT * FROM ICDCM_DRUG WHERE DATA_FORMAT = ?1 and IS_DRUG = ?2 order by PERCENT desc", nativeQuery = true)

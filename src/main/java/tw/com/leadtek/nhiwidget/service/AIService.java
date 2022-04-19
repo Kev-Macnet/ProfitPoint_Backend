@@ -507,7 +507,7 @@ public class AIService {
 
 			if (icdList.size() == 0) {
 				if (icdmcList.size() > 0) {
-
+                    ///寫資料庫
 					ICDCM_DRUG idModel = new ICDCM_DRUG();
 					for (Map<String, Object> map : icdmcList) {
 						int isDrug = 1;
@@ -531,12 +531,13 @@ public class AIService {
 						idModel.setIsdurug(isDrug);
 
 						icdcmList.add(idModel);
+						idModel = new ICDCM_DRUG();
 					}
 					icdcmDrugDao.saveAll(icdcmList);
 				}
 			}
 			if (icdList.size() == 0) {
-				/// 取得最大2筆
+				/// 取得最大4筆
 				icdList = icdcmDrugDao.queryByDataFormatLimit("10");
 			}
 			
@@ -602,6 +603,7 @@ public class AIService {
 							float b = (float) iModelPer;
 							float fPer = a / b;
 							int round = Math.round(fPer * 100);
+							///判斷小於5,寫入智能提示
 							if (round < 5) {
 								MR mr = mrDao.getMrByID(map.get("ID").toString());
 								paraResult = parametersService.getOneValueByName("INTELLIGENT",
@@ -644,7 +646,7 @@ public class AIService {
 
 			if (icdList.size() == 0) {
 				if (icdmcList.size() > 0) {
-
+					///寫資料庫
 					ICDCM_DRUG idModel = new ICDCM_DRUG();
 					for (Map<String, Object> map : icdmcList) {
 						int isDrug = 1;
@@ -668,12 +670,13 @@ public class AIService {
 						idModel.setIsdurug(isDrug);
 
 						icdcmList.add(idModel);
+						idModel = new ICDCM_DRUG();
 					}
 					icdcmDrugDao.saveAll(icdcmList);
 				}
 			}
 			if (icdList.size() == 0) {
-				/// 取得最大2筆
+				/// 取得最大4筆
 				icdList = icdcmDrugDao.queryByDataFormatLimit("20");
 			}
 			
@@ -721,6 +724,7 @@ public class AIService {
 							float b = (float) iModelPer;
 							float fPer = a / b;
 							int round = Math.round(fPer * 100);
+							///判斷小於5,寫入智能提示
 							if (round < 5) {
 								MR mr = mrDao.getMrByID(map.get("ID").toString());
 								paraResult = parametersService.getOneValueByName("INTELLIGENT",
