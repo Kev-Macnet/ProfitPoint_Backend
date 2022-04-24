@@ -161,7 +161,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   		+ "join ip_p ipp on ipd.id = ipp.ipd_id "
   		+ "join pt_payment_terms ppt on  ipp.order_code = ppt.nhi_no "
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
-  		+ "where pof.no_dentisit = 0   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "where pof.no_dentisit = 1   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
   		+ "and ipd.mr_id in (?1) ", nativeQuery = true)
   public List<Map<String, Object>> getValidByNoDentisit(List<String> mrId);
   
@@ -174,25 +174,27 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
 	  		+ "join ip_p ipp on ipd.id = ipp.ipd_id "
 	  		+ "join pt_payment_terms ppt on  ipp.order_code = ppt.nhi_no "
 	  		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
-	  		+ "where pof.no_chi_medicine = 0   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+	  		+ "where pof.no_chi_medicine = 1   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
 	  		+ "and ipd.mr_id in (?1) ", nativeQuery = true)
 	  public List<Map<String, Object>> getValidByNoChiMedicine(List<String> mrId);
   /**
    * 查詢離島資料
+   * @param ordercode
+   * @param mridStr
    * @return
    */
-  @Query(value = "select * from  ip_d ipd "
-  		+ "join ip_p ipp on ipd.id = ipp.ipd_id where ipd.PART_NO = '007' ", nativeQuery = true)
-  public List<Map<String, Object>> getPartNoByOutisLand();
+  @Query(value = "SELECT MR_ID FROM ip_d WHERE id IN ( "
+	  		+ "SELECT IPD_ID FROM ip_p WHERE ORDER_CODE = ?1 and MR_ID in (?2) ) "
+	  		+ "AND part_no <> '007'", nativeQuery = true)
+  public List<Map<String, Object>> getPartNoByOutisLand(String drugNo,List<String> mridStr);
   
   /**
-   * 由mrid取得該病例生日
+   * 由mrid取得該住院病例
    * @param mrid
    * @return
    */
-  @Query(value = "select ipd.MR_ID, ipd.ID_BIRTH_YMD from ip_d ipd "
-  		+ "where ipd.mr_id  in(?1) group by ipd.MR_ID,ipd.ID_BIRTH_YMD", nativeQuery = true)
-  public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
+  @Query(value = "select * from ip_d where MR_ID in(?1)", nativeQuery = true)
+  public List<IP_D> getDataListByMrId(List<String> mridStr);
   
   /**
    * 由mrid取得ip_d 列表

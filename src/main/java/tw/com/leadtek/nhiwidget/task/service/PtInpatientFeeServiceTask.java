@@ -15,10 +15,8 @@ import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
-import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
-import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 
 @Service
@@ -27,8 +25,6 @@ public class PtInpatientFeeServiceTask {
 	private MRDao mrDao;
 
 	@Autowired
-	private PAY_CODEDao payCodeDao;
-	@Autowired
 	private IP_PDao ippDao;
 	@Autowired
 	private OP_PDao oppDao;
@@ -36,43 +32,39 @@ public class PtInpatientFeeServiceTask {
 	@Autowired
 	private IntelligentService intelligentService;
 
+	private String Category = "住院診察費";
+
 	public void validInpatienFee(PtInpatientFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-		Calendar calendar = Calendar.getInstance();
-		Date dateObj = calendar.getTime();
-		String eDateStr = sdf.format(dateObj);
-		String sDateStr = minusYear(eDateStr);
-		/// 違反案件數
-		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr);
-		List<MR> mrList2 = new ArrayList<MR>();
+		/// 將timestamp轉成date
+		java.sql.Timestamp tSdate = new java.sql.Timestamp(params.getStart_date());
+		java.sql.Timestamp tEdate = new java.sql.Timestamp(params.getEnd_date());
+		Date tsd = new Date(tSdate.getTime());
+		Date ted = new Date(tEdate.getTime());
+		String sDateStr = sdf.format(tsd);
+		String eDateStr = sdf.format(ted);
+
+		/// 該支付準則區間病歷表
+		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr, params.getNhi_no());
+		/// 存放mrID
 		List<String> mrIdListStr = new ArrayList<String>();
-		/// 判斷支付條件準則日期，如果病歷小於該日，則不顯示
+		/// 提取將該診斷碼之ID
 		for (MR mr : mrList) {
-			/// 起日
-			Date sd = sdf.parse(sDateStr);
-			Date mrSd = mr.getMrDate();
-			/// 訖日
-			Date ed = sdf.parse(eDateStr);
-			Date mrEd = mr.getMrEndDate();
 
-			if (sd.before(mrSd) || ed.equals(mrEd)) {
-				mrList2.add(mr);
-				mrIdListStr.add(mr.getId().toString());
-			}
+			mrIdListStr.add(mr.getId().toString());
 		}
-
 		if (params.getHospitalized_type() == 0) {
-			for (MR r : mrList2) {
-				if (r.getDataFormat() != "20" && r.getCodeAll().contains(params.getNhi_no())) {
+			for (MR r : mrList) {
+				if (r.getDataFormat() == "20") {
 					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用(住院)就醫方式", params.getNhi_no()), true);
+							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
-			for (MR r : mrList2) {
-				if (r.getDataFormat() != "10") {
+			for (MR r : mrList) {
+				if (r.getDataFormat() == "10") {
 					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用(門診)就醫方式", params.getNhi_no()), true);
+							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
 				}
 			}
 		}
@@ -116,18 +108,40 @@ public class PtInpatientFeeServiceTask {
 		if (params.getExclude_nhi_no_enable() == 1) {
 			List<String> nhiNoList = params.getLst_nhi_no();
 			int count = 0;
-			for (MR mr : mrList2) {
-				for (String nhiNo : nhiNoList) {
-					if (mr.getCodeAll().contains(nhiNo) && count == 0) {
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-								params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
-										params.getNhi_no(), nhiNo),
-								true);
-						count++;
-					} else if (mr.getCodeAll().contains(nhiNo) && count > 0) {
-						continue;
+			/// 如果住院
+			if (params.getHospitalized_type() == 1) {
+				for (MR mr : mrList) {
+					for (String nhiNo : nhiNoList) {
+						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+									params.getNhi_no(),
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+											params.getNhi_no(), nhiNo),
+									true);
+							count++;
+						} else if (mr.getCodeAll().contains(nhiNo) && count > 0) {
+							continue;
+						}
 					}
+					count = 0;
+				}
+			}
+			/// 如果門診
+			if (params.getOutpatient_type() == 1) {
+				for (MR mr : mrList) {
+					for (String nhiNo : nhiNoList) {
+						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+									params.getNhi_no(),
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+											params.getNhi_no(), nhiNo),
+									true);
+							count++;
+						} else if (mr.getCodeAll().contains(nhiNo) && count > 0) {
+							continue;
+						}
+					}
+					count = 0;
 				}
 			}
 
@@ -136,46 +150,81 @@ public class PtInpatientFeeServiceTask {
 		/// 4.
 		/// 每組病歷號碼，每院限申報
 		if (params.getMax_patient_no_enable() == 1) {
-			List<Map<String, Object>> ippData = ippDao.getListCountByOrderCodeAndMrid(params.getNhi_no(), mrIdListStr);
-			List<Map<String, Object>> oppData = oppDao.getListCountByDrugNoAndMrid(params.getNhi_no(), mrIdListStr);
+			///如果門診
+			if (params.getOutpatient_type() == 1) {
+				List<Map<String, Object>> oppData = oppDao.getListCountByDrugNoAndMrid(params.getNhi_no(), mrIdListStr);
+				if (oppData.size() > 0) {
+					for (Map<String, Object> map : oppData) {
+						float t = Float.parseFloat(map.get("COUNT").toString());
+						if (params.getMax_patient_no() < t) {
+							MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:每組病歷號碼，每院限申報%d次，疑似有出入",
+											params.getNhi_no(), params.getMax_patient_no()),
+									true);
+						}
+					}
+				}
+			}
+			///如果住院
+			if (params.getHospitalized_type() == 1) {
+				List<Map<String, Object>> ippData = ippDao.getListCountByOrderCodeAndMrid(params.getNhi_no(),
+						mrIdListStr);
 
-			if (ippData.size() > 0) {
-				for (Map<String, Object> map : ippData) {
-					float t = Float.parseFloat(map.get("COUNT").toString());
-					if (params.getMax_patient_no() < t) {
-						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-								params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:每組病歷號碼，每院限申報%d次，疑似有出入",
-										params.getNhi_no(), params.getMax_patient_no()),
-								true);
+				if (ippData.size() > 0) {
+					for (Map<String, Object> map : ippData) {
+						float t = Float.parseFloat(map.get("COUNT").toString());
+						if (params.getMax_patient_no() < t) {
+							MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:每組病歷號碼，每院限申報%d次，疑似有出入",
+											params.getNhi_no(), params.getMax_patient_no()),
+									true);
+						}
 					}
 				}
 			}
-			if (oppData.size() > 0) {
-				for (Map<String, Object> map : oppData) {
-					float t = Float.parseFloat(map.get("COUNT").toString());
-					if (params.getMax_patient_no() < t) {
-						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-								params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:每組病歷號碼，每院限申報%d次，疑似有出入",
-										params.getNhi_no(), params.getMax_patient_no()),
-								true);
-					}
-				}
-			}
+
 		}
 
 		/// 5.
 		/// 參與計畫之病患，不得申報
 		if (params.getNot_allow_plan_enable() == 1) {
 			List<String> planList = params.getLst_allow_plan();
-			for (MR mr : mrList2) {
-				if (mr.getCodeAll().contains(params.getNhi_no())) {
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s與支付準則條件:參與[%s]計畫之病患，不得申報，疑似有出入", params.getNhi_no(),
-									planList.toString()),
-							true);
+			int count = 0;
+			for (MR mr : mrList) {
+				/// 如果門診
+				if (params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+					for (String s : planList) {
+						if (mr.getCodeAll().contains(s)) {
+
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:參與[%s]計畫之病患，不得申報，疑似有出入",
+											params.getNhi_no(), planList.toString()),
+									true);
+							count++;
+						} else if (mr.getCodeAll().contains(s) && count > 0) {
+							continue;
+						}
+					}
 				}
+				/// 如果住院
+				if (params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+					for (String s : planList) {
+						if (mr.getCodeAll().contains(s)) {
+
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:參與[%s]計畫之病患，不得申報，疑似有出入",
+											params.getNhi_no(), planList.toString()),
+									true);
+							count++;
+						} else if (mr.getCodeAll().contains(s) && count > 0) {
+							continue;
+						}
+					}
+				}
+
+				count++;
 			}
 		}
 
@@ -184,11 +233,32 @@ public class PtInpatientFeeServiceTask {
 		if (params.getCoexist_nhi_no_enable() == 1) {
 			List<String> coList = params.getLst_co_nhi_no();
 			int count = 0;
-			for (MR mr : mrList2) {
-				for (String s : coList) {
-					/// 先判斷有相同支付標準
-					if (mr.getCodeAll().contains(params.getNhi_no())) {
-						/// 再判斷沒有符合
+			for (MR mr : mrList) {
+				/// 如果門診
+				if (params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+					for (String s : coList) {
+						/// 判斷沒有符合
+						if (!mr.getCodeAll().contains(s)) {
+							if (count == 0) {
+								try {
+									
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+											params.getNhi_no(),
+											String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報，疑似有出入",
+													params.getNhi_no(), coList.toString()),
+											true);
+								}catch(Exception e){
+									String errStr = e.getMessage();
+								}
+							}
+							count++;
+						}
+					}
+				}
+				/// 如果住院
+				if (params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+					for (String s : coList) {
+						/// 判斷沒有符合
 						if (!mr.getCodeAll().contains(s)) {
 							if (count == 0) {
 
@@ -200,35 +270,49 @@ public class PtInpatientFeeServiceTask {
 							count++;
 						}
 					}
-					count = 0;
 				}
+
+				count = 0;
 			}
 		}
 
 		/// 7.
 		/// 同科別，門急診當次轉住院，單一住院就醫紀錄， 門診診察費或住院診察費支付標準代碼，不可並存
 		if (params.getNo_coexist_enable() == 1) {
-			for (MR mr : mrList2) {
-				/// 先判斷有相同支付標準
-				if (mr.getCodeAll().contains(params.getNhi_no()) && mr.getDataFormat().equals("10")) {
-					String[] split = mr.getCodeAll().toString().split(",");
-					for (String s : split) {
-						if (s.equals(params.getNhi_no())) {
-
-							PAY_CODE pcModel = payCodeDao.findDataByCode(params.getNhi_no());
-							if (pcModel.getCodeType().equals("門診診察費")) {
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-										params.getNhi_no(),
-										String.format(
-												"(醫令代碼)%s與支付準則條件:同科別，門急診當次轉住院，單一住院就醫紀錄， 門診診察費或住院診察費支付標準代碼，不可並存:，疑似有出入",
-												params.getNhi_no()),
-										true);
-							}
-						}
+			/// 如果門診
+			if (params.getOutpatient_type() == 1) {
+				List<Map<String, Object>> opData = mrDao.getIdByOPandPaycode(mrIdListStr, "住院診察費");
+				for (Map<String, Object> map : opData) {
+					MR mr = mrDao.getMrByID(map.get("ID").toString());
+					try {
+						
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+								String.format("(醫令代碼)%s與支付準則條件:同科別，門急診當次轉住院，單一住院就醫紀錄， 住院診察費支付標準代碼，不可並存:，疑似有出入",
+										params.getNhi_no()),
+								true);
+					}catch(Exception e) {
+						String errStr = e.getMessage();
 					}
+				}
 
+			}
+			/// 如果住院
+			if (params.getHospitalized_type() == 1) {
+				List<Map<String, Object>> ipData = mrDao.getIdByIPandPaycode(mrIdListStr, "門診診察費");
+				for (Map<String, Object> map : ipData) {
+					MR mr = mrDao.getMrByID(map.get("ID").toString());
+					try {
+						
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+								String.format("(醫令代碼)%s與支付準則條件:同科別，門急診當次轉住院，單一住院就醫紀錄， 門診診察費支付標準代碼，不可並存:，疑似有出入",
+										params.getNhi_no()),
+								true);
+					}catch(Exception e) {
+						String errStr = e.getMessage();
+					}
 				}
 			}
+
 		}
 
 	}

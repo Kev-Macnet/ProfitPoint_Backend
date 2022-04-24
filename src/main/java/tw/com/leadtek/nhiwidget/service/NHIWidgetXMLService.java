@@ -5995,10 +5995,10 @@ public class NHIWidgetXMLService {
       result.setOrderSeqNo(Integer.parseInt(values.get("ORDER_SEQ_NO")));
     }
     if (values.get("START_TIME") != null && values.get("START_TIME").length() > 0) {
-      result.setStartTime(DateTool.convertExcelDateTimeToChinese(values.get("START_TIME"), true));
+//      result.setStartTime(DateTool.convertExcelDateTimeToChinese(values.get("START_TIME"), true));
     }
     if (values.get("END_TIME") != null && values.get("END_TIME").length() > 0) {
-      result.setEndTime(DateTool.convertExcelDateTimeToChinese(values.get("END_TIME"), true));
+//      result.setEndTime(DateTool.convertExcelDateTimeToChinese(values.get("END_TIME"), true));
     }
     result.setPrsnId(values.get("PRSN_ID"));
     result.setChrMark(values.get("CHR_MARK"));
@@ -6247,10 +6247,10 @@ public class NHIWidgetXMLService {
     result.setPartAccoData(values.get("PART_ACCO_DATA"));
     result.setDonater(values.get("DONATER"));
     if (values.get("START_TIME") != null && values.get("START_TIME").length() > 0) {
-      result.setStartTime(DateTool.convertExcelDateTimeToChinese(values.get("START_TIME"), true));
+//      result.setStartTime(DateTool.convertExcelDateTimeToChinese(values.get("START_TIME"), true));
     }
     if (values.get("END_TIME") != null && values.get("END_TIME").length() > 0) {
-      result.setEndTime(DateTool.convertExcelDateTimeToChinese(values.get("END_TIME"), true));
+//      result.setEndTime(DateTool.convertExcelDateTimeToChinese(values.get("END_TIME"), true));
     }
     if (values.get("TOTAL_Q") != null && values.get("TOTAL_Q").length() > 0) {
       result.setTotalQ(Double.parseDouble(values.get("TOTAL_Q")));

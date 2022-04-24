@@ -705,10 +705,10 @@ public class GenerateSqlByClass {
   
   public static void testDateTool() {
     String s = "2021/10/8";
-    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
-    s = "2021/10/8  09:32:00 AM";
-    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
-    s = "2021/10/8 AM 09:32:00";
-    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
+//    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
+//    s = "2021/10/8  09:32:00 AM";
+//    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
+//    s = "2021/10/8 AM 09:32:00";
+//    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
   }
 }
