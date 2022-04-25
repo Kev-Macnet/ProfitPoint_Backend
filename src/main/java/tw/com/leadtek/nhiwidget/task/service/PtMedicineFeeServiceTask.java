@@ -54,14 +54,14 @@ public class PtMedicineFeeServiceTask {
 		if (params.getHospitalized_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "20") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "10") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
 				}
 			}
@@ -82,7 +82,7 @@ public class PtMedicineFeeServiceTask {
 			if(ippData.size() > 0) {
 				for(Map<String,Object> map: ippData) {
 					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:每件給藥日數不得超過%d日，疑似有出入", params.getNhi_no(),params.getMax_nday()), true);
 				}
 			}
@@ -90,7 +90,7 @@ public class PtMedicineFeeServiceTask {
 			if(oppData.size() > 0) {
 				for(Map<String,Object> map: oppData) {
 					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:每件給藥日數不得超過%d日，疑似有出入", params.getNhi_no(),params.getMax_nday()), true);
 				}
 			}

@@ -55,14 +55,14 @@ public class PtTubeFeedingFeeServiceTask {
 		if (params.getHospitalized_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "20") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "10") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
 				}
 			}
@@ -80,7 +80,7 @@ public class PtTubeFeedingFeeServiceTask {
 					/// 如果資料大於限定值
 					if (params.getMax_inpatient() < t) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄應用總數量,限定小於等於%d次，疑似有出入", params.getNhi_no(),
 										params.getMax_inpatient()),
 								true);
@@ -93,7 +93,7 @@ public class PtTubeFeedingFeeServiceTask {
 					/// 如果資料大於限定值
 					if (params.getMax_inpatient() < t) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄應用總數量,限定小於等於%d次，疑似有出入", params.getNhi_no(),
 										params.getMax_inpatient()),
 								true);
@@ -113,7 +113,7 @@ public class PtTubeFeedingFeeServiceTask {
 					/// 如果資料大於限定值
 					if (params.getMax_daily() < t) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:單一住院就醫紀錄應用數量,限定小於等於%d次，疑似有出入", params.getNhi_no(),
 										params.getMax_daily()),
 								true);
@@ -126,7 +126,7 @@ public class PtTubeFeedingFeeServiceTask {
 					/// 如果資料大於限定值
 					if (params.getMax_daily() < t) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:單一住院就醫紀錄應用數量,限定小於等於%d次，疑似有出入", params.getNhi_no(),
 										params.getMax_daily()),
 								true);
@@ -147,7 +147,7 @@ public class PtTubeFeedingFeeServiceTask {
 					/// 如果資料大於限定值
 					if (params.getEvery_nday_times() < t) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄上，每%d日內，限定應用小於等於%d次，疑似有出入", params.getNhi_no(),
 										params.getEvery_nday_days(),params.getEvery_nday_times()),
 								true);
@@ -160,7 +160,7 @@ public class PtTubeFeedingFeeServiceTask {
 					/// 如果資料大於限定值
 					if (params.getEvery_nday_times() < t) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄上，每%d日內，限定應用小於等於%d次，疑似有出入", params.getNhi_no(),
 										params.getEvery_nday_days(),params.getEvery_nday_times()),
 								true);
@@ -179,7 +179,7 @@ public class PtTubeFeedingFeeServiceTask {
 					/// 如果資料大於限定值
 					if (params.getOver_nday_times() < t) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄上，超過%d日後，超出天數部份，限定應用小於等於%d次，疑似有出入", params.getNhi_no(),
 										params.getOver_nday_days(),params.getOver_nday_times()),
 								true);
@@ -193,18 +193,40 @@ public class PtTubeFeedingFeeServiceTask {
 		if(params.getExclude_nhi_no_enable() ==1) {
 			List<String> nhiNoList = params.getLst_nhi_no();
 			int count = 0;
-			for (MR mr : mrList) {
-				for (String nhiNo : nhiNoList) {
-					if (mr.getCodeAll().contains(nhiNo) && count == 0) {
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-								params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
-										params.getNhi_no(), nhiNoList.toString()),
-								true);
-						count++;
-					} else if (mr.getCodeAll().contains(nhiNo) && count > 0) {
-						continue;
+			/// 如果門診
+			if (params.getHospitalized_type() == 1) {
+				for (MR mr : mrList) {
+					for (String nhiNo : nhiNoList) {
+						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+									params.getNhi_no(),
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+											params.getNhi_no(), nhiNoList.toString()),
+									true);
+							count++;
+						} else if (mr.getCodeAll().contains(nhiNo) && count > 0) {
+							continue;
+						}
 					}
+					count = 0;
+				}
+			}
+			/// 如果住院
+			if (params.getOutpatient_type() == 1) {
+				for (MR mr : mrList) {
+					for (String nhiNo : nhiNoList) {
+						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+									params.getNhi_no(),
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+											params.getNhi_no(), nhiNoList.toString()),
+									true);
+							count++;
+						} else if (mr.getCodeAll().contains(nhiNo) && count > 0) {
+							continue;
+						}
+					}
+					count = 0;
 				}
 			}
 		}

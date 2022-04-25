@@ -204,5 +204,22 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   @Query(value = "select * from ip_d where mr_id in(?1) ", nativeQuery = true)
   public List<IP_D> getListByMrId(List<String> mrid);
   
+  /**
+   * 每月醫療人員上限筆數比較
+   * @param mrid
+   * @param limit
+   * @return
+   */
+  @Query(value = "select IN_DATE, IPDPRID, IPDCOUNT, IPPPRID, IPPCOUNT from ( "
+  		+ "select substr(ipd.in_date, 1, 5) in_date, ipd.prsn_id ipdprid, count(ipd.prsn_id)ipdcount, ipp.prsn_id ippprid,count(ipp.prsn_id) ippcount from "
+  		+ "(select * from ip_p where mr_id in (?1)) ipp,  "
+  		+ "(select * from ip_d where  mr_id in (?1)) ipd "
+  		+ "where ipp.ipd_id = ipp.id  "
+  		+ "group by ipd.prsn_id, ipp.prsn_id)temp "
+  		+ "where IPDCOUNT > ?2 or IPPCOUNT > ?2", nativeQuery = true)
+  public List<Map<String, Object>> getPerMonthPrmanCount(List<String> mrid, int limit);
+  
+  
+  
   
 }

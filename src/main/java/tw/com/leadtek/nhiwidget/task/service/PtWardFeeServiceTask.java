@@ -57,14 +57,14 @@ public class PtWardFeeServiceTask {
 		if (params.getHospitalized_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "20") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "10") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
 				}
 			}
@@ -81,7 +81,7 @@ public class PtWardFeeServiceTask {
 				long diff = hourBetween(sDate, eDate);
 				if (params.getMin_stay() > diff) {
 					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:入住時間滿%d小時，方可申報此支付標準代碼，疑似有出入", params.getNhi_no(),
 									params.getMin_stay()),
 							true);
@@ -99,7 +99,7 @@ public class PtWardFeeServiceTask {
 				long diff = hourBetween(sDate, eDate);
 				if (params.getMax_stay() < diff) {
 					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:入住時間滿%d小時，不方可申報此支付標準代碼，疑似有出入", params.getNhi_no(),
 									params.getMax_stay()),
 							true);
@@ -118,7 +118,7 @@ public class PtWardFeeServiceTask {
 				for (MR mr : mrList) {
 					for (String nhiNo : nhiNoList) {
 						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
-							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(),
 									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
 											params.getNhi_no(), nhiNoList.toString()),
@@ -136,7 +136,7 @@ public class PtWardFeeServiceTask {
 				for (MR mr : mrList) {
 					for (String nhiNo : nhiNoList) {
 						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
-							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(),
 									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
 											params.getNhi_no(), nhiNoList.toString()),
