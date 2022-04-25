@@ -27,41 +27,35 @@ public class PtBoneMarrowTransFeeServiceTask {
 
 	public void validBoneMarrowTransFee(PtBoneMarrowTransFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-		Calendar calendar = Calendar.getInstance();
-		Date dateObj = calendar.getTime();
-		String eDateStr = sdf.format(dateObj);
-		String sDateStr = minusYear(eDateStr);
-		/// 違反案件數
-		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr);
-		List<MR> mrList2 = new ArrayList<MR>();
+		/// 將timestamp轉成date
+		java.sql.Timestamp tSdate = new java.sql.Timestamp(params.getStart_date());
+		java.sql.Timestamp tEdate = new java.sql.Timestamp(params.getEnd_date());
+		Date tsd = new Date(tSdate.getTime());
+		Date ted = new Date(tEdate.getTime());
+		String sDateStr = sdf.format(tsd);
+		String eDateStr = sdf.format(ted);
+
+		/// 該支付準則區間病歷表
+		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr, params.getNhi_no());
+		/// 存放mrID
 		List<String> mrIdListStr = new ArrayList<String>();
-		/// 判斷支付條件準則日期，如果病歷小於該日，則不顯示
+		/// 提取將該診斷碼之ID
 		for (MR mr : mrList) {
-			/// 起日
-			Date sd = sdf.parse(sDateStr);
-			Date mrSd = mr.getMrDate();
-			/// 訖日
-			Date ed = sdf.parse(eDateStr);
-			Date mrEd = mr.getMrEndDate();
 
-			if (sd.before(mrSd) || ed.equals(mrEd)) {
-				mrList2.add(mr);
-				mrIdListStr.add(mr.getId().toString());
-			}
+			mrIdListStr.add(mr.getId().toString());
 		}
-
 		if (params.getHospitalized_type() == 0) {
-			for (MR r : mrList2) {
-				if (r.getDataFormat() != "20" && r.getCodeAll().contains(params.getNhi_no())) {
+			for (MR r : mrList) {
+				if (r.getDataFormat() == "20") {
 					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用(住院)就醫方式", params.getNhi_no()), true);
+							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
-			for (MR r : mrList2) {
-				if (r.getDataFormat() != "10") {
+			for (MR r : mrList) {
+				if (r.getDataFormat() == "10") {
 					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用(門診)就醫方式", params.getNhi_no()), true);
+							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
 				}
 			}
 		}
@@ -71,7 +65,7 @@ public class PtBoneMarrowTransFeeServiceTask {
         if(params.getCoexist_nhi_no_enable() == 1) {
         	List<String> coList = params.getLst_co_nhi_no();
 			int count = 0;
-			for (MR mr : mrList2) {
+			for (MR mr : mrList) {
 				for (String s : coList) {
 					/// 先判斷有相同支付標準
 					if (mr.getCodeAll().contains(params.getNhi_no())) {
@@ -96,7 +90,7 @@ public class PtBoneMarrowTransFeeServiceTask {
         ///參與計畫之病患，不得申報
         if(params.getNot_allow_plan_enable() == 1) {
         	List<String> planList = params.getLst_allow_plan();
-			for (MR mr : mrList2) {
+			for (MR mr : mrList) {
 				if (mr.getCodeAll().contains(params.getNhi_no())) {
 					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:參與[%s]計畫之病患，不得申報，疑似有出入", params.getNhi_no(),
@@ -116,14 +110,23 @@ public class PtBoneMarrowTransFeeServiceTask {
 				funcAppend.add(func);
 			}
 
-
-			List<MR> mrDataList = mrDao.getIntelligentMrByFuncName(sDateStr, eDateStr, funcAppend);
+			List<MR> mrDataList = mrDao.getIntelligentMrByFuncName(mrIdListStr, funcAppend);
 			/// 如果有非指定funcName資料
 			if (mrDataList.size() > 0) {
 				for (MR mr : mrDataList) {
+					///如果門診
+					if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+						
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
+					}
+					///如果住院
+					if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
 
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
+					}
+
 				}
 			}
         }

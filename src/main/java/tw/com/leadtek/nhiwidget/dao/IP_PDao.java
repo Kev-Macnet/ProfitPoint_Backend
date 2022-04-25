@@ -159,12 +159,13 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	 * @param mrid
  	 * @return
  	 */
- 	@Query(value = "select temp.MR_ID, ipp.START_TIME / 10000 as START_TIME , ipp.END_TIME / 10000 as END_TIME from ( "
+ 	@Query(value = "select * from ( "
+ 			+ "select temp.MR_ID, ipp.START_TIME, ipp.END_TIME  from ( "
  			+ "select MR_ID , MAX(END_TIME) as END_TIME "
  			+ "from ip_p "
  			+ "group by MR_ID) temp, ip_p ipp "
  			+ "where ipp.MR_ID = temp.MR_ID and ipp.END_TIME = temp.END_TIME and ipp.MR_ID in (?1) "
- 			+ "group by temp.MR_ID", nativeQuery = true)
+ 			+ "group by temp.MR_ID) temp2", nativeQuery = true)
  	public List<Map<String, Object>> getTimeListByMrid(List<String> mrid);
  	/**
  	 * 由支付準則代碼和MRid查詢，查詢一天之內次數

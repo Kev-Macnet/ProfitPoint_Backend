@@ -1,5 +1,6 @@
 package tw.com.leadtek.nhiwidget.service;
 
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -13,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
-import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.ICDCM_DRUGDao;
 import tw.com.leadtek.nhiwidget.dao.ICDCM_ICDOPDao;
 import tw.com.leadtek.nhiwidget.dao.ICDCM_ORDERDao;
@@ -83,11 +83,11 @@ public class AIService {
 				String word_ll = parametersService.getOneValueByName("INTELLIGENT", "COST_DIFF_LL_WORDING");
 
 				MR mr = mrDao.getMrByID(clinicMap.get("ID").toString());
-				
+
 				int t_dot = (int) clinicMap.get("T_DOT");
 				float up = Float.valueOf(clinicMap.get("UP").toString());
 				float down = Float.valueOf(clinicMap.get("DOWN").toString());
-				
+
 				String reason = String.format(word_ul + "%", mr.getInhClinicId(), mr.getIcdcm1(),
 						Math.round(Float.valueOf(clinicMap.get("T_DOT").toString())),
 						Float.valueOf(clinicMap.get("UP").toString()));
@@ -132,21 +132,20 @@ public class AIService {
 			// 設定檔下限
 			float costDiffll = Float.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "COST_DIFF_LL"));
 			/// 取得門診上限n%下限n%的病例點數資料
-			List<Map<String, Object>> listHospitalizedMap = mrDao.hospitalized(sDate1, eDate2, sDate2, eDate2, costDiffUl,
-					costDiffll);
-			
-			
+			List<Map<String, Object>> listHospitalizedMap = mrDao.hospitalized(sDate1, eDate2, sDate2, eDate2,
+					costDiffUl, costDiffll);
+
 			for (Map<String, Object> hospitalizedMap : listHospitalizedMap) {
 				/// 上限字樣
 				String word_ul = parametersService.getOneValueByName("INTELLIGENT", "COST_DIFF_UL_WORDING");
 				/// 下限字樣
 				String word_ll = parametersService.getOneValueByName("INTELLIGENT", "COST_DIFF_LL_WORDING");
-				
+
 				MR mr = mrDao.getMrByID(hospitalizedMap.get("ID").toString());
 				int t_dot = (int) hospitalizedMap.get("T_DOT");
 				float up = Float.valueOf(hospitalizedMap.get("UP").toString());
 				float down = Float.valueOf(hospitalizedMap.get("DOWN").toString());
-				
+
 				String reason = String.format(word_ul + "%", mr.getInhClinicId(), mr.getIcdcm1(),
 						Math.round(Float.valueOf(hospitalizedMap.get("T_DOT").toString())),
 						Float.valueOf(hospitalizedMap.get("UP").toString()));
@@ -165,7 +164,6 @@ public class AIService {
 							mr.getIcdcm1().toString(), reason, true);
 				}
 			}
-
 
 			data.put("msg", msg);
 		} catch (Exception e) {
@@ -205,36 +203,37 @@ public class AIService {
 			List<Map<String, Object>> clinicList = mrDao.clinicMedBeh(sDate, eDate);
 
 			// 設定檔上限
-			int orderDiffUl = Integer
-					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_UL"));
+			float orderDiffUl = Float
+					.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_UL"));
 			// 設定檔下限
-			int orderDiffll = Integer
-					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_LL"));
+			float orderDiffll = Float
+					.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_LL"));
 
 			for (Map<String, Object> map : clinicList) {
-				MR mm = mrDao.getMrByID(map.get("ID").toString());
+				MR mm = mrDao.getMrByID(map.get("MR_ID").toString());
+
+				float count = Float.valueOf(map.get("COUNT").toString());
 				float up = Float.valueOf(map.get("UP").toString());
 				float down = Float.valueOf(map.get("DOWN").toString());
-				
-				if(orderDiffUl < up) {
-					
-				
+
+				if (count > up) {
+
+					float ff = (orderDiffUl / count) * 100;
+
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_UL_WORDING");
-					msg = String.format(paraResult + "%", map.get("ID").toString(), map.get("ICDCM").toString(),
-							map.get("ORDER_CODE"), orderDiffUl, up);
+					msg = String.format(paraResult + "%", map.get("MR_ID").toString(), map.get("ICDCM").toString(),
+							map.get("ORDER_CODE"), Math.round(orderDiffUl), ff);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);
-				}
-				else if(orderDiffll > down) {
-					
-					
+				} else if (count < down) {
+
+					float ff = (count / orderDiffll) * 100;
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_LL_WORDING");
-					msg = String.format(paraResult + "%", map.get("ID"), map.get("ICDCM").toString(),
-							map.get("ORDER_CODE"), orderDiffUl, down);
+					msg = String.format(paraResult + "%", map.get("MR_ID"), map.get("ICDCM").toString(),
+							map.get("ORDER_CODE"), Math.round(orderDiffll), ff);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);
 				}
-				
 
 			}
 			data.put("msg", msg);
@@ -261,8 +260,8 @@ public class AIService {
 				List<ICDCM_ORDER> icdcmList = new ArrayList<ICDCM_ORDER>();
 				for (Map<String, Object> m : calculateIcdList) {
 					ICDCM_ORDER io = new ICDCM_ORDER();
-					io.setIcdcmorderPK(new ICDCM_ORDER_KEYS(m.get("ICDCM1").toString(), m.get("ORDER_CODE").toString(),
-							"20"));
+					io.setIcdcmorderPK(
+							new ICDCM_ORDER_KEYS(m.get("ICDCM1").toString(), m.get("ORDER_CODE").toString(), "20"));
 					io.setAverage(Float.parseFloat(m.get("AVG").toString()));
 					io.setUlimit(Float.parseFloat(m.get("UP").toString()));
 					io.setLlimit(Float.parseFloat(m.get("DOWN").toString()));
@@ -272,40 +271,39 @@ public class AIService {
 				}
 				icdcmOrderDao.saveAll(icdcmList);
 			}
-			List<Map<String, Object>> clinicList = mrDao.hospitalMedBeh(sDate,eDate);
+			List<Map<String, Object>> clinicList = mrDao.hospitalMedBeh(sDate, eDate);
 
 			// 設定檔上限
-			int orderDiffUl = Integer
-					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_UL"));
+			float orderDiffUl = Float
+					.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_UL"));
 			// 設定檔下限
-			int orderDiffll = Integer
-					.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_LL"));
+			float orderDiffll = Float
+					.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "ORDER_DIFF_LL"));
 
 			for (Map<String, Object> map : clinicList) {
-				MR mm = mrDao.getMrByID(map.get("ID").toString());
+				MR mm = mrDao.getMrByID(map.get("MR_ID").toString());
+				float count = Float.valueOf(map.get("COUNT").toString());
 				float up = Float.valueOf(map.get("UP").toString());
 				float down = Float.valueOf(map.get("DOWN").toString());
-				
-				if(orderDiffUl < up) {
-					
-				
+
+				if (count > up) {
+
+					float ff = (orderDiffUl / count) * 100;
+
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_UL_WORDING");
-					msg = String.format(paraResult + "%", map.get("ID").toString(), map.get("ICDCM").toString(),
-							map.get("ORDER_CODE"), orderDiffUl, up);
+					msg = String.format(paraResult + "%", map.get("MR_ID").toString(), map.get("ICDCM").toString(),
+							map.get("ORDER_CODE"), Math.round(orderDiffUl), ff);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);
-				}
-				else if(orderDiffll > down) {
-					
-					
+				} else if (count < down) {
+
+					float ff = (count / orderDiffll) * 100;
 					paraResult = parametersService.getOneValueByName("INTELLIGENT", "ORDER_DIFF_LL_WORDING");
-					msg = String.format(paraResult + "%", map.get("ID"), map.get("ICDCM").toString(),
-							map.get("ORDER_CODE"), orderDiffll, down);
+					msg = String.format(paraResult + "%", map.get("MR_ID"), map.get("ICDCM").toString(),
+							map.get("ORDER_CODE"), Math.round(orderDiffll), ff);
 					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(),
 							map.get("ORDER_CODE").toString(), msg, true);
 				}
-				
-				
 
 			}
 			data.put("msg", msg);
@@ -330,19 +328,19 @@ public class AIService {
 			String paraResult = "";
 			List<ICDCM_ICDOP> icdList = icdcmIcdopDao.queryByDataFormat("10");
 			if (icdList.size() == 0) {
-				List<Map<String, Object>> calculateIcdList = opdDao.getClinicOperation(sDate,eDate);
-				List<Map<String, Object>> calculateIcdList2 = opdDao.getClinicOperation2(sDate,eDate);
+				List<Map<String, Object>> calculateIcdList = opdDao.getClinicOperation(sDate, eDate);
+				List<Map<String, Object>> calculateIcdList2 = opdDao.getClinicOperation2(sDate, eDate);
 				List<ICDCM_ICDOP> icdcmList = new ArrayList<ICDCM_ICDOP>();
 				float maxNum = 0;
 				float maxNum2 = 0;
 				maxNum = Float.valueOf(calculateIcdList.get(0).get("IOC1COUNT").toString());
 				maxNum2 = Float.valueOf(calculateIcdList2.get(0).get("IOC2COUNT").toString());
-				
+
 				for (Map<String, Object> m : calculateIcdList) {
 					ICDCM_ICDOP ii = new ICDCM_ICDOP();
 					/// 主診斷碼之手術碼1
 					float t = Float.valueOf(m.get("IOC1COUNT").toString());
-					float ff = t  / maxNum;
+					float ff = t / maxNum;
 					int math = Math.round(ff * 100);
 					ii.setTotal(Math.round(t));
 					ii.setUpdateAT(new Date());
@@ -352,10 +350,10 @@ public class AIService {
 
 					icdcmList.add(ii);
 					/// 主診斷碼之手術碼2
-					float t2 =Float.valueOf(m.get("IOC2COUNT").toString());
+					float t2 = Float.valueOf(m.get("IOC2COUNT").toString());
 					if (t2 > 0) {
 						ii = new ICDCM_ICDOP();
-					    ff = t2  / maxNum2;
+						ff = t2 / maxNum2;
 						int math2 = Math.round(ff * 100);
 						ii.setTotal(Math.round(t2));
 						ii.setUpdateAT(new Date());
@@ -415,20 +413,20 @@ public class AIService {
 			String paraResult = "";
 			List<ICDCM_ICDOP> icdList = icdcmIcdopDao.queryByDataFormat("20");
 			if (icdList.size() == 0) {
-				List<Map<String, Object>> calculateIcdList = ipdDao.getHospitalOperation(sDate,eDate);
-				List<Map<String, Object>> calculateIcdList2 = ipdDao.getHospitalOperation2(sDate,eDate);
+				List<Map<String, Object>> calculateIcdList = ipdDao.getHospitalOperation(sDate, eDate);
+				List<Map<String, Object>> calculateIcdList2 = ipdDao.getHospitalOperation2(sDate, eDate);
 
 				List<ICDCM_ICDOP> icdcmList = new ArrayList<ICDCM_ICDOP>();
 				float maxNum = 0;
 				float maxNum2 = 0;
 				maxNum = Float.valueOf(calculateIcdList.get(0).get("IOC1COUNT").toString());
 				maxNum2 = Float.valueOf(calculateIcdList2.get(0).get("IOC2COUNT").toString());
-				
+
 				for (Map<String, Object> m : calculateIcdList) {
 					ICDCM_ICDOP ii = new ICDCM_ICDOP();
 					/// 主診斷碼之手術碼1
 					float t = Float.valueOf(m.get("IOC1COUNT").toString());
-					float ff = t  / maxNum;
+					float ff = t / maxNum;
 					int math = Math.round(ff * 100);
 					ii.setTotal(Math.round(t));
 					ii.setUpdateAT(new Date());
@@ -441,7 +439,7 @@ public class AIService {
 					float t2 = Float.valueOf(m.get("IOC2COUNT").toString());
 					if (t2 > 0) {
 						ii = new ICDCM_ICDOP();
-						ff = t2  / maxNum2;
+						ff = t2 / maxNum2;
 						int math2 = Math.round(ff * 100);
 						ii.setTotal(Math.round(t2));
 						ii.setUpdateAT(new Date());
@@ -454,7 +452,7 @@ public class AIService {
 				}
 				icdcmIcdopDao.saveAll(icdcmList);
 			}
-			List<Map<String, Object>> clinicList = mrDao.hospitalOpepration(sDate,eDate);
+			List<Map<String, Object>> clinicList = mrDao.hospitalOpepration(sDate, eDate);
 			for (Map<String, Object> map : clinicList) {
 				String str = "";
 				String str2 = "";
@@ -502,71 +500,52 @@ public class AIService {
 		try {
 			String msg = "";
 			String paraResult = "";
-			List<ICDCM_DRUG> icdList = icdcmDrugDao.queryByDataFormat("10");
+			List<ICDCM_DRUG> icdList = icdcmDrugDao.queryByDataFormatLimit("10");
 			/// 取得主診斷count
 			List<Map<String, Object>> icdmcList = mrDao.getIcdcmCountOPByDate(sDate, eDate);
-			/// 取得藥用count
-			List<Map<String, Object>> drugnoList = mrDao.getDrugNoCount(sDate, eDate);
-			List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
-			Map<String, Object> model = new HashMap<String, Object>();
 			List<ICDCM_DRUG> icdcmList = new ArrayList<ICDCM_DRUG>();
 
 			if (icdList.size() == 0) {
-				/// 將資料append再一起
-				for (Map<String, Object> map1 : drugnoList) {
-					for (Map<String, Object> map2 : icdmcList) {
-						if (map1.get("ICDCM1").toString().equals(map2.get("ICDCM1"))) {
-							int isDrug = 1;
-							PAY_CODE pcModel = pcDao.findDataByCode(map1.get("DRUG_NO").toString());
-
-							if (pcModel != null) {
-								if (pcModel.getCodeType() == "西藥藥品") {
-									isDrug = 1;
-								} else {
-									isDrug = 2;
-								}
-							}
-							model.put("DRUGNO", map1.get("DRUG_NO"));
-							model.put("DRUGNO_COUNT", map1.get("COUNT"));
-							model.put("ICDCM", map1.get("ICDCM1"));
-							model.put("IS_DRUG", isDrug);
-							model.put("ICDCM_COUNT", map2.get("COUNT"));
-							float percent = (Float.parseFloat(map1.get("COUNT").toString())
-									/ Float.parseFloat(map2.get("COUNT").toString()));
-							model.put("PERCENT", percent);
-							dataList.add(model);
-							model = new HashMap<String, Object>();
-						}
-
-					}
-				}
-				/// 寫資料庫
-				for (Map<String, Object> m : dataList) {
+				if (icdmcList.size() > 0) {
+                    ///寫資料庫
 					ICDCM_DRUG idModel = new ICDCM_DRUG();
-					int t = Integer.parseInt(m.get("ICDCM_COUNT").toString());
-					int math = Math.round((float) m.get("PERCENT"));
-					idModel.setTotal(t);
-					idModel.setUpdateAT(new Date());
-					idModel.setIcdcm(m.get("ICDCM").toString());
-					idModel.setDrug(m.get("DRUGNO").toString());
-					idModel.setDataformat("10");
-//					idModel.setIcdcmdrugPK(
-//							new ICDCM_DRUG_KEYS(m.get("ICDCM").toString(), m.get("DRUGNO").toString(), "10"));
-					idModel.setPercent(math);
-					idModel.setIsdurug(Integer.parseInt(m.get("IS_DRUG").toString()));
-					icdcmList.add(idModel);
+					for (Map<String, Object> map : icdmcList) {
+						int isDrug = 1;
+						PAY_CODE pcModel = pcDao.findDataByCode(map.get("DRUGNO").toString());
+						if (pcModel != null) {
+							if (pcModel.getCodeType() == "西藥藥品") {
+								isDrug = 1;
+							} else {
+								isDrug = 2;
+							}
+						}
+						int t = Integer.parseInt(map.get("ICCOUNT").toString());
+						BigDecimal d = (BigDecimal)map.get("PERCENT");
+						int math = d.intValue();
+						idModel.setTotal(t);
+						idModel.setUpdateAT(new Date());
+						idModel.setIcdcm(map.get("ICDCM").toString());
+						idModel.setDrug(map.get("DRUGNO").toString());
+						idModel.setDataFormat("10");
+						idModel.setPercent(math);
+						idModel.setIsdurug(isDrug);
+
+						icdcmList.add(idModel);
+						idModel = new ICDCM_DRUG();
+					}
+					icdcmDrugDao.saveAll(icdcmList);
 				}
-
-				icdcmDrugDao.saveAll(icdcmList);
-
 			}
 			if (icdList.size() == 0) {
-				icdList = icdcmDrugDao.queryByDataFormat("10");
+				/// 取得最大4筆
+				icdList = icdcmDrugDao.queryByDataFormatLimit("10");
 			}
+			
 			String drug11 = "";
 			String drug12 = "";
 			String drug21 = "";
 			String drug22 = "";
+			
 			int count1 = 0;
 			int count2 = 0;
 			for (ICDCM_DRUG idModel : icdList) {
@@ -578,7 +557,7 @@ public class AIService {
 					} else {
 						break;
 					}
-
+					
 					count1++;
 				} else {
 					if (count2 == 0) {
@@ -588,58 +567,56 @@ public class AIService {
 					} else {
 						break;
 					}
-
+					
 					count2++;
 				}
 			}
-			List<Map<String, Object>> idList = mrDao.getIdByDrugNoCount(sDate, eDate);
+			icdmcList.clear();
+			icdmcList = mrDao.getIcdcmCountOPByDate2(sDate, eDate);
+			
 			for (ICDCM_DRUG idModel : icdList) {
-				for (Map<String, Object> mapModel : dataList) {
-					for (Map<String, Object> map : idList) {
-
-						MR mr = mrDao.getMrByID(map.get("ID").toString());
-						if (idModel.getIsdurug() == 1) {
-							if (idModel.getDrug().equals(mapModel.get("DRUGNO").toString())) {
-								int math = Math.round((float) mapModel.get("PERCENT"));
-								int iModelPer = idModel.getPercent();
-								float a = (float) math;
-								float b = (float) iModelPer;
-								float fPer = a / b;
-								int round = Math.round(fPer * 100);
-								if (round < 5) {
-
-									paraResult = parametersService.getOneValueByName("INTELLIGENT",
-											"DRUG_DIFF_WORDING");
-									msg = String.format(paraResult, mr.getInhMrId(), mapModel.get("ICDCM").toString(),
-											mr.getName(), mapModel.get("DRUGNO").toString(), drug11, drug12);
-									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.DRUG_DIFF.value(),
-											mapModel.get("ICDCM").toString(), msg, true);
-								}
+				for (Map<String, Object> map : icdmcList) {
+					if (idModel.getIsdurug() == 1) {
+						if (idModel.getDrug().equals(map.get("DRUGNO").toString())) {
+							BigDecimal d = (BigDecimal)map.get("PERCENT");
+							int math = d.intValue();
+							int iModelPer = idModel.getPercent();
+							float a = (float) math;
+							float b = (float) iModelPer;
+							float fPer = a / b;
+							int round = Math.round(fPer * 100);
+							if (round < 5) {
+								MR mr = mrDao.getMrByID(map.get("ID").toString());
+								paraResult = parametersService.getOneValueByName("INTELLIGENT",
+										"DRUG_DIFF_WORDING");
+								msg = String.format(paraResult, mr.getInhMrId(), map.get("ICDCM").toString(),
+										mr.getName(), map.get("DRUGNO").toString(), drug11, drug12);
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.DRUG_DIFF.value(),
+										map.get("ICDCM").toString(), msg, true);
 							}
-						} else {
-
-							if (idModel.getDrug().equals(mapModel.get("DRUGNO").toString())) {
-								int math = Math.round((float) mapModel.get("PERCENT"));
-								int iModelPer = idModel.getPercent();
-								float a = (float) math;
-								float b = (float) iModelPer;
-								float fPer = a / b;
-								int round = Math.round(fPer * 100);
-								if (round < 5) {
-
-									paraResult = parametersService.getOneValueByName("INTELLIGENT",
-											"MATERIAL_DIFF_WORDING");
-									msg = String.format(paraResult, mr.getInhMrId(), mapModel.get("ICDCM").toString(),
-											mr.getName(), mapModel.get("DRUGNO").toString(), drug21, drug22);
-									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.DRUG_DIFF.value(),
-											mapModel.get("ICDCM").toString(), msg, true);
-								}
+						}
+					} else {
+						if (idModel.getDrug().equals(map.get("DRUGNO").toString())) {
+							int math = Math.round((float) map.get("PERCENT"));
+							int iModelPer = idModel.getPercent();
+							float a = (float) math;
+							float b = (float) iModelPer;
+							float fPer = a / b;
+							int round = Math.round(fPer * 100);
+							///判斷小於5,寫入智能提示
+							if (round < 5) {
+								MR mr = mrDao.getMrByID(map.get("ID").toString());
+								paraResult = parametersService.getOneValueByName("INTELLIGENT",
+										"DRUG_DIFF_WORDING");
+								msg = String.format(paraResult, mr.getInhMrId(), map.get("ICDCM").toString(),
+										mr.getName(), map.get("DRUGNO").toString(), drug21, drug22);
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.DRUG_DIFF.value(),
+										map.get("ICDCM").toString(), msg, true);
 							}
-
 						}
 					}
+					
 				}
-
 			}
 
 			data.put("msg", msg);
@@ -662,73 +639,52 @@ public class AIService {
 		try {
 			String msg = "";
 			String paraResult = "";
-			List<ICDCM_DRUG> icdList = icdcmDrugDao.queryByDataFormat("20");
-
+			List<ICDCM_DRUG> icdList = icdcmDrugDao.queryByDataFormatLimit("20");
 			/// 取得主診斷count
-			List<Map<String, Object>> icdmcList = mrDao.getIcdcmCountIPByDate(sDate,eDate);
-			/// 取得藥用count
-			List<Map<String, Object>> drugnoList = mrDao.getOderCodeCount(sDate,eDate);
-			List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
-			Map<String, Object> model = new HashMap<String, Object>();
+			List<Map<String, Object>> icdmcList = mrDao.getIcdcmCountIPByDate(sDate, eDate);
 			List<ICDCM_DRUG> icdcmList = new ArrayList<ICDCM_DRUG>();
 
 			if (icdList.size() == 0) {
-				/// 將資料append再一起
-				for (Map<String, Object> map1 : drugnoList) {
-					for (Map<String, Object> map2 : icdmcList) {
-						if (map1.get("ICDCM1").toString().equals(map2.get("ICDCM1"))) {
-							int isDrug = 1;
-							PAY_CODE pcModel = pcDao.findDataByCode(map1.get("ORDER_CODE").toString());
-
-							if (pcModel != null) {
-								if (pcModel.getCodeType() == "西藥藥品") {
-									isDrug = 1;
-								} else {
-									isDrug = 2;
-								}
-							}
-							model.put("DRUGNO", map1.get("ORDER_CODE"));
-							model.put("DRUGNO_COUNT", map1.get("COUNT"));
-							model.put("ICDCM", map1.get("ICDCM1"));
-							model.put("IS_DRUG", isDrug);
-							model.put("ICDCM_COUNT", map2.get("COUNT"));
-							float percent = (Float.parseFloat(map1.get("COUNT").toString())
-									/ Float.parseFloat(map2.get("COUNT").toString()));
-							model.put("PERCENT", percent);
-							dataList.add(model);
-							model = new HashMap<String, Object>();
-						}
-
-					}
-				}
-				/// 寫資料庫
-				for (Map<String, Object> m : dataList) {
+				if (icdmcList.size() > 0) {
+					///寫資料庫
 					ICDCM_DRUG idModel = new ICDCM_DRUG();
-					int t = Integer.parseInt(m.get("ICDCM_COUNT").toString());
-					int math = Math.round((float) m.get("PERCENT"));
-					idModel.setTotal(t);
-					idModel.setUpdateAT(new Date());
-					   idModel.setIcdcm(m.get("ICDCM").toString());
-	                    idModel.setDrug(m.get("DRUGNO").toString());
-	                    idModel.setDataformat("20");
-//					idModel.setIcdcmdrugPK(
-//							new ICDCM_DRUG_KEYS(m.get("ICDCM").toString(), m.get("DRUGNO").toString(), "20"));
-					idModel.setPercent(math);
-					idModel.setIsdurug(Integer.parseInt(m.get("IS_DRUG").toString()));
+					for (Map<String, Object> map : icdmcList) {
+						int isDrug = 1;
+						PAY_CODE pcModel = pcDao.findDataByCode(map.get("DRUGNO").toString());
+						if (pcModel != null) {
+							if (pcModel.getCodeType() == "西藥藥品") {
+								isDrug = 1;
+							} else {
+								isDrug = 2;
+							}
+						}
+						int t = Integer.parseInt(map.get("ICCOUNT").toString());
+						BigDecimal d = (BigDecimal)map.get("PERCENT");
+						int math = d.intValue();
+						idModel.setTotal(t);
+						idModel.setUpdateAT(new Date());
+						idModel.setIcdcm(map.get("ICDCM").toString());
+						idModel.setDrug(map.get("DRUGNO").toString());
+						idModel.setDataFormat("20");
+						idModel.setPercent(math);
+						idModel.setIsdurug(isDrug);
 
-					icdcmList.add(idModel);
+						icdcmList.add(idModel);
+						idModel = new ICDCM_DRUG();
+					}
+					icdcmDrugDao.saveAll(icdcmList);
 				}
-
-				icdcmDrugDao.saveAll(icdcmList);
-
 			}
 			if (icdList.size() == 0) {
-				icdList = icdcmDrugDao.queryByDataFormat("20");
+				/// 取得最大4筆
+				icdList = icdcmDrugDao.queryByDataFormatLimit("20");
 			}
+			
 			String drug11 = "";
 			String drug12 = "";
 			String drug21 = "";
 			String drug22 = "";
+			
 			int count1 = 0;
 			int count2 = 0;
 			for (ICDCM_DRUG idModel : icdList) {
@@ -740,7 +696,7 @@ public class AIService {
 					} else {
 						break;
 					}
-
+					
 					count1++;
 				} else {
 					if (count2 == 0) {
@@ -750,58 +706,56 @@ public class AIService {
 					} else {
 						break;
 					}
-
+					
 					count2++;
 				}
 			}
-			List<Map<String, Object>> idList = mrDao.getIdByOderCodeCount(sDate, eDate);
+			icdmcList.clear();
+			icdmcList = mrDao.getIcdcmCountIPByDate2(sDate, eDate);
+			
 			for (ICDCM_DRUG idModel : icdList) {
-				for (Map<String, Object> mapModel : dataList) {
-					for (Map<String, Object> map : idList) {
-
-						MR mr = mrDao.getMrByID(map.get("ID").toString());
-						if (idModel.getIsdurug() == 1) {
-							if (idModel.getDrug().equals(mapModel.get("DRUGNO").toString())) {
-								int math = Math.round((float) mapModel.get("PERCENT"));
-								int iModelPer = idModel.getPercent();
-								float a = (float) math;
-								float b = (float) iModelPer;
-								float fPer = a / b;
-								int round = Math.round(fPer * 100);
-								if (round < 5) {
-
-									paraResult = parametersService.getOneValueByName("INTELLIGENT",
-											"DRUG_DIFF_WORDING");
-									msg = String.format(paraResult, mr.getInhMrId(), mapModel.get("ICDCM").toString(),
-											mr.getName(), mapModel.get("DRUGNO").toString(), drug11, drug12);
-									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.DRUG_DIFF.value(),
-											mapModel.get("ICDCM").toString(), msg, true);
-								}
+				for (Map<String, Object> map : icdmcList) {
+					if (idModel.getIsdurug() == 1) {
+						if (idModel.getDrug().equals(map.get("DRUGNO").toString())) {
+							BigDecimal d = (BigDecimal)map.get("PERCENT");
+							int math = d.intValue();
+							int iModelPer = idModel.getPercent();
+							float a = (float) math;
+							float b = (float) iModelPer;
+							float fPer = a / b;
+							int round = Math.round(fPer * 100);
+							///判斷小於5,寫入智能提示
+							if (round < 5) {
+								MR mr = mrDao.getMrByID(map.get("ID").toString());
+								paraResult = parametersService.getOneValueByName("INTELLIGENT",
+										"DRUG_DIFF_WORDING");
+								msg = String.format(paraResult, mr.getInhMrId(), map.get("ICDCM").toString(),
+										mr.getName(), map.get("DRUGNO").toString(), drug11, drug12);
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.DRUG_DIFF.value(),
+										map.get("ICDCM").toString(), msg, true);
 							}
-						} else {
-
-							if (idModel.getDrug().equals(mapModel.get("DRUGNO").toString())) {
-								int math = Math.round((float) mapModel.get("PERCENT"));
-								int iModelPer = idModel.getPercent();
-								float a = (float) math;
-								float b = (float) iModelPer;
-								float fPer = a / b;
-								int round = Math.round(fPer * 100);
-								if (round < 5) {
-
-									paraResult = parametersService.getOneValueByName("INTELLIGENT",
-											"MATERIAL_DIFF_WORDING");
-									msg = String.format(paraResult, mr.getInhMrId(), mapModel.get("ICDCM").toString(),
-											mr.getName(), mapModel.get("DRUGNO").toString(), drug21, drug22);
-									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.DRUG_DIFF.value(),
-											mapModel.get("ICDCM").toString(), msg, true);
-								}
+						}
+					} else {
+						if (idModel.getDrug().equals(map.get("DRUGNO").toString())) {
+							int math = Math.round((float) map.get("PERCENT"));
+							int iModelPer = idModel.getPercent();
+							float a = (float) math;
+							float b = (float) iModelPer;
+							float fPer = a / b;
+							int round = Math.round(fPer * 100);
+							if (round < 5) {
+								MR mr = mrDao.getMrByID(map.get("ID").toString());
+								paraResult = parametersService.getOneValueByName("INTELLIGENT",
+										"DRUG_DIFF_WORDING");
+								msg = String.format(paraResult, mr.getInhMrId(), map.get("ICDCM").toString(),
+										mr.getName(), map.get("DRUGNO").toString(), drug21, drug22);
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.DRUG_DIFF.value(),
+										map.get("ICDCM").toString(), msg, true);
 							}
-
 						}
 					}
+					
 				}
-
 			}
 
 			data.put("msg", msg);
@@ -824,23 +778,23 @@ public class AIService {
 
 		try {
 			String msg = "";
-			List<Map<String, Object>> listHospitalizedMap = mrDao.hospitalDays(sDate,eDate);
-			// 設定檔上限
 			int ipDays = Integer.parseInt(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "IP_DAYS"));
+			/// 直接在sql裡面計算，住院病歷的住院天數減去各主診斷碼算出的上限值，若超過設定檔中的天數上限
+			List<Map<String, Object>> listHospitalizedMap = mrDao.hospitalDays(sDate, eDate, ipDays);
+			// 設定檔上限
 			for (Map<String, Object> map : listHospitalizedMap) {
 
-				MR mm = mrDao.getMrByID(map.get("ID").toString());
+				MR mm = mrDao.getMrByID(map.get("MR_ID").toString());
 				// 住院上限
-				float hospitalizedUp = Float.parseFloat(map.get("up").toString());
-				int up = Math.round(hospitalizedUp);
+				float up = Float.parseFloat(map.get("UP").toString());
+				/// 超出天數
+				float count = Float.valueOf(map.get("VCOUNT").toString());
 
-				if (up > ipDays) {
+				String paraResult = parametersService.getOneValueByName("INTELLIGENT", "IP_DAYS_WORDING");
+				msg = String.format(paraResult, mm.getInhMrId(), map.get("ICD_CM_1").toString(), mm.getName(),
+						Math.round(up), Math.round(count));
+				intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(), "", msg, true);
 
-					String paraResult = parametersService.getOneValueByName("INTELLIGENT", "IP_DAYS_WORDING");
-					msg = String.format(paraResult, mm.getInhMrId(), map.get("ICD_CM_1").toString(), mm.getName(),
-							ipDays, (up - ipDays));
-					intelligentService.insertIntelligent(mm, INTELLIGENT_REASON.ORDER_DIFF.value(), "", msg, true);
-				}
 			}
 
 			data.put("msg", msg);

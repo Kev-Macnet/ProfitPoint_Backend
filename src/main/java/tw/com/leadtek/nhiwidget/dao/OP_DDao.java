@@ -201,7 +201,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "join op_p opp on opd.id = opp.opd_id  "
   		+ "join pt_payment_terms ppt on  opp.drug_no = ppt.nhi_no  "
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id  "
-  		+ "where pof.no_dentisit = 0   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "where pof.no_dentisit = 1   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
   		+ "and opd.mr_id in (?1) ", nativeQuery = true)
   public List<Map<String, Object>> getValidByNoDentisit(List<String> mrId);
   
@@ -214,26 +214,28 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "join op_p opp on opd.id = opp.opd_id  "
   		+ "join pt_payment_terms ppt on  opp.drug_no = ppt.nhi_no  "
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
-  		+ "where pof.no_chi_medicine = 0   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "where pof.no_chi_medicine = 1   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
 	  	+ "and opd.mr_id in (?1) ", nativeQuery = true)
 	  public List<Map<String, Object>> getValidByNoChiMedicine(List<String> mrId);
   
   /**
    * 查詢離島資料
+   * @param drugNo
+   * @param mridStr
    * @return
    */
-  @Query(value = "select * from("
-  		+ "select opd.MR_ID from op_d opd "
-  		+ "join op_p opp on opd.id = opp.opd_id where opd.part_no = '007') temp", nativeQuery = true)
-  public List<Map<String, Object>> getPartNoByOutisLand();
+  @Query(value = "SELECT MR_ID FROM op_D WHERE id IN ( "
+  		+ "SELECT OPD_ID FROM op_p WHERE DRUG_NO = ?1 and MR_ID in (?2) ) "
+  		+ "AND part_no <> '007'", nativeQuery = true)
+  public List<Map<String, Object>> getPartNoByOutisLand(String drugNo,List<String> mridStr);
+  
   /**
-   * 由mrid取得該病例生日
+   * 由mrid取得該門診病例
    * @param mrid
    * @return
    */
-  @Query(value = "select opd.MR_ID, opd.ID_BIRTH_YMD from op_d opd "
-  		+ "where opd.mr_id  in(?1) group by opd.MR_ID, opd.ID_BIRTH_YMD", nativeQuery = true)
-  public List<Map<String, Object>> getBirthByMrId(List<String> mridStr);
+  @Query(value = "select * from op_d where MR_ID in(?1)", nativeQuery = true)
+  public List<OP_D> getDataListByMrId(List<String> mridStr);
   
   /**
    * 由func & mrid取得醫療人員人數

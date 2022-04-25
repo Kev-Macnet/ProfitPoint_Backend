@@ -12,17 +12,13 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import org.springframework.format.annotation.DateTimeFormat;
+import io.swagger.annotations.ApiModel;
 
+@ApiModel("診斷碼搭配藥品衛材的出現次數")
 @Table(name = "ICDCM_DRUG")
 @Entity
 @IdClass(ICDCM_DRUG_KEYS.class)
 public class ICDCM_DRUG {
-	/**
-	 * 主鍵 複合主鍵不能用@Id，需要用@EmbeddedId。插入資料的時候必須手工賦值
-	 */
-//	@EmbeddedId
-//	private ICDCM_DRUG_KEYS icdcmdrugPK;
-  
   /**
    * 診斷碼
    */
@@ -36,71 +32,69 @@ public class ICDCM_DRUG {
   @Column(name = "DRUG")
   private String drug;
   /**
-   * 資料格式
-     10: 門急診
-     20: 住院
+   * 資料格式 10: 門急診 20: 住院
    */
   @Id
   @Column(name = "DATA_FORMAT")
-  private String dataformat;
+  private String dataFormat;
 
-	/**
-	 * 是否為藥品 1: 藥品 2: 衛材
-	 */
-	@Column(name = "IS_DRUG")
-	private int isdurug;
+  /**
+   * 是否為藥品 1: 藥品 2: 衛材
+   */
+  @Column(name = "IS_DRUG")
+  private int isdurug;
 
-	/**
-	 * 該診斷碼出現該藥品/衛材的總次數
-	 */
-	@Column(name = "TOTAL")
-	private int total;
+  /**
+   * 該診斷碼出現該藥品/衛材的總次數
+   */
+  @Column(name = "TOTAL")
+  private int total;
 
-	/**
-	 * 該藥品/衛材出現次數百分比，值為0~100
-	 */
-	@Column(name = "PERCENT")
-	private int percent;
-	
-	/**
-	 * 建立時間
-	 */
-	@Column(name = "UPDATE_AT")
-	@Temporal(TemporalType.TIMESTAMP)
-	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-	private Date updateAT;
+  /**
+   * 該藥品/衛材出現次數百分比，值為0~100
+   */
+  @Column(name = "PERCENT")
+  private int percent;
 
-	public int getIsdurug() {
-		return isdurug;
-	}
+  /**
+   * 建立時間
+   */
+  @Column(name = "UPDATE_AT")
+  @Temporal(TemporalType.TIMESTAMP)
+  @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+  private Date updateAT;
 
-	public void setIsdurug(int isdurug) {
-		this.isdurug = isdurug;
-	}
+  public int getIsdurug() {
+    return isdurug;
+  }
 
-	public int getTotal() {
-		return total;
-	}
+  public void setIsdurug(int isdurug) {
+    this.isdurug = isdurug;
+  }
 
-	public void setTotal(int total) {
-		this.total = total;
-	}
+  public int getTotal() {
+    return total;
+  }
 
-	public int getPercent() {
-		return percent;
-	}
+  public void setTotal(int total) {
+    this.total = total;
+  }
 
-	public void setPercent(int percent) {
-		this.percent = percent;
-	}
+  public int getPercent() {
+    return percent;
+  }
 
-	public Date getUpdateAT() {
-		return updateAT;
-	}
+  public void setPercent(int percent) {
+    this.percent = percent;
+  }
 
-	public void setUpdateAT(Date updateAT) {
-		this.updateAT = updateAT;
-	}
+  public Date getUpdateAT() {
+    return updateAT;
+  }
+
+  public void setUpdateAT(Date updateAT) {
+    this.updateAT = updateAT;
+  }
 
   public String getIcdcm() {
     return icdcm;
@@ -118,20 +112,12 @@ public class ICDCM_DRUG {
     this.drug = drug;
   }
 
-  public String getDataformat() {
-    return dataformat;
+  public String getDataFormat() {
+    return dataFormat;
   }
 
-  public void setDataformat(String dataformat) {
-    this.dataformat = dataformat;
+  public void setDataFormat(String dataFormat) {
+    this.dataFormat = dataFormat;
   }
-
-//	public ICDCM_DRUG_KEYS getIcdcmdrugPK() {
-//		return icdcmdrugPK;
-//	}
-//
-//	public void setIcdcmdrugPK(ICDCM_DRUG_KEYS icdcmdrugPK) {
-//		this.icdcmdrugPK = icdcmdrugPK;
-//	}
 
 }

@@ -5,7 +5,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +19,9 @@ import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
+import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.tools.DateTool;
 
@@ -43,41 +44,35 @@ public class PtTreatmentFeeServiceTask {
 	
 	public void validTreatmentFee(PtTreatmentFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-		Calendar calendar = Calendar.getInstance();
-		Date dateObj = calendar.getTime();
-		String eDateStr = sdf.format(dateObj);
-		String sDateStr = minusYear(eDateStr);
-		/// 違反案件數
-		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr);
-		List<MR> mrList2 = new ArrayList<MR>();
+		/// 將timestamp轉成date
+		java.sql.Timestamp tSdate = new java.sql.Timestamp(params.getStart_date());
+		java.sql.Timestamp tEdate = new java.sql.Timestamp(params.getEnd_date());
+		Date tsd = new Date(tSdate.getTime());
+		Date ted = new Date(tEdate.getTime());
+		String sDateStr = sdf.format(tsd);
+		String eDateStr = sdf.format(ted);
+
+		/// 該支付準則區間病歷表
+		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr, params.getNhi_no());
+		/// 存放mrID
 		List<String> mrIdListStr = new ArrayList<String>();
-		/// 判斷支付條件準則日期，如果病歷小於該日，則不顯示
+		/// 提取將該診斷碼之ID
 		for (MR mr : mrList) {
-			/// 起日
-			Date sd = sdf.parse(sDateStr);
-			Date mrSd = mr.getMrDate();
-			/// 訖日
-			Date ed = sdf.parse(eDateStr);
-			Date mrEd = mr.getMrEndDate();
 
-			if (sd.before(mrSd) || ed.equals(mrEd)) {
-				mrList2.add(mr);
-				mrIdListStr.add(mr.getId().toString());
-			}
+			mrIdListStr.add(mr.getId().toString());
 		}
-
 		if (params.getHospitalized_type() == 0) {
-			for (MR r : mrList2) {
-				if (r.getDataFormat() != "20" && r.getCodeAll().contains(params.getNhi_no())) {
+			for (MR r : mrList) {
+				if (r.getDataFormat() == "20") {
 					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用(住院)就醫方式", params.getNhi_no()), true);
+							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
-			for (MR r : mrList2) {
-				if (r.getDataFormat() != "10") {
+			for (MR r : mrList) {
+				if (r.getDataFormat() == "10") {
 					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用(門診)就醫方式", params.getNhi_no()), true);
+							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
 				}
 			}
 		}
@@ -87,7 +82,7 @@ public class PtTreatmentFeeServiceTask {
 		if(params.getExclude_nhi_no_enable() == 1) {
 			List<String> nhiNoList = params.getLst_nhi_no();
 			int count = 0;
-			for (MR mr : mrList2) {
+			for (MR mr : mrList) {
 				for (String nhiNo : nhiNoList) {
 					if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
@@ -107,7 +102,7 @@ public class PtTreatmentFeeServiceTask {
 		if (params.getCoexist_nhi_no_enable() == 1) {
 			List<String> coList = params.getLst_co_nhi_no();
 			int count = 0;
-			for (MR mr : mrList2) {
+			for (MR mr : mrList) {
 				for (String s : coList) {
 					/// 先判斷有相同支付標準
 					if (mr.getCodeAll().contains(params.getNhi_no())) {
@@ -285,13 +280,13 @@ public class PtTreatmentFeeServiceTask {
         if(params.getInclude_icd_no_enable() == 1) {
         	List<String> icdList = params.getLst_icd_no();
         	int count = 0;
-        	for(MR mr : mrList2) {
+        	for(MR mr : mrList) {
         		for(String s : icdList) {
         			if (mr.getCodeAll().contains(params.getNhi_no()) && !mr.getIcdAll().contains(s)) {
         				
         				if(count == 0) {
     						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-    								String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄上，須包含以下任一[%s]，疑似有出入", params.getNhi_no(),
+    								String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄上，須包含以下任一ICD診斷碼[%s]，疑似有出入", params.getNhi_no(),
     										icdList.toString()),
     								true);
         				}
@@ -306,7 +301,7 @@ public class PtTreatmentFeeServiceTask {
         /// 每月申報數量，不可超過門診就診人次之百分之
         if(params.getMax_month_enable() == 1) {
         	List<String> mrIdList = new ArrayList<String>();
-        	for(MR mr : mrList2) {
+        	for(MR mr : mrList) {
         		if(mr.getCodeAll().contains(params.getNhi_no())) {
         			mrIdList.add(mr.getId().toString());
         		}
@@ -339,46 +334,64 @@ public class PtTreatmentFeeServiceTask {
         /// 10.
         /// 患者限定年紀小於等於 歲，方可進行申報
         if(params.getMax_age_enable() == 1) {
-        	List<Map<String, Object>> ipData = ipdDao.getBirthByMrId(mrIdListStr);
-			List<Map<String, Object>> opData = opdDao.getBirthByMrId(mrIdListStr);
-			if (ipData.size() > 0) {
-				for (Map<String, Object> map : ipData) {
-					String rocBirth = map.get("ID_BIRTH_YMD").toString();
-					Date d = DateTool.convertChineseToYear(rocBirth);
-					SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
-					Date currentDate = new Date();
-					String rocStr = sdf2.format(d);
-					String currentStr = sdf2.format(currentDate);
-					int diffY = yearsBetween(rocStr, currentStr);
-					if(params.getMax_age() > diffY) {
-						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-								params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:患者限定年紀小於等於%d歲，方可進行申報，疑似有出入",
-										params.getNhi_no(), params.getMax_age()),
-								true);
-					}
-				}
-			}
-			if(opData.size() > 0) {
-				for (Map<String, Object> map : opData) {
-					String rocBirth = map.get("ID_BIRTH_YMD").toString();
-					Date d = DateTool.convertChineseToYear(rocBirth);
-					SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
-					Date currentDate = new Date();
-					String rocStr = sdf2.format(d);
-					String currentStr = sdf2.format(currentDate);
-					int diffY = yearsBetween(rocStr, currentStr);
-					if(params.getMax_age() > diffY) {
-						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-								params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:患者限定年紀小於等於%d歲，方可進行申報，疑似有出入",
-										params.getNhi_no(), params.getMax_age()),
-								true);
-					}
-				}
-			} 
+        	if(params.getOutpatient_type() == 1) {
+        		List<OP_D> opData = opdDao.getDataListByMrId(mrIdListStr);
+        		if(opData.size() > 0) {
+    				for (OP_D model : opData) {
+    					String rocBirth = "";
+    					if(model.getNbBirthday() != null && !model.getNbBirthday().isEmpty()) {
+    						rocBirth = model.getNbBirthday();
+    					}
+    					else {
+    						rocBirth = model.getIdBirthYmd();
+    					}
+    					Date d = DateTool.convertChineseToYear(rocBirth);
+    					SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
+    					Date currentDate = new Date();
+    					String rocStr = sdf2.format(d);
+    					String currentStr = sdf2.format(currentDate);
+    					int diffY = yearsBetween(rocStr, currentStr);
+    					if(params.getMax_age() > diffY) {
+    						MR mr = mrDao.getMrByID(model.getId().toString());
+    						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+    								params.getNhi_no(),
+    								String.format("(醫令代碼)%s與支付準則條件:患者限定年紀小於等於%d歲，方可進行申報，疑似有出入",
+    										params.getNhi_no(), params.getMax_age()),
+    								true);
+    					}
+    				}
+    			} 
+        	}
+        	if(params.getHospitalized_type() == 1) {
+        		List<IP_D> ipData = ipdDao.getDataListByMrId(mrIdListStr);
+        		
+        		if (ipData.size() > 0) {
+        			for (IP_D model : ipData) {
+        				String rocBirth = "";
+        				if(model.getNbBirthday() != null && !model.getNbBirthday().isEmpty()) {
+        					rocBirth = model.getNbBirthday();
+        				}
+        				else {
+        					rocBirth = model.getIdBirthYmd();
+        				}
+        				Date d = DateTool.convertChineseToYear(rocBirth);
+        				SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
+        				Date currentDate = new Date();
+        				String rocStr = sdf2.format(d);
+        				String currentStr = sdf2.format(currentDate);
+        				int diffY = yearsBetween(rocStr, currentStr);
+        				if(params.getMax_age() > diffY) {
+        					MR mr = mrDao.getMrByID(model.getId().toString());
+        					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+        							params.getNhi_no(),
+        							String.format("(醫令代碼)%s與支付準則條件:患者限定年紀小於等於%d歲，方可進行申報，疑似有出入",
+        									params.getNhi_no(), params.getMax_age()),
+        							true);
+        				}
+        			}
+        		}
+        	}
+			
         }
         
         /// 11.
@@ -391,14 +404,23 @@ public class PtTreatmentFeeServiceTask {
 				funcAppend.add(func);
 			}
 
-
-			List<MR> mrDataList = mrDao.getIntelligentMrByFuncName(sDateStr, eDateStr, funcAppend);
+			List<MR> mrDataList = mrDao.getIntelligentMrByFuncName(mrIdListStr, funcAppend);
 			/// 如果有非指定funcName資料
 			if (mrDataList.size() > 0) {
 				for (MR mr : mrDataList) {
+					///如果門診
+					if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+						
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
+					}
+					///如果住院
+					if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
 
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
+					}
+
 				}
 			}
         }

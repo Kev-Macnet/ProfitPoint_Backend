@@ -360,20 +360,28 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param date
    * @return
    */
-  @Query(value = "select m.ID, imo.ICDCM, imo.ORDER_CODE, imo.ULIMIT as UP, imo.LLIMIT as DOWN from mr m  "
-  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  and m.CODE_ALL like concat('%', imo.ORDER_CODE ,'%') "
-  		+ "and m.DATA_FORMAT ='10' "
-  		+ "and m.MR_DATE  BETWEEN ?1 AND ?2 group by m.id " , nativeQuery = true)
+  @Query(value = "select MR_ID,COUNT,ORDER_CODE,ICDCM,UP,DOWN from ( "
+  		+ "select mr_id as MR_ID, COUNT, DRUG_NO as ORDER_CODE, io.icdcm as ICDCM, io.ulimit as UP, io.llimit as DOWN from ( "
+  		+ "select op_d.mr_id, count(op_d.mr_id) as COUNT, op_p.drug_no, op_d.icd_cm_1 from op_d , op_p "
+  		+ "where op_d.id = op_p.opd_id and op_d.id in (select id from mr where MR_DATE  BETWEEN ?1 AND ?2 and DATA_FORMAT ='10' ) "
+  		+ "group by op_d.mr_id, op_p.drug_no, op_d.icd_cm_1) temp , ICDCM_ORDER io "
+  		+ "where temp.drug_no = io.order_code and temp.icd_cm_1 = io.icdcm and io.data_format = '10' "
+  		+ "order by mr_id) temp2 "
+  		+ "where COUNT > UP   or COUNT < DOWN " , nativeQuery = true)
   	  public List<Map<String, Object>> clinicMedBeh(String sDate, String eDate);
   /**
    * 醫療行為差異--住院
    * @param date
    * @return
    */
-  @Query(value = "select m.ID, imo.ICDCM, imo.ORDER_CODE, imo.ULIMIT as UP, imo.LLIMIT as DOWN from mr m  "
-	  		+ ", ICDCM_ORDER imo where m.ICDCM1 = imo.ICDCM and m.DATA_FORMAT = imo.DATA_FORMAT  and m.CODE_ALL like concat('%', imo.ORDER_CODE ,'%') "
-	  		+ "and m.DATA_FORMAT ='20' "
-	  		+ "and m.MR_DATE  BETWEEN ?1 AND ?2 group by m.id " , nativeQuery = true)
+  @Query(value = "select MR_ID,COUNT,ORDER_CODE,ICDCM,UP,DOWN from ( "
+  		+ "select  temp.MR_ID, temp.COUNT, temp.ORDER_CODE, io.ICDCM, io.ulimit as UP, io.llimit as DOWN from ( "
+  		+ "select ip_d.mr_id, count(ip_d.mr_id) as COUNT, ip_p.order_code, ip_d.icd_cm_1 from ip_d , ip_p "
+  		+ "where ip_d.id = ip_p.ipd_id and ip_d.mr_id in (select id from mr where MR_DATE  BETWEEN ?1 AND ?2 and DATA_FORMAT ='20' ) "
+  		+ "group by ip_d.mr_id, ip_p.order_code, ip_d.icd_cm_1) temp , ICDCM_ORDER io "
+  		+ "where temp.order_code = io.order_code and temp.icd_cm_1 = io.icdcm and io.data_format = '20' "
+  		+ "order by mr_id) temp2 "
+  		+ "where COUNT > UP   or COUNT < DOWN " , nativeQuery = true)
   	  public List<Map<String, Object>> hospitalMedBeh(String sDate, String eDate);
   /**
    * 手術--門診
@@ -417,16 +425,19 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<MR> getMrDataGroupByIcdcm(String date,String dfmt);
   
   /**
-   * 住院天數差異
-   * @param date
+   * 住院天數差異，住院病歷的住院天數 減去 各主診斷碼算出的上限值，若超過設定檔中的天數上限
+   * @param sDate(起日)
+   * @param eDate(迄日)
+   * @param isDays(設定值)
    * @return
    */
-  @Query(value ="select * from ( "
-  		+ "select MR.ID,AI.ICD_CM_1, avg +2 * stddev as UP , STDDEV from "
-  		+ "(SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV FROM IP_D  "
-  		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2) GROUP BY ICD_CM_1) AI, MR "
-  		+ "where AI.stddev > 0 and MR.MR_DATE  between ?1 and ?2 AND DATA_FORMAT ='20' AND AI.ICD_CM_1 = MR.ICDCM1) TEMP",  nativeQuery = true)
-  public List<Map<String,Object>> hospitalDays(String sDate, String eDate);
+  @Query(value ="select MR_ID, ICD_CM_1, UP, COUNT , (COUNT - UP) as VCOUNT from ( "
+  		+ "select CO.MR_ID,AI.ICD_CM_1, avg +2 * stddev as UP , STDDEV, AI.COUNT as COUNT  from "
+  		+ "(SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV,(S_BED_DAY + E_BED_DAY) as COUNT  FROM IP_D  "
+  		+ "WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2) GROUP BY ICD_CM_1) AI, (select ICD_CM_1, (S_BED_DAY + E_BED_DAY) as COUNT, MR_ID from IP_D where MR_ID IN (SELECT ID FROM MR WHERE MR_DATE  between ?1 and ?2)) CO "
+  		+ "where AI.stddev > 0  AND AI.ICD_CM_1 = CO.ICD_CM_1) TEMP  "
+  		+ "where  (COUNT - UP) > ?3",  nativeQuery = true)
+  public List<Map<String,Object>> hospitalDays(String sDate, String eDate, int isDays);
   
   /**
    * 取得主診斷碼出現次數 -門診
@@ -434,11 +445,29 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param eDate
    * @return
    */
-  @Query(value ="select ICDCM1, count(1) as COUNT from mr where   "
-  		+ "mr_date between ?1 and ?2 "
-  		+ "and id in (select mr_id from op_p where length(drug_no) = 10)  "
-  		+ "group by  ICDCM1 order by id", nativeQuery = true)
+  @Query(value ="select temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.DRUG_NO as DRUGNO, temp2.count as ICOUNT , (temp1.iccount / temp2.count) * 100 as PERCENT from  "
+  		+ "(select  mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, op.DRUG_NO  from op_p op , mr  "
+  		+ "where op.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(op.drug_no) = 10  and mr.code_all like concat('%', op.drug_no, '%') "
+  		+ "group by mr.icdcm1, op.DRUG_NO) temp1, (select ICDCM1, count(ICDCM1) as COUNT from mr where  mr_date between ?1 and ?2 and id in (select mr_id from op_p where length(drug_no) = 10)  "
+  		+ "group by  ICDCM1) temp2 "
+  		+ "where temp1.icdcm1 = temp2.icdcm1 "
+  		+ "order by temp1.icdcm1", nativeQuery = true)
   public List<Map<String,Object>> getIcdcmCountOPByDate(String sDate, String eDate);
+  /**
+   * 取得主診斷碼出現次數 -門診
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value ="select * from ( "
+  		+ "select temp1.ID, temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.DRUG_NO as DRUGNO, temp2.count as ICOUNT , (temp1.iccount / temp2.count) * 100 as PERCENT from  "
+  		+ "(select mr.id,  mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, op.DRUG_NO  from op_p op , mr  "
+  		+ "where op.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(op.drug_no) = 10  and mr.code_all like concat('%', op.drug_no, '%') "
+  		+ "group by mr.icdcm1, op.DRUG_NO, mr.id) temp1, (select ICDCM1, count(ICDCM1) as COUNT from mr where  mr_date between ?1 and ?2 and id in (select mr_id from op_p where length(drug_no) = 10)  "
+  		+ "group by  ICDCM1) temp2 "
+  		+ "where temp1.icdcm1 = temp2.icdcm1 "
+  		+ "order by temp1.icdcm1) temp3", nativeQuery = true)
+  public List<Map<String,Object>> getIcdcmCountOPByDate2(String sDate, String eDate);
   
   /**
    * 取得主診斷碼出現次數 -住院
@@ -446,11 +475,28 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param eDate
    * @return
    */
-  @Query(value ="select ICDCM1, count(1) as COUNT from mr where   "
-  		+ "mr_date between '2021-01-01' and '2021-04-01'  "
-  		+ "and id in (select mr_id from ip_p where length(order_code) = 10)  "
-  		+ "group by  ICDCM1 order by id", nativeQuery = true)
+  @Query(value ="select temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.ORDER_CODE as DRUGNO, temp2.count as ICOUNT , (temp1.iccount / temp2.count) * 100 as PERCENT from   "
+  		+ "(select  mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, ip.ORDER_CODE  from ip_p ip , mr   "
+  		+ "where ip.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(ip.ORDER_CODE) = 10  and mr.code_all like concat('%', ip.ORDER_CODE, '%')  "
+  		+ "group by mr.icdcm1, ip.ORDER_CODE) temp1, (select ICDCM1, count(ICDCM1) as COUNT from mr where  mr_date between ?1 and ?2 and id in (select mr_id from ip_p where length(ORDER_CODE) = 10)   "
+  		+ "group by  ICDCM1) temp2  "
+  		+ "where temp1.icdcm1 = temp2.icdcm1  "
+  		+ "order by temp1.icdcm1", nativeQuery = true)
   public List<Map<String,Object>> getIcdcmCountIPByDate(String sDate, String eDate);
+  /**
+   * 取得主診斷碼出現次數 -住院
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value ="select temp1.ID, temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.ORDER_CODE as DRUGNO, temp2.count as ICOUNT , (temp1.iccount / temp2.count) * 100 as PERCENT from   "
+  		+ "(select mr.ID, mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, ip.ORDER_CODE  from ip_p ip , mr   "
+  		+ "where ip.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(ip.ORDER_CODE) = 10  and mr.code_all like concat('%', ip.ORDER_CODE, '%')  "
+  		+ "group by mr.icdcm1, ip.ORDER_CODE, mr.ID) temp1, (select ICDCM1, count(ICDCM1) as COUNT from mr where  mr_date between ?1 and ?2 and id in (select mr_id from ip_p where length(ORDER_CODE) = 10)   "
+  		+ "group by  ICDCM1) temp2  "
+  		+ "where temp1.icdcm1 = temp2.icdcm1  "
+  		+ "order by temp1.icdcm1", nativeQuery = true)
+  public List<Map<String,Object>> getIcdcmCountIPByDate2(String sDate, String eDate);
   
   public List<MR> findByApplYmAndDataFormatOrderById(String applYm, String dataFormat);
   
@@ -504,28 +550,23 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認
    * 下面測試用替換
-   * @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
-   *      + "1=1 AND START_DATE BETWEEN ?1 and ?2 ) ", nativeQuery = true)
    */
-   @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
-        + "1=1 AND START_DATE BETWEEN ?1 and ?2 ) ", nativeQuery = true)
-//  @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
-//      + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2') ", nativeQuery = true)
-  public List<MR> getIntelligentMR(String sDate, String eDate);
+   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') ", nativeQuery = true)
+  public List<MR> getIntelligentMR(String sDate, String eDate, String code);
   
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認and FUNC_TYPEC not in
    */
   @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
-      + "CONDITION_CODE ='1' AND START_DATE BETWEEN ?1 and ?2 AND STATUS = '2' AND FUNC_TYPEC NOT IN (?3)) ", nativeQuery = true)
-  public List<MR> getIntelligentMrByFuncName(String sDate, String eDate, List<String> funcName);
+      + "CONDITION_CODE ='1' AND MR_ID IN (?1) AND STATUS = '2' AND FUNC_TYPEC NOT IN (?2)) ", nativeQuery = true)
+  public List<MR> getIntelligentMrByFuncName(List<String> mrid, List<String> funcName);
   
   /**
    * 依照rocid & code 取得該筆病歷表
    * @param MRID
    * @return
    */
-  @Query(value = "select * from mr where ROC_ID = ?1 and CODE_ALL like '%?2%'", nativeQuery = true)
+  @Query(value = "select * from mr where ROC_ID = ?1 and CODE_ALL like concat('%', ?2, '%')", nativeQuery = true)
   public MR getMrByRocIdAndCode(String rocid, String code);
   /**
    * 依照id & code 取得該筆病歷表
@@ -560,5 +601,40 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    */
   @Query(value = "select * from mr where CODE_ALL like ?1 and ROC_ID = ?2 order by MR_DATE desc", nativeQuery = true)
   public List<MR> getAllByCodeAndRocid(String code, String rocid);
+  /**
+   * 依照以下條件取得MR資料
+   * @param icdcm
+   * @param dataformat
+   * @param sDate
+   * @param eDate
+   * @param code
+   * @return
+   */
+  @Query(value = "select * from mr where ICDCM1 = ?1 and DATA_FORMAT = ?2 and mr_date between  ?3 and  ?4  and code_all like concat('%', ?5, '%')", nativeQuery = true)
+  public List<MR> getDataByParams(String icdcm, String dataformat, String sDate, String eDate, String code);
+  
+  /**
+   * 門診
+   * 該支付準則意思是若病歷有A此醫令(在 MR.CODE_ALL或 OP_P.DRUG_NO)，其他醫令的醫令類別不可以是調劑費。
+   * @param mrid
+   * @return
+   */
+  @Query(value = "select distinct temp.id from "
+  		+ "(select mr.* from mr, op_p "
+  		+ "where mr.id = op_p.mr_id and mr.code_all like concat('%',op_p.drug_no, '%') and mr.id in (?1))temp, pay_code "
+  		+ "where temp.code_all like concat('%',pay_code.code, '%') and pay_code.code_type = ?2 ", nativeQuery = true)
+  public List<Map<String,Object>> getIdByOPandPaycode(List<String> mrid, String codeType);
+  /**
+   * 住院
+   * 該支付準則意思是若病歷有A此醫令(在 MR.CODE_ALL或 OP_P.DRUG_NO)，其他醫令的醫令類別不可以是調劑費。
+   * @param mrid
+   * @return
+   */
+  @Query(value = "select distinct temp.id from "
+  		+ "(select mr.* from mr, ip_p "
+  		+ "where mr.id = ip_p.mr_id and mr.code_all like concat('%',ip_p.order_code, '%') and mr.id in (?1))temp, pay_code "
+  		+ "where temp.code_all like concat('%',pay_code.code, '%') and pay_code.code_type = ?2 ", nativeQuery = true)
+  
+  public List<Map<String,Object>> getIdByIPandPaycode(List<String> mrid, String codeType);
   
 }
