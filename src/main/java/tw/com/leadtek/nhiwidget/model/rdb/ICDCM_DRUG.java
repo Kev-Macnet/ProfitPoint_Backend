@@ -4,25 +4,45 @@
 package tw.com.leadtek.nhiwidget.model.rdb;
 
 import java.util.Date;
-
 import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Table(name = "ICDCM_DRUG")
 @Entity
+@IdClass(ICDCM_DRUG_KEYS.class)
 public class ICDCM_DRUG {
 	/**
 	 * 主鍵 複合主鍵不能用@Id，需要用@EmbeddedId。插入資料的時候必須手工賦值
 	 */
-	@EmbeddedId
-	private ICDCM_DRUG_KEYS icdcmdrugPK;
+//	@EmbeddedId
+//	private ICDCM_DRUG_KEYS icdcmdrugPK;
+  
+  /**
+   * 診斷碼
+   */
+  @Id
+  @Column(name = "ICDCM")
+  private String icdcm;
+  /**
+   * 藥品、衛材代碼
+   */
+  @Id
+  @Column(name = "DRUG")
+  private String drug;
+  /**
+   * 資料格式
+     10: 門急診
+     20: 住院
+   */
+  @Id
+  @Column(name = "DATA_FORMAT")
+  private String dataformat;
 
 	/**
 	 * 是否為藥品 1: 藥品 2: 衛材
@@ -41,7 +61,7 @@ public class ICDCM_DRUG {
 	 */
 	@Column(name = "PERCENT")
 	private int percent;
-
+	
 	/**
 	 * 建立時間
 	 */
@@ -82,14 +102,36 @@ public class ICDCM_DRUG {
 		this.updateAT = updateAT;
 	}
 
-	public ICDCM_DRUG_KEYS getIcdcmdrugPK() {
-		return icdcmdrugPK;
-	}
+  public String getIcdcm() {
+    return icdcm;
+  }
 
-	public void setIcdcmdrugPK(ICDCM_DRUG_KEYS icdcmdrugPK) {
-		this.icdcmdrugPK = icdcmdrugPK;
-	}
-	
-	
+  public void setIcdcm(String icdcm) {
+    this.icdcm = icdcm;
+  }
+
+  public String getDrug() {
+    return drug;
+  }
+
+  public void setDrug(String drug) {
+    this.drug = drug;
+  }
+
+  public String getDataformat() {
+    return dataformat;
+  }
+
+  public void setDataformat(String dataformat) {
+    this.dataformat = dataformat;
+  }
+
+//	public ICDCM_DRUG_KEYS getIcdcmdrugPK() {
+//		return icdcmdrugPK;
+//	}
+//
+//	public void setIcdcmdrugPK(ICDCM_DRUG_KEYS icdcmdrugPK) {
+//		this.icdcmdrugPK = icdcmdrugPK;
+//	}
 
 }

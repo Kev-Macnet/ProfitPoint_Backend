@@ -70,7 +70,8 @@ public class IntelligentController extends BaseController {
       @ApiParam(name = "icd", value = "搜尋診斷碼",
         example = "") @RequestParam(required = false) String icd,
       @ApiParam(name = "reason", value = "智能提示原由，1:違反支付準則項目-支付準則條件，2:罕見ICD應用，3:應用比例偏高醫令，"
-          + "4:特別用量藥材、衛材，6:健保項目對應自費項目並存，7:法定傳染病，8:同性質藥物開立，9:相關計畫疑似可收案病例，10:高風險診斷碼與健保碼組合",
+          + "4:特別用量藥材、衛材，6:健保項目對應自費項目並存，7:法定傳染病，8:同性質藥物開立，9:相關計畫疑似可收案病例，10:高風險診斷碼與健保碼組合，"
+          + "11:臨床路徑差異–AI提示-費用差異，12:醫療行為差異，13:用藥差異，14:住院天數差異，16:疑似職傷與異常就診記錄，17:DRG申報建議",
         example = "1") @RequestParam(required = false) Integer reason,
       @ApiParam(name = "orderBy",
       value = "排序欄位名稱，status:資料狀態，sdate:就醫日期-起，edate:就醫日期-訖，inhMrId:病歷號碼，name:患者姓名，"

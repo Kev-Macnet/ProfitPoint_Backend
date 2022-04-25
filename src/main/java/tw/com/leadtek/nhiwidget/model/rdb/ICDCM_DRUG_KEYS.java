@@ -7,7 +7,7 @@ import javax.persistence.Embeddable;
  * 主鍵 
  * 代表複合主鍵的實體bean需要實現Serializable介面
  */
-@Embeddable
+//@Embeddable
 public class ICDCM_DRUG_KEYS implements Serializable {
 
 	/**
@@ -67,6 +67,19 @@ public class ICDCM_DRUG_KEYS implements Serializable {
 		this.dataformat = dataformat;
 	}
 	
-	
+    @Override
+    public int hashCode() {
+      return ("ICDCM_DRUG_KEYS {icdcm="+icdcm+" ,drug="+drug+" ,dataformat="+dataformat+ "}").hashCode();
+    }
+
+    @Override
+    public boolean equals(Object object) {
+      if (object instanceof ICDCM_DRUG_KEYS) {
+        ICDCM_DRUG_KEYS pk = (ICDCM_DRUG_KEYS) object;
+        return icdcm.equals(pk.getIcdcm()) && drug.equals(pk.getDrug()) && dataformat.equals(pk.getDataformat());
+      } else {
+        return false;
+      }
+    }
 
 }

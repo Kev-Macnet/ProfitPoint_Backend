@@ -1,10 +1,14 @@
 package tw.com.leadtek.nhiwidget.service;
 
-import java.util.Date;
+import java.text.ParseException;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
+import tw.com.leadtek.nhiwidget.task.service.PtInpatientFeeServiceTask;
+import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
 import tw.com.leadtek.tools.Utility;
 
 // swagger: http://127.0.0.1:8081/swagger-ui/index.html
@@ -14,6 +18,18 @@ public class PaymentTermsService {
 
     @Autowired
     private PaymentTermsDao paymentTermsDao;
+    
+    @Autowired
+    private PtOutpatientFeeService ptOutpatientFeeService;
+    
+    @Autowired
+    private PtInpatientFeeService ptInpatientFeeService;
+    
+    @Autowired
+    private PtOutpatientFeeServiceTask ptOutpatientFeeServiceTask;
+    
+    @Autowired
+    private PtInpatientFeeServiceTask ptInpatientFeeServiceTask;
 
     public java.util.Map<String, Object> searchPaymentTerms(String feeNo, String nhiNo, String category, 
             java.util.Date startDate, java.util.Date endDate, int pageSize, int pageIndex,
@@ -80,7 +96,23 @@ public class PaymentTermsService {
     
     
     public int updateActive(long id, String category, int state) {
-        return paymentTermsDao.updatePaymentTermsActive(id, category, state);
+        int result = paymentTermsDao.updatePaymentTermsActive(id, category, state);
+        if (PtOutpatientFeeService.Category.equals(category) && state == 1) {
+          PtOutpatientFeePl pt = ptOutpatientFeeService.findPtOutpatientFeePl(id);
+          try {
+            ptOutpatientFeeServiceTask.vaidOutpatientFee(pt);
+          } catch (ParseException e) {
+            e.printStackTrace();
+          }
+        } else if (PtInpatientFeeService.Category.equals(category) && state == 1) {
+          PtInpatientFeePl pt = ptInpatientFeeService.findPtInpatientFeePl(id);
+          try {
+            ptInpatientFeeServiceTask.validInpatienFee(pt);
+          } catch (ParseException e) {
+            e.printStackTrace();
+          }
+        }
+        return result;
     }
     
     private String findUserRole(String userName) {
@@ -137,6 +169,4 @@ public class PaymentTermsService {
             }
         }
     }
-
-
 }

@@ -333,7 +333,8 @@ public class IntelligentService {
 
   private void processRareICDByMonth(String chineseYm, String dataFormat, CODE_THRESHOLD ct,
       int max, String wording) {
-    List<MR> list = getMRByCode(dataFormat, chineseYm, "icdAll", ct.getCode(), max, false);
+    List<MR> list = getMRByCode(dataFormat, chineseYm, "icdAll", ct.getCode(), max, false,
+        ct.getStartDate(), ct.getEndDate());
     if (list != null) {
       String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
       for (MR mr : list) {
@@ -356,7 +357,7 @@ public class IntelligentService {
     Calendar cal = DateTool.chineseYmToCalendar(chineseYm);
     int avg = get6MAvgByCode(dataFormat, cal, ct.getCode(), true);
     List<MR> list = getMRByCode(dataFormat, String.valueOf(chineseYm), "icdAll", ct.getCode(),
-        avg + max, false);
+        avg + max, false , ct.getStartDate(), ct.getEndDate());
     if (list != null) {
       int over = list.size() - avg;
       for (MR mr : list) {
@@ -379,7 +380,7 @@ public class IntelligentService {
    * @return
    */
   private List<MR> getMRByCode(String dataFormat, String applYm, String fieldName, String code,
-      int max, boolean countEvery) {
+      int max, boolean countEvery, Date startDate, Date endDate) {
     Specification<MR> spec = new Specification<MR>() {
 
       private static final long serialVersionUID = 1012L;
@@ -392,6 +393,9 @@ public class IntelligentService {
         }
         if (applYm != null) {
           predicate.add(cb.equal(root.get("applYm"), applYm));
+        }
+        if (startDate != null && endDate != null) {
+          predicate.add(cb.between(root.get("mrEndDate"), startDate, endDate));
         }
         // String parameterName = isICD ? "icdAll" : "codeAll";
         predicate.add(cb.like(root.get(fieldName), "%," + code + ",%"));
@@ -459,9 +463,9 @@ public class IntelligentService {
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
         if (isAsc) {
-          query.orderBy(cb.asc(root.get("mrDate")));
+          query.orderBy(cb.asc(root.get("mrEndDate")));
         } else {
-          query.orderBy(cb.desc(root.get("mrDate")));
+          query.orderBy(cb.desc(root.get("mrEndDate")));
         }
         return query.getRestriction();
       }
@@ -505,8 +509,8 @@ public class IntelligentService {
     List<MR> result = new ArrayList<MR>();
     List<MR> list = mrDao.findAll(spec);
     for (MR mr : list) {
-      if (countStringAppear(mr.getCodeAll(), code1) > max1
-          && countStringAppear(mr.getCodeAll(), code2) > max2) {
+      if (countStringAppear(mr.getCodeAll(), code1) >= max1
+          && countStringAppear(mr.getCodeAll(), code2) >= max2) {
         result.add(mr);
       }
     }
@@ -731,7 +735,8 @@ public class IntelligentService {
 
   public void calculateInfectious(String applYm, CODE_TABLE ct, String wording) {
     String reason = (wording != null) ? String.format(wording, ct.getCode()) : null;
-    List<MR> list = getMRByCode(null, applYm, "icdAll", ct.getCode(), 0, false);
+    List<MR> list = getMRByCode(null, applYm, "icdAll", ct.getCode(), 0, false, 
+        null, null);
     if (list != null) {
       for (MR mr : list) {
         insertIntelligent(mr, INTELLIGENT_REASON.INFECTIOUS.value(), ct.getCode(), reason,
@@ -793,18 +798,21 @@ public class IntelligentService {
     if (list != null) {
       String reason = (wording != null) ? String.format(wording, code, max) : null;
       for (MR mr : list) {
-        Integer count = patientCount.get(mr.getRocId());
+        Integer count = patientCount.get(mr.getRocId() + mr.getName());
         String compare = ct.getCode() == null ? mr.getInhCode() : mr.getCodeAll();
         int appearCount = countStringAppear(compare, ct.getCode());
         if (count == null) {
-          patientCount.put(mr.getRocId(), new Integer(appearCount));
-          patientLastTime.put(mr.getRocId(), mr.getMrDate().getTime());
-          patientMR.put(mr.getRocId(), mr);
+          patientCount.put(mr.getRocId() + mr.getName(), new Integer(appearCount));
+          patientLastTime.put(mr.getRocId() + mr.getName(), mr.getMrEndDate().getTime());
+          patientMR.put(mr.getRocId() + mr.getName(), mr);
         } else {
-          Long lastTime = patientLastTime.get(mr.getRocId());
-          if (lastTime.longValue() - mr.getMrDate().getTime() < maxDay) {
+          Long lastTime = patientLastTime.get(mr.getRocId() + mr.getName());
+          long diff = lastTime.longValue() - mr.getMrEndDate().getTime();
+          int diffDays = (int) (diff / 86400000);
+         
+          if (lastTime.longValue() - mr.getMrEndDate().getTime() < maxDay) {
             int total = count.intValue() + appearCount;
-            patientCount.put(mr.getRocId(), new Integer(total));
+            patientCount.put(mr.getRocId() + mr.getName(), new Integer(total));
             if (total > max) {
               INTELLIGENT intelligent = findIntelligentByMrId(mr.getId(), intelligentList);
               insertIntelligent(mr, intelligent, conditionCode, code, reason,
@@ -828,7 +836,8 @@ public class IntelligentService {
       int max, String wording, int conditionCode, List<INTELLIGENT> intelligentList) {
     String fieldName = ct.getCode() == null ? "inhCode" : "codeAll";
     String code = ct.getCode() == null ? ct.getInhCode() : ct.getCode();
-    List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, ct.getCode(), max, true);
+    List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, ct.getCode(), max, true,
+        ct.getStartDate(), ct.getEndDate());
     if (list != null) {
       String reason = (wording != null) ? String.format(wording, code, max) : null;
       for (MR mr : list) {
@@ -875,7 +884,8 @@ public class IntelligentService {
       }
     }
     if (count > max) {
-      List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false);
+      List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false, 
+          ct.getStartDate(), ct.getEndDate());
       if (list != null) {
         String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
         for (MR mr : list) {
@@ -924,7 +934,8 @@ public class IntelligentService {
     int avg6m = (int) (count6M / 6);
 
     if (count1M > (avg6m + max)) {
-      List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false);
+      List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false, 
+          ct.getStartDate(), ct.getEndDate());
       if (list != null) {
         String reason = (wording != null) ? String.format(wording, code, max) : null;
         for (MR mr : list) {
@@ -1024,6 +1035,7 @@ public class IntelligentService {
       int conditionCode) {
 
     String reasonCode = ct.getCode() == null ? ct.getInhCode() : ct.getCode();
+
     List<INTELLIGENT> list =
         intelligentDao.findByConditionCodeAndReasonCode(conditionCode, reasonCode);
     if (XMLConstant.FUNC_TYPE_ALL.equals(ct.getDataFormat())

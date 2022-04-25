@@ -194,7 +194,7 @@ public class MyListController extends BaseController {
     sfp.setPerPage((perPage == null) ? parameters.getIntParameter(ParametersService.PAGE_COUNT)
         : perPage.intValue());
     String column = orderBy;
-    if (column != null) {
+    if (column != null && column.length() > 0) {
       if (column.equals("sdate")) {
         column = "startDate";
       } else if (column.equals("edate")) {

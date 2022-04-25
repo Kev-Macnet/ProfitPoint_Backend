@@ -121,7 +121,7 @@ public class PtInpatientFeeServiceTask {
 					if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
 								params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+								String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)任一，並存單一就醫紀錄一併申報，疑似有出入",
 										params.getNhi_no(), nhiNo),
 								true);
 						count++;
@@ -194,7 +194,7 @@ public class PtInpatientFeeServiceTask {
 
 								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
 										params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報，疑似有出入",
-												params.getNhi_no(), coList.toString()),
+												params.getNhi_no(), s),
 										true);
 							}
 							count++;

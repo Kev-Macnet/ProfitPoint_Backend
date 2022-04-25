@@ -352,7 +352,7 @@ public class NHIWidgetXMLService {
         if (optional.isPresent()) {
           mr = optional.get();
           if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value() 
-              && shouldCompareWarning(mr, cw)) {
+              && shouldCompareWarning(mr, cw, opd.getFuncType())) {
             diffList = new ArrayList<FILE_DIFF>();
             clearFileDiff(mr.getId());
             checkDiffOpd(diffList, opd);
@@ -488,7 +488,7 @@ public class NHIWidgetXMLService {
         if (optional.isPresent()) {
           mr = optional.get();
           if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value()
-              && shouldCompareWarning(mr, cw)) {
+              && shouldCompareWarning(mr, cw, ipd.getFuncType())) {
             diffList = new ArrayList<FILE_DIFF>();
             clearFileDiff(mr.getId());
           }
@@ -2508,8 +2508,13 @@ public class NHIWidgetXMLService {
         diffIcdCMList.add(fd.getArrayIndex());
         mrDetail.setDiffIcdCM(diffIcdCMList);
         if (isRaw && fd.getNewValue() != null) {
-          mrDetail.getIcdCM().set(fd.getArrayIndex().intValue(),
-              CodeTableService.getCodeBase(codeTableService, "ICD10-CM", fd.getNewValue()));
+          if (mrDetail.getIcdCM().size() <= fd.getArrayIndex().intValue()) {
+            mrDetail.getIcdCM()
+                .add(CodeTableService.getCodeBase(codeTableService, "ICD10-CM", fd.getNewValue()));
+          } else {
+            mrDetail.getIcdCM().set(fd.getArrayIndex().intValue(),
+                CodeTableService.getCodeBase(codeTableService, "ICD10-CM", fd.getNewValue()));
+          }
         }
       } else if ("icdOP".equals(fd.getName())) {
         List<Integer> diffIcdOPList = mrDetail.getDiffIcdOP();
@@ -2519,8 +2524,13 @@ public class NHIWidgetXMLService {
         diffIcdOPList.add(fd.getArrayIndex());
         mrDetail.setDiffIcdOP(diffIcdOPList);
         if (isRaw && fd.getNewValue() != null) {
-          mrDetail.getIcdOP().set(fd.getArrayIndex().intValue(),
-              CodeTableService.getCodeBase(codeTableService, "ICD10-PCS", fd.getNewValue()));
+          if (mrDetail.getIcdCM().size() <= fd.getArrayIndex().intValue()) {
+            mrDetail.getIcdOP()
+                .add(CodeTableService.getCodeBase(codeTableService, "ICD10-PCS", fd.getNewValue()));
+          } else {
+            mrDetail.getIcdOP().set(fd.getArrayIndex().intValue(),
+                CodeTableService.getCodeBase(codeTableService, "ICD10-PCS", fd.getNewValue()));
+          }
         }
       } else if ("mos".equals(fd.getName())) {
         List<Integer> diffMosList = mrDetail.getDiffMos();
@@ -2562,8 +2572,12 @@ public class NHIWidgetXMLService {
         diffCureItemsList.add(fd.getArrayIndex());
         mrDetail.setDiffCureItems(diffCureItemsList);
         if (isRaw && fd.getNewValue() != null) {
-          mrDetail.getCureItems().set(fd.getArrayIndex().intValue(),
-              CodeTableService.getCodeBase(codeTableService, "OP_CURE_ITEM", fd.getNewValue()));
+          if (mrDetail.getCureItems().size() <= fd.getArrayIndex().intValue()) {
+            mrDetail.getCureItems().add(CodeTableService.getCodeBase(codeTableService, "OP_CURE_ITEM", fd.getNewValue()));
+          } else {
+            mrDetail.getCureItems().set(fd.getArrayIndex().intValue(),
+                CodeTableService.getCodeBase(codeTableService, "OP_CURE_ITEM", fd.getNewValue()));
+          }
         }
       } else {
         List<String> diffFields =
@@ -2606,7 +2620,7 @@ public class NHIWidgetXMLService {
   }
 
   private boolean updateDiff(MRDetail mrDetail, int oldStatus) {
-    if (mrDetail.getStatus().intValue() != MR_STATUS.NO_CHANGE.value()
+    if (mrDetail.getStatus().intValue() == MR_STATUS.WAIT_CONFIRM.value()
         || oldStatus == MR_STATUS.NO_CHANGE.value()) {
       return false;
     }
@@ -5341,13 +5355,13 @@ public class NHIWidgetXMLService {
     predicate.add(cb.or(
         cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
             cb.or(
-        cb.and(cb.greaterThanOrEqualTo(root.get("mrDate"), sdate),
-            cb.lessThanOrEqualTo(root.get("mrDate"), edate)),
-        cb.and(cb.greaterThanOrEqualTo(root.get("mrEndDate"), sdate),
-            cb.lessThanOrEqualTo(root.get("mrEndDate"), edate)))), 
+        cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+        cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("endDate"), edate)))), 
         cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
-            cb.greaterThanOrEqualTo(root.get("mrEndDate"), sdate),
-            cb.lessThanOrEqualTo(root.get("mrEndDate"), edate))));
+            cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+            cb.lessThanOrEqualTo(root.get("endDate"), edate))));
   }
 
   private List<Predicate> getHomePageCountPredicate(CriteriaBuilder cb, CriteriaQuery<Tuple> query,
@@ -5669,7 +5683,7 @@ public class NHIWidgetXMLService {
     moDao.deleteByMrId(mrId);
   }
 
-  private boolean shouldCompareWarning(MR mr, CompareWarning cw) {
+  private boolean shouldCompareWarning(MR mr, CompareWarning cw, String newFuncType) {
     if (cw.getCompareBy() == 0) {
       // 關閉
       return false;
@@ -5684,7 +5698,7 @@ public class NHIWidgetXMLService {
         return false;
       }
       for (String func : cw.getFuncType()) {
-        if (mr.getFuncType().equals(func)) {
+        if (newFuncType.equals(func)) {
           if (cw.getDoctors() == null || cw.getDoctors().length == 0) {
             return true;
           }
@@ -5758,7 +5772,7 @@ public class NHIWidgetXMLService {
         mr.setStatus(MR_STATUS.NO_CHANGE.value());
       } else {
         if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value()
-            && shouldCompareWarning(mr, cw)) {
+            && shouldCompareWarning(mr, cw, opd.getFuncType())) {
           diffList = new ArrayList<FILE_DIFF>();
           clearFileDiff(mr.getId());
           checkDiffOpd(diffList, opd);
@@ -6468,7 +6482,7 @@ public class NHIWidgetXMLService {
       // 存放有差異的欄位
       List<FILE_DIFF> diffList = null;
       if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value()
-          && shouldCompareWarning(mr,cw)) {
+          && shouldCompareWarning(mr,cw, opd.getFuncType())) {
         diffList = new ArrayList<FILE_DIFF>();
         moDao.deleteByMrId(mr.getId());
       }
@@ -6575,7 +6589,7 @@ public class NHIWidgetXMLService {
         mr.setStatus(MR_STATUS.NO_CHANGE.value());
       } else {
         if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value() && 
-            shouldCompareWarning(mr, cw)) {
+            shouldCompareWarning(mr, cw, ipd.getFuncType())) {
           diffList = new ArrayList<FILE_DIFF>();
           clearFileDiff(mr.getId());
         }
@@ -6676,7 +6690,7 @@ public class NHIWidgetXMLService {
 
       List<FILE_DIFF> diffList = null;
       if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value()
-          && shouldCompareWarning(mr, cw)) {
+          && shouldCompareWarning(mr, cw, ipd.getFuncType())) {
         diffList = new ArrayList<FILE_DIFF>();
         moDao.deleteByMrId(mr.getId());
       }

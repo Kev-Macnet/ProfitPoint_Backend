@@ -16,12 +16,12 @@ public class PtInpatientFeeService {
     @Autowired
     private PtInpatientFeeDao ptInpatientFeeDao;
     
-    private String Category = "住院診察費"; 
+    public static String Category = "住院診察費"; 
     
     public java.util.Map<String, Object> findInpatientFee(long ptId) {
         java.util.Map<String, Object> retMap;
         if (ptId > 0) {
-            java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, this.Category);
+            java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
             if (!master.isEmpty()) {
                 java.util.Map<String, Object> detail = ptInpatientFeeDao.findOne(ptId);
                 for (java.util.Map.Entry<String, Object> entry : detail.entrySet()) {
@@ -109,5 +109,40 @@ public class PtInpatientFeeService {
         return ret;
     }
 
-    
+    public PtInpatientFeePl findPtInpatientFeePl(long ptId) {
+      PtInpatientFeePl result = new PtInpatientFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptInpatientFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              result.setMax_inpatient_enable((Short) detail.get("max_inpatient_enable"));
+              result.setMax_inpatient((Short) detail.get("max_inpatient"));
+              result.setMax_emergency_enable((Short) detail.get("max_emergency_enable"));
+              result.setMax_emergency((Short) detail.get("max_emergency"));
+              result.setMax_patient_no_enable((Short) detail.get("max_patient_no_enable"));
+              result.setMax_patient_no((Short) detail.get("max_patient_no"));
+              result.setExclude_nhi_no_enable((Short) detail.get("exclude_nhi_no_enable"));
+              result.setNot_allow_plan_enable((Short) detail.get("not_allow_plan_enable"));
+              result.setCoexist_nhi_no_enable((Short) detail.get("coexist_nhi_no_enable"));
+              result.setNo_coexist_enable((Short) detail.get("no_coexist_enable"));
+              result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
+              result.setLst_co_nhi_no(paymentTermsDao.filterCoexistNhiNo(ptId));
+              result.setLst_allow_plan(paymentTermsDao.filterNotAllowPlan(ptId));
+          }
+      } 
+      return result;
+  }
+
 }

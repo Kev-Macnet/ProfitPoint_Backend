@@ -7,7 +7,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,8 @@ import tw.com.leadtek.tools.DateTool;
 @Service
 public class PtOutpatientFeeServiceTask {
 	
+  private Logger logger = LogManager.getLogger();
+  
 	@Autowired
 	private MRDao mrDao;
 	@Autowired
@@ -70,14 +73,14 @@ public class PtOutpatientFeeServiceTask {
 		if (params.getHospitalized_type() == 0) {
 			for (MR r : mrList2) {
 				if (r.getDataFormat() != "20" && r.getCodeAll().contains(params.getNhi_no())) {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用(住院)%s就醫方式", params.getNhi_no()), true);
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
+							String.format("(醫令代碼)%s不適用(住院)就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
 			for (MR r : mrList2) {
 				if (r.getDataFormat() != "10") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用(門診)就醫方式", params.getNhi_no()), true);
 				}
 			}
@@ -106,7 +109,7 @@ public class PtOutpatientFeeServiceTask {
 
 				for (Map<String, Object> map : hospitalListD) {
 					MR mr = mrDao.getMrByID(map.get("mr_id").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:不含牙科(條件敘述)疑似有出入", params.getNhi_no()),
 							true);
 
@@ -117,7 +120,7 @@ public class PtOutpatientFeeServiceTask {
 
 				for (Map<String, Object> map : hospitalListC) {
 					MR mr = mrDao.getMrByID(map.get("mr_id").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:不含中醫(條件敘述)疑似有出入", params.getNhi_no()),
 							true);
 
@@ -137,7 +140,7 @@ public class PtOutpatientFeeServiceTask {
 
 				for (Map<String, Object> map : hospitalListD) {
 					MR mr = mrDao.getMrByID(map.get("mr_id").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:門診不含牙科(條件敘述)疑似有出入", params.getNhi_no()),
 							true);
 
@@ -148,7 +151,7 @@ public class PtOutpatientFeeServiceTask {
 
 				for (Map<String, Object> map : hospitalListC) {
 					MR mr = mrDao.getMrByID(map.get("mr_id").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:門診不含中醫(條件敘述)疑似有出入", params.getNhi_no()),
 							true);
 
@@ -163,7 +166,7 @@ public class PtOutpatientFeeServiceTask {
 
 					PAY_CODE pc = payCodeDao.findDataByCode(params.getNhi_no());
 					if (pc.getCodeType().equals("調劑費")) {
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 								params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:開立此醫令，處方交付特約藥局調劑或未開處方者，不得申報藥事服務費(調劑費)疑似有出入",
 										params.getNhi_no()),
@@ -183,7 +186,7 @@ public class PtOutpatientFeeServiceTask {
 				if (opData.size() > 0) {
 					for (Map<String, Object> map : opData) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 								params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:限定離島區域申報使用:單一就醫紀錄，部分負擔代號(PartNO)代號007，方可使用此醫令，疑似有出入",
 										params.getNhi_no()),
@@ -198,7 +201,7 @@ public class PtOutpatientFeeServiceTask {
 				if (ipData.size() > 0) {
 					for (Map<String, Object> map : ipData) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 								params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:限定離島區域申報使用:單一就醫紀錄，部分負擔代號(PartNO)代號007，方可使用此醫令，疑似有出入",
 										params.getNhi_no()),
@@ -216,7 +219,7 @@ public class PtOutpatientFeeServiceTask {
             		Date date = mr.getMrDate();
             		Calendar cal = dateToCalendar(date);
             		if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
-            			intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+            			intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 								params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:限定假日加計使用:六日或國定假日，方可使用此醫令，疑似有出入",
 										params.getNhi_no()),
@@ -235,7 +238,7 @@ public class PtOutpatientFeeServiceTask {
 			for (MR mr : mrList2) {
 				for (String nhiNo : nhiNoList) {
 					if (mr.getCodeAll().contains(nhiNo) && count == 0) {
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 								params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
 										params.getNhi_no(), nhiNo),
@@ -270,7 +273,7 @@ public class PtOutpatientFeeServiceTask {
 							ageStr = "未滿";
 							if (params.getLim_age() < diffY) {
 								MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 										params.getNhi_no(),
 										String.format("(醫令代碼)%s與支付準則條件:限定" + ageStr + "%d歲病患開立，疑似有出入",
 												params.getNhi_no(), params.getLim_age()),
@@ -281,7 +284,7 @@ public class PtOutpatientFeeServiceTask {
 							ageStr = "大於等於";
 							if (params.getLim_age() >= diffY) {
 								MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 										params.getNhi_no(),
 										String.format("(醫令代碼)%s與支付準則條件:限定" + ageStr + "%d歲病患開立，疑似有出入",
 												params.getNhi_no(), params.getLim_age()),
@@ -292,7 +295,7 @@ public class PtOutpatientFeeServiceTask {
 							ageStr = "小於等於";
 							if (params.getLim_age() <= diffY) {
 								MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 										params.getNhi_no(),
 										String.format("(醫令代碼)%s與支付準則條件:限定" + ageStr + "%d歲病患開立，疑似有出入",
 												params.getNhi_no(), params.getLim_age()),
@@ -320,7 +323,7 @@ public class PtOutpatientFeeServiceTask {
 							ageStr = "未滿";
 							if (params.getLim_age() < diffY) {
 								MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 										params.getNhi_no(),
 										String.format("(醫令代碼)%s與支付準則條件:限定" + ageStr + "%d歲病患開立，疑似有出入",
 												params.getNhi_no(), params.getLim_age()),
@@ -331,7 +334,7 @@ public class PtOutpatientFeeServiceTask {
 							ageStr = "大於等於";
 							if (params.getLim_age() >= diffY) {
 								MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 										params.getNhi_no(),
 										String.format("(醫令代碼)%s與支付準則條件:限定" + ageStr + "%d歲病患開立，疑似有出入",
 												params.getNhi_no(), params.getLim_age()),
@@ -342,7 +345,7 @@ public class PtOutpatientFeeServiceTask {
 							ageStr = "小於等於";
 							if (params.getLim_age() <= diffY) {
 								MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 										params.getNhi_no(),
 										String.format("(醫令代碼)%s與支付準則條件:限定" + ageStr + "%d歲病患開立，疑似有出入",
 												params.getNhi_no(), params.getLim_age()),
@@ -371,7 +374,7 @@ public class PtOutpatientFeeServiceTask {
 			if (mrDataList.size() > 0) {
 				for (MR mr : mrDataList) {
 
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
 				}
 			}
@@ -416,7 +419,7 @@ public class PtOutpatientFeeServiceTask {
 						/// 單月限定超過次數寫入
 						if (params.getLim_max() > prsnCount || params.getLim_max() > pharCount) {
 							MR mr = mrDao.getMrByID(opd.getMrId().toString());
-							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:限定單一門急診醫師、護理人員、藥師執行此醫令單月上限，"
 											+ params.getLim_max() + "次，疑似有出入", params.getNhi_no()),
 									true);
@@ -462,7 +465,7 @@ public class PtOutpatientFeeServiceTask {
 						/// 單月限定超過次數寫入
 						if (params.getLim_max() > prsnCount) {
 							MR mr = mrDao.getMrByID(ipd.getMrId().toString());
-							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:限定單一住院醫師、護理人員、藥師執行此醫令單月上限，"
 											+ params.getLim_max() + "次，疑似有出入", params.getNhi_no()),
 									true);
@@ -474,7 +477,7 @@ public class PtOutpatientFeeServiceTask {
 				}
 			}
 		}
-
+      logger.info("vaidOutpatientFee " + params.getFee_name());
 	}
 
 	/**

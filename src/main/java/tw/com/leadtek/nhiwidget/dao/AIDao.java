@@ -13,12 +13,18 @@ import tw.com.leadtek.nhiwidget.model.rdb.MR;
 public interface AIDao extends JpaRepository<MR, Long> {
 
   /**
-   * 費用差異--門診
+   * 變異數倍數
+   */
+  public final static String VARIATION_TIMES = "3";
+  
+  /**
+   * 費用差異--門診和住院
    * @param date
    * @return
    */
   @Query(value = "SELECT * FROM( "
-        + "SELECT MR.ID, MR.T_DOT , MR.ICDCM1, AI.AVG + 2 * AI.STDDEV AS UP, AI.AVG - 2 * AI.STDDEV AS DOWN "
+        + "SELECT MR.ID, MR.T_DOT , MR.ICDCM1, AI.AVG + " + VARIATION_TIMES + " * AI.STDDEV AS UP, "
+            + "AI.AVG - " + VARIATION_TIMES + " * AI.STDDEV AS DOWN "
         + "FROM ( "
         + "SELECT ICDCM1, AVG(T_DOT) AS AVG, STDDEV(T_DOT) AS STDDEV "
         + "FROM MR "

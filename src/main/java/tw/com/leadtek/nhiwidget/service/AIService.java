@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.ICDCM_DRUGDao;
 import tw.com.leadtek.nhiwidget.dao.ICDCM_ICDOPDao;
 import tw.com.leadtek.nhiwidget.dao.ICDCM_ORDERDao;
@@ -546,11 +547,13 @@ public class AIService {
 					int math = Math.round((float) m.get("PERCENT"));
 					idModel.setTotal(t);
 					idModel.setUpdateAT(new Date());
-					idModel.setIcdcmdrugPK(
-							new ICDCM_DRUG_KEYS(m.get("ICDCM").toString(), m.get("DRUGNO").toString(), "10"));
+					idModel.setIcdcm(m.get("ICDCM").toString());
+					idModel.setDrug(m.get("DRUGNO").toString());
+					idModel.setDataformat("10");
+//					idModel.setIcdcmdrugPK(
+//							new ICDCM_DRUG_KEYS(m.get("ICDCM").toString(), m.get("DRUGNO").toString(), "10"));
 					idModel.setPercent(math);
 					idModel.setIsdurug(Integer.parseInt(m.get("IS_DRUG").toString()));
-
 					icdcmList.add(idModel);
 				}
 
@@ -569,9 +572,9 @@ public class AIService {
 			for (ICDCM_DRUG idModel : icdList) {
 				if (idModel.getIsdurug() == 1) {
 					if (count1 == 0) {
-						drug11 = idModel.getIcdcmdrugPK().getDrug();
+						drug11 = idModel.getDrug();
 					} else if (count1 == 1) {
-						drug12 = idModel.getIcdcmdrugPK().getDrug();
+						drug12 = idModel.getDrug();
 					} else {
 						break;
 					}
@@ -579,9 +582,9 @@ public class AIService {
 					count1++;
 				} else {
 					if (count2 == 0) {
-						drug21 = idModel.getIcdcmdrugPK().getDrug();
+						drug21 = idModel.getDrug();
 					} else if (count2 == 1) {
-						drug22 = idModel.getIcdcmdrugPK().getDrug();
+						drug22 = idModel.getDrug();
 					} else {
 						break;
 					}
@@ -596,7 +599,7 @@ public class AIService {
 
 						MR mr = mrDao.getMrByID(map.get("ID").toString());
 						if (idModel.getIsdurug() == 1) {
-							if (idModel.getIcdcmdrugPK().getDrug().equals(mapModel.get("DRUGNO").toString())) {
+							if (idModel.getDrug().equals(mapModel.get("DRUGNO").toString())) {
 								int math = Math.round((float) mapModel.get("PERCENT"));
 								int iModelPer = idModel.getPercent();
 								float a = (float) math;
@@ -615,7 +618,7 @@ public class AIService {
 							}
 						} else {
 
-							if (idModel.getIcdcmdrugPK().getDrug().equals(mapModel.get("DRUGNO").toString())) {
+							if (idModel.getDrug().equals(mapModel.get("DRUGNO").toString())) {
 								int math = Math.round((float) mapModel.get("PERCENT"));
 								int iModelPer = idModel.getPercent();
 								float a = (float) math;
@@ -705,8 +708,11 @@ public class AIService {
 					int math = Math.round((float) m.get("PERCENT"));
 					idModel.setTotal(t);
 					idModel.setUpdateAT(new Date());
-					idModel.setIcdcmdrugPK(
-							new ICDCM_DRUG_KEYS(m.get("ICDCM").toString(), m.get("DRUGNO").toString(), "20"));
+					   idModel.setIcdcm(m.get("ICDCM").toString());
+	                    idModel.setDrug(m.get("DRUGNO").toString());
+	                    idModel.setDataformat("20");
+//					idModel.setIcdcmdrugPK(
+//							new ICDCM_DRUG_KEYS(m.get("ICDCM").toString(), m.get("DRUGNO").toString(), "20"));
 					idModel.setPercent(math);
 					idModel.setIsdurug(Integer.parseInt(m.get("IS_DRUG").toString()));
 
@@ -728,9 +734,9 @@ public class AIService {
 			for (ICDCM_DRUG idModel : icdList) {
 				if (idModel.getIsdurug() == 1) {
 					if (count1 == 0) {
-						drug11 = idModel.getIcdcmdrugPK().getDrug();
+						drug11 = idModel.getDrug();
 					} else if (count1 == 1) {
-						drug12 = idModel.getIcdcmdrugPK().getDrug();
+						drug12 = idModel.getDrug();
 					} else {
 						break;
 					}
@@ -738,9 +744,9 @@ public class AIService {
 					count1++;
 				} else {
 					if (count2 == 0) {
-						drug21 = idModel.getIcdcmdrugPK().getDrug();
+						drug21 = idModel.getDrug();
 					} else if (count2 == 1) {
-						drug22 = idModel.getIcdcmdrugPK().getDrug();
+						drug22 = idModel.getDrug();
 					} else {
 						break;
 					}
@@ -755,7 +761,7 @@ public class AIService {
 
 						MR mr = mrDao.getMrByID(map.get("ID").toString());
 						if (idModel.getIsdurug() == 1) {
-							if (idModel.getIcdcmdrugPK().getDrug().equals(mapModel.get("DRUGNO").toString())) {
+							if (idModel.getDrug().equals(mapModel.get("DRUGNO").toString())) {
 								int math = Math.round((float) mapModel.get("PERCENT"));
 								int iModelPer = idModel.getPercent();
 								float a = (float) math;
@@ -774,7 +780,7 @@ public class AIService {
 							}
 						} else {
 
-							if (idModel.getIcdcmdrugPK().getDrug().equals(mapModel.get("DRUGNO").toString())) {
+							if (idModel.getDrug().equals(mapModel.get("DRUGNO").toString())) {
 								int math = Math.round((float) mapModel.get("PERCENT"));
 								int iModelPer = idModel.getPercent();
 								float a = (float) math;
