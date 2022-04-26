@@ -120,7 +120,7 @@ public class PtWardFeeServiceTask {
 						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(),
-									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s任一，並存單一就醫紀錄一併申報，疑似有出入",
 											params.getNhi_no(), nhiNoList.toString()),
 									true);
 							count++;
@@ -138,7 +138,7 @@ public class PtWardFeeServiceTask {
 						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(),
-									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s任一，並存單一就醫紀錄一併申報，疑似有出入",
 											params.getNhi_no(), nhiNoList.toString()),
 									true);
 							count++;

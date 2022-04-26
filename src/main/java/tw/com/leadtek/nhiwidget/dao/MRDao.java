@@ -562,11 +562,13 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   
   /**
    * 依照rocid & code 取得該筆病歷表
-   * @param MRID
+   * @param rocid
+   * @param code
+   * @param mrid
    * @return
    */
-  @Query(value = "select * from mr where ROC_ID = ?1 and CODE_ALL like concat('%', ?2, '%')", nativeQuery = true)
-  public MR getMrByRocIdAndCode(String rocid, String code);
+  @Query(value = "select * from mr where ROC_ID = ?1 and CODE_ALL like concat('%', ?2, '%') and id in(?3) limit 1", nativeQuery = true)
+  public MR getMrByRocIdAndCode(String rocid, String code, List<String> mrid);
   /**
    * 依照id & code 取得該筆病歷表
    * @param mrid

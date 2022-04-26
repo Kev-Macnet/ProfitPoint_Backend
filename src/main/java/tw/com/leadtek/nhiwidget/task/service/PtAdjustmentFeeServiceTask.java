@@ -25,6 +25,8 @@ public class PtAdjustmentFeeServiceTask {
 
 	@Autowired
 	private IntelligentService intelligentService;
+	
+	private String Category = "調劑費";
 
 	public void validAdjustmentFee(PtAdjustmentFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -66,6 +68,7 @@ public class PtAdjustmentFeeServiceTask {
 		if (params.getCoexist_nhi_no_enable() == 1) {
 			List<String> coList = params.getLst_co_nhi_no();
 			int count = 0;
+			
 			for (MR mr : mrList) {
 				for (String s : coList) {
 					/// 先判斷有相同支付標準
@@ -73,11 +76,21 @@ public class PtAdjustmentFeeServiceTask {
 						/// 再判斷沒有符合
 						if (!mr.getCodeAll().contains(s)) {
 							if (count == 0) {
-
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
-										params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報，疑似有出入",
-												params.getNhi_no(), coList.toString()),
-										true);
+								///如果住院
+								if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與%s以下支付標準代碼任一並存，方可進行申報，疑似有出入",
+													params.getNhi_no(), coList.toString()),
+											true);
+								}
+								///如果門診
+								if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與%s以下支付標準代碼任一並存，方可進行申報，疑似有出入",
+													params.getNhi_no(), coList.toString()),
+											true);
+								}
+								
 							}
 							count++;
 						}
@@ -99,7 +112,7 @@ public class PtAdjustmentFeeServiceTask {
 						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(),
-									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s任一，並存單一就醫紀錄一併申報，疑似有出入",
 											params.getNhi_no(), nhiNoList.toString()),
 									true);
 							count++;
@@ -117,7 +130,7 @@ public class PtAdjustmentFeeServiceTask {
 						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(),
-									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s任一，並存單一就醫紀錄一併申報，疑似有出入",
 											params.getNhi_no(), nhiNoList.toString()),
 									true);
 							count++;

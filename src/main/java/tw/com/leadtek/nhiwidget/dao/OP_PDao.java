@@ -186,24 +186,24 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  			+ "group by opp.DRUG_NO, opd.ROC_ID", nativeQuery = true)
  	public List<Map<String, Object>> getListRocIdByDrugNoAndMridAndDays(int days, String code, List<String> mrid);
  	/**
- 	 * 取得每月門診百分比
- 	 * @param total
- 	 * @param drugNo
+ 	 * 取得準則區間每月門診數
  	 * @param mrid
  	 * @return
  	 */
- 	@Query(value = "select APPL_YM, COUNT, (COUNT / ?1) * 100 as PERCENT from "
- 			+ "(select  mr.APPL_YM, count(1) as COUNT from op_p,mr "
- 			+ "where mr.id = op_p.mr_id and op_p.drug_no = ?2 and mr.id in (?3) "
- 			+ "group by mr.APPL_YM) temp", nativeQuery = true)
- 	public List<Map<String,Object>> getPerMonthByDrugNoAndTotal(int total, String drugNo, List<String> mrid);
+ 	@Query(value = "select mr.ID, mr.APPL_YM, op_p.total_q as TOTAL from op_p,mr "
+ 			+ "where op_p.mr_id = mr.id  and mr.id in (?1)", nativeQuery = true)
+ 	public List<Map<String,Object>> getPerMonthByDrugNoAndTotal( List<String> mrid);
  	/**
- 	 * 取得總筆數by no
- 	 * @param drugNo
+ 	 * 該準則各月總數
+ 	 * @param sDate
+ 	 * @param eDate
+ 	 * @param code
  	 * @return
  	 */
- 	@Query(value = "select  DRUG_NO ,  sum(TOTAL_Q) as TOTAL from op_p where DRUG_NO = ?1", nativeQuery = true)
- 	public Map<String,Object> getTotalDrugByNo(String drugNo);
+ 	@Query(value = "select mr.APPL_YM, sum(op_p.total_q) TOTAL  from op_p,mr "
+ 			+ "where op_p.mr_id = mr.id and mr.mr_date  between ?1 and ?2 and op_p.drug_no = ?3 "
+ 			+ "group by mr.APPL_YM", nativeQuery = true)
+ 	public List<Map<String,Object>> getTotalDrugByNo(String sDate, String eDate, String code);
  	
  	/**
  	 * 藥用計算超過天數

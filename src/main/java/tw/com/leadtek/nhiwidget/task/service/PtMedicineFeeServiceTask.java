@@ -31,6 +31,8 @@ public class PtMedicineFeeServiceTask {
 
 	@Autowired
 	private IntelligentService intelligentService;
+	
+	private String Category = "藥費";
 
 	public void validMedicineFee(PtMedicineFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -69,31 +71,32 @@ public class PtMedicineFeeServiceTask {
 		/// 1.
 		///每件給藥日數不得超過
 		if(params.getMax_nday_enable() ==1) {
-			List<String> mrIdList = new ArrayList<String>();
-			for(MR mr: mrList) {
-				if(mr.getCodeAll().contains(params.getNhi_no())) {
-					mrIdList.add(mr.getId().toString());
+		
+			///如果住院
+			if(params.getHospitalized_type() ==1 ) {
+				
+				List<Map<String,Object>> ippData = ippDao.getListByDaysAndCodeAndMrid(params.getMax_nday(), params.getNhi_no(), mrIdListStr);
+				if(ippData.size() > 0) {
+					for(Map<String,Object> map: ippData) {
+						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
+								String.format("(醫令代碼)%s與支付準則條件:每件給藥日數不得超過%d日，疑似有出入", params.getNhi_no(),params.getMax_nday()), true);
+					}
+				}
+			}
+			///如果門診
+			if(params.getOutpatient_type() == 1) {
+				
+				List<Map<String,Object>> oppData = oppDao.getListByDaysAndCodeAndMrid(params.getMax_nday(), params.getNhi_no(), mrIdListStr);
+				if(oppData.size() > 0) {
+					for(Map<String,Object> map: oppData) {
+						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
+								String.format("(醫令代碼)%s與支付準則條件:每件給藥日數不得超過%d日，疑似有出入", params.getNhi_no(),params.getMax_nday()), true);
+					}
 				}
 			}
 			
-			List<Map<String,Object>> ippData = ippDao.getListByDaysAndCodeAndMrid(params.getMax_nday(), params.getNhi_no(), mrIdList);
-			List<Map<String,Object>> oppData = oppDao.getListByDaysAndCodeAndMrid(params.getMax_nday(), params.getNhi_no(), mrIdList);
-			
-			if(ippData.size() > 0) {
-				for(Map<String,Object> map: ippData) {
-					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s與支付準則條件:每件給藥日數不得超過%d日，疑似有出入", params.getNhi_no(),params.getMax_nday()), true);
-				}
-			}
-			
-			if(oppData.size() > 0) {
-				for(Map<String,Object> map: oppData) {
-					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s與支付準則條件:每件給藥日數不得超過%d日，疑似有出入", params.getNhi_no(),params.getMax_nday()), true);
-				}
-			}
 		}
 	}
 	/**

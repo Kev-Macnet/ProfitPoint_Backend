@@ -33,6 +33,8 @@ public class PtOthersFeeServiceTask {
 
 	@Autowired
 	private IntelligentService intelligentService;
+	
+	private String Category = "不分類";
 
 	public void validOthersFee(PtOthersFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -81,7 +83,7 @@ public class PtOthersFeeServiceTask {
 						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(),
-									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s任一，並存單一就醫紀錄一併申報，疑似有出入",
 											params.getNhi_no(), nhiNoList.toString()),
 									true);
 							count++;
@@ -99,7 +101,7 @@ public class PtOthersFeeServiceTask {
 						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
 							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
 									params.getNhi_no(),
-									String.format("(醫令代碼)%s與支付準則條件:不可與%s(輸入支付標準代碼)%s任一，並存單一就醫紀錄一併申報，疑似有出入",
+									String.format("(醫令代碼)%s與支付準則條件:不可與%s任一，並存單一就醫紀錄一併申報，疑似有出入",
 											params.getNhi_no(), nhiNoList.toString()),
 									true);
 							count++;
@@ -116,32 +118,38 @@ public class PtOthersFeeServiceTask {
 		/// 2.
 		///單一就醫紀錄應用數量,限定小於等於 次
 		if(params.getMax_inpatient_enable() == 1) {
-			List<Map<String, Object>> ippData = ippDao.getListByOrderCodeAndMrid(params.getNhi_no(), mrIdListStr);
-			List<Map<String, Object>> oppData = oppDao.getListByDrugNoAndMrid2(params.getNhi_no(), mrIdListStr);
-			if (ippData.size() > 0) {
-
-				for (Map<String, Object> map : ippData) {
-					float t = Float.parseFloat(map.get("TOTAL").toString());
-					/// 如果資料大於限定值
-					if (params.getMax_inpatient() < t) {
-						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
-								params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄應用數量,限定小於等於%d次，疑似有出入",
-										params.getNhi_no(), params.getMax_inpatient()),
-								true);
+			
+			if(params.getHospitalized_type() == 1) {
+				List<Map<String, Object>> ippData = ippDao.getListByOrderCodeAndMrid(params.getNhi_no(), mrIdListStr);
+				
+				if (ippData.size() > 0) {
+					
+					for (Map<String, Object> map : ippData) {
+						float t = Float.parseFloat(map.get("TOTAL").toString());
+						/// 如果資料大於限定值
+						if (params.getMax_inpatient() < t) {
+							MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄應用數量,限定小於等於%d次，疑似有出入",
+											params.getNhi_no(), params.getMax_inpatient()),
+									true);
+						}
 					}
 				}
 			}
-			if (oppData.size() > 0) {
-				for (Map<String, Object> map : oppData) {
-					float t = Float.parseFloat(map.get("TOTAL").toString());
-					/// 如果資料大於限定值
-					if (params.getMax_inpatient() < t) {
-						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
-								params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄應用數量,限定小於等於%d次，疑似有出入",
-										params.getNhi_no(), params.getMax_inpatient()),
-								true);
+			if(params.getOutpatient_type() == 1) {
+				List<Map<String, Object>> oppData = oppDao.getListByDrugNoAndMrid2(params.getNhi_no(), mrIdListStr);
+				if (oppData.size() > 0) {
+					for (Map<String, Object> map : oppData) {
+						float t = Float.parseFloat(map.get("TOTAL").toString());
+						/// 如果資料大於限定值
+						if (params.getMax_inpatient() < t) {
+							MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄應用數量,限定小於等於%d次，疑似有出入",
+											params.getNhi_no(), params.getMax_inpatient()),
+									true);
+						}
 					}
 				}
 			}
@@ -165,12 +173,25 @@ public class PtOthersFeeServiceTask {
 					    if(params.getMax_times() < count) {
 					    	
 					    	List<MR> mrModelList = mrDao.getAllByCodeAndRocid(params.getNhi_no(), map.get("ROC_ID").toString());
-					    	MR mr = mrModelList.get(0);
-					    	intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
-									params.getNhi_no(),
-									String.format("(醫令代碼)%s與支付準則條件:每組病歷號碼，每院限一年內，限定申報%d次，如有需求另外提出，疑似有出入",
-											params.getNhi_no(), params.getMax_times()),
-									true);
+					    	if(mrModelList.size() > 0) {
+					    		
+					    		MR mr = mrModelList.get(0);
+					    		if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+					    			intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+					    					params.getNhi_no(),
+					    					String.format("(醫令代碼)%s與支付準則條件:每組病歷號碼，每院限一年內，限定申報%d次，如有需求另外提出，疑似有出入",
+					    							params.getNhi_no(), params.getMax_times()),
+					    					true);
+					    		}
+					    		if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+					    			intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+					    					params.getNhi_no(),
+					    					String.format("(醫令代碼)%s與支付準則條件:每組病歷號碼，每院限一年內，限定申報%d次，如有需求另外提出，疑似有出入",
+					    							params.getNhi_no(), params.getMax_times()),
+					    					true);
+					    		}
+					    	}
+					    	
 					    }
 						
 						
@@ -183,131 +204,154 @@ public class PtOthersFeeServiceTask {
 		/// 4.
 		///限定同患者每次申報此支付標準代碼，與前一次申報日間隔大於等於 日，方可申報
 		if(params.getInterval_nday_enable() == 1) {
-			List<Map<String, Object>> oppData = oppDao.getRocIdCount(params.getNhi_no(), mrIdListStr);
-			List<Map<String, Object>> oppList = new ArrayList<Map<String, Object>>();
-			List<Map<String, Object>> oppList2 = new ArrayList<Map<String, Object>>();
 			Map<String, Object> m1 = new HashMap<String, Object>();
-			/// 門診
-			if (oppData.size() > 0) {
-				int count = 0;
-				/// 先理出最後2筆資料
-				for (Map<String, Object> map : oppData) {
-
-					String rocid = map.get("ROC_ID").toString();
-					String sDate = map.get("START_TIME").toString();
-					String eDate = map.get("END_TIME").toString();
-					String mrid = map.get("MR_ID").toString();
-
-					if (count == 0) {
-						m1.put("ROC_ID", rocid);
-						m1.put("START_TIME", sDate);
-						m1.put("END_TIME", eDate);
-						m1.put("MR_ID", mrid);
-						oppList.add(m1);
-						m1 = new HashMap<String, Object>();
-						count++;
-					} else if (count == 1) {
-						m1.put("ROC_ID", rocid);
-						m1.put("START_TIME", sDate);
-						m1.put("END_TIME", eDate);
-						m1.put("MR_ID", mrid);
-						oppList2.add(m1);
-						count++;
-					} else {
-						if (rocid.equals(m1.get("ROC_ID"))) {
-							continue;
-						} else {
-							m1 = new HashMap<String, Object>();
-							count = 0;
+			if(params.getOutpatient_type() == 1) {
+				
+				List<Map<String, Object>> oppData = oppDao.getRocIdCount(params.getNhi_no(), mrIdListStr);
+				List<Map<String, Object>> oppList = new ArrayList<Map<String, Object>>();
+				List<Map<String, Object>> oppList2 = new ArrayList<Map<String, Object>>();
+				/// 門診
+				if (oppData.size() > 0) {
+					int count = 0;
+					/// 先理出最後2筆資料
+					for (Map<String, Object> map : oppData) {
+						if(map.get("START_TIME") != null && map.get("END_TIME") != null) {
+							
+							String rocid = map.get("ROC_ID").toString();
+							String sDate = map.get("START_TIME").toString();
+							String eDate = map.get("END_TIME").toString();
+							String mrid = map.get("MR_ID").toString();
+							
+							if (count == 0) {
+								m1.put("ROC_ID", rocid);
+								m1.put("START_TIME", sDate);
+								m1.put("END_TIME", eDate);
+								m1.put("MR_ID", mrid);
+								oppList.add(m1);
+								m1 = new HashMap<String, Object>();
+								count++;
+							} else if (count == 1) {
+								m1.put("ROC_ID", rocid);
+								m1.put("START_TIME", sDate);
+								m1.put("END_TIME", eDate);
+								m1.put("MR_ID", mrid);
+								oppList2.add(m1);
+								count++;
+							} else {
+								if (rocid.equals(m1.get("ROC_ID"))) {
+									continue;
+								} else {
+									m1 = new HashMap<String, Object>();
+									m1.put("ROC_ID", rocid);
+									m1.put("START_TIME", sDate);
+									m1.put("END_TIME", eDate);
+									m1.put("MR_ID", mrid);
+									oppList.add(m1);
+									m1 = new HashMap<String, Object>();
+									count = 1;
+								}
+							}
 						}
 					}
-				}
-				/// 相同rocid做日期比對
-				for (Map<String, Object> map : oppList) {
-					String rocid = map.get("ROC_ID").toString();
-					String eDate = map.get("END_TIME").toString();
-					String mrid = map.get("MR_ID").toString();
-					for (Map<String, Object> map2 : oppList2) {
-						String rocid2 = map2.get("ROC_ID").toString();
-						String eDate2 = map2.get("END_TIME").toString();
-						if (rocid.equals(rocid2)) {
-							float f = Float.valueOf(eDate);
-							float f2 = Float.valueOf(eDate2);
-							float diff = (f - f2) / 10000;
-							if (params.getInterval_nday() < diff) {
-								MR mr = mrDao.getMrByID(mrid);
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
-										params.getNhi_no(),
-										String.format("(醫令代碼)%s與支付準則條件:限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔大於等於%d日，疑似有出入",
-												params.getNhi_no(), params.getInterval_nday()),
-										true);
+					/// 相同rocid做日期比對
+					for (Map<String, Object> map : oppList) {
+						String rocid = map.get("ROC_ID").toString();
+						String eDate = map.get("END_TIME").toString();
+						String mrid = map.get("MR_ID").toString();
+						for (Map<String, Object> map2 : oppList2) {
+							String rocid2 = map2.get("ROC_ID").toString();
+							String eDate2 = map2.get("END_TIME").toString();
+							if (rocid.equals(rocid2)) {
+								float f = Float.valueOf(eDate);
+								float f2 = Float.valueOf(eDate2);
+								float diff = (f - f2) / 10000;
+								/// 如果小於設定數值則寫入
+								if (params.getInterval_nday() > diff) {
+									MR mr = mrDao.getMrByID(mrid);
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(),
+											String.format("(醫令代碼)%s與支付準則條件:限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔大於等於%d日，疑似有出入",
+													params.getNhi_no(), params.getInterval_nday()),
+											true);
+								}
+								
 							}
-
 						}
 					}
 				}
 			}
-
-			List<Map<String, Object>> ippData = ippDao.getRocIdCount(params.getNhi_no(), mrIdListStr);
-			List<Map<String, Object>> ippList = new ArrayList<Map<String, Object>>();
-			List<Map<String, Object>> ippList2 = new ArrayList<Map<String, Object>>();
-			m1 = new HashMap<String, Object>();
-			/// 住院
-			if (ippData.size() > 0) {
-				int count = 0;
-				/// 先理出最後2筆資料
-				for (Map<String, Object> map : oppData) {
-
-					String rocid = map.get("ROC_ID").toString();
-					String sDate = map.get("START_TIME").toString();
-					String eDate = map.get("END_TIME").toString();
-					String mrid = map.get("MR_ID").toString();
-
-					if (count == 0) {
-						m1.put("ROC_ID", rocid);
-						m1.put("START_TIME", sDate);
-						m1.put("END_TIME", eDate);
-						m1.put("MR_ID", mrid);
-						ippList.add(m1);
-						m1 = new HashMap<String, Object>();
-						count++;
-					} else if (count == 1) {
-						m1.put("ROC_ID", rocid);
-						m1.put("START_TIME", sDate);
-						m1.put("END_TIME", eDate);
-						m1.put("MR_ID", mrid);
-						ippList2.add(m1);
-						count++;
-					} else {
-						if (rocid.equals(m1.get("ROC_ID"))) {
-							continue;
-						} else {
-							m1 = new HashMap<String, Object>();
-							count = 0;
+			if(params.getHospitalized_type() == 1) {
+				
+				List<Map<String, Object>> ippData = ippDao.getRocIdCount(params.getNhi_no(), mrIdListStr);
+				List<Map<String, Object>> ippList = new ArrayList<Map<String, Object>>();
+				List<Map<String, Object>> ippList2 = new ArrayList<Map<String, Object>>();
+				m1 = new HashMap<String, Object>();
+				/// 住院
+				if (ippData.size() > 0) {
+					int count = 0;
+					/// 先理出最後2筆資料
+					for (Map<String, Object> map : ippData) {
+						if(map.get("START_TIME") != null && map.get("END_TIME") != null) {
+							
+							String rocid = map.get("ROC_ID").toString();
+							String sDate = map.get("START_TIME").toString();
+							String eDate = map.get("END_TIME").toString();
+							String mrid = map.get("MR_ID").toString();
+							
+							if (count == 0) {
+								m1.put("ROC_ID", rocid);
+								m1.put("START_TIME", sDate);
+								m1.put("END_TIME", eDate);
+								m1.put("MR_ID", mrid);
+								ippList.add(m1);
+								m1 = new HashMap<String, Object>();
+								count++;
+							} else if (count == 1) {
+								m1.put("ROC_ID", rocid);
+								m1.put("START_TIME", sDate);
+								m1.put("END_TIME", eDate);
+								m1.put("MR_ID", mrid);
+								ippList2.add(m1);
+								count++;
+							} else {
+								if (rocid.equals(m1.get("ROC_ID"))) {
+									continue;
+								} else {
+									m1 = new HashMap<String, Object>();
+									m1.put("ROC_ID", rocid);
+									m1.put("START_TIME", sDate);
+									m1.put("END_TIME", eDate);
+									m1.put("MR_ID", mrid);
+									ippList.add(m1);
+									m1 = new HashMap<String, Object>();
+									count = 1;
+								}
+							}
 						}
 					}
-				}
-				/// 相同rocid做日期比對
-				for (Map<String, Object> map : ippList) {
-					String rocid = map.get("ROC_ID").toString();
-					String eDate = map.get("END_TIME").toString();
-					String mrid = map.get("MR_ID").toString();
-					for (Map<String, Object> map2 : ippList2) {
-						String rocid2 = map2.get("ROC_ID").toString();
-						String eDate2 = map2.get("END_TIME").toString();
-						if (rocid.equals(rocid2)) {
-							float f = Float.valueOf(eDate);
-							float f2 = Float.valueOf(eDate2);
-							float diff = (f - f2) / 10000;
-							if (params.getInterval_nday() < diff) {
-								MR mr = mrDao.getMrByID(mrid);
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
-										params.getNhi_no(),
-										String.format("(醫令代碼)%s與支付準則條件:限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔大於等於%d日，疑似有出入",
-												params.getNhi_no(), params.getInterval_nday()),
-										true);
+					/// 相同rocid做日期比對
+					for (Map<String, Object> map : ippList) {
+						String rocid = map.get("ROC_ID").toString();
+						String eDate = map.get("END_TIME").toString();
+						String mrid = map.get("MR_ID").toString();
+						for (Map<String, Object> map2 : ippList2) {
+							String rocid2 = map2.get("ROC_ID").toString();
+							String eDate2 = map2.get("END_TIME").toString();
+							if (rocid.equals(rocid2)) {
+								float f = Float.valueOf(eDate);
+								float f2 = Float.valueOf(eDate2);
+								float diff = (f - f2) / 10000;
+								/// 如果小於設定數值則寫入
+								if (params.getInterval_nday() > diff) {
+									MR mr = mrDao.getMrByID(mrid);
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(),
+											String.format("(醫令代碼)%s與支付準則條件:限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔大於等於%d日，疑似有出入",
+													params.getNhi_no(), params.getInterval_nday()),
+											true);
+								}
+								
 							}
-
 						}
 					}
 				}
@@ -317,31 +361,37 @@ public class PtOthersFeeServiceTask {
 		/// 5.
 		///限定同患者每次申報此支付標準代碼， 日內，限定申報小於等於 次
 		if(params.getPatient_nday_enable() ==1) {
-			List<Map<String, Object>> ippData = ippDao.getListRocIdByOrderCodeAndMridAndDays(params.getPatient_nday_days(),params.getNhi_no(), mrIdListStr);
-			List<Map<String, Object>> oppData = oppDao.getListRocIdByDrugNoAndMridAndDays(params.getPatient_nday_days(),params.getNhi_no(), mrIdListStr);
-			if(ippData.size() > 0) {
-				for (Map<String, Object> map : ippData) {
-					float t = Float.parseFloat(map.get("TOTAL").toString());
-					/// 如果資料大於限定值
-					if (params.getPatient_nday_times() < t) {
-						MR mr = mrDao.getMrByRocIdAndCode(map.get("ROC_ID").toString(), params.getNhi_no());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:同患者限定每小於等於%d日，總申報次數小於等於%d次為原則，疑似有出入", params.getNhi_no(),
-										params.getPatient_nday_days(),params.getPatient_nday_times()),
-								true);
+			
+			if(params.getHospitalized_type() == 1) {
+				List<Map<String, Object>> ippData = ippDao.getListRocIdByOrderCodeAndMridAndDays(params.getPatient_nday_days(),params.getNhi_no(), mrIdListStr);
+				
+				if(ippData.size() > 0) {
+					for (Map<String, Object> map : ippData) {
+						float t = Float.parseFloat(map.get("TOTAL").toString());
+						/// 如果資料大於限定值
+						if (params.getPatient_nday_times() < t) {
+							MR mr = mrDao.getMrByRocIdAndCode(map.get("ROC_ID").toString(), params.getNhi_no(),mrIdListStr);
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
+									String.format("(醫令代碼)%s與支付準則條件:同患者限定每小於等於%d日，總申報次數小於等於%d次為原則，疑似有出入", params.getNhi_no(),
+											params.getPatient_nday_days(),params.getPatient_nday_times()),
+									true);
+						}
 					}
 				}
 			}
-			if(oppData.size() > 0) {
-				for (Map<String, Object> map : oppData) {
-					float t = Float.parseFloat(map.get("TOTAL").toString());
-					/// 如果資料大於限定值
-					if (params.getPatient_nday_times() < t) {
-						MR mr = mrDao.getMrByRocIdAndCode(map.get("ROC_ID").toString(), params.getNhi_no());
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:同患者限定每小於等於%d日，總申報次數小於等於%d次為原則，疑似有出入", params.getNhi_no(),
-										params.getPatient_nday_days(),params.getPatient_nday_times()),
-								true);
+			if(params.getOutpatient_type() == 1) {
+				List<Map<String, Object>> oppData = oppDao.getListRocIdByDrugNoAndMridAndDays(params.getPatient_nday_days(),params.getNhi_no(), mrIdListStr);
+				if(oppData.size() > 0) {
+					for (Map<String, Object> map : oppData) {
+						float t = Float.parseFloat(map.get("TOTAL").toString());
+						/// 如果資料大於限定值
+						if (params.getPatient_nday_times() < t) {
+							MR mr = mrDao.getMrByRocIdAndCode(map.get("ROC_ID").toString(), params.getNhi_no(),mrIdListStr);
+							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
+									String.format("(醫令代碼)%s與支付準則條件:同患者限定每小於等於%d日，總申報次數小於等於%d次為原則，疑似有出入", params.getNhi_no(),
+											params.getPatient_nday_days(),params.getPatient_nday_times()),
+									true);
+						}
 					}
 				}
 			}

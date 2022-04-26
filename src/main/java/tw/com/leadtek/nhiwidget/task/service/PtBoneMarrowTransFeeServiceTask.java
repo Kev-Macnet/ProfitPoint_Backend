@@ -24,6 +24,8 @@ public class PtBoneMarrowTransFeeServiceTask {
 
 	@Autowired
 	private IntelligentService intelligentService;
+	
+	private String Category = "輸血及骨髓移植費";
 
 	public void validBoneMarrowTransFee(PtBoneMarrowTransFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -72,11 +74,19 @@ public class PtBoneMarrowTransFeeServiceTask {
 						/// 再判斷沒有符合
 						if (!mr.getCodeAll().contains(s)) {
 							if (count == 0) {
-
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
-										params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報時 ，疑似有出入",
-												params.getNhi_no(), coList.toString()),
-										true);
+								if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報時 ，疑似有出入",
+													params.getNhi_no(), coList.toString()),
+											true);
+								}
+								if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報時 ，疑似有出入",
+													params.getNhi_no(), coList.toString()),
+											true);
+								}
+								
 							}
 							count++;
 						}
