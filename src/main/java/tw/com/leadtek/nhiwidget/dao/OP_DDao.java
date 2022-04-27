@@ -252,4 +252,15 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    */
   @Query(value = "select * from op_d where mr_id in(?1) ", nativeQuery = true)
   public List<OP_D> getListByMrId(List<String> mrid);
+  /**
+   * 每月醫療人員上限筆數比較
+   * @param mrid
+   * @param limit
+   * @return
+   */
+  @Query(value = "select FUNC_DATE , PRSN_ID, PRCOUNT, PHAR_ID, PHCOUNT from "
+  		+ "(select substr(func_date, 1, 5) func_date, prsn_id,count(prsn_id) prcount, phar_id,count(phar_id) phcount from op_d where mr_id in (?1) "
+  		+ "group by prsn_id,phar_id)temp "
+  		+ "where prcount > ?2 or phcount > ?2 ", nativeQuery = true)
+  public List<Map<String, Object>> getPerMonthPrmanCount(List<String> mrid, int limit);
 }

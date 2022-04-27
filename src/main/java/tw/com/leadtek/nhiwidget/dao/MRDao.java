@@ -562,31 +562,32 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認and FUNC_TYPEC not in
    */
-  @Query(value = "SELECT * FROM MR WHERE MR.ID IN (SELECT MR_ID FROM INTELLIGENT WHERE "
-      + "CONDITION_CODE ='1' AND MR_ID IN (?1) AND STATUS = '2' AND FUNC_TYPEC NOT IN (?2)) ", nativeQuery = true)
+  @Query(value = "select * from mr where id in (?1) and func_type not in (?2) ", nativeQuery = true)
   public List<MR> getIntelligentMrByFuncName(List<String> mrid, List<String> funcName);
   
   /**
    * 依照rocid & code 取得該筆病歷表
-   * @param MRID
+   * @param rocid
+   * @param code
+   * @param mrid
    * @return
    */
-  @Query(value = "select * from mr where ROC_ID = ?1 and CODE_ALL like concat('%', ?2, '%')", nativeQuery = true)
-  public MR getMrByRocIdAndCode(String rocid, String code);
+  @Query(value = "select * from mr where ROC_ID = ?1 and CODE_ALL like concat('%', ?2, '%') and id in(?3) limit 1", nativeQuery = true)
+  public MR getMrByRocIdAndCode(String rocid, String code, List<String> mrid);
   /**
    * 依照id & code 取得該筆病歷表
    * @param mrid
    * @param code
    * @return
    */
-  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where ID in (?1) and CODE_ALL like ?2 group by ROC_ID ", nativeQuery = true)
+  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where ID in (?1) and CODE_ALL like concat('%',?2,'%') group by ROC_ID ", nativeQuery = true)
   public List<Map<String,Object>> getRocListByIdAndCode(List<String> mrid, String code);
   /**
    * 取得最新病例的身分號和日期
    * @param code
    * @return
    */
-  @Query(value = "select ROC_ID, max(MR_DATE) as MR_DATE from mr where CODE_ALL like ?1 group by ROC_ID", nativeQuery = true)
+  @Query(value = "select ROC_ID, max(MR_DATE) as MR_DATE from mr where CODE_ALL like concat('%',?1,'%') group by ROC_ID", nativeQuery = true)
   public List<Map<String,Object>> getRocLastDayListByIdAndCode(String code);
   /**
    * 取得日期間的該準則資料
@@ -596,7 +597,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param rocid
    * @return
    */
-  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where  CODE_ALL like ?1 and ROC_ID = ?2 and  MR_DATE between ?3 and ?4  group by ROC_ID", nativeQuery = true)
+  @Query(value = "select ROC_ID, count(ROC_ID) as COUNT from mr where  CODE_ALL like concat('%',?1,'%') and ROC_ID = ?2 and  MR_DATE between ?3 and ?4  group by ROC_ID", nativeQuery = true)
   public Map<String,Object> getRocCountListByCodeAndDate(String code, String rocid, String sdate, String edate);
   /**
    * 取得所有資料，以準則和身分號為條件
@@ -604,7 +605,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @param rocid
    * @return
    */
-  @Query(value = "select * from mr where CODE_ALL like ?1 and ROC_ID = ?2 order by MR_DATE desc", nativeQuery = true)
+  @Query(value = "select * from mr where CODE_ALL like concat('%',?1,'%') and ROC_ID = ?2 order by MR_DATE desc", nativeQuery = true)
   public List<MR> getAllByCodeAndRocid(String code, String rocid);
   /**
    * 依照以下條件取得MR資料

@@ -24,6 +24,8 @@ public class PtBoneMarrowTransFeeServiceTask {
 
 	@Autowired
 	private IntelligentService intelligentService;
+	
+	private String Category = "輸血及骨髓移植費";
 
 	public void validBoneMarrowTransFee(PtBoneMarrowTransFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -47,14 +49,14 @@ public class PtBoneMarrowTransFeeServiceTask {
 		if (params.getHospitalized_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "20") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "10") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
 				}
 			}
@@ -72,11 +74,19 @@ public class PtBoneMarrowTransFeeServiceTask {
 						/// 再判斷沒有符合
 						if (!mr.getCodeAll().contains(s)) {
 							if (count == 0) {
-
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-										params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報時 ，疑似有出入",
-												params.getNhi_no(), coList.toString()),
-										true);
+								if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報時 ，疑似有出入",
+													params.getNhi_no(), coList.toString()),
+											true);
+								}
+								if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報時 ，疑似有出入",
+													params.getNhi_no(), coList.toString()),
+											true);
+								}
+								
 							}
 							count++;
 						}
@@ -92,7 +102,7 @@ public class PtBoneMarrowTransFeeServiceTask {
         	List<String> planList = params.getLst_allow_plan();
 			for (MR mr : mrList) {
 				if (mr.getCodeAll().contains(params.getNhi_no())) {
-					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s與支付準則條件:參與[%s]計畫之病患，不得申報，疑似有出入", params.getNhi_no(),
 									planList.toString()),
 							true);
@@ -117,12 +127,12 @@ public class PtBoneMarrowTransFeeServiceTask {
 					///如果門診
 					if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
 						
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
 					}
 					///如果住院
 					if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
 
 					}

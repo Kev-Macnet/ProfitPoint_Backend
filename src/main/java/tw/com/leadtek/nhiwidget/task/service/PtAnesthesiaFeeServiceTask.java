@@ -32,6 +32,8 @@ public class PtAnesthesiaFeeServiceTask {
 
 	@Autowired
 	private IntelligentService intelligentService;
+	
+	private String Category = "麻醉費";
 
 	public void validAnesthesiaFee(PtAnesthesiaFeePl params) throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -55,14 +57,14 @@ public class PtAnesthesiaFeeServiceTask {
 		if (params.getHospitalized_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "20") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
 				}
 			}
 		} else if (params.getOutpatient_type() == 0) {
 			for (MR r : mrList) {
 				if (r.getDataFormat() == "10") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
 				}
 			}
@@ -75,13 +77,22 @@ public class PtAnesthesiaFeeServiceTask {
 			int count = 0;
 			for (MR mr : mrList) {
 				for (String s : icdList) {
-					if (mr.getCodeAll().contains(params.getNhi_no()) && !mr.getDrgCode().contains(s)) {
+					if (mr.getDrgCode() != null && !mr.getDrgCode().contains(s)) {
 
 						if (count == 0) {
-							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄上，須包含以下任一DRG代碼[%s]，疑似有出入",
-											params.getNhi_no(), icdList.toString()),
-									true);
+							if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+										params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄上，須包含以下任一DRG代碼[%s]，疑似有出入",
+												params.getNhi_no(), icdList.toString()),
+										true);
+							}
+							if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+										params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:單一就醫紀錄上，須包含以下任一DRG代碼[%s]，疑似有出入",
+												params.getNhi_no(), icdList.toString()),
+										true);
+							}
+							
 						}
 						count++;
 					}
@@ -102,12 +113,21 @@ public class PtAnesthesiaFeeServiceTask {
 						/// 再判斷沒有符合
 						if (!mr.getCodeAll().contains(s)) {
 							if (count == 0) {
-
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-										params.getNhi_no(),
-										String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報時，疑似有出入",
-												params.getNhi_no(), coList.toString()),
-										true);
+								if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(),
+											String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報時，疑似有出入",
+													params.getNhi_no(), coList.toString()),
+											true);
+								}
+								if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(),
+											String.format("(醫令代碼)%s與支付準則條件:需與[%s]任一，並存單一就醫紀錄一併申報時，疑似有出入",
+													params.getNhi_no(), coList.toString()),
+											true);
+								}
+								
 							}
 							count++;
 						}
@@ -120,63 +140,63 @@ public class PtAnesthesiaFeeServiceTask {
 		/// 3.
 		/// 單一就醫紀錄上，應用 大於等於 次時，首次執行須滿分鐘，方可進行下一次執行。後續每次執行需間隔超過 分鐘
 		if (params.getOver_times_enable() == 1) {
-			List<String> mridList = new ArrayList<String>();
-			for(MR m:mrList) {
-				if(m.getCodeAll().contains(params.getNhi_no())) {
-					
-					mridList.add(m.getId().toString());
-				}
-			}
-			List<Map<String, Object>> oppData = oppDao.getAllListByMrid(mrIdListStr);
-			List<Map<String, Object>> ippData = ippDao.getAllListByMrid(mrIdListStr);
-
-			if (oppData.size() > 0) {
-				for (Map<String, Object> opp : oppData) {
-					float t = Float.valueOf(opp.get("TOTAL_Q").toString());
-					if (params.getOver_times_n() >= t) {
-
-						if (opp.get("DIFF") != null) {
-
-							float time = Float.valueOf(opp.get("DIFF").toString());
-							if (params.getOver_times_first_n() <= time) {
-								MR mr = mrDao.getMrByID(opp.get("MR_ID").toString());
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-										params.getNhi_no(),
-										String.format(
-												"(醫令代碼)%s與支付準則條件:單一就醫紀錄上，應用大於等於%d次時，首次執行須滿%d分鐘，方可進行下一次執行。後續每次執行需間隔超過%d分鐘",
-												params.getNhi_no(), params.getOver_times_n(),
-												params.getOver_times_first_n(), params.getOver_times_next_n()),
-										true);
+		
+			
+			if(params.getOutpatient_type() == 1) 
+			{
+				List<Map<String, Object>> oppData = oppDao.getAllListByMrid(mrIdListStr);
+				
+				if (oppData.size() > 0) {
+					for (Map<String, Object> opp : oppData) {
+						float t = Float.valueOf(opp.get("TOTAL_Q").toString());
+						if (params.getOver_times_n() >= t) {
+							
+							if (opp.get("DIFF") != null) {
+								
+								float time = Float.valueOf(opp.get("DIFF").toString());
+								if (params.getOver_times_first_n() <= time) {
+									MR mr = mrDao.getMrByID(opp.get("MR_ID").toString());
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(),
+											String.format(
+													"(醫令代碼)%s與支付準則條件:單一就醫紀錄上，應用大於等於%d次時，首次執行須滿%d分鐘，方可進行下一次執行。後續每次執行需間隔超過%d分鐘",
+													params.getNhi_no(), params.getOver_times_n(),
+													params.getOver_times_first_n(), params.getOver_times_next_n()),
+											true);
+								}
+								
 							}
-
 						}
+						
 					}
-
 				}
 			}
 
-			if (ippData.size() > 0) {
-				for (Map<String, Object> ipp : ippData) {
-					int t = Integer.parseInt(ipp.get("TOTAL_Q").toString());
-					if (params.getOver_times_n() >= t) {
-
-						if (ipp.get("DIFF") != null) {
-
-							int time = Integer.parseInt(ipp.get("DIFF").toString());
-							if (params.getOver_times_first_n() >= time) {
-								MR mr = mrDao.getMrByID(ipp.get("MR_ID").toString());
-								intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(),
-										params.getNhi_no(),
-										String.format(
-												"(醫令代碼)%s與支付準則條件:單一就醫紀錄上，應用大於等於%d次時，首次執行須滿%d分鐘，方可進行下一次執行。後續每次執行需間隔超過%d分鐘",
-												params.getNhi_no(), params.getOver_times_n(),
-												params.getOver_times_first_n(), params.getOver_times_next_n()),
-										true);
+			if(params.getHospitalized_type() == 1) {
+				List<Map<String, Object>> ippData = ippDao.getAllListByMrid(mrIdListStr);
+				if (ippData.size() > 0) {
+					for (Map<String, Object> ipp : ippData) {
+						float t = Float.valueOf(ipp.get("TOTAL_Q").toString());
+						if (params.getOver_times_n() >= Math.round(t)) {
+							
+							if (ipp.get("DIFF") != null) {
+								
+								float time = Float.valueOf(ipp.get("DIFF").toString());
+								if (params.getOver_times_first_n() >= time) {
+									MR mr = mrDao.getMrByID(ipp.get("MR_ID").toString());
+									intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
+											params.getNhi_no(),
+											String.format(
+													"(醫令代碼)%s與支付準則條件:單一就醫紀錄上，應用大於等於%d次時，首次執行須滿%d分鐘，方可進行下一次執行。後續每次執行需間隔超過%d分鐘",
+													params.getNhi_no(), params.getOver_times_n(),
+													params.getOver_times_first_n(), params.getOver_times_next_n()),
+											true);
+								}
+								
 							}
-
 						}
+						
 					}
-
 				}
 			}
 		}
@@ -198,12 +218,12 @@ public class PtAnesthesiaFeeServiceTask {
 					///如果門診
 					if(params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
 						
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
 					}
 					///如果住院
 					if(params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), params.getNhi_no(),
+						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
 								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend), true);
 
 					}
