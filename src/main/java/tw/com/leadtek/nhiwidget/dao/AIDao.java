@@ -33,4 +33,25 @@ public interface AIDao extends JpaRepository<MR, Long> {
         + ") TEMP WHERE T_DOT > (UP * ?5) OR T_DOT < (DOWN * ?6)", nativeQuery = true)
   public List<Map<String, Object>> costDiffOP(Date sdate, Date edate, String dataFormat,
       String applYm, float up, float down);
+  
+  /**
+   * 住院天數差異
+   * @param lastYearSDate
+   * @param lastYearEDate
+   * @param sDate
+   * @param eDate
+   * @param days
+   * @return
+   */
+  @Query(value = "SELECT MR_ID, ICD_CM_1, UP, COUNT, (COUNT - UP) as VCOUNT FROM (" + 
+      "  SELECT CO.MR_ID,AI.ICD_CM_1, avg + " + VARIATION_TIMES + " * stddev as UP , STDDEV, CO.COUNT as COUNT  from " + 
+      "    (" + 
+      "       SELECT ICD_CM_1, AVG(S_BED_DAY + E_BED_DAY) AS AVG, STDDEV(S_BED_DAY + E_BED_DAY) AS STDDEV FROM IP_D " + 
+      "       WHERE MR_ID IN (SELECT ID FROM MR WHERE MR_END_DATE BETWEEN ?1 and ?2) GROUP BY ICD_CM_1" + 
+      "    ) AI, " + 
+      "    ( select ICD_CM_1, (S_BED_DAY + E_BED_DAY) as COUNT, MR_ID from IP_D where MR_ID IN (SELECT ID FROM MR WHERE MR_END_DATE BETWEEN ?3 and ?4)" + 
+      "    ) CO " + 
+      "   WHERE AI.STDDEV > 0  AND AI.ICD_CM_1 = CO.ICD_CM_1" + 
+      ") TEMP WHERE (COUNT - UP) > ?5", nativeQuery = true)
+  public List<Map<String, Object>> ipDays(Date lastYearSDate, Date lastYearEDate, Date sDate, Date eDate, int days);
 }

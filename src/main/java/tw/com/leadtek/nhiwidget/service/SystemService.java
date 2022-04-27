@@ -853,6 +853,7 @@ public class SystemService {
     List<PARAMETERS> list = parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG");
     HashMap<Integer, Boolean> needProcess = new HashMap<Integer, Boolean>();
     for (PARAMETERS p : list) {
+      System.out.println("p.name=" + p.getName());
       if (p.getName().equals("VIOLATE")) {
         if (payload.getViolate() != null) {
           if ((payload.getViolate().booleanValue() && "1".equals(p.getValue()))
@@ -995,6 +996,7 @@ public class SystemService {
           if (payload.getIpDays().intValue() == Integer.parseInt(p.getValue())) {
             continue;
           }
+          logger.info("IP_DAYS config change");
           p.setValue(payload.getIpDays().toString());
           needProcess.put(INTELLIGENT_REASON.IP_DAYS.value(), true);
         }
@@ -1404,6 +1406,7 @@ public class SystemService {
   }
 
   private void recalculateAll(HashMap<Integer, Boolean> needProcess) {
+    logger.info("needProcess size=" + needProcess.size());
     Thread thread = new Thread(new Runnable() {
 
       @Override
@@ -1429,6 +1432,10 @@ public class SystemService {
             parametersService.switchSameATC(needProcess.get(intelligentType));
           } else if (intelligentType.intValue() == INTELLIGENT_REASON.COST_DIFF.value()) {
             parametersService.switchCostDiff(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.ORDER_DRUG.value()) {
+            parametersService.switchOrderDrug(needProcess.get(intelligentType));
+          } else if (intelligentType.intValue() == INTELLIGENT_REASON.IP_DAYS.value()) {
+            parametersService.switchIpDays(needProcess.get(intelligentType));
           }
         }
         logger.info("recalculateAll done");

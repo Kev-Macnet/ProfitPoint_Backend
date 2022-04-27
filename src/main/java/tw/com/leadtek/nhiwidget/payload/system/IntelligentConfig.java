@@ -103,9 +103,9 @@ public class IntelligentConfig extends BaseResponse {
         costDiffUL = parameters.getValue();
       } else if (parameters.getName().equals("COST_DIFF_LL")) {
         costDiffLL = parameters.getValue();
-      } else if (parameters.getName().equals("ORDER_UL")) {
+      } else if (parameters.getName().equals("ORDER_DIFF_UL")) {
         orderUL = parameters.getValue();
-      } else if (parameters.getName().equals("ORDER_LL")) {
+      } else if (parameters.getName().equals("ORDER_DIFF_LL")) {
         orderLL = parameters.getValue();
       } else if (parameters.getName().equals("IP_DAYS")) {
         if (parameters.getValue() != null) {

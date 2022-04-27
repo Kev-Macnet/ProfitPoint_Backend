@@ -31,6 +31,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.ICDCM_ORDER;
 import tw.com.leadtek.nhiwidget.model.rdb.ICDCM_ORDER_KEYS;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
+import tw.com.leadtek.tools.DateTool;
 
 @Service
 public class AIService {
@@ -501,13 +502,17 @@ public class AIService {
 			String msg = "";
 			String paraResult = "";
 			List<ICDCM_DRUG> icdList = icdcmDrugDao.queryByDataFormatLimit("10");
+			
+            String lastYearStartDay = DateTool.getFirstDayOfMonthsAgo(sDate, -12, true, "-");
+            String lastYearEndDay = DateTool.getFirstDayOfMonthsAgo(sDate, -1, false, "-");
 			/// 取得主診斷count
-			List<Map<String, Object>> icdmcList = mrDao.getIcdcmCountOPByDate(sDate, eDate);
+			List<Map<String, Object>> icdmcList = mrDao.getIcdcmCountOPByDate(lastYearStartDay, lastYearEndDay);
 			List<ICDCM_DRUG> icdcmList = new ArrayList<ICDCM_DRUG>();
 
 			if (icdList.size() == 0) {
 				if (icdmcList.size() > 0) {
                     ///寫資料庫
+				    System.out.println("icdmcList.size()=" + icdmcList.size());
 					ICDCM_DRUG idModel = new ICDCM_DRUG();
 					for (Map<String, Object> map : icdmcList) {
 						int isDrug = 1;
@@ -533,6 +538,7 @@ public class AIService {
 						icdcmList.add(idModel);
 						idModel = new ICDCM_DRUG();
 					}
+					System.out.println("icdcmDrugDao.saveAll size=" + icdcmList.size());
 					icdcmDrugDao.saveAll(icdcmList);
 				}
 			}
@@ -571,9 +577,13 @@ public class AIService {
 					count2++;
 				}
 			}
+			System.out.println("drug11=" + drug11 + ", 12=" + drug12 + ", 21=" + drug21 + ", 22=" + drug22);
 			icdmcList.clear();
-			icdmcList = mrDao.getIcdcmCountOPByDate2(sDate, eDate);
+			if (icdmcList != null) {
+              return data;
+            }
 			
+			icdmcList = mrDao.getIcdcmCountOPByDate2(sDate, eDate);
 			for (ICDCM_DRUG idModel : icdList) {
 				for (Map<String, Object> map : icdmcList) {
 					if (idModel.getIsdurug() == 1) {

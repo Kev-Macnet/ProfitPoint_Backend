@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.service;
 
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -1705,9 +1706,6 @@ public class IntelligentService {
    * @param applYm 申報年月
    */
   public void calculateAICost(String applYm) {
-    // parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
-    // setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
-
     // 設定檔上限
     float costDiffUl =
         Float.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "COST_DIFF_UL"))
@@ -1765,6 +1763,119 @@ public class IntelligentService {
             (int)(Math.floor(down)), df.format(per));
       }
       insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), mr.getIcdcm1().toString(), reason,
+          true);
+    }
+  }
+  
+  public void recalculateAIIpDaysThread() {
+    Thread thread = new Thread(new Runnable() {
+
+      @Override
+      public void run() {
+        recalculateAIIpDays();
+      }
+    });
+    thread.start();
+  }
+  
+  public void recalculateAIIpDays() {
+    parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
+    setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
+    
+    Calendar cal = Calendar.getInstance();
+
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+
+    String minYm = mrDao.getMinYm();
+    if (minYm == null) {
+      return;
+    }
+    int min = Integer.parseInt(minYm) + 191100;
+    String maxYm = mrDao.getMaxYm();
+    if (maxYm == null) {
+      return;
+    }
+    int max = Integer.parseInt(maxYm) + 191100;
+    int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+    if (adYM < min || adYM > min) {
+      adYM = min;
+      // 要抓一年前的資料當比較，所以往後一年開始算
+      cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)) + 1);
+      cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) - 1);
+    }
+    do {
+      cal.add(Calendar.MONTH, 1);
+      adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+      if (adYM > max) {
+        break;
+      }
+      calculateAIIpDays(String.valueOf(adYM - 191100));
+    } while (true);
+    logger.info("recalculateAIIpDays done");
+    setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), false);
+  }
+
+  /**
+   * 計算AI功能費用差異
+   * 
+   * @param applYm 申報年月
+   */
+  public void calculateAIIpDays(String applYm) {
+    // 設定檔差異天數
+    int days =
+        Integer.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "IP_DAYS"));
+    /// 上限字樣
+    String wording = parametersService.getOneValueByName("INTELLIGENT", "IP_DAYS_WORDING");
+
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(DateTool.convertChineseToYear(applYm));
+    cal.set(Calendar.HOUR_OF_DAY, 0);
+    cal.set(Calendar.MINUTE, 0);
+    cal.set(Calendar.SECOND, 0);
+    cal.set(Calendar.MILLISECOND, 0);
+    java.sql.Date sDate = new java.sql.Date(cal.getTimeInMillis());
+    cal.add(Calendar.YEAR, -1);
+    java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
+    
+    cal.add(Calendar.YEAR, 1);
+    cal.add(Calendar.DAY_OF_YEAR, -1);
+    cal.set(Calendar.HOUR_OF_DAY, 23);
+    cal.set(Calendar.MINUTE, 59);
+    cal.set(Calendar.SECOND, 59);
+    java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
+    
+    cal.add(Calendar.DAY_OF_YEAR, 1);
+    cal.add(Calendar.MONTH, 1);
+    cal.add(Calendar.DAY_OF_YEAR, -1);
+    java.sql.Date eDate = new java.sql.Date(cal.getTimeInMillis());
+    
+    List<Map<String, Object>> list = aiDao.ipDays(startDate, endDate, sDate, eDate, days);
+    //(startDate, endDate, XMLConstant.DATA_FORMAT_OP, applYm, costDiffUl, costDiffll);
+    insertIntelligentForIpDays(list, wording);
+  }
+  
+  private void insertIntelligentForIpDays(List<Map<String, Object>> list, String wording) {
+    for (Map<String, Object> map : list) {
+      Optional<MR> optional = mrDao.findById(Long.parseLong(map.get("MR_ID").toString()));
+      if (!optional.isPresent()) {
+        continue;
+      }
+      MR mr = optional.get();
+
+      int up = 0;
+      if (map.get("UP") instanceof BigDecimal) {
+        BigDecimal bd = (BigDecimal) map.get("UP");
+        up = bd.intValue();
+      } else {
+        Double d = (Double) map.get("UP");
+        up = d.intValue();
+      }
+      int count = (Integer) map.get("COUNT");
+      int diff = count - up;
+      String prsn = mr.getPrsnName() == null ? mr.getPrsnId() : mr.getPrsnName();
+      String reason =
+          String.format(wording, mr.getId(), mr.getIcdcm1(), mr.getPrsnName(), up, diff);
+      insertIntelligent(mr, INTELLIGENT_REASON.IP_DAYS.value(), mr.getIcdcm1().toString(), reason,
           true);
     }
   }

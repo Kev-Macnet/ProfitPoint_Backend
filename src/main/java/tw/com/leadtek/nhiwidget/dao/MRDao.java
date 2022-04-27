@@ -439,6 +439,11 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ "where  (COUNT - UP) > ?3",  nativeQuery = true)
   public List<Map<String,Object>> hospitalDays(String sDate, String eDate, int isDays);
   
+  // temp1 : 取得各別診斷碼使用的藥品衛材的出現次數 
+  // select  mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, op.DRUG_NO  from op_p op , mr  
+  // where op.mr_id = mr.id and mr.mr_date between '2021-01-01' and '2021-01-31' and length(op.drug_no) = 10  and mr.code_all like concat(concat('%,', op.drug_no), ',%') 
+  // group by mr.icdcm1, op.DRUG_NO ORDER BY mr.ICDCM1
+  // temp2 : 主診斷碼出現的病歷數
   /**
    * 取得主診斷碼出現次數 -門診
    * @param sDate
@@ -447,7 +452,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    */
   @Query(value ="select temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.DRUG_NO as DRUGNO, temp2.count as ICOUNT , (temp1.iccount / temp2.count) * 100 as PERCENT from  "
   		+ "(select  mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, op.DRUG_NO  from op_p op , mr  "
-  		+ "where op.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(op.drug_no) = 10  and mr.code_all like concat('%', op.drug_no, '%') "
+  		+ "where op.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(op.drug_no) = 10  and mr.code_all like concat(concat('%,', op.drug_no), ',%') "
   		+ "group by mr.icdcm1, op.DRUG_NO) temp1, (select ICDCM1, count(ICDCM1) as COUNT from mr where  mr_date between ?1 and ?2 and id in (select mr_id from op_p where length(drug_no) = 10)  "
   		+ "group by  ICDCM1) temp2 "
   		+ "where temp1.icdcm1 = temp2.icdcm1 "

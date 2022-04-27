@@ -307,4 +307,47 @@ public class DateTool {
     }
     return "N/A";
   }
+  
+  public static String getFirstDayOfMonthsAgo(String startDay, int month, boolean isStartDayOfMonth, String separator) {
+    SimpleDateFormat sdfNoSeparator = new SimpleDateFormat("yyyyMMdd");
+    SimpleDateFormat sdfDash = new SimpleDateFormat("yyyy-MM-dd");
+    SimpleDateFormat sdfSlash = new SimpleDateFormat(SDF);
+    SimpleDateFormat sdf = null;
+    if (startDay.length() == 8 || startDay.length() == 10) {
+      if (startDay.indexOf('-') > 0) {
+        sdf = sdfDash;
+      } else if (startDay.indexOf('/') > 0) {
+        sdf = sdfSlash;
+      } else {
+        sdf = sdfNoSeparator;
+      }
+    } else {
+      return null;
+    }
+    try {
+      Date startDate = sdf.parse(startDay);
+      Calendar cal = Calendar.getInstance();
+      cal.setTime(startDate);
+      cal.set(Calendar.HOUR_OF_DAY, 0);
+      cal.set(Calendar.MINUTE, 0);
+      cal.set(Calendar.SECOND, 0);
+      cal.set(Calendar.MILLISECOND, 0);
+      cal.add(Calendar.MONTH, month);
+      cal.set(Calendar.DAY_OF_MONTH, 1);
+      if (!isStartDayOfMonth) { 
+        cal.add(Calendar.MONTH, 1);
+        cal.add(Calendar.DAY_OF_MONTH, -1);
+      }
+      if (separator == null) {
+        return sdfNoSeparator.format(cal.getTime());
+      } else if ("-".equals(separator)) {
+        return sdfDash.format(cal.getTime());
+      } else if ("/".equals(separator)) {
+        return sdfSlash.format(cal.getTime());
+      }
+    } catch (ParseException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
 }

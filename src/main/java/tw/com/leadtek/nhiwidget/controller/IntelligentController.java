@@ -106,7 +106,7 @@ public class IntelligentController extends BaseController {
     String applYm = getChineseYearMonth(applY, applM);
     
     String column = orderBy;
-    if (column != null) {
+    if (column != null && orderBy.length() > 0) {
       if (column.equals("sdate")) {
         column = "startDate";
       } else if (column.equals("edate")) {
@@ -125,6 +125,8 @@ public class IntelligentController extends BaseController {
         result.setResult("failed");
         return ResponseEntity.badRequest().body(result);
       }
+    } else {
+      column = null;
     }
     UserDetailsImpl user = getUserDetails();
     if (user == null) {

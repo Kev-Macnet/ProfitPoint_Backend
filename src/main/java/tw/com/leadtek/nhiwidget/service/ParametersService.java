@@ -2557,5 +2557,26 @@ public class ParametersService {
     if (isEnable) {
       is.recalculateAICostThread();
     }
-  }  
+  }
+  
+  /**
+   * 開啟或關閉AI-住院天數差異
+   * 
+   * @param isEnable
+   */
+  public void switchIpDays(boolean isEnable) {
+    logger.info("switchIpDays " + isEnable );
+    deleteIntelligent(INTELLIGENT_REASON.IP_DAYS.value(), null, null);
+    if (isEnable) {
+      is.recalculateAIIpDaysThread();
+    }
+  }
+  
+  public void switchOrderDrug(boolean isEnable) {
+    logger.info("switchOrderDrug " + isEnable );
+    deleteIntelligent(INTELLIGENT_REASON.ORDER_DRUG.value(), null, null);
+    if (isEnable) {
+      is.recalculateAIIpDaysThread();
+    }
+  }
 }

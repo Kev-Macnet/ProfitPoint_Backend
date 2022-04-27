@@ -51,6 +51,6 @@ public interface PAY_CODEDao extends JpaRepository<PAY_CODE, Long>, JpaSpecifica
   @Query(value ="SELECT * FROM PAY_CODE WHERE 1=1 and code >1 ", nativeQuery = true)
   public PAY_CODE findByCodeOne(String code);
   
-  @Query(value ="SELECT * FROM PAY_CODE WHERE 1=1 and code = ?1 ", nativeQuery = true)
+  @Query(value ="SELECT * FROM PAY_CODE WHERE 1=1 and code = ?1 LIMIT 1", nativeQuery = true)
   public PAY_CODE findDataByCode(String code);
 }

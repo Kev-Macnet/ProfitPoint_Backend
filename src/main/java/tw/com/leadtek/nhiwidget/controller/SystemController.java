@@ -712,6 +712,8 @@ public class SystemController extends BaseController {
       reportService.calculatePointWeekly(cal);
     } else if ("CostDiff".equals(name)) {
       is.recalculateAICostThread();
+    } else if ("IpDays".equals(name)) {
+      is.recalculateAIIpDaysThread();
     }
     return returnAPIResult(null);
   }
