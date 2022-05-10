@@ -642,5 +642,13 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ "where temp.code_all like concat('%',pay_code.code, '%') and pay_code.code_type = ?2 ", nativeQuery = true)
   
   public List<Map<String,Object>> getIdByIPandPaycode(List<String> mrid, String codeType);
+
+  @Query(value = "SELECT ID, ICDCM1, ICDCM_OTHERS, ICDPCS FROM MR ORDER BY ID", nativeQuery = true)
+  public List<Map<String,Object>> getICDALL();
   
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE MR SET ICD_ALL=?1 WHERE ID=?2", nativeQuery = true)
+  public void updateICDALL(String icdall, Long id);
+    
 }

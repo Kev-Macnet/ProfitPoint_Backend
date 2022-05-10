@@ -11,6 +11,8 @@ import tw.com.leadtek.nhiwidget.model.rdb.USER;
 public interface USERDao extends JpaRepository<USER, Long> {
 
   public List<USER> findByUsername(String username);
+  
+  public List<USER> findByDisplayName(String displayName);
     
   public List<USER> findByRoleOrderByDisplayName(String Role);
   

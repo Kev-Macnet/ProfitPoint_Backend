@@ -4,15 +4,16 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,7 +57,9 @@ import tw.com.leadtek.nhiwidget.payload.system.IntelligentConfig;
 import tw.com.leadtek.nhiwidget.payload.system.QuestionMarkPayload;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
+import tw.com.leadtek.nhiwidget.service.InitialDataService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
+import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
 import tw.com.leadtek.nhiwidget.service.SystemService;
@@ -68,6 +71,8 @@ import tw.com.leadtek.tools.DateTool;
 @RequestMapping(value = "/sys", produces = "application/json; charset=utf-8")
 public class SystemController extends BaseController {
 
+  private final static String INIT_FILE_PARAMETERS = "PARAMETERS.xlsx";
+  
   @Autowired
   private DrgCalService drgCalService;
 
@@ -78,7 +83,16 @@ public class SystemController extends BaseController {
   private ReportService reportService;
   
   @Autowired
+  private NHIWidgetXMLService xmlService;
+  
+  @Autowired
   private IntelligentService is;
+  
+  @Autowired
+  private ParametersService parametersService;
+  
+  @Autowired
+  private InitialDataService initial;
 
   @ApiOperation(value = "取得DRG列表", notes = "取得DRG列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
@@ -226,13 +240,29 @@ public class SystemController extends BaseController {
           example = "A01") @RequestParam(required = false) String code,
       @ApiParam(value = "ATC分類名稱",
           example = "氟化亞錫") @RequestParam(required = false) String note,
+      @ApiParam(value = "排序欄位名稱，code:ATC分類代碼，note:ATC分類名稱",
+          example = "code") @RequestParam(required = false) String orderBy,
+      @ApiParam(value = "排序方式，true:由小至大，false:由大至小", example = "true") 
+          @RequestParam(required = false) Boolean asc,
       @ApiParam(name = "perPage", value = "每頁顯示筆數",
           example = "20") @RequestParam(required = false) Integer perPage,
       @ApiParam(name = "page", value = "第幾頁，第一頁值為0", example = "0") @RequestParam(required = false,
           defaultValue = "0") Integer page) {
+    
+    String column = orderBy;
+    if (column != null) {
+      if (column.equals("code") || column.equals("note")) {
+      } else {
+        ATCListResponse result = new ATCListResponse();
+        result.setMessage("orderBy無此欄位：" + column);
+        result.setResult("failed");
+        return ResponseEntity.badRequest().body(result);
+      }
+    }
+    
     int perPageInt = (perPage == null) ? DEFAULT_PAGE_COUNT : perPage.intValue();
     int pageInt = page == null ? 0 : page.intValue();
-    return ResponseEntity.ok(systemService.getATC(code, note, perPageInt, pageInt));
+    return ResponseEntity.ok(systemService.getATC(code, note, column, asc, perPageInt, pageInt));
   }
 
   @ApiOperation(value = "新增一組ATC分類代碼", notes = "新增一組ATC分類代碼")
@@ -333,8 +363,10 @@ public class SystemController extends BaseController {
     
     String column = orderBy;
     if (column != null) {
-      if (column.equals("inhCode") || column.equals("code") || column.equals("inhName")
-          || column.equals("codeType") || column.equals("statcauts")) {
+      if (column.length() == 0) {
+        column = null;
+      } else if (column.equals("inhCode") || column.equals("code") || column.equals("inhName")
+          || column.equals("codeType") || column.equals("statcauts") || column.equals("atc")) {
 
       } else if (column.equals("startDay")) {
         column = "startDate";
@@ -360,6 +392,9 @@ public class SystemController extends BaseController {
     logger.info(request.toString());
     if (request.getCode() == null && request.getInhCode() != null) {
       return returnAPIResult("代碼或院內碼必須有值");
+    }
+    if (request.getId() != null) {
+      request.setId(null);
     }
     PAY_CODE pc = request.toDB();
     PAY_CODE oldPayCode = systemService.getPayCode(pc);
@@ -464,8 +499,12 @@ public class SystemController extends BaseController {
         (perPage == null) ? parametersService.getIntParameter(ParametersService.PAGE_COUNT)
             : perPage.intValue();
     int pageInt = page == null ? 0 : page.intValue();
+    String layer3 = l3;
+    if ("-".equals(layer3)) {
+      layer3 = null;
+    }
     return ResponseEntity.ok(
-        systemService.getDuductedList(l1, l2, l3, code, name, orderBy, asc, perPageInt, pageInt));
+        systemService.getDuductedList(l1, l2, layer3, code, name, orderBy, asc, perPageInt, pageInt));
   }
 
   @ApiOperation(value = "新增核減代碼", notes = "新增核減代碼")
@@ -738,19 +777,23 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "匯出申報檔", notes = "匯出申報檔")
   @GetMapping("/downloadXML")
   public ResponseEntity<BaseResponse> downloadXML(@ApiParam(value = "資料格式，10:門急診，20:住院",
-        example = "10") @RequestParam(required = true) String dataFormat,
+        example = "10") @RequestParam(required = false) String dataFormat,
       @ApiParam(value = "申報年，格式西元年 yyyy",
         example = "2021") @RequestParam(required = false) String applY,
       @ApiParam(value = "統計月份月，格式 M",
-        example = "1") @RequestParam(required = true) String applM,
+        example = "1") @RequestParam(required = false) String applM,
       @ApiParam(value = "申報日期，格式yyyy-MM-dd 或 yyyy/MM/dd",
-        example = "2022-02-24") @RequestParam(required = true) String applDate,
+        example = "2022-02-24") @RequestParam(required = false) String applDate,
       @ApiParam(value = "申報類別，1:送核，2:補報",
-        example = "1") @RequestParam(required = true) String applCategory,
+        example = "1") @RequestParam(required = false) String applCategory,
       @ApiParam(value = "申報方式，1:書面 2: 媒體 3: 連線",
-        example = "2") @RequestParam(required = true) String applMethod,
+        example = "2") @RequestParam(required = false) String applMethod,
       @ApiParam(value = "醫事類別:門診西醫、門診牙醫、門診中醫、住診西醫、門診洗腎",
-        example = "門診西醫") @RequestParam(required = true) String applMedic,
+        example = "門診西醫") @RequestParam(required = false) String applMedic,
+      @ApiParam(value = "起始日期，格式yyyy-MM-dd 或 yyyy/MM/dd",
+        example = "2022-02-24") @RequestParam(required = false) String dateStart,
+      @ApiParam(value = "結束日期，格式yyyy-MM-dd 或 yyyy/MM/dd",
+        example = "2022-02-24") @RequestParam(required = false) String dateEnd,
       HttpServletResponse response) throws UnsupportedEncodingException {
 
     UserDetailsImpl user = getUserDetails();
@@ -760,7 +803,11 @@ public class SystemController extends BaseController {
       result.setResult("error");
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
-
+    
+    if (dateStart != null && dateEnd != null || "0".equals(parametersService.getParameter("/sys/downloadXML"))) {
+      applY = "2000";
+      applM = "1";
+    }
     String filename = systemService.getDownloadXMLFilename(dataFormat, applY, applM);
     try {
       int progress = systemService.downloadXML(dataFormat, applY, applM, applDate, applCategory,
@@ -796,8 +843,34 @@ public class SystemController extends BaseController {
         dirPath + "/" + file.getOriginalFilename();
       File saveFile = new File(filepath);
       file.transferTo(saveFile);
-      if (saveFile.getName().endsWith(".xls")) {
-        
+      if (saveFile.getName().indexOf(INIT_FILE_PARAMETERS) > -1) {
+        initial.importParametersFromExcel(saveFile, "參數設定", 1);
+      } else if (saveFile.getName().endsWith(".xls")) {
+        HSSFWorkbook workbook = null;
+        if (saveFile.getName().toUpperCase().indexOf("OPD") > -1) {
+          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
+          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+            xmlService.readOpdSheet(workbook.getSheetAt(0));
+          }
+        } else if (saveFile.getName().toUpperCase().indexOf("IPD") > -1) {
+          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
+          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+            xmlService.readIpdSheet(workbook.getSheetAt(0));
+          }
+        } else if (saveFile.getName().toUpperCase().indexOf("OPP") > -1) {
+          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
+          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+            xmlService.readOppHSSFSheet(workbook.getSheetAt(0));
+          }
+        } else if (saveFile.getName().toUpperCase().indexOf("IPP") > -1) {
+          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
+          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+            xmlService.readIppHSSFSheet(workbook.getSheetAt(0));
+          }
+        }
+        if (workbook != null) {
+          workbook.close();
+        }
       } else {
         systemService.importFileThread(saveFile);
       }

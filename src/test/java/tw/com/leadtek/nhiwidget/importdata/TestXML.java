@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 //import javax.xml.stream.XMLOutputFactory;
 //import javax.xml.stream.XMLStreamException;
 //import javax.xml.stream.XMLStreamWriter;
@@ -36,15 +37,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
-import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
+import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.model.CodeBase;
 import tw.com.leadtek.nhiwidget.model.CodeMap;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.xml.OutPatient;
+import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.xml.Simple;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -68,6 +71,9 @@ public class TestXML {
   
   @Autowired
   private OP_PDao oppDao;
+  
+  @Autowired
+  private MRDao mrDao;
 
   /**
    * 測試讀取申報檔XML並寫至 mongo DB
@@ -706,7 +712,7 @@ public class TestXML {
   /**
    * 更新IP_P, OP_P 醫令的標準代碼類別代碼
    */
-  //@Ignore
+  @Ignore
   @Test
   public void updateCodeTypeCode() {
     System.out.println("updateCodeTypeCode");

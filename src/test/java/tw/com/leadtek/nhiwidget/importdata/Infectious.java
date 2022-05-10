@@ -35,6 +35,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.TestParameterService;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
@@ -148,7 +149,7 @@ public class Infectious {
   
   @Test
   public void importInfectious() {
-    String filename = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\法定傳染病_ICD代碼_1090511.xlsx";
+    String filename = TestParameterService.FILE_PATH + "法定傳染病_ICD代碼_1090511.xlsx";
     File file = new File(filename);
     try {
       XSSFWorkbook workbook = new XSSFWorkbook(file);

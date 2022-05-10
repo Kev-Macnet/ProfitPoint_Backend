@@ -6,10 +6,14 @@ package tw.com.leadtek.nhiwidget.payload.mr;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import tw.com.leadtek.nhiwidget.model.rdb.USER;
+import tw.com.leadtek.nhiwidget.service.UserService;
 import tw.com.leadtek.tools.DateTool;
 
 public class SearchMRParameters extends HomepageParameters {
 
+  private UserService userService;
+  
   /**
    * 單一分項內容如有空格，須/不須完全符合，Y/N
    */
@@ -257,6 +261,10 @@ public class SearchMRParameters extends HomepageParameters {
   
   public SearchMRParameters() {
     
+  }
+  
+  public SearchMRParameters(UserService userService) {
+    this.userService = userService;
   }
 
   public String getAllMatch() {
@@ -650,6 +658,14 @@ public class SearchMRParameters extends HomepageParameters {
   public void setOnlyDRG(Boolean onlyDRG) {
     this.onlyDRG = onlyDRG;
   }
+  
+  public UserService getUserService() {
+    return userService;
+  }
+
+  public void setUserService(UserService userService) {
+    this.userService = userService;
+  }
 
   public void setBasic(String applY, String applM, String sdate, String edate, String indate, String outdate,
       String inhMrId, String inhClinicId, String dataFormat) {
@@ -697,9 +713,53 @@ public class SearchMRParameters extends HomepageParameters {
       this.funcTypec = null;
     }
     this.prsnId = prsnId;
-    this.prsnName = prsnName;
+    if (prsnName != null && userService != null) {
+      String[] ss = prsnName.split(" ");
+      StringBuffer sb = new StringBuffer();
+      if (prsnId != null) {
+        sb.append(prsnId);
+        sb.append(" ");
+      }
+      for(int i=0; i<ss.length; i++) {
+        USER user = userService.findUserByDisplayName(ss[i]);
+        if (user != null) {
+          sb.append(user.getRocId() + " ");
+        }
+      }
+      if (sb.length() > 0 && sb.charAt(sb.length() - 1) == ' ') {
+        sb.deleteCharAt(sb.length() - 1);
+      }
+      if (sb.length() > 0) {
+        this.prsnId = sb.toString();
+      }
+    }
     this.pharId = pharId;
-    this.pharName = pharName;
+    if (pharName != null && userService != null) {
+      String[] ss = pharName.split(" ");
+      StringBuffer sb = new StringBuffer();
+      if (pharId != null && pharId.length() > 0) {
+        sb.append(pharId);
+        sb.append(" ");
+      }
+      for(int i=0; i<ss.length; i++) {
+        System.out.println("find " + ss[i]);
+        USER user = userService.findUserByDisplayName(ss[i]);
+        if (user != null) {
+          if (user.getRocId() != null) {
+            sb.append(user.getRocId());
+          } else if (user.getUsername() != null) {
+            sb.append(user.getUsername());
+          }
+          sb.append(" ");
+        }
+      }
+      if (sb.length() > 0 && sb.charAt(sb.length() - 1) == ' ') {
+        sb.deleteCharAt(sb.length() - 1);
+      }
+      if (sb.length() > 0) {
+        this.pharId = sb.toString();
+      }
+    }
     this.patientName = patientName;
     this.patientId = patientId;
     this.applId = applId;

@@ -1268,6 +1268,7 @@ public class ReportService {
         int index = -1;
         for (int k = 0; k < list.size(); k++) {
           POINT_MONTHLY pm = list.get(k);
+          pm.checkNull();
           if (pm.getYm().intValue() == yearMonth[j]) {
             index = k;
             calculateAchievementQuarter(result, pm, years[i] + "/" + quarters[i]);

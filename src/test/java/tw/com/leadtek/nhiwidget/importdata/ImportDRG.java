@@ -27,6 +27,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.TestParameterService;
 import tw.com.leadtek.nhiwidget.dao.DRG_CODEDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
@@ -60,7 +61,7 @@ public class ImportDRG {
   //@Ignore
   @Test
   public void importDRG() {
-    importDRGDep("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除110年7月至12月.xlsx",
+    importDRGDep(TestParameterService.FILE_PATH + "Tw-DRG_公式與排除110年7月至12月.xlsx",
         "附表7_2");
     String[] sheetNames = new String[2];
     sheetNames[0] = "第一階段導入";
@@ -68,9 +69,9 @@ public class ImportDRG {
     
     started = new ArrayList<String>();
     importDRGStarted(
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+        TestParameterService.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
         sheetNames, "20200101", "20200630");
-    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+    importDRGExcel(TestParameterService.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
         "109年1至6月 3.4版 TW-DRGs權重表", "20200101", "20200630");
     // ====================================
 //    started = new ArrayList<String>();
@@ -111,7 +112,6 @@ public class ImportDRG {
       for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
         XSSFSheet sheet = workbook.getSheetAt(i);
         if (sheet.getSheetName().equals(sheetName)) {
-          System.out.println("import sheet:" + sheet.getSheetName());
           importDRGDep(sheet);
           break;
         }

@@ -6,6 +6,7 @@ package tw.com.leadtek.nhiwidget.payload;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -1398,6 +1399,59 @@ public class MRDetail extends MR {
       mr.setIcdAll(null);
     }
     return true;
+  }
+  
+  public static boolean updateIcdAllByAlphabet(MR mr) {
+    StringBuffer sb = new StringBuffer(",");
+    String[] all = null;
+    String[] icdOthers = null;
+    String[] pcs = null;
+    int size = 1;
+    if (mr.getIcdcmOthers() != null) {
+      icdOthers = mr.getIcdcmOthers().split(",");
+      // 第一個為空字串
+      size += icdOthers.length - 1;
+    }
+    if (mr.getIcdpcs() != null) {
+      pcs = mr.getIcdpcs().split(",");
+      size += pcs.length - 1;
+    }
+    all = new String[size];
+    if (mr.getIcdcmOthers() != null) {
+      System.arraycopy(icdOthers, 1, all, 0, icdOthers.length - 1);
+    }
+    if (mr.getIcdpcs() != null) {
+      int startIndex = icdOthers == null ? 0 : icdOthers.length - 1;
+      System.arraycopy(pcs, 1, all, startIndex, pcs.length - 1);
+    }
+    all[size - 1] = mr.getIcdcm1();
+    Arrays.sort(all);
+    for (String string : all) {
+      if (string != null && string.length() > 0) {
+        sb.append(string);
+        sb.append(",");
+      }
+    }
+    if (sb.length() > 1) {
+      if (sb.toString().equals(mr.getIcdAll())) {
+        return false;
+      }
+      mr.setIcdAll(sb.toString());
+    } else {
+      if (mr.getIcdAll() == null) {
+        return false;
+      }
+      mr.setIcdAll(null);
+    }
+    return true;
+  }
+  
+  public static void test(String[] a) {
+    for(int i=0;i<a.length; i++) {
+      if (a[i] != null && a[i].length() > 0) {
+        System.out.println("i=" +  i + "," + a[i]);
+      }
+    }
   }
   
   public static void updateCodeAllIP(MR mr, List<IP_P> ippList) {

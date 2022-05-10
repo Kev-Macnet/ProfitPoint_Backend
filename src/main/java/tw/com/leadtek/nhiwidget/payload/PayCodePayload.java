@@ -59,7 +59,9 @@ public class PayCodePayload extends PAY_CODE implements Serializable {
     atc = pc.getAtc();
     
     SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
-    sday = sdf.format(pc.getStartDate());
+    if (pc.getStartDate() != null) {
+      sday = sdf.format(pc.getStartDate());
+    }
     if (pc.getEndDate() == null) {
       try {
         pc.setEndDate(sdf.parse(DateTool.MAX_DATE));

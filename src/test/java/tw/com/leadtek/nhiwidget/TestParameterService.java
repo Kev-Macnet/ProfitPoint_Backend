@@ -35,6 +35,9 @@ import tw.com.leadtek.tools.ExcelUtil;
 public class TestParameterService {
 
   private Logger logger = LogManager.getLogger();
+  
+  // 最後要有 \\
+  public final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Install\\";
 
   // private final static String FRONT_END_DATETIME = "yyyy-MM-dd HH:mm:ss";
 

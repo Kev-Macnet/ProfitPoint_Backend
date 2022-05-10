@@ -30,6 +30,7 @@ import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.model.DrgCalculate;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
+import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.payload.DrgCodeListResponse;
 import tw.com.leadtek.nhiwidget.payload.DrgCodePayload;
 import tw.com.leadtek.tools.DateTool;
@@ -498,20 +499,8 @@ public class DrgCalService {
     if (code.getId() != null) {
       return drgDao.findById(code.getId()).orElse(null);
     }
-    List<DRG_CODE> list = drgDao.findByCodeAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-        code.getCode(), code.getEndDate(), code.getEndDate());
-    if (list == null || list.size() == 0) {
-      return null;
-    }
-    for (DRG_CODE db : list) {
-      if (db.getStartDate().getTime() == code.getStartDate().getTime()
-          && db.getEndDate().getTime() == code.getEndDate().getTime()) {
-        return db;
-      }
-      if (db.getStartDate().getTime() > code.getStartDate().getTime()
-          && db.getStartDate().getTime() > code.getEndDate().getTime()) {
-        return db;
-      }
+    if (isTimeOverlapDrgCode(code)) {
+      return code;
     }
     return null;
   }
@@ -551,4 +540,24 @@ public class DrgCalService {
     drgDao.deleteById(code.getId());
   }
 
+  public boolean isTimeOverlapDrgCode(DRG_CODE dc) {
+    List<DRG_CODE> list = drgDao.findByCode(dc.getCode());
+    for (DRG_CODE drgCode : list) {
+      if (dc.getId() != null && drgCode.getId().longValue() == dc.getId().longValue()) {
+        continue;
+      }
+      if (drgCode.getStartDate().getTime() <= dc.getStartDate().getTime()
+          && drgCode.getEndDate().getTime() >= dc.getStartDate().getTime()) {
+        return true;
+      } else if (drgCode.getStartDate().getTime() >= dc.getStartDate().getTime()
+          && drgCode.getEndDate().getTime() <= dc.getEndDate().getTime()) {
+        return true;
+      } else if (drgCode.getStartDate().getTime() <= dc.getEndDate().getTime()
+          && drgCode.getEndDate().getTime() >= dc.getEndDate().getTime()) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
 }

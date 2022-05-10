@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
@@ -30,6 +31,9 @@ public class PaymentTermsService {
     
     @Autowired
     private PtInpatientFeeServiceTask ptInpatientFeeServiceTask;
+    
+    @Autowired
+    private ParametersService parametersService;
 
     public java.util.Map<String, Object> searchPaymentTerms(String feeNo, String nhiNo, String category, 
             java.util.Date startDate, java.util.Date endDate, int pageSize, int pageIndex,
@@ -97,19 +101,28 @@ public class PaymentTermsService {
     
     public int updateActive(long id, String category, int state) {
         int result = paymentTermsDao.updatePaymentTermsActive(id, category, state);
-        if (PtOutpatientFeeService.Category.equals(category) && state == 1) {
+        if (PtOutpatientFeeService.Category.equals(category)) {
           PtOutpatientFeePl pt = ptOutpatientFeeService.findPtOutpatientFeePl(id);
-          try {
-            ptOutpatientFeeServiceTask.vaidOutpatientFee(pt);
-          } catch (ParseException e) {
-            e.printStackTrace();
+          if (state == 0) {
+            parametersService.deleteIntelligent(INTELLIGENT_REASON.VIOLATE.value(), pt.getNhi_no(), null);
+          } else if (state == 1 && !"0".equals(parametersService.getParameter("VIOLATE"))) {
+            try {
+              ptOutpatientFeeServiceTask.vaidOutpatientFee(pt);
+            } catch (ParseException e) {
+              e.printStackTrace();
+            }
           }
-        } else if (PtInpatientFeeService.Category.equals(category) && state == 1) {
+        } else if (PtInpatientFeeService.Category.equals(category)) {
           PtInpatientFeePl pt = ptInpatientFeeService.findPtInpatientFeePl(id);
-          try {
-            ptInpatientFeeServiceTask.validInpatienFee(pt);
-          } catch (ParseException e) {
-            e.printStackTrace();
+          if (state == 0) {
+            parametersService.deleteIntelligent(INTELLIGENT_REASON.VIOLATE.value(), pt.getNhi_no(),
+                null);
+          } else if (state == 1 && !"0".equals(parametersService.getParameter("VIOLATE"))) {
+            try {
+              ptInpatientFeeServiceTask.validInpatienFee(pt);
+            } catch (ParseException e) {
+              e.printStackTrace();
+            }
           }
         }
         return result;

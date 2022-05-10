@@ -56,6 +56,12 @@ import tw.com.leadtek.tools.Utility;
 public class IntelligentService {
 
   private Logger logger = LogManager.getLogger();
+  
+  public final static String MENU_CLINCAL = "/intelligent?menu=clincal";
+  
+  public final static String MENU_SUSPECTED = "/intelligent?menu=suspected";
+  
+  public final static String MENU_DRG_SUGGESTION = "/intelligent?menu=drgSuggestion";
 
   @Autowired
   private INTELLIGENTDao intelligentDao;
@@ -204,14 +210,24 @@ public class IntelligentService {
     addPredicate(root, result, cb, "inhCode", inhCode, true, false, true);
     addPredicate(root, result, cb, "icd", icd, true, false, true);
     addPredicate(root, result, cb, "applYm", applYm, true, false, false);
+    if (dataFormat != null && dataFormat.indexOf(XMLConstant.DATA_FORMAT_IP) > -1 
+        && dataFormat.indexOf(XMLConstant.DATA_FORMAT_OP) > -1) {
+      dataFormat = null;
+    }
     addPredicate(root, result, cb, "dataFormat", dataFormat, true, false, false);
     // baseRule(固定條件判斷)，clincal(臨床路徑差異)，suspected(疑似職傷與異常就診記錄判斷)，drgSuggestion(DRG申報建議)
     if ("baseRule".equals(menu)) {
       result.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.VIOLATE.value(),
           INTELLIGENT_REASON.HIGH_RISK.value()));
     } else if ("clincal".equals(menu)) {
-      result.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.COST_DIFF.value(),
+      if ("0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+        result.add(cb.equal(root.get("conditionCode"), Integer.MAX_VALUE));
+      } else {
+       result.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.COST_DIFF.value(),
           INTELLIGENT_REASON.IP_DAYS.value()));
+      }
+    } else {
+      result.add(cb.equal(root.get("conditionCode"), Integer.MAX_VALUE));
     }
     result.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
     return result;
@@ -501,7 +517,7 @@ public class IntelligentService {
           predicate.add(cb.equal(root.get("applYm"), applYm));
         }
         predicate.add(cb.like(root.get("codeAll"), "%," + code1 + ",%"));
-        predicate.add(cb.like(root.get("codeAll"), "%," + code2 + ",%"));
+        predicate.add(cb.like(root.get("inhCode"), "%," + code2 + ",%"));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
         return query.getRestriction();
@@ -1879,4 +1895,95 @@ public class IntelligentService {
           true);
     }
   }
+  
+  public void recalculateAIOrderDrugThread() {
+    Thread thread = new Thread(new Runnable() {
+
+      @Override
+      public void run() {
+        recalculateAIOrderDrug();
+      }
+    });
+    thread.start();
+  }
+  
+  /**
+   * 重新計算所有病歷的用藥差異
+   */
+  public void recalculateAIOrderDrug() {
+    parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
+    setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
+    
+    Calendar cal = Calendar.getInstance();
+
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+
+    String minYm = mrDao.getMinYm();
+    if (minYm == null) {
+      return;
+    }
+    int min = Integer.parseInt(minYm) + 191100;
+    String maxYm = mrDao.getMaxYm();
+    if (maxYm == null) {
+      return;
+    }
+    int max = Integer.parseInt(maxYm) + 191100;
+    int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+    if (adYM < min || adYM > min) {
+      adYM = min;
+      // 要抓一年前的資料當比較，所以往後一年開始算
+      cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)) + 1);
+      cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) - 1);
+    }
+    do {
+      cal.add(Calendar.MONTH, 1);
+      adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+      if (adYM > max) {
+        break;
+      }
+      calculateAIOrderDrug(String.valueOf(adYM - 191100));
+    } while (true);
+    logger.info("recalculateAIOrderDrug done");
+    setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), false);
+  }
+  
+  /**
+   * 計算AI功能費用差異
+   * 
+   * @param applYm 申報年月
+   */
+  public void calculateAIOrderDrug(String applYm) {
+    // 設定檔差異天數
+    int days =
+        Integer.valueOf(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "IP_DAYS"));
+    /// 上限字樣
+    String wording = parametersService.getOneValueByName("INTELLIGENT", "IP_DAYS_WORDING");
+
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(DateTool.convertChineseToYear(applYm));
+    cal.set(Calendar.HOUR_OF_DAY, 0);
+    cal.set(Calendar.MINUTE, 0);
+    cal.set(Calendar.SECOND, 0);
+    cal.set(Calendar.MILLISECOND, 0);
+    java.sql.Date sDate = new java.sql.Date(cal.getTimeInMillis());
+    cal.add(Calendar.YEAR, -1);
+    java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
+    
+    cal.add(Calendar.YEAR, 1);
+    cal.add(Calendar.DAY_OF_YEAR, -1);
+    cal.set(Calendar.HOUR_OF_DAY, 23);
+    cal.set(Calendar.MINUTE, 59);
+    cal.set(Calendar.SECOND, 59);
+    java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
+    
+    cal.add(Calendar.DAY_OF_YEAR, 1);
+    cal.add(Calendar.MONTH, 1);
+    cal.add(Calendar.DAY_OF_YEAR, -1);
+    java.sql.Date eDate = new java.sql.Date(cal.getTimeInMillis());
+    
+    List<Map<String, Object>> list = aiDao.icdcmDrugCountOP(startDate, endDate);
+    //(startDate, endDate, XMLConstant.DATA_FORMAT_OP, applYm, costDiffUl, costDiffll);
+    insertIntelligentForIpDays(list, wording);
+  }
+
 }

@@ -44,6 +44,10 @@ public class EMailService {
   
   public void sendMail(String mailSubject, String mailToList, String content) {
     logger.info("mailHost:" + mailHost + ",fromEmail:" + fromEmail);
+    if (password == null || password.length() < 2) {
+      sendMailNoAuth(mailSubject, mailToList, content);
+      return;
+    }
     Properties props = new Properties();
     props.put("mail.smtp.host", mailHost);
     props.put("mail.smtp.auth", "true");
@@ -79,29 +83,15 @@ public class EMailService {
     }
   }
 
-  public void sendMailNoAuth(String mailSubject, String mailToList) {
-    if (mail.getMessages().size() == 0) {
-      return;
-    } else {
-      logger.info("================================ alert email =================================");
-      for (int i = 0; i < mail.getMessages().size(); i++) {
-        logger.info(mail.getMessages());
-      }
-      logger
-          .info("============================== alert email end ================================");
-    }
-
+  public void sendMailNoAuth(String mailSubject, String mailToList, String content) {
     try {
-
-      String fromEmail = "ken_lai@leadtek.com.tw";
-      String fromName = "test";
-      logger.info("InternetAddress.parse(mailToList)");
+      String fromName = "ProfitPoint";
       String[] toList = mailToList.split(",");
       String subject = mailSubject;
       // StringBuffer mailBodyHtml =
       // new StringBuffer("<html><body>").append(mail.getMailContent()).append("</body></html>");
       StringBuffer mailBodyHtml =
-          new StringBuffer("<html><body>").append("test").append("</body></html>");
+          new StringBuffer("<html><body>").append(content).append("</body></html>");
 
       MailService ms = new MailService();
       MailContext mc = new MailContext();

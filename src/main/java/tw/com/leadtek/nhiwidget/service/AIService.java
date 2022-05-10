@@ -579,10 +579,7 @@ public class AIService {
 			}
 			System.out.println("drug11=" + drug11 + ", 12=" + drug12 + ", 21=" + drug21 + ", 22=" + drug22);
 			icdmcList.clear();
-			if (icdmcList != null) {
-              return data;
-            }
-			
+					
 			icdmcList = mrDao.getIcdcmCountOPByDate2(sDate, eDate);
 			for (ICDCM_DRUG idModel : icdList) {
 				for (Map<String, Object> map : icdmcList) {

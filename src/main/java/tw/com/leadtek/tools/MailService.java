@@ -125,7 +125,6 @@ public class MailService {
             }
         };
 
-        // Session session = Session.getDefaultInstance(prop, authenticator);
         Session session = Session.getInstance(prop, authenticator);
         javax.mail.Message msg = new MimeMessage(session);
 

@@ -184,6 +184,8 @@ public class ParametersService {
     for (PARAMETERS p : list) {
       if ("SYSTEM".equals(p.getCat())) {
         newParameters.put(p.getName(), p.getValue());
+      } else if ("MENU".equals(p.getCat())) {
+        newParameters.put(p.getName(), p.getValue());
       }
     }
     parameters = newParameters;
@@ -2576,7 +2578,18 @@ public class ParametersService {
     logger.info("switchOrderDrug " + isEnable );
     deleteIntelligent(INTELLIGENT_REASON.ORDER_DRUG.value(), null, null);
     if (isEnable) {
-      is.recalculateAIIpDaysThread();
+      is.recalculateAIOrderDrugThread();
+    }
+  }
+  
+  /**
+   * 開啟或關閉罕見ICD應用
+   * @param isEnable
+   */
+  public void switchViolate(boolean isEnable) {
+    deleteIntelligent(INTELLIGENT_REASON.VIOLATE.value(), null, null);
+    if (isEnable) {
+      //is.recalculateAIOrderDrugThread();
     }
   }
 }

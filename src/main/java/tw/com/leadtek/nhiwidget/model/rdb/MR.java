@@ -687,34 +687,90 @@ public class MR {
     updateFuncType(mr.getFuncType());
     this.rocId = mr.getRocId();
     this.name = mr.getName();
-    this.prsnId = mr.getPrsnId();
-    this.prsnName = mr.getPrsnName();
-    this.applId = mr.getApplId();
-    this.applName = mr.getApplName();
-    this.dataFormat = mr.getDataFormat();
-    this.mrDate = mr.getMrDate();
-    this.mrEndDate = mr.getMrEndDate();
-    this.remark = mr.getRemark();
-    this.status = mr.getStatus();
-    this.readed = mr.getReaded();
-    this.notify = mr.getNotify();
-    this.inhClinicId = mr.getInhClinicId();
-    this.changeICD = mr.getChangeICD();
-    this.changeOther = mr.getChangeOther();
-    this.changeOrder = mr.getChangeOrder();
-    this.changeInh = mr.getChangeInh();
-    this.changeSo = mr.getChangeSo();
-    this.infectious = mr.getInfectious();
-    this.totalDot = mr.getTotalDot();
-    this.applDot = mr.getApplDot();
-    this.deductedDot = mr.getDeductedDot();
-    this.subjective = mr.getSubjective();
-    this.objective = mr.getObjective();
-    this.ownExpense = mr.getOwnExpense();
-    this.drgFixed = mr.getDrgFixed();
-    this.drgCode = mr.getDrgCode();
-    this.drgSection = mr.getDrgSection();
-    this.applYm = mr.getApplYm();
+    if (mr.getPrsnId() != null) {
+      this.prsnId = mr.getPrsnId();
+    }
+    if (mr.getPrsnName() != null) {
+      this.prsnName = mr.getPrsnName();
+    }
+    if (mr.getApplId() != null) {
+      this.applId = mr.getApplId();
+    }
+    if (mr.getApplName() != null) {
+      this.applName = mr.getApplName();
+    }
+    if (mr.getDataFormat() != null) {
+      this.dataFormat = mr.getDataFormat();
+    }
+    if (mr.getMrDate() != null) {
+      this.mrDate = mr.getMrDate();
+    }
+    if (mr.getMrEndDate() != null) {
+      this.mrEndDate = mr.getMrEndDate();
+    }
+    if (mr.getRemark() != null) {
+      this.remark = mr.getRemark();
+    }
+    if (mr.getStatus() != null) {
+      this.status = mr.getStatus();
+    }
+    if (mr.getReaded() != null) {
+      this.readed = mr.getReaded();
+    }
+    if (mr.getNotify() != null) {
+      this.notify = mr.getNotify();
+    }
+    if (mr.getInhClinicId() != null) {
+      this.inhClinicId = mr.getInhClinicId();
+    }
+    if (mr.changeICD != null) {
+      this.changeICD = mr.getChangeICD();
+    }
+    if (mr.changeOther != null) {
+      this.changeOther = mr.getChangeOther();
+    }
+    if (mr.getChangeOrder() != null) {
+      this.changeOrder = mr.getChangeOrder();
+    }
+    if (mr.getChangeInh() != null) {
+      this.changeInh = mr.getChangeInh();
+    }
+    if (mr.getChangeSo() != null) {
+      this.changeSo = mr.getChangeSo();
+    }
+    if (mr.getInfectious() != null) {
+      this.infectious = mr.getInfectious();
+    }
+    if (mr.getTotalDot() != null) {
+      this.totalDot = mr.getTotalDot();
+    }
+    if (mr.getApplDot() != null) {
+      this.applDot = mr.getApplDot();
+    }
+    if (mr.getDeductedDot() != null) {
+      this.deductedDot = mr.getDeductedDot();
+    }
+    if (mr.getSubjective() != null) {
+      this.subjective = mr.getSubjective();
+    }
+    if (mr.getObjective() != null) {
+       this.objective = mr.getObjective();
+    }
+    if (mr.getOwnExpense() != null) {
+      this.ownExpense = mr.getOwnExpense();
+    }
+    if (mr.getDrgFixed() != null) {
+      this.drgFixed = mr.getDrgFixed();
+    }
+    if (mr.getDrgCode() != null) {
+      this.drgCode = mr.getDrgCode();
+    }
+    if (mr.getDrgSection() != null) {
+      this.drgSection = mr.getDrgSection();
+    }
+    if (mr.getApplYm() != null) {
+      this.applYm = mr.getApplYm();
+    }
     this.updateAt = new Date();
     if (mr.getIcdcm1() != null) {
       icdcm1 = mr.getIcdcm1();

@@ -272,7 +272,9 @@ public class MyListController extends BaseController {
     }
     String column = orderBy;
     if (column != null) {
-      if (column.equals("sdate")) {
+      if (column.length() == 0) {
+        column = null;
+      } else if (column.equals("sdate")) {
         column = "startDate";
       } else if (column.equals("edate")) {
         column = "endDate";
@@ -372,7 +374,9 @@ public class MyListController extends BaseController {
 
     String column = orderBy;
     if (column != null) {
-      if (column.equals("sdate")) {
+      if (column.length() == 0) {
+        column = null;
+      } else if (column.equals("sdate")) {
         column = "startDate";
       } else if (column.equals("edate")) {
         column = "endDate";

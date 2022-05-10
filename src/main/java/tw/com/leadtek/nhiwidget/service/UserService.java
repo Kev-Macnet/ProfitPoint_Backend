@@ -104,7 +104,7 @@ public class UserService {
     user = ur.convertToUSER();
     user.setInhId(user.getUsername());
     if (user.getPassword() == null && user.getEmail() != null) {
-      logger.info("sendEail:" + user.getEmail());
+      logger.info("sendEmail:" + user.getEmail());
       String newPassword = generateCommonLangPassword();
       emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
           "系統隨機產生密碼:" + newPassword);
@@ -132,7 +132,7 @@ public class UserService {
     existUser.setRole(ur.getRole());
     existUser.setStatus(ur.getStatus());
     existUser.setUpdateAt(new Date());
-
+    existUser.setRocId(ur.getRocId());
     String[] departments = null;
     if (ur.getDepartments() != null && ur.getDepartments().length() > 0) {
       departments = ur.getDepartments().split(",");
@@ -204,19 +204,24 @@ public class UserService {
     }
     return null;
   }
+  
+  public USER findUserByDisplayName(String displayName) {
+    List<USER> list = userDao.findByDisplayName(displayName);
+    if (list != null && list.size() > 0) {
+      return list.get(0);
+    }
+    return null;
+  }
 
   public String deleteUser(Long id) {
     Optional<USER> optional = userDao.findById(id);
     if (!optional.isPresent()) {
       return "帳號不存在";
     }
-    USER existUser = optional.get();
     try {
-      userDao.deleteById(existUser.getId());
-      userDepartmentDao.removeByUserId(existUser.getId());
+      userDao.deleteById(id);
+      userDepartmentDao.removeByUserId(id);
     } catch (Exception e) {
-      e.printStackTrace();
-      return "帳號刪除有誤";
     }
     return null;
   }

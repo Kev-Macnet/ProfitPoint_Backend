@@ -1,0 +1,99 @@
+server:
+  port: ${port:8080}
+  tomcat:
+    uri-encoding: UTF-8
+    max-connections: 3000
+    max-http-form-post-size: 124857600
+    threads:
+      max: 1000
+  max-http-header-size: 40KB
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+spring:
+  servlet:
+    multipart:
+      max-file-size: 256MB
+      max-request-size: 256MB
+      enabled: true
+  jackson:
+    default-property-inclusion: NON_NULL
+  redis:
+    host: 10.0.0.111
+    port: 6379
+    database: 0
+    password: Leadtek
+    jedis:
+      pool:
+        max-active: 8
+        max-wait: -1
+        max-idle: 4
+  datasource:
+    url: jdbc:mariadb://${dbip:10.0.0.111}:${dbport:3306}/nwuser
+    username: root
+    password: leadtek
+  jpa:
+#    orm:
+    mapping-resources: orm.xml
+    show-sql: false
+    hibernate:
+      naming:
+        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+        id: 
+          new_generator_mappings: false
+          connection:
+          pool_size: 100
+        format_sql: false
+        order_inserts: true
+        order_updates: true
+        jdbc:
+          batch_size: 1000
+          batch_versioned_data: true
+        temp:
+          use_jdbc_metadata_defaults: false
+      jdbc:
+        batch_size: 1000
+        lob:
+          non_contextual_creation: true
+      default-schema: NHIWIDGET
+      connection:
+        pool_size: 100
+      show_sql: false
+      format_sql: false
+      bytecode: 
+        provider: javassist
+        use_reflection_optimizer: true
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+project:
+  jwt:
+    secret: leadtek_NHIWidget
+  # jwt expire time: 8 hours
+    expiration: 28800000
+  # away from keyboard 時間，超過30分則刪除 jwt
+    afk: 1800000
+  mail:
+    host: 10.0.0.6
+    port: 25
+    fromEmail: profitpoint@mail.pohai.org.tw
+    password:
+  serverUrl: "http://10.0.0.111:8080/#/login?redir=warehouse/"
+  apiUrl: "http://10.0.0.111:8080/"
+  hospId: 1532011154
+  isMask: false
+swagger:
+  enable: false
+  application-name: 健保申保最佳化系統 API
+  application-version: 2.0
+  application-description: 健保申保最佳化系統 API
+  try-host: http://10.0.0.111:${server.port}

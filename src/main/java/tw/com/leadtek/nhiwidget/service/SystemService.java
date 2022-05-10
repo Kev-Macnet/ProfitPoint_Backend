@@ -101,6 +101,14 @@ public class SystemService {
   private Logger logger = LogManager.getLogger();
 
   public final static String FILE_PATH = "download";
+  
+  public final static String MENU_VIOLATE = "/violate";
+  
+  public final static String MENU_PILOT_PROJECT = "/pilotProject";
+
+  public final static String MENU_FILE_MANAGEMENT = "/fileManagement";
+  
+  public final static String MENU_DB_MANAGEMENT = "/dbManagement";
 
   @Autowired
   private ATCDao atcDao;
@@ -153,7 +161,8 @@ public class SystemService {
   @Autowired
   private ParametersService parametersService;
 
-  public ATCListResponse getATC(String code, String note, int perPage, int page) {
+  public ATCListResponse getATC(String code, String note, String orderBy,
+      Boolean asc, int perPage, int page) {
     List<ATC> codes = new ArrayList<ATC>();
     Specification<ATC> spec = new Specification<ATC>() {
 
@@ -167,8 +176,18 @@ public class SystemService {
         if (note != null && note.length() > 0) {
           predicate.add(cb.like(cb.upper(root.get("note")), "%" + note.toUpperCase() + "%"));
         }
+        
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
+        if (orderBy != null && asc != null) {
+          List<Order> orderList = new ArrayList<Order>();
+          if (asc.booleanValue()) {
+            orderList.add(cb.asc(root.get(orderBy)));
+          } else {
+            orderList.add(cb.desc(root.get(orderBy)));
+          }
+          query.orderBy(orderList);
+        }
         return query.getRestriction();
       }
     };
@@ -259,16 +278,10 @@ public class SystemService {
             ed = sdf.parse(endDay);
           }
         } catch (ParseException e) {
-          e.printStackTrace();
+          logger.error("getPayCode", e);
         }
 
         List<Predicate> predicate = new ArrayList<Predicate>();
-        if (sd != null) {
-          predicate.add(cb.lessThanOrEqualTo(root.get("startDay"), sd));
-        }
-        if (ed != null) {
-          predicate.add(cb.greaterThan(root.get("endDay"), ed));
-        }
         if (atc != null) {
           predicate.add(cb.like(root.get("atc"), atc.toUpperCase() + "%"));
         }
@@ -286,6 +299,19 @@ public class SystemService {
         }
         if (inhName != null && inhName.length() > 1) {
           predicate.add(cb.like(root.get("inhName"), inhName + "%"));
+        }
+        if (sd != null && ed != null) {
+          predicate.add(cb.or(
+              cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sd),
+                  cb.lessThanOrEqualTo(root.get("startDate"), ed)),
+          cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sd),
+                  cb.lessThanOrEqualTo(root.get("endDate"), ed))));
+        } else {
+          if (sd != null) {
+            predicate.add(cb.greaterThanOrEqualTo(root.get("startDate"), sd));
+          } else if (ed != null) {
+            predicate.add(cb.lessThanOrEqualTo(root.get("endDate"), ed));
+          }
         }
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
@@ -748,6 +774,9 @@ public class SystemService {
   }
 
   public String updateFileManagementPaylod(FileManagementPayload payload) {
+    if ("0".equals(parametersService.getParameter(MENU_FILE_MANAGEMENT))) {
+      return null;
+    } 
     List<PARAMETERS> list = parametersDao.findByCatOrderByName("FILE_MANAGEMENT");
     for (PARAMETERS p : list) {
       if (p.getName().equals("IS_DAILY_INPUT")) {
@@ -846,16 +875,22 @@ public class SystemService {
   }
 
   public IntelligentConfig getIntelligentConfig() {
-    return new IntelligentConfig(parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG"));
+    IntelligentConfig result = new IntelligentConfig(parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG"));
+    if ("0".equals(parametersService.getParameter(MENU_PILOT_PROJECT))) {
+      result.setPilotProject(false);
+    } 
+    if ("0".equals(parametersService.getParameter(MENU_VIOLATE))) {
+      result.setViolate(false);
+    }
+    return result;
   }
 
   public String updateIntelligentConfig(IntelligentConfig payload) {
     List<PARAMETERS> list = parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG");
     HashMap<Integer, Boolean> needProcess = new HashMap<Integer, Boolean>();
     for (PARAMETERS p : list) {
-      System.out.println("p.name=" + p.getName());
       if (p.getName().equals("VIOLATE")) {
-        if (payload.getViolate() != null) {
+        if (payload.getViolate() != null && !"0".equals(parametersService.getParameter(MENU_VIOLATE))) {
           if ((payload.getViolate().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getViolate().booleanValue() && "0".equals(p.getValue()))) {
             continue;
@@ -930,7 +965,7 @@ public class SystemService {
           }
         }
       } else if (p.getName().equals("PILOT_PROJECT")) {
-        if (payload.getPilotProject() != null) {
+        if (payload.getPilotProject() != null && !"0".equals(parametersService.getParameter(MENU_PILOT_PROJECT))) {
           if ((payload.getPilotProject().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getPilotProject().booleanValue() && "0".equals(p.getValue()))) {
             continue;
@@ -1032,6 +1067,9 @@ public class SystemService {
   }
 
   public String updateDbManagement(DbManagement payload) {
+    if ("0".equals(parametersService.getParameter(MENU_DB_MANAGEMENT))) {
+      return null;
+    }
     List<PARAMETERS> list = parametersDao.findByCatOrderByName("DB_MANAGEMENT");
     for (PARAMETERS p : list) {
       if (p.getName().equals("ADD_USER_BY")) {
@@ -1443,4 +1481,5 @@ public class SystemService {
     });
     thread.start();
   }
+  
 }

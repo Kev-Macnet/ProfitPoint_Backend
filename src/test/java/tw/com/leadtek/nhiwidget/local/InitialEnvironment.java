@@ -68,7 +68,8 @@ public class InitialEnvironment {
   
   public final static String SERVER_IP = "localhost";
   
-  private final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\";
+  // 最後要有 \\
+  private final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Install\\";
   
   @Autowired
   private PARAMETERSDao pDao;
@@ -117,8 +118,8 @@ public class InitialEnvironment {
     }
     importFromExcel(FILE_PATH + "PARAMETERS.xlsx", "參數設定", 1);
     importCODE_TABLEToRDB(FILE_PATH + "CODE_TABLE.xlsx");
-    addDepartmentFile();
-    addUserFile();
+    //addDepartmentFile();
+    //addUserFile();
   }
   
   public void importFromExcel(String filename, String sheetName, int titleRow) {

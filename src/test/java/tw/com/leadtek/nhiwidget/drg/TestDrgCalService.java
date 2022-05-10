@@ -294,7 +294,7 @@ public class TestDrgCalService {
           System.out.println("icdOther:" + mr.getIcdcmOthers());
           MRDetail.updateIcdpcsOP(mr, opd);
           System.out.println("icdOp:" + mr.getIcdpcs());
-          MRDetail.updateIcdAll(mr);
+          MRDetail.updateIcdAllByAlphabet(mr);
           System.out.println("icdAll:" + mr.getIcdAll());
         }
         MRDetail.updateCodeAllOP(mr, oppDao.findByMrId(mr.getId()));
@@ -328,7 +328,7 @@ public class TestDrgCalService {
           mr.setIcdcm1(ipd.getIcdCm1());
           MRDetail.updateIcdcmOtherIP(mr, ipd);
           MRDetail.updateIcdpcsIP(mr, ipd);
-          MRDetail.updateIcdAll(mr);
+          MRDetail.updateIcdAllByAlphabet(mr);
         }
         MRDetail.updateCodeAllIP(mr, ippDao.findByMrId(mr.getId()));
         if (mr.getCodeAll().length() > 4000) {

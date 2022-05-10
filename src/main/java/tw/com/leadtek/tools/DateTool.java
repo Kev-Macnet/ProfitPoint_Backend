@@ -336,7 +336,6 @@ public class DateTool {
       cal.set(Calendar.DAY_OF_MONTH, 1);
       if (!isStartDayOfMonth) { 
         cal.add(Calendar.MONTH, 1);
-        cal.add(Calendar.DAY_OF_MONTH, -1);
       }
       if (separator == null) {
         return sdfNoSeparator.format(cal.getTime());

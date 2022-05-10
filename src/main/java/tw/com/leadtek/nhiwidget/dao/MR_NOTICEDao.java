@@ -13,5 +13,8 @@ public interface MR_NOTICEDao extends JpaRepository<MR_NOTICE, Long>, JpaSpecifi
   public List<MR_NOTICE> findByMrIdAndStatusAndReceiveUserIdContainingOrderByNoticeDateDesc(
       long mrId, int status, String userId);
   
+  public List<MR_NOTICE> findByMrIdAndReceiveUserIdContainingOrderByNoticeDateDesc(
+      long mrId, String userId);
+  
   public List<MR_NOTICE> findByMrId(long mrId);
 }

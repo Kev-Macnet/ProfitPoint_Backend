@@ -29,6 +29,7 @@ public class UserRequest extends USER {
     role = user.getRole();
     status = user.getStatus();
     inhId = user.getInhId();
+    rocId = user.getRocId();
     createAt = user.getCreateAt();
     updateAt = user.getUpdateAt();
   }
@@ -67,6 +68,7 @@ public class UserRequest extends USER {
     result.setCreateAt(getCreateAt());
     result.setUpdateAt(getUpdateAt());
     result.setRole(getRole());
+    result.setRocId(rocId);
     return result;
   }
   

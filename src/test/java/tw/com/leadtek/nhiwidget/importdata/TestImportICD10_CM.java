@@ -32,6 +32,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.TestParameterService;
 import tw.com.leadtek.nhiwidget.constant.RedisConstants;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
@@ -47,7 +48,7 @@ import tw.com.leadtek.nhiwidget.service.RedisService;
 public class TestImportICD10_CM {
 
   private Logger logger = LogManager.getLogger();
-
+  
   @Autowired
   private RedisTemplate<String, Object> redisTemplate;
 
@@ -133,16 +134,16 @@ public class TestImportICD10_CM {
    * 將excel檔案資料匯至 Redis
    */
   //@Ignore
-  @Test
+  //@Test
   public void importICD10ToRedis() {
     System.out.println("importICD10ToRedis");
     long start = System.currentTimeMillis();
-    importExcelToRedis("ICD10",
-        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.1 中文版ICD-10-CM(106.07.19更新)_Chapter.xlsx",
-        "ICD10-CM");
-//     importExcelToRedis("ICD10",
-//     "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.2 中文版ICD-10-PCS(106.07.19更新).xlsx",
-//     "ICD10-PCS");
+//    importExcelToRedis("ICD10",
+//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\1.1 中文版ICD-10-CM(106.07.19更新)_Chapter.xlsx",
+//        "ICD10-CM");
+     importExcelToRedis("ICD10",
+     "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.2 中文版ICD-10-PCS(106.07.19更新).xlsx",
+     "ICD10-PCS");
 
     long usedTime = System.currentTimeMillis() - start;
     System.out.println("usedTime:" + usedTime);
@@ -285,7 +286,7 @@ public class TestImportICD10_CM {
             saveICD10DB(code, category, descTw, descEn, dataId);
             continue;
           } else {
-            System.out.println("not found in redis:" + code);
+            //System.out.println("not found in redis:" + code);
           }
 
           // addCode1(collectionName, code);
@@ -300,7 +301,7 @@ public class TestImportICD10_CM {
           cb.setCategory(category);
           // addCount += addCode3(op, objectMapper, collectionName, cb);
           addCodeByThread(null, collectionName, cb, false);
-          System.out.println("add(" + maxId + ")[" + addCount + "]" + code + ":" + descEn);
+          //System.out.println("add(" + maxId + ")[" + addCount + "]" + code + ":" + descEn);
           saveICD10DB(code, category, descTw, descEn, cb.getId());
           count++;
           total++;
@@ -743,10 +744,10 @@ public class TestImportICD10_CM {
   }
 
   //@Ignore
-  //@Test
+  @Test
   public void importATC() {
     String cat = "ATC";
-    File file = new File("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\ATC分類.xlsx");
+    File file = new File(TestParameterService.FILE_PATH + "ATC分類.xlsx");
     // 存放處理過的 ATC code，避免因來源檔案資料重複，而重複insert
     HashMap<String, String> duplicate = new HashMap<String, String>();
     ObjectMapper objectMapper = new ObjectMapper();

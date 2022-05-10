@@ -90,35 +90,35 @@ public class NHIWidgetXMLController extends BaseController {
   private CodeTableService codeTableService;
 
 
-  @ApiOperation(value = "上傳申報檔XML檔案", notes = "上傳申報檔XML檔案")
-  @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "申報檔XML檔案",
-      dataType = "file", required = true)})
-  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
-  @PostMapping(value = "/nhixml/uploadFile")
-  public ResponseEntity<BaseResponse> upload(@RequestPart("file") MultipartFile file) {
-    ObjectMapper xmlMapper = new XmlMapper();
-    try {
-      logger.info("start upload:" + file.getOriginalFilename());
-      String xml = new String(file.getBytes(), "BIG5");
-      if (xml.indexOf("inpatient") > 0) {
-        IP ip = xmlMapper.readValue(xml, IP.class);
-        xmlService.saveIP(ip);
-      }
-      if (xml.indexOf("outpatient") > 0) {
-        OP op = xmlMapper.readValue(xml, OP.class);
-        logger.info("start upload:" + file.getOriginalFilename() + " OP op");
-        xmlService.saveOP(op);
-      }
-      return returnAPIResult(null);
-    } catch (JsonMappingException e) {
-      e.printStackTrace();
-    } catch (JsonProcessingException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return returnAPIResult("system error");
-  }
+//  @ApiOperation(value = "上傳申報檔XML檔案", notes = "上傳申報檔XML檔案")
+//  @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "申報檔XML檔案",
+//      dataType = "file", required = true)})
+//  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+//  @PostMapping(value = "/nhixml/uploadFile")
+//  public ResponseEntity<BaseResponse> upload(@RequestPart("file") MultipartFile file) {
+//    ObjectMapper xmlMapper = new XmlMapper();
+//    try {
+//      logger.info("start upload:" + file.getOriginalFilename());
+//      String xml = new String(file.getBytes(), "BIG5");
+//      if (xml.indexOf("inpatient") > 0) {
+//        IP ip = xmlMapper.readValue(xml, IP.class);
+//        xmlService.saveIP(ip);
+//      }
+//      if (xml.indexOf("outpatient") > 0) {
+//        OP op = xmlMapper.readValue(xml, OP.class);
+//        logger.info("start upload:" + file.getOriginalFilename() + " OP op");
+//        xmlService.saveOP(op);
+//      }
+//      return returnAPIResult(null);
+//    } catch (JsonMappingException e) {
+//      e.printStackTrace();
+//    } catch (JsonProcessingException e) {
+//      e.printStackTrace();
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    }
+//    return returnAPIResult("system error");
+//  }
 
   @ApiOperation(value = "下載整個月份或指定區間的申報檔XML檔案", notes = "下載申報檔XML檔案")
   @GetMapping(value = "/nhixml/download", produces = "application/xml; charset=big5")
@@ -372,7 +372,7 @@ public class NHIWidgetXMLController extends BaseController {
     }
     funcType = addAllFuncType(funcType, funcTypec);
     
-    SearchMRParameters smrp = new SearchMRParameters();
+    SearchMRParameters smrp = new SearchMRParameters(userService);
     smrp.setBasic(applY, applM, sdate, edate, indate, outdate, inhMrId, inhClinicId, dataFormat);
     smrp.setOthers(notOthers, minPoints, maxPoints, funcType, funcTypec, prsnId, prsnName, pharName, pharId, patientName, patientId, applId, applName);
     smrp.setICD(notICD, icdAll, icdCMMajor, icdCMSec, icdPCS);
@@ -866,7 +866,12 @@ public class NHIWidgetXMLController extends BaseController {
       br.setMessage("未登入，無法執行");
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
     }
-    
+    if (note.getCode() == null) {
+      BaseResponse br = new BaseResponse();
+      br.setResult("failed");
+      br.setMessage("無核刪代碼，無法新增");
+    }
+
     note.setEditor(user.getUsername());
     note.setActionType(ACTION_TYPE.ADD.value());
     return returnAPIResult(xmlService.newDeductedNote(mrId, note));
@@ -887,9 +892,11 @@ public class NHIWidgetXMLController extends BaseController {
       br.setMessage("未登入，無法執行");
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
     }
-    
     String result = null;
     for (DEDUCTED_NOTE deducted_NOTE : note) {
+      if (deducted_NOTE.getCode() == null || deducted_NOTE.getCode().length() == 0) {
+        continue;
+      }
       deducted_NOTE.setEditor(user.getUsername());
       deducted_NOTE.setActionType(ACTION_TYPE.ADD.value());
       result = xmlService.newDeductedNote(mrId, deducted_NOTE);
@@ -933,7 +940,7 @@ public class NHIWidgetXMLController extends BaseController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
     }
     note.setEditor(user.getUsername());
-    return returnAPIResult(xmlService.updateDeductedNote(note));
+    return returnAPIResult(xmlService.updateDeductedNote(note, user.getDisplayName()));
   }
   
   @ApiOperation(value = "更新指定病歷的核刪註記內容", notes = "更新指定病歷的核刪註記內容")
@@ -949,8 +956,8 @@ public class NHIWidgetXMLController extends BaseController {
     }
     String response = null;
     for (DEDUCTED_NOTE note : notes) {
-      note.setEditor(user.getUsername());
-      response = xmlService.updateDeductedNote(note);
+      note.setEditor(user.getDisplayName());
+      response = xmlService.updateDeductedNote(note, user.getDisplayName());
     }
     return returnAPIResult(response);
   }

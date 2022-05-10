@@ -2,9 +2,7 @@ package tw.com.leadtek.nhiwidget.controller;
 
 
 import java.util.Map;
-
 import javax.annotation.PostConstruct;
-
 import org.quartz.Job;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -19,9 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -31,8 +27,10 @@ import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.dto.BackupSettingDto;
 import tw.com.leadtek.nhiwidget.dto.DbBackupLogDto;
 import tw.com.leadtek.nhiwidget.dto.DbBackupProgressDto;
+import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.service.DbBackupJob;
-import tw.com.leadtek.nhiwidget.service.DbBackupService; 
+import tw.com.leadtek.nhiwidget.service.DbBackupService;
+import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.service.QuartzUtils;
 import tw.com.leadtek.nhiwidget.sql.WebConfigDao;
@@ -44,6 +42,8 @@ import tw.com.leadtek.tools.Utility;
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class DbBackupControll {
 
+    private final static String MENU_DBBACKUP = "/dbbackup/"; 
+    
     @Autowired
     private PaymentTermsService paymentTermsService;
     @Autowired
@@ -52,6 +52,8 @@ public class DbBackupControll {
     private WebConfigDao webConfigDao;
     @Autowired
     private QuartzUtils quartzUtils;
+    @Autowired
+    private ParametersService parametersService;
 
     private String jobName = "profitpoint-quartz-job";
     private Class<? extends Job> jobClass= DbBackupJob.class;
@@ -85,8 +87,12 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             java.util.List<Map<String, Object>> retMap = dbBackupService.findAll(0, "");
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
     
@@ -105,8 +111,12 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             java.util.Map<String, Object> mapBackup = dbBackupService.dbBackup(mode, jwtValidation.get("userName").toString());
             return new ResponseEntity<>(mapBackup, HttpStatus.OK);
+          }
         }
     }
     
@@ -121,8 +131,12 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             java.util.Map<String, Object> retMap = dbBackupService.loadBackupProgress();
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
     
@@ -137,10 +151,14 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             int status = dbBackupService.setBackupAbort();
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
     
@@ -160,10 +178,14 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             int status = dbBackupService.deleteRow(backup_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
     
@@ -178,11 +200,15 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             int status = dbBackupService.saveSetting(params);
             quartzUtils.modifyCron(jobName, calcQuartzCron());
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
     
@@ -198,8 +224,12 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             java.util.Map<String, Object> retMap = dbBackupService.loadSetting();
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
     
@@ -219,8 +249,12 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             java.util.Map<String, Object> retMap = dbBackupService.restore(backup_id);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
     
@@ -235,8 +269,12 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             java.util.Map<String, Object> retMap = dbBackupService.loadRestoreProgress();
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
     
@@ -251,10 +289,14 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             int status = dbBackupService.setRestoreAbort();
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
     
@@ -270,6 +312,9 @@ public class DbBackupControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            return ResponseEntity.ok(new BaseResponse("success", null));
+          } else {
             webConfigDao.setConfig("backup_busy", "0", "");
             webConfigDao.setConfig("backup_abort", "0", "");
             webConfigDao.setConfig("backup_progress", "0", "");
@@ -279,9 +324,9 @@ public class DbBackupControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", 0);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
+          }
         }
     }
-    
     
     @ApiOperation(value="12.12 下載備份檔", notes="", position=12)
     @ApiResponses({
@@ -305,8 +350,16 @@ public class DbBackupControll {
                     .body(new InputStreamResource(new java.io.ByteArrayInputStream(retMessage)));
 
         } else {
+          if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
+            byte[] retMessage = String.format("{status:%d, message=\"%s\"}",-2, "檔案不存在").getBytes("UTF-8");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .contentLength(retMessage.length)
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .cacheControl(CacheControl.noCache())
+                .header("Content-Disposition", "attachment;filename=" + "download-error.txt")
+                .body(new InputStreamResource(new java.io.ByteArrayInputStream(retMessage)));
+          } else {
             String fullFileName = dbBackupService.getFilename(backup_id);
-            System.out.println("fullFileName="+fullFileName);
             if (fullFileName.length()>0) {
                 java.io.File myfile = new java.io.File(fullFileName);
 //                System.out.println("name="+myfile.getName());
@@ -328,6 +381,7 @@ public class DbBackupControll {
                         .header("Content-Disposition", "attachment;filename=" + "download-error.txt")
                         .body(new InputStreamResource(new java.io.ByteArrayInputStream(retMessage)));
             }
+          }
         }
     }
     

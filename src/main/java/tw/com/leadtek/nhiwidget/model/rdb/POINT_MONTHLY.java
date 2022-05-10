@@ -680,4 +680,105 @@ public class POINT_MONTHLY {
     this.noApplOp = noApplOp;
   }
 
+  public void checkNull() {
+    if (partOp == null) {
+      partOp = new Long(0);
+    }
+    if (partEm == null) {
+      partEm = new Long(0);
+    }
+    if (partOpAll == null) {
+      partOpAll = new Long(0);
+    }
+    if (partIp == null) {
+      partIp = new Long(0);
+    }
+    if (partAll == null) {
+      partAll = new Long(0);
+    }
+    if (applOp == null) {
+      applOp = new Long(0);
+    }
+    if (applEm == null) {
+      applEm = new Long(0);
+    }
+    if (applOpAll == null) {
+      applOpAll = new Long(0);
+    }
+    if (applIp == null) {
+      applIp = new Long(0);
+    }
+    if (applAll == null) {
+      applAll = new Long(0);
+    }
+    if (totalOp == null) {
+      totalOp = new Long(0);
+    }
+    if (totalEm == null) {
+      totalEm = new Long(0);
+    }
+    if (totalOpAll == null) {
+      totalOpAll = new Long(0);
+    }
+    if (totalIp == null) {
+      totalIp = new Long(0);
+    }
+    if (totalAll == null) {
+      totalAll = new Long(0);
+    }
+    if (assignedOpAll == null) {
+      assignedOpAll = new Long(0);
+    }
+    if (assignedIp == null) {
+      assignedIp = new Long(0);
+    }
+    if (assignedAll == null) {
+      assignedAll = new Long(0);
+    }
+    if (patientOp == null) {
+      patientOp = new Long(0);
+    }
+    if (patientIp == null) {
+      patientIp = new Long(0);
+    }
+    if (patientEm == null) {
+      patientEm = new Long(0);
+    }
+    if (chronic == null) {
+      chronic = new Long(0);
+    }
+    if (remaining == null) {
+      remaining = new Long(0);
+    }
+    if (ipQuantity == null) {
+      ipQuantity = new Long(0);
+    }
+    if (rateIp == null) {
+      rateIp = new Double(0);
+    }
+    if (rateOpAll == null) {
+      rateOpAll = new Double(0);
+    }
+    if (rateAll == null) {
+      rateAll = new Double(0);
+    }
+    if (drgQuantity == null) {
+      drgQuantity = new Long(0);
+    }
+    if (drgApplPoint == null) {
+      drgApplPoint = new Long(0);
+    }
+    if (drgActualPoint == null) {
+      drgActualPoint = new Long(0);
+    }
+    if (noApplAll == null) {
+      noApplAll = new Long(0);
+    }
+    if (noApplIp == null) {
+      noApplIp = new Long(0);
+    }
+    if (noApplOp == null) {
+      noApplOp = new Long(0);
+    }
+  }
 }
