@@ -551,13 +551,23 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   		+ "group by mr.id ", nativeQuery = true)
   public List<Map<String,Object>> getIdByOderCodeCount(String sDate, String eDate);
   
-  
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認
-   * 下面測試用替換
    */
-   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') ", nativeQuery = true)
-  public List<MR> getIntelligentMR(String sDate, String eDate, String code);
+  @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') ", nativeQuery = true)
+ public List<MR> getIntelligentMR(String sDate, String eDate, String code);
+  
+  /**
+   * 取得列在智能提示中的病歷，近一年違規且狀態為待確認，門診
+   */
+   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') and data_format = '10' ", nativeQuery = true)
+  public List<MR> getIntelligentMRO(String sDate, String eDate, String code);
+   
+   /**
+    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認，住院
+    */
+   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') and data_format = '20' ", nativeQuery = true)
+  public List<MR> getIntelligentMRH(String sDate, String eDate, String code);
   
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認and FUNC_TYPEC not in

@@ -186,24 +186,24 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  			+ "group by opp.DRUG_NO, opd.ROC_ID", nativeQuery = true)
  	public List<Map<String, Object>> getListRocIdByDrugNoAndMridAndDays(int days, String code, List<String> mrid);
  	/**
- 	 * 取得準則區間每月門診數
+ 	 * 取得準則區間門診數
  	 * @param mrid
  	 * @return
  	 */
- 	@Query(value = "select mr.ID, mr.APPL_YM, op_p.total_q as TOTAL from op_p,mr "
- 			+ "where op_p.mr_id = mr.id  and mr.id in (?1)", nativeQuery = true)
- 	public List<Map<String,Object>> getPerMonthByDrugNoAndTotal( List<String> mrid);
+ 	@Query(value = "select  mr.roc_id as ROC_ID, sum(op_p.total_q) TOTAL  from op_p,mr "
+ 			+ "where op_p.mr_id = mr.id and mr.mr_date  between ?1 and ?2 and op_p.drug_no = ?3 "
+ 			+ "group by mr.roc_id", nativeQuery = true)
+ 	public List<Map<String,Object>> getPerMonthByDrugNoAndTotal(String sDate, String eDate, String code);
  	/**
- 	 * 該準則各月總數
+ 	 * 該準則門診總人數
  	 * @param sDate
  	 * @param eDate
  	 * @param code
  	 * @return
  	 */
- 	@Query(value = "select mr.APPL_YM, sum(op_p.total_q) TOTAL  from op_p,mr "
- 			+ "where op_p.mr_id = mr.id and mr.mr_date  between ?1 and ?2 and op_p.drug_no = ?3 "
- 			+ "group by mr.APPL_YM", nativeQuery = true)
- 	public List<Map<String,Object>> getTotalDrugByNo(String sDate, String eDate, String code);
+ 	@Query(value = "select  count(*) COUNT from op_p,mr "
+ 			+ "where op_p.mr_id = mr.id and mr.mr_date  between ?1 and ?2 and op_p.drug_no = ?3 ", nativeQuery = true)
+ 	public Map<String,Object> getTotalDrugByNo(String sDate, String eDate, String code);
  	
  	/**
  	 * 藥用計算超過天數

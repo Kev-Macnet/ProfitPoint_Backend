@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,7 @@ import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.tools.DateTool;
 
 @Service
-public class PtOutpatientFeeServiceTask {
+public class PtOutpatientFeeServiceTask extends BasicIntelligentService {
 
 	@Autowired
 	private MRDao mrDao;
@@ -36,40 +37,22 @@ public class PtOutpatientFeeServiceTask {
 
 	private String Category = "門診診察費";
 
+	@SuppressWarnings("unchecked")
 	public void vaidOutpatientFee(PtOutpatientFeePl params) throws ParseException {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-		/// 將timestamp轉成date
-		java.sql.Timestamp tSdate = new java.sql.Timestamp(params.getStart_date());
-		java.sql.Timestamp tEdate = new java.sql.Timestamp(params.getEnd_date());
-		Date tsd = new Date(tSdate.getTime());
-		Date ted = new Date(tEdate.getTime());
-		String sDateStr = sdf.format(tsd);
-		String eDateStr = sdf.format(ted);
-
-		/// 該支付準則區間病歷表
-		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr, params.getNhi_no());
+		
+		boolean isHospital = false;
+		boolean isOutpatien = false;
+		Map<String,Object> retMap = this.vaidIntelligentTtype(params.getStart_date(), params.getEnd_date(), params.getNhi_no(), params.getOutpatient_type(), params.getHospitalized_type());
+		isHospital = (boolean) retMap.get("isHospital");
+		isOutpatien = (boolean) retMap.get("isOutpatien");
+		/// 存放病例
+		List<MR> mrList = new ArrayList<MR>();
+		mrList.addAll((Collection<? extends MR>) retMap.get("mrList"));
 		/// 存放mrID
 		List<String> mrIdListStr = new ArrayList<String>();
-		/// 提取將該診斷碼之ID
-		for (MR mr : mrList) {
-
-			mrIdListStr.add(mr.getId().toString());
-		}
-		if (params.getHospitalized_type() == 0) {
-			for (MR r : mrList) {
-				if (r.getDataFormat().equals("20")) {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
-				}
-			}
-		} else if (params.getOutpatient_type() == 0) {
-			for (MR r : mrList) {
-				if (r.getDataFormat().equals("10")) {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
-				}
-			}
-		}
+		mrIdListStr.addAll((Collection<? extends String>) retMap.get("mrIdListStr"));
+		
+		
 
 		/// 1.
 		/// 住院
@@ -79,7 +62,7 @@ public class PtOutpatientFeeServiceTask {
 		List<Map<String, Object>> outpatientListD = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> outpatientListC = new ArrayList<Map<String, Object>>();
 		/// 如果住院
-		if (params.getHospitalized_type() == 1) {
+		if (isHospital) {
 			/// 不含牙科
 			if (params.getNo_dentisit() == 1) {
 				hospitalListD = ipdDao.getValidByNoDentisit(mrIdListStr);
@@ -111,7 +94,7 @@ public class PtOutpatientFeeServiceTask {
 			}
 		}
 		/// 如果門診
-		if (params.getOutpatient_type() == 1) {
+		if (isOutpatien) {
 			/// 不含牙科
 			if (params.getNo_dentisit() == 1) {
 				outpatientListD = opdDao.getValidByNoDentisit(mrIdListStr);
@@ -146,7 +129,7 @@ public class PtOutpatientFeeServiceTask {
 		/// 開立此醫令，處方交付特約藥局調劑或未開處方者，不得申報藥事服務費(調劑費)
 		if (params.getNo_service_charge() == 1) {
 			/// 如果門診
-			if (params.getOutpatient_type() == 1) {
+			if (isOutpatien) {
 				List<Map<String, Object>> opData = mrDao.getIdByOPandPaycode(mrIdListStr, "調劑費");
 				for (Map<String, Object> map : opData) {
 					MR mr = mrDao.getMrByID(map.get("ID").toString());
@@ -157,7 +140,7 @@ public class PtOutpatientFeeServiceTask {
 				}
 			}
 			/// 如果住院
-			if (params.getHospitalized_type() == 1) {
+			if (isHospital) {
 				List<Map<String, Object>> ipData = mrDao.getIdByIPandPaycode(mrIdListStr, "調劑費");
 				for (Map<String, Object> map : ipData) {
 					MR mr = mrDao.getMrByID(map.get("ID").toString());
@@ -173,20 +156,21 @@ public class PtOutpatientFeeServiceTask {
 		/// 限定山地離島區域申報使用，目前測試將離島排除，但正式要等於離島
 		if (params.getLim_out_islands() == 1) {
 			/// 如果門診
-			if (params.getOutpatient_type() == 1) {
+			if (isOutpatien) {
+
 				List<Map<String, Object>> opData = opdDao.getPartNoByOutisLand(params.getNhi_no(), mrIdListStr);
 				if (opData.size() > 0) {
 					for (Map<String, Object> map : opData) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
 						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-   					      String.format("(醫令代碼)%s與支付準則條件:限定離島區域申報使用:單一就醫紀錄，部分負擔代號(PartNO)代號007，方可使用此醫令，疑似有出入",
+								String.format("(醫令代碼)%s與支付準則條件:限定離島區域申報使用:單一就醫紀錄，部分負擔代號(PartNO)代號007，方可使用此醫令，疑似有出入",
 										params.getNhi_no()),
 								true);
 					}
 				}
 			}
 			/// 如果住院
-			if (params.getHospitalized_type() == 1) {
+			if (isHospital) {
 
 				List<Map<String, Object>> ipData = ipdDao.getPartNoByOutisLand(params.getNhi_no(), mrIdListStr);
 				if (ipData.size() > 0) {
@@ -205,9 +189,9 @@ public class PtOutpatientFeeServiceTask {
 		if (params.getLim_holiday() == 1) {
 			for (MR mr : mrList) {
 				Date date = mr.getMrDate();
-				Calendar cal = dateToCalendar(date);
+				Calendar cal = this.dateToCalendar(date);
 				/// 如果住院
-				if (params.getHospitalized_type() == 1) {
+				if (isHospital) {
 					if (mr.getDataFormat().equals("20")) {
 						if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY
 								|| cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
@@ -219,7 +203,7 @@ public class PtOutpatientFeeServiceTask {
 					}
 				}
 				/// 如果門診
-				if (params.getOutpatient_type() == 1) {
+				if (isOutpatien) {
 					if (mr.getDataFormat().equals("10")) {
 						if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY
 								|| cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
@@ -237,44 +221,8 @@ public class PtOutpatientFeeServiceTask {
 		/// 5.
 		/// 不可與___(輸入支付標準代碼)____任一，並存單一就醫紀錄一併申報
 		if (params.getExclude_nhi_no_enable() == 1) {
-			List<String> nhiNoList = params.getLst_nhi_no();
-			int count = 0;
-			/// 如果住院
-			if (params.getHospitalized_type() == 1) {
-				///該支付準則與區間資料
-				for (MR mr : mrList) {
-					///輸入之支付代碼
-					for (String nhiNo : nhiNoList) {
-						///如果code_all有相同
-						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
-							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
-									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:不可與%s任一，並存單一就醫紀錄一併申報，疑似有出入",
-											params.getNhi_no(), nhiNoList.toString()), true);
-							count++;
-						} else if (mr.getCodeAll().contains(nhiNo) && count > 0) {
-							continue;
-						}
-					}
-					count = 0;
-				}
-			}
-			/// 如果門診
-			if (params.getOutpatient_type() == 1) {
-				for (MR mr : mrList) {
-					for (String nhiNo : nhiNoList) {
-						if (mr.getCodeAll().contains(nhiNo) && count == 0) {
-							intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(),
-									params.getNhi_no(), String.format("(醫令代碼)%s與支付準則條件:不可與%s任一，並存單一就醫紀錄一併申報，疑似有出入",
-											params.getNhi_no(), nhiNoList.toString()),
-									true);
-							count++;
-						} else if (mr.getCodeAll().contains(nhiNo) && count > 0) {
-							continue;
-						}
-					}
-					count = 0;
-				}
-			}
+
+			this.Exclude_nhi_no_enable(params.getNhi_no(), params.getLst_nhi_no(), isOutpatien, isHospital, mrList);
 		}
 
 		/// 6.
@@ -282,7 +230,7 @@ public class PtOutpatientFeeServiceTask {
 		if (params.getLim_age_enable() == 1) {
 			String ageStr = "";
 			/// 如果住院
-			if (params.getHospitalized_type() == 1) {
+			if (isHospital) {
 
 				List<IP_D> ipData = ipdDao.getDataListByMrId(mrIdListStr);
 				if (ipData.size() > 0) {
@@ -339,7 +287,7 @@ public class PtOutpatientFeeServiceTask {
 					}
 				}
 			}
-			if (params.getOutpatient_type() == 1) {
+			if (isOutpatien) {
 				List<OP_D> opData = opdDao.getDataListByMrId(mrIdListStr);
 				if (opData.size() > 0) {
 					for (OP_D model : opData) {
@@ -355,7 +303,7 @@ public class PtOutpatientFeeServiceTask {
 						Date currentDate = new Date();
 						String rocStr = sdf2.format(d);
 						String currentStr = sdf2.format(currentDate);
-						int diffY = yearsBetween(rocStr, currentStr);
+						int diffY = this.yearsBetween(rocStr, currentStr);
 
 						switch (params.getLim_age_type()) {
 						case 1:
@@ -400,34 +348,8 @@ public class PtOutpatientFeeServiceTask {
 		/// 7.
 		/// 限定特定科別應用
 		if (params.getLim_division_enable() == 1) {
-			List<String> funList = params.getLst_division();
-			List<String> funcAppend = new ArrayList<String>();
-
-			for (String func : funList) {
-				funcAppend.add(func);
-			}
-
-			List<MR> mrDataList = mrDao.getIntelligentMrByFuncName(mrIdListStr, funcAppend);
-			/// 如果有非指定funcName資料
-			if (mrDataList.size() > 0) {
-				for (MR mr : mrDataList) {
-					/// 如果門診
-					if (params.getOutpatient_type() == 1 && mr.getDataFormat().equals("10")) {
-
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend),
-								true);
-					}
-					/// 如果住院
-					if (params.getHospitalized_type() == 1 && mr.getDataFormat().equals("20")) {
-						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-								String.format("(醫令代碼)%s與支付準則條件:限定特定科%s別應用，疑似有出入", params.getNhi_no(), funcAppend),
-								true);
-
-					}
-
-				}
-			}
+			
+			this.Lim_division_enable(params.getNhi_no(), params.getLst_division(), mrIdListStr, isOutpatien, isHospital);
 
 		}
 
@@ -435,7 +357,7 @@ public class PtOutpatientFeeServiceTask {
 		/// 限定單一醫師、護理人員、藥師執行此醫令單月上限
 		if (params.getLim_max_enable() == 1) {
 			/// 如果門診
-			if (params.getOutpatient_type() == 1) {
+			if (isOutpatien) {
 				List<String> mrStrAppendList = new ArrayList<String>();
 				for (MR mr : mrList) {
 					/// 取出門診資料病例id
@@ -487,7 +409,7 @@ public class PtOutpatientFeeServiceTask {
 
 			}
 			/// 如果住院
-			if (params.getHospitalized_type() == 1) {
+			if (isHospital) {
 
 				List<String> mrStrAppendList = new ArrayList<String>();
 				for (MR mr : mrList) {
@@ -535,56 +457,5 @@ public class PtOutpatientFeeServiceTask {
 			}
 		}
 
-	}
-
-	/**
-	 * 帶入日期並減一年
-	 * 
-	 * @param date
-	 * @return
-	 * @throws ParseException
-	 */
-	private String minusYear(String date) throws ParseException {
-		String result = "";
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-		Date d = sdf.parse(date);
-		Calendar currentDate = Calendar.getInstance();
-		currentDate.setTime(d);
-		currentDate.add(Calendar.YEAR, -1);
-		Date d2 = currentDate.getTime();
-		result = sdf.format(d2);
-
-		return result;
-	}
-
-	/**
-	 * 計算兩個時間相差多少個年
-	 * 
-	 * @param early
-	 * @param late
-	 * @return
-	 * @throws ParseException
-	 */
-	private int yearsBetween(String start, String end) throws ParseException {
-		Calendar startDate = Calendar.getInstance();
-		Calendar endDate = Calendar.getInstance();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-		startDate.setTime(sdf.parse(start));
-		endDate.setTime(sdf.parse(end));
-		return (endDate.get(Calendar.YEAR) - startDate.get(Calendar.YEAR));
-	}
-
-	// Convert Date to Calendar
-	private Calendar dateToCalendar(Date date) {
-
-		Calendar calendar = Calendar.getInstance();
-		calendar.setTime(date);
-		return calendar;
-
-	}
-
-	// Convert Calendar to Date
-	private Date calendarToDate(Calendar calendar) {
-		return calendar.getTime();
 	}
 }
