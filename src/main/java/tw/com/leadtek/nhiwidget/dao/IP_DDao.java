@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 
 public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExecutor<IP_D> {
 
@@ -26,6 +27,10 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   @Query(value = "SELECT * FROM IP_D WHERE ID IN (SELECT D_ID FROM MR WHERE DATA_FORMAT = ?1 AND MR_DATE BETWEEN ?2 AND ?3) ", nativeQuery = true)
   public List<IP_D> findByIDFromMR(String dataFormat, Date sDate, Date eDate);
+  
+  @Query(value = "SELECT * FROM IP_D WHERE MR_ID IN (SELECT ID FROM MR WHERE DATA_FORMAT = '20' "
+      + "AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) ", nativeQuery = true)
+  public List<IP_D> findByIDFromMR(java.util.Date sDate, java.util.Date eDate);
   
   // for Test
   @Query(value = "SELECT DISTINCT (PRSN_ID) , FUNC_TYPE "
@@ -78,7 +83,8 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @return [科別代碼, 部分負擔金額, 件數]
    */
   @Query(value = "SELECT IP_D.FUNC_TYPE, SUM(IP_D.OWN_EXPENSE), COUNT(1) FROM MR, IP_D " + 
-      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_D.MR_ID = MR.ID GROUP BY IP_D.FUNC_TYPE", nativeQuery = true) 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_D.MR_ID = MR.ID AND IP_D.OWN_EXPENSE > 0 "
+      + "GROUP BY IP_D.FUNC_TYPE", nativeQuery = true) 
   public List<Object[]> findOwnExpenseGroupByFuncType(Date sdate, Date edate);
   
   /**
@@ -219,7 +225,9 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   		+ "where IPDCOUNT > ?2 or IPPCOUNT > ?2", nativeQuery = true)
   public List<Map<String, Object>> getPerMonthPrmanCount(List<String> mrid, int limit);
   
-  
-  
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE IP_D SET FUNC_TYPE=?1 WHERE ID=?2", nativeQuery = true)
+  public void updateFuncTypeById(String funcType, Long id);  
   
 }

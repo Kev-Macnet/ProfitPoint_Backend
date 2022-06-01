@@ -4,6 +4,7 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import java.text.DecimalFormat;
+import java.util.Calendar;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -73,6 +74,7 @@ public class UserController extends BaseController {
       @ApiParam(value = "帳號內容") @RequestBody(required = true) UserRequest request) {
     
     if (userService.getUserCount() > 0 ) {
+      // 存在登入帳號，檢查是否有登入，反之則因系統剛建立，尚無帳號，因此不檢查有無登入
       UserDetailsImpl loginUser = getUserDetails();
       if (loginUser == null) {
         BaseResponse result = new BaseResponse();
@@ -250,9 +252,29 @@ public class UserController extends BaseController {
       jwt.setMessage("帳號已停用");
       return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
     }
+    if (parametersService.getParameter("HOSP_EXPIRE") != null) {
+      String expireDate = userService.checkExpire(parametersService.getParameter("HOSP_EXPIRE"));
+      if (expireDate != null) {
+        USER leadtek = userService.findUser("leadtek");
+        Calendar cal = Calendar.getInstance();
+        long nowTime = cal.getTimeInMillis();
+        cal.setTime(leadtek.getCreateAt());
+        cal.add(Calendar.DAY_OF_YEAR, Integer.parseInt(expireDate));
+        if (nowTime > cal.getTimeInMillis()) {
+          JwtResponse jwt = new JwtResponse();
+          jwt.setResult("error");
+          if (expireDate.length() > 0) {
+            jwt.setMessage("PrpfitPoint試用日期(" + expireDate + ")已期滿，請與您的業務窗口聯繫，或洽麗臺科技由專人為您服務");
+          } else {
+            jwt.setMessage("PrpfitPoint試用日期已期滿，請與您的業務窗口聯繫，或洽麗臺科技由專人為您服務");
+          }
+          return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
+        }
+      }
+    }
     SecurityContextHolder.getContext().setAuthentication(authentication);
     String jwt = jwtUtils.generateJwtToken(authentication);
-    logService.setLogin(jwt);
+    logService.setLogin(loginRequest.getUsername(), jwt);
     UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
     userService.loginLog(loginRequest.getUsername(), jwt);
     // List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())

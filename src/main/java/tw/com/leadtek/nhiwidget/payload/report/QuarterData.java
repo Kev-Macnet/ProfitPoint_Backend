@@ -15,13 +15,13 @@ public class QuarterData implements Serializable {
   @ApiModelProperty(value = "季度名稱，如 2021/Q1", required = true)
   protected String name;
   
-  @ApiModelProperty(value = "原始總點數", required = true)
+  @ApiModelProperty(value = "原始總點數/原始實績總點數，部分負擔+申請點數+自費", required = true)
   protected Long original;
   
-  @ApiModelProperty(value = "實際總點數", required = true)
+  @ApiModelProperty(value = "實際總點數/申報實績總點數，部分負擔+申請點數", required = true)
   protected Long actual;
   
-  @ApiModelProperty(value = "分配總點數", required = true)
+  @ApiModelProperty(value = "分配總點數/分配實績總點數", required = true)
   protected Long assigned;
   
   @ApiModelProperty(value = "超額總點數", required = true)

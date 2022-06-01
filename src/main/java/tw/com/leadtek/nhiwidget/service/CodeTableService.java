@@ -9,9 +9,11 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
+import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.model.CodeBase;
 import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.tools.StringUtility;
 
 /**
@@ -27,6 +29,9 @@ public class CodeTableService {
   
   @Autowired
   private CODE_TABLEDao ctDao;
+  
+  @Autowired
+  private PAY_CODEDao payCodeDao;
   
   @Autowired
   private RedisService redis;
@@ -126,10 +131,16 @@ public class CodeTableService {
     }
     String c = code.trim();
     if (code.length() == 0) {
-      return null;
+      return null; 
     }
     CODE_TABLE ct = cts.getCodeTable(cat, c);
     if (ct == null) {
+      if ("ORDER".equals(cat) && code.length() == 10) {
+        List<PAY_CODE> list = cts.getPayCodeDao().findByCode(c);
+        if (list != null && list.size() > 0) {
+          return code + "-" + list.get(0).getName();
+        }
+      }
       return code;
     }
     return code + "-" + ct.getDescChi();
@@ -197,5 +208,9 @@ public class CodeTableService {
     String[] result = new String[1];
     result[0] = getCodeByDesc("FUNC_TYPE", funcTypec);
     return result;
+  }
+  
+  public PAY_CODEDao getPayCodeDao() {
+    return payCodeDao;
   }
 }

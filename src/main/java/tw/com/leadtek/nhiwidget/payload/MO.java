@@ -591,7 +591,7 @@ public class MO implements Serializable {
     this.medTypeCode = opp.getMedType();
     this.orderType = CodeTableService.getDesc(cts, "ORDER_TYPE", opp.getOrderType());
     this.orderTypeCode = opp.getOrderType();
-    this.drugNo = opp.getDrugNo();
+    this.drugNo = CodeTableService.getDesc(cts, "ORDER", opp.getDrugNo());
     this.drugUse = opp.getDrugUse();
     this.totalQ = opp.getTotalQ();
     this.unitP = opp.getUnitP();

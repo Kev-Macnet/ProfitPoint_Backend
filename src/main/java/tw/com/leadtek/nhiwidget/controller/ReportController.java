@@ -188,6 +188,7 @@ public class ReportController extends BaseController {
     Calendar cal = Calendar.getInstance();
     cal.set(Calendar.YEAR, Integer.parseInt(year));
     cal.set(Calendar.WEEK_OF_YEAR, Integer.parseInt(week));
+    // 指定週的最後一天
     cal.set(Calendar.DAY_OF_WEEK, Calendar.SATURDAY);
 
     return ResponseEntity.ok(reportService.getAchievementWeekly(cal));

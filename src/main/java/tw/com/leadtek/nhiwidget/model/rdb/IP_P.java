@@ -12,6 +12,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -313,6 +314,41 @@ V:虛醫令,交付調劑之藥品空針
   @Column(name = "PAY_CODE_TYPE", nullable = true)
   @JsonIgnore
   private String payCodeType;
+  
+  /**
+   * 醫師姓名
+   */
+  @Column(name = "PRSN_NAME", nullable = true)
+  @JsonIgnore
+  private String prsnName;
+  
+  /**
+   * 主診斷
+   */
+  @Column(name = "ICD_CM_1")
+  @JsonIgnore
+  private String icdCm1;
+  
+  /**
+   * 醫師姓名
+   */
+  @Column(name = "ROC_ID", nullable = true)
+  @JsonIgnore
+  private String rocid;
+  
+  /**
+   * 病患姓名
+   */
+  @JsonIgnore
+  @Transient
+  private String name;
+  
+  /**
+   * 病歷號碼
+   */
+  @JsonIgnore
+  @Transient
+  private String inhMr;
 
   /**
    * 序號
@@ -768,5 +804,44 @@ V:虛醫令,交付調劑之藥品空針
     this.payCodeType = payCodeType;
   }
 
+  public String getPrsnName() {
+    return prsnName;
+  }
+
+  public void setPrsnName(String prsnName) {
+    this.prsnName = prsnName;
+  }
+
+  public String getIcdCm1() {
+    return icdCm1;
+  }
+
+  public void setIcdCm1(String icdCm1) {
+    this.icdCm1 = icdCm1;
+  }
+
+  public String getRocid() {
+    return rocid;
+  }
+
+  public void setRocid(String rocid) {
+    this.rocid = rocid;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getInhMr() {
+    return inhMr;
+  }
+
+  public void setInhMr(String inhMr) {
+    this.inhMr = inhMr;
+  }
   
 }

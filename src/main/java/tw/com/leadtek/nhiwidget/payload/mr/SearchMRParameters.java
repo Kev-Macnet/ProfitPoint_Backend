@@ -768,17 +768,17 @@ public class SearchMRParameters extends HomepageParameters {
   
   public void setICD(Boolean notICD, String icdAll, String icdCMMajor, String icdCMSec, String icdPCS) {
     this.notICD = notICD;
-    if (icdAll != null) {
-      this.icdAll = "%," + icdAll;
+    if (icdAll != null && icdAll.trim().length() > 0) {
+      this.icdAll = "%," + icdAll.trim();
     }
-    if (icdCMMajor != null) {
-      this.icdCMMajor = icdCMMajor;
+    if (icdCMMajor != null && icdCMMajor.trim().length() > 0) {
+      this.icdCMMajor = icdCMMajor.trim();
     }
-    if (icdCMSec != null) {
-      this.icdCMSec = "%," + icdCMSec;  
+    if (icdCMSec != null && icdCMSec.trim().length() > 0) {
+      this.icdCMSec = "%," + icdCMSec.trim();  
     }
-    if (icdPCS != null) {
-      this.icdPCS = "%," + icdPCS;
+    if (icdPCS != null && icdPCS.trim().length() > 0) {
+      this.icdPCS = "%," + icdPCS.trim();
     }
   }
   
@@ -786,7 +786,7 @@ public class SearchMRParameters extends HomepageParameters {
       String inhCodeDrugUse) {
     this.notOrderCode = notOrderCode;
     if (orderCode != null) {
-      this.orderCode = "%," + orderCode;
+      this.orderCode = "%," + orderCode.trim().toUpperCase();
     }
     this.drugUse = drugUse;
     this.inhCode = inhCode;

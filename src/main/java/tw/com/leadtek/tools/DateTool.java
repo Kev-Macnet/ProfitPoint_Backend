@@ -24,6 +24,12 @@ public class DateTool {
    * @return ex:1100223
    */
   public static String convertToChineseYear(String date) {
+    if (date == null) {
+      return null;
+    }
+    if (date.length() == 7) {
+      return date;
+    }
     String year = date.substring(0, 4);
     int chineseYear = Integer.parseInt(year) - 1911;
     return String.valueOf(chineseYear) + date.substring(4);

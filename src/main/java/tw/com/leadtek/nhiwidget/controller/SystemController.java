@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -71,7 +72,11 @@ import tw.com.leadtek.tools.DateTool;
 @RequestMapping(value = "/sys", produces = "application/json; charset=utf-8")
 public class SystemController extends BaseController {
 
-  private final static String INIT_FILE_PARAMETERS = "PARAMETERS.xlsx";
+  private final static String INIT_FILE_PARAMETERS = "PARAMETER";
+  
+  private final static String INIT_FILE_PAY_CODE = "醫療服務給付項目";
+  
+  private final static String INIT_FILE_CODE_TABLE = "CODE_TABLE";
   
   @Autowired
   private DrgCalService drgCalService;
@@ -753,6 +758,8 @@ public class SystemController extends BaseController {
       is.recalculateAICostThread();
     } else if ("IpDays".equals(name)) {
       is.recalculateAIIpDaysThread();
+    } else if ("DrugDiff".equals(name)) {
+      is.calculateAIOrderDrug(param);
     }
     return returnAPIResult(null);
   }
@@ -842,10 +849,18 @@ public class SystemController extends BaseController {
       String filepath =  (System.getProperty("os.name").toLowerCase().startsWith("windows")) ? dirPath + "\\" + file.getOriginalFilename() :
         dirPath + "/" + file.getOriginalFilename();
       File saveFile = new File(filepath);
-      file.transferTo(saveFile);
+      try {
+        file.transferTo(saveFile);
+      } catch (IllegalStateException e) {
+        e.printStackTrace();
+      }
       if (saveFile.getName().indexOf(INIT_FILE_PARAMETERS) > -1) {
         initial.importParametersFromExcel(saveFile, "參數設定", 1);
-      } else if (saveFile.getName().endsWith(".xls")) {
+      } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE) > -1) {
+        initial.importPayCode(saveFile, null, 0);
+      } else if (saveFile.getName().indexOf(INIT_FILE_CODE_TABLE) > -1) {
+        initial.importCODE_TABLEToRDB(saveFile, "CODE_TABLE");
+      }  else if (saveFile.getName().endsWith(".xls")) {
         HSSFWorkbook workbook = null;
         if (saveFile.getName().toUpperCase().indexOf("OPD") > -1) {
           workbook = new HSSFWorkbook(new FileInputStream(saveFile));
@@ -871,6 +886,9 @@ public class SystemController extends BaseController {
         if (workbook != null) {
           workbook.close();
         }
+      } else if (saveFile.getName().endsWith(".xlsx")) {
+        XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(saveFile));
+        xmlService.readTheseSheet(workbook.getSheetAt(0));
       } else {
         systemService.importFileThread(saveFile);
       }

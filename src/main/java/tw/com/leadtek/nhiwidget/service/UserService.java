@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.service;
 
+import java.security.Key;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,6 +14,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +34,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.USER_DEPARTMENT;
 import tw.com.leadtek.nhiwidget.payload.UserRequest;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
+import tw.com.leadtek.tools.DateTool;
 
 /**
  * 處理用戶帳號、部門及權限
@@ -41,6 +46,10 @@ import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 public class UserService {
 
   private Logger logger = LogManager.getLogger();
+  
+  private final static String ALGORITHM = "AES";
+  
+  private final static Key KEY = new SecretKeySpec(new byte[]{'L', 'E', 'A', 'D', 'T', 'E', 'K', 'P', 'R', 'O', 'F', 'I', 'T', 'P', 'O', 'I'}, ALGORITHM);
 
   public final static String USER_PREFIX = "USER:";
 
@@ -96,7 +105,26 @@ public class UserService {
     }
     USER user = findUser(ur.getUsername());
     if (user != null) {
-      return null;
+      System.out.println("find user "+ user.getUsername());
+      List<USER_DEPARTMENT> udList = userDepartmentDao.findByUserIdOrderByDepartmentId(user.getId());
+        for (String department : departments) {
+          DEPARTMENT dep = findDepartment(department);
+          boolean isNewDepartment = true;
+          for (USER_DEPARTMENT ud : udList) {
+            if (dep.getId().longValue() == ud.getDepartmentId()) {
+              isNewDepartment = false;
+              break;
+            }
+          }
+          if (isNewDepartment) {
+            System.out.println("add department " + department);
+            USER_DEPARTMENT ud = new USER_DEPARTMENT();
+            ud.setDepartmentId(dep.getId());
+            ud.setUserId(user.getId());
+            userDepartmentDao.save(ud);
+          }
+        }
+      return user;
     }
     if (ur.getDisplayName() == null) {
       ur.setDisplayName(ur.getUsername());
@@ -143,6 +171,11 @@ public class UserService {
     return null;
   }
 
+  /**
+   * 儲存使用者部門
+   * @param userId
+   * @param departments String[] 部門名稱
+   */
   public void saveUserDepartment(Long userId, String[] departments) {
     if (departments == null || departments.length == 0 || userId == null) {
       return;
@@ -711,5 +744,64 @@ public class UserService {
   
   public long getUserCount() {
     return userDao.count();
+  }
+  
+  public String encrypt(String plainText) {
+    String encryptedValue = null;
+
+    try {
+      Cipher chiper = Cipher.getInstance(ALGORITHM);
+      chiper.init(Cipher.ENCRYPT_MODE, KEY);
+      byte[] encVal = chiper.doFinal(plainText.getBytes());
+      encryptedValue = new String(Base64.encodeBase64(encVal));
+    } catch (Exception exception) {
+      exception.printStackTrace();
+    }
+
+    return encryptedValue;
+  }
+
+  public String decrypt(String encryptedText) {
+    String decryptedValue = null;
+    try {
+      Cipher chiper = Cipher.getInstance(ALGORITHM);
+      chiper.init(Cipher.DECRYPT_MODE, KEY);
+      byte[] decordedValue = Base64.decodeBase64(encryptedText.getBytes());
+      byte[] decValue = chiper.doFinal(decordedValue);
+      decryptedValue = new String(decValue);
+
+    } catch (Exception exception) {
+      exception.printStackTrace();
+    }
+    return decryptedValue;
+  }
+
+  /**
+   * 檢查使用期限是否到期
+   * @param encoded
+   * @return null:未過期， != null 到期，回傳起訖日
+   */
+  public String checkExpire(String encoded) {
+    if (encoded == null) {
+      return "";
+    }
+    String decoded = decrypt(encoded);
+    if (decoded == null) {
+      return "";
+    }
+    USER leadtek =  findUser("leadtek");
+    if (leadtek != null) {
+      if (System.currentTimeMillis() > leadtek.getCreateAt().getTime() + Long.parseLong(decoded) * 86400000) {
+        // 到期
+        SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+        StringBuffer sb = new StringBuffer();
+        sb.append(sdf.format(leadtek.getCreateAt()));
+        sb.append(" - ");
+        Date lastDate = new Date(leadtek.getCreateAt().getTime() + Long.parseLong(decoded) * 86400000);
+        sb.append(sdf.format(lastDate));
+        return sb.toString();
+      }
+    }
+    return null;
   }
 }

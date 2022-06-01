@@ -106,4 +106,6 @@ public class XMLConstant {
     MAP_APPL_TYPE.put(APPL_TYPE_APPLY_FOR_REPLY, "申復");
     
   }
+  
+  public final static int BATCH = 1000;
 }

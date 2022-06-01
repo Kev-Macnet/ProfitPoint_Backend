@@ -253,7 +253,6 @@ public class GenerateSampleXML {
     do {
       int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
       reportService.calculateDRGMonthly(String.valueOf(chineseYM));
-      System.out.println(chineseYM);
       calMin.add(Calendar.MONTH, 1);
     } while (calMin.before(calMax));
   }

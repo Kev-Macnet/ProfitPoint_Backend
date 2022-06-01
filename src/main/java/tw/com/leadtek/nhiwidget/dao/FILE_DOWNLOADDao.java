@@ -17,4 +17,6 @@ public interface FILE_DOWNLOADDao extends JpaRepository<FILE_DOWNLOAD, Long> {
   public List<FILE_DOWNLOAD> findAllByProgressLessThan(int progress);
   
   public List<FILE_DOWNLOAD> findAllByOrderByUpdateAtDesc();
+  
+  public List<FILE_DOWNLOAD> findAllByUserIdOrderByUpdateAtDesc(Long userId);
 }

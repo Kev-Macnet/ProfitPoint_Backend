@@ -298,6 +298,13 @@ V:虛醫令,交付調劑之藥品空針
   private String payCodeType;
   
   /**
+   * 領藥號
+   */
+  @Column(name = "RECEIVE_NO")
+  @JsonIgnore
+  private String receiveNo;
+  
+  /**
    * 序號
    */
   public Long getId() {
@@ -722,5 +729,13 @@ V:虛醫令,交付調劑之藥品空針
   public void setPayCodeType(String payCodeType) {
     this.payCodeType = payCodeType;
   }
-  
+
+  public String getReceiveNo() {
+    return receiveNo;
+  }
+
+  public void setReceiveNo(String receiveNo) {
+    this.receiveNo = receiveNo;
+  }
+ 
 }

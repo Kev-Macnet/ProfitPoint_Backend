@@ -107,6 +107,9 @@ public class INTELLIGENT {
   
   @Column(name = "PRSN_NAME", length = 30)
   private String prsnName;
+  
+  @Column(name = "PRSN_ID", length = 10)
+  private String prsnId;
 
   /**
    * ICD診斷碼和處置碼，用,分隔
@@ -413,6 +416,14 @@ public class INTELLIGENT {
 
   public void setApplYm(String applYm) {
     this.applYm = applYm;
+  }
+
+  public String getPrsnId() {
+    return prsnId;
+  }
+
+  public void setPrsnId(String prsnId) {
+    this.prsnId = prsnId;
   }
   
 }

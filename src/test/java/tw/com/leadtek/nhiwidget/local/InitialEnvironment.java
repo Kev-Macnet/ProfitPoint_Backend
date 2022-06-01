@@ -69,7 +69,7 @@ public class InitialEnvironment {
   public final static String SERVER_IP = "localhost";
   
   // 最後要有 \\
-  private final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Install\\";
+  private final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\高雄霖園醫院\\";
   
   @Autowired
   private PARAMETERSDao pDao;
@@ -110,14 +110,14 @@ public class InitialEnvironment {
    */
   private long maxId = 0;
 
-  //@Ignore
+  @Ignore
   @Test
   public void importData() {
     if(userDao.count() ==0) {
       initialLeadtek();
     }
-    importFromExcel(FILE_PATH + "PARAMETERS.xlsx", "參數設定", 1);
-    importCODE_TABLEToRDB(FILE_PATH + "CODE_TABLE.xlsx");
+    //importFromExcel(FILE_PATH + "PARAMETERS.xlsx", "參數設定", 1);
+    importCODE_TABLEToRDB(FILE_PATH + "CODE_TABLE_霖園醫院.xlsx");
     //addDepartmentFile();
     //addUserFile();
   }
@@ -419,13 +419,13 @@ public class InitialEnvironment {
     userService.newUser(user);
   }
   
-  @Ignore
+  //@Ignore
   @Test
   public void importPayCode() {
     maxId = getMaxId() + 1;
     System.out.println("maxid=" + maxId);
-    importExcelToRedisNew("ICD10", FILE_PATH + "醫療服務給付項目(1100701執行).xlsx", "ORDER");
-    updateCodeTypeCode();
+    importExcelToRedisNew("ICD10", FILE_PATH + "醫療服務給付項目(1110518生效).xlsx", "ORDER");
+    //updateCodeTypeCode();
   }
   
   /**
@@ -495,7 +495,6 @@ public class InitialEnvironment {
     // UPDATE IP_P SET PAY_CODE_TYPE = '20' WHERE PAY_CODE_TYPE IS NULL 
     ippDao.updatePayCodeType20();
   }
-
   
   private int getMaxId() {
     HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
@@ -512,14 +511,16 @@ public class InitialEnvironment {
   
   public void importExcelToRedisNew(String collectionName, String filename, String category) {
     ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
+    // 取得目前已存在 redis 和 DB 中的支付標準代碼
     HashMap<String, String> keys = getRedisId(collectionName + "-data", category);
     System.out.println("keys size=" + keys.size());
-    for (String string : keys.keySet()) {
-      System.out.println(string +":" + keys.get(string));
-    }
-    if (keys.size() > 0) {
-      return;
-    }
+    
+//    for (String string : keys.keySet()) {
+//      System.out.println(string +":" + keys.get(string));
+//    }
+//    if (keys.size() > 0) {
+//      return;
+//    }
     File file = new File(filename);
     WriteToRedisThreadPool wtrPool = new WriteToRedisThreadPool();
     try {
@@ -627,7 +628,7 @@ public class InitialEnvironment {
   }
 
   /**
-   * 取得 key 此 hashset 裡面 category為cat的code/id對應表
+   * 取得 key 此 hashmap 裡面 category為cat的code/id對應表
    * 
    * @param key
    * @param cat
@@ -688,11 +689,12 @@ public class InitialEnvironment {
     }
 
     // addCode1(collectionName, code);
-    OrderCode oc = new OrderCode(++maxId, code, descTw, descEn);
+    OrderCode oc = new OrderCode(maxId, code, descTw, descEn);
 
     oc.setP((int) row.getCell(1).getNumericCellValue());
     oc.setsDate(getDateFromCell(row.getCell(2), sdf, df));
     if (row.getCell(22) != null) {
+      // 22:刪除日期
       oc.seteDate(getDateFromCell(row.getCell(22), sdf, df));
     } else {
       oc.seteDate(getDateFromCell(row.getCell(3), sdf, df));

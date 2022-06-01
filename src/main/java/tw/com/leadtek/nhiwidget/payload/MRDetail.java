@@ -1425,11 +1425,13 @@ public class MRDetail extends MR {
       System.arraycopy(pcs, 1, all, startIndex, pcs.length - 1);
     }
     all[size - 1] = mr.getIcdcm1();
-    Arrays.sort(all);
-    for (String string : all) {
-      if (string != null && string.length() > 0) {
-        sb.append(string);
-        sb.append(",");
+    if (all.length > 1) {
+      Arrays.sort(all);
+      for (String string : all) {
+        if (string != null && string.length() > 0) {
+          sb.append(string);
+          sb.append(",");
+        }
       }
     }
     if (sb.length() > 1) {

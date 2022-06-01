@@ -608,7 +608,8 @@ public class GenerateSqlByClass {
     //testSub();
     //gen.testNormalDistribution();
     //testPercent();
-    testDateTool();
+   // testDateTool();
+    testSystemInformation();
     // gen.generateSQL();
 
     // 改用 generateClassByDB
@@ -710,5 +711,9 @@ public class GenerateSqlByClass {
     System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
     s = "2021/10/8 AM 09:32:00";
     System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
+  }
+  
+  public static void testSystemInformation() {
+    System.out.println("PROCESSOR_IDENTIFIER=" + System.getenv("PROCESSOR_IDENTIFIER"));
   }
 }

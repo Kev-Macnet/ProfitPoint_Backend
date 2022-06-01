@@ -937,6 +937,20 @@ public class IP_D {
   @JsonIgnore
   private Integer noAppl;
   
+  /**
+   * 試辦計畫
+   */
+  @Column(name = "PRSN_NAME")
+  @JsonIgnore
+  private String prsnName;
+  
+  /**
+   * 病床號
+   */
+  @Column(name = "BED_NO")
+  @JsonIgnore
+  private String bedNo;
+  
   @JsonProperty("pdata")
   @JacksonXmlElementWrapper(useWrapping=false)
   @Transient // 當做 table 時跳過此欄位
@@ -2523,5 +2537,21 @@ public class IP_D {
   public void setNoAppl(Integer noAppl) {
     this.noAppl = noAppl;
   }
-  
+
+  public String getPrsnName() {
+    return prsnName;
+  }
+
+  public void setPrsnName(String prsnName) {
+    this.prsnName = prsnName;
+  }
+
+  public String getBedNo() {
+    return bedNo;
+  }
+
+  public void setBedNo(String bedNo) {
+    this.bedNo = bedNo;
+  }
+ 
 }

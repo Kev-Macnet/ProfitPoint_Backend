@@ -30,6 +30,7 @@ import javax.persistence.criteria.Root;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -102,9 +103,27 @@ public class SystemService {
 
   public final static String FILE_PATH = "download";
   
+  /**
+   * 
+   */
   public final static String MENU_VIOLATE = "/violate";
   
   public final static String MENU_PILOT_PROJECT = "/pilotProject";
+  
+  /**
+   * 臨床路徑差異 – AI提示
+   */
+  public final static String MENU_CLINCAL = "/intelligent?menu=clincal";
+ 
+  /**
+   * 疑似職傷與異常就診紀錄 – AI提示
+   */
+  public final static String MENU_SUSPECTED = "/intelligent?menu=suspected";
+  
+  /**
+   * DRG申報建議 – AI提示
+   */
+  public final static String MENU_DRG_SUGGESTION = "/intelligent?menu=drgSuggestion";
 
   public final static String MENU_FILE_MANAGEMENT = "/fileManagement";
   
@@ -882,6 +901,15 @@ public class SystemService {
     if ("0".equals(parametersService.getParameter(MENU_VIOLATE))) {
       result.setViolate(false);
     }
+    if ("0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+      result.setClinicalDiff(false);
+    }
+    if ("0".equals(parametersService.getParameter(MENU_SUSPECTED))) {
+      result.setSuspected(false);
+    }
+    if ("0".equals(parametersService.getParameter(MENU_DRG_SUGGESTION))) {
+      result.setDrgSuggestion(false);
+    }
     return result;
   }
 
@@ -978,11 +1006,12 @@ public class SystemService {
           if ((payload.getHighRisk().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getHighRisk().booleanValue() && "0".equals(p.getValue()))) {
             continue;
+            
           }
           p.setValue(payload.getHighRisk().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.HIGH_RISK.value(), payload.getHighRisk());
         }
-      } else if (p.getName().equals("CLINICAL_DIFF")) {
+      } else if (p.getName().equals("CLINICAL_DIFF") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getClinicalDiff() != null) {
           if ((payload.getClinicalDiff().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getClinicalDiff().booleanValue() && "0".equals(p.getValue()))) {
@@ -994,7 +1023,7 @@ public class SystemService {
           needProcess.put(INTELLIGENT_REASON.ORDER_DRUG.value(), payload.getClinicalDiff());
           needProcess.put(INTELLIGENT_REASON.IP_DAYS.value(), payload.getClinicalDiff());
         }
-      } else if (p.getName().equals("COST_DIFF_UL")) {
+      } else if (p.getName().equals("COST_DIFF_UL") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getCostDiffUL() != null) {
           if (payload.getCostDiffUL().equals(p.getValue())) {
             continue;
@@ -1002,7 +1031,7 @@ public class SystemService {
           p.setValue(payload.getCostDiffUL());
           needProcess.put(INTELLIGENT_REASON.COST_DIFF.value(), true);
         }
-      } else if (p.getName().equals("COST_DIFF_LL")) {
+      } else if (p.getName().equals("COST_DIFF_LL") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getCostDiffLL() != null) {
           if (payload.getCostDiffLL().equals(p.getValue())) {
             continue;
@@ -1010,7 +1039,7 @@ public class SystemService {
           p.setValue(payload.getCostDiffLL());
           needProcess.put(INTELLIGENT_REASON.COST_DIFF.value(), true);
         }
-      } else if (p.getName().equals("ORDER_DIFF_UL")) {
+      } else if (p.getName().equals("ORDER_DIFF_UL") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getOrderUL() != null) {
           if (payload.getOrderUL().equals(p.getValue())) {
             continue;
@@ -1018,7 +1047,7 @@ public class SystemService {
           p.setValue(payload.getOrderUL());
           needProcess.put(INTELLIGENT_REASON.ORDER_DIFF.value(), true);
         }
-      } else if (p.getName().equals("ORDER_DIFF_LL")) {
+      } else if (p.getName().equals("ORDER_DIFF_LL") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getOrderLL() != null) {
           if (payload.getOrderLL().equals(p.getValue())) {
             continue;
@@ -1026,7 +1055,7 @@ public class SystemService {
           p.setValue(payload.getOrderLL());
           needProcess.put(INTELLIGENT_REASON.ORDER_DIFF.value(), true);
         }
-      } else if (p.getName().equals("IP_DAYS")) {
+      } else if (p.getName().equals("IP_DAYS") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getIpDays() != null) {
           if (payload.getIpDays().intValue() == Integer.parseInt(p.getValue())) {
             continue;
@@ -1035,7 +1064,7 @@ public class SystemService {
           p.setValue(payload.getIpDays().toString());
           needProcess.put(INTELLIGENT_REASON.IP_DAYS.value(), true);
         }
-      } else if (p.getName().equals("SUSPECTED")) {
+      } else if (p.getName().equals("SUSPECTED") && !"0".equals(parametersService.getParameter(MENU_SUSPECTED))) {
         if (payload.getSuspected() != null) {
           if ((payload.getSuspected().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getSuspected().booleanValue() && "0".equals(p.getValue()))) {
@@ -1044,7 +1073,7 @@ public class SystemService {
           p.setValue(payload.getSuspected().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.SUSPECTED.value(), payload.getSuspected());
         }
-      } else if (p.getName().equals("DRG_SUGGESTION")) {
+      } else if (p.getName().equals("DRG_SUGGESTION") && !"0".equals(parametersService.getParameter(MENU_DRG_SUGGESTION))) {
         if (payload.getDrgSuggestion() != null) {
           if ((payload.getDrgSuggestion().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getDrgSuggestion().booleanValue() && "0".equals(p.getValue()))) {
@@ -1482,4 +1511,60 @@ public class SystemService {
     thread.start();
   }
   
+  public void refreshMRFromFolder(File[] files) {
+    List<FILE_DOWNLOAD> oldFiles = downloadDao.findAllByUserIdOrderByUpdateAtDesc(0L);
+    for (File file : files) {
+      if (!file.getName().endsWith(".xlsx") || file.getName().indexOf('~') > -1) {
+        continue;
+      }
+      boolean isOldFile = false;
+      for (FILE_DOWNLOAD oldFile : oldFiles) {
+        if (file.getName().equals(oldFile.getFilename())){
+          isOldFile = true;
+          break;
+        }
+      }
+      if(isOldFile) {
+        continue;
+      }
+      int count = 0;
+      long filesize1 = 0;
+      long filesize2 = 0;
+      do {
+        count++;
+        filesize1 = file.length();
+        try {
+          Thread.sleep(5000);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+        filesize2 = file.length();
+      } while ((filesize1 == 0 || filesize1 != filesize2) && count < 1800);
+      
+      FILE_DOWNLOAD fd = new FILE_DOWNLOAD();
+      fd.setFilename(file.getName());
+      fd.setProgress(100);
+      fd.setUpdateAt(new Date());
+      fd.setUserId(0L);
+      downloadDao.save(fd);
+      logger.info("process " + fd.getFilename());
+      XSSFWorkbook workbook = null;
+      try {
+        workbook = new XSSFWorkbook(new FileInputStream(file));
+        xmlService.readTheseSheet(workbook.getSheetAt(0));
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        if (workbook != null) {
+          try {
+            workbook.close();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+  }
 }

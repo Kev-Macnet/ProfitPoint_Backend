@@ -262,4 +262,8 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  			+ "end  DIFF "
  			+ "from ip_p where MR_ID in (?1)", nativeQuery = true)
  	public List<Map<String, Object>> getAllListByMrid(List<String> mrid);
+ 	
+ 	@Query(value = "SELECT * FROM IP_P WHERE MR_ID IN (SELECT ID FROM MR "
+ 	    + "WHERE DATA_FORMAT = '20' AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) ", nativeQuery = true)
+ 	public List<IP_P> getByMrIdFromMR(java.util.Date sDate, java.util.Date eDate);
 }

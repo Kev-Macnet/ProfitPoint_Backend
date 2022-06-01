@@ -325,7 +325,6 @@ public class ExcelUtil {
   public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
       XSSFRow row) {
     HashMap<String, String> result = new HashMap<String, String>();
-    System.out.println("cells:" + row.getPhysicalNumberOfCells());
     // for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
     for (int i = 0; i < 100; i++) {
       String cellValue = null;
@@ -343,12 +342,20 @@ public class ExcelUtil {
         cellValue = row.getCell(i).getStringCellValue().trim();
       }
       if (cellValue != null && cellValue.length() > 0) {
-        result.put(columnMap.get(new Integer(i)), cellValue);
+        if (columnMap.get(new Integer(i)) != null) {
+          result.put(columnMap.get(new Integer(i)), cellValue);
+        }
       }
     }
     return result;
   }
 
+  /**
+   * 讀取 excel一列的值，依據 columnMap 的位置與欄位名稱對應關係，放至對應欄位名稱/值的 map
+   * @param columnMap
+   * @param row
+   * @return
+   */
   public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
       HSSFRow row) {
     HashMap<String, String> result = new HashMap<String, String>();

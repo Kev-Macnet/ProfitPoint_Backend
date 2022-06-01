@@ -1,5 +1,6 @@
 package tw.com.leadtek.nhiwidget.service;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -15,15 +16,30 @@ public class ScheduleTask {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private ParametersService paramerterService;
+    
+    @Autowired
+    private SystemService systemService;
         
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private Integer count1 = 1;
+//    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//    private Integer count1 = 1;
 
     @Scheduled(fixedDelay = 60000*10, initialDelay = 5000)
     public void runCurrentTimeEvery60m() throws InterruptedException {
-        String msg = String.format("(10分鐘)第%d次執行，目前時間：%s",count1++, dateFormat.format(new java.util.Date()));
-        logger.info(msg);
         userService.checkLoginUser();
+    }
+    
+    @Scheduled(fixedDelay = 60000, initialDelay = 20000)
+    public void runCurrentTimeEveryMinute() throws InterruptedException {
+      if (paramerterService.getParameter("MR_PATH") == null) {
+        return;
+      }
+      File[] files = new File(paramerterService.getParameter("MR_PATH")).listFiles();
+      if (files != null && files.length > 0) {
+        systemService.refreshMRFromFolder(files);
+      }
     }
 
 }

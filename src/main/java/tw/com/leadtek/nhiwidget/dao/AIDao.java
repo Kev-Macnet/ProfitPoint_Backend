@@ -56,17 +56,37 @@ public interface AIDao extends JpaRepository<MR, Long> {
       ") TEMP WHERE (COUNT - UP) > ?5", nativeQuery = true)
   public List<Map<String, Object>> ipDays(Date lastYearSDate, Date lastYearEDate, Date sDate, Date eDate, int days);
   
-  // temp1 取得各診斷碼搭配藥物的出現次數
-  // temp2 取得各診斷碼在指定時間內的出現次數
-  @Query(value = "SELECT temp1.icdcm1 as ICDCM, temp1.ICCOUNT, temp1.DRUG_NO as DRUGNO, temp2.count as ICOUNT FROM (" + 
-      "  SELECT mr.ICDCM1, count(mr.ICDCM1) ICCOUNT, op.DRUG_NO FROM op_p op , mr " + 
-      "    WHERE op.mr_id = mr.id and mr.mr_date between ?1 and ?2 and length(op.drug_no) = 10 " + 
-      "    group by mr.icdcm1, op.DRUG_NO " + 
-      "  ) temp1, " + 
-      " (SELECT ICDCM1, count(ICDCM1) as COUNT FROM mr WHERE mr_end_date between '2021-01-01' and '2021-01-31' and id in (select mr_id from op_p where length(drug_no) = 10) \r\n" + 
-      "    group by  ICDCM1" + 
-      "  ) temp2 " + 
-      "WHERE temp1.icdcm1 = temp2.icdcm1 order by temp1.icdcm1", nativeQuery = true)
-  public List<Map<String,Object>> icdcmDrugCountOP(Date sDate, Date eDate);
+  @Query(value = "SELECT mr.MAX_MR_DATE, ida.MAX_DATE FROM " + 
+      "(SELECT max(MR_END_DATE) AS MAX_MR_DATE FROM mr WHERE DATA_FORMAT = ?1) mr," + 
+      "(SELECT max(LATEST_DATE) AS MAX_DATE FROM icdcm_drug_atc WHERE DATA_FORMAT= ?1) ida", 
+      nativeQuery = true)
+  public List<Map<String, Object>> getMaxMrEndDateAndIcdcmDrugAtcDate(String dataFormat);
   
+  // temp1 取得各診斷碼搭配的藥物的出現次數及藥物的ATC碼
+  // temp2 取得各診斷碼在的出現病歷數
+  @Query(value = "SELECT temp1.ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO, temp1.DRUG_COUNT,temp1.ATC FROM ( " + 
+      "        SELECT mr.ICDCM1, count(mr.ICDCM1) DRUG_COUNT, op.DRUG_NO , pc.ATC FROM op_p op, mr, PAY_CODE pc " + 
+      "          WHERE op.mr_id = mr.id and length(op.drug_no) = 10 AND op.DRUG_NO = pc.CODE AND mr.MR_END_DATE <= ?1 " + 
+      "          group by mr.icdcm1, op.drug_no, pc.atc ORDER BY icdcm1, pc.atc " + 
+      "        ) temp1," + 
+      "        (" + 
+      "         SELECT ICDCM1, count(ICDCM1) as COUNT FROM mr WHERE DATA_FORMAT ='10' AND mr.MR_END_DATE <= ?1" + 
+      "          group by ICDCM1 " + 
+      "        ) temp2 " + 
+      "      WHERE temp1.ICDCM1 = temp2.ICDCM1 AND temp2.COUNT > 30 ORDER BY temp1.ICDCM1, temp1.atc", nativeQuery = true)
+  public List<Map<String,Object>> icdcmDrugCountOP(Date endDate);
+ 
+  // temp1 取得各診斷碼搭配的藥物的出現次數及藥物的ATC碼
+  // temp2 取得各診斷碼在的出現病歷數
+  @Query(value = "SELECT temp1.ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO, temp1.DRUG_COUNT,temp1.ATC FROM ( " + 
+      "        SELECT mr.ICDCM1, count(mr.ICDCM1) DRUG_COUNT, ip.ORDER_CODE AS DRUG_NO , pc.ATC FROM ip_p ip, mr, PAY_CODE pc " + 
+      "          WHERE ip.mr_id = mr.id and length(ip.ORDER_CODE) = 10 AND ip.ORDER_CODE = pc.CODE AND mr.MR_END_DATE <= ?1 " + 
+      "          group by mr.icdcm1, ip.ORDER_CODE, pc.atc ORDER BY icdcm1, pc.atc " + 
+      "        ) temp1," + 
+      "        (" + 
+      "         SELECT ICDCM1, count(ICDCM1) as COUNT FROM mr WHERE DATA_FORMAT ='20' AND mr.MR_END_DATE <= ?1" + 
+      "          group by ICDCM1 " + 
+      "        ) temp2 " + 
+      "      WHERE temp1.ICDCM1 = temp2.ICDCM1 AND temp2.COUNT > 30 ORDER BY temp1.ICDCM1, temp1.atc", nativeQuery = true)
+  public List<Map<String,Object>> icdcmDrugCountIP(Date endDate);
 }

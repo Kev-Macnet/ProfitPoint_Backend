@@ -501,6 +501,27 @@ public class OP_D {
   @Column(name = "NO_APPL")
   @JsonIgnore
   private Integer noAppl;
+  
+  /**
+   * 領藥號
+   */
+  @Column(name = "RECEIVE_NO")
+  @JsonIgnore
+  private String receiveNo;
+  
+  /**
+   * 醫師姓名
+   */
+  @Column(name = "PRSN_NAME")
+  @JsonIgnore
+  private String prsnName;
+  
+  /**
+   * 藥師姓名
+   */
+  @Column(name = "PHAR_NAME")
+  @JsonIgnore
+  private String pharName;
 
   /**
    * 更新時間
@@ -1320,4 +1341,28 @@ public class OP_D {
     this.noAppl = noAppl;
   }
 
+  public String getReceiveNo() {
+    return receiveNo;
+  }
+
+  public void setReceiveNo(String receiveNo) {
+    this.receiveNo = receiveNo;
+  }
+
+  public String getPrsnName() {
+    return prsnName;
+  }
+
+  public void setPrsnName(String prsnName) {
+    this.prsnName = prsnName;
+  }
+
+  public String getPharName() {
+    return pharName;
+  }
+
+  public void setPharName(String pharName) {
+    this.pharName = pharName;
+  }
+  
 }

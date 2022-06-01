@@ -735,22 +735,10 @@ public class LogDataService {
     return newId;
   }
 
-  public int setLogin(String jwt) {
+  public int setLogin(String username, String jwt) {
     int ret = -1;
     if (jwt.length() > 20) {
-      jwt = jwt.replace("Bearer", "");
-      String arrJwt[] = jwt.split("\\.");
-      String jwtBody = "";
-      byte[] jwtBytes = java.util.Base64.getDecoder().decode(arrJwt[1]);
-      try {
-        jwtBody = new String(jwtBytes, "UTF-8");
-      } catch (java.io.UnsupportedEncodingException ex) {
-        jwtBody = new String(jwtBytes);
-      }
-      BasicJsonParser linkJsonParser = new BasicJsonParser();
-      Map<String, Object> jwtMap = linkJsonParser.parseMap(jwtBody);
-      logDataDao.addSignin(jwtMap.get("sub").toString(), jwt);
-      // { "sub": "test", "uid": 2, "exp": 1627378586 }
+      logDataDao.addSignin(username, jwt);
       ret = 0;
     }
     return ret;

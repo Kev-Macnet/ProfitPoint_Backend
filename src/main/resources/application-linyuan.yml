@@ -1,6 +1,6 @@
-# Replace 59.120.139.60:8081 to localhost:8081 
+# Replace to 192.168.1.137:8080
 server:
-  port: ${port:8081}
+  port: ${port:8080}
   tomcat:
     uri-encoding: UTF-8
     max-connections: 3000
@@ -84,17 +84,17 @@ project:
   # away from keyboard 時間，超過30分則刪除 jwt
     afk: 1800000
   mail:
-    host: 59.120.139.196
+    host: 10.0.0.6
     port: 25
-    fromEmail: monitor@leadtek.com.tw
-    password: z5z8tah5
-  serverUrl: "http://localhost:8081/#/login?redir=warehouse/"
-  apiUrl: "http://localhost:8081/"
+    fromEmail: profitpoint@mail.pohai.org.tw
+    password:
+  serverUrl: "http://192.168.1.137:8080/#/login?redir=warehouse/"
+  apiUrl: "http://192.168.1.137:8080/"
   hospId: 1532011154
-  isMask: true
+  isMask: false
 swagger:
-  enable: true
+  enable: false
   application-name: 健保申保最佳化系統 API
   application-version: 2.0
   application-description: 健保申保最佳化系統 API
-  try-host: http://localhost:${server.port}
+  try-host: http://192.168.1.137:${server.port}

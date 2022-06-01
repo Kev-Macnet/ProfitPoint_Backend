@@ -344,11 +344,13 @@ public class PAY_CODE implements Serializable {
   public static PAY_CODE convertFromOrderCode(OrderCode oc) {
     PAY_CODE result = new PAY_CODE();
     result.setCode(oc.getCode().toUpperCase());
+    result.setInhCode(result.getCode());
     result.setCodeType(oc.getDetail());
     result.setEndDate(oc.geteDate());
     result.setStartDate(oc.getsDate());
     result.setHospLevel(oc.getLevel());
     result.setName(oc.getDesc());
+    result.setInhName(result.getName());
     result.setPoint(oc.getP());
     result.setUpdateAt(new Date());
     return result;

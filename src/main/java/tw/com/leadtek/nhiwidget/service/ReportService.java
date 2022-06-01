@@ -156,6 +156,10 @@ public class ReportService {
    * @param ym
    */
   public void calculatePointMR(String ym) {
+    if ("ALL".equals(ym.toUpperCase())) {
+      calculatePointMRAll();
+      return;
+    }
     String chineseYM = ymToROCYM(ym);
     String adYM = ymToADYM(ym);
     POINT_MONTHLY pm = null;
@@ -183,8 +187,7 @@ public class ReportService {
       return;
     }
 
-    List<Object[]> list = opdDao.findMonthlyPoint(optId, optId, iptId, optId, optId, chineseYM, optId,
-        optId, iptId, optId, chineseYM, chineseYM, chineseYM);
+    List<Object[]> list = opdDao.findMonthlyPoint(chineseYM);
     if (list != null && list.size() > 0) {
       Object[] obj = list.get(0);
       pm.setPartOp(getLongValue(obj[0]));
@@ -214,11 +217,27 @@ public class ReportService {
       pm.setDrgQuantity(((BigInteger) obj[11]).longValue());
       pm.setDrgApplPoint(getLongValue(obj[12]));
       pm.setDrgActualPoint(getLongValue(obj[13]));
+      pm.setNoApplIp(getLongValue(obj[14]));
+      pm.setNoApplOp(getLongValue(obj[15]));
+      pm.setNoApplAll(pm.getNoApplIp() + pm.getNoApplOp());
       pm.setUpdateAt(new Date());
 
       updateAssignedPoint(pm, adYM, null);
     }
     pointMonthlyDao.save(pm);
+  }
+  
+  /**
+   * 計算指定年月的單月健保點數總表
+   *  
+   * @param ym
+   */
+  public void calculatePointMRAll() {
+    List<Map<String, Object>> list = mrDao.getAllApplYm();
+    for (Map<String, Object> map : list) {
+      String applYm = (String) map.get("APPL_YM");
+      calculatePointMR(applYm);
+    }
   }
 
   /**
@@ -267,8 +286,7 @@ public class ReportService {
         cutPointNumber(((double) pm.getTotalOpAll() * (double) 100) / (double) pm.getAssignedOpAll()));
     pm.setRateIp(
         cutPointNumber(((double) pm.getTotalIp() * (double) 100) / (double) pm.getAssignedIp()));
-    pm.setRemaining(pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll()
-        - pm.getChronic().longValue());
+    pm.setRemaining(pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll());
     pointMonthlyDao.save(pm);
   }
 
@@ -339,8 +357,7 @@ public class ReportService {
     PeriodPointPayload result = new PeriodPointPayload();
     java.sql.Date s = new java.sql.Date(sdate.getTime());
     java.sql.Date e = new java.sql.Date(edate.getTime());
-    List<Object[]> list = opdDao.findPeriodPoint(s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s,
-        e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e, s, e);
+    List<Object[]> list = opdDao.findPeriodPoint(s, e);
     if (list != null && list.size() > 0) {
       Object[] obj = list.get(0);
       // 案件數
@@ -350,12 +367,13 @@ public class ReportService {
       result.setQuantityEm(((BigInteger) obj[3]).longValue());
       result.setQuantityIp(((BigInteger) obj[4]).longValue());
 
-      // 累計申報總點數
-      result.setApplPointOpAll(getLongValue(obj[5]));
-      result.setApplPointOp(getLongValue(obj[6]));
-      result.setApplPointEm(getLongValue(obj[7]));
-      result.setApplPointIp(getLongValue(obj[8]));
-      result.setApplPointAll(result.getApplPointOpAll() + result.getApplPointIp());
+      // 申請總點數
+      result.setApplNoPartPointOpAll(getLongValue(obj[5]));
+      result.setApplNoPartPointOp(getLongValue(obj[6]));
+      result.setApplNoPartPointEm(getLongValue(obj[7]));
+      result.setApplNoPartPointIp(getLongValue(obj[8]));
+      result.setApplNoPartPointAll(result.getApplNoPartPointOpAll() + result.getApplNoPartPointIp());
+
       // 部分負擔
       result.setPartPointOpAll(getLongValue(obj[9]));
       result.setPartPointOp(getLongValue(obj[10]));
@@ -374,19 +392,21 @@ public class ReportService {
       result.setNoApplEm(getLongValue(obj[19]));
       result.setNoApplIp(getLongValue(obj[20]));
       result.setNoApplAll(result.getNoApplOpAll() + result.getNoApplIp());
-      // 原始總點數    
-      result.setPointAll(result.getApplPointAll() + result.getPartPointAll());
-      result.setPointEm(result.getApplPointEm() + result.getPartPointEm());
-      result.setPointIp(result.getApplPointIp() + result.getPartPointIp());
-      result.setPointOp(result.getApplPointOp() + result.getPartPointOp());
-      result.setPointOpAll(result.getApplPointOpAll() + result.getPartPointOpAll());
 
-      // 申請總點數
-      result.setApplNoPartPointAll(result.getApplPointAll() - result.getPartPointAll());
-      result.setApplNoPartPointEm(result.getApplPointEm() - result.getPartPointEm());
-      result.setApplNoPartPointIp(result.getApplPointIp() - result.getPartPointIp());
-      result.setApplNoPartPointOp(result.getApplPointOp() - result.getPartPointOp());
-      result.setApplNoPartPointOpAll(result.getApplPointOpAll() - result.getPartPointOpAll());
+      // 累積申報總點數
+      result.setApplPointOp(result.getApplNoPartPointOp() + result.getPartPointOp());
+      result.setApplPointEm(result.getApplNoPartPointEm() + result.getPartPointEm());
+      result.setApplPointIp(result.getApplNoPartPointIp() + result.getPartPointIp());
+      result.setApplPointOpAll(result.getApplPointOp() + result.getApplPointEm());
+      result.setApplPointAll(result.getApplPointOpAll() + result.getApplPointIp());
+      
+      // 原始總點數
+      result.setPointAll(result.getApplPointAll() + result.getOwnExpAll());
+      result.setPointEm(result.getApplPointEm() + result.getOwnExpEm());
+      // 住院: 醫療費用+不計入醫療費用點數合計+自費
+      result.setPointIp(getLongValue(obj[21]) + result.getNoApplIp() + result.getOwnExpIp());
+      result.setPointOp(result.getApplPointOp() + result.getOwnExpOp());
+      result.setPointOpAll(result.getPointOp() + result.getPointEm());
     }
 
     result.setApplByFuncType(getApplPointGroupByFuncType(s, e));
@@ -396,7 +416,6 @@ public class ReportService {
     result.setOwnExpByOrderType(getOwnExpenseGroupByOrderType(s, e));
     return result;
   }
-
 
   public PointQuantityList getApplPointGroupByFuncType(java.sql.Date s, java.sql.Date e) {
     PointQuantityList result = new PointQuantityList();
@@ -712,7 +731,7 @@ public class ReportService {
       Date end = cal.getTime();
 
       calculatePointByWeek(start, end, funcTypes);
-      calculateDRGPointByWeek(start, end, funcTypes);
+      calculateDRGPointByWeek(start, end, funcTypesDRG);
       cal.add(Calendar.DAY_OF_YEAR, 1);
     } while (cal.before(calMax));
     logger.info("calculatePointWeekly done");
@@ -852,6 +871,20 @@ public class ReportService {
       int week = cal.get(Calendar.WEEK_OF_YEAR);
       result.setPweek(week);
     }
+    if (XMLConstant.FUNC_TYPE_ALL.equals(funcType)) {
+      result.setDrgQuantity(0L);
+      result.setDrgPoint(0L);
+      result.setNondrgQuantity(0L);
+      result.setNondrgPoint(0L);
+      result.setSectionA(0L);
+      result.setSectionB1(0L);
+      result.setSectionB2(0L);
+      result.setSectionC(0L);
+      result.setPointA(0L);
+      result.setPointB1(0L);
+      result.setPointB2(0L);
+      result.setPointC(0L);
+    }
     return result;
   }
 
@@ -909,6 +942,16 @@ public class ReportService {
   }
 
   public void calculateDRGMonthly(String ym) {
+    if ("ALL".equals(ym.toUpperCase())) {
+      List<Map<String, Object>> list = mrDao.getAllApplYm();
+      for (Map<String, Object> map : list) {
+        String applYm = (String) map.get("APPL_YM");
+        System.out.println("calculateDRGMonthly " + ym);
+        calculateDRGMonthly(applYm);
+      }
+      return;
+    }
+    
     String chineseYM = ymToROCYM(ym);
     String adYM = ymToADYM(ym);
 
@@ -1173,6 +1216,11 @@ public class ReportService {
     return (long) (int) obj;
   }
 
+  /**
+   * 取得健保申報總額達成趨勢資料
+   * @param cal
+   * @return
+   */
   public AchievementWeekly getAchievementWeekly(Calendar cal) {
     AchievementWeekly result = new AchievementWeekly();
     java.sql.Date e = new java.sql.Date(cal.getTimeInMillis());
@@ -1198,37 +1246,44 @@ public class ReportService {
   private void addMonthlyData(AchievementWeekly aw, Calendar cal) {
     Calendar lastMonth = Calendar.getInstance();
     lastMonth.setTime(cal.getTime());
-    lastMonth.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
-    int endYm = lastMonth.get(Calendar.YEAR) * 100 + lastMonth.get(Calendar.MONTH);
+    
+    lastMonth.set(Calendar.DAY_OF_WEEK,  cal.getActualMaximum(Calendar.DAY_OF_WEEK));
+    int endYm = lastMonth.get(Calendar.YEAR) * 100 + lastMonth.get(Calendar.MONTH) + 1;
     lastMonth.add(Calendar.WEEK_OF_YEAR, -52);
-    int startYm = lastMonth.get(Calendar.YEAR) * 100 + lastMonth.get(Calendar.MONTH);
+    lastMonth.set(Calendar.DAY_OF_WEEK,  cal.getActualMinimum(Calendar.DAY_OF_WEEK));
+    int startYm = lastMonth.get(Calendar.YEAR) * 100 + lastMonth.get(Calendar.MONTH) + 1;
+    //System.out.println("startYm=" + startYm + ", endYm=" + endYm);
+    //SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
     List<POINT_MONTHLY> list = pointMonthlyDao.findByYmBetweenOrderByYm(startYm, endYm);
     Calendar temp = Calendar.getInstance();
     for (int i = 0; i < list.size(); i++) {
       POINT_MONTHLY pm = list.get(i);
       if (i == list.size() - 1) {
-        aw.setMonthTotal(pm.getApplAll());
+        aw.setMonthTotal(pm.getTotalAll());
         aw.setMonthAssigned(pm.getAssignedAll());
         DecimalFormat df = new DecimalFormat("#.##");
         aw.setAchievementRate(
             df.format(((double) aw.getMonthTotal() * (double) 100) / (double) aw.getMonthAssigned())
                 + "%");
       }
-      temp.set(Calendar.YEAR, pm.getYm() / 100);
+      
+      temp.set(Calendar.YEAR, pm.getYm() / 100); 
       temp.set(Calendar.MONTH, (pm.getYm() % 100) - 1);
-      temp.set(Calendar.DAY_OF_MONTH, temp.getActualMaximum(Calendar.DAY_OF_MONTH));
-
+      //temp.set(Calendar.DAY_OF_MONTH, temp.getActualMaximum(Calendar.DAY_OF_MONTH));
+      temp.set(Calendar.DAY_OF_MONTH, 1);
+    
       String name =
           String.valueOf(temp.get(Calendar.YEAR)) + " w" + temp.get(Calendar.WEEK_OF_YEAR);
+      //System.out.println("point monthly " + i + ":" + pm.getYm() + " day=" + sdf.format(temp.getTime()) + " name=" + name);
       aw.getAssignedAll().add(name, pm.getAssignedAll());
-      aw.getActualAll().add(name, pm.getApplAll(), (pm.getApplAll() * 100 / pm.getAssignedAll()));
+      aw.getActualAll().add(name, pm.getTotalAll(), (pm.getTotalAll() * 100 / pm.getAssignedAll()));
 
       aw.getAssignedOpAll().add(name, pm.getAssignedOpAll());
-      aw.getActualOpAll().add(name, pm.getApplOpAll(),
-          (pm.getApplOpAll() * 100 / pm.getAssignedOpAll()));
+      aw.getActualOpAll().add(name, pm.getTotalOpAll(),
+          (pm.getTotalOpAll() * 100 / pm.getAssignedOpAll()));
 
       aw.getAssignedIp().add(name, pm.getAssignedIp());
-      aw.getActualIp().add(name, pm.getApplIp(), (pm.getApplIp() * 100 / pm.getAssignedIp()));
+      aw.getActualIp().add(name, pm.getTotalIp(), (pm.getTotalIp() * 100 / pm.getAssignedIp()));
     }
   }
 
@@ -1289,7 +1344,7 @@ public class ReportService {
     int max = 0;
     for (int i = 0; i < years.length; i++) {
       int[] yearMonth = getYearMonthByQuarter(years[i], quarters[i]);
-      System.out.println(yearMonth[0] + "," + yearMonth[1] + "," + yearMonth[2]);
+      //System.out.println(yearMonth[0] + "," + yearMonth[1] + "," + yearMonth[2]);
       if (max < yearMonth[2]) {
         max = yearMonth[2];
       }
@@ -1300,6 +1355,13 @@ public class ReportService {
     return new int[] {min, max};
   }
 
+  /**
+   * 計算健保總額累積達成率
+   * @param aq
+   * @param pm
+   * @param name
+   */
+  
   private void calculateAchievementQuarter(AchievementQuarter aq, POINT_MONTHLY pm, String name) {
     DecimalFormat df = new DecimalFormat("#.##");
     QuarterData qdAll = getQuarterDataByName(aq.getAll(), name);
@@ -1309,22 +1371,21 @@ public class ReportService {
     qdAll.setActual(qdAll.getActual() + pm.getTotalAll());
     qdAll.setAssigned(qdAll.getAssigned() + pm.getAssignedAll());
     qdAll.setOriginal(qdAll.getOriginal() + pm.getTotalAll() + pm.getNoApplAll());
-    qdAll
-        .setOver(qdAll.getOver() + qdAll.getActual().longValue() - qdAll.getAssigned().longValue());
+    qdAll.setOver(qdAll.getActual().longValue() - qdAll.getAssigned().longValue());
     qdAll.setPercent(Float.parseFloat(df.format(
         (double) (qdAll.getActual().longValue() * 100) / qdAll.getAssigned().doubleValue())));
 
     qdIp.setActual(qdIp.getActual() + pm.getTotalIp());
     qdIp.setAssigned(qdIp.getAssigned() + pm.getAssignedIp());
     qdIp.setOriginal(qdIp.getOriginal() + pm.getTotalIp() + pm.getNoApplIp());
-    qdIp.setOver(qdIp.getOver() + qdIp.getActual().longValue() - qdIp.getAssigned().longValue());
+    qdIp.setOver(qdIp.getActual().longValue() - qdIp.getAssigned().longValue());
     qdIp.setPercent(Float.parseFloat(df
         .format((double) (qdIp.getActual().longValue() * 100) / qdIp.getAssigned().doubleValue())));
 
     qdOp.setActual(qdOp.getActual() + pm.getTotalOpAll());
     qdOp.setAssigned(qdOp.getAssigned() + pm.getAssignedOpAll());
     qdOp.setOriginal(qdOp.getOriginal() + pm.getTotalOpAll() + pm.getNoApplOp());
-    qdOp.setOver(qdOp.getOver() + qdOp.getActual().longValue() - qdOp.getAssigned().longValue());
+    qdOp.setOver(qdOp.getActual().longValue() - qdOp.getAssigned().longValue());
     qdOp.setPercent(Float.parseFloat(df
         .format((double) (qdOp.getActual().longValue() * 100) / qdOp.getAssigned().doubleValue())));
   }

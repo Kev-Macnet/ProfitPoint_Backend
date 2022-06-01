@@ -42,6 +42,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.TestParameterService;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
@@ -393,7 +394,7 @@ public class ImportPayCode {
   /**
    * 匯入醫令代碼(支付代碼)
    */
-  // @Ignore
+  @Ignore
   @Test
   public void importPayCodeNew() {
     System.out.println("importPayCode");
@@ -401,17 +402,17 @@ public class ImportPayCode {
     maxId = getMaxId() + 1;
     System.out.println("maxid=" + maxId);
      importExcelToRedisNew("ICD10",
-     "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\醫療服務給付項目(1100701執行).xlsx",
+             TestParameterService.FILE_PATH +  "醫療服務給付項目(1100701執行).xlsx",
      "ORDER");
-    // importDrugHtmlExcelToRedis("ICD10",
-    // "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020183522-用藥品項查詢結果.xls",
-    // "ORDER");
-//    importDrugHtmlExcelToRedis("ICD10",
-//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020184556-用藥品項查詢結果.xls",
-//        "ORDER");
-//    importDrugHtmlExcelToRedis("ICD10",
-//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\標準支付(醫令)\\藥品\\20211020184620-用藥品項查詢結果.xls",
-//        "ORDER");
+     importDrugHtmlExcelToRedis("ICD10",
+             TestParameterService.FILE_PATH +  "藥品\\20211020183522-用藥品項查詢結果.xls",
+     "ORDER");
+    importDrugHtmlExcelToRedis("ICD10",
+        TestParameterService.FILE_PATH +  "藥品\\20211020184556-用藥品項查詢結果.xls",
+        "ORDER");
+    importDrugHtmlExcelToRedis("ICD10",
+        TestParameterService.FILE_PATH +  "藥品\\20211020184620-用藥品項查詢結果.xls",
+        "ORDER");
   }
 
   private int getMaxId() {
@@ -825,4 +826,22 @@ public class ImportPayCode {
     }
   }
 
+  @Ignore
+  @Test
+  public void testExcel() {
+    File file = new File("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\高雄霖園醫院\\202205\\202205- op-0519.xlsx");    
+    try {
+      XSSFWorkbook workbook = new XSSFWorkbook(file);
+      int total = 0;
+      for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+        XSSFSheet sheet = workbook.getSheetAt(i);
+        System.out.println(sheet.getRow(0).getCell(0));
+      }
+    } catch (InvalidFormatException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    
+  }
 }
