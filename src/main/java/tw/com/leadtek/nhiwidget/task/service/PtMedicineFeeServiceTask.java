@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 
 @Service
-public class PtMedicineFeeServiceTask {
+public class PtMedicineFeeServiceTask extends BasicIntelligentService{
 	@Autowired
 	private MRDao mrDao;
 	@Autowired
@@ -34,49 +35,29 @@ public class PtMedicineFeeServiceTask {
 	
 	private String Category = "藥費";
 
+	@SuppressWarnings("unchecked")
 	public void validMedicineFee(PtMedicineFeePl params) throws ParseException {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-		/// 將timestamp轉成date
-		java.sql.Timestamp tSdate = new java.sql.Timestamp(params.getStart_date());
-		java.sql.Timestamp tEdate = new java.sql.Timestamp(params.getEnd_date());
-		Date tsd = new Date(tSdate.getTime());
-		Date ted = new Date(tEdate.getTime());
-		String sDateStr = sdf.format(tsd);
-		String eDateStr = sdf.format(ted);
-
-		/// 該支付準則區間病歷表
-		List<MR> mrList = mrDao.getIntelligentMR(sDateStr, eDateStr, params.getNhi_no());
+		boolean isHospital = false;
+		boolean isOutpatien = false;
+		Map<String,Object> retMap = this.vaidIntelligentTtype(params.getStart_date(), params.getEnd_date(), params.getNhi_no(), params.getOutpatient_type(), params.getHospitalized_type());
+		isHospital = (boolean) retMap.get("isHospital");
+		isOutpatien = (boolean) retMap.get("isOutpatien");
+		/// 存放病例
+		List<MR> mrList = new ArrayList<MR>();
+		mrList.addAll((Collection<? extends MR>) retMap.get("mrList"));
 		/// 存放mrID
 		List<String> mrIdListStr = new ArrayList<String>();
-		/// 提取將該診斷碼之ID
-		for (MR mr : mrList) {
-
-			mrIdListStr.add(mr.getId().toString());
-		}
-		if (params.getHospitalized_type() == 0) {
-			for (MR r : mrList) {
-				if (r.getDataFormat() == "20") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用住院就醫方式", params.getNhi_no()), true);
-				}
-			}
-		} else if (params.getOutpatient_type() == 0) {
-			for (MR r : mrList) {
-				if (r.getDataFormat() == "10") {
-					intelligentService.insertIntelligent(r, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
-							String.format("(醫令代碼)%s不適用門診就醫方式", params.getNhi_no()), true);
-				}
-			}
-		}
+		mrIdListStr.addAll((Collection<? extends String>) retMap.get("mrIdListStr"));
+		
 		/// 1.
 		///每件給藥日數不得超過
 		if(params.getMax_nday_enable() ==1) {
 		
 			///如果住院
-			if(params.getHospitalized_type() ==1 ) {
+			if(isHospital ) {
 				
 				List<Map<String,Object>> ippData = ippDao.getListByDaysAndCodeAndMrid(params.getMax_nday(), params.getNhi_no(), mrIdListStr);
-				if(ippData.size() > 0) {
+				if(ippData.size() > 0) { 
 					for(Map<String,Object> map: ippData) {
 						MR mr = mrDao.getMrByID(map.get("MR_ID").toString());
 						intelligentService.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), params.getNhi_no(),
@@ -85,7 +66,7 @@ public class PtMedicineFeeServiceTask {
 				}
 			}
 			///如果門診
-			if(params.getOutpatient_type() == 1) {
+			if(isOutpatien) {
 				
 				List<Map<String,Object>> oppData = oppDao.getListByDaysAndCodeAndMrid(params.getMax_nday(), params.getNhi_no(), mrIdListStr);
 				if(oppData.size() > 0) {
@@ -98,72 +79,5 @@ public class PtMedicineFeeServiceTask {
 			}
 			
 		}
-	}
-	/**
-	 * 帶入日期並減一年
-	 * 
-	 * @param date
-	 * @return
-	 * @throws ParseException
-	 */
-	private String minusYear(String date) throws ParseException {
-		String result = "";
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-		Date d = sdf.parse(date);
-		Calendar currentDate = Calendar.getInstance();
-		currentDate.setTime(d);
-		currentDate.add(Calendar.YEAR, -1);
-		Date d2 = currentDate.getTime();
-		result = sdf.format(d2);
-
-		return result;
-	}
-
-	/**
-	 * 計算兩個時間相差多少個年
-	 * 
-	 * @param start
-	 * @param end
-	 * @return
-	 * @throws ParseException
-	 */
-	private int yearsBetween(String start, String end) throws ParseException {
-		Calendar startDate = Calendar.getInstance();
-		Calendar endDate = Calendar.getInstance();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-		startDate.setTime(sdf.parse(start));
-		endDate.setTime(sdf.parse(end));
-		return (endDate.get(Calendar.YEAR) - startDate.get(Calendar.YEAR));
-	}
-
-	/**
-	 * 計算兩個時間相差多少小時
-	 * 
-	 * @param start
-	 * @param end
-	 * @return
-	 * @throws ParseException
-	 */
-	private long hourBetween(Date start, Date end) throws ParseException {
-		long diff = end.getTime() - start.getTime();
-
-		TimeUnit time = TimeUnit.DAYS;
-		long diffrence = time.convert(diff, TimeUnit.MILLISECONDS);
-		long hour = diffrence * 24;
-		return hour;
-	}
-
-	// Convert Date to Calendar
-	private Calendar dateToCalendar(Date date) {
-
-		Calendar calendar = Calendar.getInstance();
-		calendar.setTime(date);
-		return calendar;
-
-	}
-
-	// Convert Calendar to Date
-	private Date calendarToDate(Calendar calendar) {
-		return calendar.getTime();
 	}
 }
