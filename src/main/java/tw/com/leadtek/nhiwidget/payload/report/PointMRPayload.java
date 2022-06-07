@@ -107,6 +107,11 @@ public class PointMRPayload extends BaseResponse implements Serializable {
 	@ApiModelProperty(value = "門急診/住院趨勢圖點數", required = true)
 	private List<Map<String, Object>> totalTredDotData;
 
+	@ApiModelProperty(value = "各科別名稱", required = true)
+	protected List<String> funcTypes;
+
+	private VisitsVarietyPayload visitsVarietyPayload;
+
 	public PointMRPayload() {
 
 	}
@@ -349,6 +354,22 @@ public class PointMRPayload extends BaseResponse implements Serializable {
 
 	public void setTotalTredDotData(List<Map<String, Object>> totalTredDotData) {
 		this.totalTredDotData = totalTredDotData;
+	}
+
+	public VisitsVarietyPayload getVisitsVarietyPayload() {
+		return visitsVarietyPayload;
+	}
+
+	public void setVisitsVarietyPayload(VisitsVarietyPayload visitsVarietyPayload) {
+		this.visitsVarietyPayload = visitsVarietyPayload;
+	}
+
+	public List<String> getFuncTypes() {
+		return funcTypes;
+	}
+
+	public void setFuncTypes(List<String> funcTypes) {
+		this.funcTypes = funcTypes;
 	}
 
 	public void calculateDifference() {

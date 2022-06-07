@@ -29,9 +29,11 @@ import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hssf.util.HSSFColor;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -62,11 +64,11 @@ import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
-import tw.com.leadtek.nhiwidget.payload.report.HeadDetails;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePoint;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePointQuantity;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList2;
+import tw.com.leadtek.nhiwidget.payload.report.NameValueList3;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
@@ -76,7 +78,6 @@ import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriod;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriodDetail;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsVarietyPayload;
-import tw.com.leadtek.nhiwidget.payload.report.WorkbookUtil;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.StringUtility;
 
@@ -1598,6 +1599,67 @@ public class ReportService {
 		}
 	}
 
+	private VisitsVarietyPayload getVistAndPointWeekly(VisitsVarietyPayload vvp, String year, String month) {
+
+		String sDate = String.valueOf(Integer.valueOf(year) - 1) + "-" + month + "-01";
+		String eDate = year + "-" + month + "-01";
+
+		Map<String, String> funcMap = findAllFuncTypesMap(true);
+
+		Map<String, NameValueList3> opemMap = vvp.getOpemMap3();
+		Map<String, NameValueList3> ipMap = vvp.getIpMap3();
+		Map<String, NameValueList3> leaveMap = vvp.getLeaveMap3();
+		Map<String, NameValueList3> allMap = vvp.getAllMap3();
+
+		List<POINT_WEEKLY> list = pointWeeklyDao.getTredAllData(sDate, eDate);
+
+		// 記錄抓了幾週的資料
+		Map<String, String> weeks = new HashMap<String, String>();
+		for (POINT_WEEKLY pw : list) {
+			String name = pw.getPyear() + " w" + pw.getPweek();
+			if (weeks.get(name) == null) {
+				weeks.put(name, "");
+			}
+			try {
+
+				NameValueList3 nvlOpem = opemMap.get(funcMap.get(pw.getFuncType()));
+				if (nvlOpem == null) {
+					nvlOpem = new NameValueList3();
+					opemMap.put(funcMap.get(pw.getFuncType()), nvlOpem);
+				}
+				NameValueList3 nvlIp = ipMap.get(funcMap.get(pw.getFuncType()));
+				if (nvlIp == null) {
+					nvlIp = new NameValueList3();
+					ipMap.put(funcMap.get(pw.getFuncType()), nvlIp);
+				}
+				NameValueList3 nvlLeave = leaveMap.get(funcMap.get(pw.getFuncType()));
+				if (nvlLeave == null) {
+					nvlLeave = new NameValueList3();
+					leaveMap.put(funcMap.get(pw.getFuncType()), nvlLeave);
+				}
+				NameValueList3 nvlAll = allMap.get(funcMap.get(pw.getFuncType()));
+				if (nvlAll == null) {
+					nvlAll = new NameValueList3();
+					allMap.put(funcMap.get(pw.getFuncType()), nvlAll);
+				}
+				nvlOpem.add(name, pw.getVisitsOp(), pw.getOp());
+				nvlIp.add(name, pw.getVisitsIp(), pw.getIp());
+				nvlLeave.add(name, pw.getVisitsLeave(), (long) 0);
+				Long allVist = pw.getVisitsOp() + pw.getVisitsIp();
+				Long allPoint = pw.getOp() + pw.getIp();
+				nvlAll.add(name, allVist, allPoint);
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println(e);
+			}
+
+			if (weeks.keySet().size() >= 52) {
+				break;
+			}
+		}
+		return vvp;
+	}
+
 	/**
 	 * 單月各科健保申報量與人次
 	 * 
@@ -1658,9 +1720,9 @@ public class ReportService {
 		collectionList.addAll(opPieCountData);
 		collectionList.addAll(ipPieCountData);
 		collectionList2.addAll(collectionList);
-		
-		if(opPieCountData.size() > 0) {
-			///將門急診和住院資料+在一起
+
+		if (opPieCountData.size() > 0) {
+			/// 將門急診和住院資料+在一起
 			int opPieCountTotal = opdDao.getOPPieCountTotal(endDate);
 			int ipPieCountTotal = ipdDao.getIPPieCountTotal(endDate);
 			for (Map<String, Object> op : opPieCountData) {
@@ -1691,10 +1753,9 @@ public class ReportService {
 				for (Map<String, Object> col : collectionList) {
 					String colFt = col.get("FUNC_TYPE").toString();
 					if (colFt.equals(pFt)) {
-						if(del == collectionList2.size()) {
+						if (del == collectionList2.size()) {
 							collectionList2.remove(del - 1);
-						}
-						else {
+						} else {
 							collectionList2.remove(del);
 						}
 					}
@@ -1705,7 +1766,7 @@ public class ReportService {
 				del = 0;
 			}
 		}
-		///將最後結果add倒要顯示集合
+		/// 將最後結果add倒要顯示集合
 		peoplePie.addAll(collectionList2);
 
 		SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
@@ -1734,8 +1795,8 @@ public class ReportService {
 		collectionList.addAll(opPieDotData);
 		collectionList.addAll(ipPieDotData);
 		collectionList2.addAll(collectionList);
-		if(opPieDotData.size() > 0) {
-			///將門急診和住院資料+在一起
+		if (opPieDotData.size() > 0) {
+			/// 將門急診和住院資料+在一起
 			int opPieDotTotal = opdDao.getOPPieDotTotal(endDate);
 			int ipPieDoTotal = ipdDao.getIPPieDotTotal(endDate);
 			for (Map<String, Object> op : opPieDotData) {
@@ -1760,17 +1821,16 @@ public class ReportService {
 					}
 				}
 			}
-			
+
 			int del = 0;
 			for (Map<String, Object> p : dotPie) {
 				String pFt = p.get("FUNC_TYPE").toString();
 				for (Map<String, Object> col : collectionList) {
 					String colFt = col.get("FUNC_TYPE").toString();
 					if (colFt.equals(pFt)) {
-						if(del == collectionList2.size()) {
+						if (del == collectionList2.size()) {
 							collectionList2.remove(del - 1);
-						}
-						else {
+						} else {
 							collectionList2.remove(del);
 						}
 					}
@@ -1780,8 +1840,8 @@ public class ReportService {
 				collectionList.addAll(collectionList2);
 				del = 0;
 			}
-		} 
-		///將最後結果add倒要顯示集合
+		}
+		/// 將最後結果add倒要顯示集合
 		dotPie.addAll(collectionList2);
 
 		List<Map<String, Object>> pointList = new ArrayList<Map<String, Object>>();
@@ -1789,7 +1849,7 @@ public class ReportService {
 		if (!func_type.isEmpty() && !func_type.equals("不分科")) {
 			pointList = pointWeeklyDao.getTredDataByFuncType(func_type);
 		} else {
-			pointList = pointWeeklyDao.getTredAllData();
+//			pointList = pointWeeklyDao.getTredAllData();
 		}
 		List<Map<String, Object>> opDotTred = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> ipDotTred = new ArrayList<Map<String, Object>>();
@@ -1864,6 +1924,8 @@ public class ReportService {
 		}
 
 		PointMRPayload result = new PointMRPayload();
+
+		result.setFuncTypes(findAllFuncTypesName(true));
 		/// 取得返回當月資料
 		result.setCurrent(pointMonthlyDao.findByYm(year * 100 + month));
 		/// 返回門急診人數
@@ -1887,17 +1949,20 @@ public class ReportService {
 		/// 返回 門急診＋住院點數園餅
 		result.setTotalPieDotData(dotPie);
 		/// 返回門急診人數趨勢圖
-		result.setOpTredCountData(opCountTred);
-		/// 返回住院人數趨勢圖
-		result.setIpTredCountData(ipCountTred);
-		/// 返回出院人數趨勢圖
-		result.setIpTredOutCountData(leaveCountTred);
-		/// 返回門急診點數趨勢圖
-		result.setOpTredDotData(opDotTred);
-		/// 返回住院點數趨勢圖
-		result.setIpTredDotData(ipDotTred);
-		/// 返回門急診/住院點數趨勢圖
-		result.setTotalTredDotData(dotTred);
+//		result.setOpTredCountData(opCountTred);
+//		/// 返回住院人數趨勢圖
+//		result.setIpTredCountData(ipCountTred);
+//		/// 返回出院人數趨勢圖
+//		result.setIpTredOutCountData(leaveCountTred);
+//		/// 返回門急診點數趨勢圖
+//		result.setOpTredDotData(opDotTred);
+//		/// 返回住院點數趨勢圖
+//		result.setIpTredDotData(ipDotTred);
+//		/// 返回門急診/住院點數趨勢圖
+//		result.setTotalTredDotData(dotTred);
+
+		VisitsVarietyPayload res = new VisitsVarietyPayload();
+		result.setVisitsVarietyPayload(getVistAndPointWeekly(res, String.valueOf(year), monthStr));
 
 		return result;
 	}
@@ -1918,7 +1983,7 @@ public class ReportService {
 		PointMRPayload pointData = this.getMonthlyReportApplCount(year, month, func_type);
 		String[] tableHeaderNum = { "門急診/住院", "門急診", "門診(早)", "門診(中)", "門診(晚)", "急診", "住院", "出院" };
 		String[] tableCellHeader = { "單月各科人次比\n門急診/住院(含手術)", "人次", "比例", "", "單月各科人次比\n門急診(含手術)", "人次", "比例", "" };
-       
+
 		POINT_MONTHLY model = pointData.getCurrent();
 		String sheetName = "單月各科健保申報量與人次報表" + "_" + endDate;
 //		Map<String,Object> map = new HashMap<String,Object>();
@@ -1945,7 +2010,7 @@ public class ReportService {
 //		.setSheetData(headDetails, data, null)
 //		.builderResponseEntity()
 //		;
-        
+
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
 		// 新建工作表
@@ -1962,8 +2027,7 @@ public class ReportService {
 		HSSFCell cell = row.createCell(0);
 		// 設定單元格的值,即A1的值(第一行,第一列)
 		cell.setCellValue("統計月份");
-		
-		 
+
 		HSSFRow row2 = sheet.createRow(2);
 		for (int i = 0; i < tableHeaderNum.length; i++) {
 			HSSFCell cell2 = row2.createCell(1 + i);
@@ -2290,7 +2354,270 @@ public class ReportService {
 			String str = String.format("%.02f", f);
 			cell32_2.setCellValue(str + "%");
 		}
-		
+		String[] tableHeader = { "門急診/住院申報總點數趨勢圖","","", "門急診申報總點數趨勢圖","","", "住院申報總點數趨勢圖", "","","門急診人數趨勢圖","", "住院人數趨勢圖","", "出院人數趨勢圖",""};
+		String[] tableHeader2 = { "週數", "點數", "案件數", "週數", "點數", "案件數", "週數", "點數", "案件數", "週數", "人次", "週數", "人次", "週數",
+				"人次" };
+		VisitsVarietyPayload model2 = pointData.getVisitsVarietyPayload();
+		List<String> functypes = pointData.getFuncTypes();
+		for (String str : functypes) {
+			if (str.equals("不分科")) {
+				int cellIndex = 0;
+				/// 第二頁籤
+				sheet = workbook.createSheet("申報點數趨勢圖(全院)");
+				// 建立行,行號作為引數傳遞給createRow()方法,第一行從0開始計算
+				row = sheet.createRow(0);
+				// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
+				cell = row.createCell(0);
+				// 設定單元格的值,即A1的值(第一行,第一列)
+				cell.setCellValue("全院");
+				HSSFRow row1 = sheet.createRow(1);
+				CellStyle style1 = workbook.createCellStyle();
+				style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
+				style1.setVerticalAlignment(VerticalAlignment.CENTER);
+				
+				for (int i = 0; i < tableHeader.length; i++) {
+					HSSFCell cell1 = row1.createCell(i);
+				
+					switch (i) {
+					case 0:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,0,2));
+						break;
+					case 3:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,3,5));
+						break;
+					case 6:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,6,8));
+						break;
+					case 9:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,9,10));
+						break;
+					case 11:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,11,12));
+						break;
+					case 13:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,13,14));
+						break;
+					default:
+						break;
+					}
+				}
+				row2 = sheet.createRow(2);
+				for (int i = 0; i < tableHeader2.length; i++) {
+					HSSFCell cell2 = row2.createCell(i);
+					cell2.setCellValue(tableHeader2[i]);
+					cell2.setCellStyle(style1);
+				}
+				cellIndex = 0;
+				NameValueList3 nvlAll = model2.getAllMap3().get(str);
+				NameValueList3 nvlOp = model2.getOpemMap3().get(str);
+				NameValueList3 nvlip = model2.getIpMap3().get(str);
+				NameValueList3 nvlLeave = model2.getLeaveMap3().get(str);
+				HSSFRow rows = sheet.createRow(3);
+				/// 不知為何，poi如果直向寫入會發生值消失問題，這邊用一般橫向資料增長
+				for (int i = 0; i < nvlAll.getNames().size(); i++) {
+					HSSFCell cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlAll.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlAll.getValues2().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlAll.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getValues2().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getValues2().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlLeave.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlLeave.getValues().get(i));
+					rows = sheet.createRow(4 + i);
+					cellIndex = 0;
+					cellIndex--;
+					if (i >= 1) {
+						cellIndex -= i;
+					}
+
+				}
+
+			}
+		}
+
+		for (String str : functypes) {
+			if (!str.equals("不分科")) {
+				int cellIndex = 0;
+				/// 第二頁籤
+				sheet = workbook.createSheet("申報點數趨勢圖(" + str + ")");
+				// 建立行,行號作為引數傳遞給createRow()方法,第一行從0開始計算
+				row = sheet.createRow(0);
+				// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
+				cell = row.createCell(0);
+				// 設定單元格的值,即A1的值(第一行,第一列)
+				cell.setCellValue(str);
+				HSSFRow row1 = sheet.createRow(1);
+				CellStyle style1 = workbook.createCellStyle();
+				style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
+				style1.setVerticalAlignment(VerticalAlignment.CENTER);
+				for (int i = 0; i < tableHeader.length; i++) {
+					HSSFCell cell1 = row1.createCell(i);
+				
+					switch (i) {
+					case 0:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,0,2));
+						break;
+					case 3:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,3,5));
+						break;
+					case 6:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,6,8));
+						break;
+					case 9:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,9,10));
+						break;
+					case 11:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,11,12));
+						break;
+					case 13:
+						cell1 = row1.createCell(i);
+						cell1.setCellValue(tableHeader[i]);
+						cell1.setCellStyle(style1);
+						sheet.addMergedRegion(new CellRangeAddress(1,1,13,14));
+						break;
+					default:
+						break;
+					}
+				}
+				row2 = sheet.createRow(2);
+				for (int i = 0; i < tableHeader2.length; i++) {
+					HSSFCell cell2 = row2.createCell(i);
+					cell2.setCellValue(tableHeader2[i]);
+					cell2.setCellStyle(style1);
+				}
+				cellIndex = 0;
+				NameValueList3 nvlAll = model2.getAllMap3().get(str);
+				NameValueList3 nvlOp = model2.getOpemMap3().get(str);
+				NameValueList3 nvlip = model2.getIpMap3().get(str);
+				NameValueList3 nvlLeave = model2.getLeaveMap3().get(str);
+				HSSFRow rows = sheet.createRow(3);
+				/// 不知為何，poi如果直向寫入會發生值消失問題，這邊用一般橫向資料增長
+				for (int i = 0; i < nvlAll.getNames().size(); i++) {
+					HSSFCell cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlAll.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlAll.getValues2().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlAll.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getValues2().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getValues2().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip.getValues().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlLeave.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlLeave.getValues().get(i));
+					rows = sheet.createRow(4 + i);
+					cellIndex = 0;
+					cellIndex--;
+					if (i >= 1) {
+						cellIndex -= i;
+					}
+
+				}
+
+			}
+		}
+
 		String fileNameStr = "單月各科健保申報量與人次報表" + "_" + endDate;
 		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
 		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
@@ -2301,7 +2628,7 @@ public class ReportService {
 		response.setHeader("Content-Disposition",
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
 		response.setContentType("application/vnd.ms-excel;charset=utf8");
-		
+
 		// 輸出到磁碟中
 //		FileOutputStream fos = new FileOutputStream(new File("/Users/kamoguai/Desktop/單月各科健保申報量與人次報表" + ".csv"));
 		workbook.write(response.getOutputStream());

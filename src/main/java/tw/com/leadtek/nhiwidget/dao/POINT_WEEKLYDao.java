@@ -33,8 +33,8 @@ public interface POINT_WEEKLYDao extends JpaRepository<POINT_WEEKLY, Long> {
    * 取得趨勢圖資料
    * @return
    */
-  @Query(value = "SELECT pw.P_YEAR, pw.P_WEEK, pw.START_DATE, pw.END_DATE, pw.OP, pw.IP, pw.EM, pw.VISITS_OP, pw.VISITS_IP, pw.VISITS_LEAVE, pw.FUNC_TYPE, ct.DESC_CHI  FROM POINT_WEEKLY pw ,CODE_TABLE ct WHERE pw.FUNC_TYPE  = ct.CODE AND ct.CAT ='FUNC_TYPE' ", nativeQuery = true)
-  public List<Map<String,Object>> getTredAllData();
+  @Query(value = "SELECT * FROM POINT_WEEKLY  WHERE  END_DATE  BETWEEN  ?1 AND  ?2 ORDER BY END_DATE DESC", nativeQuery = true)
+  public List<POINT_WEEKLY> getTredAllData(String sDate, String eDate);
   
   
 }
