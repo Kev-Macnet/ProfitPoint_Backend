@@ -263,4 +263,49 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   @Modifying
   @Query(value = "UPDATE OP_D SET FUNC_TYPE=?1 WHERE ID=?2", nativeQuery = true)
   public void updateFuncTypeById(String funcType, Long id);
+  /**
+   * 門急診圓餅圖人數-人
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT COUNT, ROUND(COUNT / (SELECT sum(COUNT) FROM "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%'))  AND ct.CAT ='FUNC_TYPE' "
+  		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp) * 100,2) AS PERCENT, FUNC_TYPE, DESC_CHI FROM  "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' "
+  		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp", nativeQuery = true)
+  public List<Map<String,Object>> getOPPieCountData(String date);
+  
+  /**
+   * 門急診圓餅圖人數-人total
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT sum(COUNT) as TOTAL FROM "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE'  "
+  		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp", nativeQuery = true)
+  public int getOPPieCountTotal(String date);
+  
+  /**
+   * 門急診圓餅圖人數-點數
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT SUM, ROUND(SUM / (SELECT sum(SUM) FROM "
+  		+ "(SELECT SUM(opd.T_DOT) AS SUM, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp) * 100,2) AS PERCENT, FUNC_TYPE, DESC_CHI FROM  "
+  		+ "(SELECT SUM(opd.T_DOT) AS SUM,  opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp  "
+  		+ "", nativeQuery = true)
+  public List<Map<String,Object>> getOPPieDotData(String date);
+  
+  /**
+   * 門急診圓餅圖人數-點數 total
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT sum(SUM) FROM "
+  		+ "(SELECT SUM(opd.T_DOT) AS SUM, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp"
+  		, nativeQuery = true)
+  public int getOPPieDotTotal(String date);
 }

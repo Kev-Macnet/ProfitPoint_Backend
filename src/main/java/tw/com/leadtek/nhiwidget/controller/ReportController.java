@@ -3,10 +3,14 @@
  */
 package tw.com.leadtek.nhiwidget.controller;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -228,6 +232,59 @@ public class ReportController extends BaseController {
       return ResponseEntity.badRequest().body(result);
     }
     return ResponseEntity.ok(reportService.getVisitsVariety(startDate, endDate, year, week));
+  }
+ 
+  
+  @ApiOperation(value = "取得單月各科健保申報量與人次報表", notes = "取得單月各科健保申報量與人次報表")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/monthlyPointApplCount")
+  public ResponseEntity<PointMRPayload> getMonthlyPointApplCount(@ApiParam(name = "year", value = "西元年",
+      example = "2019") @RequestParam(required = true) Integer year,
+      @ApiParam(name = "month", value = "月份",
+      example = "3") @RequestParam(required = true) Integer month,
+      @ApiParam(name = "funcType", value = "",
+      example = "不分科") @RequestParam(required = true) String funcType
+		  ) {
+    if (year < 2015 || year > 2099) {
+      PointMRPayload result = new PointMRPayload();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("年份超過範圍");
+      return ResponseEntity.badRequest().body(result);
+    }
+    if (month < 1 || month > 12) {
+      PointMRPayload result = new PointMRPayload();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("月份超過範圍");
+      return ResponseEntity.badRequest().body(result);
+    }
+    return ResponseEntity.ok(reportService.getMonthlyReportApplCount(year, month,funcType));
+  }
+  
+  @ApiOperation(value = "取得單月各科健保申報量與人次報表-匯出", notes = "取得單月各科健保申報量與人次報表-匯出")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/monthlyPointApplCountExport")
+  public ResponseEntity<BaseResponse> getMonthlyPointApplCountExport(@ApiParam(name = "year", value = "西元年",
+      example = "2019") @RequestParam(required = true) Integer year,
+      @ApiParam(name = "month", value = "月份",
+      example = "3") @RequestParam(required = true) Integer month,
+      @ApiParam(name = "funcType", value = "",
+      example = "不分科") @RequestParam(required = true) String funcType,
+      HttpServletResponse response ) throws IOException {
+    if (year < 2015 || year > 2099) {
+      PointMRPayload result = new PointMRPayload();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("年份超過範圍");
+      return ResponseEntity.badRequest().body(result);
+    }
+    if (month < 1 || month > 12) {
+      PointMRPayload result = new PointMRPayload();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("月份超過範圍");
+      return ResponseEntity.badRequest().body(result);
+    }
+    reportService.getMonthlyReportApplCountExport(year, month,funcType,response);
+    
+    return null;
   }
 
 }

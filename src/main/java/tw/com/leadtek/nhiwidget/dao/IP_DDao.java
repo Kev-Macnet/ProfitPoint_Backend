@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 
 public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExecutor<IP_D> {
@@ -229,5 +230,86 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   @Modifying
   @Query(value = "UPDATE IP_D SET FUNC_TYPE=?1 WHERE ID=?2", nativeQuery = true)
   public void updateFuncTypeById(String funcType, Long id);  
+  
+  /**
+   * 取得申報日期總人數
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT  ipd.* FROM MR mr, IP_D ipd "
+  		+ "WHERE mr.id = ipd.MR_ID   AND mr.APPL_YM  = ?1 ", nativeQuery = true)
+  public List<IP_D> getApplCountByApplYM(String date);
+  
+  /**
+   * 取得未申報病歷資料
+   * @return
+   */
+  @Query(value = "SELECT mr.APPL_YM , ipd.OUT_DATE , ipd.IN_DATE  FROM MR mr, IP_D ipd "
+  		+ "WHERE mr.id = ipd.MR_ID   AND mr.APPL_YM  IS null", nativeQuery = true)
+  public List<Map<String, Object>> getMrDataByApplYMNull();
+  
+  /**
+   * 取得出院圓餅圖資料
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value = "SELECT  COUNT, ROUND(COUNT/ (SELECT SUM(COUNT) FROM (	 "
+  		+ "SELECT COUNT(ipd.FUNC_TYPE) as COUNT, ipd.FUNC_TYPE, ct.DESC_CHI FROM IP_D ipd, CODE_TABLE ct WHERE ipd.FUNC_TYPE = ct.CODE AND  LEAVE_DATE BETWEEN ?1 AND ?2 AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE , ct.DESC_CHI) temp) * 100,2 ) AS PERCENT,FUNC_TYPE,DESC_CHI FROM "
+  		+ "(SELECT COUNT(ipd.FUNC_TYPE) as COUNT, ipd.FUNC_TYPE, ct.DESC_CHI FROM IP_D ipd, CODE_TABLE ct WHERE ipd.FUNC_TYPE = ct.CODE AND  LEAVE_DATE BETWEEN ?1 AND ?2 AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE , ct.DESC_CHI) temp "
+  		+ "", nativeQuery = true)
+  public List<Map<String,Object>> getIPPieOutCountData(String sDate, String eDate);
+  
+  /**
+   * 取得出院圓餅圖資料 total
+   * @param sDate
+   * @param eDate
+   * @return
+   */
+  @Query(value = "SELECT SUM(COUNT) FROM (	 "
+  		+ "SELECT COUNT(ipd.FUNC_TYPE) as COUNT, ipd.FUNC_TYPE, ct.DESC_CHI FROM IP_D ipd, CODE_TABLE ct WHERE ipd.FUNC_TYPE = ct.CODE AND  LEAVE_DATE BETWEEN ?1 AND ?2 AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE , ct.DESC_CHI) temp", nativeQuery = true)
+  public int getIPPieOutCountToal(String sDate, String eDate);
+  
+  /**
+   * 取得住院圓餅圖資料-人
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT COUNT, ROUND(COUNT / (SELECT SUM(COUNT) FROM "
+  		+ "(SELECT COUNT(ipd.FUNC_TYPE) AS COUNT, ipd.FUNC_TYPE, ct.DESC_CHI FROM IP_D ipd, CODE_TABLE ct  WHERE ipd.FUNC_TYPE = ct.CODE  AND  ipd.IPT_ID in (SELECT ID FROM IP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE , ct.DESC_CHI)temp) * 100,2 ) AS PERCENT,FUNC_TYPE,DESC_CHI FROM"
+  		+ "(SELECT COUNT(ipd.FUNC_TYPE) AS COUNT, ipd.FUNC_TYPE, ct.DESC_CHI FROM IP_D ipd, CODE_TABLE ct  WHERE ipd.FUNC_TYPE = ct.CODE  AND  ipd.IPT_ID in (SELECT ID FROM IP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE , ct.DESC_CHI) temp "
+  		, nativeQuery = true)
+  public List<Map<String,Object>> getIPPieCountData(String date);
+  
+  /**
+   * 取得住院圓餅圖資料-人 total
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT SUM(COUNT) FROM "
+  		+ "(SELECT COUNT(ipd.FUNC_TYPE) AS COUNT, ipd.FUNC_TYPE, ct.DESC_CHI FROM IP_D ipd, CODE_TABLE ct  WHERE ipd.FUNC_TYPE = ct.CODE  AND  ipd.IPT_ID in (SELECT ID FROM IP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE , ct.DESC_CHI)temp", nativeQuery = true)
+  public int getIPPieCountTotal(String date);
+  
+  /**
+   * 取得住院圓餅圖資料-點數
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT  SUM, ROUND(SUM / (SELECT SUM(SUM) AS SUM FROM "
+  		+ "(SELECT (SUM(ipd.PART_DOT) + SUM(ipd.APPL_DOT)) AS SUM, ipd.FUNC_TYPE, ct.DESC_CHI FROM  IP_D ipd, CODE_TABLE ct WHERE ipd.FUNC_TYPE  = ct.CODE AND  ipd.IPT_ID IN (SELECT ID FROM IP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE, ct.DESC_CHI) temp "
+  		+ ") * 100, 2) AS PERCENT, FUNC_TYPE,DESC_CHI FROM  "
+  		+ "(SELECT (SUM(ipd.PART_DOT) + SUM(ipd.APPL_DOT)) AS SUM, ipd.FUNC_TYPE, ct.DESC_CHI FROM  IP_D ipd, CODE_TABLE ct WHERE ipd.FUNC_TYPE  = ct.CODE AND  ipd.IPT_ID IN (SELECT ID FROM IP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE, ct.DESC_CHI) temp "
+  		+ " ", nativeQuery = true)
+  public List<Map<String,Object>> getIPPieDotData(String date);
+  
+  /**
+   * 取得住院圓餅圖資料-點數 total
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT SUM(SUM) AS SUM FROM "
+  		+ "(SELECT (SUM(ipd.PART_DOT) + SUM(ipd.APPL_DOT)) AS SUM, ipd.FUNC_TYPE, ct.DESC_CHI FROM  IP_D ipd, CODE_TABLE ct WHERE ipd.FUNC_TYPE  = ct.CODE AND  ipd.IPT_ID IN (SELECT ID FROM IP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE, ct.DESC_CHI) temp "
+  		, nativeQuery = true)
+  public int getIPPieDotTotal(String date);
   
 }
