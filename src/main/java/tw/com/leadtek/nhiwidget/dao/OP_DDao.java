@@ -20,6 +20,33 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   
   public List<OP_D> findByMrId(Long mrId);
   
+  //門急診/住院病例總點數
+  @Query(value="SELECT OP.OP_DOT + IP.IP_DOT FROM "
+  		+ "(SELECT SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
+  		+ "(SELECT (SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP", nativeQuery=true)
+  public String findTDot(List<Integer>ids,List<Integer>ids2);
+  
+  //門急診/住院總藥費
+  @Query(value="SELECT OP.OP_DOT + IP.IP_DOT FROM "
+  		+ "(SELECT SUM(DRUG_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
+  		+ "(SELECT SUM(DRUG_DOT) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP",nativeQuery=true)
+  public String findTDrugFee(List<Integer>ids,List<Integer>ids2);
+  
+  //門急診病例總點數
+  @Query(value="SELECT OP.OP_DOT FROM "
+	  		+ "(SELECT SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
+  public String findOPDot(List<Integer>ids);
+  
+  //門急診總藥費
+  @Query(value="SELECT OP.OP_DOT FROM "
+	  		+ "(SELECT SUM(DRUG_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP",nativeQuery=true)
+  public String findOPDrugFee(List<Integer>ids);
+  
+  //各科別門急診總藥品點數or總藥費
+  @Query(value="SELECT FUNC_TYPE,SUM(DRUG_DOT) AS OP_DOT FROM "
+  		+ "OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE",nativeQuery=true)
+  public List<Object[]> findByOptIdAndGroupByFuncType(List<Integer>ids);
+  
   @Query(value = "SELECT SEQ_NO, ID, ROC_ID, FUNC_DATE, MR_ID, ID_BIRTH_YMD FROM OP_D WHERE OPT_ID= ?1 ", nativeQuery = true)
   public List<Object[]> findByOptIdSimple(Long optId);
   

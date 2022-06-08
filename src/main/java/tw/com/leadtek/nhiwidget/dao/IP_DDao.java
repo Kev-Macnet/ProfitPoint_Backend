@@ -23,6 +23,21 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   public List<IP_D> findByMrId(Long mrid);
   
+  //住院病例總點數
+  @Query(value="SELECT IP.IP_DOT FROM "
+  		+ "(SELECT (SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP", nativeQuery=true)
+  public String findIPDot(List<Integer>ids);
+  
+  //住院總藥費
+  @Query(value="SELECT IP.IP_DOT FROM "
+  		+ "(SELECT SUM(DRUG_DOT) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP",nativeQuery=true)
+  public String findIPDrugFee(List<Integer>ids);
+  
+  //各科別住院總藥品點數or總藥費
+  @Query(value="SELECT FUNC_TYPE,SUM(DRUG_DOT) AS IP_DOT FROM "
+  		+ "IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE",nativeQuery=true)
+  public List<Object[]> findByIptIdAndGroupByFuncType(List<Integer>ids);
+  
   @Query(value =  "SELECT SEQ_NO ,ID ,ROC_ID, IN_DATE, MR_ID, ID_BIRTH_YMD FROM IP_D WHERE IPT_ID=?1 ", nativeQuery = true)
   public List<Object[]> findByIptIdSimple(Long iptId);
   

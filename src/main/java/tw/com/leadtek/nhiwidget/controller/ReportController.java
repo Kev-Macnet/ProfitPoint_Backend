@@ -6,11 +6,11 @@ package tw.com.leadtek.nhiwidget.controller;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-
 import javax.servlet.http.HttpServletResponse;
-
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -28,11 +29,14 @@ import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
+import tw.com.leadtek.nhiwidget.payload.report.HealthCareCost;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsVarietyPayload;
+import tw.com.leadtek.nhiwidget.service.HealthCareCostService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
+import tw.com.leadtek.tools.DateTool;
 
 @Api(tags = "快速報告相關API", value = "快速報告相關API")
 @CrossOrigin(origins = "*", maxAge = 36000)
@@ -43,6 +47,9 @@ public class ReportController extends BaseController {
 
   @Autowired
   private ReportService reportService;
+  
+  @Autowired
+  private HealthCareCostService healthCareCostService;
   
   @ApiOperation(value = "取得健保點數月報表", notes = "取得健保點數月報表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
@@ -283,4 +290,34 @@ public class ReportController extends BaseController {
     return null;
   }
 
+  @ApiOperation(value = "健保藥費概況", notes = "健保藥費概況")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/healthcarecost")
+  public ResponseEntity<List<HealthCareCost>> getHealthCareCost(
+      @ApiParam(name = "syear", value = "開始年份", example = "2022") 
+      @RequestParam(required = false) String syear,
+      @ApiParam(name = "season", value = "季度", example = "Q1") 
+      @RequestParam(required = false) String season){
+	
+	List<HealthCareCost>results=new ArrayList<HealthCareCost>();
+	  
+	if(syear.length()!=4 || season.length()==0) {
+		HealthCareCost healthCareCost=new HealthCareCost();
+		healthCareCost.setResult(BaseResponse.ERROR);
+		healthCareCost.setMessage("年份或季度格式不正確");
+	      results.add(healthCareCost);
+	      return ResponseEntity.badRequest().body(results);
+	}
+    
+	String chineseYear=DateTool.convertToChineseYear(syear);
+	
+	results=healthCareCostService.getData(chineseYear,season,results);
+	logger.info("健保藥費概況: {}",results.toString());
+	
+	if(results.size()==1 && results.get(0).getResult().equals("error") && results.get(0).getMessage().equals("季度格式不正確")) {
+		return ResponseEntity.badRequest().body(results);
+	}
+	
+    return ResponseEntity.ok(results);
+  }
 }
