@@ -9,8 +9,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -35,6 +37,7 @@ import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsVarietyPayload;
 import tw.com.leadtek.nhiwidget.service.HealthCareCostService;
+import tw.com.leadtek.nhiwidget.service.ReportExportService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
 import tw.com.leadtek.tools.DateTool;
 
@@ -50,6 +53,9 @@ public class ReportController extends BaseController {
   
   @Autowired
   private HealthCareCostService healthCareCostService;
+  
+  @Autowired
+  private ReportExportService reportExportService;
   
   @ApiOperation(value = "取得健保點數月報表", notes = "取得健保點數月報表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
@@ -285,7 +291,7 @@ public class ReportController extends BaseController {
       result.setMessage("月份超過範圍");
       return ResponseEntity.badRequest().body(result);
     }
-    reportService.getMonthlyReportApplCountExport(year, month,response);
+    reportExportService.getMonthlyReportApplCountExport(year, month,response);
     
     return null;
   }
@@ -319,5 +325,30 @@ public class ReportController extends BaseController {
 	}
 	
     return ResponseEntity.ok(results);
+  }
+  
+  @ApiOperation(value = "取得健保點數月報表-匯出", notes = "取得健保點數月報表-匯出")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/monthlyPointExport")
+  public ResponseEntity<BaseResponse> getMonthlyPointExport(@ApiParam(name = "year", value = "西元年",
+      example = "2021") @RequestParam(required = true) Integer year,
+      @ApiParam(name = "month", value = "月份",
+      example = "3") @RequestParam(required = true) Integer month,
+      HttpServletResponse response 
+      ) throws IOException {
+    if (year < 2015 || year > 2030) {
+      PointMRPayload result = new PointMRPayload();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("年份超過範圍");
+      return ResponseEntity.badRequest().body(result);
+    }
+    if (month < 1 || month > 12) {
+      PointMRPayload result = new PointMRPayload();
+      result.setResult(BaseResponse.ERROR);
+      result.setMessage("月份超過範圍");
+      return ResponseEntity.badRequest().body(result);
+    }
+    reportExportService.getMonthlyReportExport(year, month, response);
+    return null;
   }
 }
