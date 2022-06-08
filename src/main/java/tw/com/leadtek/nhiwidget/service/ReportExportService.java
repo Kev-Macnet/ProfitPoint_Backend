@@ -3,6 +3,7 @@ package tw.com.leadtek.nhiwidget.service;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +27,9 @@ import org.springframework.stereotype.Service;
 import com.google.common.io.Files;
 
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
+import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
+import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
+import tw.com.leadtek.nhiwidget.payload.report.NameValueList2;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList3;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsVarietyPayload;
@@ -1516,6 +1520,297 @@ public class ReportExportService {
 		}
 
 		String fileNameStr = "單月健保點數總表" + "_" + endDate;
+		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+				? FILE_PATH + "\\" + fileName
+				: FILE_PATH + "/" + fileName;
+		File file = new File(filepath);
+		response.reset();
+		response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+		response.setContentType("application/vnd.ms-excel;charset=utf8");
+
+		workbook.write(response.getOutputStream());
+		workbook.close();
+
+	}
+
+	public void getAchievementRateExport(String year, String week, HttpServletResponse response) throws IOException {
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.YEAR, Integer.parseInt(year));
+		cal.set(Calendar.WEEK_OF_YEAR, Integer.parseInt(week));
+		// 指定週的最後一天
+		cal.set(Calendar.DAY_OF_WEEK, Calendar.SATURDAY);
+
+		String dateStr = year + week + "w";
+
+		AchievementWeekly awData = reportService.getAchievementWeekly(cal);
+
+		// 建立新工作簿
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		// 新建工作表
+		HSSFSheet sheet = workbook.createSheet("基本數值");
+		HSSFCellStyle cellStyle = workbook.createCellStyle();
+		cellStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellStyle.setBorderRight(BorderStyle.MEDIUM);
+
+		HSSFCellStyle cellTitleStyle = workbook.createCellStyle();
+		cellTitleStyle.setAlignment(HorizontalAlignment.CENTER);
+		cellTitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellTitleStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
+
+		int cellIndex = 0;
+		int rowIndex = 0;
+
+		String[] tableRowHeaders = { "統計月份", "慢籤額度條件", "本月申報點數", "本月分配額度", "總額達成率" };
+
+		for (int y = 0; y < tableRowHeaders.length; y++) {
+			HSSFRow rows = sheet.createRow(y);
+			HSSFCell cells = rows.createCell(cellIndex);
+			cells.setCellValue(tableRowHeaders[y]);
+			cells.setCellStyle(cellStyle);
+
+			cellIndex++;
+			HSSFCell cellss = rows.createCell(cellIndex);
+			switch (y) {
+			case 0:
+				cellss = rows.createCell(cellIndex);
+				cellss.setCellValue(dateStr);
+				cellss.setCellStyle(cellStyle);
+				break;
+			case 1:
+				cellss = rows.createCell(cellIndex);
+				cellss.setCellValue("");
+				cellss.setCellStyle(cellStyle);
+				break;
+			case 2:
+				cellss = rows.createCell(cellIndex);
+				cellss.setCellValue(awData.getMonthTotal());
+				cellss.setCellStyle(cellStyle);
+				break;
+			case 3:
+				cellss = rows.createCell(cellIndex);
+				cellss.setCellValue(awData.getMonthAssigned());
+				cellss.setCellStyle(cellStyle);
+				break;
+			case 4:
+				cellss = rows.createCell(cellIndex);
+				cellss.setCellValue(awData.getAchievementRate());
+				cellss.setCellStyle(cellStyle);
+				break;
+			default:
+				break;
+			}
+			cellIndex = 0;
+		}
+
+		/// 最後設定autosize
+		for (int i = 0; i < tableRowHeaders.length; i++) {
+			sheet.autoSizeColumn(i);
+			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+		}
+		/// sheet2
+		String[] sheetHeaders = { "門急診住院總額總點數趨勢圖", "門急診總額總點數趨勢圖", "住院總額總點數趨勢圖", "門診急診總額總點數" };
+		String[] tableCellHeaders = { "週數", "總額點數", "週數", "分配點數", "實際申報點數", "達成率" };
+		String[] tableCellHeaders5_1 = { "門診申報點數趨勢圖", "", "急診申報點數趨勢圖", "" };
+		String[] tableCellHeaders5_2 = { "週數", "總額點數", "週數", "總額點數" };
+
+		NameValueList nvlAll = null;
+		NameValueList nvlAssingAll = null;
+		NameValueList2 nvlActualAll = null;
+		/// 重點： nvlAssingAll物件長度與nvlActualAll相同
+
+		cellIndex = 0;
+		rowIndex = 1;
+		boolean isContinue = false;
+		try {
+			for (String sheetName : sheetHeaders) {
+				switch (sheetName) {
+				case "門急診住院總額總點數趨勢圖":
+					nvlAll = awData.getAll();
+					nvlAssingAll = awData.getAssignedAll();
+					nvlActualAll = awData.getActualAll();
+					break;
+				case "門急診總額總點數趨勢圖":
+					nvlAll = awData.getOpAll();
+					nvlAssingAll = awData.getAssignedOpAll();
+					nvlActualAll = awData.getActualOpAll();
+					break;
+				case "住院總額總點數趨勢圖":
+					nvlAll = awData.getIp();
+					nvlAssingAll = awData.getAssignedIp();
+					nvlActualAll = awData.getActualIp();
+					break;
+				case "門診急診總額總點數":
+					nvlAll = awData.getOp();
+					nvlAssingAll = awData.getEm();
+					break;
+				default:
+					break;
+				}
+				if (!sheetHeaders[3].equals(sheetName)) {
+					sheet = workbook.createSheet(sheetName);
+					HSSFRow rows = sheet.createRow(0);
+					HSSFCell cells = rows.createCell(cellIndex);
+					for (int i = 0; i <= 5; i++) {
+						cells = rows.createCell(i);
+						cells.setCellStyle(cellTitleStyle);
+						if (i == 0) {
+
+							cells.setCellValue(sheetName);
+						}
+					}
+
+					sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 5));
+
+					/// headers
+					HSSFRow rowss = sheet.createRow(1);
+					for (int x = 0; x < tableCellHeaders.length; x++) {
+						HSSFCell cellss = rowss.createCell(x + cellIndex);
+						cellss.setCellValue(tableCellHeaders[x]);
+						cellss.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+					rowIndex = 2;
+					rowss = sheet.createRow(rowIndex);
+					/// values
+					for (int v1 = 0; v1 < nvlAll.getNames().size(); v1++) {
+						String v1Name = nvlAll.getNames().get(v1);
+						Long v1Val = nvlAll.getValues().get(v1);
+
+						HSSFCell cellss = rowss.createCell(cellIndex);
+						cellss.setCellValue(v1Name);
+						cellss.setCellStyle(cellStyle);
+						cellIndex++;
+						cellss = rowss.createCell(cellIndex);
+						cellss.setCellValue(v1Val);
+						cellss.setCellStyle(cellStyle);
+						cellIndex = 2;
+						for (int v2 = 0; v2 < nvlAssingAll.getNames().size(); v2++) {
+							String v2Name = nvlAssingAll.getNames().get(v2);
+							Long v2Val = nvlAssingAll.getValues().get(v2);
+							if (v1Name.equals(v2Name)) {
+								cellss = rowss.createCell(cellIndex);
+								cellss.setCellValue(v2Name);
+								cellss.setCellStyle(cellStyle);
+								cellIndex++;
+								cellss = rowss.createCell(cellIndex);
+								cellss.setCellValue(v2Val);
+								cellss.setCellStyle(cellStyle);
+								cellIndex++;
+								cellss = rowss.createCell(cellIndex);
+								Long v3Val = nvlActualAll.getValues().get(v2);
+								Long v3Val2 = nvlActualAll.getValues2().get(v2);
+								cellss.setCellValue(v3Val);
+								cellss.setCellStyle(cellStyle);
+								cellIndex++;
+								cellss = rowss.createCell(cellIndex);
+								cellss.setCellValue(String.valueOf(v3Val2) + "%");
+								cellss.setCellStyle(cellStyle);
+
+							} else {
+								if (!isContinue) {
+									cellss = rowss.createCell(cellIndex);
+									cellss.setCellValue("");
+									cellss.setCellStyle(cellStyle);
+									cellIndex++;
+									cellss = rowss.createCell(cellIndex);
+									cellss.setCellValue("");
+									cellss.setCellStyle(cellStyle);
+									cellIndex++;
+									cellss = rowss.createCell(cellIndex);
+									cellss.setCellValue("");
+									cellss.setCellStyle(cellStyle);
+									cellIndex++;
+									cellss = rowss.createCell(cellIndex);
+									cellss.setCellValue("");
+									cellss.setCellStyle(cellStyle);
+									isContinue = true;
+								} else {
+									continue;
+								}
+
+								isContinue = true;
+							}
+							cellss.setCellStyle(cellStyle);
+							cellIndex = 2;
+						}
+						isContinue = false;
+						rowss = sheet.createRow(rowIndex + v1);
+						cellIndex = 0;
+
+					}
+					cellIndex = 0;
+					rowIndex = 0;
+				} else {
+					sheet = workbook.createSheet(sheetName);
+					HSSFRow rows = sheet.createRow(0);
+					HSSFCell cells = rows.createCell(cellIndex);
+					for (int i = 0; i < tableCellHeaders5_1.length; i++) {
+						cells = rows.createCell(i);
+						cells.setCellStyle(cellTitleStyle);
+						if (i == 0) {
+							cells.setCellValue(tableCellHeaders5_1[i]);
+						} else if (i == 2) {
+							cells.setCellValue(tableCellHeaders5_1[i]);
+						}
+					}
+
+					sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 1));
+					sheet.addMergedRegion(new CellRangeAddress(0, 0, 2, 3));
+
+					HSSFRow rowss = sheet.createRow(1);
+					for (int x = 0; x < tableCellHeaders5_2.length; x++) {
+						HSSFCell cellss = rowss.createCell(x + cellIndex);
+						cellss.setCellValue(tableCellHeaders5_2[x]);
+						cellss.setCellStyle(cellStyle);
+					}
+					rowss = sheet.createRow(2);
+					rowIndex = 3;
+					for (int v = 0; v < nvlAll.getNames().size(); v++) {
+						String v1Name = nvlAll.getNames().get(v);
+						Long v1Val = nvlAll.getValues().get(v);
+						String v2Name = nvlAssingAll.getNames().get(v);
+						Long v2Val = nvlAssingAll.getValues().get(v);
+
+						HSSFCell cellss = rowss.createCell(cellIndex);
+						cellss.setCellValue(v1Name);
+						cellss.setCellStyle(cellStyle);
+						cellIndex++;
+						cellss = rowss.createCell(cellIndex);
+						cellss.setCellValue(v1Val);
+						cellss.setCellStyle(cellStyle);
+						cellIndex++;
+						cellss = rowss.createCell(cellIndex);
+						cellss.setCellValue(v2Name);
+						cellss.setCellStyle(cellStyle);
+						cellIndex++;
+						cellss = rowss.createCell(cellIndex);
+						cellss.setCellValue(v2Val);
+						cellss.setCellStyle(cellStyle);
+						rowss = sheet.createRow(rowIndex + v);
+						cellIndex = 0;
+					}
+				}
+				/// 最後設定autosize
+				for (int i = 0; i < tableCellHeaders.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		String fileNameStr = "健保申報總額達成趨勢圖" + "_" + dateStr;
 		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
 		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
 				? FILE_PATH + "\\" + fileName
