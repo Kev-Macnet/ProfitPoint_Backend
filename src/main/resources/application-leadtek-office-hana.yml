@@ -110,7 +110,7 @@ project:
   serverUrl: "http://59.120.139.62:8082/#/login?redir=warehouse/"
   apiUrl: "http://59.120.139.60:8081/"
   hospId: 1532011154
-  isMask: false
+  isMask: true
 swagger:
   enable: true
   application-name: 健保申保最佳化系統 API
