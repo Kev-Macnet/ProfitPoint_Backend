@@ -1668,7 +1668,7 @@ public class ReportService {
 	 * @param func_type
 	 * @return
 	 */
-	public PointMRPayload getMonthlyReportApplCount(int year, int month, String func_type) {
+	public PointMRPayload getMonthlyReportApplCount(int year, int month) {
 
 		String monthStr = "";
 		if (month < 10) {
@@ -1844,84 +1844,7 @@ public class ReportService {
 		/// 將最後結果add倒要顯示集合
 		dotPie.addAll(collectionList2);
 
-		List<Map<String, Object>> pointList = new ArrayList<Map<String, Object>>();
-		/// 取得趨勢圖資料
-		if (!func_type.isEmpty() && !func_type.equals("不分科")) {
-			pointList = pointWeeklyDao.getTredDataByFuncType(func_type);
-		} else {
-//			pointList = pointWeeklyDao.getTredAllData();
-		}
-		List<Map<String, Object>> opDotTred = new ArrayList<Map<String, Object>>();
-		List<Map<String, Object>> ipDotTred = new ArrayList<Map<String, Object>>();
-		List<Map<String, Object>> dotTred = new ArrayList<Map<String, Object>>();
-		List<Map<String, Object>> opCountTred = new ArrayList<Map<String, Object>>();
-		List<Map<String, Object>> ipCountTred = new ArrayList<Map<String, Object>>();
-		List<Map<String, Object>> leaveCountTred = new ArrayList<Map<String, Object>>();
-		ojectMap = new HashMap<String, Object>();
-
-		for (Map<String, Object> map : pointList) {
-			/// 點數
-			String pyear = map.get("P_YEAR").toString();
-			String pweek = map.get("P_WEEK").toString();
-			String opPoint = map.get("OP").toString();
-			String ipPoint = map.get("IP").toString();
-			String emPoint = map.get("EM").toString();
-			String funcT = map.get("FUNC_TYPE").toString();
-			String funcC = map.get("DESC_CHI").toString();
-			/// 人數
-			String vOp = map.get("VISITS_OP").toString();
-			String vIp = map.get("VISITS_IP").toString();
-			String vLeave = map.get("VISITS_LEAVE").toString();
-			/// 趨勢圖門急診點數
-			ojectMap.put("YEAR", pyear);
-			ojectMap.put("WEEK", pweek);
-			ojectMap.put("OP", String.valueOf(Integer.parseInt(opPoint) + Integer.parseInt(emPoint)));
-			ojectMap.put("FUNC_TYPE", funcT);
-			ojectMap.put("DESC_CHI", funcC);
-			opDotTred.add(ojectMap);
-			ojectMap = new HashMap<String, Object>();
-			/// 趨勢圖住院點數
-			ojectMap.put("YEAR", pyear);
-			ojectMap.put("WEEK", pweek);
-			ojectMap.put("EM", emPoint);
-			ojectMap.put("FUNC_TYPE", funcT);
-			ojectMap.put("DESC_CHI", funcC);
-			ipDotTred.add(ojectMap);
-			ojectMap = new HashMap<String, Object>();
-			/// 趨勢圖門急診/住院點數
-			ojectMap.put("YEAR", pyear);
-			ojectMap.put("WEEK", pweek);
-			ojectMap.put("ALL_DOT",
-					String.valueOf(Integer.parseInt(opPoint) + Integer.parseInt(emPoint) + Integer.parseInt(ipPoint)));
-			ojectMap.put("FUNC_TYPE", funcT);
-			ojectMap.put("DESC_CHI", funcC);
-			dotTred.add(ojectMap);
-			ojectMap = new HashMap<String, Object>();
-			/// 趨勢圖門急診人數
-			ojectMap.put("YEAR", pyear);
-			ojectMap.put("WEEK", pweek);
-			ojectMap.put("VISITS_OP", vOp);
-			ojectMap.put("FUNC_TYPE", funcT);
-			ojectMap.put("DESC_CHI", funcC);
-			opCountTred.add(ojectMap);
-			ojectMap = new HashMap<String, Object>();
-			/// 趨勢圖住院人數
-			ojectMap.put("YEAR", pyear);
-			ojectMap.put("WEEK", pweek);
-			ojectMap.put("VISITS_IP", vIp);
-			ojectMap.put("FUNC_TYPE", funcT);
-			ojectMap.put("DESC_CHI", funcC);
-			ipCountTred.add(ojectMap);
-			ojectMap = new HashMap<String, Object>();
-			/// 趨勢圖出院人數
-			ojectMap.put("YEAR", pyear);
-			ojectMap.put("WEEK", pweek);
-			ojectMap.put("VISITS_LEAVE", vLeave);
-			ojectMap.put("FUNC_TYPE", funcT);
-			ojectMap.put("DESC_CHI", funcC);
-			leaveCountTred.add(ojectMap);
-			ojectMap = new HashMap<String, Object>();
-		}
+		
 
 		PointMRPayload result = new PointMRPayload();
 
@@ -1948,26 +1871,14 @@ public class ReportService {
 		result.setIpPieDotData(ipPieDotData);
 		/// 返回 門急診＋住院點數園餅
 		result.setTotalPieDotData(dotPie);
-		/// 返回門急診人數趨勢圖
-//		result.setOpTredCountData(opCountTred);
-//		/// 返回住院人數趨勢圖
-//		result.setIpTredCountData(ipCountTred);
-//		/// 返回出院人數趨勢圖
-//		result.setIpTredOutCountData(leaveCountTred);
-//		/// 返回門急診點數趨勢圖
-//		result.setOpTredDotData(opDotTred);
-//		/// 返回住院點數趨勢圖
-//		result.setIpTredDotData(ipDotTred);
-//		/// 返回門急診/住院點數趨勢圖
-//		result.setTotalTredDotData(dotTred);
-
+		/// 返回趨勢圖資料
 		VisitsVarietyPayload res = new VisitsVarietyPayload();
 		result.setVisitsVarietyPayload(getVistAndPointWeekly(res, String.valueOf(year), monthStr));
 
 		return result;
 	}
 
-	public void getMonthlyReportApplCountExport(int year, int month, String func_type, HttpServletResponse response)
+	public void getMonthlyReportApplCountExport(int year, int month, HttpServletResponse response)
 			throws IOException {
 		String monthStr = "";
 		if (month < 10) {
@@ -1980,36 +1891,12 @@ public class ReportService {
 		/// 轉成民國年月
 		String endDate = inputDate.substring(0, inputDate.length() - 2);
 		/// 呼叫上面api
-		PointMRPayload pointData = this.getMonthlyReportApplCount(year, month, func_type);
+		PointMRPayload pointData = this.getMonthlyReportApplCount(year, month);
 		String[] tableHeaderNum = { "門急診/住院", "門急診", "門診(早)", "門診(中)", "門診(晚)", "急診", "住院", "出院" };
 		String[] tableCellHeader = { "單月各科人次比\n門急診/住院(含手術)", "人次", "比例", "", "單月各科人次比\n門急診(含手術)", "人次", "比例", "" };
 
 		POINT_MONTHLY model = pointData.getCurrent();
 		String sheetName = "單月各科健保申報量與人次報表" + "_" + endDate;
-//		Map<String,Object> map = new HashMap<String,Object>();
-//		map.put("totalAll", model.getTotalAll());
-//		map.put("totalOpAll", model.getTotalOpAll());
-//		map.put("totalEm", model.getTotalEm());
-//		map.put("totalIp", model.getTotalIp());
-//		
-//		List<Map<String,Object>>data = new ArrayList<Map<String,Object>>();
-//		data.add(map);
-//		HeadDetails headDetails = new HeadDetails()
-//        		.add("totalAll", "門急診/住院",35,true)
-//        		.add("totalOpAll", "門急診",35,true)
-//        		.add("", "門診(早)",35,true)
-//        		.add("", "門診(中)",35,true)
-//        		.add("", "門診(晚)",35,true)
-//        		.add("totalEm", "急診",35,true)
-//        		.add("totalIp", "住院",35,true)
-//        		.add("", "出院",35,true)
-//        		;
-//		new WorkbookUtil("單月各科健保申報量與人次報表").initWorkbook()
-//		.initSheet(sheetName, null)
-//		.initSheetHead(headDetails, null, null, null)
-//		.setSheetData(headDetails, data, null)
-//		.builderResponseEntity()
-//		;
 
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
@@ -2629,12 +2516,10 @@ public class ReportService {
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
 		response.setContentType("application/vnd.ms-excel;charset=utf8");
 
-		// 輸出到磁碟中
-//		FileOutputStream fos = new FileOutputStream(new File("/Users/kamoguai/Desktop/單月各科健保申報量與人次報表" + ".csv"));
 		workbook.write(response.getOutputStream());
 		workbook.close();
 		Files.copy(file, response.getOutputStream());
-//		fos.close();
+
 
 	}
 

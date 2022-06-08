@@ -241,9 +241,7 @@ public class ReportController extends BaseController {
   public ResponseEntity<PointMRPayload> getMonthlyPointApplCount(@ApiParam(name = "year", value = "西元年",
       example = "2019") @RequestParam(required = true) Integer year,
       @ApiParam(name = "month", value = "月份",
-      example = "3") @RequestParam(required = true) Integer month,
-      @ApiParam(name = "funcType", value = "",
-      example = "不分科") @RequestParam(required = true) String funcType
+      example = "3") @RequestParam(required = true) Integer month
 		  ) {
     if (year < 2015 || year > 2099) {
       PointMRPayload result = new PointMRPayload();
@@ -257,7 +255,7 @@ public class ReportController extends BaseController {
       result.setMessage("月份超過範圍");
       return ResponseEntity.badRequest().body(result);
     }
-    return ResponseEntity.ok(reportService.getMonthlyReportApplCount(year, month,funcType));
+    return ResponseEntity.ok(reportService.getMonthlyReportApplCount(year, month));
   }
   
   @ApiOperation(value = "取得單月各科健保申報量與人次報表-匯出", notes = "取得單月各科健保申報量與人次報表-匯出")
@@ -267,8 +265,6 @@ public class ReportController extends BaseController {
       example = "2019") @RequestParam(required = true) Integer year,
       @ApiParam(name = "month", value = "月份",
       example = "3") @RequestParam(required = true) Integer month,
-      @ApiParam(name = "funcType", value = "",
-      example = "不分科") @RequestParam(required = true) String funcType,
       HttpServletResponse response ) throws IOException {
     if (year < 2015 || year > 2099) {
       PointMRPayload result = new PointMRPayload();
@@ -282,7 +278,7 @@ public class ReportController extends BaseController {
       result.setMessage("月份超過範圍");
       return ResponseEntity.badRequest().body(result);
     }
-    reportService.getMonthlyReportApplCountExport(year, month,funcType,response);
+    reportService.getMonthlyReportApplCountExport(year, month,response);
     
     return null;
   }
