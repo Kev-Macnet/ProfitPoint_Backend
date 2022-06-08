@@ -69,7 +69,8 @@ public class InitialEnvironment {
   public final static String SERVER_IP = "localhost";
   
   // 最後要有 \\
-  private final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\高雄霖園醫院\\";
+  //public final static String FILE_PATH = "D:\\Documents\\Projects\\Leadtek\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\";
+  public final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\";
   
   @Autowired
   private PARAMETERSDao pDao;
@@ -110,14 +111,14 @@ public class InitialEnvironment {
    */
   private long maxId = 0;
 
-  @Ignore
+  //@Ignore
   @Test
   public void importData() {
     if(userDao.count() ==0) {
       initialLeadtek();
     }
-    //importFromExcel(FILE_PATH + "PARAMETERS.xlsx", "參數設定", 1);
-    importCODE_TABLEToRDB(FILE_PATH + "CODE_TABLE_霖園醫院.xlsx");
+    importFromExcel(FILE_PATH + "PARAMETERS.xlsx", "參數設定", 1);
+    //importCODE_TABLEToRDB(FILE_PATH + "CODE_TABLE_霖園醫院.xlsx");
     //addDepartmentFile();
     //addUserFile();
   }
@@ -419,7 +420,7 @@ public class InitialEnvironment {
     userService.newUser(user);
   }
   
-  //@Ignore
+  @Ignore
   @Test
   public void importPayCode() {
     maxId = getMaxId() + 1;

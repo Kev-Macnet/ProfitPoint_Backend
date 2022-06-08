@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.tools;
 
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DecimalStyle;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFRow;
@@ -22,6 +24,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
+import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 
 public class ExcelUtil {
 
@@ -349,6 +352,42 @@ public class ExcelUtil {
     }
     return result;
   }
+  
+  public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
+      XSSFRow row, DecimalFormat df) {
+    HashMap<String, String> result = new HashMap<String, String>();
+    // for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+    for (int i = 0; i < 100; i++) {
+      String cellValue = null;
+      if (row.getCell(i) == null) {
+        continue;
+      }
+      if (row.getCell(i).getCellType() == CellType.NUMERIC) {
+        if (DateUtil.isCellDateFormatted(row.getCell(i)) || row.getCell(i).getCellStyle().getDataFormatString().indexOf("yy") > -1
+            || row.getCell(i).getCellStyle().getDataFormatString().indexOf("/") > 0) {
+          cellValue = ExcelUtil.SDF_DATETIME.format(row.getCell(i).getDateCellValue());
+        } else {
+          cellValue = String.valueOf(df.format(row.getCell(i).getNumericCellValue()));
+          if ("44743".equals(cellValue)) {
+            System.out.println(cellValue + " format:" + DateUtil.isCellDateFormatted(row.getCell(i)) + "," + row.getCell(i).getCellStyle().getDataFormatString());
+          }
+        }
+        // System.out.println("cell numeric before:" + cellValue);
+        if (cellValue.endsWith(".0")) {
+          cellValue = cellValue.substring(0, cellValue.length() - 2);
+        }
+        // System.out.println("cell numeric after:" + cellValue);
+      } else {
+        cellValue = row.getCell(i).getStringCellValue().trim();
+      }
+      if (cellValue != null && cellValue.length() > 0) {
+        if (columnMap.get(new Integer(i)) != null) {
+          result.put(columnMap.get(new Integer(i)), cellValue);
+        }
+      }
+    }
+    return result;
+  }
 
   /**
    * 讀取 excel一列的值，依據 columnMap 的位置與欄位名稱對應關係，放至對應欄位名稱/值的 map
@@ -384,4 +423,52 @@ public class ExcelUtil {
     }
     return result;
   }
+  
+  /**
+   * 取得標題欄位名稱對應的位置
+   * @param row
+   * @return
+   */
+  public static HashMap<Integer, String> readTitleRow(XSSFRow row, List<PARAMETERS> parameterList) {
+    HashMap<Integer, String> result = new HashMap<Integer, String>();
+    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+      if (row.getCell(i) == null) {
+        continue;
+      }
+      String cellValue = row.getCell(i).getStringCellValue();
+      if (cellValue != null && cellValue.length() > 1) {
+        if (cellValue.indexOf(',') > -1) {
+          cellValue = cellValue.split(",")[0];
+        }
+        if (cellValue.indexOf(' ') > -1) {
+          cellValue = removeSpace(cellValue);
+        }
+        if (parameterList != null && parameterList.size() > 0) {
+          for(int j=0; j<parameterList.size(); j++) {
+            if (parameterList.get(j).getValue() == null) {
+              continue;
+            }
+            if (cellValue.equals(parameterList.get(j).getValue().trim())) {
+              result.put(new Integer(i), parameterList.get(j).getName());
+              break;
+            }
+          }
+        } else {
+          result.put(new Integer(i), cellValue);
+        }
+      }
+    }
+    return result;
+  }
+  
+  public static String removeSpace(String s) {
+    StringBuffer sb = new StringBuffer();
+    for(int i=0;i<s.length();i++) {
+      if (s.charAt(i) !=  ' ') {
+        sb.append(s.charAt(i));
+      }
+    }
+    return sb.toString();
+  }
+
 }

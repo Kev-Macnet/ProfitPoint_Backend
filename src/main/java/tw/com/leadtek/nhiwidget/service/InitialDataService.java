@@ -22,6 +22,7 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -32,6 +33,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
+import tw.com.leadtek.nhiwidget.controller.SystemController;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.PARAMETERSDao;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
@@ -183,7 +185,7 @@ public class InitialDataService {
    * @param sheetName
    * @param titleRow
    */
-  public void importPayCode(File file, String sheetName, int titleRow) {
+  public void importPayCode(File file, String fileFormat, int titleRow) {
     int maxId = getMaxId() + 1;
     String collectionName = "ICD10";
     String category = "ORDER";
@@ -195,6 +197,7 @@ public class InitialDataService {
 //    }
     try {
       List<PARAMETERS> payCodeType = parametersService.getByCat("PAY_CODE_TYPE");
+      
       ObjectMapper objectMapper = new ObjectMapper();
       objectMapper.setSerializationInclusion(Include.NON_NULL);
       XSSFWorkbook workbook = new XSSFWorkbook(file);
@@ -202,27 +205,36 @@ public class InitialDataService {
 
       int total = 0;
       XSSFSheet sheet = workbook.getSheetAt(0);
+      HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRow),
+          parametersService.getByCat("PAY_CODE_" + fileFormat));
+      HashMap<String, String> values = null;
       SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
       DecimalFormat df = new DecimalFormat("#");
       List<PAY_CODE> payCodeBatch = new ArrayList<PAY_CODE>();
-      for (int j = 1; j < sheet.getPhysicalNumberOfRows(); j++) {
+      for (int j = titleRow + 1; j < sheet.getPhysicalNumberOfRows(); j++) {
       //   for (int j = 1; j < 3; j++) {
         XSSFRow row = sheet.getRow(j);
         if (row == null || row.getCell(0) == null) {
           // System.out.println("sheet:" + i + ", row=" + j + " is null");
           continue;
         }
-        String code = null;
-        if (row.getCell(0).getCellType() == CellType.NUMERIC) {
-          code = df.format(row.getCell(0).getNumericCellValue());
-        } else {
-          code = row.getCell(0).getStringCellValue().trim().toLowerCase();
-        }
-        if (code.length() == 0) {
+        values = ExcelUtil.readCellValue(columnMap, row, df);
+        String code = values.get("CODE");
+        if (SystemController.INIT_FILE_PAY_CODE.equals(fileFormat) && code.length() == 0) {
           break;
         }
-        OrderCode oc = getOrderCodyByExcelRowNew(row, sdf, df, maxId, payCodeType);
-        payCodeBatch.add(saveOrderCodeToRedis(oc, keys, maxId));
+        OrderCode oc = getOrderCodyByMap(values, sdf, df, maxId, payCodeType);
+        PAY_CODE pc = PAY_CODE.convertFromOrderCode(oc);
+        if (values.get("OE_POINT") != null) {
+          pc.setOwnExpense(Double.parseDouble(values.get("OE_POINT")));
+        }
+        if (values.get("INH_CODE") != null) {
+          pc.setInhCode(values.get("INH_CODE"));
+        }
+        if (values.get("ATC") != null) {
+          pc.setAtc(values.get("ATC"));
+        }
+        payCodeBatch.add(saveOrderCodeToRedis(oc, pc, keys, maxId));
         if (payCodeBatch.size() > XMLConstant.BATCH) {
           payCodeDao.saveAll(payCodeBatch);
           payCodeBatch.clear();
@@ -270,9 +282,7 @@ public class InitialDataService {
    * @param maxId
    * @return true: redis 無此代碼，已新增，false: redis 已存在此代碼，不需新增
    */
-  private PAY_CODE saveOrderCodeToRedis(OrderCode oc, HashMap<String, String> keys, long maxId) {
-    PAY_CODE payCode = PAY_CODE.convertFromOrderCode(oc);
-
+  private PAY_CODE saveOrderCodeToRedis(OrderCode oc, PAY_CODE payCode, HashMap<String, String> keys, long maxId) {
     String json = null;
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.setSerializationInclusion(Include.NON_NULL);
@@ -287,8 +297,13 @@ public class InitialDataService {
       oc.setId(maxId);
       payCode.setRedisId((int) maxId);
       redisService.putHash(RedisService.DATA_KEY, String.valueOf(oc.getId()), json);
-      redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(oc.getId()),
-          oc.getCode());
+      if (oc.getCode() == null) {
+        redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(oc.getId()),
+            payCode.getInhCode());
+      } else {
+        redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(oc.getId()),
+            oc.getCode());
+      }
     } else {
       oc.setId(Long.parseLong(sId));
       payCode.setRedisId(Integer.parseInt(sId));
@@ -299,6 +314,9 @@ public class InitialDataService {
   }
 
   private PAY_CODE savePayCode(PAY_CODE code) {
+    if (code.getStartDate() == null) {
+      System.out.println("getStartDate null,code=" + code.getCode() + "," + code.getInhCode() +"," + code.getName());
+    }
     List<PAY_CODE> codes = payCodeDao.findByCode(code.getCode());
     if (codes == null || codes.size() == 0) {
       return code;
@@ -412,6 +430,42 @@ public class InitialDataService {
     if (row.getCell(10) != null) {
       oc.setOutIsland(row.getCell(10).getStringCellValue());
     }
+    return oc;
+  }
+  
+  private OrderCode getOrderCodyByMap(HashMap<String, String> values, SimpleDateFormat sdf, 
+      DecimalFormat df, long maxId, List<PARAMETERS> parameters)
+      throws ParseException {
+
+    OrderCode oc = new OrderCode(maxId, values.get("CODE"), values.get("DESC"), values.get("DESC_EN"));
+    if (values.get("POINT") != null) {
+      String point = values.get("POINT");
+      if (point.indexOf('.') > 0) {
+        point = point.substring(0, point.indexOf('.'));
+      }
+      oc.setP(Integer.parseInt(point));  
+    }
+    System.out.println("code=" + values.get("CODE") + ", startDate=" + values.get("START_DATE"));
+    oc.setsDate(getDateFromExcelValue(values.get("START_DATE"), sdf));
+    if (values.get("DELETE_DATE") != null) {
+      // 刪除日期
+      oc.seteDate(getDateFromExcelValue(values.get("DELETE_DATE"), sdf));
+    } else {
+      oc.seteDate(getDateFromExcelValue(values.get("END_DATE"), sdf));
+    }
+    
+    if (values.get("PAY_CODE_TYPE") != null) {
+      oc.setDetail(values.get("PAY_CODE_TYPE") );
+      oc.setDetail(getPayCodeType(oc.getDetail(), parameters));
+    }
+    
+    oc.setDetailCat(values.get("DETAIL_CAT"));
+  
+    if (values.get("HOSP_LEVEL") != null) {
+      String[] level = values.get("HOSP_LEVEL").split(",");
+      oc.setLevel(getHospLevel(level));
+    }
+    oc.setOutIsland(values.get("OUT_ISLAND"));
     return oc;
   }
   
@@ -614,5 +668,33 @@ public class InitialDataService {
       return cell.getStringCellValue().trim();
     }
     return null;
+  }
+  
+  private int getColumnIndex(HashMap<Integer, String> columnMap, String columnName) {
+    for (Integer key : columnMap.keySet()) {
+      if (columnName.equals(columnMap.get(key))) {
+        return key.intValue();
+      }
+    }
+    return -1;
+  }
+  
+  private Date getDateFromExcelValue(String date, SimpleDateFormat sdf) throws ParseException {
+    if (date == null || date.length() < 8) {
+      return null;
+    }
+    if (date.length() == 8) {
+      return sdf.parse(date);
+    } else if (date.indexOf('/') > 0) {
+      // 民國年 111/01/01
+      String[] ss = date.split("/");
+      int year = Integer.parseInt(ss[0]) + 1911;
+      return sdf.parse(String.valueOf(year) + ss[1] + ss[2]);
+    }
+    return null;
+  }
+  
+  public void importDRGFromExcel(File file, String sheetName) {
+    
   }
 }

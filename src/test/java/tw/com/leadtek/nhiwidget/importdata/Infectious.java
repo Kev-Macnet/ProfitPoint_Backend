@@ -14,6 +14,7 @@ import java.io.OutputStreamWriter;
 import java.text.DecimalFormat;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -31,13 +32,15 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import tw.com.leadtek.nhiwidget.NHIWidget;
-import tw.com.leadtek.nhiwidget.TestParameterService;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
+import tw.com.leadtek.nhiwidget.local.InitialEnvironment;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
@@ -149,7 +152,7 @@ public class Infectious {
   
   @Test
   public void importInfectious() {
-    String filename = TestParameterService.FILE_PATH + "法定傳染病_ICD代碼_1090511.xlsx";
+    String filename = InitialEnvironment.FILE_PATH + "法定傳染病_ICD代碼_1090511.xlsx";
     File file = new File(filename);
     try {
       XSSFWorkbook workbook = new XSSFWorkbook(file);

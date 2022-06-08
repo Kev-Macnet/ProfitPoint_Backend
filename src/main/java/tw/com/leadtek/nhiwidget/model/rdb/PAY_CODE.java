@@ -343,7 +343,9 @@ public class PAY_CODE implements Serializable {
 
   public static PAY_CODE convertFromOrderCode(OrderCode oc) {
     PAY_CODE result = new PAY_CODE();
-    result.setCode(oc.getCode().toUpperCase());
+    if (oc.getCode() != null) {
+      result.setCode(oc.getCode().toUpperCase());
+    }
     result.setInhCode(result.getCode());
     result.setCodeType(oc.getDetail());
     result.setEndDate(oc.geteDate());
@@ -352,13 +354,14 @@ public class PAY_CODE implements Serializable {
     result.setName(oc.getDesc());
     result.setInhName(result.getName());
     result.setPoint(oc.getP());
+    result.setNameEn(oc.getDescEn());
     result.setUpdateAt(new Date());
     return result;
   }
   
   public OrderCode toOrderCode() {
     OrderCode result = new OrderCode();
-    result.setCode(code.toLowerCase());
+    result.setCode(code);
     result.setDetail(codeType);
     result.setsDate(startDate);
     result.seteDate(endDate);

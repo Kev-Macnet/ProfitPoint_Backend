@@ -524,6 +524,13 @@ public class OP_D {
   private String pharName;
 
   /**
+   * 健保卡號
+   */
+  @Column(name = "CARD_NO")
+  @JsonIgnore
+  private String cardNo;
+
+  /**
    * 更新時間
    */
   @Column(name = "UPDATE_AT", nullable = false)
@@ -1365,4 +1372,12 @@ public class OP_D {
     this.pharName = pharName;
   }
   
+  public String getCardNo() {
+    return cardNo;
+  }
+
+  public void setCardNo(String cardNo) {
+    this.cardNo = cardNo;
+  }
+
 }

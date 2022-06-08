@@ -74,7 +74,12 @@ public class SystemController extends BaseController {
 
   private final static String INIT_FILE_PARAMETERS = "PARAMETER";
   
-  private final static String INIT_FILE_PAY_CODE = "醫療服務給付項目";
+  public final static String INIT_FILE_PAY_CODE = "醫療服務給付項目";
+  
+  /**
+   * 高雄霖園醫院藥品衛材xxxxxxx.xlsx
+   */
+  public final static String INIT_FILE_PAY_CODE_LINYUAN = "藥品衛材";
   
   private final static String INIT_FILE_CODE_TABLE = "CODE_TABLE";
   
@@ -854,10 +859,12 @@ public class SystemController extends BaseController {
       } catch (IllegalStateException e) {
         e.printStackTrace();
       }
-      if (saveFile.getName().indexOf(INIT_FILE_PARAMETERS) > -1) {
+      if (saveFile.getName().indexOf(INIT_FILE_PARAMETERS) == 0) {
         initial.importParametersFromExcel(saveFile, "參數設定", 1);
       } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE) > -1) {
-        initial.importPayCode(saveFile, null, 0);
+        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE, 0);
+      } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE_LINYUAN) == 0) {
+        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_LINYUAN, 0);
       } else if (saveFile.getName().indexOf(INIT_FILE_CODE_TABLE) > -1) {
         initial.importCODE_TABLEToRDB(saveFile, "CODE_TABLE");
       }  else if (saveFile.getName().endsWith(".xls")) {

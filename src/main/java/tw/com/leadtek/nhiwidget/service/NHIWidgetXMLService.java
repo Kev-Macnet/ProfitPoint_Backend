@@ -6119,6 +6119,9 @@ public class NHIWidgetXMLService {
       result.setCureItemNo4(values.get("CURE_ITEM_NO4"));
     }
     String funcType = values.get("FUNC_TYPE");
+    if (funcType == null) {
+      System.out.println("funcType == null," + values.get("ROC_ID") + "," + values.get("FUNC_DATE"));
+    }
     if (funcType.indexOf(' ') > -1) {
       funcType = funcType.substring(0, 2);
     }
@@ -6201,6 +6204,7 @@ public class NHIWidgetXMLService {
     result.setReceiveNo(values.get("RECEIVE_NO"));
     result.setPrsnName(values.get("PRSN_NAME"));
     result.setPharName(values.get("PHAR_NAME"));
+    result.setCardNo(values.get("CARD_NO"));
     result.setUpdateAt(new java.util.Date());
   }
 
@@ -7251,10 +7255,10 @@ public class NHIWidgetXMLService {
     
     int titleRowIndex = 0;
     // 取得各欄位名稱的位置
-    HashMap<Integer, String> columnMap = readTitleRow(sheet.getRow(0), parameters.getByCat("OP_D"));
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0), parameters.getByCat("OP_D"));
     // 第一筆資料
     HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(titleRowIndex + 1));
-    
+    testColumnMap(columnMap);
     String[] orderDateString = getOrderDateFromSheet(sheet, titleRowIndex + 1, getColumnIndex(columnMap, "FUNC_END_DATE"));
     java.util.Date[] orderDate = new java.util.Date[2];
     orderDate[0] = DateTool.convertChineseToYear(orderDateString[0]);
@@ -7278,6 +7282,20 @@ public class NHIWidgetXMLService {
       List<FILE_DIFF> diffList = null;
       if (values.get("FUNC_END_DATE") != null && values.get("FUNC_END_DATE").length() > 0) {
         values.put("FUNC_END_DATE", DateTool.removeSlashForChineseYear(values.get("FUNC_END_DATE")));
+      }
+      if (values.get("ROC_ID") == null && values.get("FUNC_DATE") == null) {
+        System.out.println("error row=" + i);
+      }
+      if (values.get("CARD_NO") != null && values.get("CARD_NO").length() > 0) {
+        String cardNo = values.get("CARD_NO");
+        int index = cardNo.indexOf('-');
+        if (index > -1) {
+          if (index < 3) {
+            values.put("CARD_NO", cardNo.substring(index + 1));
+          } else if (index > 3) {
+            values.put("CARD_NO", cardNo.substring(0, index));
+          }
+        }
       }
       OP_D opd = findOpdByOpdValues(opdList, values);
       if (opd.getFuncDate() == null) {
@@ -7326,7 +7344,7 @@ public class NHIWidgetXMLService {
     System.out.println("readTheseOPP");
     // 取得各欄位名稱的位置
     int titleRowIndex = 2;
-    HashMap<Integer, String> columnMap = readTitleRow(sheet.getRow(titleRowIndex), parameters.getByCat("OP_P"));
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRowIndex), parameters.getByCat("OP_P"));
     String[] orderDateString = getOrderDateFromSheet(sheet, titleRowIndex + 1, getColumnIndex(columnMap, "FUNC_DATE"));
     java.util.Date[] orderDate = new java.util.Date[2];
     orderDate[0] = DateTool.convertChineseToYear(orderDateString[0]);
@@ -7367,6 +7385,12 @@ public class NHIWidgetXMLService {
         opdList.add(opd);
         mr.setdId(opd.getId());
         mrList.add(mr);
+        Integer rocIdDateCountValue = rocIdDateCount.get(values.get("ROC_ID") + opd.getFuncEndDate());
+        if (rocIdDateCountValue == null) {
+          rocIdDateCount.put(values.get("ROC_ID") + opd.getFuncEndDate(), new Integer(1));
+        } else {
+          rocIdDateCount.put(values.get("ROC_ID") + opd.getFuncEndDate(), new Integer(rocIdDateCountValue.intValue() + 1));
+        }
         //System.out.println("new opd=" + opd.getId() + " opd.MrId=" + opd.getMrId() + ",mr=" + mr.getId() + " did=" + mr.getdId());
       } else {
         // 科別以醫令為主
@@ -7465,53 +7489,6 @@ public class NHIWidgetXMLService {
     saveMrAndOpd(mrList, opdList);
   }
   
-  /**
-   * 取得標題欄位名稱對應的位置
-   * @param row
-   * @return
-   */
-  public HashMap<Integer, String> readTitleRow(XSSFRow row, List<PARAMETERS> parameterList) {
-    HashMap<Integer, String> result = new HashMap<Integer, String>();
-    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
-      if (row.getCell(i) == null) {
-        continue;
-      }
-      String cellValue = row.getCell(i).getStringCellValue();
-      if (cellValue != null && cellValue.length() > 1) {
-        if (cellValue.indexOf(',') > -1) {
-          cellValue = cellValue.split(",")[0];
-        }
-        if (cellValue.indexOf(' ') > -1) {
-          cellValue = removeSpace(cellValue);
-        }
-        if (parameterList != null && parameterList.size() > 0) {
-          for(int j=0; j<parameterList.size(); j++) {
-            if (parameterList.get(j).getValue() == null) {
-              continue;
-            }
-            if (cellValue.equals(parameterList.get(j).getValue().trim())) {
-              result.put(new Integer(i), parameterList.get(j).getName());
-              break;
-            }
-          }
-        } else {
-          result.put(new Integer(i), cellValue);
-        }
-      }
-    }
-    return result;
-  }
-  
-  public static String removeSpace(String s) {
-    StringBuffer sb = new StringBuffer();
-    for(int i=0;i<s.length();i++) {
-      if (s.charAt(i) !=  ' ') {
-        sb.append(s.charAt(i));
-      }
-    }
-    return sb.toString();
-  }
-
   public static String addICDCMDot(String s) {
     if (s == null || s.indexOf('.') > 0) {
       return s;
@@ -7596,17 +7573,30 @@ public class NHIWidgetXMLService {
       HashMap<String, String> values) {
     for (OP_D op_D : opdList) {
       if (op_D.getRocId().equals(values.get("ROC_ID"))) {
+       // 先比對卡號，不一致再比其他欄位
+        if (op_D.getCardNo() != null && op_D.getCardNo().equals(values.get("CARD_NO"))) {
+          return op_D;
+        }
         if (op_D.getFuncEndDate().equals(values.get("FUNC_DATE"))) {
-         if (isOpdMatcOpp(op_D, countMap, values)) {
-           return op_D;
-         }
-        } else {
+          // 先比對領藥號，比不到若當天只有一筆病歷，就回傳該筆病歷
+          if (op_D.getReceiveNo() != null) {
+            if (op_D.getReceiveNo().equals(values.get("RECEIVE_NO"))) {
+              return op_D;
+            }
+            if (op_D.getReceiveNo() != null && values.get("RECEIVE_NO") != null
+                && values.get("RECEIVE_NO").indexOf(op_D.getReceiveNo()) > 0) {
+              return op_D;
+            }
+          } else if (op_D.getReceiveNo() == null && values.get("RECEIVE_NO") == null) {
+            return op_D;
+          }
+        } else if (op_D.getFuncDate() != null) {
           // 因醫令時間可能位於病歷的看診日期和治療日期
-          int startDate = op_D.getFuncDate() == null ? 0 : Integer.parseInt(op_D.getFuncDate());
+          int startDate = Integer.parseInt(op_D.getFuncDate());
           int endDate = Integer.parseInt(op_D.getFuncEndDate());
           int funcDate = Integer.parseInt(values.get("FUNC_DATE"));
           if (funcDate < endDate && funcDate >= startDate) {
-            if (isOpdMatcOpp(op_D, countMap, values)) {
+            if (isOpdMatchOpp(op_D, countMap, values)) {
               return op_D;
             }  
           }
@@ -7616,7 +7606,7 @@ public class NHIWidgetXMLService {
     return null;
   }
   
-  private boolean isOpdMatcOpp(OP_D op_D, HashMap<String, Integer> countMap,  HashMap<String, String> values) {
+  private boolean isOpdMatchOpp(OP_D op_D, HashMap<String, Integer> countMap,  HashMap<String, String> values) {
     // 因醫令領藥號和病歷的領藥號對不起來，所以若同一病患當天只有一筆病歷，就抓該筆病歷
     Integer count = countMap.get(values.get("ROC_ID") + op_D.getFuncEndDate());
     if (count == null) {
@@ -7719,6 +7709,9 @@ public class NHIWidgetXMLService {
     for (OP_D opd : list) {
       if (opd.getFuncEndDate().equals(values.get("FUNC_END_DATE")) && opd.getRocId().equals(values.get("ROC_ID")) && 
           opd.getPrsnName().equals(values.get("PRSN_NAME"))) {
+        if (opd.getCardNo() != null && opd.getCardNo().equals(values.get("CARD_NO"))) {
+          return opd;
+        }
         if (opd.getReceiveNo() != null) {
           if (opd.getReceiveNo().equals(values.get("RECEIVE_NO"))) {
             return opd;
@@ -7761,7 +7754,7 @@ public class NHIWidgetXMLService {
     System.out.println("readTheseIPD");
     int titleRowIndex = 0;
     // 取得各欄位名稱的位置
-    HashMap<Integer, String> columnMap = readTitleRow(sheet.getRow(0), parameters.getByCat("IP_D"));
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0), parameters.getByCat("IP_D"));
 //    for (Integer key : columnMap.keySet()) {
 //      System.out.println(key + ":" + columnMap.get(key));
 //    }
@@ -7889,7 +7882,7 @@ public class NHIWidgetXMLService {
     System.out.println("readTheseIPP");
     // 取得各欄位名稱的位置
     int titleRowIndex = 2;
-    HashMap<Integer, String> columnMap = readTitleRow(sheet.getRow(titleRowIndex), parameters.getByCat("IP_P"));
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRowIndex), parameters.getByCat("IP_P"));
     //testColumnMap(columnMap);
     String[] orderDateString = getOrderDateFromSheet(sheet, titleRowIndex + 1, getColumnIndex(columnMap, "FUNC_DATE"));
     java.util.Date[] orderDate = new java.util.Date[2];
@@ -8124,6 +8117,9 @@ public class NHIWidgetXMLService {
     result.setFuncEndDate(values.get("FUNC_DATE"));
     result.setIcdCm1(addICDCMDot(values.get("ICD_CM_1")));
     result.setReceiveNo(values.get("RECEIVE_NO"));
+    if (values.get("CARD_NO") != null && values.get("CARD_NO").length() > 0) {
+      result.setCardNo(values.get("CARD_NO"));
+    }
     result.setUpdateAt(new java.util.Date());
     return result;
   }

@@ -62,7 +62,7 @@ public class UserController extends BaseController {
 
   @Autowired
   private JwtUtils jwtUtils;
-  
+
   @Autowired
   private LogDataService logService;
 
@@ -72,8 +72,8 @@ public class UserController extends BaseController {
   @PostMapping("/auth/user")
   public ResponseEntity<BaseResponse> newUser(
       @ApiParam(value = "帳號內容") @RequestBody(required = true) UserRequest request) {
-    
-    if (userService.getUserCount() > 0 ) {
+
+    if (userService.getUserCount() > 0) {
       // 存在登入帳號，檢查是否有登入，反之則因系統剛建立，尚無帳號，因此不檢查有無登入
       UserDetailsImpl loginUser = getUserDetails();
       if (loginUser == null) {
@@ -90,14 +90,13 @@ public class UserController extends BaseController {
       return returnAPIResult("已有相同的名稱");
     }
   }
-  
+
   @ApiOperation(value = "忘記密碼", notes = "更換密碼")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "舊密碼有誤")})
   @PutMapping("/auth/forgetPassword")
-  public ResponseEntity<BaseResponse> forgetPassword(
-      @ApiParam(name = "username", value = "登入帳號",
-          example = "test") @RequestParam(required = true) String username) {
+  public ResponseEntity<BaseResponse> forgetPassword(@ApiParam(name = "username", value = "登入帳號",
+      example = "test") @RequestParam(required = true) String username) {
     String result = userService.forgetPassword(username, null);
     if (result == null) {
       return returnAPIResult(null);
@@ -156,31 +155,34 @@ public class UserController extends BaseController {
     }
     return ResponseEntity.ok(userService.getUserById(idL));
   }
-  
+
   @ApiOperation(value = "取得所有帳號", notes = "取得所有帳號")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/user")
-  public ResponseEntity<List<UserRequest>> getAllUser(@ApiParam(name = "funcType", value = "科別代碼",
-      example = "00") @RequestParam(required = false) String funcType,
+  public ResponseEntity<List<UserRequest>> getAllUser(
+      @ApiParam(name = "funcType", value = "科別代碼",
+          example = "00") @RequestParam(required = false) String funcType,
       @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...",
-      example = "不分科") @RequestParam(required = false) String funcTypeC,
-      @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...", example = "家醫科") 
-      @RequestParam(required = false) String funcTypec,
-      @ApiParam(name = "rocId", value = "醫護代碼rocId或inhId都可") @RequestParam(required = false) String rocId,
-      @ApiParam(name = "inhId", value = "醫護代碼rocId或inhId都可") @RequestParam(required = false) String inhId,
+          example = "不分科") @RequestParam(required = false) String funcTypeC,
+      @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...",
+          example = "家醫科") @RequestParam(required = false) String funcTypec,
+      @ApiParam(name = "rocId",
+          value = "醫護代碼rocId或inhId都可") @RequestParam(required = false) String rocId,
+      @ApiParam(name = "inhId",
+          value = "醫護代碼rocId或inhId都可") @RequestParam(required = false) String inhId,
       @ApiParam(name = "name", value = "醫護名稱",
-        example = "王小明") @RequestParam(required = false) String name,
-      @ApiParam(value = "帳號權限，E:醫護人員，D:申報人員，U:使用者清單",
-        example = "E") @RequestParam(required = false, defaultValue = "E") String role,
-      @ApiParam(value = "關鍵字查詢",
-        example = "test") @RequestParam(required = false) String keyword) {
+          example = "王小明") @RequestParam(required = false) String name,
+      @ApiParam(value = "帳號權限，E:醫護人員，D:申報人員，U:使用者清單", example = "E") @RequestParam(required = false,
+          defaultValue = "E") String role,
+      @ApiParam(value = "關鍵字查詢", example = "test") @RequestParam(required = false) String keyword) {
     // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     // System.out.println("currentPrincipalName:" + authentication.getName());
     // UserDetailsImpl userDetail = (UserDetailsImpl) authentication.getPrincipal();
     // System.out.println(userDetail.getEmail());
-      String id = (rocId == null) ? inhId : rocId;
-      String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
-    return ResponseEntity.ok(userService.getAllUser(funcType, funcTypeChinese, id, name, role, keyword));
+    String id = (rocId == null) ? inhId : rocId;
+    String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
+    return ResponseEntity
+        .ok(userService.getAllUser(funcType, funcTypeChinese, id, name, role, keyword));
   }
 
   @ApiOperation(value = "更換密碼", notes = "更換密碼")
@@ -211,24 +213,24 @@ public class UserController extends BaseController {
 
   @ApiOperation(value = "登出", notes = "登出，將 session 清空")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "登出成功")})
-  @ApiImplicitParams({
-      @ApiImplicitParam(name="Authorization", dataType="string", paramType="header", required=true)
-  })
+  @ApiImplicitParams({@ApiImplicitParam(name = "Authorization", dataType = "string",
+      paramType = "header", required = true)})
   @PostMapping("/user/logout")
-  public ResponseEntity<BaseResponse> logout(HttpServletRequest request, @RequestHeader("Authorization") String jwt) {
+  public ResponseEntity<BaseResponse> logout(HttpServletRequest request,
+      @RequestHeader("Authorization") String jwt) {
     UserDetailsImpl user = getUserDetails();
     logger.info("logout user=" + user);
     if (user == null || (jwt == null || jwt.indexOf(' ') < 0 || jwt.split(" ").length != 2)) {
       return returnAPIResult(null);
     }
-    if (jwt !=null && jwt.length()>20) {
-        int status = logService.setLogout(jwt.split(" ")[1]);
+    if (jwt != null && jwt.length() > 20) {
+      int status = logService.setLogout(jwt.split(" ")[1]);
     }
     userService.logoutLog(user.getUsername(), jwt.split(" ")[1]);
     request.getSession().invalidate();
     return returnAPIResult(null);
   }
-  
+
   @ApiOperation(value = "登入", notes = "輸入帳號密碼，取得 JWT")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "登入成功"),
       @ApiResponse(responseCode = "401", description = "Unauthorized 帳密有誤")})
@@ -244,7 +246,7 @@ public class UserController extends BaseController {
       JwtResponse jwt = new JwtResponse();
       jwt.setResult("error");
       jwt.setMessage("帳號不存在");
-      return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN); 
+      return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
     }
     if (user.getStatus() != null && user.getStatus().intValue() == 0) {
       JwtResponse jwt = new JwtResponse();
@@ -254,22 +256,15 @@ public class UserController extends BaseController {
     }
     if (parametersService.getParameter("HOSP_EXPIRE") != null) {
       String expireDate = userService.checkExpire(parametersService.getParameter("HOSP_EXPIRE"));
-      if (expireDate != null) {
-        USER leadtek = userService.findUser("leadtek");
-        Calendar cal = Calendar.getInstance();
-        long nowTime = cal.getTimeInMillis();
-        cal.setTime(leadtek.getCreateAt());
-        cal.add(Calendar.DAY_OF_YEAR, Integer.parseInt(expireDate));
-        if (nowTime > cal.getTimeInMillis()) {
-          JwtResponse jwt = new JwtResponse();
-          jwt.setResult("error");
-          if (expireDate.length() > 0) {
-            jwt.setMessage("PrpfitPoint試用日期(" + expireDate + ")已期滿，請與您的業務窗口聯繫，或洽麗臺科技由專人為您服務");
-          } else {
-            jwt.setMessage("PrpfitPoint試用日期已期滿，請與您的業務窗口聯繫，或洽麗臺科技由專人為您服務");
-          }
-          return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
+      if (expireDate != null && expireDate.length() > 0) {
+        JwtResponse jwt = new JwtResponse();
+        jwt.setResult("error");
+        if (expireDate.length() > 0) {
+          jwt.setMessage("PrpfitPoint試用日期(" + expireDate + ")已期滿，請與您的業務窗口聯繫，或洽麗臺科技由專人為您服務");
+        } else {
+          jwt.setMessage("PrpfitPoint試用日期已期滿，請與您的業務窗口聯繫，或洽麗臺科技由專人為您服務");
         }
+        return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
       }
     }
     SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -281,7 +276,8 @@ public class UserController extends BaseController {
     // .collect(Collectors.toList());
 
     return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getRole(), userDetails.getUsername(),
-        userDetails.getDisplayName(), userDetails.getId(), userService.needChangePassword(userDetails.getId())));
+        userDetails.getDisplayName(), userDetails.getId(),
+        userService.needChangePassword(userDetails.getId())));
   }
 
   /**
@@ -295,13 +291,13 @@ public class UserController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/department")
   public ResponseEntity<List<DEPARTMENT>> getAllDepartments(
-      @ApiParam(name = "funcType", value = "科別代碼", example = "00") 
-      @RequestParam(required = false) String funcType,
-      @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...", example = "家醫科") 
-      @RequestParam(required = false) String funcTypec,
-      @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...", example = "家醫科") 
-      @RequestParam(required = false) String funcTypeC) {
-	String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
+      @ApiParam(name = "funcType", value = "科別代碼",
+          example = "00") @RequestParam(required = false) String funcType,
+      @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...",
+          example = "家醫科") @RequestParam(required = false) String funcTypec,
+      @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...",
+          example = "家醫科") @RequestParam(required = false) String funcTypeC) {
+    String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
     return ResponseEntity.ok(userService.getAllDepartment(funcType, funcTypeChinese));
   }
 
@@ -352,7 +348,7 @@ public class UserController extends BaseController {
       return returnAPIResult("id 有誤");
     }
   }
-  
+
   @GetMapping("ms")
   public MemoryStatus getMemoryStatistics() {
     MemoryStatus stats = new MemoryStatus();

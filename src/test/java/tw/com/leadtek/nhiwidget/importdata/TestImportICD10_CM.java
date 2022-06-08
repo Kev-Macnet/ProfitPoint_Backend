@@ -36,6 +36,7 @@ import tw.com.leadtek.nhiwidget.TestParameterService;
 import tw.com.leadtek.nhiwidget.constant.RedisConstants;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
+import tw.com.leadtek.nhiwidget.local.InitialEnvironment;
 import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
@@ -133,16 +134,16 @@ public class TestImportICD10_CM {
   /**
    * 將excel檔案資料匯至 Redis
    */
-  //@Ignore
-  //@Test
+  @Ignore
+  @Test
   public void importICD10ToRedis() {
     System.out.println("importICD10ToRedis");
     long start = System.currentTimeMillis();
-//    importExcelToRedis("ICD10",
-//        "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\1.1 中文版ICD-10-CM(106.07.19更新)_Chapter.xlsx",
-//        "ICD10-CM");
      importExcelToRedis("ICD10",
-     "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\ICD10\\1.2 中文版ICD-10-PCS(106.07.19更新).xlsx",
+    		 InitialEnvironment.FILE_PATH + "1.1 中文版ICD-10-CM(106.07.19更新)_Chapter.xlsx",
+        "ICD10-CM");
+     importExcelToRedis("ICD10",
+    		 InitialEnvironment.FILE_PATH + "1.2 中文版ICD-10-PCS(106.07.19更新).xlsx",
      "ICD10-PCS");
 
     long usedTime = System.currentTimeMillis() - start;
@@ -747,7 +748,7 @@ public class TestImportICD10_CM {
   @Test
   public void importATC() {
     String cat = "ATC";
-    File file = new File(TestParameterService.FILE_PATH + "ATC分類.xlsx");
+    File file = new File(InitialEnvironment.FILE_PATH + "ATC分類.xlsx");
     // 存放處理過的 ATC code，避免因來源檔案資料重複，而重複insert
     HashMap<String, String> duplicate = new HashMap<String, String>();
     ObjectMapper objectMapper = new ObjectMapper();

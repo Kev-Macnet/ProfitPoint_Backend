@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
 import tw.com.leadtek.nhiwidget.TestParameterService;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
+import tw.com.leadtek.nhiwidget.local.InitialEnvironment;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
@@ -402,16 +403,16 @@ public class ImportPayCode {
     maxId = getMaxId() + 1;
     System.out.println("maxid=" + maxId);
      importExcelToRedisNew("ICD10",
-             TestParameterService.FILE_PATH +  "醫療服務給付項目(1100701執行).xlsx",
+    		 InitialEnvironment.FILE_PATH +  "醫療服務給付項目(1100701執行).xlsx",
      "ORDER");
      importDrugHtmlExcelToRedis("ICD10",
-             TestParameterService.FILE_PATH +  "藥品\\20211020183522-用藥品項查詢結果.xls",
+    		 InitialEnvironment.FILE_PATH +  "藥品\\20211020183522-用藥品項查詢結果.xls",
      "ORDER");
     importDrugHtmlExcelToRedis("ICD10",
-        TestParameterService.FILE_PATH +  "藥品\\20211020184556-用藥品項查詢結果.xls",
+    		InitialEnvironment.FILE_PATH +  "藥品\\20211020184556-用藥品項查詢結果.xls",
         "ORDER");
     importDrugHtmlExcelToRedis("ICD10",
-        TestParameterService.FILE_PATH +  "藥品\\20211020184620-用藥品項查詢結果.xls",
+    		InitialEnvironment.FILE_PATH +  "藥品\\20211020184620-用藥品項查詢結果.xls",
         "ORDER");
   }
 

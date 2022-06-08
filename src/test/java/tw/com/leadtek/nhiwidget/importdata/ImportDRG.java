@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFCell;
@@ -26,14 +27,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
+
 import tw.com.leadtek.nhiwidget.NHIWidget;
-import tw.com.leadtek.nhiwidget.TestParameterService;
 import tw.com.leadtek.nhiwidget.dao.DRG_CODEDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
+import tw.com.leadtek.nhiwidget.local.InitialEnvironment;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.payload.ParameterValue;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
+import tw.com.leadtek.nhiwidget.service.UserService;
 import tw.com.leadtek.nhiwidget.sql.LogDataDao;
 import tw.com.leadtek.tools.DateTool;
 
@@ -54,6 +57,10 @@ public class ImportDRG {
   @Autowired
   private LogDataDao logDataDao;
 
+  @Autowired
+  private UserService userService;
+
+
   private HashMap<String, String> drgDep = new HashMap<String, String>();
 
   private List<String> started = null;
@@ -61,18 +68,18 @@ public class ImportDRG {
   //@Ignore
   @Test
   public void importDRG() {
-    importDRGDep(TestParameterService.FILE_PATH + "Tw-DRG_公式與排除110年7月至12月.xlsx",
+    importDRGDep(InitialEnvironment.FILE_PATH + "Tw-DRG_公式與排除110年7月至12月.xlsx",
         "附表7_2");
     String[] sheetNames = new String[2];
     sheetNames[0] = "第一階段導入";
     sheetNames[1] = "第二階段導入";
     
-    started = new ArrayList<String>();
-    importDRGStarted(
-        TestParameterService.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
-        sheetNames, "20200101", "20200630");
-    importDRGExcel(TestParameterService.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
-        "109年1至6月 3.4版 TW-DRGs權重表", "20200101", "20200630");
+//    started = new ArrayList<String>();
+//    importDRGStarted(
+//    		InitialEnvironment.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+//        sheetNames, "20200101", "20200630");
+//    importDRGExcel(InitialEnvironment.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+//        "109年1至6月 3.4版 TW-DRGs權重表", "20200101", "20200630");
     // ====================================
 //    started = new ArrayList<String>();
 //    importDRGStarted(
@@ -96,6 +103,14 @@ public class ImportDRG {
 //        sheetNames, "20210701", "20211231");
 //    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除110年7月至12月.xlsx",
 //        "110年7至12月 3.4版 TW-DRGs權重表", "20210701", "20211231");
+    // ==========================
+  started = new ArrayList<String>();
+  importDRGStarted(
+      InitialEnvironment.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+      sheetNames);
+  importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Install\\111年1-6月3.4版1,068項Tw-DRGs適用權重表.xlsx",
+      "附表7.3", "20220101", "20220630");
+    // 
   }
 
   /**
@@ -131,8 +146,7 @@ public class ImportDRG {
    * @param startDay
    * @param endDay
    */
-  private void importDRGStarted(String filename, String[] sheetNames, String startDay,
-      String endDay) {
+  private void importDRGStarted(String filename, String[] sheetNames) {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
     File file = new File(filename);
     try {
@@ -142,7 +156,7 @@ public class ImportDRG {
         for (int j = 0; j < sheetNames.length; j++) {
           if (sheet.getSheetName().equals(sheetNames[j])) {
             System.out.println("importDRGNotStart sheet:" + sheet.getSheetName());
-            importDRGStarted(sheet, startDay, endDay);
+            importDRGStarted(sheet);
             break;
           }
         }
@@ -177,11 +191,23 @@ public class ImportDRG {
 
   private void importDRGFromSheet(XSSFSheet sheet, Date startDate, Date endDate) {
     System.out.println("importDRGFromSheet:" + startDate + "," + endDate);
-    for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+    int titleRow = 0;
+    for (int i = titleRow ; i < sheet.getPhysicalNumberOfRows(); i++) {
       XSSFRow row = sheet.getRow(i);
-      if (row == null || row.getCell(2) == null) {
+      if (row.getCell(0).getStringCellValue().startsWith("MDC")) {
+        break;
+      }
+      titleRow++;
+    }
+    for (int i = titleRow + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+      XSSFRow row = sheet.getRow(i);
+      
+      if (row == null || row.getCell(0) == null) {
         // System.out.println("sheet:" + i + ", row=" + j + " is null");
         continue;
+      }
+      if (row.getCell(0).getStringCellValue().startsWith("全國")) {
+        break;
       }
       String code = row.getCell(2).getStringCellValue().trim().toLowerCase();
       if (code.length() == 0) {
@@ -290,7 +316,7 @@ public class ImportDRG {
     System.out.println("total drg:" + drgDep.size());
   }
 
-  private void importDRGStarted(XSSFSheet sheet, String startDay, String endDay) {
+  private void importDRGStarted(XSSFSheet sheet) {
     boolean start = false;
     for (int i = 0; i < sheet.getPhysicalNumberOfRows(); i++) {
       XSSFRow row = sheet.getRow(i);
@@ -446,5 +472,18 @@ public class ImportDRG {
       // System.out.println("update " + mrId);
       logDataDao.updateMRTDot(total, mrId);
     }
+  }
+  
+  @Ignore
+  @Test
+  public void testEncrypt() {
+    String day = "90";
+    String encode = userService.encrypt(day);
+    String decode = userService.decrypt(encode);
+    
+    System.out.println(day + " ==> " + encode + " <== " + decode);
+    String test = "bYDmdrF7CxhyBsa1n7hu+Q==";
+    System.out.println("test = " + userService.decrypt(test));
+        
   }
 }
