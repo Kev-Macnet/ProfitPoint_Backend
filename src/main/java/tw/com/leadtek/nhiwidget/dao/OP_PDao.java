@@ -280,6 +280,14 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  			+ "end as DIFF "
  			+ "from op_p where MR_ID in (?1)", nativeQuery = true)
  	public List<Map<String, Object>> getAllListByMrid(List<String> mrid);
+ 	/**
+ 	 * 門急診-取得診療結束人次
+ 	 * @param date
+ 	 * @return
+ 	 */
+ 	@Query(value="SELECT count(1) FROM OP_D od "
+ 			+ "WHERE FUNC_END_DATE LIKE CONCAT(?1,'%') ", nativeQuery = true)
+ 	public int getFuncEndDateCount(String date);
 	
 	
 }

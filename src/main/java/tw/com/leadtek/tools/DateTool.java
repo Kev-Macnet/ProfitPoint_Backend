@@ -225,8 +225,30 @@ public class DateTool {
   public static Calendar chineseYmToCalendar(String chineseYm) {
     Calendar cal = Calendar.getInstance();
     // cal.setTime(ct.getStartDate());
+    int y = Integer.parseInt(chineseYm.substring(0, 3));
+    int m = Integer.parseInt(chineseYm.substring(2)) - 1;
+    System.out.println(y);
+    System.out.println(m);
     cal.set(Calendar.YEAR, 1911 + Integer.parseInt(chineseYm.substring(0, 3)));
     cal.set(Calendar.MONTH, Integer.parseInt(chineseYm.substring(2)) - 1);
+    return cal;
+  }
+  
+  /**
+   * 將民國年月轉成 Calendar object.
+   * 
+   * @param chineseYm yyymm
+   * @return
+   */
+  public static Calendar chineseYmToCalendar2(String chineseYm) {
+    Calendar cal = Calendar.getInstance();
+    // cal.setTime(ct.getStartDate());
+    int y = Integer.parseInt(chineseYm.substring(0, 3));
+    int m = Integer.parseInt(chineseYm.substring(3));
+    System.out.println(y);
+    System.out.println(m);
+    cal.set(Calendar.YEAR, 1911 + y);
+    cal.set(Calendar.MONTH, m);
     return cal;
   }
 

@@ -20,6 +20,33 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   
   public List<OP_D> findByMrId(Long mrId);
   
+  //門急診/住院病例總點數
+  @Query(value="SELECT OP.OP_DOT + IP.IP_DOT FROM "
+  		+ "(SELECT SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
+  		+ "(SELECT (SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP", nativeQuery=true)
+  public String findTDot(List<Integer>ids,List<Integer>ids2);
+  
+  //門急診/住院總藥費
+  @Query(value="SELECT OP.OP_DOT + IP.IP_DOT FROM "
+  		+ "(SELECT SUM(DRUG_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
+  		+ "(SELECT SUM(DRUG_DOT) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP",nativeQuery=true)
+  public String findTDrugFee(List<Integer>ids,List<Integer>ids2);
+  
+  //門急診病例總點數
+  @Query(value="SELECT OP.OP_DOT FROM "
+	  		+ "(SELECT SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
+  public String findOPDot(List<Integer>ids);
+  
+  //門急診總藥費
+  @Query(value="SELECT OP.OP_DOT FROM "
+	  		+ "(SELECT SUM(DRUG_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP",nativeQuery=true)
+  public String findOPDrugFee(List<Integer>ids);
+  
+  //各科別門急診總藥品點數or總藥費
+  @Query(value="SELECT FUNC_TYPE,SUM(DRUG_DOT) AS OP_DOT FROM "
+  		+ "OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE",nativeQuery=true)
+  public List<Object[]> findByOptIdAndGroupByFuncType(List<Integer>ids);
+  
   @Query(value = "SELECT SEQ_NO, ID, ROC_ID, FUNC_DATE, MR_ID, ID_BIRTH_YMD FROM OP_D WHERE OPT_ID= ?1 ", nativeQuery = true)
   public List<Object[]> findByOptIdSimple(Long optId);
   
@@ -263,4 +290,49 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   @Modifying
   @Query(value = "UPDATE OP_D SET FUNC_TYPE=?1 WHERE ID=?2", nativeQuery = true)
   public void updateFuncTypeById(String funcType, Long id);
+  /**
+   * 門急診圓餅圖人數-人
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT COUNT, ROUND(COUNT / (SELECT sum(COUNT) FROM "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%'))  AND ct.CAT ='FUNC_TYPE' "
+  		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp) * 100,2) AS PERCENT, FUNC_TYPE, DESC_CHI FROM  "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' "
+  		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp", nativeQuery = true)
+  public List<Map<String,Object>> getOPPieCountData(String date);
+  
+  /**
+   * 門急診圓餅圖人數-人total
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT sum(COUNT) as TOTAL FROM "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE'  "
+  		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp", nativeQuery = true)
+  public int getOPPieCountTotal(String date);
+  
+  /**
+   * 門急診圓餅圖人數-點數
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT SUM, ROUND(SUM / (SELECT sum(SUM) FROM "
+  		+ "(SELECT SUM(opd.T_DOT) AS SUM, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp) * 100,2) AS PERCENT, FUNC_TYPE, DESC_CHI FROM  "
+  		+ "(SELECT SUM(opd.T_DOT) AS SUM,  opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp  "
+  		+ "", nativeQuery = true)
+  public List<Map<String,Object>> getOPPieDotData(String date);
+  
+  /**
+   * 門急診圓餅圖人數-點數 total
+   * @param date
+   * @return
+   */
+  @Query(value = "SELECT sum(SUM) FROM "
+  		+ "(SELECT SUM(opd.T_DOT) AS SUM, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp"
+  		, nativeQuery = true)
+  public int getOPPieDotTotal(String date);
 }
