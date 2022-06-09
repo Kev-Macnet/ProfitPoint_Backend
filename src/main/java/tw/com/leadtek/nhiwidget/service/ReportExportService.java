@@ -1,7 +1,5 @@
 package tw.com.leadtek.nhiwidget.service;
 
-import static org.mockito.ArgumentMatchers.intThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -28,6 +26,8 @@ import org.springframework.stereotype.Service;
 
 import com.google.common.io.Files;
 
+import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
+import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
@@ -49,6 +49,8 @@ public class ReportExportService {
 
 	@Autowired
 	private ReportService reportService;
+	@Autowired
+	private CODE_TABLEDao codeTableDao;
 
 	public final static String FILE_PATH = "download";
 
@@ -2616,30 +2618,30 @@ public class ReportExportService {
 				cell.setCellStyle(cellStyle);
 				cellIndex++;
 				cell = row.createCell(cellIndex);
-				String v1Str = (v1Val == 0 ) ? "": String.valueOf(v1Val);
+				String v1Str = (v1Val == 0) ? "" : String.valueOf(v1Val);
 				cell.setCellValue(v1Str);
 				cell.setCellStyle(cellStyle);
 				cellIndex++;
 				cell = row.createCell(cellIndex);
-				String v1Str2 = (v1Val2 == 0 ) ? "": String.valueOf(v1Val2);
+				String v1Str2 = (v1Val2 == 0) ? "" : String.valueOf(v1Val2);
 				cell.setCellValue(v1Str2);
 				cell.setCellStyle(cellStyle);
-				
+
 				cellIndex++;
 				cell = row.createCell(cellIndex);
 				cell.setCellValue(v2Name);
 				cell.setCellStyle(cellStyle);
 				cellIndex++;
 				cell = row.createCell(cellIndex);
-				String v2Str = (v2Val == 0 ) ? "": String.valueOf(v2Val);
+				String v2Str = (v2Val == 0) ? "" : String.valueOf(v2Val);
 				cell.setCellValue(v2Str);
 				cell.setCellStyle(cellStyle);
 				cellIndex++;
 				cell = row.createCell(cellIndex);
-				String v2Str2 = (v2Val2 == 0 ) ? "": String.valueOf(v2Val2);
+				String v2Str2 = (v2Val2 == 0) ? "" : String.valueOf(v2Val2);
 				cell.setCellValue(v2Str2);
 				cell.setCellStyle(cellStyle);
-				
+
 				row = sheet.createRow(rowIndex + v1);
 				cellIndex = 0;
 			}
@@ -2648,8 +2650,6 @@ public class ReportExportService {
 				sheet.autoSizeColumn(i);
 				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
 			}
-			
-			
 
 		} else {
 			HSSFSheet sheet = workbook.createSheet("工作表");
@@ -2669,5 +2669,509 @@ public class ReportExportService {
 		workbook.write(response.getOutputStream());
 		workbook.close();
 
+	}
+
+	/**
+	 * 取得DRG各科分配比例月報表-匯出
+	 * 
+	 * @param year
+	 * @param month
+	 * @param response
+	 * @throws IOException
+	 */
+	public void getDrgMonthlyAllFuncTypeExport(int year, int month, HttpServletResponse response) throws IOException {
+		String monthStr = "";
+		if (month < 10) {
+			monthStr = "0" + month;
+		} else {
+			monthStr = String.valueOf(month);
+		}
+
+		String inputDate = DateTool.convertToChineseYear(year + monthStr + "00");
+		/// 轉成民國年月
+		String endDate = inputDate.substring(0, inputDate.length() - 2);
+
+		String dateStr = year + "/" + month;
+
+		DRGMonthlyPayload drgData = reportService.getDrgMonthlyAllFuncType(year, month);
+		
+		List<CODE_TABLE> ctModelList = codeTableDao.findByCat("FUNC_TYPE");
+
+		// 建立新工作簿
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		// 樣式
+		HSSFCellStyle cellStyle = workbook.createCellStyle();
+		cellStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellStyle.setBorderRight(BorderStyle.MEDIUM);
+		
+		HSSFCellStyle cellTitleStyle = workbook.createCellStyle();
+		cellTitleStyle.setAlignment(HorizontalAlignment.CENTER);
+		cellTitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellTitleStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
+
+		int cellIndex = 0;
+		int rowIndex = 0;
+
+		if (drgData != null) {
+			/// 新建工作表
+			HSSFSheet sheet = workbook.createSheet("DRG各科分配(全院)");
+			String[] tableCellHeaders = { "總住院案件數(含)手術", "住院案件申報總點數 ", "住院案件病歷總點數(不含自費)" };
+			String[] tableCellHeaders2 = { "DRG總案件數(含)手術", "DRG案件申報總點數", "DRG案件病歷總點數(不含自費)" };
+			String[] tableCellHeaders3 = { "DRG件數佔率", "DRG費用佔率", "DRG案件支付差額點數" };
+
+			/// 欄位A1
+			HSSFRow row = sheet.createRow(0);
+			HSSFCell cell = row.createCell(0);
+			cell.setCellValue("統計月份");
+			cell.setCellStyle(cellStyle);
+
+			/// 欄位B1
+			cell = row.createCell(1);
+			cell.setCellValue(dateStr);
+			cell.setCellStyle(cellStyle);
+
+			/// 欄位A3
+			row = sheet.createRow(2);
+			for (int x = 0; x < tableCellHeaders.length; x++) {
+				cell = row.createCell(x);
+				cell.setCellValue(tableCellHeaders[x]);
+				cell.setCellStyle(cellStyle);
+			}
+
+			/// 欄位A4
+			row = sheet.createRow(3);
+			for (int x = 0; x < tableCellHeaders.length; x++) {
+				cell = row.createCell(x);
+				switch (x) {
+				case 0:
+					cell.setCellValue(drgData.getQuantityIp());
+					break;
+				case 1:
+					cell.setCellValue(drgData.getApplPointIp());
+					break;
+				case 2:
+					cell.setCellValue(drgData.getPointIp());
+					break;
+				default:
+					break;
+				}
+				cell.setCellStyle(cellStyle);
+			}
+
+			/// 欄位A5
+			row = sheet.createRow(4);
+			for (int x = 0; x < tableCellHeaders2.length; x++) {
+				cell = row.createCell(x);
+				cell.setCellValue(tableCellHeaders[x]);
+				cell.setCellStyle(cellStyle);
+			}
+
+			/// 欄位A6
+			row = sheet.createRow(5);
+			for (int x = 0; x < tableCellHeaders2.length; x++) {
+				cell = row.createCell(x);
+				switch (x) {
+				case 0:
+					cell.setCellValue(drgData.getQuantityDrg());
+					break;
+				case 1:
+					cell.setCellValue(drgData.getApplPointDrg());
+					break;
+				case 2:
+					cell.setCellValue(drgData.getPointDrg());
+					break;
+				default:
+					break;
+				}
+				cell.setCellStyle(cellStyle);
+			}
+
+			/// 欄位A7
+			row = sheet.createRow(6);
+			for (int x = 0; x < tableCellHeaders3.length; x++) {
+				cell = row.createCell(x);
+				cell.setCellValue(tableCellHeaders[x]);
+				cell.setCellStyle(cellStyle);
+			}
+
+			/// 欄位A8
+			row = sheet.createRow(7);
+			for (int x = 0; x < tableCellHeaders3.length; x++) {
+				cell = row.createCell(x);
+				switch (x) {
+				case 0:
+					cell.setCellValue(drgData.getRateDrg() + "%");
+					break;
+				case 1:
+					cell.setCellValue(drgData.getRatePointDrg() + "%");
+					break;
+				case 2:
+					cell.setCellValue(drgData.getDiffDrg());
+					break;
+				default:
+					break;
+				}
+				cell.setCellStyle(cellStyle);
+			}
+
+			/// 最後設定autosize
+			for (int i = 0; i < tableCellHeaders.length; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+
+			/// 新建工作表
+			tableCellHeaders = new String[] { "", "DRG案件數", "非DRG案件數" };
+			String[] tableRowHeaders = { "件數", "比例" };
+			sheet = workbook.createSheet("DRG比例(全院)");
+
+			/// 欄位A1
+			row = sheet.createRow(0);
+			cell = row.createCell(0);
+			cell.setCellValue("DRG件數佔率");
+			cell.setCellStyle(cellStyle);
+
+			/// 欄位A2
+			row = sheet.createRow(1);
+			for (int x = 0; x < tableCellHeaders.length; x++) {
+				cell = row.createCell(x);
+				cell.setCellValue(tableCellHeaders[x]);
+				cell.setCellStyle(cellStyle);
+			}
+
+			/// 欄位A3
+			row = sheet.createRow(2);
+			rowIndex = 3;
+			for (int y = 0; y < tableRowHeaders.length; y++) {
+				cell = row.createCell(0);
+				cell.setCellValue(tableRowHeaders[y]);
+				cell.setCellStyle(cellStyle);
+
+				cellIndex = 1;
+				switch (y) {
+				case 0:
+					for (int x = 0; x < tableCellHeaders.length - 1; x++) {
+						cell = row.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cell.setCellValue(drgData.getQuantityDrg());
+							break;
+						case 1:
+							cell.setCellValue(drgData.getQuantityIp() - drgData.getQuantityDrg());
+							break;
+						default:
+							break;
+						}
+						cell.setCellStyle(cellStyle);
+					}
+					break;
+				case 1:
+					for (int x = 0; x < tableCellHeaders.length - 1; x++) {
+						cell = row.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cell.setCellValue(drgData.getRateDrg() + "%");
+							break;
+						case 1:
+							cell.setCellValue(100 - drgData.getRateDrg() + "%");
+							break;
+						default:
+							break;
+						}
+						cell.setCellStyle(cellStyle);
+					}
+					break;
+				default:
+					break;
+
+				}
+
+				row = sheet.createRow(rowIndex + y);
+			}
+
+			/// 欄位A6
+			row = sheet.createRow(5);
+			cell = row.createCell(0);
+			cell.setCellValue("DRG費用佔率");
+			cell.setCellStyle(cellStyle);
+
+			/// 欄位A7
+			row = sheet.createRow(6);
+			for (int x = 0; x < tableCellHeaders.length; x++) {
+				cell = row.createCell(x);
+				cell.setCellValue(tableCellHeaders[x]);
+				cell.setCellStyle(cellStyle);
+			}
+
+			/// 欄位A8
+			cellIndex = 1;
+			row = sheet.createRow(7);
+			rowIndex = 8;
+			tableRowHeaders = new String[] { "申報點數", "比例" };
+			for (int y = 0; y < tableRowHeaders.length; y++) {
+				cell = row.createCell(0);
+				cell.setCellValue(tableRowHeaders[y]);
+				cell.setCellStyle(cellStyle);
+
+				cellIndex = 1;
+				switch (y) {
+				case 0:
+					for (int x = 0; x < tableCellHeaders.length - 1; x++) {
+						cell = row.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cell.setCellValue(drgData.getApplPointDrg());
+							break;
+						case 1:
+							cell.setCellValue(drgData.getApplPointIp() - drgData.getApplPointDrg());
+							break;
+						default:
+							break;
+						}
+						cell.setCellStyle(cellStyle);
+					}
+					break;
+				case 1:
+					for (int x = 0; x < tableCellHeaders.length - 1; x++) {
+						cell = row.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cell.setCellValue(drgData.getRatePointDrg() + "%");
+							break;
+						case 1:
+							cell.setCellValue(100 - drgData.getRatePointDrg() + "%");
+							break;
+						default:
+							break;
+						}
+						cell.setCellStyle(cellStyle);
+					}
+					break;
+				default:
+					break;
+
+				}
+
+				row = sheet.createRow(rowIndex + y);
+			}
+
+			/// 最後設定autosize
+			for (int i = 0; i < tableCellHeaders.length; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+
+			/// 新建工作表
+			tableCellHeaders = new String[] { "DRG案件數比例趨勢圖", "", "", "DRG點數比例趨勢圖", "", "" };
+			tableCellHeaders2 = new String[] { "週數", "DRG案件數", "非DRG案件數", "週數", "DRG案件點數", "非DRG案件點數" };
+			cellIndex = 0;
+			rowIndex = 0;
+			
+			List<String> funcTypes = drgData.getFuncTypes();
+			
+			for(String funcName : funcTypes) {
+				if(funcName.equals("不分科")) {
+					sheet = workbook.createSheet("趨勢圖(全院)");
+					/// 欄位A1
+					row = sheet.createRow(0);
+					for (int i = 0; i < tableCellHeaders.length; i++) {
+						cell = row.createCell(i);
+						cell.setCellStyle(cellTitleStyle);
+						if (i == 0) {
+							cell.setCellValue(tableCellHeaders[i]);
+						} else if (i == 3) {
+							cell.setCellValue(tableCellHeaders[i]);
+						}
+					}
+					/// 合併欄位
+					sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
+					sheet.addMergedRegion(new CellRangeAddress(0, 0, 3, 5));
+
+					/// 欄位A2
+					row = sheet.createRow(1);
+					for (int x = 0; x < tableCellHeaders2.length; x++) {
+						cell = row.createCell(x);
+						cell.setCellValue(tableCellHeaders2[x]);
+						cell.setCellStyle(cellStyle);
+					}
+
+					/// 欄位A3
+					row = sheet.createRow(2);
+					rowIndex = 3;
+					cellIndex = 0;
+					NameValueList2 nvlQ = drgData.getQuantityMap().get("00");
+					NameValueList2 nvlD = drgData.getPointMap().get("00");
+					/// values
+					for (int v1 = 0; v1 < nvlQ.getNames().size(); v1++) {
+						String v1Name = nvlQ.getNames().get(v1);
+						Long v1Val = nvlQ.getValues().get(v1);
+						Long v1Val2 = nvlQ.getValues2().get(v1);
+						String v2Name = nvlD.getNames().get(v1);
+						Long v2Val = nvlD.getValues().get(v1);
+						Long v2Val2 = nvlD.getValues2().get(v1);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(v1Name);
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						String v1Str = (v1Val == 0) ? "" : String.valueOf(v1Val);
+						cell.setCellValue(v1Str);
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						String v1Str2 = (v1Val2 == 0) ? "" : String.valueOf(v1Val2);
+						cell.setCellValue(v1Str2);
+						cell.setCellStyle(cellStyle);
+
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(v2Name);
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						String v2Str = (v2Val == 0) ? "" : String.valueOf(v2Val);
+						cell.setCellValue(v2Str);
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						String v2Str2 = (v2Val2 == 0) ? "" : String.valueOf(v2Val2);
+						cell.setCellValue(v2Str2);
+						cell.setCellStyle(cellStyle);
+
+						row = sheet.createRow(rowIndex + v1);
+						cellIndex = 0;
+					}
+					cellIndex = 0;
+					rowIndex = 0;
+					/// 最後設定autosize
+					for (int i = 0; i < tableCellHeaders.length; i++) {
+						sheet.autoSizeColumn(i);
+						sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+					}
+				}
+				else {
+					String funcCode = "";
+					///先用funcType中文取得對應的code
+					for(CODE_TABLE model : ctModelList) {
+						if(model.getDescChi().equals(funcName)) {
+							funcCode = model.getCode();
+						}
+					}
+					NameValueList2 nvlQ = drgData.getQuantityMap().get(funcCode);
+					NameValueList2 nvlD = drgData.getPointMap().get(funcCode);
+					if(nvlQ == null) {
+						continue;
+					}
+					sheet = workbook.createSheet("趨勢圖("+funcName+")");
+					
+					/// 欄位A1
+					row = sheet.createRow(0);
+					cell = row.createCell(0);
+					cell.setCellValue(funcName);
+					
+					/// 欄位A2
+					row = sheet.createRow(1);
+					for (int i = 0; i < tableCellHeaders.length; i++) {
+						cell = row.createCell(i);
+						cell.setCellStyle(cellTitleStyle);
+						if (i == 0) {
+							cell.setCellValue(tableCellHeaders[i]);
+						} else if (i == 3) {
+							cell.setCellValue(tableCellHeaders[i]);
+						}
+					}
+					/// 合併欄位
+					sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 2));
+					sheet.addMergedRegion(new CellRangeAddress(1, 1, 3, 5));
+
+					/// 欄位A3
+					row = sheet.createRow(2);
+					for (int x = 0; x < tableCellHeaders2.length; x++) {
+						cell = row.createCell(x);
+						cell.setCellValue(tableCellHeaders2[x]);
+						cell.setCellStyle(cellStyle);
+					}
+
+					/// 欄位A4
+					row = sheet.createRow(3);
+					rowIndex = 4;
+					cellIndex = 0;
+					
+					/// values
+					for (int v1 = 0; v1 < nvlQ.getNames().size(); v1++) {
+						String v1Name = nvlQ.getNames().get(v1);
+						Long v1Val = nvlQ.getValues().get(v1);
+						Long v1Val2 = nvlQ.getValues2().get(v1);
+						String v2Name = nvlD.getNames().get(v1);
+						Long v2Val = nvlD.getValues().get(v1);
+						Long v2Val2 = nvlD.getValues2().get(v1);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(v1Name);
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						String v1Str = (v1Val == 0) ? "" : String.valueOf(v1Val);
+						cell.setCellValue(v1Str);
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						String v1Str2 = (v1Val2 == 0) ? "" : String.valueOf(v1Val2);
+						cell.setCellValue(v1Str2);
+						cell.setCellStyle(cellStyle);
+
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(v2Name);
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						String v2Str = (v2Val == 0) ? "" : String.valueOf(v2Val);
+						cell.setCellValue(v2Str);
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						String v2Str2 = (v2Val2 == 0) ? "" : String.valueOf(v2Val2);
+						cell.setCellValue(v2Str2);
+						cell.setCellStyle(cellStyle);
+
+						row = sheet.createRow(rowIndex + v1);
+						cellIndex = 0;
+					}
+					cellIndex = 0;
+					rowIndex = 0;
+					/// 最後設定autosize
+					for (int i = 0; i < tableCellHeaders.length; i++) {
+						sheet.autoSizeColumn(i);
+						sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+					}
+				}
+			}
+
+			
+
+		} else {
+			HSSFSheet sheet = workbook.createSheet("工作表");
+		}
+
+		String fileNameStr = "DRG各科分配比例月報表_" + endDate;
+		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+				? FILE_PATH + "\\" + fileName
+				: FILE_PATH + "/" + fileName;
+		File file = new File(filepath);
+		response.reset();
+		response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+		response.setContentType("application/vnd.ms-excel;charset=utf8");
+
+		workbook.write(response.getOutputStream());
+		workbook.close();
 	}
 }
