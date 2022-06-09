@@ -1,5 +1,7 @@
 package tw.com.leadtek.nhiwidget.service;
 
+import static org.mockito.ArgumentMatchers.intThat;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -27,11 +29,13 @@ import org.springframework.stereotype.Service;
 import com.google.common.io.Files;
 
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
+import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList2;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList3;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
+import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsVarietyPayload;
 import tw.com.leadtek.tools.DateTool;
 
@@ -1535,6 +1539,14 @@ public class ReportExportService {
 
 	}
 
+	/**
+	 * 取得健保總額累積達成率-匯出
+	 * 
+	 * @param year
+	 * @param week
+	 * @param response
+	 * @throws IOException
+	 */
 	public void getAchievementRateExport(String year, String week, HttpServletResponse response) throws IOException {
 		Calendar cal = Calendar.getInstance();
 		cal.set(Calendar.YEAR, Integer.parseInt(year));
@@ -1656,6 +1668,7 @@ public class ReportExportService {
 					break;
 				}
 				if (!sheetHeaders[3].equals(sheetName)) {
+					/// 不是 門診急診總額總點數走這
 					sheet = workbook.createSheet(sheetName);
 					HSSFRow rows = sheet.createRow(0);
 					HSSFCell cells = rows.createCell(cellIndex);
@@ -1750,6 +1763,7 @@ public class ReportExportService {
 					cellIndex = 0;
 					rowIndex = 0;
 				} else {
+					/// 門診急診總額總點數走這
 					sheet = workbook.createSheet(sheetName);
 					HSSFRow rows = sheet.createRow(0);
 					HSSFCell cells = rows.createCell(cellIndex);
@@ -1824,5 +1838,438 @@ public class ReportExportService {
 		workbook.write(response.getOutputStream());
 		workbook.close();
 
+	}
+
+	/**
+	 * 取得健保總額累積達成率-匯出
+	 * 
+	 * @param year
+	 * @param quarter
+	 * @param response
+	 * @throws IOException
+	 */
+	public void getAchievementQuarterExport(String year, String quarter, HttpServletResponse response)
+			throws IOException {
+
+		AchievementQuarter aqData = reportService.getAchievementQuarter(year, quarter);
+		List<QuarterData> qdAllList = aqData.getAll();
+		List<QuarterData> qdOpList = aqData.getOp();
+		List<QuarterData> qdIpList = aqData.getIp();
+
+		// 建立新工作簿
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		// 樣式
+		HSSFCellStyle cellStyle = workbook.createCellStyle();
+		cellStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellStyle.setBorderRight(BorderStyle.MEDIUM);
+		
+		HSSFCellStyle cellTitleStyle = workbook.createCellStyle();
+		cellTitleStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellTitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellTitleStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
+		Font font = workbook.createFont();
+		font.setColor(HSSFColor.HSSFColorPredefined.RED.getIndex());
+		cellTitleStyle.setFont(font);
+
+		int cellIndex = 0;
+		int rowIndex = 0;
+
+		/// 如過沒資料就會出空的
+		if (qdAllList.size() != 0) {
+			
+			if (qdAllList.size() < 2) {
+				/// 單季度資料匯出
+				String[] tableCellHeaders = { "申報與分配點數與達成率", "病歷總點數(含自費)", "申報總點數", "分配額度總點數", "超額總點數", "總額達成率" };
+				String[] tableRowHeaders = { "門急診/住院", "門急診", "住院" };
+				String[] tableCellHeaders2 = {"","分配點數","申報總額點數"};
+				HSSFSheet sheet = workbook.createSheet("單季度");
+				/// 欄位A1
+				HSSFRow row = sheet.createRow(0);
+				HSSFCell cell = row.createCell(0);
+				cell.setCellValue("申報季度");
+				cell.setCellStyle(cellStyle);
+
+				/// 欄位B1
+				cell = row.createCell(1);
+				cell.setCellValue(qdAllList.get(0).getName());
+				cell.setCellStyle(cellStyle);
+
+				/// 欄位A3
+				row = sheet.createRow(2);
+				for (int x = 0; x < tableCellHeaders.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableCellHeaders[x]);
+					cell.setCellStyle(cellStyle);
+
+				}
+				/// 欄位A4
+				row = sheet.createRow(3);
+				rowIndex = 4;
+				for (int y = 0; y < tableRowHeaders.length; y++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(tableRowHeaders[y]);
+					cell.setCellStyle(cellStyle);
+					cellIndex = 1;
+					HSSFCell cells = row.createCell(cellIndex);
+					switch (y) {
+					case 0:
+						for (int x = 0; x < tableCellHeaders.length - 1; x++) {
+							cells = row.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(qdAllList.get(0).getOriginal());
+								break;
+							case 1:
+								cells.setCellValue(qdAllList.get(0).getActual());
+								break;
+							case 2:
+								cells.setCellValue(qdAllList.get(0).getAssigned());
+								break;
+							case 3:
+								cells.setCellValue(qdAllList.get(0).getOver());
+								break;
+							case 4:
+								cells.setCellValue(qdAllList.get(0).getPercent() + "%");
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellStyle);
+						}
+						break;
+					case 1:
+						for (int x = 0; x < tableCellHeaders.length - 1; x++) {
+							cells = row.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(qdOpList.get(0).getOriginal());
+								break;
+							case 1:
+								cells.setCellValue(qdOpList.get(0).getActual());
+								break;
+							case 2:
+								cells.setCellValue(qdOpList.get(0).getAssigned());
+								break;
+							case 3:
+								cells.setCellValue(qdOpList.get(0).getOver());
+								break;
+							case 4:
+								cells.setCellValue(qdOpList.get(0).getPercent() + "%");
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellStyle);
+						}
+						break;
+					case 2:
+						for (int x = 0; x < tableCellHeaders.length - 1; x++) {
+							cells = row.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(qdIpList.get(0).getOriginal());
+								break;
+							case 1:
+								cells.setCellValue(qdIpList.get(0).getActual());
+								break;
+							case 2:
+								cells.setCellValue(qdIpList.get(0).getAssigned());
+								break;
+							case 3:
+								cells.setCellValue(qdIpList.get(0).getOver());
+								break;
+							case 4:
+								cells.setCellValue(qdIpList.get(0).getPercent() + "%");
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellStyle);
+						}
+						break;
+					default:
+						break;
+
+					}
+					row = sheet.createRow(rowIndex + y);
+					cellIndex = 0;
+				}
+				///欄位A8
+				cellIndex = 0;
+				row = sheet.createRow(7);
+				for(int x=0; x < tableCellHeaders2.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableCellHeaders2[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				///欄位A9
+				row = sheet.createRow(8);
+				rowIndex = 9;
+				for (int y = 0; y < tableRowHeaders.length; y++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(tableRowHeaders[y]);
+					cell.setCellStyle(cellStyle);
+					cellIndex = 1;
+					HSSFCell cells = row.createCell(cellIndex);
+					switch (y) {
+					case 0:
+						for (int x = 0; x < tableCellHeaders2.length - 1; x++) {
+							cells = row.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(qdAllList.get(0).getAssigned());
+								break;
+							case 1:
+								cells.setCellValue(qdAllList.get(0).getActual());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellStyle);
+						}
+						break;
+					case 1:
+						for (int x = 0; x < tableCellHeaders2.length - 1; x++) {
+							cells = row.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(qdOpList.get(0).getAssigned());
+								break;
+							case 1:
+								cells.setCellValue(qdOpList.get(0).getActual());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellStyle);
+						}
+						break;
+					case 2:
+						for (int x = 0; x < tableCellHeaders2.length - 1; x++) {
+							cells = row.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(qdIpList.get(0).getAssigned());
+								break;
+							case 1:
+								cells.setCellValue(qdIpList.get(0).getActual());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellStyle);
+						}
+						break;
+					default:
+						break;
+
+					}
+					row = sheet.createRow(rowIndex + y);
+					cellIndex = 0;
+				}
+				/// 最後設定autosize
+				for (int i = 0; i < tableCellHeaders.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+
+			} else {
+				/// 多季度資料匯出
+				String[] tableCellHeaders = { "申報與分配點數與達成率", "病歷總點數(含自費)", "申報總點數", "分配額度總點數", "超額總點數", "總額達成率" };
+				HSSFSheet sheet = workbook.createSheet("多季度");
+				cellIndex = 0;
+				rowIndex = 0;
+				/// 欄位A1
+				HSSFRow row = sheet.createRow(0);
+				HSSFCell cell = row.createCell(0);
+				cell.setCellValue("申報季度");
+				cell.setCellStyle(cellStyle);
+				cellIndex = 1;
+				for(int v=0; v < qdAllList.size(); v++) {
+					cell = row.createCell(cellIndex + v);
+					cell.setCellValue(qdAllList.get(v).getName());
+					cell.setCellStyle(cellStyle);
+				}
+				
+				/// 欄位A3
+				row = sheet.createRow(2);
+				cell = row.createCell(0);
+				cell.setCellValue("門急診/住院");
+				cell.setCellStyle(cellStyle);
+				
+				///欄位A4
+				row = sheet.createRow(3);
+				for (int x = 0; x < tableCellHeaders.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableCellHeaders[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				
+				///欄位A5
+				row = sheet.createRow(4);
+				cellIndex = 0;
+				rowIndex = 5;
+				for(int v=0; v < qdAllList.size(); v++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getName());
+					cell.setCellStyle(cellTitleStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getOriginal());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getActual());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getAssigned());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getOver());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getPercent() + "%");
+					cell.setCellStyle(cellStyle);
+					
+					rowIndex += v;
+					row = sheet.createRow(rowIndex);
+					cellIndex = 0;
+				}
+//				rowIndex += 2;
+			
+				///欄位 rowIndex
+				row = sheet.createRow(rowIndex);
+				cell = row.createCell(0);
+				cell.setCellValue("門急診");
+				cell.setCellStyle(cellStyle);
+				rowIndex++;
+				
+				///欄位 rowIndex
+				row = sheet.createRow(rowIndex);
+				for (int x = 0; x < tableCellHeaders.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableCellHeaders[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				rowIndex++;
+				
+				///欄位 rowIndex
+				row = sheet.createRow(rowIndex);
+				cellIndex = 0;
+				rowIndex++;
+				for(int v=0; v < qdAllList.size(); v++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getName());
+					cell.setCellStyle(cellTitleStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getOriginal());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getActual());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getAssigned());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getOver());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getPercent() + "%");
+					cell.setCellStyle(cellStyle);
+					
+					rowIndex += v;
+					row = sheet.createRow(rowIndex);
+					cellIndex = 0;
+				}
+//				rowIndex += 2;
+				
+				///欄位 rowIndex
+				row = sheet.createRow(rowIndex);
+				cell = row.createCell(0);
+				cell.setCellValue("住院");
+				cell.setCellStyle(cellStyle);
+				rowIndex++;
+				
+				///欄位 rowIndex
+				row = sheet.createRow(rowIndex);
+				for (int x = 0; x < tableCellHeaders.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableCellHeaders[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				rowIndex++;
+				
+				///欄位 rowIndex
+				row = sheet.createRow(rowIndex);
+				cellIndex = 0;
+				rowIndex++;
+				for(int v=0; v < qdAllList.size(); v++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getName());
+					cell.setCellStyle(cellTitleStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getOriginal());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getActual());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getAssigned());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getOver());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(qdAllList.get(v).getPercent() + "%");
+					cell.setCellStyle(cellStyle);
+					
+					rowIndex += v;
+					row = sheet.createRow(rowIndex);
+					cellIndex = 0;
+				}
+				/// 最後設定autosize
+				for (int i = 0; i < tableCellHeaders.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+			}
+		}
+		else {
+			HSSFSheet sheet = workbook.createSheet("工作表");
+		}
+
+		String fileNameStr = "健保總額累積達成率";
+		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+				? FILE_PATH + "\\" + fileName
+				: FILE_PATH + "/" + fileName;
+		File file = new File(filepath);
+		response.reset();
+		response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+		response.setContentType("application/vnd.ms-excel;charset=utf8");
+
+		workbook.write(response.getOutputStream());
+		workbook.close();
 	}
 }

@@ -347,4 +347,17 @@ public class ReportController extends BaseController {
 		reportExportService.getAchievementRateExport(year, week, response);
 		return null;
 	}
+	
+	@ApiOperation(value = "取得健保總額累積達成率-匯出", notes = "取得健保申報總額達成趨勢資料-匯出")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/achievementRateQuarterExport")
+	public ResponseEntity<BaseResponse> getAchievementRateQuarterExport(
+			@ApiParam(value = "西元年，若為多筆資料，用空格隔開", example = "2021 2021 2021") @RequestParam(required = true) String year,
+			@ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true) String quarter,
+			HttpServletResponse response
+			) throws IOException {
+		
+		reportExportService.getAchievementQuarterExport(year, quarter, response);
+		return null;
+	}
 }
