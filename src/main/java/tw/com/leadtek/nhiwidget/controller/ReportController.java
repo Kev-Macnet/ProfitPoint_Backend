@@ -360,4 +360,29 @@ public class ReportController extends BaseController {
 		reportExportService.getAchievementQuarterExport(year, quarter, response);
 		return null;
 	}
+	
+	@ApiOperation(value = "取得DRG分配比例月報表-匯出", notes = "取得DRG分配比例月報表-匯出")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/drgMonthlyExport")
+	public ResponseEntity<BaseResponse> getDrgMonthlyExport(
+			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
+			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
+			HttpServletResponse response
+			) throws IOException {
+		if (year < 2015 || year > 2030) {
+			DRGMonthlyPayload result = new DRGMonthlyPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("年份超過範圍");
+			return ResponseEntity.badRequest().body(result);
+		}
+		if (month < 1 || month > 12) {
+			DRGMonthlyPayload result = new DRGMonthlyPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("月份超過範圍");
+			return ResponseEntity.badRequest().body(result);
+		}
+		
+		reportExportService.getDrgMonthlyExport(year, month, response);
+		return null;
+	}
 }
