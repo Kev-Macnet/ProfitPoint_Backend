@@ -2,6 +2,7 @@ package tw.com.leadtek.nhiwidget.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -24,10 +25,7 @@ import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.couchbase.CouchbaseProperties.Env;
 import org.springframework.stereotype.Service;
-
-import com.google.common.io.Files;
 
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
@@ -709,14 +707,20 @@ public class ReportExportService {
 				: FILE_PATH + "/" + fileName;
 		File file = new File(filepath);
 		response.reset();
-		response.setHeader("Acccess-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
 		response.setHeader("Content-Disposition",
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
-		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		response.setContentType("application/octet-stream;charset=utf8");
+//		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		
+		///最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
 
-		workbook.write(response.getOutputStream());
+		workbook.write(out);
+		out.flush();
+		out.close();
 		workbook.close();
-//		Files.copy(file, response.getOutputStream());
 
 	}
 
@@ -1540,12 +1544,19 @@ public class ReportExportService {
 				: FILE_PATH + "/" + fileName;
 		File file = new File(filepath);
 		response.reset();
-		response.setHeader("Acccess-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
 		response.setHeader("Content-Disposition",
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
-		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		response.setContentType("application/octet-stream;charset=utf8");
+//		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		
+		///最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
 
-		workbook.write(response.getOutputStream());
+		workbook.write(out);
+		out.flush();
+		out.close();
 		workbook.close();
 
 	}
@@ -1842,12 +1853,19 @@ public class ReportExportService {
 				: FILE_PATH + "/" + fileName;
 		File file = new File(filepath);
 		response.reset();
-		response.setHeader("Acccess-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
 		response.setHeader("Content-Disposition",
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
-		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		response.setContentType("application/octet-stream;charset=utf8");
+//		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		
+		///最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
 
-		workbook.write(response.getOutputStream());
+		workbook.write(out);
+		out.flush();
+		out.close();
 		workbook.close();
 
 	}
@@ -2274,12 +2292,19 @@ public class ReportExportService {
 				: FILE_PATH + "/" + fileName;
 		File file = new File(filepath);
 		response.reset();
-		response.setHeader("Acccess-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
 		response.setHeader("Content-Disposition",
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
-		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		response.setContentType("application/octet-stream;charset=utf8");
+//		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		
+		///最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
 
-		workbook.write(response.getOutputStream());
+		workbook.write(out);
+		out.flush();
+		out.close();
 		workbook.close();
 	}
 
@@ -2672,12 +2697,19 @@ public class ReportExportService {
 				: FILE_PATH + "/" + fileName;
 		File file = new File(filepath);
 		response.reset();
-		response.setHeader("Acccess-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
 		response.setHeader("Content-Disposition",
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
-		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		response.setContentType("application/octet-stream;charset=utf8");
+//		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		
+		///最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
 
-		workbook.write(response.getOutputStream());
+		workbook.write(out);
+		out.flush();
+		out.close();
 		workbook.close();
 
 	}
@@ -3175,12 +3207,19 @@ public class ReportExportService {
 				: FILE_PATH + "/" + fileName;
 		File file = new File(filepath);
 		response.reset();
-		response.setHeader("Acccess-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
 		response.setHeader("Content-Disposition",
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
-		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		response.setContentType("application/octet-stream;charset=utf8");
+//		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		
+		///最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
 
-		workbook.write(response.getOutputStream());
+		workbook.write(out);
+		out.flush();
+		out.close();
 		workbook.close();
 	}
 
@@ -3531,28 +3570,33 @@ public class ReportExportService {
 					}
 					break;
 				case 1:
-					Long sum = drgData.getQuantityA() + drgData.getQuantityB1() + drgData.getQuantityB2() + drgData.getQuantityC();
+					Long sum = drgData.getQuantityA() + drgData.getQuantityB1() + drgData.getQuantityB2()
+							+ drgData.getQuantityC();
 					for (int x = 0; x < tableCellHeaders.length - 1; x++) {
 						cell = row.createCell(cellIndex + x);
-						///四捨五入double型態取小數2位
-						double d = Math.round(drgData.getQuantityA().doubleValue() / sum.doubleValue() * 100.0 * 100.0)/100.0;
+						/// 四捨五入double型態取小數2位
+						double d = Math.round(drgData.getQuantityA().doubleValue() / sum.doubleValue() * 100.0 * 100.0)
+								/ 100.0;
 						switch (x) {
 						case 0:
 							cell.setCellValue(d + "%");
 							break;
 						case 1:
-							///四捨五入double型態取小數2位
-							d = Math.round(drgData.getQuantityB1().doubleValue() / sum.doubleValue() * 100.0 * 100.0)/100.0;
+							/// 四捨五入double型態取小數2位
+							d = Math.round(drgData.getQuantityB1().doubleValue() / sum.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
 							cell.setCellValue(d + "%");
 							break;
 						case 2:
-							///四捨五入double型態取小數2位
-							d = Math.round(drgData.getQuantityB2().doubleValue() / sum.doubleValue() * 100.0 * 100.0)/100.0;
+							/// 四捨五入double型態取小數2位
+							d = Math.round(drgData.getQuantityB2().doubleValue() / sum.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
 							cell.setCellValue(d + "%");
 							break;
 						case 3:
-							///四捨五入double型態取小數2位
-							d = Math.round(drgData.getQuantityC().doubleValue() / sum.doubleValue() * 100.0 * 100.0)/100.0;
+							/// 四捨五入double型態取小數2位
+							d = Math.round(drgData.getQuantityC().doubleValue() / sum.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
 							cell.setCellValue(d + "%");
 							break;
 						default:
@@ -3631,25 +3675,29 @@ public class ReportExportService {
 					sum = drgData.getApplA() + drgData.getApplB1() + drgData.getApplB2() + drgData.getApplC();
 					for (int x = 0; x < tableCellHeaders.length - 1; x++) {
 						cell = row.createCell(cellIndex + x);
-						///四捨五入double型態取小數2位
-						double d = Math.round(drgData.getApplA().doubleValue() / sum.doubleValue() * 100.0 * 100.0) / 100.0;
+						/// 四捨五入double型態取小數2位
+						double d = Math.round(drgData.getApplA().doubleValue() / sum.doubleValue() * 100.0 * 100.0)
+								/ 100.0;
 						switch (x) {
 						case 0:
 							cell.setCellValue(d + "%");
 							break;
 						case 1:
-							///四捨五入double型態取小數2位
-							d = Math.round(drgData.getApplB1().doubleValue() / sum.doubleValue() * 100.0 * 100.0) / 100.0;
+							/// 四捨五入double型態取小數2位
+							d = Math.round(drgData.getApplB1().doubleValue() / sum.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
 							cell.setCellValue(d + "%");
 							break;
 						case 2:
-							///四捨五入double型態取小數2位
-							d = Math.round(drgData.getApplB2().doubleValue() / sum.doubleValue() * 100.0 * 100.0) / 100.0;
+							/// 四捨五入double型態取小數2位
+							d = Math.round(drgData.getApplB2().doubleValue() / sum.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
 							cell.setCellValue(d + "%");
 							break;
 						case 3:
-							///四捨五入double型態取小數2位
-							d = Math.round(drgData.getApplC().doubleValue() / sum.doubleValue() * 100.0 * 100.0) / 100.0;
+							/// 四捨五入double型態取小數2位
+							d = Math.round(drgData.getApplC().doubleValue() / sum.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
 							cell.setCellValue(d + "%");
 							break;
 						default:
@@ -3665,34 +3713,34 @@ public class ReportExportService {
 				row = sheet.createRow(rowIndex + y);
 				cellIndex = 1;
 			}
-			
+
 			/// 最後設定autosize
 			for (int i = 0; i < tableCellHeaders.length; i++) {
 				sheet.autoSizeColumn(i);
 				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
 			}
-			
-			///新建工作表
+
+			/// 新建工作表
 			List<String> tableCellHeadersList = new ArrayList<String>();
 			List<String> tableCellHeadersList2 = new ArrayList<String>();
-			tableCellHeaders = new String[]{"A區","B1區","B2區","C區",};
-			tableRowHeaders = new String[]{"DRG案件數","DRG案件申報總點數","DRG案件支付差額點數","DRG案件佔率"};
+			tableCellHeaders = new String[] { "A區", "B1區", "B2區", "C區", };
+			tableRowHeaders = new String[] { "DRG案件數", "DRG案件申報總點數", "DRG案件支付差額點數", "DRG案件佔率" };
 			cellIndex = 0;
 			rowIndex = 0;
-			int y1,y2,x1,x2;
+			int y1, y2, x1, x2;
 			sheet = workbook.createSheet("DRG各科別各區差額資訊(各科)");
-			///以下資料筆數皆為相同
+			/// 以下資料筆數皆為相同
 			List<NameCodePointQuantity> sectonA = drgData.getSectionA();
 			List<NameCodePointQuantity> sectonB1 = drgData.getSectionB1();
 			List<NameCodePointQuantity> sectonB2 = drgData.getSectionB2();
 			List<NameCodePointQuantity> sectonC = drgData.getSectionC();
-			List<NameCodePoint> diffB1 =  drgData.getDiffB1FuncType();
-			List<NameCodePoint> diffB2 =  drgData.getDiffB2FuncType();
-			List<NameCodePoint> diffC =  drgData.getDiffCFuncType();
-			///將表頭先拿出
-			for(NameCodePointQuantity ncpq : sectonA) {
+			List<NameCodePoint> diffB1 = drgData.getDiffB1FuncType();
+			List<NameCodePoint> diffB2 = drgData.getDiffB2FuncType();
+			List<NameCodePoint> diffC = drgData.getDiffCFuncType();
+			/// 將表頭先拿出
+			for (NameCodePointQuantity ncpq : sectonA) {
 				tableCellHeadersList.add(ncpq.getName());
-				///有幾個funcType就塞入幾次
+				/// 有幾個funcType就塞入幾次
 				Collections.addAll(tableCellHeadersList2, tableCellHeaders);
 			}
 			y1 = 0;
@@ -3703,41 +3751,31 @@ public class ReportExportService {
 			cell = row.createCell(1);
 			cellIndex = 1;
 			/// 欄位B1
-			for(String name : tableCellHeadersList) {
-				for(int i=0; i<4; i++) {
-					if(i==0) {
-					
+			for (String name : tableCellHeadersList) {
+				for (int i = 0; i < 4; i++) {
+					if (i == 0) {
+
 						cell.setCellValue(name);
 					}
 					cell.setCellStyle(cellTitleStyle);
 				}
-				///merge欄位
+				/// merge欄位
 				sheet.addMergedRegion(new CellRangeAddress(y1, y2, x1, x2));
 				x1 += 4;
 				x2 += 4;
 				cell = row.createCell(x1);
 			}
-			
-			
+
 			/// 欄位A2
 			cellIndex = 1;
 			rowIndex = 0;
 			row = sheet.createRow(1);
-			for(String name : tableCellHeadersList2) {
+			for (String name : tableCellHeadersList2) {
 				cell = row.createCell(cellIndex);
 				cell.setCellValue(name);
 				cell.setCellStyle(cellTitleStyle);
 				cellIndex++;
 			}
-			
-			
-			
-			
-			
-			
-			
-			
-			
 
 		} else {
 			HSSFSheet sheet = workbook.createSheet("工作表");
@@ -3750,13 +3788,19 @@ public class ReportExportService {
 				: FILE_PATH + "/" + fileName;
 		File file = new File(filepath);
 		response.reset();
-		response.setHeader("Acccess-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
 		response.setHeader("Content-Disposition",
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
-		response.setContentType("application/vnd.ms-excel;charset=utf8");
+		response.setContentType("application/octet-stream;charset=utf8");
+//		response.setContentType("application/vnd.ms-excel;charset=utf8");
 		
+		///最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
 
-		workbook.write(response.getOutputStream());
+		workbook.write(out);
+		out.flush();
+		out.close();
 		workbook.close();
 	}
 }

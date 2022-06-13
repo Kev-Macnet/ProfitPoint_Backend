@@ -258,7 +258,7 @@ public class ReportController extends BaseController {
 		}
 		return ResponseEntity.ok(reportService.getMonthlyReportApplCount(year, month));
 	}
-
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得單月各科健保申報量與人次報表-匯出", notes = "取得單月各科健保申報量與人次報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/monthlyPointApplCountExport")
@@ -312,7 +312,7 @@ public class ReportController extends BaseController {
 
 		return ResponseEntity.ok(results);
 	}
-
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得健保點數月報表-匯出", notes = "取得健保點數月報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/monthlyPointExport")
@@ -335,7 +335,7 @@ public class ReportController extends BaseController {
 		reportExportService.getMonthlyReportExport(year, month, response);
 		return null;
 	}
-
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得健保申報總額達成趨勢資料-匯出", notes = "取得健保申報總額達成趨勢資料-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievementRateExport")
@@ -347,7 +347,7 @@ public class ReportController extends BaseController {
 		reportExportService.getAchievementRateExport(year, week, response);
 		return null;
 	}
-	
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得健保總額累積達成率-匯出", notes = "取得健保申報總額達成趨勢資料-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievementRateQuarterExport")
@@ -360,7 +360,7 @@ public class ReportController extends BaseController {
 		reportExportService.getAchievementQuarterExport(year, quarter, response);
 		return null;
 	}
-	
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得DRG分配比例月報表-匯出", notes = "取得DRG分配比例月報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgMonthlyExport")
@@ -386,7 +386,7 @@ public class ReportController extends BaseController {
 		return null;
 	}
 	
-	
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得DRG各科分配比例月報表-匯出", notes = "取得DRG各科分配比例月報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgMonthlyAllFuncTypeExport")
@@ -410,7 +410,7 @@ public class ReportController extends BaseController {
 		reportExportService.getDrgMonthlyAllFuncTypeExport(year, month, response);
 		return null;
 	}
-	
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得DRG各區分配比例月報表-匯出", notes = "取得DRG各區分配比例月報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgMonthlySectionExport")
