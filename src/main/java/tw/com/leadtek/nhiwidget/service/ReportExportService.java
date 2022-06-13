@@ -9,6 +9,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -40,7 +41,10 @@ import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList2;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList3;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
+import tw.com.leadtek.nhiwidget.payload.report.PointPeriod;
 import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
+import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriod;
+import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriodDetail;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsVarietyPayload;
 import tw.com.leadtek.tools.DateTool;
 
@@ -58,6 +62,17 @@ public class ReportExportService {
 
 	public final static String FILE_PATH = "download";
 
+	
+	public void addRowCell(HSSFRow row,int num,String value,HSSFCellStyle cellStyle) {
+			// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
+			HSSFCell cell = row.createCell(num);
+			// 設定單元格的值,即A1的值(第一行,第一列)
+			cell.setCellValue(value);
+		  if(cellStyle!=null) {
+			  cell.setCellStyle(cellStyle);
+		  }
+	  }
+	
 	/**
 	 * 取得單月各科健保申報量與人次報表-匯出
 	 * 
@@ -4197,4 +4212,474 @@ public class ReportExportService {
 		out.close();
 		workbook.close();
 	}
+	
+	/**
+	 * 取得門急診/住院/出院人次變化-匯出
+	 * 
+	 * @param year
+	 * @param quarter
+	 * @param response
+	 * @throws IOException
+	 */
+	public void getVisitsVarietyExport(VisitsVarietyPayload visitsVarietyPayload,HttpServletResponse response,String year,String week,String sdate,String edate) {
+		
+		StringBuilder yearWeek=new StringBuilder();
+		yearWeek.append(year+"/"+week+"週");
+		
+		StringBuilder day=new StringBuilder();
+		day.append(sdate+"~"+edate);
+		
+		//實際總點數
+		PointPeriod actual= visitsVarietyPayload.getActual();
+		//門急診-住院
+		Long all=actual.getAll();
+		//門急診
+		Long opem=actual.getOpem();
+		//門診 早
+		Long opMorning=actual.getOpMorning();
+		//門診 中
+		Long opAfternoon=actual.getOpAfternoon();
+		//門診 晚
+		Long opNight=actual.getOpNight();
+		//急診
+		Long em=actual.getEm();
+		//住院
+		Long ip=actual.getIp();
+		
+		//申報總點數
+		PointPeriod appl=visitsVarietyPayload.getAppl();
+		//門急診-住院
+		Long all_appl=appl.getAll();
+		//門急診
+		Long opem_appl=appl.getOpem();
+		//門診 早
+		Long opMorning_appl=appl.getOpMorning();
+		//門診 中
+		Long opAfternoon_appl=appl.getOpAfternoon();
+		//門診 晚
+		Long opNight_appl=appl.getOpNight();
+		//急診
+		Long em_appl=appl.getEm();
+		//住院
+		Long ip_appl=appl.getIp();
+		
+		//統計截止人次
+		VisitsPeriod visitsPeriod=visitsVarietyPayload.getVisitsPeriod();
+		//總人次
+		VisitsPeriodDetail total=visitsPeriod.getTotal();
+		Long total_all=total.getAll();
+		Long total_opem=total.getOpem();
+		Long total_opMorning=total.getOpMorning();
+		Long total_opAfternoon=total.getOpAfternoon();
+		Long total_opNight=total.getOpNight();
+		Long total_em=total.getEm();
+		Long total_ip=total.getIp();
+		Long total_leave=total.getLeave();
+		
+		//手術人次
+		VisitsPeriodDetail surgery=visitsPeriod.getSurgery();
+		Long surgery_all=surgery.getAll();
+		Long surgery_opem=surgery.getOpem();
+		Long surgery_opMorning=surgery.getOpMorning();
+		Long surgery_opAfternoon=surgery.getOpAfternoon();
+		Long surgery_opNight=surgery.getOpNight();
+		Long surgery_em=surgery.getEm();
+		Long surgery_ip=surgery.getIp();
+		Long surgery_leave=surgery.getLeave();
+		
+		//上月同區間總人次相比差額
+		VisitsPeriodDetail diff=visitsPeriod.getDiff();
+		Long diff_all=diff.getAll();
+		Long diff_opem=diff.getOpem();
+		Long diff_opMorning=diff.getOpMorning();
+		Long diff_opAfternoon=diff.getOpAfternoon();
+		Long diff_opNight=diff.getOpNight();
+		Long diff_em=diff.getEm();
+		Long diff_ip=diff.getIp();
+		Long diff_leave=diff.getLeave();
+		
+		//上月同區間總差額率-門急診和住院
+		Float percentAll=visitsPeriod.getPercentAll();
+		//上月同區間總差額率-門急診
+		Float percentOpem=visitsPeriod.getPercentOpem();
+		//上月同區間總差額率-門診(早)
+		Float percentOpMorning=visitsPeriod.getPercentOpMorning();
+		//上月同區間總差額率-門診(中)
+		Float percentOpAfternoon=visitsPeriod.getPercentOpAfternoon();
+		//上月同區間總差額率-門診(晚)
+		Float percentOpNight=visitsPeriod.getPercentOpNight();
+		//上月同區間總差額率-急診
+		Float percentEm=visitsPeriod.getPercentEm();
+		//上月同區間總差額率-住院
+		Float percentIp=visitsPeriod.getPercentIp();
+		//上月同區間總差額率-出院
+		Float percentLeave=visitsPeriod.getPercentLeave();
+		
+		//科名
+		List<String> funcTypes=visitsVarietyPayload.getFuncTypes();
+		//各科門急診人次
+		Map<String, NameValueList> opemMap=visitsVarietyPayload.getOpemMap();
+		//各科住院人次
+		Map<String, NameValueList> ipMap=visitsVarietyPayload.getIpMap();
+		//各科出院人次
+		Map<String, NameValueList> leaveMap=visitsVarietyPayload.getLeaveMap();
+		
+		try {
+		// 建立新工作簿
+		HSSFWorkbook workbook = new HSSFWorkbook();
+	  
+		HSSFCellStyle cellStyle = workbook.createCellStyle();
+		cellStyle.setAlignment(HorizontalAlignment.CENTER);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellStyle.setBorderBottom(BorderStyle.THIN);
+		cellStyle.setBorderLeft(BorderStyle.THIN);
+		cellStyle.setBorderRight(BorderStyle.THIN);
+		cellStyle.setBorderTop(BorderStyle.THIN);
+		
+		HSSFCellStyle cellStyle_left = workbook.createCellStyle();
+		cellStyle_left.setAlignment(HorizontalAlignment.LEFT);
+		cellStyle_left.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellStyle_left.setBorderBottom(BorderStyle.THIN);
+		cellStyle_left.setBorderLeft(BorderStyle.THIN);
+		cellStyle_left.setBorderRight(BorderStyle.THIN);
+		cellStyle_left.setBorderTop(BorderStyle.THIN);
+		
+		HSSFCellStyle cellStyle_noBorder = workbook.createCellStyle();
+		cellStyle_noBorder.setAlignment(HorizontalAlignment.CENTER);
+		cellStyle_noBorder.setVerticalAlignment(VerticalAlignment.CENTER);
+
+		Font font = workbook.createFont();
+		font.setColor(HSSFColor.HSSFColorPredefined.RED.getIndex());
+		
+		/*新建工作表 門急診/住院/出院人次變化*/
+		HSSFSheet visitsVarietySheet = workbook.createSheet("門急診-住院-出院人次變化");
+		
+		for(int i=0;i<14;i++){
+			if(i==0 || i==1) {
+				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,2));
+				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,3,4));
+			}
+			else if(i==2) {
+				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,2));
+			}
+			else if(i>3 && i<8) {
+				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,2));
+			}
+			else if(i>8 && i<14) {
+				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,2));
+			}
+			else if(i==3) {
+				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,9));
+			}
+			else if(i==8) {
+				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,10));
+			}
+		}
+	
+		HSSFRow rowA0 = visitsVarietySheet.createRow(0);
+		HSSFRow rowA1 = visitsVarietySheet.createRow(1);
+		HSSFRow rowA2 = visitsVarietySheet.createRow(2);
+		HSSFRow rowA3 = visitsVarietySheet.createRow(3);
+		HSSFRow rowA4 = visitsVarietySheet.createRow(4);
+		HSSFRow rowA5 = visitsVarietySheet.createRow(5);
+		HSSFRow rowA6 = visitsVarietySheet.createRow(6);
+		HSSFRow rowA7 = visitsVarietySheet.createRow(7);
+		HSSFRow rowA8 = visitsVarietySheet.createRow(8);
+		HSSFRow rowA9 = visitsVarietySheet.createRow(9);
+		HSSFRow rowA10 = visitsVarietySheet.createRow(10);
+		HSSFRow rowA11 = visitsVarietySheet.createRow(11);
+		HSSFRow rowA12 = visitsVarietySheet.createRow(12);
+		HSSFRow rowA13 = visitsVarietySheet.createRow(13);
+		HSSFRow rowA14 = visitsVarietySheet.createRow(14);
+		
+		String[] titleHeader_point= {"門急診/住院","門急診","門診(早)","門診(中)","門診(晚)","急診","住院"};
+		String[] titleHeader_people= {"門急診/住院","門急診","門診(早)","門診(中)","門診(晚)","急診","住院","出院"};
+		
+		addRowCell(rowA0, 0, "就醫日期區間", cellStyle);
+		for(int i=1;i<3;i++) {
+			addRowCell(rowA0, i, "", cellStyle);
+		}
+		addRowCell(rowA0, 3, day.toString(), cellStyle);
+		addRowCell(rowA0, 4, "", cellStyle);
+		
+		addRowCell(rowA1, 0, "人次趨勢統計截止時間", cellStyle);
+		for(int i=1;i<3;i++) {
+			addRowCell(rowA1, i, "", cellStyle);
+		}
+		addRowCell(rowA1, 3, yearWeek.toString(), cellStyle);
+		addRowCell(rowA1, 4, "", cellStyle);
+		
+		
+		addRowCell(rowA3, 0, "就醫日期區間總點數", cellStyle);
+		for(int i=1;i<10;i++) {
+			addRowCell(rowA3, i, "", cellStyle);
+		}
+		
+		for(int i=0;i<3;i++) {
+			addRowCell(rowA4, i, "", cellStyle);
+		}
+		for(int i=0;i<titleHeader_point.length;i++) {
+			addRowCell(rowA4, i+3, titleHeader_point[i], cellStyle);
+		}
+		
+		addRowCell(rowA5, 0, "病歷總點數(含自費)", cellStyle);
+		for(int i=1;i<3;i++) {
+			addRowCell(rowA5, i, "", cellStyle);
+		}
+		addRowCell(rowA5, 3, String.valueOf(all), cellStyle);
+		addRowCell(rowA5, 4, String.valueOf(opem), cellStyle);
+		addRowCell(rowA5, 5, String.valueOf(opMorning), cellStyle);
+		addRowCell(rowA5, 6, String.valueOf(opAfternoon), cellStyle);
+		addRowCell(rowA5, 7, String.valueOf(opNight), cellStyle);
+		addRowCell(rowA5, 8, String.valueOf(em), cellStyle);
+		addRowCell(rowA5, 9, String.valueOf(ip), cellStyle);
+		
+		addRowCell(rowA6, 0, "申報總點數", cellStyle);
+		for(int i=1;i<3;i++) {
+			addRowCell(rowA6, i, "", cellStyle);
+		}
+		addRowCell(rowA6, 3, String.valueOf(all_appl), cellStyle);
+		addRowCell(rowA6, 4, String.valueOf(opem_appl), cellStyle);
+		addRowCell(rowA6, 5, String.valueOf(opMorning_appl), cellStyle);
+		addRowCell(rowA6, 6, String.valueOf(opAfternoon_appl), cellStyle);
+		addRowCell(rowA6, 7, String.valueOf(opNight_appl), cellStyle);
+		addRowCell(rowA6, 8, String.valueOf(em_appl), cellStyle);
+		addRowCell(rowA6, 9, String.valueOf(ip_appl), cellStyle);
+		
+		addRowCell(rowA8, 0, "趨勢統計截止人次", cellStyle);
+		for(int i=1;i<11;i++) {
+			addRowCell(rowA8, i, "", cellStyle);
+		}
+		
+		for(int i=1;i<3;i++) {
+			addRowCell(rowA9, i, "", cellStyle);
+		}
+		for(int i=0;i<titleHeader_people.length;i++) {
+			addRowCell(rowA9, i+3, titleHeader_people[i], cellStyle);
+		}
+		
+		addRowCell(rowA10, 0, "總人次", cellStyle);
+		for(int i=1;i<3;i++) {
+			addRowCell(rowA10, i, "", cellStyle);
+		}
+		addRowCell(rowA10, 3, total_all.toString(), cellStyle);
+		addRowCell(rowA10, 4, total_opem.toString(), cellStyle);
+		addRowCell(rowA10, 5, total_opMorning.toString(), cellStyle);
+		addRowCell(rowA10, 6, total_opAfternoon.toString(), cellStyle);
+		addRowCell(rowA10, 7, total_opNight.toString(), cellStyle);
+		addRowCell(rowA10, 8, total_em.toString(), cellStyle);
+		addRowCell(rowA10, 9, total_ip.toString(), cellStyle);
+		addRowCell(rowA10, 10, total_leave.toString(), cellStyle);
+		
+		addRowCell(rowA11, 0, "手術人次", cellStyle);
+		for(int i=1;i<3;i++) {
+			addRowCell(rowA11, i, "", cellStyle);
+		}
+		addRowCell(rowA11, 3, surgery_all.toString(), cellStyle);
+		addRowCell(rowA11, 4, surgery_opem.toString(), cellStyle);
+		addRowCell(rowA11, 5, surgery_opMorning.toString(), cellStyle);
+		addRowCell(rowA11, 6, surgery_opAfternoon.toString(), cellStyle);
+		addRowCell(rowA11, 7, surgery_opNight.toString(), cellStyle);
+		addRowCell(rowA11, 8, surgery_em.toString(), cellStyle);
+		addRowCell(rowA11, 9, surgery_ip.toString(), cellStyle);
+		addRowCell(rowA11, 10, surgery_leave.toString(), cellStyle);
+		
+		addRowCell(rowA12, 0, "上月同區間總人次相比差額", cellStyle);
+		for(int i=1;i<3;i++) {
+			addRowCell(rowA12, i, "", cellStyle);
+		}
+		addRowCell(rowA12, 3, diff_all.toString(), cellStyle);
+		addRowCell(rowA12, 4, diff_opem.toString(), cellStyle);
+		addRowCell(rowA12, 5, diff_opMorning.toString(), cellStyle);
+		addRowCell(rowA12, 6, diff_opAfternoon.toString(), cellStyle);
+		addRowCell(rowA12, 7, diff_opNight.toString(), cellStyle);
+		addRowCell(rowA12, 8, diff_em.toString(), cellStyle);
+		addRowCell(rowA12, 9, diff_ip.toString(), cellStyle);
+		addRowCell(rowA12, 10, diff_leave.toString(), cellStyle);
+		
+		addRowCell(rowA13, 0, "上月同區間總差額率", cellStyle);
+		for(int i=1;i<3;i++) {
+			addRowCell(rowA13, i, "", cellStyle);
+		}
+		addRowCell(rowA13, 3, percentAll.toString(), cellStyle);
+		addRowCell(rowA13, 4,  percentOpem.toString(), cellStyle);
+		addRowCell(rowA13, 5, percentOpMorning.toString(), cellStyle);
+		addRowCell(rowA13, 6, percentOpAfternoon.toString(), cellStyle);
+		addRowCell(rowA13, 7, percentOpNight.toString(), cellStyle);
+		addRowCell(rowA13, 8, percentEm.toString(), cellStyle);
+		addRowCell(rowA13, 9, percentIp.toString(), cellStyle);
+		addRowCell(rowA13, 10, percentLeave.toString(), cellStyle);
+
+		/*新建工作表 人次趨勢圖(全院)*/
+		HSSFSheet allClassSheet = workbook.createSheet("人次趨勢圖(全院)");
+		
+		//各科門急診人數趨勢
+		for (Entry<String, NameValueList> entry : opemMap.entrySet()) {
+			if(entry.getKey().equals("不分科")) {
+				allClassSheet.addMergedRegion(new CellRangeAddress(0,0,0,1));
+				allClassSheet.addMergedRegion(new CellRangeAddress(1,1,0,1));
+				allClassSheet.addMergedRegion(new CellRangeAddress(1,1,2,3));
+				allClassSheet.addMergedRegion(new CellRangeAddress(1,1,4,5));
+				
+				HSSFRow row = allClassSheet.createRow(0);
+				addRowCell(row,0,entry.getKey(), cellStyle_noBorder);
+				
+				HSSFRow row_head = allClassSheet.createRow(1);
+				addRowCell(row_head,0,"門急診人數趨勢圖", cellStyle);
+				addRowCell(row_head,1,"", cellStyle);
+				addRowCell(row_head,2,"住院人數趨勢圖", cellStyle);
+				addRowCell(row_head,3,"", cellStyle);
+				addRowCell(row_head,4,"出院人數趨勢圖", cellStyle);
+				addRowCell(row_head,5,"", cellStyle);
+	
+				HSSFRow row_head2 = allClassSheet.createRow(2);
+				addRowCell(row_head2,0,"週數", cellStyle_left);
+				addRowCell(row_head2,1,"人次", cellStyle_left);
+				addRowCell(row_head2,2,"週數", cellStyle_left);
+				addRowCell(row_head2,3,"人次", cellStyle_left);
+				addRowCell(row_head2,4,"週數", cellStyle_left);
+				addRowCell(row_head2,5,"人次", cellStyle_left);
+				
+				List<String> names=entry.getValue().getNames();
+				List<Long> values=entry.getValue().getValues();
+				
+				for(int i=0;i<names.size();i++) {
+					HSSFRow row_head3 = allClassSheet.createRow(i+3);
+					addRowCell(row_head3,0,names.get(i), cellStyle_left);
+					addRowCell(row_head3,1,values.get(i).toString(), cellStyle_left);
+				}
+			}
+			
+		}
+		
+		//各科住院人數趨勢
+		for (Entry<String, NameValueList> entry : ipMap.entrySet()) {
+			if(entry.getKey().equals("不分科")) {
+				List<String> names=entry.getValue().getNames();
+				List<Long> values=entry.getValue().getValues();
+				for(int i=0;i<names.size();i++) {
+					HSSFRow row_head3 = allClassSheet.getRow(i+3);
+					addRowCell(row_head3,2,names.get(i), cellStyle_left);
+					addRowCell(row_head3,3,values.get(i).toString(), cellStyle_left);
+				}
+			}
+		}
+		
+		//各科出院人數趨勢
+		for (Entry<String, NameValueList> entry : leaveMap.entrySet()) {
+			if(entry.getKey().equals("不分科")) {
+				List<String> names=entry.getValue().getNames();
+				List<Long> values=entry.getValue().getValues();
+				for(int i=0;i<names.size();i++) {
+					HSSFRow row_head3 = allClassSheet.getRow(i+3);
+					addRowCell(row_head3,4,names.get(i), cellStyle_left);
+					addRowCell(row_head3,5,values.get(i).toString(), cellStyle_left);
+				}
+			}
+		}
+		
+		/*新建工作表 人次趨勢圖(單一科別名)*/
+		HSSFSheet singleClassSheet = workbook.createSheet("人次趨勢圖(單一科別名)");
+		
+		int index=0;
+		int title=0;
+		//各科門急診人數趨勢
+		for (Entry<String, NameValueList> entry : opemMap.entrySet()) {
+			if(index!=0) {
+				title=title+entry.getValue().getValues().size()+4;
+			}
+			singleClassSheet.addMergedRegion(new CellRangeAddress(title,title,0,1));
+			singleClassSheet.addMergedRegion(new CellRangeAddress(title+1,title+1,0,1));
+			singleClassSheet.addMergedRegion(new CellRangeAddress(title+1,title+1,2,3));
+			singleClassSheet.addMergedRegion(new CellRangeAddress(title+1,title+1,4,5));
+			
+			HSSFRow row = singleClassSheet.createRow(title);
+			addRowCell(row,0,entry.getKey(), cellStyle_noBorder);
+			
+			HSSFRow row_head = singleClassSheet.createRow(title+1);
+			addRowCell(row_head,0,"門急診人數趨勢圖", cellStyle);
+			addRowCell(row_head,1,"", cellStyle);
+			addRowCell(row_head,2,"住院人數趨勢圖", cellStyle);
+			addRowCell(row_head,3,"", cellStyle);
+			addRowCell(row_head,4,"出院人數趨勢圖", cellStyle);
+			addRowCell(row_head,5,"", cellStyle);
+
+			HSSFRow row_head2 = singleClassSheet.createRow(title+2);
+			addRowCell(row_head2,0,"週數", cellStyle_left);
+			addRowCell(row_head2,1,"人次", cellStyle_left);
+			addRowCell(row_head2,2,"週數", cellStyle_left);
+			addRowCell(row_head2,3,"人次", cellStyle_left);
+			addRowCell(row_head2,4,"週數", cellStyle_left);
+			addRowCell(row_head2,5,"人次", cellStyle_left);
+			
+			List<String> names=entry.getValue().getNames();
+			List<Long> values=entry.getValue().getValues();
+			
+			for(int i=0;i<names.size();i++) {
+				HSSFRow row_head3 = singleClassSheet.createRow(title+i+3);
+				addRowCell(row_head3,0,names.get(i), cellStyle_left);
+				addRowCell(row_head3,1,values.get(i).toString(), cellStyle_left);
+			}
+			
+			index++;
+		}
+		
+		
+		index=0;
+		title=0;
+		//各科住院人數趨勢
+		for (Entry<String, NameValueList> entry : ipMap.entrySet()) {
+			List<String> names=entry.getValue().getNames();
+			List<Long> values=entry.getValue().getValues();
+			if(index!=0) {
+				title=title+entry.getValue().getValues().size()+4;
+			}
+			for(int i=0;i<names.size();i++) {
+				HSSFRow row_head3 = singleClassSheet.getRow(title+i+3);
+				addRowCell(row_head3,2,names.get(i), cellStyle_left);
+				addRowCell(row_head3,3,values.get(i).toString(), cellStyle_left);
+			}
+			
+			index++;
+		}
+		
+		index=0;
+		title=0;
+		//各科出院人數趨勢
+		for (Entry<String, NameValueList> entry : leaveMap.entrySet()) {
+			List<String> names=entry.getValue().getNames();
+			List<Long> values=entry.getValue().getValues();
+			if(index!=0) {
+				title=title+entry.getValue().getValues().size()+4;
+			}
+			for(int i=0;i<names.size();i++) {
+				HSSFRow row_head3 = singleClassSheet.getRow(title+i+3);
+				addRowCell(row_head3,4,names.get(i), cellStyle_left);
+				addRowCell(row_head3,5,values.get(i).toString(), cellStyle_left);
+			}
+			
+			index++;
+		}
+		
+	  //產生報表
+		String fileNameStr = "門急診_住院_出院人次變化" + "_" + year+"_"+week;
+		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+				? FILE_PATH + "\\" + fileName
+				: FILE_PATH + "/" + fileName;
+		File file = new File(filepath);
+		response.reset();
+		response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+		response.setContentType("application/vnd.ms-excel;charset=utf8");
+
+		workbook.write(response.getOutputStream());
+		workbook.close();
+
+		} catch (Exception e) {
+			// TODO: handle exception
+//			e.printStackTrace();
+		}
+	}
+	
 }

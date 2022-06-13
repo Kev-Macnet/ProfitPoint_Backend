@@ -5,7 +5,7 @@ import javax.validation.constraints.NotNull;
 
 import io.swagger.annotations.ApiModelProperty;
 
-public class ClassDrugDotDto {
+public class ClassCaseCountDto {
     @ApiModelProperty(value="科別中文名", example="消化內科", required=true, position=1)
     @NotNull()
     private String desc_chi;
@@ -14,22 +14,22 @@ public class ClassDrugDotDto {
     @NotNull()
     private String code;
     
-    @ApiModelProperty(value="點數", example="100", required=true, position=3)
+    @ApiModelProperty(value="案件數", example="100", required=true, position=3)
     @Min(value = 0)
-    private String dot;
+    private String caseCount;
 
-	public ClassDrugDotDto(@NotNull String desc_chi, @NotNull String code, @Min(0) String dot) {
+	public ClassCaseCountDto(@NotNull String desc_chi, @NotNull String code, @Min(0) String caseCount) {
 		super();
 		this.desc_chi = desc_chi;
 		this.code = code;
-		this.dot = dot;
+		this.caseCount = caseCount;
 	}
 	
-	public ClassDrugDotDto() {
+	public ClassCaseCountDto() {
 		super();
 		this.desc_chi = "";
 		this.code = "";
-		this.dot = "0";
+		this.caseCount = "";
 	}
 
 	public String getDesc_chi() {
@@ -48,13 +48,14 @@ public class ClassDrugDotDto {
 		this.code = code;
 	}
 
-	public String getDot() {
-		return dot;
+	public String getCaseCount() {
+		return caseCount;
 	}
 
-	public void setDot(String dot) {
-		this.dot = dot;
+	public void setCaseCount(String caseCount) {
+		this.caseCount = caseCount;
 	}
+ 
     
     
 }

@@ -237,6 +237,34 @@ public class ReportController extends BaseController {
 		}
 		return ResponseEntity.ok(reportService.getVisitsVariety(startDate, endDate, year, week));
 	}
+	
+	@ApiOperation(value = "取得門急診/住院/出院人次變化-匯出", notes = "取得門急診/住院/出院人次變化-匯出")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/visitsVarietyExport")
+	public ResponseEntity<VisitsVarietyPayload> getVisitsVarietyExport(
+			@ApiParam(name = "sdate", value = "開始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
+			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
+			@ApiParam(value = "西元年", example = "2021") @RequestParam(required = false) String year,
+			@ApiParam(value = "第幾週(week of year)", example = "16") @RequestParam(required = false) String week,HttpServletResponse response) {
+
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		java.sql.Date startDate = null;
+		java.sql.Date endDate = null;
+		try {
+			startDate = new java.sql.Date(sdf.parse(sdate).getTime());
+			endDate = new java.sql.Date(sdf.parse(edate).getTime());
+		} catch (ParseException e) {
+			VisitsVarietyPayload result = new VisitsVarietyPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("日期格式不正確");
+//			e.printStackTrace();
+			return ResponseEntity.badRequest().body(result);
+		}
+		
+		reportExportService.getVisitsVarietyExport(reportService.getVisitsVariety(startDate, endDate, year, week),response,year,week,sdate,edate);
+		
+		return null;
+	}
 
 	@ApiOperation(value = "取得單月各科健保申報量與人次報表", notes = "取得單月各科健保申報量與人次報表")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
@@ -285,7 +313,7 @@ public class ReportController extends BaseController {
 
 	@ApiOperation(value = "健保藥費概況", notes = "健保藥費概況")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
-	@GetMapping("/healthcarecost")
+	@GetMapping("/healthCareCost")
 	public ResponseEntity<List<HealthCareCost>> getHealthCareCost(
 			@ApiParam(name = "syear", value = "開始年份", example = "2022") @RequestParam(required = false) String syear,
 			@ApiParam(name = "season", value = "季度", example = "Q1") @RequestParam(required = false) String season) {
@@ -303,7 +331,7 @@ public class ReportController extends BaseController {
 		String chineseYear = DateTool.convertToChineseYear(syear);
 
 		results = healthCareCostService.getData(chineseYear, season, results);
-		logger.info("健保藥費概況: {}", results.toString());
+//		logger.info("健保藥費概況: {}", results.toString());
 
 		if (results.size() == 1 && results.get(0).getResult().equals("error")
 				&& results.get(0).getMessage().equals("季度格式不正確")) {
@@ -434,4 +462,45 @@ public class ReportController extends BaseController {
 		reportExportService.getDrgMonthlySectionExport(year, month, response);
 		return null;
 	}
+  
+  @ApiOperation(value = "健保藥費概況-匯出", notes = "健保藥費概況-匯出")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/healthCareCostExport")
+  public ResponseEntity<BaseResponse> getHealthCareCostExport(
+      @ApiParam(name = "syear", value = "開始年份", example = "2022") 
+      @RequestParam(required = false) String syear,
+      @ApiParam(name = "season", value = "季度", example = "Q1") 
+      @RequestParam(required = false) String season,
+      HttpServletResponse response){
+	
+	List<HealthCareCost>results=new ArrayList<HealthCareCost>();
+	  
+	if(syear.length()!=4 || season.length()==0) {
+		HealthCareCost healthCareCost=new HealthCareCost();
+		healthCareCost.setResult(BaseResponse.ERROR);
+		healthCareCost.setMessage("年份或季度格式不正確");
+	    return ResponseEntity.badRequest().body(healthCareCost);
+	}
+	
+	String[]seasonList=season.split(" ");
+	String chineseYear=DateTool.convertToChineseYear(syear);
+	
+	if(seasonList.length>1) {
+		results=healthCareCostService.getData(chineseYear,"Q1 Q2 Q3 Q4",results);
+	}
+	else {
+		results=healthCareCostService.getData(chineseYear,season,results);
+	}
+	
+	if(results.size()==1 && results.get(0).getResult().equals("error") && results.get(0).getMessage().equals("季度格式不正確")) {
+		HealthCareCost healthCareCost=new HealthCareCost();
+		healthCareCost.setResult(BaseResponse.ERROR);
+		healthCareCost.setMessage("季度格式不正確");
+	    return ResponseEntity.badRequest().body(healthCareCost);
+	}
+	
+	healthCareCostService.getDataExport(chineseYear,season,results,response);
+	
+    return null;
+  }
 }

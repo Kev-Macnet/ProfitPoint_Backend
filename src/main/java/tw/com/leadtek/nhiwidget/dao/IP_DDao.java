@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
+import tw.com.leadtek.nhiwidget.dto.ClassDrugDotDto;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
@@ -28,10 +29,23 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   		+ "(SELECT (SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP", nativeQuery=true)
   public String findIPDot(List<Integer>ids);
   
+  //住院案件數
+  @Query(value="SELECT IP.IP_DOT FROM "
+  		+ "(SELECT (COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP", nativeQuery=true)
+  public String findIPCount(List<Integer>ids);
+  
   //住院總藥費
   @Query(value="SELECT IP.IP_DOT FROM "
   		+ "(SELECT SUM(DRUG_DOT) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP",nativeQuery=true)
   public String findIPDrugFee(List<Integer>ids);
+  
+  //各科別住院病歷總點數
+  @Query(value="SELECT FUNC_TYPE,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
+  public List<Object[]> findClassIP_TDot(List<Integer>ids);
+  
+  //各科別住院案件數
+  @Query(value="SELECT FUNC_TYPE ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) FROM IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
+  public List<Object[]> findClassIPCount(List<Integer>ids);
   
   //各科別住院總藥品點數or總藥費
   @Query(value="SELECT FUNC_TYPE,SUM(DRUG_DOT) AS IP_DOT FROM "
