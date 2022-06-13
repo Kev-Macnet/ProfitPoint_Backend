@@ -347,6 +347,7 @@ public class MRDetail extends MR {
     subjective = mr.getSubjective();
     totalDot = mr.getTotalDot();
     updateAt = mr.getUpdateAt();
+    clinic = mr.getClinic();
   }
   
   public String getBirthday() {
@@ -1433,6 +1434,9 @@ public class MRDetail extends MR {
           sb.append(",");
         }
       }
+    } else {
+      sb.append(mr.getIcdcm1());
+      sb.append(",");
     }
     if (sb.length() > 1) {
       if (sb.toString().equals(mr.getIcdAll())) {

@@ -22,7 +22,6 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -73,6 +72,9 @@ public class InitialDataService {
   
   @Autowired
   private CODE_TABLEDao ctDao;
+  
+//  @Autowired
+//  private CODE_THRESHOLDDao codeThresholdDao;
 
 
   /**
@@ -152,6 +154,7 @@ public class InitialDataService {
     if ("HOSP_EXPIRE".equals(p.getName())) {
       p.setValue(userService.encrypt(p.getValue()));
     }
+    //System.out.println("upsertParameters " + p.getName() + ":" + p.getValue());
     List<PARAMETERS> list = parametersDao.findByName(p.getName());
     if (list != null) {
       boolean isFound = false;
@@ -167,12 +170,14 @@ public class InitialDataService {
           parameters.setEndDate(p.getEndDate());
           parameters.setUpdateAt(new Date());
           parametersDao.save(parameters);
+          //System.out.println("found " + p.getName());
           isFound = true;
           break;
         }
       }
       if (!isFound) {
         parametersDao.save(p);
+        //System.out.println("not found " + p.getName());
       }
     } else {
       parametersDao.save(p);
@@ -548,6 +553,15 @@ public class InitialDataService {
       System.out.println(sheetName + " not exist.");
       return;
     }
+//    SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+//    Date startDate = null;
+//    Date endDate = null;
+//    try {
+//      startDate = sdf.parse("2019/01/01");
+//      endDate = sdf.parse(DateTool.MAX_DATE);
+//    } catch (ParseException e) {
+//      e.printStackTrace();
+//    }
     String groupName = null;
     int codeIndex = 2;
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {

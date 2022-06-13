@@ -313,7 +313,7 @@ public class IntelligentService {
   /**
    * 計算指定年月的罕見ICD次數是否超過設定值
    * 
-   * @param chineseYm
+   * @param chineseYm 民國年月
    */
   public void calculateRareICD(String chineseYm) {
     List<CODE_THRESHOLD> list = ctDao.findByCodeTypeOrderByStartDateDesc(1);
@@ -833,20 +833,20 @@ public class IntelligentService {
    */
   public void calculateInfectious(String applYm) {
     String wording = parametersService.getOneValueByName("INTELLIGENT", "INFECTIOUS");
-    List<CODE_TABLE> infectious = codeTableService.getInfectious();
-    for (CODE_TABLE ct : infectious) {
-      calculateInfectious(applYm, ct, wording);
+    List<CODE_THRESHOLD> ctList = ctDao.findByCodeTypeAndStatus(1, 1);
+    for (CODE_THRESHOLD ct : ctList) {
+      calculateInfectious(applYm, ct.getCode(), wording, true);
     }
   }
 
-  public void calculateInfectious(String applYm, CODE_TABLE ct, String wording) {
-    String reason = (wording != null) ? String.format(wording, ct.getCode()) : null;
-    List<MR> list = getMRByCode(null, applYm, "icdAll", ct.getCode(), 0, false, 
+  public void calculateInfectious(String applYm, String code, String wording, boolean isEnable) {
+    String reason = (wording != null) ? String.format(wording, code) : null;
+    List<MR> list = getMRByCode(null, applYm, "icdAll", code, 0, false, 
         null, null);
     if (list != null) {
       for (MR mr : list) {
-        insertIntelligent(mr, INTELLIGENT_REASON.INFECTIOUS.value(), ct.getCode(), reason,
-            ct.getRemark() == null, null);
+        insertIntelligent(mr, INTELLIGENT_REASON.INFECTIOUS.value(), code, reason,
+            isEnable , null);
       }
     }
   }

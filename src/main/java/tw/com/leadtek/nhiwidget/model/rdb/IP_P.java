@@ -349,6 +349,13 @@ V:虛醫令,交付調劑之藥品空針
   @JsonIgnore
   @Transient
   private String inhMr;
+  
+  /**
+   * 病患生日
+   */
+  @JsonIgnore
+  @Transient
+  private String birthday;
 
   /**
    * 序號
@@ -843,5 +850,13 @@ V:虛醫令,交付調劑之藥品空針
   public void setInhMr(String inhMr) {
     this.inhMr = inhMr;
   }
-  
+
+  public String getBirthday() {
+    return birthday;
+  }
+
+  public void setBirthday(String birthday) {
+    this.birthday = birthday;
+  }
+
 }

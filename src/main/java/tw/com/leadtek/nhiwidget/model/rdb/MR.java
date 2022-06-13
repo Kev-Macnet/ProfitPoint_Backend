@@ -285,21 +285,22 @@ public class MR {
     } else {
       this.mrEndDate = DateTool.convertChineseToYear(ipd.getApplEndDate());
     }
-    this.totalDot = (ipd.getApplDot() == null) ? 0 : ipd.getApplDot();
-    if (ipd.getPartDot() != null) {
-      this.totalDot = this.totalDot + ipd.getPartDot();  
-    }
+    // this.totalDot = (ipd.getApplDot() == null) ? 0 : ipd.getApplDot();
+    // if (ipd.getPartDot() != null) {
+    // this.totalDot = this.totalDot + ipd.getPartDot();
+    // }
     // 醫療+不計入+自費
-    // if (ipd.getMedDot() != null) {
-    // this.totalDot = ipd.getMedDot();
-    // }
-    // if (ipd.getNonApplDot() != null) {
-    // this.totalDot += ipd.getNonApplDot();
-    // }
-    // if (ipd.getOwnExpense() != null) {
-    // this.totalDot += ipd.getOwnExpense();
-    // }
+    if (ipd.getMedDot() != null) {
+      this.totalDot = ipd.getMedDot();
+    }
+    if (ipd.getNonApplDot() != null) {
+      this.totalDot += ipd.getNonApplDot();
+    }
+    if (ipd.getOwnExpense() != null) {
+      this.totalDot += ipd.getOwnExpense();
+    }
     this.drgCode = ipd.getTwDrgCode();
+    this.icdAll = "," + ipd.getIcdCm1() + ",";
     this.applDot = ipd.getApplDot();
     this.ownExpense = ipd.getOwnExpense();
     this.updateAt = new Date();
@@ -326,6 +327,7 @@ public class MR {
     if (opd.getPartDot() != null) {
       this.totalDot = this.totalDot + opd.getPartDot();
     }
+    this.icdAll = "," + opd.getIcdCm1() + ",";
     this.applDot = opd.getTotalApplDot();
     this.ownExpense = 0;
     this.updateAt = new Date();
@@ -941,8 +943,10 @@ public class MR {
 //      diffList.add(fd);
 //    } else {
       //this.ownExpense = ipd.getNonApplDot();
-      this.ownExpense = 0;
     //}
+    if (this.ownExpense == null) {
+      this.ownExpense = 0;
+    }
     
     this.updateAt = new Date();
   }

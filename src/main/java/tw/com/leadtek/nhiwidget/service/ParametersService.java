@@ -2185,7 +2185,7 @@ public class ParametersService {
     }
     String wording = getOneValueByName("INTELLIGENT", "INFECTIOUS");
     do {
-      is.calculateInfectious(String.valueOf(adYM - 191100), ct, wording);
+      is.calculateInfectious(String.valueOf(adYM - 191100), ct.getCode(), wording, ct.getRemark() == null);
       cal.add(Calendar.MONTH, 1);
       adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
       if (adYM > max) {

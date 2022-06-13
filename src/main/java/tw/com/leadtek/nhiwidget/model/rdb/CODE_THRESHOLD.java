@@ -226,6 +226,39 @@ public class CODE_THRESHOLD {
   @Column(name = "UPDATE_AT")
   @JsonIgnore
   private Date updateAt;
+  
+  public CODE_THRESHOLD() {
+    
+  }
+  
+  public CODE_THRESHOLD(CODE_TABLE ct, int codeType, Date startDate, Date endDate) {
+     this.codeType = codeType;
+     code = ct.getCode();
+     descChi = ct.getDescChi();
+     dataFormat = "00";
+     opTimesStatus = 1;
+     opTimes = 0;
+     opTimesDStatus = 0;
+     opTimesD = 0;
+     opTimesDay = 0;
+     opTimesMStatus = 0;
+     opTimesM = 0;
+     opTimes6m = 0;
+     opTimes6mStatus = 0;
+     ipTimesStatus = 1;
+     ipTimes = 0;
+     ipTimesDStatus = 0;
+     ipTimesD = 0;
+     ipTimesDay = 0;
+     ipTimesM = 0;
+     ipTimesMStatus = 0;
+     ipTimes6m = 0;
+     ipTimes6mStatus = 0;
+     status = 1;
+     this.startDate = startDate;
+     this.endDate = endDate;
+     this.updateAt = new Date();
+  }
 
   /**
    * 序號
@@ -632,5 +665,6 @@ public class CODE_THRESHOLD {
   public void setUpdateAt(Date UPDATE_AT) {
     updateAt = UPDATE_AT;
   }
+
 
 }
