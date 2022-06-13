@@ -92,6 +92,7 @@ public class ReportExportService {
 		HSSFCellStyle cellStyle = workbook.createCellStyle();
 		cellStyle.setAlignment(HorizontalAlignment.CENTER);
 		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+	
 
 		Font font = workbook.createFont();
 		font.setColor(HSSFColor.HSSFColorPredefined.RED.getIndex());
@@ -101,6 +102,9 @@ public class ReportExportService {
 		HSSFCell cell = row.createCell(0);
 		// 設定單元格的值,即A1的值(第一行,第一列)
 		cell.setCellValue("統計月份");
+		
+		cell = row.createCell(1);
+		cell.setCellValue(year + "/" + monthStr);
 
 		HSSFRow row2 = sheet.createRow(2);
 		for (int i = 0; i < tableHeaderNum.length; i++) {
@@ -428,6 +432,13 @@ public class ReportExportService {
 			String str = String.format("%.02f", f);
 			cell32_2.setCellValue(str + "%");
 		}
+
+		/// 最後設定autosize
+		for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
+			sheet.autoSizeColumn(i);
+			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+		}
+		/// 新建工作表
 		String[] tableHeader = { "門急診/住院申報總點數趨勢圖", "", "", "門急診申報總點數趨勢圖", "", "", "住院申報總點數趨勢圖", "", "", "門急診人數趨勢圖", "",
 				"住院人數趨勢圖", "", "出院人數趨勢圖", "" };
 		String[] tableHeader2 = { "週數", "點數", "案件數", "週數", "點數", "案件數", "週數", "點數", "案件數", "週數", "人次", "週數", "人次", "週數",
@@ -449,7 +460,7 @@ public class ReportExportService {
 				CellStyle style1 = workbook.createCellStyle();
 				style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
 				style1.setVerticalAlignment(VerticalAlignment.CENTER);
-
+		
 				for (int i = 0; i < tableHeader.length; i++) {
 					HSSFCell cell1 = row1.createCell(i);
 
@@ -560,6 +571,11 @@ public class ReportExportService {
 					}
 
 				}
+				///auto size
+				for (int i = 0; i < tableHeader.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
 
 			}
 		}
@@ -583,6 +599,7 @@ public class ReportExportService {
 					CellStyle style1 = workbook.createCellStyle();
 					style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
 					style1.setVerticalAlignment(VerticalAlignment.CENTER);
+			
 					for (int i = 0; i < tableHeader.length; i++) {
 						HSSFCell cell1 = row1.createCell(i);
 
@@ -693,8 +710,14 @@ public class ReportExportService {
 						}
 
 					}
+					///auto size
+					for (int i = 0; i < tableHeader.length; i++) {
+						sheet.autoSizeColumn(i);
+						sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+					}
 
 				}
+				
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -713,8 +736,8 @@ public class ReportExportService {
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
 		response.setContentType("application/octet-stream;charset=utf8");
 //		response.setContentType("application/vnd.ms-excel;charset=utf8");
-		
-		///最後由outputstream輸出
+
+		/// 最後由outputstream輸出
 		OutputStream out = response.getOutputStream();
 
 		workbook.write(out);
@@ -1550,8 +1573,8 @@ public class ReportExportService {
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
 		response.setContentType("application/octet-stream;charset=utf8");
 //		response.setContentType("application/vnd.ms-excel;charset=utf8");
-		
-		///最後由outputstream輸出
+
+		/// 最後由outputstream輸出
 		OutputStream out = response.getOutputStream();
 
 		workbook.write(out);
@@ -1859,8 +1882,8 @@ public class ReportExportService {
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
 		response.setContentType("application/octet-stream;charset=utf8");
 //		response.setContentType("application/vnd.ms-excel;charset=utf8");
-		
-		///最後由outputstream輸出
+
+		/// 最後由outputstream輸出
 		OutputStream out = response.getOutputStream();
 
 		workbook.write(out);
@@ -2298,8 +2321,8 @@ public class ReportExportService {
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
 		response.setContentType("application/octet-stream;charset=utf8");
 //		response.setContentType("application/vnd.ms-excel;charset=utf8");
-		
-		///最後由outputstream輸出
+
+		/// 最後由outputstream輸出
 		OutputStream out = response.getOutputStream();
 
 		workbook.write(out);
@@ -2703,8 +2726,8 @@ public class ReportExportService {
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
 		response.setContentType("application/octet-stream;charset=utf8");
 //		response.setContentType("application/vnd.ms-excel;charset=utf8");
-		
-		///最後由outputstream輸出
+
+		/// 最後由outputstream輸出
 		OutputStream out = response.getOutputStream();
 
 		workbook.write(out);
@@ -3213,8 +3236,8 @@ public class ReportExportService {
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
 		response.setContentType("application/octet-stream;charset=utf8");
 //		response.setContentType("application/vnd.ms-excel;charset=utf8");
-		
-		///最後由outputstream輸出
+
+		/// 最後由outputstream輸出
 		OutputStream out = response.getOutputStream();
 
 		workbook.write(out);
@@ -3246,8 +3269,6 @@ public class ReportExportService {
 		String dateStr = year + "/" + month;
 
 		DRGMonthlySectionPayload drgData = reportService.getDrgMonthlySection(year, month);
-
-		List<CODE_TABLE> ctModelList = codeTableDao.findByCat("FUNC_TYPE");
 
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
@@ -3748,22 +3769,22 @@ public class ReportExportService {
 			x1 = 1;
 			x2 = 4;
 			row = sheet.createRow(0);
-			cell = row.createCell(1);
 			cellIndex = 1;
 			/// 欄位B1
 			for (String name : tableCellHeadersList) {
 				for (int i = 0; i < 4; i++) {
+					cell = row.createCell(cellIndex + i);
+					cell.setCellStyle(cellTitleStyle);
 					if (i == 0) {
 
 						cell.setCellValue(name);
 					}
-					cell.setCellStyle(cellTitleStyle);
 				}
 				/// merge欄位
 				sheet.addMergedRegion(new CellRangeAddress(y1, y2, x1, x2));
 				x1 += 4;
 				x2 += 4;
-				cell = row.createCell(x1);
+				cellIndex += 4;
 			}
 
 			/// 欄位A2
@@ -3775,6 +3796,379 @@ public class ReportExportService {
 				cell.setCellValue(name);
 				cell.setCellStyle(cellTitleStyle);
 				cellIndex++;
+			}
+
+			/// 欄位A3
+			row = sheet.createRow(2);
+			rowIndex = 3;
+			cellIndex = 1;
+			for (int y = 0; y < tableRowHeaders.length; y++) {
+				cell = row.createCell(0);
+				cell.setCellValue(tableRowHeaders[y]);
+				cell.setCellStyle(cellStyle);
+				switch (y) {
+				case 0:/// DRG案件數
+					for (int x = 0; x < tableCellHeadersList.size(); x++) {
+						if (tableCellHeadersList.get(x).equals(sectonA.get(x).getName())) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(sectonA.get(x).getQuantity());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(sectonB1.get(x).getQuantity());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(sectonB2.get(x).getQuantity());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(sectonC.get(x).getQuantity());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+						}
+					}
+					cellIndex = 1;
+					break;
+				case 1:/// DRG案件申報總點數
+					for (int x = 0; x < tableCellHeadersList.size(); x++) {
+						if (tableCellHeadersList.get(x).equals(sectonA.get(x).getName())) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(sectonA.get(x).getPoint());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(sectonB1.get(x).getPoint());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(sectonB2.get(x).getPoint());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(sectonC.get(x).getPoint());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+						}
+					}
+					cellIndex = 1;
+					break;
+				case 2:/// DRG案件支付差額點數
+					for (int x = 0; x < tableCellHeadersList.size(); x++) {
+						if (tableCellHeadersList.get(x).equals(sectonA.get(x).getName())) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue("");
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(diffB1.get(x).getPoint());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(diffB2.get(x).getPoint());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(diffC.get(x).getPoint());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+						}
+					}
+					cellIndex = 1;
+					break;
+				case 3:/// DRG案件佔率
+					Long tPointA = 0L;
+					Long tPointB1 = 0L;
+					Long tPointB2 = 0L;
+					Long tPointC = 0L;
+					/// 總計各區總點數
+					for (int v = 0; v < sectonA.size(); v++) {
+
+						tPointA += sectonA.get(v).getPoint();
+						tPointB1 += sectonA.get(v).getPoint();
+						tPointB2 += sectonA.get(v).getPoint();
+						tPointC += sectonA.get(v).getPoint();
+					}
+
+					for (int x = 0; x < tableCellHeadersList.size(); x++) {
+						if (tableCellHeadersList.get(x).equals(sectonA.get(x).getName())) {
+							cell = row.createCell(cellIndex);
+							double d = Math.round(
+									sectonA.get(x).getPoint().doubleValue() / tPointA.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							d = Math.round(
+									sectonB1.get(x).getPoint().doubleValue() / tPointB1.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							d = Math.round(
+									sectonB2.get(x).getPoint().doubleValue() / tPointB2.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							d = Math.round(
+									sectonC.get(x).getPoint().doubleValue() / tPointC.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+						}
+					}
+					cellIndex = 1;
+					break;
+				default:
+					break;
+				}
+				row = sheet.createRow(rowIndex + y);
+			}
+			/// 最後設定autosize
+			for (int i = 0; i < tableCellHeaders.length; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+
+			/// 新建工作表
+			tableCellHeaders = new String[] { "A區", "B1區", "B2區", "C區" };
+			tableCellHeaders2 = new String[] { "週數", "申報點數", "案件數", "週數", "申報點數", "案件數", "週數", "申報點數", "案件數", "週數",
+					"申報點數", "案件數", };
+			cellIndex = 0;
+			rowIndex = 0;
+			List<String> funcTypes = drgData.getFuncTypes();
+			for (String funcName : funcTypes) {
+				if (funcName.equals("不分科")) {
+					sheet = workbook.createSheet("案件趨勢圖(全院)");
+
+					/// 欄位A2
+					row = sheet.createRow(1);
+					cell = row.createCell(0);
+					cell.setCellValue("全院");
+					cell.setCellStyle(cellStyle);
+
+					/// 欄位A3
+					row = sheet.createRow(2);
+					y1 = 0;
+					y2 = 0;
+					x1 = 0;
+					x2 = 2;
+					for (String name : tableCellHeaders) {
+						for (int i = 0; i < 3; i++) {
+							cell = row.createCell(cellIndex + i);
+							cell.setCellStyle(cellTitleStyle);
+							if (i == 0) {
+
+								cell.setCellValue(name);
+							}
+						}
+						/// merge欄位
+						sheet.addMergedRegion(new CellRangeAddress(y1, y2, x1, x2));
+						x1 += 3;
+						x2 += 3;
+						cellIndex += 3;
+					}
+
+					/// 欄位A4
+					row = sheet.createRow(3);
+					cell = row.createCell(0);
+					cellIndex = 1;
+					for (int i = 0; i < tableCellHeaders2.length; i++) {
+						cell.setCellValue(tableCellHeaders2[i]);
+						cell.setCellStyle(cellStyle);
+						cell = row.createCell(cellIndex + i);
+					}
+
+					/// 欄位A5
+					NameValueList2 nvlA = drgData.getWeeklyAMap().get("不分科");
+					NameValueList2 nvlB1 = drgData.getWeeklyB1Map().get("不分科");
+					NameValueList2 nvlB2 = drgData.getWeeklyB2Map().get("不分科");
+					NameValueList2 nvlC = drgData.getWeeklyCMap().get("不分科");
+					row = sheet.createRow(4);
+					cellIndex = 0;
+					rowIndex = 5;
+					for (int v1 = 0; v1 < nvlA.getNames().size(); v1++) {
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlA.getNames().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlA.getValues().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlA.getValues2().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB1.getNames().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB1.getValues().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB1.getValues2().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB2.getNames().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB2.getValues().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB2.getValues2().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlC.getNames().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlC.getValues().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlC.getValues2().get(v1));
+						cell.setCellStyle(cellStyle);
+
+						row = sheet.createRow(rowIndex + v1);
+						cellIndex = 0;
+					}
+					for (int i = 0; i < tableCellHeaders2.length; i++) {
+						sheet.autoSizeColumn(i);
+						sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+					}
+					cellIndex = 0;
+					rowIndex = 0;
+
+				} else {
+					if (drgData.getWeeklyAMap().get(funcName) == null) {
+						continue;
+					}
+					sheet = workbook.createSheet("案件趨勢圖(" + funcName + ")");
+
+					/// 欄位A2
+					row = sheet.createRow(1);
+					cell = row.createCell(0);
+					cell.setCellValue(funcName);
+					cell.setCellStyle(cellStyle);
+
+					/// 欄位A3
+					row = sheet.createRow(2);
+					y1 = 0;
+					y2 = 0;
+					x1 = 0;
+					x2 = 2;
+					for (String name : tableCellHeaders) {
+						for (int i = 0; i < 3; i++) {
+							cell = row.createCell(cellIndex + i);
+							cell.setCellStyle(cellTitleStyle);
+							if (i == 0) {
+
+								cell.setCellValue(name);
+							}
+						}
+						/// merge欄位
+						sheet.addMergedRegion(new CellRangeAddress(y1, y2, x1, x2));
+						x1 += 3;
+						x2 += 3;
+						cellIndex += 3;
+					}
+
+					/// 欄位A4
+					row = sheet.createRow(3);
+					cell = row.createCell(0);
+					cellIndex = 1;
+					for (int i = 0; i < tableCellHeaders2.length; i++) {
+						cell.setCellValue(tableCellHeaders2[i]);
+						cell.setCellStyle(cellStyle);
+						cell = row.createCell(cellIndex + i);
+					}
+
+					/// 欄位A5
+					NameValueList2 nvlA = drgData.getWeeklyAMap().get("不分科");
+					NameValueList2 nvlB1 = drgData.getWeeklyB1Map().get("不分科");
+					NameValueList2 nvlB2 = drgData.getWeeklyB2Map().get("不分科");
+					NameValueList2 nvlC = drgData.getWeeklyCMap().get("不分科");
+					row = sheet.createRow(4);
+					cellIndex = 0;
+					rowIndex = 5;
+					for (int v1 = 0; v1 < nvlA.getNames().size(); v1++) {
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlA.getNames().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlA.getValues().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlA.getValues2().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB1.getNames().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB1.getValues().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB1.getValues2().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB2.getNames().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB2.getValues().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlB2.getValues2().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlC.getNames().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlC.getValues().get(v1));
+						cell.setCellStyle(cellStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(nvlC.getValues2().get(v1));
+						cell.setCellStyle(cellStyle);
+
+						row = sheet.createRow(rowIndex + v1);
+						cellIndex = 0;
+					}
+					for (int i = 0; i < tableCellHeaders2.length; i++) {
+						sheet.autoSizeColumn(i);
+						sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+					}
+					cellIndex = 0;
+					rowIndex = 0;
+
+				}
 			}
 
 		} else {
@@ -3794,8 +4188,8 @@ public class ReportExportService {
 				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
 		response.setContentType("application/octet-stream;charset=utf8");
 //		response.setContentType("application/vnd.ms-excel;charset=utf8");
-		
-		///最後由outputstream輸出
+
+		/// 最後由outputstream輸出
 		OutputStream out = response.getOutputStream();
 
 		workbook.write(out);
