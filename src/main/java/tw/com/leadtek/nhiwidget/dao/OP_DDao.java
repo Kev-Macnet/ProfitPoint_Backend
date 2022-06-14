@@ -26,6 +26,12 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "(SELECT (SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP", nativeQuery=true)
   public String findTDot(List<Integer>ids,List<Integer>ids2);
   
+  //門急診/住院案件數
+  @Query(value="SELECT OP.OP_DOT + IP.IP_DOT FROM "
+  		+ "(SELECT COUNT(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
+  		+ "(SELECT (COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP", nativeQuery=true)
+  public String findTCount(List<Integer>ids,List<Integer>ids2);
+  
   //門急診/住院總藥費
   @Query(value="SELECT OP.OP_DOT + IP.IP_DOT FROM "
   		+ "(SELECT SUM(DRUG_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
@@ -37,10 +43,23 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
 	  		+ "(SELECT SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
   public String findOPDot(List<Integer>ids);
   
+  //門急診案件數
+  @Query(value="SELECT OP.OP_DOT FROM "
+  		+ "(SELECT COUNT(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
+  public String findOPCount(List<Integer>ids);
+  
   //門急診總藥費
   @Query(value="SELECT OP.OP_DOT FROM "
 	  		+ "(SELECT SUM(DRUG_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP",nativeQuery=true)
   public String findOPDrugFee(List<Integer>ids);
+  
+  //各科別門急診病例總點數
+  @Query(value="SELECT FUNC_TYPE ,SUM(T_DOT) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
+  public List<Object[]> findClassOP_TDot(List<Integer>ids);
+  
+  //各科別門急診案件數
+  @Query(value="SELECT FUNC_TYPE, COUNT(T_DOT) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
+  public List<Object[]> findClassOPCount(List<Integer>ids);
   
   //各科別門急診總藥品點數or總藥費
   @Query(value="SELECT FUNC_TYPE,SUM(DRUG_DOT) AS OP_DOT FROM "

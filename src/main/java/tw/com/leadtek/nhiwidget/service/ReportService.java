@@ -1844,8 +1844,6 @@ public class ReportService {
 		/// 將最後結果add倒要顯示集合
 		dotPie.addAll(collectionList2);
 
-		
-
 		PointMRPayload result = new PointMRPayload();
 
 		result.setFuncTypes(findAllFuncTypesName(true));
@@ -2510,6 +2508,7 @@ public class ReportService {
 		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
 				? FILE_PATH + "\\" + fileName
 				: FILE_PATH + "/" + fileName;
+		System.out.println(filepath);
 		File file = new File(filepath);
 		response.reset();
 		response.setHeader("Content-Disposition",

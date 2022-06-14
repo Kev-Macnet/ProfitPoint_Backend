@@ -21,6 +21,13 @@ public class ClassDrugFeeDto {
 		this.code = code;
 		this.fee = fee;
 	}
+	
+	public ClassDrugFeeDto() {
+		super();
+		this.desc_chi = "";
+		this.code = "";
+		this.fee = "0";
+	}
 
 	public String getDesc_chi() {
 		return desc_chi;
