@@ -37,16 +37,19 @@ public class VisitsVarietyPayload extends BaseResponse implements Serializable {
 	@ApiModelProperty(value = "各科出院人次", required = true)
 	protected Map<String, NameValueList> leaveMap;
 
-	@ApiModelProperty(value = "各科門急診人次/點數")
+	@ApiModelProperty(value = "各科門急診/住院院人次")
+	protected Map<String, NameValueList> allMap;
+
+	@ApiModelProperty(value = "各科門急診案件數/點數")
 	protected Map<String, NameValueList3> opemMap3;
 
-	@ApiModelProperty(value = "各科住院人次/點數")
+	@ApiModelProperty(value = "各科住院案件數/點數")
 	protected Map<String, NameValueList3> ipMap3;
 
-	@ApiModelProperty(value = "各科出院人次/點數")
+	@ApiModelProperty(value = "各科出院案件數/點數")
 	protected Map<String, NameValueList3> leaveMap3;
 
-	@ApiModelProperty(value = "各科出院人次/點數")
+	@ApiModelProperty(value = "各科出院案件數/點數")
 	protected Map<String, NameValueList3> allMap3;
 
 	public VisitsVarietyPayload() {
@@ -113,6 +116,14 @@ public class VisitsVarietyPayload extends BaseResponse implements Serializable {
 
 	public void setLeaveMap(Map<String, NameValueList> leaveMap) {
 		this.leaveMap = leaveMap;
+	}
+
+	public Map<String, NameValueList> getAllMap() {
+		return allMap;
+	}
+
+	public void setAllMap(Map<String, NameValueList> allMap) {
+		this.allMap = allMap;
 	}
 
 	public Map<String, NameValueList3> getOpemMap3() {

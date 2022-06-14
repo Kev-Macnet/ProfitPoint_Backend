@@ -347,6 +347,7 @@ public class ReportController extends BaseController {
 	public ResponseEntity<BaseResponse> getMonthlyPointExport(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
+			@ApiParam(name = "type", value = "慢籤額度顯示", example = "月初一次累加") @RequestParam(required = true) String type,
 			HttpServletResponse response) throws IOException {
 		if (year < 2015 || year > 2030) {
 			PointMRPayload result = new PointMRPayload();
@@ -360,7 +361,7 @@ public class ReportController extends BaseController {
 			result.setMessage("月份超過範圍");
 			return ResponseEntity.badRequest().body(result);
 		}
-		reportExportService.getMonthlyReportExport(year, month, response);
+		reportExportService.getMonthlyReportExport(year, month, type, response);
 		return null;
 	}
 	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
@@ -370,9 +371,10 @@ public class ReportController extends BaseController {
 	public ResponseEntity<BaseResponse> getAchievementRateExport(
 			@ApiParam(value = "西元年", example = "2021") @RequestParam(required = true) String year,
 			@ApiParam(value = "第幾週(week of year)", example = "16") @RequestParam(required = true) String week,
+			@ApiParam(name = "type", value = "慢籤額度顯示", example = "月初一次累加") @RequestParam(required = true) String type,
 			HttpServletResponse response) throws IOException {
 
-		reportExportService.getAchievementRateExport(year, week, response);
+		reportExportService.getAchievementRateExport(year, week, type,  response);
 		return null;
 	}
 	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")

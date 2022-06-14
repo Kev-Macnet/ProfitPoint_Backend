@@ -340,8 +340,8 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "SELECT SUM, ROUND(SUM / (SELECT sum(SUM) FROM "
-  		+ "(SELECT SUM(opd.T_DOT) AS SUM, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp) * 100,2) AS PERCENT, FUNC_TYPE, DESC_CHI FROM  "
-  		+ "(SELECT SUM(opd.T_DOT) AS SUM,  opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp  "
+  		+ "(SELECT (SUM(opd.T_APPL_DOT) + SUM(opd.PART_DOT)) AS SUM, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp) * 100,2) AS PERCENT, FUNC_TYPE, DESC_CHI FROM  "
+  		+ "(SELECT (SUM(opd.T_APPL_DOT) + SUM(opd.PART_DOT))  AS SUM,  opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp  "
   		+ "", nativeQuery = true)
   public List<Map<String,Object>> getOPPieDotData(String date);
   
@@ -351,7 +351,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "SELECT sum(SUM) FROM "
-  		+ "(SELECT SUM(opd.T_DOT) AS SUM, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp"
+  		+ "(SELECT (SUM(opd.T_APPL_DOT) + SUM(opd.PART_DOT))  AS SUM, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp"
   		, nativeQuery = true)
   public int getOPPieDotTotal(String date);
 }

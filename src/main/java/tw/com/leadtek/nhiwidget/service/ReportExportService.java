@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -62,17 +63,16 @@ public class ReportExportService {
 
 	public final static String FILE_PATH = "download";
 
-	
-	public void addRowCell(HSSFRow row,int num,String value,HSSFCellStyle cellStyle) {
-			// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
-			HSSFCell cell = row.createCell(num);
-			// 設定單元格的值,即A1的值(第一行,第一列)
-			cell.setCellValue(value);
-		  if(cellStyle!=null) {
-			  cell.setCellStyle(cellStyle);
-		  }
-	  }
-	
+	public void addRowCell(HSSFRow row, int num, String value, HSSFCellStyle cellStyle) {
+		// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
+		HSSFCell cell = row.createCell(num);
+		// 設定單元格的值,即A1的值(第一行,第一列)
+		cell.setCellValue(value);
+		if (cellStyle != null) {
+			cell.setCellStyle(cellStyle);
+		}
+	}
+
 	/**
 	 * 取得單月各科健保申報量與人次報表-匯出
 	 * 
@@ -94,7 +94,7 @@ public class ReportExportService {
 		String endDate = inputDate.substring(0, inputDate.length() - 2);
 		/// 呼叫上面api
 		PointMRPayload pointData = reportService.getMonthlyReportApplCount(year, month);
-		String[] tableHeaderNum = { "門急診/住院", "門急診", "門診(早)", "門診(中)", "門診(晚)", "急診", "住院", "出院" };
+		String[] tableHeaderNum = { "門急診/住院", "門急診", "門診", "門診(早)", "門診(中)", "門診(晚)", "急診", "住院", "出院" };
 		String[] tableCellHeader = { "單月各科人次比\n門急診/住院(含手術)", "人次", "比例", "", "單月各科人次比\n門急診(含手術)", "人次", "比例", "" };
 
 		POINT_MONTHLY model = pointData.getCurrent();
@@ -107,17 +107,20 @@ public class ReportExportService {
 		HSSFCellStyle cellStyle = workbook.createCellStyle();
 		cellStyle.setAlignment(HorizontalAlignment.CENTER);
 		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-	
+
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
 
 		Font font = workbook.createFont();
-		font.setColor(HSSFColor.HSSFColorPredefined.RED.getIndex());
 		// 建立行,行號作為引數傳遞給createRow()方法,第一行從0開始計算
 		HSSFRow row = sheet.createRow(0);
 		// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
 		HSSFCell cell = row.createCell(0);
 		// 設定單元格的值,即A1的值(第一行,第一列)
 		cell.setCellValue("統計月份");
-		
+
 		cell = row.createCell(1);
 		cell.setCellValue(year + "/" + monthStr);
 
@@ -131,29 +134,32 @@ public class ReportExportService {
 		HSSFRow row3 = sheet.createRow(3);
 		HSSFCell cell3 = row3.createCell(0);
 		cell3.setCellValue("申報總點數");
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < 9; i++) {
 			HSSFCell cell3_2 = row3.createCell(1 + i);
-			cell3_2.setCellStyle(cellStyle);
+			cell3_2.setCellStyle(cellFormatStyle);
 			switch (i) {
 			case 0:
-				cell3_2.setCellValue(model.getTotalAll());
+				cell3_2.setCellValue(model.getTotalAll().doubleValue());
 				break;
 			case 1:
-				cell3_2.setCellValue(model.getTotalOpAll());
+				cell3_2.setCellValue(model.getTotalOpAll().doubleValue());
 				break;
 			case 2:
+				cell3_2.setCellValue(model.getTotalOp().doubleValue());
 				break;
 			case 3:
 				break;
 			case 4:
 				break;
 			case 5:
-				cell3_2.setCellValue(model.getTotalEm());
 				break;
 			case 6:
-				cell3_2.setCellValue(model.getTotalIp());
+				cell3_2.setCellValue(model.getTotalEm().doubleValue());
 				break;
 			case 7:
+				cell3_2.setCellValue(model.getTotalIp().doubleValue());
+				break;
+			case 8:
 				cell3_2.setCellValue("-");
 				break;
 			default:
@@ -167,30 +173,33 @@ public class ReportExportService {
 		HSSFCell cell4 = row4.createCell(0);
 		cell4.setCellValue("總人次(含手術)");
 		// todo
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < 9; i++) {
 			HSSFCell cell4_2 = row4.createCell(1 + i);
-			cell4_2.setCellStyle(cellStyle);
+			cell4_2.setCellStyle(cellFormatStyle);
 			switch (i) {
 			case 0:
-				cell4_2.setCellValue(pointData.getPatient_total_count());
+				cell4_2.setCellValue(Double.valueOf(pointData.getPatient_total_count()));
 				break;
 			case 1:
-				cell4_2.setCellValue(pointData.getPatient_op_count());
+				cell4_2.setCellValue(Double.valueOf(pointData.getPatient_op_count()));
 				break;
 			case 2:
+				cell4_2.setCellValue(model.getPatientOp().doubleValue());
 				break;
 			case 3:
 				break;
 			case 4:
 				break;
 			case 5:
-				cell4_2.setCellValue(model.getPatientEm());
 				break;
 			case 6:
-				cell4_2.setCellValue(pointData.getPatient_ip_count());
+				cell4_2.setCellValue(model.getPatientEm().doubleValue());
 				break;
 			case 7:
-				cell4_2.setCellValue(model.getPatientIp());
+				cell4_2.setCellValue(Double.valueOf(pointData.getPatient_ip_count()));
+				break;
+			case 8:
+				cell4_2.setCellValue(model.getPatientIp().doubleValue());
 				break;
 			default:
 				break;
@@ -221,7 +230,8 @@ public class ReportExportService {
 		for (int i = 0; i < pointData.getTotalPieCountData().size(); i++) {
 			HSSFCell cell7_2 = row7.createCell(1 + i);
 			Map<String, Object> map = pointData.getTotalPieCountData().get(i);
-			cell7_2.setCellValue(Integer.valueOf(map.get("COUNT").toString()));
+			cell7_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
+			cell7_2.setCellStyle(cellFormatStyle);
 		}
 
 		HSSFRow row8 = sheet.createRow(8);
@@ -257,7 +267,8 @@ public class ReportExportService {
 		for (int i = 0; i < pointData.getOpPieCountData().size(); i++) {
 			HSSFCell cell11_2 = row11.createCell(1 + i);
 			Map<String, Object> map = pointData.getOpPieCountData().get(i);
-			cell11_2.setCellValue(Integer.valueOf(map.get("COUNT").toString()));
+			cell11_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
+			cell11_2.setCellStyle(cellFormatStyle);
 		}
 		HSSFRow row12 = sheet.createRow(12);
 		HSSFCell cell12 = row12.createCell(0);
@@ -292,7 +303,8 @@ public class ReportExportService {
 		for (int i = 0; i < pointData.getIpPieCountData().size(); i++) {
 			HSSFCell cell15_2 = row15.createCell(1 + i);
 			Map<String, Object> map = pointData.getIpPieCountData().get(i);
-			cell15_2.setCellValue(Integer.valueOf(map.get("COUNT").toString()));
+			cell15_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
+			cell15_2.setCellStyle(cellFormatStyle);
 		}
 		HSSFRow row16 = sheet.createRow(16);
 		HSSFCell cell16 = row16.createCell(0);
@@ -327,7 +339,8 @@ public class ReportExportService {
 		for (int i = 0; i < pointData.getIpPieOutCountData().size(); i++) {
 			HSSFCell cell19_2 = row19.createCell(1 + i);
 			Map<String, Object> map = pointData.getIpPieOutCountData().get(i);
-			cell19_2.setCellValue(Integer.valueOf(map.get("COUNT").toString()));
+			cell19_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
+			cell19_2.setCellStyle(cellFormatStyle);
 		}
 		HSSFRow row20 = sheet.createRow(20);
 		HSSFCell cell20 = row20.createCell(0);
@@ -363,7 +376,8 @@ public class ReportExportService {
 		for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
 			HSSFCell cell23_2 = row23.createCell(1 + i);
 			Map<String, Object> map = pointData.getTotalPieDotData().get(i);
-			cell23_2.setCellValue(Integer.valueOf(map.get("SUM").toString()));
+			cell23_2.setCellValue(Double.valueOf(map.get("SUM").toString()));
+			cell23_2.setCellStyle(cellFormatStyle);
 		}
 		HSSFRow row24 = sheet.createRow(24);
 		HSSFCell cell24 = row24.createCell(0);
@@ -399,7 +413,8 @@ public class ReportExportService {
 		for (int i = 0; i < pointData.getOpPieDotData().size(); i++) {
 			HSSFCell cell27_2 = row27.createCell(1 + i);
 			Map<String, Object> map = pointData.getOpPieDotData().get(i);
-			cell27_2.setCellValue(Integer.valueOf(map.get("SUM").toString()));
+			cell27_2.setCellValue(Double.valueOf(map.get("SUM").toString()));
+			cell27_2.setCellStyle(cellFormatStyle);
 		}
 		HSSFRow row28 = sheet.createRow(28);
 		HSSFCell cell28 = row28.createCell(0);
@@ -435,7 +450,8 @@ public class ReportExportService {
 		for (int i = 0; i < pointData.getIpPieDotData().size(); i++) {
 			HSSFCell cell31_2 = row31.createCell(1 + i);
 			Map<String, Object> map = pointData.getIpPieDotData().get(i);
-			cell31_2.setCellValue(Integer.valueOf(map.get("SUM").toString()));
+			cell31_2.setCellValue(Double.valueOf(map.get("SUM").toString()));
+			cell31_2.setCellStyle(cellFormatStyle);
 		}
 		HSSFRow row32 = sheet.createRow(32);
 		HSSFCell cell32 = row32.createCell(0);
@@ -475,7 +491,7 @@ public class ReportExportService {
 				CellStyle style1 = workbook.createCellStyle();
 				style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
 				style1.setVerticalAlignment(VerticalAlignment.CENTER);
-		
+
 				for (int i = 0; i < tableHeader.length; i++) {
 					HSSFCell cell1 = row1.createCell(i);
 
@@ -527,66 +543,78 @@ public class ReportExportService {
 					cell2.setCellStyle(style1);
 				}
 				cellIndex = 0;
-				NameValueList3 nvlAll = model2.getAllMap3().get(str);
-				NameValueList3 nvlOp = model2.getOpemMap3().get(str);
-				NameValueList3 nvlip = model2.getIpMap3().get(str);
-				NameValueList3 nvlLeave = model2.getLeaveMap3().get(str);
+				NameValueList3 nvlAll3 = model2.getAllMap3().get(str);
+				NameValueList3 nvlOp3 = model2.getOpemMap3().get(str);
+				NameValueList3 nvlip3 = model2.getIpMap3().get(str);
+				NameValueList nvlLeave = model2.getLeaveMap().get(str);
+				NameValueList nvlOp = model2.getOpemMap().get(str);
+				NameValueList nvlIp = model2.getIpMap().get(str);
+
 				HSSFRow rows = sheet.createRow(3);
 				/// 不知為何，poi如果直向寫入會發生值消失問題，這邊用一般橫向資料增長
-				for (int i = 0; i < nvlAll.getNames().size(); i++) {
+				for (int i = 0; i < nvlAll3.getNames().size(); i++) {
 					HSSFCell cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlAll.getNames().get(i));
+					cells.setCellValue(nvlAll3.getNames().get(i));
 					cellIndex++;
 					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlAll.getValues2().get(i));
+					cells.setCellValue(nvlAll3.getValues2().get(i).doubleValue());
+					cells.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlAll.getValues().get(i));
+					cells.setCellValue(nvlAll3.getValues().get(i).doubleValue());
+					cells.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp3.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp3.getValues2().get(i).doubleValue());
+					cells.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlOp3.getValues().get(i).doubleValue());
+					cells.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip3.getNames().get(i));
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip3.getValues2().get(i).doubleValue());
+					cells.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cells = rows.createCell(cellIndex + i);
+					cells.setCellValue(nvlip3.getValues().get(i).doubleValue());
+					cells.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cells = rows.createCell(cellIndex + i);
 					cells.setCellValue(nvlOp.getNames().get(i));
 					cellIndex++;
 					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlOp.getValues2().get(i));
+					cells.setCellValue(nvlOp.getValues().get(i).doubleValue());
+					cells.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlOp.getValues().get(i));
+					cells.setCellValue(nvlIp.getNames().get(i));
 					cellIndex++;
 					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlip.getNames().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlip.getValues2().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlip.getValues().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlOp.getNames().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlOp.getValues().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlip.getNames().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlip.getValues().get(i));
+					cells.setCellValue(nvlIp.getValues().get(i).doubleValue());
+					cells.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cells = rows.createCell(cellIndex + i);
 					cells.setCellValue(nvlLeave.getNames().get(i));
 					cellIndex++;
 					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlLeave.getValues().get(i));
+					cells.setCellValue(nvlLeave.getValues().get(i).doubleValue());
+					cells.setCellStyle(cellFormatStyle);
 					rows = sheet.createRow(4 + i);
 					cellIndex = 0;
 					cellIndex--;
 					if (i >= 1) {
 						cellIndex -= i;
 					}
-
+					cells.setCellStyle(cellFormatStyle);
 				}
-				///auto size
+				/// auto size
 				for (int i = 0; i < tableHeader.length; i++) {
 					sheet.autoSizeColumn(i);
 					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
@@ -614,7 +642,7 @@ public class ReportExportService {
 					CellStyle style1 = workbook.createCellStyle();
 					style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
 					style1.setVerticalAlignment(VerticalAlignment.CENTER);
-			
+
 					for (int i = 0; i < tableHeader.length; i++) {
 						HSSFCell cell1 = row1.createCell(i);
 
@@ -666,73 +694,85 @@ public class ReportExportService {
 						cell2.setCellStyle(style1);
 					}
 					cellIndex = 0;
-					NameValueList3 nvlAll = model2.getAllMap3().get(str);
-					NameValueList3 nvlOp = model2.getOpemMap3().get(str);
-					NameValueList3 nvlip = model2.getIpMap3().get(str);
-					NameValueList3 nvlLeave = model2.getLeaveMap3().get(str);
+					NameValueList3 nvlAll3 = model2.getAllMap3().get(str);
+					NameValueList3 nvlOp3 = model2.getOpemMap3().get(str);
+					NameValueList3 nvlip3 = model2.getIpMap3().get(str);
+					NameValueList nvlLeave = model2.getLeaveMap().get(str);
+					NameValueList nvlOp = model2.getOpemMap().get(str);
+					NameValueList nvlIp = model2.getIpMap().get(str);
 					HSSFRow rows = sheet.createRow(3);
 					/// 不知為何，poi如果直向寫入會發生值消失問題，這邊用一般橫向資料增長
-					for (int i = 0; i < nvlAll.getNames().size(); i++) {
+					for (int i = 0; i < nvlAll3.getNames().size(); i++) {
 						HSSFCell cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlAll.getNames().get(i));
+						cells.setCellValue(nvlAll3.getNames().get(i));
 						cellIndex++;
 						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlAll.getValues2().get(i));
+						cells.setCellValue(nvlAll3.getValues2().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlAll.getValues().get(i));
+						cells.setCellValue(nvlAll3.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlOp3.getNames().get(i));
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlOp3.getValues2().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlOp3.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlip3.getNames().get(i));
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlip3.getValues2().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlip3.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cells = rows.createCell(cellIndex + i);
 						cells.setCellValue(nvlOp.getNames().get(i));
 						cellIndex++;
 						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlOp.getValues2().get(i));
+						cells.setCellValue(nvlOp.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlOp.getValues().get(i));
+						cells.setCellValue(nvlIp.getNames().get(i));
 						cellIndex++;
 						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlip.getNames().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlip.getValues2().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlip.getValues().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlOp.getNames().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlOp.getValues().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlip.getNames().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlip.getValues().get(i));
+						cells.setCellValue(nvlIp.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cells = rows.createCell(cellIndex + i);
 						cells.setCellValue(nvlLeave.getNames().get(i));
 						cellIndex++;
 						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlLeave.getValues().get(i));
+						cells.setCellValue(nvlLeave.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
 						rows = sheet.createRow(4 + i);
 						cellIndex = 0;
 						cellIndex--;
 						if (i >= 1) {
 							cellIndex -= i;
 						}
+						cells.setCellStyle(cellFormatStyle);
 
 					}
-					///auto size
+					/// auto size
 					for (int i = 0; i < tableHeader.length; i++) {
 						sheet.autoSizeColumn(i);
 						sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
 					}
 
 				}
-				
+
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -770,7 +810,8 @@ public class ReportExportService {
 	 * @param response
 	 * @throws IOException
 	 */
-	public void getMonthlyReportExport(int year, int month, HttpServletResponse response) throws IOException {
+	public void getMonthlyReportExport(int year, int month, String type, HttpServletResponse response)
+			throws IOException {
 
 		String monthStr = "";
 		if (month < 10) {
@@ -820,6 +861,15 @@ public class ReportExportService {
 		cellHeadDataStyle.setBorderLeft(BorderStyle.MEDIUM);
 		cellHeadDataStyle.setBorderRight(BorderStyle.MEDIUM);
 
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
 		int cellIndex = 0;
 		int rowIndex = 0;
 
@@ -837,28 +887,28 @@ public class ReportExportService {
 				cells.setCellStyle(cellHeadDataStyle);
 				break;
 			case 1:
-				cells.setCellValue("");
+				cells.setCellValue(type);
 				cells.setCellStyle(cellHeadDataStyle);
 				break;
 			case 2:
-				cells.setCellValue(cModel.getAssignedAll());
-				cells.setCellStyle(cellHeadDataStyle);
+				cells.setCellValue(cModel.getAssignedAll().doubleValue());
+				cells.setCellStyle(cellFormatStyle);
 				break;
 			case 3:
-				cells.setCellValue(cModel.getApplAll());
-				cells.setCellStyle(cellHeadDataStyle);
+				cells.setCellValue(cModel.getApplAll().doubleValue());
+				cells.setCellStyle(cellFormatStyle);
 				break;
 			case 4:
-				cells.setCellValue(cModel.getPartAll());
-				cells.setCellStyle(cellHeadDataStyle);
+				cells.setCellValue(cModel.getPartAll().doubleValue());
+				cells.setCellStyle(cellFormatStyle);
 				break;
 			case 5:
-				cells.setCellValue(cModel.getChronic());
-				cells.setCellStyle(cellHeadDataStyle);
+				cells.setCellValue(cModel.getChronic().doubleValue());
+				cells.setCellStyle(cellFormatStyle);
 				break;
 			case 6:
-				cells.setCellValue(cModel.getRemaining());
-				cells.setCellStyle(cellHeadDataStyle);
+				cells.setCellValue(cModel.getRemaining().doubleValue());
+				cells.setCellStyle(cellFormatStyle);
 				break;
 
 			case 8:
@@ -873,24 +923,24 @@ public class ReportExportService {
 					cells = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cells.setCellValue(cModel.getPartAll());
+						cells.setCellValue(cModel.getPartAll().doubleValue());
 						break;
 					case 1:
-						cells.setCellValue(cModel.getPartOpAll());
+						cells.setCellValue(cModel.getPartOpAll().doubleValue());
 						break;
 					case 2:
-						cells.setCellValue(cModel.getPartOp());
+						cells.setCellValue(cModel.getPartOp().doubleValue());
 						break;
 					case 3:
-						cells.setCellValue(cModel.getPartEm());
+						cells.setCellValue(cModel.getPartEm().doubleValue());
 						break;
 					case 4:
-						cells.setCellValue(cModel.getPartIp());
+						cells.setCellValue(cModel.getPartIp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cells.setCellStyle(cellHeadDataStyle);
+					cells.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 10:
@@ -898,24 +948,24 @@ public class ReportExportService {
 					cells = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cells.setCellValue(cModel.getApplAll());
+						cells.setCellValue(cModel.getApplAll().doubleValue());
 						break;
 					case 1:
-						cells.setCellValue(cModel.getApplOpAll());
+						cells.setCellValue(cModel.getApplOpAll().doubleValue());
 						break;
 					case 2:
-						cells.setCellValue(cModel.getApplOp());
+						cells.setCellValue(cModel.getApplOp().doubleValue());
 						break;
 					case 3:
-						cells.setCellValue(cModel.getApplEm());
+						cells.setCellValue(cModel.getApplEm().doubleValue());
 						break;
 					case 4:
-						cells.setCellValue(cModel.getApplIp());
+						cells.setCellValue(cModel.getApplIp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cells.setCellStyle(cellHeadDataStyle);
+					cells.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 11:
@@ -923,24 +973,24 @@ public class ReportExportService {
 					cells = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cells.setCellValue(cModel.getTotalAll());
+						cells.setCellValue(cModel.getTotalAll().doubleValue());
 						break;
 					case 1:
-						cells.setCellValue(cModel.getTotalOpAll());
+						cells.setCellValue(cModel.getTotalOpAll().doubleValue());
 						break;
 					case 2:
-						cells.setCellValue(cModel.getTotalOp());
+						cells.setCellValue(cModel.getTotalOp().doubleValue());
 						break;
 					case 3:
-						cells.setCellValue(cModel.getTotalEm());
+						cells.setCellValue(cModel.getTotalEm().doubleValue());
 						break;
 					case 4:
-						cells.setCellValue(cModel.getTotalIp());
+						cells.setCellValue(cModel.getTotalIp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cells.setCellStyle(cellHeadDataStyle);
+					cells.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 12:
@@ -948,10 +998,10 @@ public class ReportExportService {
 					cells = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cells.setCellValue(cModel.getAssignedAll());
+						cells.setCellValue(cModel.getAssignedAll().doubleValue());
 						break;
 					case 1:
-						cells.setCellValue(cModel.getAssignedOpAll());
+						cells.setCellValue(cModel.getAssignedOpAll().doubleValue());
 						break;
 					case 2:
 						cells.setCellValue("-");
@@ -960,12 +1010,12 @@ public class ReportExportService {
 						cells.setCellValue("-");
 						break;
 					case 4:
-						cells.setCellValue(cModel.getAssignedIp());
+						cells.setCellValue(cModel.getAssignedIp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cells.setCellStyle(cellHeadDataStyle);
+					cells.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 13:
@@ -1055,18 +1105,18 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(cModel.getTotalAll());
+						cellss.setCellValue(cModel.getTotalAll().doubleValue());
 						break;
 					case 1:
-						cellss.setCellValue(mModel.getTotalAll());
+						cellss.setCellValue(mModel.getTotalAll().doubleValue());
 						break;
 					case 2:
-						cellss.setCellValue(yModel.getTotalAll());
+						cellss.setCellValue(yModel.getTotalAll().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 2:
@@ -1074,18 +1124,18 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(cModel.getAssignedAll());
+						cellss.setCellValue(cModel.getAssignedAll().doubleValue());
 						break;
 					case 1:
-						cellss.setCellValue(mModel.getAssignedAll());
+						cellss.setCellValue(mModel.getAssignedAll().doubleValue());
 						break;
 					case 2:
-						cellss.setCellValue(yModel.getAssignedAll());
+						cellss.setCellValue(yModel.getAssignedAll().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 3:
@@ -1093,7 +1143,7 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(pointData.getDiffAllLastM());
+						cellss.setCellValue(pointData.getDiffAllLastM().doubleValue());
 						break;
 					case 1:
 						cellss.setCellValue("-");
@@ -1104,7 +1154,7 @@ public class ReportExportService {
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 4:
@@ -1112,7 +1162,7 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(pointData.getDiffAllLastY());
+						cellss.setCellValue(pointData.getDiffAllLastY().doubleValue());
 						break;
 					case 1:
 						cellss.setCellValue("-");
@@ -1123,7 +1173,7 @@ public class ReportExportService {
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 5:
@@ -1139,18 +1189,18 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(cModel.getTotalOpAll());
+						cellss.setCellValue(cModel.getTotalOpAll().doubleValue());
 						break;
 					case 1:
-						cellss.setCellValue(mModel.getTotalOpAll());
+						cellss.setCellValue(mModel.getTotalOpAll().doubleValue());
 						break;
 					case 2:
-						cellss.setCellValue(yModel.getTotalOpAll());
+						cellss.setCellValue(yModel.getTotalOpAll().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 7:
@@ -1158,18 +1208,18 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(cModel.getAssignedOpAll());
+						cellss.setCellValue(cModel.getAssignedOpAll().doubleValue());
 						break;
 					case 1:
-						cellss.setCellValue(mModel.getAssignedOpAll());
+						cellss.setCellValue(mModel.getAssignedOpAll().doubleValue());
 						break;
 					case 2:
-						cellss.setCellValue(yModel.getAssignedOpAll());
+						cellss.setCellValue(yModel.getAssignedOpAll().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 8:
@@ -1177,7 +1227,7 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(pointData.getDiffOpAllLastM());
+						cellss.setCellValue(pointData.getDiffOpAllLastM().doubleValue());
 						break;
 					case 1:
 						cellss.setCellValue("-");
@@ -1188,7 +1238,7 @@ public class ReportExportService {
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 9:
@@ -1196,7 +1246,7 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(pointData.getDiffOpAllLastY());
+						cellss.setCellValue(pointData.getDiffOpAllLastY().doubleValue());
 						break;
 					case 1:
 						cellss.setCellValue("-");
@@ -1207,7 +1257,7 @@ public class ReportExportService {
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 10:
@@ -1223,18 +1273,18 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(cModel.getTotalOp());
+						cellss.setCellValue(cModel.getTotalOp().doubleValue());
 						break;
 					case 1:
-						cellss.setCellValue(mModel.getTotalOp());
+						cellss.setCellValue(mModel.getTotalOp().doubleValue());
 						break;
 					case 2:
-						cellss.setCellValue(yModel.getTotalOp());
+						cellss.setCellValue(yModel.getTotalOp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 12:
@@ -1261,7 +1311,7 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(pointData.getDiffOpLastM());
+						cellss.setCellValue(pointData.getDiffOpLastM().doubleValue());
 						break;
 					case 1:
 						cellss.setCellValue("-");
@@ -1272,7 +1322,7 @@ public class ReportExportService {
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 14:
@@ -1280,7 +1330,7 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(pointData.getDiffOpLastY());
+						cellss.setCellValue(pointData.getDiffOpLastY().doubleValue());
 						break;
 					case 1:
 						cellss.setCellValue("-");
@@ -1291,7 +1341,7 @@ public class ReportExportService {
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 15:
@@ -1307,18 +1357,18 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(cModel.getTotalEm());
+						cellss.setCellValue(cModel.getTotalEm().doubleValue());
 						break;
 					case 1:
-						cellss.setCellValue(mModel.getTotalEm());
+						cellss.setCellValue(mModel.getTotalEm().doubleValue());
 						break;
 					case 2:
-						cellss.setCellValue(yModel.getTotalEm());
+						cellss.setCellValue(yModel.getTotalEm().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 17:
@@ -1364,7 +1414,7 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(pointData.getDiffEmLastY());
+						cellss.setCellValue(pointData.getDiffEmLastY().doubleValue());
 						break;
 					case 1:
 						cellss.setCellValue("-");
@@ -1375,7 +1425,7 @@ public class ReportExportService {
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 20:
@@ -1391,18 +1441,18 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(cModel.getTotalIp());
+						cellss.setCellValue(cModel.getTotalIp().doubleValue());
 						break;
 					case 1:
-						cellss.setCellValue(mModel.getTotalIp());
+						cellss.setCellValue(mModel.getTotalIp().doubleValue());
 						break;
 					case 2:
-						cellss.setCellValue(yModel.getTotalIp());
+						cellss.setCellValue(yModel.getTotalIp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 22:
@@ -1410,18 +1460,18 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(cModel.getAssignedIp());
+						cellss.setCellValue(cModel.getAssignedIp().doubleValue());
 						break;
 					case 1:
-						cellss.setCellValue(mModel.getAssignedIp());
+						cellss.setCellValue(mModel.getAssignedIp().doubleValue());
 						break;
 					case 2:
-						cellss.setCellValue(yModel.getAssignedIp());
+						cellss.setCellValue(yModel.getAssignedIp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 23:
@@ -1429,7 +1479,7 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(pointData.getDiffIpLastM());
+						cellss.setCellValue(pointData.getDiffIpLastM().doubleValue());
 						break;
 					case 1:
 						cellss.setCellValue("-");
@@ -1440,7 +1490,7 @@ public class ReportExportService {
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 24:
@@ -1448,7 +1498,7 @@ public class ReportExportService {
 					HSSFCell cellss = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cellss.setCellValue(pointData.getDiffIpLastY());
+						cellss.setCellValue(pointData.getDiffIpLastY().doubleValue());
 						break;
 					case 1:
 						cellss.setCellValue("-");
@@ -1459,7 +1509,7 @@ public class ReportExportService {
 					default:
 						break;
 					}
-					cellss.setCellStyle(cellStyle2);
+					cellss.setCellStyle(cellFormatStyle);
 				}
 				break;
 			default:
@@ -1511,18 +1561,18 @@ public class ReportExportService {
 					cells = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cells.setCellValue(cModel.getPatientOp());
+						cells.setCellValue(cModel.getPatientOp().doubleValue());
 						break;
 					case 1:
-						cells.setCellValue(cModel.getPatientIp());
+						cells.setCellValue(cModel.getPatientEm().doubleValue());
 						break;
 					case 2:
-						cells.setCellValue(cModel.getPatientEm());
+						cells.setCellValue(cModel.getPatientIp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cells.setCellStyle(cellStyle3);
+					cells.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 2:
@@ -1530,18 +1580,18 @@ public class ReportExportService {
 					cells = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cells.setCellValue(cModel.getPatientOp() - mModel.getPatientOp());
+						cells.setCellValue(cModel.getPatientOp().doubleValue() - mModel.getPatientOp().doubleValue());
 						break;
 					case 1:
-						cells.setCellValue(cModel.getPatientEm() - mModel.getPatientEm());
+						cells.setCellValue(cModel.getPatientEm().doubleValue() - mModel.getPatientEm().doubleValue());
 						break;
 					case 2:
-						cells.setCellValue(cModel.getPatientIp() - mModel.getPatientIp());
+						cells.setCellValue(cModel.getPatientIp().doubleValue() - mModel.getPatientIp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cells.setCellStyle(cellStyle3);
+					cells.setCellStyle(cellFormatStyle);
 				}
 				break;
 			case 3:
@@ -1549,18 +1599,18 @@ public class ReportExportService {
 					cells = rows.createCell(cellIndex + x);
 					switch (x) {
 					case 0:
-						cells.setCellValue(cModel.getPatientOp() - yModel.getPatientOp());
+						cells.setCellValue(cModel.getPatientOp().doubleValue() - yModel.getPatientOp().doubleValue());
 						break;
 					case 1:
-						cells.setCellValue(cModel.getPatientEm() - yModel.getPatientEm());
+						cells.setCellValue(cModel.getPatientEm().doubleValue() - yModel.getPatientEm().doubleValue());
 						break;
 					case 2:
-						cells.setCellValue(cModel.getPatientIp() - yModel.getPatientIp());
+						cells.setCellValue(cModel.getPatientIp().doubleValue() - yModel.getPatientIp().doubleValue());
 						break;
 					default:
 						break;
 					}
-					cells.setCellStyle(cellStyle3);
+					cells.setCellStyle(cellFormatStyle);
 				}
 				break;
 			default:
@@ -1607,7 +1657,8 @@ public class ReportExportService {
 	 * @param response
 	 * @throws IOException
 	 */
-	public void getAchievementRateExport(String year, String week, HttpServletResponse response) throws IOException {
+	public void getAchievementRateExport(String year, String week, String type, HttpServletResponse response)
+			throws IOException {
 		Calendar cal = Calendar.getInstance();
 		cal.set(Calendar.YEAR, Integer.parseInt(year));
 		cal.set(Calendar.WEEK_OF_YEAR, Integer.parseInt(week));
@@ -1638,10 +1689,19 @@ public class ReportExportService {
 		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
 		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
 
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
 		int cellIndex = 0;
 		int rowIndex = 0;
 
-		String[] tableRowHeaders = { "統計月份", "慢籤額度條件", "本月申報點數", "本月分配額度", "總額達成率" };
+		String[] tableRowHeaders = { "趨勢圖截止時間", "慢籤額度條件", "本月申報點數", "本月分配額度", "總額達成率" };
 
 		for (int y = 0; y < tableRowHeaders.length; y++) {
 			HSSFRow rows = sheet.createRow(y);
@@ -1659,18 +1719,18 @@ public class ReportExportService {
 				break;
 			case 1:
 				cellss = rows.createCell(cellIndex);
-				cellss.setCellValue("");
+				cellss.setCellValue(type);
 				cellss.setCellStyle(cellStyle);
 				break;
 			case 2:
 				cellss = rows.createCell(cellIndex);
-				cellss.setCellValue(awData.getMonthTotal());
-				cellss.setCellStyle(cellStyle);
+				cellss.setCellValue(awData.getMonthTotal().doubleValue());
+				cellss.setCellStyle(cellFormatStyle);
 				break;
 			case 3:
 				cellss = rows.createCell(cellIndex);
-				cellss.setCellValue(awData.getMonthAssigned());
-				cellss.setCellStyle(cellStyle);
+				cellss.setCellValue(awData.getMonthAssigned().doubleValue());
+				cellss.setCellStyle(cellFormatStyle);
 				break;
 			case 4:
 				cellss = rows.createCell(cellIndex);
@@ -1751,20 +1811,21 @@ public class ReportExportService {
 						cellss.setCellStyle(cellStyle);
 					}
 					cellIndex = 0;
-					rowIndex = 2;
-					rowss = sheet.createRow(rowIndex);
+					rowIndex = 3;
+					rowss = sheet.createRow(2);
+					HSSFCell cellss = rowss.createCell(cellIndex);
 					/// values
 					for (int v1 = 0; v1 < nvlAll.getNames().size(); v1++) {
 						String v1Name = nvlAll.getNames().get(v1);
 						Long v1Val = nvlAll.getValues().get(v1);
 
-						HSSFCell cellss = rowss.createCell(cellIndex);
+						cellss = rowss.createCell(cellIndex);
 						cellss.setCellValue(v1Name);
 						cellss.setCellStyle(cellStyle);
 						cellIndex++;
 						cellss = rowss.createCell(cellIndex);
-						cellss.setCellValue(v1Val);
-						cellss.setCellStyle(cellStyle);
+						cellss.setCellValue(v1Val.doubleValue());
+						cellss.setCellStyle(cellFormatStyle);
 						cellIndex = 2;
 						for (int v2 = 0; v2 < nvlAssingAll.getNames().size(); v2++) {
 							String v2Name = nvlAssingAll.getNames().get(v2);
@@ -1775,42 +1836,36 @@ public class ReportExportService {
 								cellss.setCellStyle(cellStyle);
 								cellIndex++;
 								cellss = rowss.createCell(cellIndex);
-								cellss.setCellValue(v2Val);
-								cellss.setCellStyle(cellStyle);
+								cellss.setCellValue(v2Val.doubleValue());
+								cellss.setCellStyle(cellFormatStyle);
 								cellIndex++;
 								cellss = rowss.createCell(cellIndex);
 								Long v3Val = nvlActualAll.getValues().get(v2);
 								Long v3Val2 = nvlActualAll.getValues2().get(v2);
-								cellss.setCellValue(v3Val);
-								cellss.setCellStyle(cellStyle);
+								cellss.setCellValue(v3Val.doubleValue());
+								cellss.setCellStyle(cellFormatStyle);
 								cellIndex++;
 								cellss = rowss.createCell(cellIndex);
 								cellss.setCellValue(String.valueOf(v3Val2) + "%");
 								cellss.setCellStyle(cellStyle);
-
+								isContinue = true;
 							} else {
 								if (!isContinue) {
 									cellss = rowss.createCell(cellIndex);
-									cellss.setCellValue("");
 									cellss.setCellStyle(cellStyle);
 									cellIndex++;
 									cellss = rowss.createCell(cellIndex);
-									cellss.setCellValue("");
 									cellss.setCellStyle(cellStyle);
 									cellIndex++;
 									cellss = rowss.createCell(cellIndex);
-									cellss.setCellValue("");
 									cellss.setCellStyle(cellStyle);
 									cellIndex++;
 									cellss = rowss.createCell(cellIndex);
-									cellss.setCellValue("");
 									cellss.setCellStyle(cellStyle);
 									isContinue = true;
 								} else {
 									continue;
 								}
-
-								isContinue = true;
 							}
 							cellss.setCellStyle(cellStyle);
 							cellIndex = 2;
@@ -1859,16 +1914,16 @@ public class ReportExportService {
 						cellss.setCellStyle(cellStyle);
 						cellIndex++;
 						cellss = rowss.createCell(cellIndex);
-						cellss.setCellValue(v1Val);
-						cellss.setCellStyle(cellStyle);
+						cellss.setCellValue(v1Val.doubleValue());
+						cellss.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cellss = rowss.createCell(cellIndex);
 						cellss.setCellValue(v2Name);
 						cellss.setCellStyle(cellStyle);
 						cellIndex++;
 						cellss = rowss.createCell(cellIndex);
-						cellss.setCellValue(v2Val);
-						cellss.setCellStyle(cellStyle);
+						cellss.setCellValue(v2Val.doubleValue());
+						cellss.setCellStyle(cellFormatStyle);
 						rowss = sheet.createRow(rowIndex + v);
 						cellIndex = 0;
 					}
@@ -1946,6 +2001,15 @@ public class ReportExportService {
 		font.setColor(HSSFColor.HSSFColorPredefined.RED.getIndex());
 		cellTitleStyle.setFont(font);
 
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
 		int cellIndex = 0;
 		int rowIndex = 0;
 
@@ -1992,16 +2056,16 @@ public class ReportExportService {
 							cells = row.createCell(cellIndex + x);
 							switch (x) {
 							case 0:
-								cells.setCellValue(qdAllList.get(0).getOriginal());
+								cells.setCellValue(qdAllList.get(0).getOriginal().doubleValue());
 								break;
 							case 1:
-								cells.setCellValue(qdAllList.get(0).getActual());
+								cells.setCellValue(qdAllList.get(0).getActual().doubleValue());
 								break;
 							case 2:
-								cells.setCellValue(qdAllList.get(0).getAssigned());
+								cells.setCellValue(qdAllList.get(0).getAssigned().doubleValue());
 								break;
 							case 3:
-								cells.setCellValue(qdAllList.get(0).getOver());
+								cells.setCellValue(qdAllList.get(0).getOver().doubleValue());
 								break;
 							case 4:
 								cells.setCellValue(qdAllList.get(0).getPercent() + "%");
@@ -2009,7 +2073,7 @@ public class ReportExportService {
 							default:
 								break;
 							}
-							cells.setCellStyle(cellStyle);
+							cells.setCellStyle(cellFormatStyle);
 						}
 						break;
 					case 1:
@@ -2017,16 +2081,16 @@ public class ReportExportService {
 							cells = row.createCell(cellIndex + x);
 							switch (x) {
 							case 0:
-								cells.setCellValue(qdOpList.get(0).getOriginal());
+								cells.setCellValue(qdOpList.get(0).getOriginal().doubleValue());
 								break;
 							case 1:
-								cells.setCellValue(qdOpList.get(0).getActual());
+								cells.setCellValue(qdOpList.get(0).getActual().doubleValue());
 								break;
 							case 2:
-								cells.setCellValue(qdOpList.get(0).getAssigned());
+								cells.setCellValue(qdOpList.get(0).getAssigned().doubleValue());
 								break;
 							case 3:
-								cells.setCellValue(qdOpList.get(0).getOver());
+								cells.setCellValue(qdOpList.get(0).getOver().doubleValue());
 								break;
 							case 4:
 								cells.setCellValue(qdOpList.get(0).getPercent() + "%");
@@ -2034,7 +2098,7 @@ public class ReportExportService {
 							default:
 								break;
 							}
-							cells.setCellStyle(cellStyle);
+							cells.setCellStyle(cellFormatStyle);
 						}
 						break;
 					case 2:
@@ -2042,16 +2106,16 @@ public class ReportExportService {
 							cells = row.createCell(cellIndex + x);
 							switch (x) {
 							case 0:
-								cells.setCellValue(qdIpList.get(0).getOriginal());
+								cells.setCellValue(qdIpList.get(0).getOriginal().doubleValue());
 								break;
 							case 1:
-								cells.setCellValue(qdIpList.get(0).getActual());
+								cells.setCellValue(qdIpList.get(0).getActual().doubleValue());
 								break;
 							case 2:
-								cells.setCellValue(qdIpList.get(0).getAssigned());
+								cells.setCellValue(qdIpList.get(0).getAssigned().doubleValue());
 								break;
 							case 3:
-								cells.setCellValue(qdIpList.get(0).getOver());
+								cells.setCellValue(qdIpList.get(0).getOver().doubleValue());
 								break;
 							case 4:
 								cells.setCellValue(qdIpList.get(0).getPercent() + "%");
@@ -2059,7 +2123,7 @@ public class ReportExportService {
 							default:
 								break;
 							}
-							cells.setCellStyle(cellStyle);
+							cells.setCellStyle(cellFormatStyle);
 						}
 						break;
 					default:
@@ -2092,15 +2156,15 @@ public class ReportExportService {
 							cells = row.createCell(cellIndex + x);
 							switch (x) {
 							case 0:
-								cells.setCellValue(qdAllList.get(0).getAssigned());
+								cells.setCellValue(qdAllList.get(0).getAssigned().doubleValue());
 								break;
 							case 1:
-								cells.setCellValue(qdAllList.get(0).getActual());
+								cells.setCellValue(qdAllList.get(0).getActual().doubleValue());
 								break;
 							default:
 								break;
 							}
-							cells.setCellStyle(cellStyle);
+							cells.setCellStyle(cellFormatStyle);
 						}
 						break;
 					case 1:
@@ -2108,15 +2172,15 @@ public class ReportExportService {
 							cells = row.createCell(cellIndex + x);
 							switch (x) {
 							case 0:
-								cells.setCellValue(qdOpList.get(0).getAssigned());
+								cells.setCellValue(qdOpList.get(0).getAssigned().doubleValue());
 								break;
 							case 1:
-								cells.setCellValue(qdOpList.get(0).getActual());
+								cells.setCellValue(qdOpList.get(0).getActual().doubleValue());
 								break;
 							default:
 								break;
 							}
-							cells.setCellStyle(cellStyle);
+							cells.setCellStyle(cellFormatStyle);
 						}
 						break;
 					case 2:
@@ -2124,15 +2188,15 @@ public class ReportExportService {
 							cells = row.createCell(cellIndex + x);
 							switch (x) {
 							case 0:
-								cells.setCellValue(qdIpList.get(0).getAssigned());
+								cells.setCellValue(qdIpList.get(0).getAssigned().doubleValue());
 								break;
 							case 1:
-								cells.setCellValue(qdIpList.get(0).getActual());
+								cells.setCellValue(qdIpList.get(0).getActual().doubleValue());
 								break;
 							default:
 								break;
 							}
-							cells.setCellStyle(cellStyle);
+							cells.setCellStyle(cellFormatStyle);
 						}
 						break;
 					default:
@@ -2190,20 +2254,20 @@ public class ReportExportService {
 					cell.setCellStyle(cellTitleStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getOriginal());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdAllList.get(v).getOriginal().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getActual());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdAllList.get(v).getActual().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getAssigned());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdAllList.get(v).getAssigned().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getOver());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdAllList.get(v).getOver().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(qdAllList.get(v).getPercent() + "%");
@@ -2234,29 +2298,29 @@ public class ReportExportService {
 				row = sheet.createRow(rowIndex);
 				cellIndex = 0;
 				rowIndex++;
-				for (int v = 0; v < qdAllList.size(); v++) {
+				for (int v = 0; v < qdOpList.size(); v++) {
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getName());
+					cell.setCellValue(qdOpList.get(v).getName());
 					cell.setCellStyle(cellTitleStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getOriginal());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdOpList.get(v).getOriginal().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getActual());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdOpList.get(v).getActual().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getAssigned());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdOpList.get(v).getAssigned().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getOver());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdOpList.get(v).getOver().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getPercent() + "%");
+					cell.setCellValue(qdOpList.get(v).getPercent() + "%");
 					cell.setCellStyle(cellStyle);
 
 					rowIndex += v;
@@ -2284,29 +2348,29 @@ public class ReportExportService {
 				row = sheet.createRow(rowIndex);
 				cellIndex = 0;
 				rowIndex++;
-				for (int v = 0; v < qdAllList.size(); v++) {
+				for (int v = 0; v < qdIpList.size(); v++) {
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getName());
+					cell.setCellValue(qdIpList.get(v).getName());
 					cell.setCellStyle(cellTitleStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getOriginal());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdIpList.get(v).getOriginal().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getActual());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdIpList.get(v).getActual().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getAssigned());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdIpList.get(v).getAssigned().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getOver());
-					cell.setCellStyle(cellStyle);
+					cell.setCellValue(qdIpList.get(v).getOver().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					cell.setCellValue(qdAllList.get(v).getPercent() + "%");
+					cell.setCellValue(qdIpList.get(v).getPercent() + "%");
 					cell.setCellStyle(cellStyle);
 
 					rowIndex += v;
@@ -2390,6 +2454,15 @@ public class ReportExportService {
 		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
 		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
 
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
 		int cellIndex = 0;
 		int rowIndex = 0;
 
@@ -2425,18 +2498,18 @@ public class ReportExportService {
 				cell = row.createCell(x);
 				switch (x) {
 				case 0:
-					cell.setCellValue(drgData.getQuantityIp());
+					cell.setCellValue(drgData.getQuantityIp().doubleValue());
 					break;
 				case 1:
-					cell.setCellValue(drgData.getApplPointIp());
+					cell.setCellValue(drgData.getApplPointIp().doubleValue());
 					break;
 				case 2:
-					cell.setCellValue(drgData.getPointIp());
+					cell.setCellValue(drgData.getPointIp().doubleValue());
 					break;
 				default:
 					break;
 				}
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 			}
 
 			/// 欄位A5
@@ -2453,18 +2526,18 @@ public class ReportExportService {
 				cell = row.createCell(x);
 				switch (x) {
 				case 0:
-					cell.setCellValue(drgData.getQuantityDrg());
+					cell.setCellValue(drgData.getQuantityDrg().doubleValue());
 					break;
 				case 1:
-					cell.setCellValue(drgData.getApplPointDrg());
+					cell.setCellValue(drgData.getApplPointDrg().doubleValue());
 					break;
 				case 2:
-					cell.setCellValue(drgData.getPointDrg());
+					cell.setCellValue(drgData.getPointDrg().doubleValue());
 					break;
 				default:
 					break;
 				}
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 			}
 
 			/// 欄位A7
@@ -2487,12 +2560,12 @@ public class ReportExportService {
 					cell.setCellValue(drgData.getRatePointDrg() + "%");
 					break;
 				case 2:
-					cell.setCellValue(drgData.getDiffDrg());
+					cell.setCellValue(drgData.getDiffDrg().doubleValue());
 					break;
 				default:
 					break;
 				}
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 			}
 
 			/// 最後設定autosize
@@ -2535,15 +2608,16 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getQuantityDrg());
+							cell.setCellValue(drgData.getQuantityDrg().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getQuantityIp() - drgData.getQuantityDrg());
+							cell.setCellValue(
+									drgData.getQuantityIp().doubleValue() - drgData.getQuantityDrg().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 1:
@@ -2601,15 +2675,16 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getApplPointDrg());
+							cell.setCellValue(drgData.getApplPointDrg().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getApplPointIp() - drgData.getApplPointDrg());
+							cell.setCellValue(
+									drgData.getApplPointIp().doubleValue() - drgData.getApplPointDrg().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 1:
@@ -2691,14 +2766,12 @@ public class ReportExportService {
 				cell.setCellStyle(cellStyle);
 				cellIndex++;
 				cell = row.createCell(cellIndex);
-				String v1Str = (v1Val == 0) ? "" : String.valueOf(v1Val);
-				cell.setCellValue(v1Str);
-				cell.setCellStyle(cellStyle);
+				cell.setCellValue(v1Val.doubleValue());
+				cell.setCellStyle(cellFormatStyle);
 				cellIndex++;
 				cell = row.createCell(cellIndex);
-				String v1Str2 = (v1Val2 == 0) ? "" : String.valueOf(v1Val2);
-				cell.setCellValue(v1Str2);
-				cell.setCellStyle(cellStyle);
+				cell.setCellValue(v1Val2.doubleValue());
+				cell.setCellStyle(cellFormatStyle);
 
 				cellIndex++;
 				cell = row.createCell(cellIndex);
@@ -2706,13 +2779,11 @@ public class ReportExportService {
 				cell.setCellStyle(cellStyle);
 				cellIndex++;
 				cell = row.createCell(cellIndex);
-				String v2Str = (v2Val == 0) ? "" : String.valueOf(v2Val);
-				cell.setCellValue(v2Str);
-				cell.setCellStyle(cellStyle);
+				cell.setCellValue(v2Val.doubleValue());
+				cell.setCellStyle(cellFormatStyle);
 				cellIndex++;
 				cell = row.createCell(cellIndex);
-				String v2Str2 = (v2Val2 == 0) ? "" : String.valueOf(v2Val2);
-				cell.setCellValue(v2Str2);
+				cell.setCellValue(v2Val2.doubleValue());
 				cell.setCellStyle(cellStyle);
 
 				row = sheet.createRow(rowIndex + v1);
@@ -2797,6 +2868,15 @@ public class ReportExportService {
 		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
 		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
 
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
 		int cellIndex = 0;
 		int rowIndex = 0;
 
@@ -2832,18 +2912,18 @@ public class ReportExportService {
 				cell = row.createCell(x);
 				switch (x) {
 				case 0:
-					cell.setCellValue(drgData.getQuantityIp());
+					cell.setCellValue(drgData.getQuantityIp().doubleValue());
 					break;
 				case 1:
-					cell.setCellValue(drgData.getApplPointIp());
+					cell.setCellValue(drgData.getApplPointIp().doubleValue());
 					break;
 				case 2:
-					cell.setCellValue(drgData.getPointIp());
+					cell.setCellValue(drgData.getPointIp().doubleValue());
 					break;
 				default:
 					break;
 				}
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 			}
 
 			/// 欄位A5
@@ -2860,18 +2940,18 @@ public class ReportExportService {
 				cell = row.createCell(x);
 				switch (x) {
 				case 0:
-					cell.setCellValue(drgData.getQuantityDrg());
+					cell.setCellValue(drgData.getQuantityDrg().doubleValue());
 					break;
 				case 1:
-					cell.setCellValue(drgData.getApplPointDrg());
+					cell.setCellValue(drgData.getApplPointDrg().doubleValue());
 					break;
 				case 2:
-					cell.setCellValue(drgData.getPointDrg());
+					cell.setCellValue(drgData.getPointDrg().doubleValue());
 					break;
 				default:
 					break;
 				}
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 			}
 
 			/// 欄位A7
@@ -2894,12 +2974,12 @@ public class ReportExportService {
 					cell.setCellValue(drgData.getRatePointDrg() + "%");
 					break;
 				case 2:
-					cell.setCellValue(drgData.getDiffDrg());
+					cell.setCellValue(drgData.getDiffDrg().doubleValue());
 					break;
 				default:
 					break;
 				}
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 			}
 
 			/// 最後設定autosize
@@ -2942,15 +3022,16 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getQuantityDrg());
+							cell.setCellValue(drgData.getQuantityDrg().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getQuantityIp() - drgData.getQuantityDrg());
+							cell.setCellValue(
+									drgData.getQuantityIp().doubleValue() - drgData.getQuantityDrg().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 1:
@@ -3008,15 +3089,16 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getApplPointDrg());
+							cell.setCellValue(drgData.getApplPointDrg().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getApplPointIp() - drgData.getApplPointDrg());
+							cell.setCellValue(
+									drgData.getApplPointIp().doubleValue() - drgData.getApplPointDrg().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 1:
@@ -3102,14 +3184,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						String v1Str = (v1Val == 0) ? "" : String.valueOf(v1Val);
-						cell.setCellValue(v1Str);
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(v1Val.doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						String v1Str2 = (v1Val2 == 0) ? "" : String.valueOf(v1Val2);
-						cell.setCellValue(v1Str2);
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(v1Val2.doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 
 						cellIndex++;
 						cell = row.createCell(cellIndex);
@@ -3117,14 +3197,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						String v2Str = (v2Val == 0) ? "" : String.valueOf(v2Val);
-						cell.setCellValue(v2Str);
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(v2Val.doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						String v2Str2 = (v2Val2 == 0) ? "" : String.valueOf(v2Val2);
-						cell.setCellValue(v2Str2);
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(v2Val2.doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 
 						row = sheet.createRow(rowIndex + v1);
 						cellIndex = 0;
@@ -3197,14 +3275,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						String v1Str = (v1Val == 0) ? "" : String.valueOf(v1Val);
-						cell.setCellValue(v1Str);
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(v1Val.doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						String v1Str2 = (v1Val2 == 0) ? "" : String.valueOf(v1Val2);
-						cell.setCellValue(v1Str2);
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(v1Val2.doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 
 						cellIndex++;
 						cell = row.createCell(cellIndex);
@@ -3212,14 +3288,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						String v2Str = (v2Val == 0) ? "" : String.valueOf(v2Val);
-						cell.setCellValue(v2Str);
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(v2Val.doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						String v2Str2 = (v2Val2 == 0) ? "" : String.valueOf(v2Val2);
-						cell.setCellValue(v2Str2);
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(v2Val2.doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 
 						row = sheet.createRow(rowIndex + v1);
 						cellIndex = 0;
@@ -3304,6 +3378,15 @@ public class ReportExportService {
 		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
 		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
 
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
 		int cellIndex = 0;
 		int rowIndex = 0;
 
@@ -3339,18 +3422,18 @@ public class ReportExportService {
 				cell = row.createCell(x);
 				switch (x) {
 				case 0:
-					cell.setCellValue(drgData.getQuantityIp());
+					cell.setCellValue(drgData.getQuantityIp().doubleValue());
 					break;
 				case 1:
-					cell.setCellValue(drgData.getApplPointIp());
+					cell.setCellValue(drgData.getApplPointIp().doubleValue());
 					break;
 				case 2:
-					cell.setCellValue(drgData.getPointIp());
+					cell.setCellValue(drgData.getPointIp().doubleValue());
 					break;
 				default:
 					break;
 				}
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 			}
 
 			/// 欄位A5
@@ -3367,18 +3450,18 @@ public class ReportExportService {
 				cell = row.createCell(x);
 				switch (x) {
 				case 0:
-					cell.setCellValue(drgData.getQuantityDrg());
+					cell.setCellValue(drgData.getQuantityDrg().doubleValue());
 					break;
 				case 1:
-					cell.setCellValue(drgData.getApplPointDrg());
+					cell.setCellValue(drgData.getApplPointDrg().doubleValue());
 					break;
 				case 2:
-					cell.setCellValue(drgData.getPointDrg());
+					cell.setCellValue(drgData.getPointDrg().doubleValue());
 					break;
 				default:
 					break;
 				}
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 			}
 
 			/// 欄位A7
@@ -3401,12 +3484,12 @@ public class ReportExportService {
 					cell.setCellValue(drgData.getRatePointDrg() + "%");
 					break;
 				case 2:
-					cell.setCellValue(drgData.getDiffDrg());
+					cell.setCellValue(drgData.getDiffDrg().doubleValue());
 					break;
 				default:
 					break;
 				}
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 			}
 
 			/// 最後設定autosize
@@ -3449,15 +3532,16 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getQuantityDrg());
+							cell.setCellValue(drgData.getQuantityDrg().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getQuantityIp() - drgData.getQuantityDrg());
+							cell.setCellValue(
+									drgData.getQuantityIp().doubleValue() - drgData.getQuantityDrg().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 1:
@@ -3515,15 +3599,16 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getApplPointDrg());
+							cell.setCellValue(drgData.getApplPointDrg().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getApplPointIp() - drgData.getApplPointDrg());
+							cell.setCellValue(
+									drgData.getApplPointIp().doubleValue() - drgData.getApplPointDrg().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 1:
@@ -3588,21 +3673,21 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getQuantityA());
+							cell.setCellValue(drgData.getQuantityA().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getQuantityB1());
+							cell.setCellValue(drgData.getQuantityB1().doubleValue());
 							break;
 						case 2:
-							cell.setCellValue(drgData.getQuantityB2());
+							cell.setCellValue(drgData.getQuantityB2().doubleValue());
 							break;
 						case 3:
-							cell.setCellValue(drgData.getQuantityC());
+							cell.setCellValue(drgData.getQuantityC().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 1:
@@ -3646,21 +3731,21 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getActualA());
+							cell.setCellValue(drgData.getActualA().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getActualB1());
+							cell.setCellValue(drgData.getActualB1().doubleValue());
 							break;
 						case 2:
-							cell.setCellValue(drgData.getActualB2());
+							cell.setCellValue(drgData.getActualB2().doubleValue());
 							break;
 						case 3:
-							cell.setCellValue(drgData.getActualC());
+							cell.setCellValue(drgData.getActualC().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 3:
@@ -3668,21 +3753,21 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getApplA());
+							cell.setCellValue(drgData.getApplA().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getApplB1());
+							cell.setCellValue(drgData.getApplB1().doubleValue());
 							break;
 						case 2:
-							cell.setCellValue(drgData.getApplB2());
+							cell.setCellValue(drgData.getApplB2().doubleValue());
 							break;
 						case 3:
-							cell.setCellValue(drgData.getApplC());
+							cell.setCellValue(drgData.getApplC().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 4:
@@ -3690,21 +3775,21 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex + x);
 						switch (x) {
 						case 0:
-							cell.setCellValue(drgData.getDiffA());
+							cell.setCellValue(drgData.getDiffA().doubleValue());
 							break;
 						case 1:
-							cell.setCellValue(drgData.getDiffB1());
+							cell.setCellValue(drgData.getDiffB1().doubleValue());
 							break;
 						case 2:
-							cell.setCellValue(drgData.getDiffB2());
+							cell.setCellValue(drgData.getDiffB2().doubleValue());
 							break;
 						case 3:
-							cell.setCellValue(drgData.getDiffC());
+							cell.setCellValue(drgData.getDiffC().doubleValue());
 							break;
 						default:
 							break;
 						}
-						cell.setCellStyle(cellStyle);
+						cell.setCellStyle(cellFormatStyle);
 					}
 					break;
 				case 5:
@@ -3826,20 +3911,20 @@ public class ReportExportService {
 					for (int x = 0; x < tableCellHeadersList.size(); x++) {
 						if (tableCellHeadersList.get(x).equals(sectonA.get(x).getName())) {
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(sectonA.get(x).getQuantity());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(sectonA.get(x).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(sectonB1.get(x).getQuantity());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(sectonB1.get(x).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(sectonB2.get(x).getQuantity());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(sectonB2.get(x).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(sectonC.get(x).getQuantity());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(sectonC.get(x).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 						}
 					}
@@ -3849,20 +3934,20 @@ public class ReportExportService {
 					for (int x = 0; x < tableCellHeadersList.size(); x++) {
 						if (tableCellHeadersList.get(x).equals(sectonA.get(x).getName())) {
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(sectonA.get(x).getPoint());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(sectonA.get(x).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(sectonB1.get(x).getPoint());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(sectonB1.get(x).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(sectonB2.get(x).getPoint());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(sectonB2.get(x).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(sectonC.get(x).getPoint());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(sectonC.get(x).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 						}
 					}
@@ -3876,16 +3961,16 @@ public class ReportExportService {
 							cell.setCellStyle(cellStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(diffB1.get(x).getPoint());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(diffB1.get(x).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(diffB2.get(x).getPoint());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(diffB2.get(x).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(diffC.get(x).getPoint());
-							cell.setCellStyle(cellStyle);
+							cell.setCellValue(diffC.get(x).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 						}
 					}
@@ -4013,12 +4098,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlA.getValues().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlA.getValues2().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlA.getValues2().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlA.getValues().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 
 						cell = row.createCell(cellIndex);
@@ -4026,12 +4111,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlB1.getValues().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlB1.getValues2().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlB1.getValues2().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlB1.getValues().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 
 						cell = row.createCell(cellIndex);
@@ -4039,12 +4124,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlB2.getValues().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlB2.getValues2().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlB2.getValues2().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlB2.getValues().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 
 						cell = row.createCell(cellIndex);
@@ -4052,12 +4137,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlC.getValues().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlC.getValues2().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlC.getValues2().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlC.getValues().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 
 						row = sheet.createRow(rowIndex + v1);
 						cellIndex = 0;
@@ -4127,12 +4212,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlA.getValues().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlA.getValues2().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlA.getValues2().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlA.getValues().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 
 						cell = row.createCell(cellIndex);
@@ -4140,12 +4225,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlB1.getValues().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlB1.getValues2().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlB1.getValues2().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlB1.getValues().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 
 						cell = row.createCell(cellIndex);
@@ -4153,12 +4238,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlB2.getValues().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlB2.getValues2().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlB2.getValues2().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlB2.getValues().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 
 						cell = row.createCell(cellIndex);
@@ -4166,12 +4251,12 @@ public class ReportExportService {
 						cell.setCellStyle(cellStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlC.getValues().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlC.getValues2().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						cell.setCellValue(nvlC.getValues2().get(v1));
-						cell.setCellStyle(cellStyle);
+						cell.setCellValue(nvlC.getValues().get(v1).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
 
 						row = sheet.createRow(rowIndex + v1);
 						cellIndex = 0;
@@ -4212,7 +4297,7 @@ public class ReportExportService {
 		out.close();
 		workbook.close();
 	}
-	
+
 	/**
 	 * 取得門急診/住院/出院人次變化-匯出
 	 * 
@@ -4221,465 +4306,459 @@ public class ReportExportService {
 	 * @param response
 	 * @throws IOException
 	 */
-	public void getVisitsVarietyExport(VisitsVarietyPayload visitsVarietyPayload,HttpServletResponse response,String year,String week,String sdate,String edate) {
-		
-		StringBuilder yearWeek=new StringBuilder();
-		yearWeek.append(year+"/"+week+"週");
-		
-		StringBuilder day=new StringBuilder();
-		day.append(sdate+"~"+edate);
-		
-		//實際總點數
-		PointPeriod actual= visitsVarietyPayload.getActual();
-		//門急診-住院
-		Long all=actual.getAll();
-		//門急診
-		Long opem=actual.getOpem();
-		//門診 早
-		Long opMorning=actual.getOpMorning();
-		//門診 中
-		Long opAfternoon=actual.getOpAfternoon();
-		//門診 晚
-		Long opNight=actual.getOpNight();
-		//急診
-		Long em=actual.getEm();
-		//住院
-		Long ip=actual.getIp();
-		
-		//申報總點數
-		PointPeriod appl=visitsVarietyPayload.getAppl();
-		//門急診-住院
-		Long all_appl=appl.getAll();
-		//門急診
-		Long opem_appl=appl.getOpem();
-		//門診 早
-		Long opMorning_appl=appl.getOpMorning();
-		//門診 中
-		Long opAfternoon_appl=appl.getOpAfternoon();
-		//門診 晚
-		Long opNight_appl=appl.getOpNight();
-		//急診
-		Long em_appl=appl.getEm();
-		//住院
-		Long ip_appl=appl.getIp();
-		
-		//統計截止人次
-		VisitsPeriod visitsPeriod=visitsVarietyPayload.getVisitsPeriod();
-		//總人次
-		VisitsPeriodDetail total=visitsPeriod.getTotal();
-		Long total_all=total.getAll();
-		Long total_opem=total.getOpem();
-		Long total_opMorning=total.getOpMorning();
-		Long total_opAfternoon=total.getOpAfternoon();
-		Long total_opNight=total.getOpNight();
-		Long total_em=total.getEm();
-		Long total_ip=total.getIp();
-		Long total_leave=total.getLeave();
-		
-		//手術人次
-		VisitsPeriodDetail surgery=visitsPeriod.getSurgery();
-		Long surgery_all=surgery.getAll();
-		Long surgery_opem=surgery.getOpem();
-		Long surgery_opMorning=surgery.getOpMorning();
-		Long surgery_opAfternoon=surgery.getOpAfternoon();
-		Long surgery_opNight=surgery.getOpNight();
-		Long surgery_em=surgery.getEm();
-		Long surgery_ip=surgery.getIp();
-		Long surgery_leave=surgery.getLeave();
-		
-		//上月同區間總人次相比差額
-		VisitsPeriodDetail diff=visitsPeriod.getDiff();
-		Long diff_all=diff.getAll();
-		Long diff_opem=diff.getOpem();
-		Long diff_opMorning=diff.getOpMorning();
-		Long diff_opAfternoon=diff.getOpAfternoon();
-		Long diff_opNight=diff.getOpNight();
-		Long diff_em=diff.getEm();
-		Long diff_ip=diff.getIp();
-		Long diff_leave=diff.getLeave();
-		
-		//上月同區間總差額率-門急診和住院
-		Float percentAll=visitsPeriod.getPercentAll();
-		//上月同區間總差額率-門急診
-		Float percentOpem=visitsPeriod.getPercentOpem();
-		//上月同區間總差額率-門診(早)
-		Float percentOpMorning=visitsPeriod.getPercentOpMorning();
-		//上月同區間總差額率-門診(中)
-		Float percentOpAfternoon=visitsPeriod.getPercentOpAfternoon();
-		//上月同區間總差額率-門診(晚)
-		Float percentOpNight=visitsPeriod.getPercentOpNight();
-		//上月同區間總差額率-急診
-		Float percentEm=visitsPeriod.getPercentEm();
-		//上月同區間總差額率-住院
-		Float percentIp=visitsPeriod.getPercentIp();
-		//上月同區間總差額率-出院
-		Float percentLeave=visitsPeriod.getPercentLeave();
-		
-		//科名
-		List<String> funcTypes=visitsVarietyPayload.getFuncTypes();
-		//各科門急診人次
-		Map<String, NameValueList> opemMap=visitsVarietyPayload.getOpemMap();
-		//各科住院人次
-		Map<String, NameValueList> ipMap=visitsVarietyPayload.getIpMap();
-		//各科出院人次
-		Map<String, NameValueList> leaveMap=visitsVarietyPayload.getLeaveMap();
-		
+	public void getVisitsVarietyExport(VisitsVarietyPayload visitsVarietyPayload, HttpServletResponse response,
+			String year, String week, String sdate, String edate) {
+
+		StringBuilder yearWeek = new StringBuilder();
+		yearWeek.append(year + "/" + week + "週");
+
+		StringBuilder day = new StringBuilder();
+		day.append(sdate + "~" + edate);
+
+		// 實際總點數
+		PointPeriod actual = visitsVarietyPayload.getActual();
+		// 門急診-住院
+		Long all = actual.getAll();
+		// 門急診
+		Long opem = actual.getOpem();
+		// 門診 早
+		Long opMorning = actual.getOpMorning();
+		// 門診 中
+		Long opAfternoon = actual.getOpAfternoon();
+		// 門診 晚
+		Long opNight = actual.getOpNight();
+		// 急診
+		Long em = actual.getEm();
+		// 住院
+		Long ip = actual.getIp();
+
+		// 申報總點數
+		PointPeriod appl = visitsVarietyPayload.getAppl();
+		// 門急診-住院
+		Long all_appl = appl.getAll();
+		// 門急診
+		Long opem_appl = appl.getOpem();
+		// 門診 早
+		Long opMorning_appl = appl.getOpMorning();
+		// 門診 中
+		Long opAfternoon_appl = appl.getOpAfternoon();
+		// 門診 晚
+		Long opNight_appl = appl.getOpNight();
+		// 急診
+		Long em_appl = appl.getEm();
+		// 住院
+		Long ip_appl = appl.getIp();
+
+		// 統計截止人次
+		VisitsPeriod visitsPeriod = visitsVarietyPayload.getVisitsPeriod();
+		// 總人次
+		VisitsPeriodDetail total = visitsPeriod.getTotal();
+		Long total_all = total.getAll();
+		Long total_opem = total.getOpem();
+		Long total_opMorning = total.getOpMorning();
+		Long total_opAfternoon = total.getOpAfternoon();
+		Long total_opNight = total.getOpNight();
+		Long total_em = total.getEm();
+		Long total_ip = total.getIp();
+		Long total_leave = total.getLeave();
+
+		// 手術人次
+		VisitsPeriodDetail surgery = visitsPeriod.getSurgery();
+		Long surgery_all = surgery.getAll();
+		Long surgery_opem = surgery.getOpem();
+		Long surgery_opMorning = surgery.getOpMorning();
+		Long surgery_opAfternoon = surgery.getOpAfternoon();
+		Long surgery_opNight = surgery.getOpNight();
+		Long surgery_em = surgery.getEm();
+		Long surgery_ip = surgery.getIp();
+		Long surgery_leave = surgery.getLeave();
+
+		// 上月同區間總人次相比差額
+		VisitsPeriodDetail diff = visitsPeriod.getDiff();
+		Long diff_all = diff.getAll();
+		Long diff_opem = diff.getOpem();
+		Long diff_opMorning = diff.getOpMorning();
+		Long diff_opAfternoon = diff.getOpAfternoon();
+		Long diff_opNight = diff.getOpNight();
+		Long diff_em = diff.getEm();
+		Long diff_ip = diff.getIp();
+		Long diff_leave = diff.getLeave();
+
+		// 上月同區間總差額率-門急診和住院
+		Float percentAll = visitsPeriod.getPercentAll();
+		// 上月同區間總差額率-門急診
+		Float percentOpem = visitsPeriod.getPercentOpem();
+		// 上月同區間總差額率-門診(早)
+		Float percentOpMorning = visitsPeriod.getPercentOpMorning();
+		// 上月同區間總差額率-門診(中)
+		Float percentOpAfternoon = visitsPeriod.getPercentOpAfternoon();
+		// 上月同區間總差額率-門診(晚)
+		Float percentOpNight = visitsPeriod.getPercentOpNight();
+		// 上月同區間總差額率-急診
+		Float percentEm = visitsPeriod.getPercentEm();
+		// 上月同區間總差額率-住院
+		Float percentIp = visitsPeriod.getPercentIp();
+		// 上月同區間總差額率-出院
+		Float percentLeave = visitsPeriod.getPercentLeave();
+
+		// 科名
+		List<String> funcTypes = visitsVarietyPayload.getFuncTypes();
+		// 各科門急診人次
+		Map<String, NameValueList> opemMap = visitsVarietyPayload.getOpemMap();
+		// 各科住院人次
+		Map<String, NameValueList> ipMap = visitsVarietyPayload.getIpMap();
+		// 各科出院人次
+		Map<String, NameValueList> leaveMap = visitsVarietyPayload.getLeaveMap();
+
 		try {
-		// 建立新工作簿
-		HSSFWorkbook workbook = new HSSFWorkbook();
-	  
-		HSSFCellStyle cellStyle = workbook.createCellStyle();
-		cellStyle.setAlignment(HorizontalAlignment.CENTER);
-		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-		cellStyle.setBorderBottom(BorderStyle.THIN);
-		cellStyle.setBorderLeft(BorderStyle.THIN);
-		cellStyle.setBorderRight(BorderStyle.THIN);
-		cellStyle.setBorderTop(BorderStyle.THIN);
-		
-		HSSFCellStyle cellStyle_left = workbook.createCellStyle();
-		cellStyle_left.setAlignment(HorizontalAlignment.LEFT);
-		cellStyle_left.setVerticalAlignment(VerticalAlignment.CENTER);
-		cellStyle_left.setBorderBottom(BorderStyle.THIN);
-		cellStyle_left.setBorderLeft(BorderStyle.THIN);
-		cellStyle_left.setBorderRight(BorderStyle.THIN);
-		cellStyle_left.setBorderTop(BorderStyle.THIN);
-		
-		HSSFCellStyle cellStyle_noBorder = workbook.createCellStyle();
-		cellStyle_noBorder.setAlignment(HorizontalAlignment.CENTER);
-		cellStyle_noBorder.setVerticalAlignment(VerticalAlignment.CENTER);
+			// 建立新工作簿
+			HSSFWorkbook workbook = new HSSFWorkbook();
 
-		Font font = workbook.createFont();
-		font.setColor(HSSFColor.HSSFColorPredefined.RED.getIndex());
-		
-		/*新建工作表 門急診/住院/出院人次變化*/
-		HSSFSheet visitsVarietySheet = workbook.createSheet("門急診-住院-出院人次變化");
-		
-		for(int i=0;i<14;i++){
-			if(i==0 || i==1) {
-				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,2));
-				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,3,4));
-			}
-			else if(i==2) {
-				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,2));
-			}
-			else if(i>3 && i<8) {
-				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,2));
-			}
-			else if(i>8 && i<14) {
-				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,2));
-			}
-			else if(i==3) {
-				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,9));
-			}
-			else if(i==8) {
-				visitsVarietySheet.addMergedRegion(new CellRangeAddress(i,i,0,10));
-			}
-		}
-	
-		HSSFRow rowA0 = visitsVarietySheet.createRow(0);
-		HSSFRow rowA1 = visitsVarietySheet.createRow(1);
-		HSSFRow rowA2 = visitsVarietySheet.createRow(2);
-		HSSFRow rowA3 = visitsVarietySheet.createRow(3);
-		HSSFRow rowA4 = visitsVarietySheet.createRow(4);
-		HSSFRow rowA5 = visitsVarietySheet.createRow(5);
-		HSSFRow rowA6 = visitsVarietySheet.createRow(6);
-		HSSFRow rowA7 = visitsVarietySheet.createRow(7);
-		HSSFRow rowA8 = visitsVarietySheet.createRow(8);
-		HSSFRow rowA9 = visitsVarietySheet.createRow(9);
-		HSSFRow rowA10 = visitsVarietySheet.createRow(10);
-		HSSFRow rowA11 = visitsVarietySheet.createRow(11);
-		HSSFRow rowA12 = visitsVarietySheet.createRow(12);
-		HSSFRow rowA13 = visitsVarietySheet.createRow(13);
-		HSSFRow rowA14 = visitsVarietySheet.createRow(14);
-		
-		String[] titleHeader_point= {"門急診/住院","門急診","門診(早)","門診(中)","門診(晚)","急診","住院"};
-		String[] titleHeader_people= {"門急診/住院","門急診","門診(早)","門診(中)","門診(晚)","急診","住院","出院"};
-		
-		addRowCell(rowA0, 0, "就醫日期區間", cellStyle);
-		for(int i=1;i<3;i++) {
-			addRowCell(rowA0, i, "", cellStyle);
-		}
-		addRowCell(rowA0, 3, day.toString(), cellStyle);
-		addRowCell(rowA0, 4, "", cellStyle);
-		
-		addRowCell(rowA1, 0, "人次趨勢統計截止時間", cellStyle);
-		for(int i=1;i<3;i++) {
-			addRowCell(rowA1, i, "", cellStyle);
-		}
-		addRowCell(rowA1, 3, yearWeek.toString(), cellStyle);
-		addRowCell(rowA1, 4, "", cellStyle);
-		
-		
-		addRowCell(rowA3, 0, "就醫日期區間總點數", cellStyle);
-		for(int i=1;i<10;i++) {
-			addRowCell(rowA3, i, "", cellStyle);
-		}
-		
-		for(int i=0;i<3;i++) {
-			addRowCell(rowA4, i, "", cellStyle);
-		}
-		for(int i=0;i<titleHeader_point.length;i++) {
-			addRowCell(rowA4, i+3, titleHeader_point[i], cellStyle);
-		}
-		
-		addRowCell(rowA5, 0, "病歷總點數(含自費)", cellStyle);
-		for(int i=1;i<3;i++) {
-			addRowCell(rowA5, i, "", cellStyle);
-		}
-		addRowCell(rowA5, 3, String.valueOf(all), cellStyle);
-		addRowCell(rowA5, 4, String.valueOf(opem), cellStyle);
-		addRowCell(rowA5, 5, String.valueOf(opMorning), cellStyle);
-		addRowCell(rowA5, 6, String.valueOf(opAfternoon), cellStyle);
-		addRowCell(rowA5, 7, String.valueOf(opNight), cellStyle);
-		addRowCell(rowA5, 8, String.valueOf(em), cellStyle);
-		addRowCell(rowA5, 9, String.valueOf(ip), cellStyle);
-		
-		addRowCell(rowA6, 0, "申報總點數", cellStyle);
-		for(int i=1;i<3;i++) {
-			addRowCell(rowA6, i, "", cellStyle);
-		}
-		addRowCell(rowA6, 3, String.valueOf(all_appl), cellStyle);
-		addRowCell(rowA6, 4, String.valueOf(opem_appl), cellStyle);
-		addRowCell(rowA6, 5, String.valueOf(opMorning_appl), cellStyle);
-		addRowCell(rowA6, 6, String.valueOf(opAfternoon_appl), cellStyle);
-		addRowCell(rowA6, 7, String.valueOf(opNight_appl), cellStyle);
-		addRowCell(rowA6, 8, String.valueOf(em_appl), cellStyle);
-		addRowCell(rowA6, 9, String.valueOf(ip_appl), cellStyle);
-		
-		addRowCell(rowA8, 0, "趨勢統計截止人次", cellStyle);
-		for(int i=1;i<11;i++) {
-			addRowCell(rowA8, i, "", cellStyle);
-		}
-		
-		for(int i=1;i<3;i++) {
-			addRowCell(rowA9, i, "", cellStyle);
-		}
-		for(int i=0;i<titleHeader_people.length;i++) {
-			addRowCell(rowA9, i+3, titleHeader_people[i], cellStyle);
-		}
-		
-		addRowCell(rowA10, 0, "總人次", cellStyle);
-		for(int i=1;i<3;i++) {
-			addRowCell(rowA10, i, "", cellStyle);
-		}
-		addRowCell(rowA10, 3, total_all.toString(), cellStyle);
-		addRowCell(rowA10, 4, total_opem.toString(), cellStyle);
-		addRowCell(rowA10, 5, total_opMorning.toString(), cellStyle);
-		addRowCell(rowA10, 6, total_opAfternoon.toString(), cellStyle);
-		addRowCell(rowA10, 7, total_opNight.toString(), cellStyle);
-		addRowCell(rowA10, 8, total_em.toString(), cellStyle);
-		addRowCell(rowA10, 9, total_ip.toString(), cellStyle);
-		addRowCell(rowA10, 10, total_leave.toString(), cellStyle);
-		
-		addRowCell(rowA11, 0, "手術人次", cellStyle);
-		for(int i=1;i<3;i++) {
-			addRowCell(rowA11, i, "", cellStyle);
-		}
-		addRowCell(rowA11, 3, surgery_all.toString(), cellStyle);
-		addRowCell(rowA11, 4, surgery_opem.toString(), cellStyle);
-		addRowCell(rowA11, 5, surgery_opMorning.toString(), cellStyle);
-		addRowCell(rowA11, 6, surgery_opAfternoon.toString(), cellStyle);
-		addRowCell(rowA11, 7, surgery_opNight.toString(), cellStyle);
-		addRowCell(rowA11, 8, surgery_em.toString(), cellStyle);
-		addRowCell(rowA11, 9, surgery_ip.toString(), cellStyle);
-		addRowCell(rowA11, 10, surgery_leave.toString(), cellStyle);
-		
-		addRowCell(rowA12, 0, "上月同區間總人次相比差額", cellStyle);
-		for(int i=1;i<3;i++) {
-			addRowCell(rowA12, i, "", cellStyle);
-		}
-		addRowCell(rowA12, 3, diff_all.toString(), cellStyle);
-		addRowCell(rowA12, 4, diff_opem.toString(), cellStyle);
-		addRowCell(rowA12, 5, diff_opMorning.toString(), cellStyle);
-		addRowCell(rowA12, 6, diff_opAfternoon.toString(), cellStyle);
-		addRowCell(rowA12, 7, diff_opNight.toString(), cellStyle);
-		addRowCell(rowA12, 8, diff_em.toString(), cellStyle);
-		addRowCell(rowA12, 9, diff_ip.toString(), cellStyle);
-		addRowCell(rowA12, 10, diff_leave.toString(), cellStyle);
-		
-		addRowCell(rowA13, 0, "上月同區間總差額率", cellStyle);
-		for(int i=1;i<3;i++) {
-			addRowCell(rowA13, i, "", cellStyle);
-		}
-		addRowCell(rowA13, 3, percentAll.toString(), cellStyle);
-		addRowCell(rowA13, 4,  percentOpem.toString(), cellStyle);
-		addRowCell(rowA13, 5, percentOpMorning.toString(), cellStyle);
-		addRowCell(rowA13, 6, percentOpAfternoon.toString(), cellStyle);
-		addRowCell(rowA13, 7, percentOpNight.toString(), cellStyle);
-		addRowCell(rowA13, 8, percentEm.toString(), cellStyle);
-		addRowCell(rowA13, 9, percentIp.toString(), cellStyle);
-		addRowCell(rowA13, 10, percentLeave.toString(), cellStyle);
+			HSSFCellStyle cellStyle = workbook.createCellStyle();
+			cellStyle.setAlignment(HorizontalAlignment.CENTER);
+			cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+			cellStyle.setBorderBottom(BorderStyle.THIN);
+			cellStyle.setBorderLeft(BorderStyle.THIN);
+			cellStyle.setBorderRight(BorderStyle.THIN);
+			cellStyle.setBorderTop(BorderStyle.THIN);
 
-		/*新建工作表 人次趨勢圖(全院)*/
-		HSSFSheet allClassSheet = workbook.createSheet("人次趨勢圖(全院)");
-		
-		//各科門急診人數趨勢
-		for (Entry<String, NameValueList> entry : opemMap.entrySet()) {
-			if(entry.getKey().equals("不分科")) {
-				allClassSheet.addMergedRegion(new CellRangeAddress(0,0,0,1));
-				allClassSheet.addMergedRegion(new CellRangeAddress(1,1,0,1));
-				allClassSheet.addMergedRegion(new CellRangeAddress(1,1,2,3));
-				allClassSheet.addMergedRegion(new CellRangeAddress(1,1,4,5));
-				
-				HSSFRow row = allClassSheet.createRow(0);
-				addRowCell(row,0,entry.getKey(), cellStyle_noBorder);
-				
-				HSSFRow row_head = allClassSheet.createRow(1);
-				addRowCell(row_head,0,"門急診人數趨勢圖", cellStyle);
-				addRowCell(row_head,1,"", cellStyle);
-				addRowCell(row_head,2,"住院人數趨勢圖", cellStyle);
-				addRowCell(row_head,3,"", cellStyle);
-				addRowCell(row_head,4,"出院人數趨勢圖", cellStyle);
-				addRowCell(row_head,5,"", cellStyle);
-	
-				HSSFRow row_head2 = allClassSheet.createRow(2);
-				addRowCell(row_head2,0,"週數", cellStyle_left);
-				addRowCell(row_head2,1,"人次", cellStyle_left);
-				addRowCell(row_head2,2,"週數", cellStyle_left);
-				addRowCell(row_head2,3,"人次", cellStyle_left);
-				addRowCell(row_head2,4,"週數", cellStyle_left);
-				addRowCell(row_head2,5,"人次", cellStyle_left);
-				
-				List<String> names=entry.getValue().getNames();
-				List<Long> values=entry.getValue().getValues();
-				
-				for(int i=0;i<names.size();i++) {
-					HSSFRow row_head3 = allClassSheet.createRow(i+3);
-					addRowCell(row_head3,0,names.get(i), cellStyle_left);
-					addRowCell(row_head3,1,values.get(i).toString(), cellStyle_left);
+			HSSFCellStyle cellStyle_left = workbook.createCellStyle();
+			cellStyle_left.setAlignment(HorizontalAlignment.LEFT);
+			cellStyle_left.setVerticalAlignment(VerticalAlignment.CENTER);
+			cellStyle_left.setBorderBottom(BorderStyle.THIN);
+			cellStyle_left.setBorderLeft(BorderStyle.THIN);
+			cellStyle_left.setBorderRight(BorderStyle.THIN);
+			cellStyle_left.setBorderTop(BorderStyle.THIN);
+
+			HSSFCellStyle cellStyle_noBorder = workbook.createCellStyle();
+			cellStyle_noBorder.setAlignment(HorizontalAlignment.CENTER);
+			cellStyle_noBorder.setVerticalAlignment(VerticalAlignment.CENTER);
+
+			Font font = workbook.createFont();
+			font.setColor(HSSFColor.HSSFColorPredefined.RED.getIndex());
+
+			/* 新建工作表 門急診/住院/出院人次變化 */
+			HSSFSheet visitsVarietySheet = workbook.createSheet("門急診-住院-出院人次變化");
+
+			for (int i = 0; i < 14; i++) {
+				if (i == 0 || i == 1) {
+					visitsVarietySheet.addMergedRegion(new CellRangeAddress(i, i, 0, 2));
+					visitsVarietySheet.addMergedRegion(new CellRangeAddress(i, i, 3, 4));
+				} else if (i == 2) {
+					visitsVarietySheet.addMergedRegion(new CellRangeAddress(i, i, 0, 2));
+				} else if (i > 3 && i < 8) {
+					visitsVarietySheet.addMergedRegion(new CellRangeAddress(i, i, 0, 2));
+				} else if (i > 8 && i < 14) {
+					visitsVarietySheet.addMergedRegion(new CellRangeAddress(i, i, 0, 2));
+				} else if (i == 3) {
+					visitsVarietySheet.addMergedRegion(new CellRangeAddress(i, i, 0, 9));
+				} else if (i == 8) {
+					visitsVarietySheet.addMergedRegion(new CellRangeAddress(i, i, 0, 10));
 				}
 			}
-			
-		}
-		
-		//各科住院人數趨勢
-		for (Entry<String, NameValueList> entry : ipMap.entrySet()) {
-			if(entry.getKey().equals("不分科")) {
-				List<String> names=entry.getValue().getNames();
-				List<Long> values=entry.getValue().getValues();
-				for(int i=0;i<names.size();i++) {
-					HSSFRow row_head3 = allClassSheet.getRow(i+3);
-					addRowCell(row_head3,2,names.get(i), cellStyle_left);
-					addRowCell(row_head3,3,values.get(i).toString(), cellStyle_left);
+
+			HSSFRow rowA0 = visitsVarietySheet.createRow(0);
+			HSSFRow rowA1 = visitsVarietySheet.createRow(1);
+			HSSFRow rowA2 = visitsVarietySheet.createRow(2);
+			HSSFRow rowA3 = visitsVarietySheet.createRow(3);
+			HSSFRow rowA4 = visitsVarietySheet.createRow(4);
+			HSSFRow rowA5 = visitsVarietySheet.createRow(5);
+			HSSFRow rowA6 = visitsVarietySheet.createRow(6);
+			HSSFRow rowA7 = visitsVarietySheet.createRow(7);
+			HSSFRow rowA8 = visitsVarietySheet.createRow(8);
+			HSSFRow rowA9 = visitsVarietySheet.createRow(9);
+			HSSFRow rowA10 = visitsVarietySheet.createRow(10);
+			HSSFRow rowA11 = visitsVarietySheet.createRow(11);
+			HSSFRow rowA12 = visitsVarietySheet.createRow(12);
+			HSSFRow rowA13 = visitsVarietySheet.createRow(13);
+			HSSFRow rowA14 = visitsVarietySheet.createRow(14);
+
+			String[] titleHeader_point = { "門急診/住院", "門急診", "門診(早)", "門診(中)", "門診(晚)", "急診", "住院" };
+			String[] titleHeader_people = { "門急診/住院", "門急診", "門診(早)", "門診(中)", "門診(晚)", "急診", "住院", "出院" };
+
+			addRowCell(rowA0, 0, "就醫日期區間", cellStyle);
+			for (int i = 1; i < 3; i++) {
+				addRowCell(rowA0, i, "", cellStyle);
+			}
+			addRowCell(rowA0, 3, day.toString(), cellStyle);
+			addRowCell(rowA0, 4, "", cellStyle);
+
+			addRowCell(rowA1, 0, "人次趨勢統計截止時間", cellStyle);
+			for (int i = 1; i < 3; i++) {
+				addRowCell(rowA1, i, "", cellStyle);
+			}
+			addRowCell(rowA1, 3, yearWeek.toString(), cellStyle);
+			addRowCell(rowA1, 4, "", cellStyle);
+
+			addRowCell(rowA3, 0, "就醫日期區間總點數", cellStyle);
+			for (int i = 1; i < 10; i++) {
+				addRowCell(rowA3, i, "", cellStyle);
+			}
+
+			for (int i = 0; i < 3; i++) {
+				addRowCell(rowA4, i, "", cellStyle);
+			}
+			for (int i = 0; i < titleHeader_point.length; i++) {
+				addRowCell(rowA4, i + 3, titleHeader_point[i], cellStyle);
+			}
+
+			addRowCell(rowA5, 0, "病歷總點數(含自費)", cellStyle);
+			for (int i = 1; i < 3; i++) {
+				addRowCell(rowA5, i, "", cellStyle);
+			}
+			addRowCell(rowA5, 3, String.valueOf(all), cellStyle);
+			addRowCell(rowA5, 4, String.valueOf(opem), cellStyle);
+			addRowCell(rowA5, 5, String.valueOf(opMorning), cellStyle);
+			addRowCell(rowA5, 6, String.valueOf(opAfternoon), cellStyle);
+			addRowCell(rowA5, 7, String.valueOf(opNight), cellStyle);
+			addRowCell(rowA5, 8, String.valueOf(em), cellStyle);
+			addRowCell(rowA5, 9, String.valueOf(ip), cellStyle);
+
+			addRowCell(rowA6, 0, "申報總點數", cellStyle);
+			for (int i = 1; i < 3; i++) {
+				addRowCell(rowA6, i, "", cellStyle);
+			}
+			addRowCell(rowA6, 3, String.valueOf(all_appl), cellStyle);
+			addRowCell(rowA6, 4, String.valueOf(opem_appl), cellStyle);
+			addRowCell(rowA6, 5, String.valueOf(opMorning_appl), cellStyle);
+			addRowCell(rowA6, 6, String.valueOf(opAfternoon_appl), cellStyle);
+			addRowCell(rowA6, 7, String.valueOf(opNight_appl), cellStyle);
+			addRowCell(rowA6, 8, String.valueOf(em_appl), cellStyle);
+			addRowCell(rowA6, 9, String.valueOf(ip_appl), cellStyle);
+
+			addRowCell(rowA8, 0, "趨勢統計截止人次", cellStyle);
+			for (int i = 1; i < 11; i++) {
+				addRowCell(rowA8, i, "", cellStyle);
+			}
+
+			for (int i = 1; i < 3; i++) {
+				addRowCell(rowA9, i, "", cellStyle);
+			}
+			for (int i = 0; i < titleHeader_people.length; i++) {
+				addRowCell(rowA9, i + 3, titleHeader_people[i], cellStyle);
+			}
+
+			addRowCell(rowA10, 0, "總人次", cellStyle);
+			for (int i = 1; i < 3; i++) {
+				addRowCell(rowA10, i, "", cellStyle);
+			}
+			addRowCell(rowA10, 3, total_all.toString(), cellStyle);
+			addRowCell(rowA10, 4, total_opem.toString(), cellStyle);
+			addRowCell(rowA10, 5, total_opMorning.toString(), cellStyle);
+			addRowCell(rowA10, 6, total_opAfternoon.toString(), cellStyle);
+			addRowCell(rowA10, 7, total_opNight.toString(), cellStyle);
+			addRowCell(rowA10, 8, total_em.toString(), cellStyle);
+			addRowCell(rowA10, 9, total_ip.toString(), cellStyle);
+			addRowCell(rowA10, 10, total_leave.toString(), cellStyle);
+
+			addRowCell(rowA11, 0, "手術人次", cellStyle);
+			for (int i = 1; i < 3; i++) {
+				addRowCell(rowA11, i, "", cellStyle);
+			}
+			addRowCell(rowA11, 3, surgery_all.toString(), cellStyle);
+			addRowCell(rowA11, 4, surgery_opem.toString(), cellStyle);
+			addRowCell(rowA11, 5, surgery_opMorning.toString(), cellStyle);
+			addRowCell(rowA11, 6, surgery_opAfternoon.toString(), cellStyle);
+			addRowCell(rowA11, 7, surgery_opNight.toString(), cellStyle);
+			addRowCell(rowA11, 8, surgery_em.toString(), cellStyle);
+			addRowCell(rowA11, 9, surgery_ip.toString(), cellStyle);
+			addRowCell(rowA11, 10, surgery_leave.toString(), cellStyle);
+
+			addRowCell(rowA12, 0, "上月同區間總人次相比差額", cellStyle);
+			for (int i = 1; i < 3; i++) {
+				addRowCell(rowA12, i, "", cellStyle);
+			}
+			addRowCell(rowA12, 3, diff_all.toString(), cellStyle);
+			addRowCell(rowA12, 4, diff_opem.toString(), cellStyle);
+			addRowCell(rowA12, 5, diff_opMorning.toString(), cellStyle);
+			addRowCell(rowA12, 6, diff_opAfternoon.toString(), cellStyle);
+			addRowCell(rowA12, 7, diff_opNight.toString(), cellStyle);
+			addRowCell(rowA12, 8, diff_em.toString(), cellStyle);
+			addRowCell(rowA12, 9, diff_ip.toString(), cellStyle);
+			addRowCell(rowA12, 10, diff_leave.toString(), cellStyle);
+
+			addRowCell(rowA13, 0, "上月同區間總差額率", cellStyle);
+			for (int i = 1; i < 3; i++) {
+				addRowCell(rowA13, i, "", cellStyle);
+			}
+			addRowCell(rowA13, 3, percentAll.toString(), cellStyle);
+			addRowCell(rowA13, 4, percentOpem.toString(), cellStyle);
+			addRowCell(rowA13, 5, percentOpMorning.toString(), cellStyle);
+			addRowCell(rowA13, 6, percentOpAfternoon.toString(), cellStyle);
+			addRowCell(rowA13, 7, percentOpNight.toString(), cellStyle);
+			addRowCell(rowA13, 8, percentEm.toString(), cellStyle);
+			addRowCell(rowA13, 9, percentIp.toString(), cellStyle);
+			addRowCell(rowA13, 10, percentLeave.toString(), cellStyle);
+
+			/* 新建工作表 人次趨勢圖(全院) */
+			HSSFSheet allClassSheet = workbook.createSheet("人次趨勢圖(全院)");
+
+			// 各科門急診人數趨勢
+			for (Entry<String, NameValueList> entry : opemMap.entrySet()) {
+				if (entry.getKey().equals("不分科")) {
+					allClassSheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 1));
+					allClassSheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 1));
+					allClassSheet.addMergedRegion(new CellRangeAddress(1, 1, 2, 3));
+					allClassSheet.addMergedRegion(new CellRangeAddress(1, 1, 4, 5));
+
+					HSSFRow row = allClassSheet.createRow(0);
+					addRowCell(row, 0, entry.getKey(), cellStyle_noBorder);
+
+					HSSFRow row_head = allClassSheet.createRow(1);
+					addRowCell(row_head, 0, "門急診人數趨勢圖", cellStyle);
+					addRowCell(row_head, 1, "", cellStyle);
+					addRowCell(row_head, 2, "住院人數趨勢圖", cellStyle);
+					addRowCell(row_head, 3, "", cellStyle);
+					addRowCell(row_head, 4, "出院人數趨勢圖", cellStyle);
+					addRowCell(row_head, 5, "", cellStyle);
+
+					HSSFRow row_head2 = allClassSheet.createRow(2);
+					addRowCell(row_head2, 0, "週數", cellStyle_left);
+					addRowCell(row_head2, 1, "人次", cellStyle_left);
+					addRowCell(row_head2, 2, "週數", cellStyle_left);
+					addRowCell(row_head2, 3, "人次", cellStyle_left);
+					addRowCell(row_head2, 4, "週數", cellStyle_left);
+					addRowCell(row_head2, 5, "人次", cellStyle_left);
+
+					List<String> names = entry.getValue().getNames();
+					List<Long> values = entry.getValue().getValues();
+
+					for (int i = 0; i < names.size(); i++) {
+						HSSFRow row_head3 = allClassSheet.createRow(i + 3);
+						addRowCell(row_head3, 0, names.get(i), cellStyle_left);
+						addRowCell(row_head3, 1, values.get(i).toString(), cellStyle_left);
+					}
+				}
+
+			}
+
+			// 各科住院人數趨勢
+			for (Entry<String, NameValueList> entry : ipMap.entrySet()) {
+				if (entry.getKey().equals("不分科")) {
+					List<String> names = entry.getValue().getNames();
+					List<Long> values = entry.getValue().getValues();
+					for (int i = 0; i < names.size(); i++) {
+						HSSFRow row_head3 = allClassSheet.getRow(i + 3);
+						addRowCell(row_head3, 2, names.get(i), cellStyle_left);
+						addRowCell(row_head3, 3, values.get(i).toString(), cellStyle_left);
+					}
 				}
 			}
-		}
-		
-		//各科出院人數趨勢
-		for (Entry<String, NameValueList> entry : leaveMap.entrySet()) {
-			if(entry.getKey().equals("不分科")) {
-				List<String> names=entry.getValue().getNames();
-				List<Long> values=entry.getValue().getValues();
-				for(int i=0;i<names.size();i++) {
-					HSSFRow row_head3 = allClassSheet.getRow(i+3);
-					addRowCell(row_head3,4,names.get(i), cellStyle_left);
-					addRowCell(row_head3,5,values.get(i).toString(), cellStyle_left);
+
+			// 各科出院人數趨勢
+			for (Entry<String, NameValueList> entry : leaveMap.entrySet()) {
+				if (entry.getKey().equals("不分科")) {
+					List<String> names = entry.getValue().getNames();
+					List<Long> values = entry.getValue().getValues();
+					for (int i = 0; i < names.size(); i++) {
+						HSSFRow row_head3 = allClassSheet.getRow(i + 3);
+						addRowCell(row_head3, 4, names.get(i), cellStyle_left);
+						addRowCell(row_head3, 5, values.get(i).toString(), cellStyle_left);
+					}
 				}
 			}
-		}
-		
-		/*新建工作表 人次趨勢圖(單一科別名)*/
-		HSSFSheet singleClassSheet = workbook.createSheet("人次趨勢圖(單一科別名)");
-		
-		int index=0;
-		int title=0;
-		//各科門急診人數趨勢
-		for (Entry<String, NameValueList> entry : opemMap.entrySet()) {
-			if(index!=0) {
-				title=title+entry.getValue().getValues().size()+4;
-			}
-			singleClassSheet.addMergedRegion(new CellRangeAddress(title,title,0,1));
-			singleClassSheet.addMergedRegion(new CellRangeAddress(title+1,title+1,0,1));
-			singleClassSheet.addMergedRegion(new CellRangeAddress(title+1,title+1,2,3));
-			singleClassSheet.addMergedRegion(new CellRangeAddress(title+1,title+1,4,5));
-			
-			HSSFRow row = singleClassSheet.createRow(title);
-			addRowCell(row,0,entry.getKey(), cellStyle_noBorder);
-			
-			HSSFRow row_head = singleClassSheet.createRow(title+1);
-			addRowCell(row_head,0,"門急診人數趨勢圖", cellStyle);
-			addRowCell(row_head,1,"", cellStyle);
-			addRowCell(row_head,2,"住院人數趨勢圖", cellStyle);
-			addRowCell(row_head,3,"", cellStyle);
-			addRowCell(row_head,4,"出院人數趨勢圖", cellStyle);
-			addRowCell(row_head,5,"", cellStyle);
 
-			HSSFRow row_head2 = singleClassSheet.createRow(title+2);
-			addRowCell(row_head2,0,"週數", cellStyle_left);
-			addRowCell(row_head2,1,"人次", cellStyle_left);
-			addRowCell(row_head2,2,"週數", cellStyle_left);
-			addRowCell(row_head2,3,"人次", cellStyle_left);
-			addRowCell(row_head2,4,"週數", cellStyle_left);
-			addRowCell(row_head2,5,"人次", cellStyle_left);
-			
-			List<String> names=entry.getValue().getNames();
-			List<Long> values=entry.getValue().getValues();
-			
-			for(int i=0;i<names.size();i++) {
-				HSSFRow row_head3 = singleClassSheet.createRow(title+i+3);
-				addRowCell(row_head3,0,names.get(i), cellStyle_left);
-				addRowCell(row_head3,1,values.get(i).toString(), cellStyle_left);
-			}
-			
-			index++;
-		}
-		
-		
-		index=0;
-		title=0;
-		//各科住院人數趨勢
-		for (Entry<String, NameValueList> entry : ipMap.entrySet()) {
-			List<String> names=entry.getValue().getNames();
-			List<Long> values=entry.getValue().getValues();
-			if(index!=0) {
-				title=title+entry.getValue().getValues().size()+4;
-			}
-			for(int i=0;i<names.size();i++) {
-				HSSFRow row_head3 = singleClassSheet.getRow(title+i+3);
-				addRowCell(row_head3,2,names.get(i), cellStyle_left);
-				addRowCell(row_head3,3,values.get(i).toString(), cellStyle_left);
-			}
-			
-			index++;
-		}
-		
-		index=0;
-		title=0;
-		//各科出院人數趨勢
-		for (Entry<String, NameValueList> entry : leaveMap.entrySet()) {
-			List<String> names=entry.getValue().getNames();
-			List<Long> values=entry.getValue().getValues();
-			if(index!=0) {
-				title=title+entry.getValue().getValues().size()+4;
-			}
-			for(int i=0;i<names.size();i++) {
-				HSSFRow row_head3 = singleClassSheet.getRow(title+i+3);
-				addRowCell(row_head3,4,names.get(i), cellStyle_left);
-				addRowCell(row_head3,5,values.get(i).toString(), cellStyle_left);
-			}
-			
-			index++;
-		}
-		
-	  //產生報表
-		String fileNameStr = "門急診_住院_出院人次變化" + "_" + year+"_"+week;
-		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
-		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
-				? FILE_PATH + "\\" + fileName
-				: FILE_PATH + "/" + fileName;
-		File file = new File(filepath);
-		response.reset();
-		response.setHeader("Content-Disposition",
-				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
-		response.setContentType("application/vnd.ms-excel;charset=utf8");
+			/* 新建工作表 人次趨勢圖(單一科別名) */
+			HSSFSheet singleClassSheet = workbook.createSheet("人次趨勢圖(單一科別名)");
 
-		workbook.write(response.getOutputStream());
-		workbook.close();
+			int index = 0;
+			int title = 0;
+			// 各科門急診人數趨勢
+			for (Entry<String, NameValueList> entry : opemMap.entrySet()) {
+				if (index != 0) {
+					title = title + entry.getValue().getValues().size() + 4;
+				}
+				singleClassSheet.addMergedRegion(new CellRangeAddress(title, title, 0, 1));
+				singleClassSheet.addMergedRegion(new CellRangeAddress(title + 1, title + 1, 0, 1));
+				singleClassSheet.addMergedRegion(new CellRangeAddress(title + 1, title + 1, 2, 3));
+				singleClassSheet.addMergedRegion(new CellRangeAddress(title + 1, title + 1, 4, 5));
+
+				HSSFRow row = singleClassSheet.createRow(title);
+				addRowCell(row, 0, entry.getKey(), cellStyle_noBorder);
+
+				HSSFRow row_head = singleClassSheet.createRow(title + 1);
+				addRowCell(row_head, 0, "門急診人數趨勢圖", cellStyle);
+				addRowCell(row_head, 1, "", cellStyle);
+				addRowCell(row_head, 2, "住院人數趨勢圖", cellStyle);
+				addRowCell(row_head, 3, "", cellStyle);
+				addRowCell(row_head, 4, "出院人數趨勢圖", cellStyle);
+				addRowCell(row_head, 5, "", cellStyle);
+
+				HSSFRow row_head2 = singleClassSheet.createRow(title + 2);
+				addRowCell(row_head2, 0, "週數", cellStyle_left);
+				addRowCell(row_head2, 1, "人次", cellStyle_left);
+				addRowCell(row_head2, 2, "週數", cellStyle_left);
+				addRowCell(row_head2, 3, "人次", cellStyle_left);
+				addRowCell(row_head2, 4, "週數", cellStyle_left);
+				addRowCell(row_head2, 5, "人次", cellStyle_left);
+
+				List<String> names = entry.getValue().getNames();
+				List<Long> values = entry.getValue().getValues();
+
+				for (int i = 0; i < names.size(); i++) {
+					HSSFRow row_head3 = singleClassSheet.createRow(title + i + 3);
+					addRowCell(row_head3, 0, names.get(i), cellStyle_left);
+					addRowCell(row_head3, 1, values.get(i).toString(), cellStyle_left);
+				}
+
+				index++;
+			}
+
+			index = 0;
+			title = 0;
+			// 各科住院人數趨勢
+			for (Entry<String, NameValueList> entry : ipMap.entrySet()) {
+				List<String> names = entry.getValue().getNames();
+				List<Long> values = entry.getValue().getValues();
+				if (index != 0) {
+					title = title + entry.getValue().getValues().size() + 4;
+				}
+				for (int i = 0; i < names.size(); i++) {
+					HSSFRow row_head3 = singleClassSheet.getRow(title + i + 3);
+					addRowCell(row_head3, 2, names.get(i), cellStyle_left);
+					addRowCell(row_head3, 3, values.get(i).toString(), cellStyle_left);
+				}
+
+				index++;
+			}
+
+			index = 0;
+			title = 0;
+			// 各科出院人數趨勢
+			for (Entry<String, NameValueList> entry : leaveMap.entrySet()) {
+				List<String> names = entry.getValue().getNames();
+				List<Long> values = entry.getValue().getValues();
+				if (index != 0) {
+					title = title + entry.getValue().getValues().size() + 4;
+				}
+				for (int i = 0; i < names.size(); i++) {
+					HSSFRow row_head3 = singleClassSheet.getRow(title + i + 3);
+					addRowCell(row_head3, 4, names.get(i), cellStyle_left);
+					addRowCell(row_head3, 5, values.get(i).toString(), cellStyle_left);
+				}
+
+				index++;
+			}
+
+			// 產生報表
+			String fileNameStr = "門急診_住院_出院人次變化" + "_" + year + "_" + week;
+			String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+			String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+					? FILE_PATH + "\\" + fileName
+					: FILE_PATH + "/" + fileName;
+			File file = new File(filepath);
+			response.reset();
+			response.setHeader("Content-Disposition",
+					"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+			response.setContentType("application/vnd.ms-excel;charset=utf8");
+
+			workbook.write(response.getOutputStream());
+			workbook.close();
 
 		} catch (Exception e) {
 			// TODO: handle exception
 //			e.printStackTrace();
 		}
 	}
-	
+
 }
