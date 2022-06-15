@@ -6,6 +6,8 @@ import java.util.List;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.dto.ClassCaseCountDto;
+import tw.com.leadtek.nhiwidget.dto.ClassDoctorDto;
+import tw.com.leadtek.nhiwidget.dto.ClassDoctorWeeklyDto;
 import tw.com.leadtek.nhiwidget.dto.ClassDrugDotDto;
 import tw.com.leadtek.nhiwidget.dto.ClassDrugFeeDto;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -35,6 +37,12 @@ public class HealthCareCost extends BaseResponse implements Serializable{
 	
 	@ApiModelProperty(value="門急診-住院各科別藥品總點數(總藥費)", required = true)
 	private List<ClassDrugDotDto> classAll;
+	
+	@ApiModelProperty(value="門急診-住院各科別各醫師藥品總點數(總藥費)", required = true)
+	private List<ClassDoctorDto> classDoctorAll;
+	
+	@ApiModelProperty(value="門急診-住院各科別各醫師每週藥品總點數(總藥費)", required = true)
+	private List<ClassDoctorWeeklyDto> classDoctorAllWeekly;
 	
 	@ApiModelProperty(value="門急診-住院各科別病歷總點數", required = true)
 	private List<ClassDrugDotDto> classAll_TDot;
@@ -145,6 +153,22 @@ public class HealthCareCost extends BaseResponse implements Serializable{
 
 	public void setClassAll(List<ClassDrugDotDto> classAll) {
 		this.classAll = classAll;
+	}
+
+	public List<ClassDoctorDto> getClassDoctorAll() {
+		return classDoctorAll;
+	}
+
+	public void setClassDoctorAll(List<ClassDoctorDto> classDoctorAll) {
+		this.classDoctorAll = classDoctorAll;
+	}
+
+	public List<ClassDoctorWeeklyDto> getClassDoctorAllWeekly() {
+		return classDoctorAllWeekly;
+	}
+
+	public void setClassDoctorAllWeekly(List<ClassDoctorWeeklyDto> classDoctorAllWeekly) {
+		this.classDoctorAllWeekly = classDoctorAllWeekly;
 	}
 
 	public List<ClassDrugDotDto> getClassAll_TDot() {
@@ -318,7 +342,8 @@ public class HealthCareCost extends BaseResponse implements Serializable{
 	@Override
 	public String toString() {
 		return "HealthCareCost [season=" + season + ", AllDot=" + AllDot + ", AllCount=" + AllCount + ", AllDrugFee="
-				+ AllDrugFee + ", AllRate=" + AllRate + ", classAll=" + classAll + ", classAll_TDot=" + classAll_TDot
+				+ AllDrugFee + ", AllRate=" + AllRate + ", classAll=" + classAll + ", classDoctorAll=" + classDoctorAll
+				+ ", classDoctorAllWeekly=" + classDoctorAllWeekly + ", classAll_TDot=" + classAll_TDot
 				+ ", classAllCaseCount=" + classAllCaseCount + ", classAllFeeRate=" + classAllFeeRate
 				+ ", classAllFeeDiff=" + classAllFeeDiff + ", AllFeeDiff=" + AllFeeDiff + ", OP_Dot=" + OP_Dot
 				+ ", OPCount=" + OPCount + ", OP_DrugFee=" + OP_DrugFee + ", OP_Rate=" + OP_Rate + ", classOP="
@@ -327,7 +352,5 @@ public class HealthCareCost extends BaseResponse implements Serializable{
 				+ IP_DrugFee + ", IP_Rate=" + IP_Rate + ", classIP=" + classIP + ", classIP_TDot=" + classIP_TDot
 				+ ", classIPCaseCount=" + classIPCaseCount + ", classIPFeeRate=" + classIPFeeRate + "]";
 	}
-
-
 
 }

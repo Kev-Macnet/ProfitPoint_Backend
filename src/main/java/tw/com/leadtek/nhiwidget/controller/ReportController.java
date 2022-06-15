@@ -328,9 +328,7 @@ public class ReportController extends BaseController {
 			return ResponseEntity.badRequest().body(results);
 		}
 
-		String chineseYear = DateTool.convertToChineseYear(syear);
-
-		results = healthCareCostService.getData(chineseYear, season, results);
+		results = healthCareCostService.getData(syear, season, results);
 //		logger.info("健保藥費概況: {}", results.toString());
 
 		if (results.size() == 1 && results.get(0).getResult().equals("error")

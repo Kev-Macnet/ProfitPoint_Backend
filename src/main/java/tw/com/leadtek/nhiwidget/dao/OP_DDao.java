@@ -66,6 +66,16 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE",nativeQuery=true)
   public List<Object[]> findByOptIdAndGroupByFuncType(List<Integer>ids);
   
+  //各科別各醫師門急診案件數、病歷實際總點數、總藥品點數(總藥費)
+  @Query(value="SELECT FUNC_TYPE, PRSN_ID ,COUNT(T_DOT),SUM(T_DOT),"
+  		+ "SUM(DRUG_DOT) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE ,PRSN_ID ",nativeQuery=true)
+  public List<Object[]>findOPClassDoctor(List<Integer>ids);
+  
+  //各科別各醫師每週門急診案件數、病歷實際總點數、總藥品點數(總藥費)
+  @Query(value="SELECT FUNC_TYPE, PRSN_ID,COUNT(T_DOT) ,SUM(T_DOT), SUM(DRUG_DOT) "
+  		+ "FROM OP_D WHERE FUNC_END_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID",nativeQuery=true)
+  public List<Object[]>findOPClassDoctorWeekly(String sdate,String edate);
+  
   @Query(value = "SELECT SEQ_NO, ID, ROC_ID, FUNC_DATE, MR_ID, ID_BIRTH_YMD FROM OP_D WHERE OPT_ID= ?1 ", nativeQuery = true)
   public List<Object[]> findByOptIdSimple(Long optId);
   
