@@ -19,5 +19,13 @@ public interface POINT_MONTHLYDao extends JpaRepository<POINT_MONTHLY, Long> {
   public Integer getMaxYm();
   
   public List<POINT_MONTHLY> findByYmBetweenOrderByYm(int startYm, int endYm);
+  
+  /**
+   * 取得輸入區間資料
+   * @param ym
+   * @return
+   */
+  @Query(value = "SELECT * FROM POINT_MONTHLY WHERE YM IN (?1)  ORDER BY YM ", nativeQuery = true)
+  public List<POINT_MONTHLY> getByYmInOrderByYm(List<Integer> ym);
 }
 
