@@ -81,6 +81,13 @@ public class PAY_CODE implements Serializable {
   @Column(name = "SEC_SM")
   @JsonIgnore
   protected Integer secSm;
+  
+  /**
+   * 醫令類別代碼
+   */
+  @Column(name = "ORDER_TYPE")
+  @JsonIgnore
+  protected String orderType;
 
   @ApiModelProperty(value = "生效日", example = "A01", required = false)
   @Column(name = "START_DATE")
@@ -340,13 +347,21 @@ public class PAY_CODE implements Serializable {
   public void setSameAtc(Integer sameAtc) {
     this.sameAtc = sameAtc;
   }
+  
+  public String getOrderType() {
+    return orderType;
+  }
+
+  public void setOrderType(String orderType) {
+    this.orderType = orderType;
+  }
 
   public static PAY_CODE convertFromOrderCode(OrderCode oc) {
     PAY_CODE result = new PAY_CODE();
     if (oc.getCode() != null) {
       result.setCode(oc.getCode().toUpperCase());
     }
-    result.setInhCode(result.getCode());
+    //result.setInhCode(result.getCode());
     result.setCodeType(oc.getDetail());
     result.setEndDate(oc.geteDate());
     result.setStartDate(oc.getsDate());

@@ -90,7 +90,7 @@ project:
     password:
   serverUrl: "http://192.168.1.137:8080/#/login?redir=warehouse/"
   apiUrl: "http://192.168.1.137:8080/"
-  hospId: 1532011154
+  hospId: 1542051151
   isMask: false
 swagger:
   enable: false

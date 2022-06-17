@@ -52,7 +52,7 @@ spring:
           new_generator_mappings: false
           connection:
           pool_size: 100
-        format_sql: false
+        format_sql: true
         order_inserts: true
         order_updates: true
         jdbc:
@@ -67,8 +67,6 @@ spring:
       default-schema: NHIWIDGET
       connection:
         pool_size: 100
-      show_sql: false
-      format_sql: false
       bytecode: 
         provider: javassist
         use_reflection_optimizer: true
@@ -91,7 +89,7 @@ project:
   serverUrl: "http://localhost:8081/#/login?redir=warehouse/"
   apiUrl: "http://localhost:8081/"
   hospId: 1532011154
-  isMask: false
+  isMask: true
 swagger:
   enable: true
   application-name: 健保申保最佳化系統 API

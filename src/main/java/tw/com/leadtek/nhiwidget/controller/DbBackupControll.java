@@ -65,7 +65,7 @@ public class DbBackupControll {
             try {
                 Thread.sleep(10000);
                 String cron = calcQuartzCron();
-                System.out.println("cron = "+cron+", "+Utility.dateFormat(new java.util.Date(), "HH:mm:ss"));
+                //System.out.println("cron = "+cron+", "+Utility.dateFormat(new java.util.Date(), "HH:mm:ss"));
                 quartzUtils.addCronJob(jobClass, jobName, cron);
             } catch (Exception e) {
                 //

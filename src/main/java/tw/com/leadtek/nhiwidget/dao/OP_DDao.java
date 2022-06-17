@@ -307,8 +307,8 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
 
   @Transactional
   @Modifying
-  @Query(value = "UPDATE OP_D SET FUNC_TYPE=?1 WHERE ID=?2", nativeQuery = true)
-  public void updateFuncTypeById(String funcType, Long id);
+  @Query(value = "UPDATE OP_D SET FUNC_TYPE=?1, DRUG_DOT=?2, TREAT_DOT=?3, METR_DOT=?4, DIAG_DOT=?5, DSVC_DOT=?6 WHERE ID=?7", nativeQuery = true)
+  public void updateFuncTypeById(String funcType, int drugDot, int treatDot, int metrDot, int diagDot, int dsvcDot, Long id);
   /**
    * 門急診圓餅圖人數-人
    * @param date
@@ -354,4 +354,21 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "(SELECT SUM(opd.T_DOT) AS SUM, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND  opd.OPT_ID IN (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp"
   		, nativeQuery = true)
   public int getOPPieDotTotal(String date);
+  
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE OP_D SET FUNC_DATE=?1, FUNC_END_DATE=?2 WHERE ID=?3", nativeQuery = true)
+  public void updateFuncTypeById(String startDate, String endDate, Long id);
+  
+  //找出醫令使用次數超過的病歷id
+  @Query(value="SELECT mr_id FROM OP_P WHERE DRUG_NO =?1 AND TOTAL_Q > ?2 AND MR_ID IN ?3 " + 
+      "UNION (" + 
+      "SELECT mr_id FROM IP_P WHERE ORDER_CODE =?1 AND TOTAL_Q > ?2 AND MR_ID IN ?3)", nativeQuery=true)
+  public List<Long> getMrIdByOrderCodeCount(String orderCode, int quantity, List<Long>ids);
+  
+  //找出院內碼使用次數超過的病歷id
+  @Query(value="SELECT mr_id FROM OP_P WHERE INH_CODE =?1 AND TOTAL_Q > ?2 AND MR_ID IN ?3 " + 
+      "UNION (" + 
+      "SELECT mr_id FROM IP_P WHERE INH_CODE =?1 AND TOTAL_Q > ?2 AND MR_ID IN ?3)", nativeQuery=true)
+  public List<Long> getMrIdByInhCodeCount(String orderCode, int quantity, List<Long>ids);
 }

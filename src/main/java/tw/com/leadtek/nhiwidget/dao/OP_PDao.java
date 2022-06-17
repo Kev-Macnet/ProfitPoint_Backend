@@ -6,12 +6,10 @@ package tw.com.leadtek.nhiwidget.dao;
 import java.sql.Date;
 import java.util.List;
 import java.util.Map;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
-
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface OP_PDao extends JpaRepository<OP_P, Long> {
@@ -289,5 +287,12 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
  			+ "WHERE FUNC_END_DATE LIKE CONCAT(?1,'%') ", nativeQuery = true)
  	public int getFuncEndDateCount(String date);
 	
-	
+ 	/**
+ 	 * 取得目前所有醫令的代碼及醫令類別代碼，排除無類別代碼或4(不得另計價)或代碼長度>=10(藥品、衛材)的醫令。
+ 	 * 長度10碼為藥品，類別代碼為1，長度12碼為衛材，類別代碼為3。
+ 	 * @return
+ 	 */
+    @Query(value = "SELECT DISTINCT (DRUG_NO), ORDER_TYPE FROM op_p WHERE ORDER_TYPE IS NOT NULL " + 
+        "and ORDER_TYPE <> '4' and length (DRUG_NO) < 10 GROUP BY DRUG_NO , ORDER_TYPE", nativeQuery = true)
+    public List<Map<String,Object>> getDrugNoAndOrderType();
 }

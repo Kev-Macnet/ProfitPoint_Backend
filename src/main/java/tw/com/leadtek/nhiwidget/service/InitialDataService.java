@@ -73,6 +73,9 @@ public class InitialDataService {
   @Autowired
   private CODE_TABLEDao ctDao;
   
+  @Autowired
+  private CodeTableService codeTableService;
+  
 //  @Autowired
 //  private CODE_THRESHOLDDao codeThresholdDao;
 
@@ -327,25 +330,45 @@ public class InitialDataService {
       return code;
     } else {
       for (PAY_CODE old : codes) {
-        if (old.getStartDate().getTime() == code.getStartDate().getTime()) {
+        if (code.getAtc() != null) {
           old.setAtc(code.getAtc());
-          old.setCodeType(code.getCodeType());
-          old.setEndDate(code.getEndDate());
-          old.setStartDate(code.getStartDate());
-          old.setName(code.getName());
-          old.setHospLevel(code.getHospLevel());
-          old.setPoint(code.getPoint());
-          old.setUpdateAt(new Date());
-          old.setRedisId(code.getRedisId());
-          old.setNameEn(code.getNameEn());
-          old.setOwnExpense(code.getOwnExpense());
-          old.setInhName(code.getName());
-          old.setInhCode(code.getCode());
-          return old;
         }
+        if (code.getCodeType() != null) {
+          old.setCodeType(code.getCodeType());
+        }
+        if (code.getEndDate() != null) {
+          old.setEndDate(code.getEndDate());
+        }
+        if (code.getStartDate() != null) {
+          old.setStartDate(code.getStartDate());
+        }
+        if (code.getName() != null) {
+          old.setName(code.getName());
+          old.setInhName(code.getName());
+        }
+        if (code.getHospLevel() != null) {
+          old.setHospLevel(code.getHospLevel());
+        }
+        if (code.getPoint() != null) {
+          old.setPoint(code.getPoint());
+        }
+        old.setUpdateAt(new Date());
+        if (code.getRedisId() != null) {
+          old.setRedisId(code.getRedisId());
+        }
+        if (code.getNameEn() != null) {
+          old.setNameEn(code.getNameEn());
+        }
+        if (code.getOwnExpense() != null) {
+          old.setOwnExpense(code.getOwnExpense());
+        }
+        if (code.getInhCode() != null) {
+          old.setInhCode(code.getCode());
+        }
+        return old;
       }
-      return code;
     }
+    return code;
   }
 
   /**
@@ -450,7 +473,7 @@ public class InitialDataService {
       }
       oc.setP(Integer.parseInt(point));  
     }
-    System.out.println("code=" + values.get("CODE") + ", startDate=" + values.get("START_DATE"));
+    //System.out.println("code=" + values.get("CODE") + ", startDate=" + values.get("START_DATE"));
     oc.setsDate(getDateFromExcelValue(values.get("START_DATE"), sdf));
     if (values.get("DELETE_DATE") != null) {
       // 刪除日期
@@ -620,7 +643,7 @@ public class InitialDataService {
         ctDao.save(ct);
       }
     }
-
+    codeTableService.refreshCodes();
   }
   
   private XSSFSheet getSheetByName(XSSFWorkbook workbook, String name) {

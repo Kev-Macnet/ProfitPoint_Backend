@@ -342,5 +342,8 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   		+ "(SELECT (SUM(ipd.PART_DOT) + SUM(ipd.APPL_DOT)) AS SUM, ipd.FUNC_TYPE, ct.DESC_CHI FROM  IP_D ipd, CODE_TABLE ct WHERE ipd.FUNC_TYPE  = ct.CODE AND  ipd.IPT_ID IN (SELECT ID FROM IP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' GROUP BY ipd.FUNC_TYPE, ct.DESC_CHI) temp "
   		, nativeQuery = true)
   public int getIPPieDotTotal(String date);
-  
+
+  @Query(value = "SELECT DISTINCT (ORDER_CODE), ORDER_TYPE FROM ip_p where ORDER_TYPE IS NOT NULL \r\n" + 
+      "and ORDER_TYPE <> '4' and length (ORDER_CODE) <10 GROUP BY ORDER_CODE , ORDER_TYPE", nativeQuery = true)
+  public List<Map<String,Object>> getOrderCodeAndOrderType();
 }

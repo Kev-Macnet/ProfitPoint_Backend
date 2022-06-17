@@ -671,18 +671,19 @@ public class SearchMRParameters extends HomepageParameters {
       String inhMrId, String inhClinicId, String dataFormat) {
      
     initialApplYM(applY, applM);
-
-    SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
-    this.edate = edate;
-    this.sdate = (sdate == null) ? "2010/01/01" : sdate;
-    try {
-      sDate = new java.sql.Date(sdf.parse(this.sdate).getTime());
-      if (edate == null) {
-        this.edate  = sdf.format(new Date());
+    if (applYM == null) {
+      SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
+      this.edate = edate;
+      this.sdate = (sdate == null) ? "2010/01/01" : sdate;
+      try {
+        sDate = new java.sql.Date(sdf.parse(this.sdate).getTime());
+        if (edate == null) {
+          this.edate = sdf.format(new Date());
+        }
+        eDate = new java.sql.Date(sdf.parse(this.edate).getTime());
+      } catch (ParseException e) {
+        e.printStackTrace();
       }
-      eDate = new java.sql.Date(sdf.parse(this.edate).getTime());
-    } catch (ParseException e) {
-      e.printStackTrace();
     }
     this.indate = indate;
     this.outdate = outdate;
@@ -789,7 +790,9 @@ public class SearchMRParameters extends HomepageParameters {
       this.orderCode = "%," + orderCode.trim().toUpperCase();
     }
     this.drugUse = drugUse;
-    this.inhCode = inhCode;
+    if (inhCode != null) {
+      this.inhCode = inhCode.trim().toUpperCase();
+    }
     this.inhCodeDrugUse = inhCodeDrugUse;
   }
   
