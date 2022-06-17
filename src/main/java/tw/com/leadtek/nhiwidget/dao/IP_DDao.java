@@ -59,7 +59,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   //各科別各醫師每週住院案件數、病歷實際總點數、總藥品點數(總藥費)
   @Query(value="SELECT FUNC_TYPE,PRSN_ID ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)),(SUM(MED_DOT)+SUM(NON_APPL_DOT)),SUM(DRUG_DOT)"
-  		+ "FROM IP_D WHERE OUT_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID",nativeQuery=true)
+  		+ "FROM IP_D WHERE OUT_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID ORDER BY PRSN_ID",nativeQuery=true)
   public List<Object[]>findIPClassDoctorWeekly(String sdate,String edate);
   
   @Query(value =  "SELECT SEQ_NO ,ID ,ROC_ID, IN_DATE, MR_ID, ID_BIRTH_YMD FROM IP_D WHERE IPT_ID=?1 ", nativeQuery = true)

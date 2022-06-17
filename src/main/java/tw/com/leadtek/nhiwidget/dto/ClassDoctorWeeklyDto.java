@@ -8,45 +8,46 @@ import javax.validation.constraints.NotNull;
 import io.swagger.annotations.ApiModelProperty;
 
 public class ClassDoctorWeeklyDto {
-    @ApiModelProperty(value="週", example="110w2", required=true, position=1)
+    @ApiModelProperty(value="科別名稱代碼", example="AA", required=true, position=1)
     @NotNull()
-    private String weekOfYear;
+    private String code;
     
-    @ApiModelProperty(value="科別與醫師列表", example="[外科:{王小明:{案件數:100,總點數:100,總藥費:100},李小明:{案件數:100,總點數:100,總藥費:100}},"
-    		+ "內科:{王小明:{案件數:100,總點數:100,總藥費:100},李小明:{案件數:100,總點數:100,總藥費:100}}]", required=true, position=2)
+    @ApiModelProperty(value="各醫師每週案件數、總點數、總藥費", example="[{王曉明,[{週期:2021w1,100,100,100},{週期:2021w2,100,100,100}]}"
+    		+ ",{李曉明,[{週期:2021w1,100,100,100},{週期:2021w3,100,100,100}]}]", required=true, position=2)
     @NotNull()
-    private List<ClassDoctorDto>classDoctors;
-    
-    
-    
-	public ClassDoctorWeeklyDto(@NotNull String weekOfYear, @NotNull List<ClassDoctorDto> classDoctors) {
+    private List<ClassDoctorDto_weekly>classDoctors;
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(String code) {
+		this.code = code;
+	}
+
+	public List<ClassDoctorDto_weekly> getClassDoctors() {
+		return classDoctors;
+	}
+
+	public void setClassDoctors(List<ClassDoctorDto_weekly> classDoctors) {
+		this.classDoctors = classDoctors;
+	}
+
+	public ClassDoctorWeeklyDto(@NotNull String code, @NotNull List<ClassDoctorDto_weekly> classDoctors) {
 		super();
-		this.weekOfYear = weekOfYear;
+		this.code = code;
 		this.classDoctors = classDoctors;
 	}
 
 	public ClassDoctorWeeklyDto() {
 		super();
 		// TODO Auto-generated constructor stub
-		this.weekOfYear="";
-		this.classDoctors=new ArrayList<ClassDoctorDto>();
+		this.code="";
+		this.classDoctors=new ArrayList<ClassDoctorDto_weekly>();
+		
 	}
 
-	public String getWeekOfYear() {
-		return weekOfYear;
-	}
 
-	public void setWeekOfYear(String weekOfYear) {
-		this.weekOfYear = weekOfYear;
-	}
-
-	public List<ClassDoctorDto> getClassDoctors() {
-		return classDoctors;
-	}
-
-	public void setClassDoctors(List<ClassDoctorDto> classDoctors) {
-		this.classDoctors = classDoctors;
-	}
     
     
 }

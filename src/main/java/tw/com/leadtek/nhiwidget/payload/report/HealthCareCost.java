@@ -44,6 +44,9 @@ public class HealthCareCost extends BaseResponse implements Serializable{
 	@ApiModelProperty(value="門急診-住院各科別各醫師每週藥品總點數(總藥費)", required = true)
 	private List<ClassDoctorWeeklyDto> classDoctorAllWeekly;
 	
+	@ApiModelProperty(value="週期", required = true)
+	private List<String> weekly;
+	
 	@ApiModelProperty(value="門急診-住院各科別病歷總點數", required = true)
 	private List<ClassDrugDotDto> classAll_TDot;
 	
@@ -167,8 +170,17 @@ public class HealthCareCost extends BaseResponse implements Serializable{
 		return classDoctorAllWeekly;
 	}
 
-	public void setClassDoctorAllWeekly(List<ClassDoctorWeeklyDto> classDoctorAllWeekly) {
-		this.classDoctorAllWeekly = classDoctorAllWeekly;
+	public void setClassDoctorAllWeekly(List<ClassDoctorWeeklyDto> classDoctorWeekly) {
+		this.classDoctorAllWeekly = classDoctorWeekly;
+	}
+	
+
+	public List<String> getWeekly() {
+		return weekly;
+	}
+
+	public void setWeekly(List<String> weekly) {
+		this.weekly = weekly;
 	}
 
 	public List<ClassDrugDotDto> getClassAll_TDot() {

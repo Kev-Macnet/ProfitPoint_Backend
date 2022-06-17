@@ -1,5 +1,6 @@
 package tw.com.leadtek.nhiwidget.service;
 
+
 import java.io.File;
 import java.net.URLEncoder;
 import java.text.DateFormat;
@@ -8,10 +9,12 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -48,6 +51,7 @@ import tw.com.leadtek.nhiwidget.dao.POINT_WEEKLYDao;
 import tw.com.leadtek.nhiwidget.dto.CaseDotFeeDto;
 import tw.com.leadtek.nhiwidget.dto.ClassCaseCountDto;
 import tw.com.leadtek.nhiwidget.dto.ClassDoctorDto;
+import tw.com.leadtek.nhiwidget.dto.ClassDoctorDto_weekly;
 import tw.com.leadtek.nhiwidget.dto.ClassDoctorWeeklyDto;
 import tw.com.leadtek.nhiwidget.dto.ClassDrugDotDto;
 import tw.com.leadtek.nhiwidget.dto.ClassDrugFeeDto;
@@ -57,9 +61,7 @@ import tw.com.leadtek.nhiwidget.payload.report.HealthCareCost;
 import tw.com.leadtek.tools.DateTool;
 
 /*
- * todo list:
- * 	健保藥費概況:
- * 		健保藥費變化優勢
+ * 	健保藥費概況
  * */
 
 @Service
@@ -119,6 +121,7 @@ public class HealthCareCostService {
 	  
 	  private DecimalFormat df = new DecimalFormat("######0.0000");
 	  
+	//取得健保藥費概況數據
 	  public List<HealthCareCost> getData(String year,String season,List<HealthCareCost> results) {
 		  
 			  String[] seasons=new String[4];
@@ -129,7 +132,7 @@ public class HealthCareCostService {
 			
 			codeTableList=code_TABLEDao.findByCatOrderByCode("FUNC_TYPE");
 			
-			//週期區分結束時間
+			//週期結束時間
 			String weekDate="";
 			for(int i=0;i<seasons.length;i++) {
 				if(seasons[i].equals("Q1")) {
@@ -151,29 +154,60 @@ public class HealthCareCostService {
 			for(int i=0;i<seasons.length;i++) {
 				
 				List<String> seasonList=new ArrayList<String>();
+				StringBuilder monthA=new StringBuilder();
+				StringBuilder monthB=new StringBuilder();
+				StringBuilder monthC=new StringBuilder();
 				
 				if(seasons[i].equals("Q1")) {
-					seasonList.add(chineseYear+"01");
-					seasonList.add(chineseYear+"02");
-					seasonList.add(chineseYear+"03");
+					monthA.append(chineseYear);
+					monthA.append("01");
+					monthB.append(chineseYear);
+					monthB.append("02");
+					monthC.append(chineseYear);
+					monthC.append("03");
+					
+					seasonList.add(monthA.toString());
+					seasonList.add(monthB.toString());
+					seasonList.add(monthC.toString());
 					results.add(statisticData(seasons[i],seasonList,year,weekDate));
 				}
 				else if(seasons[i].equals("Q2")) {
-					seasonList.add(chineseYear+"04");
-					seasonList.add(chineseYear+"05");
-					seasonList.add(chineseYear+"06");
+					monthA.append(chineseYear);
+					monthA.append("04");
+					monthB.append(chineseYear);
+					monthB.append("05");
+					monthC.append(chineseYear);
+					monthC.append("06");
+					
+					seasonList.add(monthA.toString());
+					seasonList.add(monthB.toString());
+					seasonList.add(monthC.toString());
 					results.add(statisticData(seasons[i],seasonList,year,weekDate));
 				}
 				else if(seasons[i].equals("Q3")) {
-					seasonList.add(chineseYear+"07");
-					seasonList.add(chineseYear+"08");
-					seasonList.add(chineseYear+"09");
+					monthA.append(chineseYear);
+					monthA.append("07");
+					monthB.append(chineseYear);
+					monthB.append("08");
+					monthC.append(chineseYear);
+					monthC.append("09");
+					
+					seasonList.add(monthA.toString());
+					seasonList.add(monthB.toString());
+					seasonList.add(monthC.toString());
 					results.add(statisticData(seasons[i],seasonList,year,weekDate));
 				}
 				else if(seasons[i].equals("Q4")) {
-					seasonList.add(chineseYear+"10");
-					seasonList.add(chineseYear+"11");
-					seasonList.add(chineseYear+"12");
+					monthA.append(chineseYear);
+					monthA.append("10");
+					monthB.append(chineseYear);
+					monthB.append("11");
+					monthC.append(chineseYear);
+					monthC.append("12");
+					
+					seasonList.add(monthA.toString());
+					seasonList.add(monthB.toString());
+					seasonList.add(monthC.toString());
 					results.add(statisticData(seasons[i],seasonList,year,weekDate));
 				}
 				else {
@@ -188,8 +222,13 @@ public class HealthCareCostService {
 		  return results;
 	  }
 	  
-	  public void getDataExport(String endDate,String season,List<HealthCareCost> results,HttpServletResponse response) {
+	  
+	  //健保藥費概況-匯出
+	  public void getDataExport(String year,String season,List<HealthCareCost> results,HttpServletResponse response) {
 			try {
+				
+				String chineseYear = DateTool.convertToChineseYear(year);
+				
 				// 建立新工作簿
 				HSSFWorkbook workbook = new HSSFWorkbook();
 			  
@@ -310,171 +349,94 @@ public class HealthCareCostService {
 					HSSFRow rowDFD2 = drugFeeDiffSheet.createRow(2);
 					
 					addRowCell(rowDFD0,0,"去年同期健保藥費相比差額",cellStyle_noBorder);
-					addRowCell(rowDFD1,0,"",cellStyle);
-					addRowCell(rowDFD1,1,"",cellStyle);
-					addRowCell(rowDFD1,2,"全院",cellStyle);
-					addRowCell(rowDFD2, 0, "藥費總差額",cellStyle);
-					addRowCell(rowDFD2, 2, AllFeeDiff,cellStyle);
+					addRowCell(rowDFD1,0,"",cellStyle_left);
+					addRowCell(rowDFD1,1,"",cellStyle_left);
+					addRowCell(rowDFD1,2,"全院",cellStyle_left);
+					addRowCell(rowDFD2, 0, "藥費總差額",cellStyle_left);
+					addRowCell(rowDFD2, 2, AllFeeDiff,cellStyle_left);
 					
 					for(int i=0;i<classAllFeeDiff.size();i++) {
-						addRowCell(rowDFD1 ,i+3,classAllFeeDiff.get(i).getDesc_chi(),cellStyle);
-						addRowCell(rowDFD2,i+3, classAllFeeDiff.get(i).getFee(),cellStyle);
+						addRowCell(rowDFD1 ,i+3,classAllFeeDiff.get(i).getDesc_chi(),cellStyle_left);
+						addRowCell(rowDFD2,i+3, classAllFeeDiff.get(i).getFee(),cellStyle_left);
 					}
 					
 					/*新建工作表 
 					 * 單季度-健保藥費排序
 					 * */
 					HSSFSheet drugFeeSortsheet = workbook.createSheet("單季度-健保藥費排序");
+					
+					HSSFRow rowDFS0 = drugFeeSortsheet.createRow(0);
+					addRowCell(rowDFS0,0, "",cellStyle_left);
+					addRowCell(rowDFS0,1, "案件數",cellStyle_left);
+					addRowCell(rowDFS0,2, "實際總點數",cellStyle_left);
+					addRowCell(rowDFS0,3, "總藥費",cellStyle_left);
+					
+					List<ClassDoctorDto> classDoctorAll=results.get(0).getClassDoctorAll();
+					int index=1;
+					
+					for(int i=1;i<classDoctorAll.size();i++) {
+						String desc_chi=classDoctorAll.get(i).getDesc_chi();
+						Map<String,CaseDotFeeDto> doctors=classDoctorAll.get(i).getDoctors();
+						
+						HSSFRow row = drugFeeSortsheet.createRow(index);
+						
+						//印出科別名稱
+						addRowCell(row, 0,  desc_chi, cellStyle_left);
+						addRowCell(row, 1,  "", cellStyle_left);
+						addRowCell(row, 2,  "", cellStyle_left);
+						addRowCell(row, 3,  "", cellStyle_left);
+						
+						index++;
+						
+						for (Map.Entry<String, CaseDotFeeDto> entry : doctors.entrySet()) {
+							String doctorName=entry.getKey();
+							Integer caseCount=entry.getValue().getCaseCount();
+							Integer dot=entry.getValue().getDot();
+							Integer drugFee=entry.getValue().getDrugFee();
+							
+							HSSFRow row_element = drugFeeSortsheet.createRow(index);
+							
+							//印出科別各醫師數據
+							addRowCell(row_element, 0, doctorName, cellStyle_left);
+							addRowCell(row_element, 1,  caseCount.toString(), cellStyle_left);
+							addRowCell(row_element, 2, dot.toString(), cellStyle_left);
+							addRowCell(row_element, 3, drugFee.toString(), cellStyle_left);
+							
+							index++;
+						}
+					}
+					
+					
 				}
 				else {
-					
-					season="Q1 Q2 Q3 Q4";
 					
 					/* 新建工作表
 					 *  多季度-各科別藥費占比(門急診/住院)
 					 *  */
-					HSSFSheet drugFeeSheet_All = workbook.createSheet("多季度-各科別藥費占比(門急診-住院)");
-					
-					for(int i=0;i<24;i++){
-						if(i==0 || i==6 || i==12 || i==18) {
-							drugFeeSheet_All.addMergedRegion(new CellRangeAddress(i,i,0,4));
-						}
-						else {
-							drugFeeSheet_All.addMergedRegion(new CellRangeAddress(i,i,0,2));
-						}
-					}
-					
-					HSSFRow rowDFA0 = drugFeeSheet_All.createRow(0);
-					HSSFRow rowDFA1 = drugFeeSheet_All.createRow(1);
-					HSSFRow rowDFA2 = drugFeeSheet_All.createRow(2);
-					HSSFRow rowDFA3 = drugFeeSheet_All.createRow(3);
-					HSSFRow rowDFA4 = drugFeeSheet_All.createRow(4);
-					HSSFRow rowDFA5 = drugFeeSheet_All.createRow(5);
-					HSSFRow rowDFA6 = drugFeeSheet_All.createRow(6);
-					HSSFRow rowDFA7 = drugFeeSheet_All.createRow(7);
-					HSSFRow rowDFA8 = drugFeeSheet_All.createRow(8);
-					HSSFRow rowDFA9 = drugFeeSheet_All.createRow(9);
-					HSSFRow rowDFA10 = drugFeeSheet_All.createRow(10);
-					HSSFRow rowDFA11 = drugFeeSheet_All.createRow(11);
-					HSSFRow rowDFA12 = drugFeeSheet_All.createRow(12);
-					HSSFRow rowDFA13 = drugFeeSheet_All.createRow(13);
-					HSSFRow rowDFA14 = drugFeeSheet_All.createRow(14);
-					HSSFRow rowDFA15 = drugFeeSheet_All.createRow(15);
-					HSSFRow rowDFA16 = drugFeeSheet_All.createRow(16);
-					HSSFRow rowDFA17 = drugFeeSheet_All.createRow(17);
-					HSSFRow rowDFA18 = drugFeeSheet_All.createRow(18);
-					HSSFRow rowDFA19 = drugFeeSheet_All.createRow(19);
-					HSSFRow rowDFA20 = drugFeeSheet_All.createRow(20);
-					HSSFRow rowDFA21 = drugFeeSheet_All.createRow(21);
-					HSSFRow rowDFA22 = drugFeeSheet_All.createRow(22);
-					HSSFRow rowDFA23 = drugFeeSheet_All.createRow(23);
-					
+					HSSFSheet drugFeeSheet_All = workbook.createSheet("多季度-各科別藥費占比(門急診-住院)");					
 					/* 新建工作表
 					 *  多季度-各科別藥費占比(門急診)
 					 *  */
-					HSSFSheet drugFeeSheet_OP = workbook.createSheet("多季度-各科別藥費占比(門急診)");
-					
-					for(int i=0;i<24;i++){
-						if(i==0 || i==6 || i==12 || i==18) {
-							drugFeeSheet_OP.addMergedRegion(new CellRangeAddress(i,i,0,4));
-						}
-						else {
-							drugFeeSheet_OP.addMergedRegion(new CellRangeAddress(i,i,0,2));
-						}
-					}
-					
-					HSSFRow rowDFO0 = drugFeeSheet_OP.createRow(0);
-					HSSFRow rowDFO1 = drugFeeSheet_OP.createRow(1);
-					HSSFRow rowDFO2 = drugFeeSheet_OP.createRow(2);
-					HSSFRow rowDFO3 = drugFeeSheet_OP.createRow(3);
-					HSSFRow rowDFO4 = drugFeeSheet_OP.createRow(4);
-					HSSFRow rowDFO5 = drugFeeSheet_OP.createRow(5);
-					HSSFRow rowDFO6 = drugFeeSheet_OP.createRow(6);
-					HSSFRow rowDFO7 = drugFeeSheet_OP.createRow(7);
-					HSSFRow rowDFO8 = drugFeeSheet_OP.createRow(8);
-					HSSFRow rowDFO9 = drugFeeSheet_OP.createRow(9);
-					HSSFRow rowDFO10 = drugFeeSheet_OP.createRow(10);
-					HSSFRow rowDFO11 = drugFeeSheet_OP.createRow(11);
-					HSSFRow rowDFO12 = drugFeeSheet_OP.createRow(12);
-					HSSFRow rowDFO13 = drugFeeSheet_OP.createRow(13);
-					HSSFRow rowDFO14 = drugFeeSheet_OP.createRow(14);
-					HSSFRow rowDFO15 = drugFeeSheet_OP.createRow(15);
-					HSSFRow rowDFO16 = drugFeeSheet_OP.createRow(16);
-					HSSFRow rowDFO17 = drugFeeSheet_OP.createRow(17);
-					HSSFRow rowDFO18 = drugFeeSheet_OP.createRow(18);
-					HSSFRow rowDFO19 = drugFeeSheet_OP.createRow(19);
-					HSSFRow rowDFO20 = drugFeeSheet_OP.createRow(20);
-					HSSFRow rowDFO21 = drugFeeSheet_OP.createRow(21);
-					HSSFRow rowDFO22 = drugFeeSheet_OP.createRow(22);
-					HSSFRow rowDFO23 = drugFeeSheet_OP.createRow(23);
-					
-					
+					HSSFSheet drugFeeSheet_OP = workbook.createSheet("多季度-各科別藥費占比(門急診)");				
 					/* 新建工作表
 					 *  多季度-各科別藥費占比(住院)
 					 *  */
-					HSSFSheet drugFeeSheet_IP = workbook.createSheet("多季度-各科別藥費占比(住院)");
-					
-					for(int i=0;i<24;i++){
-						if(i==0 || i==6 || i==12 || i==18) {
-							drugFeeSheet_IP.addMergedRegion(new CellRangeAddress(i,i,0,4));
-						}
-						else {
-							drugFeeSheet_IP.addMergedRegion(new CellRangeAddress(i,i,0,2));
-						}
-					}
-					
-					HSSFRow rowDFI0 = drugFeeSheet_IP.createRow(0);
-					HSSFRow rowDFI1 = drugFeeSheet_IP.createRow(1);
-					HSSFRow rowDFI2 = drugFeeSheet_IP.createRow(2);
-					HSSFRow rowDFI3 = drugFeeSheet_IP.createRow(3);
-					HSSFRow rowDFI4 = drugFeeSheet_IP.createRow(4);
-					HSSFRow rowDFI5 = drugFeeSheet_IP.createRow(5);
-					HSSFRow rowDFI6 = drugFeeSheet_IP.createRow(6);
-					HSSFRow rowDFI7 = drugFeeSheet_IP.createRow(7);
-					HSSFRow rowDFI8 = drugFeeSheet_IP.createRow(8);
-					HSSFRow rowDFI9 = drugFeeSheet_IP.createRow(9);
-					HSSFRow rowDFI10 = drugFeeSheet_IP.createRow(10);
-					HSSFRow rowDFI11 = drugFeeSheet_IP.createRow(11);
-					HSSFRow rowDFI12 = drugFeeSheet_IP.createRow(12);
-					HSSFRow rowDFI13 = drugFeeSheet_IP.createRow(13);
-					HSSFRow rowDFI14 = drugFeeSheet_IP.createRow(14);
-					HSSFRow rowDFI15 = drugFeeSheet_IP.createRow(15);
-					HSSFRow rowDFI16 = drugFeeSheet_IP.createRow(16);
-					HSSFRow rowDFI17 = drugFeeSheet_IP.createRow(17);
-					HSSFRow rowDFI18 = drugFeeSheet_IP.createRow(18);
-					HSSFRow rowDFI19 = drugFeeSheet_IP.createRow(19);
-					HSSFRow rowDFI20 = drugFeeSheet_IP.createRow(20);
-					HSSFRow rowDFI21 = drugFeeSheet_IP.createRow(21);
-					HSSFRow rowDFI22 = drugFeeSheet_IP.createRow(22);
-					HSSFRow rowDFI23 = drugFeeSheet_IP.createRow(23);
-							
+					HSSFSheet drugFeeSheet_IP = workbook.createSheet("多季度-各科別藥費占比(住院)");						
 					/* 新建工作表
 					 *  多季度-各科別藥費占比(住院)
 					 *  */
 					HSSFSheet drugFeeDiffSheet = workbook.createSheet("多季度-去年同期健保藥費相比差額");
 					
-					for(int i=0;i<12;i++){
-						if(i==0 || i==3 || i==6 || i==9) {
-							drugFeeDiffSheet.addMergedRegion(new CellRangeAddress(i,i,0,4));
-						}
-						else {
-							drugFeeDiffSheet.addMergedRegion(new CellRangeAddress(i,i,0,2));
-						}
-					}
-					HSSFRow rowD0 = drugFeeDiffSheet.createRow(0);
-					HSSFRow rowD1 = drugFeeDiffSheet.createRow(1);
-					HSSFRow rowD2 = drugFeeDiffSheet.createRow(2);
-					HSSFRow rowD3 = drugFeeDiffSheet.createRow(3);
-					HSSFRow rowD4 = drugFeeDiffSheet.createRow(4);
-					HSSFRow rowD5 = drugFeeDiffSheet.createRow(5);
-					HSSFRow rowD6 = drugFeeDiffSheet.createRow(6);
-					HSSFRow rowD7 = drugFeeDiffSheet.createRow(7);
-					HSSFRow rowD8 = drugFeeDiffSheet.createRow(8);
-					HSSFRow rowD9 = drugFeeDiffSheet.createRow(9);
-					HSSFRow rowD10 = drugFeeDiffSheet.createRow(10);
-					HSSFRow rowD11 = drugFeeDiffSheet.createRow(11);
+					int cellIndex=0;
+					int cellIndex2=0;
 					
 					for(int i=0;i<results.size();i++) {
+						
+						if(i!=0) {
+							cellIndex+=6;
+							cellIndex2+=3;
+						}
+						
 						//門急診/住院
 						String multi_allDot=results.get(i).getAllDot(); //全院 病歷總點數
 						String multi_allDrugFee=results.get(i).getAllDrugFee(); //全院 總藥費
@@ -509,85 +471,337 @@ public class HealthCareCostService {
 						List<ClassDrugFeeDto> multi_classAllFeeDiff=results.get(i).getClassAllFeeDiff();
 						String multi_AllFeeDiff=results.get(i).getAllFeeDiff();
 						
-						switch (results.get(i).getSeason()) {
-							case "Q1":
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(門急診/住院)",rowDFA0,rowDFA1,rowDFA2,rowDFA3,rowDFA4,
-										rowDFA5,cellStyle_left,multi_allCount,multi_classAllCaseCount,
-										multi_allDot,multi_classAll_TDot,multi_allDrugFee,multi_classAllDrugFee,
-										multi_allRate,multi_classAllDrugFeeRate);
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(門急診)",rowDFO0,rowDFO1,rowDFO2,rowDFO3,rowDFO4,
-										rowDFO5,cellStyle_left,multi_OPCount,multi_classOPCaseCount,
-										multi_OPDot,multi_classOP_TDot,multi_OPDrugFee,multi_classOPDrugFee,
-										multi_OPRate,multi_classOPDrugFeeRate);
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(住院)",rowDFI0,rowDFI1,rowDFI2,rowDFI3,rowDFI4,
-										rowDFI5,cellStyle_left,multi_IPCount,multi_classIPCaseCount,
-										multi_IPDot,multi_classIP_TDot,multi_IPDrugFee,multi_classIPDrugFee,
-										multi_IPRate,multi_classIPDrugFeeRate);
-								
-								classDrugFeeDiffTemplate(results.get(i).getSeason(),"去年同期健保藥費相比差額",rowD0,rowD1,rowD2,
-										  cellStyle_left,multi_classAllFeeDiff,multi_AllFeeDiff);
 						
-								break;
-							case "Q2":
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(門急診/住院)",rowDFA6,rowDFA7,rowDFA8,rowDFA9,rowDFA10,
-										rowDFA11,cellStyle_left,multi_allCount,multi_classAllCaseCount,
-										multi_allDot,multi_classAll_TDot,multi_allDrugFee,multi_classAllDrugFee,
-										multi_allRate,multi_classAllDrugFeeRate);
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(門急診)",rowDFO6,rowDFO7,rowDFO8,rowDFO9,rowDFO10,
-										rowDFO11,cellStyle_left,multi_OPCount,multi_classOPCaseCount,
-										multi_OPDot,multi_classOP_TDot,multi_OPDrugFee,multi_classOPDrugFee,
-										multi_OPRate,multi_classOPDrugFeeRate);
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(住院)",rowDFI6,rowDFI7,rowDFI8,rowDFI9,rowDFI10,
-										rowDFI11,cellStyle_left,multi_IPCount,multi_classIPCaseCount,
-										multi_IPDot,multi_classIP_TDot,multi_IPDrugFee,multi_classIPDrugFee,
-										multi_IPRate,multi_classIPDrugFeeRate);
-								
-								classDrugFeeDiffTemplate(results.get(i).getSeason(),"去年同期健保藥費相比差額",rowD3,rowD4,rowD5,
-										  cellStyle_left,multi_classAllFeeDiff,multi_AllFeeDiff);
-								break;
-							case "Q3":
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(門急診/住院)",rowDFA12,rowDFA13,rowDFA14,rowDFA15,rowDFA16,
-										rowDFA17,cellStyle_left,multi_allCount,multi_classAllCaseCount,
-										multi_allDot,multi_classAll_TDot,multi_allDrugFee,multi_classAllDrugFee,
-										multi_allRate,multi_classAllDrugFeeRate);
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(門急診)",rowDFO12,rowDFO13,rowDFO14,rowDFO15,rowDFO16,
-										rowDFO17,cellStyle_left,multi_OPCount,multi_classOPCaseCount,
-										multi_OPDot,multi_classOP_TDot,multi_OPDrugFee,multi_classOPDrugFee,
-										multi_OPRate,multi_classOPDrugFeeRate);
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(住院)",rowDFI12,rowDFI13,rowDFI14,rowDFI15,rowDFI16,
-										rowDFI17,cellStyle_left,multi_IPCount,multi_classIPCaseCount,
-										multi_IPDot,multi_classIP_TDot,multi_IPDrugFee,multi_classIPDrugFee,
-										multi_IPRate,multi_classIPDrugFeeRate);
-								
-								classDrugFeeDiffTemplate(results.get(i).getSeason(),"去年同期健保藥費相比差額",rowD6,rowD7,rowD8,
-										  cellStyle_left,multi_classAllFeeDiff,multi_AllFeeDiff);
-								break;
-							case "Q4":
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(門急診/住院)",rowDFA18,rowDFA19,rowDFA20,rowDFA21,rowDFA22,
-										rowDFA23,cellStyle_left,multi_allCount,multi_classAllCaseCount,
-										multi_allDot,multi_classAll_TDot,multi_allDrugFee,multi_classAllDrugFee,
-										multi_allRate,multi_classAllDrugFeeRate);
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(門急診)",rowDFO18,rowDFO19,rowDFO20,rowDFO21,rowDFO22,
-										rowDFO23,cellStyle_left,multi_OPCount,multi_classOPCaseCount,
-										multi_OPDot,multi_classOP_TDot,multi_OPDrugFee,multi_classOPDrugFee,
-										multi_OPRate,multi_classOPDrugFeeRate);
-								classDrugFeeTemplate(results.get(i).getSeason(),"各科別藥費佔比(住院)",rowDFI18,rowDFI19,rowDFI20,rowDFI21,rowDFI22,
-										rowDFI23,cellStyle_left,multi_IPCount,multi_classIPCaseCount,
-										multi_IPDot,multi_classIP_TDot,multi_IPDrugFee,multi_classIPDrugFee,
-										multi_IPRate,multi_classIPDrugFeeRate);
-								
-								classDrugFeeDiffTemplate(results.get(i).getSeason(),"去年同期健保藥費相比差額",rowD9,rowD10,rowD11,
-										  cellStyle_left,multi_classAllFeeDiff,multi_AllFeeDiff);
-								break;
-							default:
-								break;
+						//各科別藥費佔比(門急診/住院) table
+						drugFeeSheet_All.addMergedRegion(new CellRangeAddress(cellIndex,cellIndex,0,2));
+						drugFeeSheet_All.addMergedRegion(new CellRangeAddress(cellIndex+1,cellIndex+1,0,2));
+						drugFeeSheet_All.addMergedRegion(new CellRangeAddress(cellIndex+2,cellIndex+2,0,2));
+						drugFeeSheet_All.addMergedRegion(new CellRangeAddress(cellIndex+3,cellIndex+3,0,2));
+						drugFeeSheet_All.addMergedRegion(new CellRangeAddress(cellIndex+4,cellIndex+4,0,2));
+						drugFeeSheet_All.addMergedRegion(new CellRangeAddress(cellIndex+5,cellIndex+5,0,2));
+						
+						HSSFRow row1 = drugFeeSheet_All.createRow(cellIndex);
+						HSSFRow row2 = drugFeeSheet_All.createRow(cellIndex+1);
+						HSSFRow row3 = drugFeeSheet_All.createRow(cellIndex+2);
+						HSSFRow row4 = drugFeeSheet_All.createRow(cellIndex+3);
+						HSSFRow row5 = drugFeeSheet_All.createRow(cellIndex+4);
+						HSSFRow row6 = drugFeeSheet_All.createRow(cellIndex+5);
+						
+						StringBuilder titleName=new StringBuilder();
+						titleName.append(results.get(i).getSeason());
+						titleName.append("各科別藥費佔比(門急診/住院)");
+						
+						addRowCell(row1, 0,titleName.toString() , cellStyle_noBorder);
+						
+						for(int j=0;j<3;j++) {
+							addRowCell(row2, j,"" , cellStyle_left);
+						}
+						addRowCell(row2, 3,"全院" , cellStyle_left);
+						
+						addRowCell(row3, 0,"案件數" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(row3, j,"" , cellStyle_left);
+						}
+						addRowCell(row3, 3, multi_allCount, cellStyle_left);
+						
+						for(int j=0;j<multi_classAllCaseCount.size();j++) {
+							addRowCell(row2, j+4, multi_classAllCaseCount.get(j).getDesc_chi(), cellStyle_left);
+							addRowCell(row3, j+4, multi_classAllCaseCount.get(j).getCaseCount(), cellStyle_left);
+						}
+						
+						addRowCell(row4, 0,"病歷總點數(不含自費)" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(row4, j,"" , cellStyle_left);
+						}
+						addRowCell(row4, 3, multi_allDot, cellStyle_left);
+						
+						for(int j=0;j<multi_classAll_TDot.size();j++) {
+							addRowCell(row4, j+4, multi_classAll_TDot.get(j).getDot(), cellStyle_left);
+						}
+						
+						addRowCell(row5, 0,"總藥費(不含自費)" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(row5, j,"" , cellStyle_left);
+						}
+						addRowCell(row5, 3, multi_allDrugFee, cellStyle_left);
+						
+						for(int j=0;j<multi_classAllDrugFee.size();j++) {
+							addRowCell(row5, j+4, multi_classAllDrugFee.get(j).getDot(), cellStyle_left);
+						}
+						
+						addRowCell(row6, 0,"藥費佔率" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(row6, j,"" , cellStyle_left);
+						}
+						addRowCell(row6, 3, multi_allRate, cellStyle_left);
+						
+						for(int j=0;j<multi_classAllDrugFeeRate.size();j++) {
+							addRowCell(row6, j+4, multi_classAllDrugFeeRate.get(j).getFee(), cellStyle_left);
+						}
+						
+						//各科別藥費佔比(門急診) table
+						drugFeeSheet_OP.addMergedRegion(new CellRangeAddress(cellIndex,cellIndex,0,2));
+						drugFeeSheet_OP.addMergedRegion(new CellRangeAddress(cellIndex+1,cellIndex+1,0,2));
+						drugFeeSheet_OP.addMergedRegion(new CellRangeAddress(cellIndex+2,cellIndex+2,0,2));
+						drugFeeSheet_OP.addMergedRegion(new CellRangeAddress(cellIndex+3,cellIndex+3,0,2));
+						drugFeeSheet_OP.addMergedRegion(new CellRangeAddress(cellIndex+4,cellIndex+4,0,2));
+						drugFeeSheet_OP.addMergedRegion(new CellRangeAddress(cellIndex+5,cellIndex+5,0,2));
+						
+						HSSFRow rowA = drugFeeSheet_OP.createRow(cellIndex);
+						HSSFRow rowB = drugFeeSheet_OP.createRow(cellIndex+1);
+						HSSFRow rowC = drugFeeSheet_OP.createRow(cellIndex+2);
+						HSSFRow rowD = drugFeeSheet_OP.createRow(cellIndex+3);
+						HSSFRow rowE = drugFeeSheet_OP.createRow(cellIndex+4);
+						HSSFRow rowF = drugFeeSheet_OP.createRow(cellIndex+5);
+						
+						titleName.setLength(0);
+						titleName.append(results.get(i).getSeason());
+						titleName.append("各科別藥費佔比(門急診)");
+						
+						addRowCell(rowA, 0,titleName.toString() , cellStyle_noBorder);
+						
+						for(int j=0;j<3;j++) {
+							addRowCell(rowB, j,"" , cellStyle_left);
+						}
+						addRowCell(rowB, 3,"全院" , cellStyle_left);
+						
+						addRowCell(rowC, 0,"案件數" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(rowC, j,"" , cellStyle_left);
+						}
+						addRowCell(rowC, 3, multi_OPCount, cellStyle_left);
+						
+						for(int j=0;j<multi_classOPCaseCount.size();j++) {
+							addRowCell(rowB, j+4, multi_classOPCaseCount.get(j).getDesc_chi(), cellStyle_left);
+							addRowCell(rowC, j+4, multi_classOPCaseCount.get(j).getCaseCount(), cellStyle_left);
+						}
+						
+						addRowCell(rowD, 0,"病歷總點數(不含自費)" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(rowD, j,"" , cellStyle_left);
+						}
+						addRowCell(rowD, 3, multi_OPDot, cellStyle_left);
+						
+						for(int j=0;j<multi_classOP_TDot.size();j++) {
+							addRowCell(rowD, j+4, multi_classOP_TDot.get(j).getDot(), cellStyle_left);
+						}
+						
+						addRowCell(rowE, 0,"總藥費(不含自費)" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(rowE, j,"" , cellStyle_left);
+						}
+						addRowCell(rowE, 3, multi_OPDrugFee, cellStyle_left);
+						
+						for(int j=0;j<multi_classOPDrugFee.size();j++) {
+							addRowCell(rowE, j+4, multi_classOPDrugFee.get(j).getDot(), cellStyle_left);
+						}
+						
+						addRowCell(rowF, 0,"藥費佔率" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(rowF, j,"" , cellStyle_left);
+						}
+						addRowCell(rowF, 3, multi_OPRate, cellStyle_left);
+						
+						for(int j=0;j<multi_classOPDrugFeeRate.size();j++) {
+							addRowCell(rowF, j+4, multi_classOPDrugFeeRate.get(j).getFee(), cellStyle_left);
+						}
+						
+						//各科別藥費佔比(住院) table
+						drugFeeSheet_IP.addMergedRegion(new CellRangeAddress(cellIndex,cellIndex,0,2));
+						drugFeeSheet_IP.addMergedRegion(new CellRangeAddress(cellIndex+1,cellIndex+1,0,2));
+						drugFeeSheet_IP.addMergedRegion(new CellRangeAddress(cellIndex+2,cellIndex+2,0,2));
+						drugFeeSheet_IP.addMergedRegion(new CellRangeAddress(cellIndex+3,cellIndex+3,0,2));
+						drugFeeSheet_IP.addMergedRegion(new CellRangeAddress(cellIndex+4,cellIndex+4,0,2));
+						drugFeeSheet_IP.addMergedRegion(new CellRangeAddress(cellIndex+5,cellIndex+5,0,2));
+						
+						HSSFRow rowAA = drugFeeSheet_IP.createRow(cellIndex);
+						HSSFRow rowBB = drugFeeSheet_IP.createRow(cellIndex+1);
+						HSSFRow rowCC = drugFeeSheet_IP.createRow(cellIndex+2);
+						HSSFRow rowDD = drugFeeSheet_IP.createRow(cellIndex+3);
+						HSSFRow rowEE = drugFeeSheet_IP.createRow(cellIndex+4);
+						HSSFRow rowFF = drugFeeSheet_IP.createRow(cellIndex+5);
+						
+						titleName.setLength(0);
+						titleName.append(results.get(i).getSeason());
+						titleName.append("各科別藥費佔比(住院)");
+						
+						addRowCell(rowAA, 0,titleName.toString() , cellStyle_noBorder);
+						
+						for(int j=0;j<3;j++) {
+							addRowCell(rowBB, j,"" , cellStyle_left);
+						}
+						addRowCell(rowBB, 3,"全院" , cellStyle_left);
+						
+						addRowCell(rowCC, 0,"案件數" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(rowCC, j,"" , cellStyle_left);
+						}
+						addRowCell(rowCC, 3, multi_IPCount, cellStyle_left);
+						
+						for(int j=0;j<multi_classIPCaseCount.size();j++) {
+							addRowCell(rowBB, j+4, multi_classIPCaseCount.get(j).getDesc_chi(), cellStyle_left);
+							addRowCell(rowCC, j+4, multi_classIPCaseCount.get(j).getCaseCount(), cellStyle_left);
+						}
+						
+						addRowCell(rowDD, 0,"病歷總點數(不含自費)" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(rowDD, j,"" , cellStyle_left);
+						}
+						addRowCell(rowDD, 3, multi_IPDot, cellStyle_left);
+						
+						for(int j=0;j<multi_classIP_TDot.size();j++) {
+							addRowCell(rowDD, j+4, multi_classIP_TDot.get(j).getDot(), cellStyle_left);
+						}
+						
+						addRowCell(rowEE, 0,"總藥費(不含自費)" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(rowEE, j,"" , cellStyle_left);
+						}
+						addRowCell(rowEE, 3, multi_IPDrugFee, cellStyle_left);
+						
+						for(int j=0;j<multi_classIPDrugFee.size();j++) {
+							addRowCell(rowEE, j+4, multi_classIPDrugFee.get(j).getDot(), cellStyle_left);
+						}
+						
+						addRowCell(rowFF, 0,"藥費佔率" , cellStyle_left);
+						for(int j=1;j<3;j++) {
+							addRowCell(rowFF, j,"" , cellStyle_left);
+						}
+						addRowCell(rowFF, 3, multi_IPRate, cellStyle_left);
+						
+						for(int j=0;j<multi_classIPDrugFeeRate.size();j++) {
+							addRowCell(rowFF, j+4, multi_classIPDrugFeeRate.get(j).getFee(), cellStyle_left);
+						}
+						
+						
+						//與去年同期健保藥費差額相比
+						HSSFRow rowa = drugFeeDiffSheet.createRow(cellIndex2);
+						HSSFRow rowb = drugFeeDiffSheet.createRow(cellIndex2+1);
+						HSSFRow rowc = drugFeeDiffSheet.createRow(cellIndex2+2);
+						
+						drugFeeDiffSheet.addMergedRegion(new CellRangeAddress(cellIndex2,cellIndex2,0,2));
+						drugFeeDiffSheet.addMergedRegion(new CellRangeAddress(cellIndex2+1,cellIndex2+1,0,2));
+						drugFeeDiffSheet.addMergedRegion(new CellRangeAddress(cellIndex2+2,cellIndex2+2,0,2));
+						
+						titleName.setLength(0);
+						titleName.append(results.get(i).getSeason());
+						titleName.append("去年同期健保藥費相比差額");
+						
+						addRowCell(rowa,0,titleName.toString(),null);
+						
+						for(int j=0;j<3;j++) {
+							addRowCell(rowb,j,"",cellStyle_left);
+						}
+						addRowCell(rowb,3,"全院",cellStyle_left);
+						
+						addRowCell(rowc,0, "藥費總差額",cellStyle_left);
+						addRowCell(rowc,1,"",cellStyle_left);
+						addRowCell(rowc,2,"",cellStyle_left);
+						addRowCell(rowc,3, multi_AllFeeDiff,cellStyle_left);
+						
+						for(int x=0;x<multi_classAllFeeDiff.size();x++) {
+							addRowCell(rowb ,x+4,multi_classAllFeeDiff.get(x).getDesc_chi(),cellStyle_left);
+							addRowCell(rowc,x+4, multi_classAllFeeDiff.get(x).getFee(),cellStyle_left);
 						}
 					}
 					
+					/*新建工作表 
+					 * 多季度-健保藥費變化趨勢(單一科名)
+					 * */
+					HSSFSheet classDrugFeeSheet_weekly = workbook.createSheet("多季度-健保藥費變化趨勢");
+					
+					String[]seasonList=season.split(" ");
+					List<Integer>seasonSort=new ArrayList<Integer>();
+					for(int i=0;i<seasonList.length;i++) {
+						 String[]s=seasonList[i].split("Q");
+						 seasonSort.add(Integer.valueOf(s[1]));
+					}
+					int targetSeason=Collections.max(seasonSort);
+					
+					//每一科別起始位置
+					int title=0;
+					
+					List<ClassDoctorWeeklyDto>classDoctorWeeklyList=results.get(seasonSort.indexOf(targetSeason)).getClassDoctorAllWeekly();
+					List<String>weekly=results.get(seasonSort.indexOf(targetSeason)).getWeekly();
+					
+					for(int i=0;i<classDoctorWeeklyList.size();i++) {
+						List<ClassDoctorDto_weekly> classDoctors=classDoctorWeeklyList.get(i).getClassDoctors();
+						
+						if(i!=0) {
+							title=title+weekly.size()+4;
+						}
+						
+						for(int j=0;j<codeTableList.size();j++) {
+							if(classDoctorWeeklyList.get(i).getCode().equals(codeTableList.get(j).getCode()))
+							{
+								String desc_chi=codeTableList.get(j).getDescChi();
+								HSSFRow rowHead = classDrugFeeSheet_weekly.createRow(title);
+								addRowCell(rowHead, 0,desc_chi , cellStyle_left);
+								
+								HSSFRow row1 = classDrugFeeSheet_weekly.createRow(title+1);
+								HSSFRow row2 = classDrugFeeSheet_weekly.createRow(title+2);
+								
+								//週數、藥費點數、案件數索引
+								int weekIndex=0;
+								int drugFeeIndex=1;
+								int caseCountweekIndex=2;
+								
+								for(int x=0;x<classDoctors.size();x++) {
+									//醫師名
+									String doctor=classDoctors.get(x).getDoctorName();
+									//醫師各週數據
+									List<CaseDotFeeDto> weeklyInfo=classDoctors.get(x).getCaseDotFeeWeekly();
+									
+									addRowCell(row1, weekIndex+1,doctor, cellStyle_noBorder);
+									addRowCell(row2, weekIndex,"週數" , cellStyle_left);
+									addRowCell(row2, drugFeeIndex, "藥費點數", cellStyle_left);
+									addRowCell(row2, caseCountweekIndex,"案件數" , cellStyle_left);
+									
+									if(x==0) {
+										for(int y=0;y<weekly.size();y++) {
+											HSSFRow row = classDrugFeeSheet_weekly.createRow(title+3+y);
+											addRowCell(row, weekIndex, weekly.get(y) , cellStyle_left);
+											addRowCell(row, drugFeeIndex, "0" , cellStyle_left);
+											addRowCell(row, caseCountweekIndex, "0"  , cellStyle_left);
+										}
+									}
+									else {
+										for(int y=0;y<weekly.size();y++) {
+											HSSFRow row = classDrugFeeSheet_weekly.getRow(title+3+y);
+											addRowCell(row, weekIndex, weekly.get(y) , cellStyle_left);
+											addRowCell(row, drugFeeIndex, "0" , cellStyle_left);
+											addRowCell(row, caseCountweekIndex, "0"  , cellStyle_left);
+										}
+									}
+									
+									for(int y=0;y<weekly.size();y++) {
+										String week=weekly.get(y);
+										for(int k=0;k<weeklyInfo.size();k++) {
+											String week2=weeklyInfo.get(k).getWeek();
+											Integer caseCount=weeklyInfo.get(k).getCaseCount();
+											Integer drugFee=weeklyInfo.get(k).getDrugFee();
+											
+											if(week.equals(week2)) {
+												HSSFRow row = classDrugFeeSheet_weekly.getRow(title+3+y);
+												addRowCell(row, drugFeeIndex, drugFee.toString() , cellStyle_left);
+												addRowCell(row, caseCountweekIndex,  caseCount.toString() , cellStyle_left);
+											}
+										}
+										
+									}
+									
+									caseCountweekIndex+=3;
+									drugFeeIndex+=3;
+									weekIndex+=3;
+								}
+								
+							}
+						}
+					}	
 			  }
 		  
 			  //產生報表
-				String fileNameStr = "健保藥費概況" + "_" + endDate+"_"+season.replaceAll("\\s", "_");
+				String fileNameStr = "健保藥費概況" + "_" + chineseYear+"_"+season.replaceAll("\\s", "_");
 				String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
 				String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
 						? FILE_PATH + "\\" + fileName
@@ -603,7 +817,8 @@ public class HealthCareCostService {
 		  } catch (Exception e) {
 				// TODO: handle exception
 			  logger.info("健保藥費概況產生報表錯誤: {}",e);
-			  System.out.println(e);
+//			  e.printStackTrace();
+//			  System.out.println(e);
 		  }
 	  }
 	  
@@ -691,7 +906,8 @@ public class HealthCareCostService {
 			addRowCell(row5,3,drugFeeRate,cellStyle_left);
 	  }
 	  
-	  public HealthCareCost statisticData(String seasonStr,List<String> seasonList,String year,String weekDate) {
+	 @SuppressWarnings("unchecked")
+	public HealthCareCost statisticData(String seasonStr,List<String> seasonList,String year,String weekDate) {
 		  
 			//門急診/住院 1.病例總點數 2.總藥費 3.藥費佔率 4.案件數
 		  	  StringBuilder OP_AllDot=new StringBuilder();
@@ -743,20 +959,19 @@ public class HealthCareCostService {
 			List<ClassCaseCountDto> classOPCaseCount=initCaseList();
 			//各科別住院案件
 			List<ClassCaseCountDto> classIPCaseCount=initCaseList();
+			//週期
+			List<String>weekly=new ArrayList<String>();
+			Object[] objects=new Object[2];
 		  
 			try {
 				
-				if(weekDate.equals("0331") && seasonStr.equals("Q1")) {
-					classDoctorWeekly=calculateFeeWeekly(classDoctorWeekly,year,weekDate);
+				objects=calculateFeeWeekly(classDoctorWeekly,year,weekDate);
+				
+				if(objects[0]!=null) {
+					classDoctorWeekly=(List<ClassDoctorWeeklyDto>) objects[0];
 				}
-				else if(weekDate.equals("0630") && seasonStr.equals("Q2")) {
-					classDoctorWeekly=calculateFeeWeekly(classDoctorWeekly,year,weekDate);
-				}
-				else if(weekDate.equals("0930") && seasonStr.equals("Q3")) {
-					classDoctorWeekly=calculateFeeWeekly(classDoctorWeekly,year,weekDate);
-				}
-				else if(weekDate.equals("1231") && seasonStr.equals("Q4")) {
-					classDoctorWeekly=calculateFeeWeekly(classDoctorWeekly,year,weekDate);
+				if(objects[1]!=null) {
+					weekly=(List<String>) objects[1];
 				}
 				
 				//門急診/住院 1.病例總點數 2.總藥費 3.藥費佔率 4.案件數
@@ -1209,7 +1424,7 @@ public class HealthCareCostService {
 									int caseCount=checkIntgerNull(classDoctorOP.get(b)[2]);
 									int dot=checkIntgerNull(classDoctorOP.get(b)[3]);
 									int fee=checkIntgerNull(classDoctorOP.get(b)[4]);
-									doctors.put(doctorID,new CaseDotFeeDto(caseCount,dot,fee));
+									doctors.put(doctorID,new CaseDotFeeDto("",caseCount,dot,fee));
 									classDoctorAll.set(a,new ClassDoctorDto(desc_chi,code,doctors));
 								}
 						}
@@ -1233,7 +1448,7 @@ public class HealthCareCostService {
 								int dotAll=doctors.get(doctorID).getDot();
 								int feeAll=doctors.get(doctorID).getDrugFee();
 								
-								doctors.replace(doctorID,new CaseDotFeeDto(caseCount+caseCountAll,
+								doctors.replace(doctorID,new CaseDotFeeDto("",caseCount+caseCountAll,
 										dot+dotAll, fee+feeAll));
 								classDoctorAll.set(a,new ClassDoctorDto(desc_chi,code,doctors));
 							}
@@ -1244,7 +1459,7 @@ public class HealthCareCostService {
 			} catch (Exception e) {
 				// TODO: handle exception
 				logger.info("health care cost exception {}",e);
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 			
 			return setHealthCareCost(seasonStr
@@ -1255,7 +1470,7 @@ public class HealthCareCostService {
 					,classOP_TDot,classIP_TDot,classAll_TDot
 					,classOPDrugFeeRate,classIPDrugFeeRate,classAllDrugFeeRate
 					,classOPCaseCount,classIPCaseCount,classAllCaseCount,classDoctorAll
-					,classDoctorWeekly);
+					,classDoctorWeekly,weekly);
 	  }
 	  
 	  public HealthCareCost setHealthCareCost(String season,String OP_AllDot, String OP_AllDrugFee,String OP_AllRate,String AllCount,
@@ -1265,7 +1480,7 @@ public class HealthCareCostService {
 			  List<ClassDrugDotDto> classOP_TDot,List<ClassDrugDotDto> classIP_TDot,List<ClassDrugDotDto>classAll_TDot,
 			  List<ClassDrugFeeDto>classOPDrugFeeRate,List<ClassDrugFeeDto>classIPDrugFeeRate,List<ClassDrugFeeDto>classAllDrugFeeRate,
 			  List<ClassCaseCountDto> classOPCaseCount,List<ClassCaseCountDto> classIPCaseCount,List<ClassCaseCountDto> classAllCaseCount,
-			  List<ClassDoctorDto>classDoctorAll,List<ClassDoctorWeeklyDto> classDoctorWeekly){ 
+			  List<ClassDoctorDto>classDoctorAll,List<ClassDoctorWeeklyDto> classDoctorWeekly,List<String>weekly){ 
 		  	HealthCareCost healthCareCost=new HealthCareCost();
 			healthCareCost.setSeason(season);
 			healthCareCost.setAllDot(OP_AllDot);
@@ -1298,6 +1513,8 @@ public class HealthCareCostService {
 			healthCareCost.setClassIP_TDot(classIP_TDot);
 			healthCareCost.setClassIPFeeRate(classIPDrugFeeRate);
 			healthCareCost.setClassIPCaseCount(classIPCaseCount);
+			
+			healthCareCost.setWeekly(weekly);
 			
 			return healthCareCost;
 		}
@@ -1338,7 +1555,9 @@ public class HealthCareCostService {
 		  return num;
 	  }
 	  
-	  public List<ClassDoctorWeeklyDto> calculateFeeWeekly(List<ClassDoctorWeeklyDto> classDoctorWeekly,String year,String day) {
+	  public Object[] calculateFeeWeekly(List<ClassDoctorWeeklyDto> classDoctorWeekly,String year,String day) {
+		  
+		  List<String> weekly=new ArrayList<String>();
 		  
 		  try {
 			  	DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
@@ -1364,6 +1583,9 @@ public class HealthCareCostService {
 			  	Calendar calMax = Calendar.getInstance();
 			  	calMax.setTime(endDate);
 			  	
+				List<String> codes = new ArrayList<String>();
+				List<String> doctors = new ArrayList<String>();
+				
 				do {
 					Date start = cal.getTime();
 					cal.add(Calendar.DAY_OF_YEAR, 6);
@@ -1377,8 +1599,6 @@ public class HealthCareCostService {
 					List<Object[]>classDoctorOP=opdDao.findOPClassDoctorWeekly(weekStart, weekEnd);
 					//各科別各醫師住院每週健保藥費
 					List<Object[]>classDoctorIP=ipdDao.findIPClassDoctorWeekly(weekStart, weekEnd);
-				  	//各科別各醫師門急診/住院每週健保藥費
-				  	List<ClassDoctorDto>classDoctorList=new ArrayList<ClassDoctorDto>();
 				  	
 					//年分/週
 					StringBuilder week=new StringBuilder();
@@ -1386,68 +1606,79 @@ public class HealthCareCostService {
 					week.append("w");
 					week.append(cal.get(Calendar.WEEK_OF_YEAR));
 					
-
-					List<String> checkDuplicatesList = new ArrayList<String>();
+					weekly.add(week.toString());
 					
-					//各科別各醫師門急診每週健保藥費
-						for(int i=0;i<classDoctorOP.size();i++) {
-							if(classDoctorOP.get(i)!=null) {
-								String code="";
-								String doctorName="";
-								Integer caseCount=0;
-								Integer dot=0;
-								Integer drugFee=0;
-								if(classDoctorOP.get(i)[0]!=null) {
-									code=classDoctorOP.get(i)[0].toString();
-								}
-								if(classDoctorOP.get(i)[1]!=null) {
-									doctorName=classDoctorOP.get(i)[1].toString();
-								}
-								if(classDoctorOP.get(i)[2]!=null) {
-									caseCount=Integer.parseInt(classDoctorOP.get(i)[2].toString());
-								}
-								if(classDoctorOP.get(i)[3]!=null) {
-									dot=Integer.parseInt(classDoctorOP.get(i)[3].toString());
-								}
-								if(classDoctorOP.get(i)[4]!=null) {
-									drugFee=Integer.parseInt(classDoctorOP.get(i)[4].toString());
-								}
-								
-								//檢查重複的科別名稱，一樣的放進同一個
-								if(checkDuplicatesList.contains(code)) {
+					//各科別各醫師門急診/住院每週健保藥費
+					for(int i=0;i<classDoctorOP.size();i++) {
+						if(classDoctorOP.get(i)!=null) {
+							String code="";
+							String doctorName="";
+							Integer caseCount=0;
+							Integer dot=0;
+							Integer drugFee=0;
+							if(classDoctorOP.get(i)[0]!=null) {
+								code=classDoctorOP.get(i)[0].toString();
+							}
+							if(classDoctorOP.get(i)[1]!=null) {
+								doctorName=classDoctorOP.get(i)[1].toString();
+							}
+							if(classDoctorOP.get(i)[2]!=null) {
+								caseCount=Integer.parseInt(classDoctorOP.get(i)[2].toString());
+							}
+							if(classDoctorOP.get(i)[3]!=null) {
+								dot=Integer.parseInt(classDoctorOP.get(i)[3].toString());
+							}
+							if(classDoctorOP.get(i)[4]!=null) {
+								drugFee=Integer.parseInt(classDoctorOP.get(i)[4].toString());
+							}
+							
+							if(codes.contains(code)) {
+								if(doctors.contains(doctorName)) {
 									
-									for(int j=0;j<classDoctorList.size();j++) {
-										ClassDoctorDto classDoctorDto=classDoctorList.get(j);
-										String c=classDoctorList.get(j).getCode();
-										Map<String, CaseDotFeeDto>doctors=classDoctorList.get(j).getDoctors();
-										if(c.equals(code)) {
-											if(doctors.containsKey(doctorName)) {
-												CaseDotFeeDto caseDotFee=doctors.get(doctorName);
-												Integer oldCaseCount=caseDotFee.getCaseCount();
-												Integer oldDot=caseDotFee.getDot();
-												Integer oldDrugFee=caseDotFee.getDrugFee();
-												doctors.put(doctorName,new CaseDotFeeDto((caseCount+oldCaseCount),(dot+oldDot),(drugFee+oldDrugFee)));
-												classDoctorDto.setDoctors(doctors);
-												classDoctorList.set(j,classDoctorDto);
+									for(int j=0;j<classDoctorWeekly.size();j++) {
+										ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
+										if(code.equals(cw.getCode())) {
+											List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
+											for(int k=0;k<classDoctorDtos_weekly.size();k++) {
+												if(doctorName.equals(classDoctorDtos_weekly.get(k).getDoctorName())) {
+													List<CaseDotFeeDto>caseDotFeeDtos=classDoctorDtos_weekly.get(k).getCaseDotFeeWeekly();
+													caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+													classDoctorDtos_weekly.set(k,new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
+												}
 											}
-											else {
-												doctors.put(doctorName,new CaseDotFeeDto(caseCount,dot,drugFee));
-												classDoctorDto.setDoctors(doctors);
-												classDoctorList.set(j,classDoctorDto);
-											}
+											classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
 										}
 									}
+									
 								}
 								else {
-									Map<String, CaseDotFeeDto>newDoctor=new HashMap<String, CaseDotFeeDto>();
-									newDoctor.put(doctorName,new CaseDotFeeDto(caseCount,dot,drugFee));
-									classDoctorList.add(new ClassDoctorDto("",code,newDoctor));
-									checkDuplicatesList.add(code);
+									for(int j=0;j<classDoctorWeekly.size();j++) {
+										ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
+										if(code.equals(cw.getCode())) {
+											List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
+											List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
+											caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+											classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
+											classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
+										}
+									}
+									doctors.add(doctorName);
 								}
+							}
+							else {
+								List<ClassDoctorDto_weekly> classDoctorDtos_weekly=new ArrayList<ClassDoctorDto_weekly>();
+								List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
+								
+								caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+								classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
+								classDoctorWeekly.add(new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
+								
+								codes.add(code);
+								doctors.add(doctorName);
+							}
 						}
 					}
-						
-					//各科別各醫師住院每週健保藥費
+					
 					for(int i=0;i<classDoctorIP.size();i++) {
 						if(classDoctorIP.get(i)!=null) {
 							String code="";
@@ -1471,41 +1702,62 @@ public class HealthCareCostService {
 								drugFee=Integer.parseInt(classDoctorIP.get(i)[4].toString());
 							}
 							
-							//檢查重複的科別名稱，一樣的放進同一個
-							if(checkDuplicatesList.contains(code)) {
-								
-								for(int j=0;j<classDoctorList.size();j++) {
-									ClassDoctorDto classDoctorDto=classDoctorList.get(j);
-									String c=classDoctorList.get(j).getCode();
-									Map<String, CaseDotFeeDto>doctors=classDoctorList.get(j).getDoctors();
-									if(c.equals(code)) {
-										if(doctors.containsKey(doctorName)) {
-											CaseDotFeeDto caseDotFee=doctors.get(doctorName);
-											Integer oldCaseCount=caseDotFee.getCaseCount();
-											Integer oldDot=caseDotFee.getDot();
-											Integer oldDrugFee=caseDotFee.getDrugFee();
-											doctors.put(doctorName,new CaseDotFeeDto((caseCount+oldCaseCount),(dot+oldDot),(drugFee+oldDrugFee)));
-											classDoctorDto.setDoctors(doctors);
-											classDoctorList.set(j,classDoctorDto);
-										}
-										else {
-											doctors.put(doctorName,new CaseDotFeeDto(caseCount,dot,drugFee));
-											classDoctorDto.setDoctors(doctors);
-											classDoctorList.set(j,classDoctorDto);
+							if(codes.contains(code)) {
+								if(doctors.contains(doctorName)) {
+									
+									for(int j=0;j<classDoctorWeekly.size();j++) {
+										ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
+										if(code.equals(cw.getCode())) {
+											List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
+											for(int k=0;k<classDoctorDtos_weekly.size();k++) {
+												if(doctorName.equals(classDoctorDtos_weekly.get(k).getDoctorName())) {
+													List<CaseDotFeeDto>caseDotFeeDtos=classDoctorDtos_weekly.get(k).getCaseDotFeeWeekly();
+													for(int z=0;z<caseDotFeeDtos.size();z++) {
+														String weekStr=caseDotFeeDtos.get(z).getWeek();
+														if(week.toString().equals(weekStr)) {
+															int oldCaseCount=caseDotFeeDtos.get(z).getCaseCount();
+															int oldDot=caseDotFeeDtos.get(z).getDot();
+															int oldDrugFee=caseDotFeeDtos.get(z).getDrugFee();
+															caseDotFeeDtos.get(z).setCaseCount(oldCaseCount + caseCount);
+															caseDotFeeDtos.get(z).setDot(oldDot + dot);
+															caseDotFeeDtos.get(z).setDrugFee(oldDrugFee + drugFee);
+														}
+													}
+													classDoctorDtos_weekly.set(k,new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
+												}
+											}
+											classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
 										}
 									}
+									
+								}
+								else {
+									for(int j=0;j<classDoctorWeekly.size();j++) {
+										ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
+										if(code.equals(cw.getCode())) {
+											List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
+											List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
+											caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+											classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
+											classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
+										}
+									}
+									doctors.add(doctorName);
 								}
 							}
 							else {
-								Map<String, CaseDotFeeDto>newDoctor=new HashMap<String, CaseDotFeeDto>();
-								newDoctor.put(doctorName,new CaseDotFeeDto(caseCount,dot,drugFee));
-								classDoctorList.add(new ClassDoctorDto("",code,newDoctor));
-								checkDuplicatesList.add(code);
+								List<ClassDoctorDto_weekly> classDoctorDtos_weekly=new ArrayList<ClassDoctorDto_weekly>();
+								List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
+								
+								caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+								classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
+								classDoctorWeekly.add(new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
+								
+								codes.add(code);
+								doctors.add(doctorName);
 							}
+						}
 					}
-				}
-					
-					classDoctorWeekly.add(new ClassDoctorWeeklyDto(week.toString(),classDoctorList));
 					
 					cal.add(Calendar.DAY_OF_YEAR, 1);
 					
@@ -1514,11 +1766,13 @@ public class HealthCareCostService {
 				
 		  }
 		  catch (Exception e) {
-				  e.printStackTrace();
+//				  e.printStackTrace();
 				  logger.info("calculateFeeWeekly error {}",e);
 		  }
 		  
-		  return classDoctorWeekly;
+		  Object[]objects={classDoctorWeekly,weekly};
+		  
+		  return objects;
 	  }
 	  
 	  public List<ClassDoctorDto> initDoctorDotList(){
@@ -1572,15 +1826,14 @@ public class HealthCareCostService {
 					lastYear = String.valueOf(instance.get(Calendar.YEAR));
 				} catch (ParseException e) {
 					logger.info("getLastSeason error {}",e);
-					e.printStackTrace();
+//					e.printStackTrace();
 				}
 				
 				day.append(lastYear+current.get(i).substring(3));
 				last.add(day.toString());
 				
 		  }
-		  
-//		  System.out.println(last.toString());
+
 		  return last;
 	  }
 	  
@@ -1592,7 +1845,7 @@ public class HealthCareCostService {
 				instance.setTime(day);
 				instance.add(Calendar.YEAR, -1);
 			} catch (Exception e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 				logger.info("getLastYearDay error {}",e);
 			}
 			

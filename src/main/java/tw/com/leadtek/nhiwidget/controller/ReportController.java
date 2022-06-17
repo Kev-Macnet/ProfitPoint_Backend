@@ -482,15 +482,7 @@ public class ReportController extends BaseController {
 	    return ResponseEntity.badRequest().body(healthCareCost);
 	}
 	
-	String[]seasonList=season.split(" ");
-	String chineseYear=DateTool.convertToChineseYear(syear);
-	
-	if(seasonList.length>1) {
-		results=healthCareCostService.getData(chineseYear,"Q1 Q2 Q3 Q4",results);
-	}
-	else {
-		results=healthCareCostService.getData(chineseYear,season,results);
-	}
+	results=healthCareCostService.getData(syear,season,results);
 	
 	if(results.size()==1 && results.get(0).getResult().equals("error") && results.get(0).getMessage().equals("季度格式不正確")) {
 		HealthCareCost healthCareCost=new HealthCareCost();
@@ -499,7 +491,7 @@ public class ReportController extends BaseController {
 	    return ResponseEntity.badRequest().body(healthCareCost);
 	}
 	
-	healthCareCostService.getDataExport(chineseYear,season,results,response);
+	healthCareCostService.getDataExport(syear,season,results,response);
 	
     return null;
   }
