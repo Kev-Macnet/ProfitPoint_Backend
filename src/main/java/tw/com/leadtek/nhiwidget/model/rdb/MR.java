@@ -1028,7 +1028,10 @@ public class MR {
 //      changeOther = 1;
 //    } else {
       //this.ownExpense = totalDot - applDot;
+    if (ownExpense == null) {
       this.ownExpense = 0;
+    }
+    this.totalDot += this.ownExpense;
     //}
     this.updateAt = new Date();
   }

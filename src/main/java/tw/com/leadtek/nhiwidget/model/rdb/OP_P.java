@@ -12,6 +12,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -303,6 +304,13 @@ V:虛醫令,交付調劑之藥品空針
   @Column(name = "RECEIVE_NO")
   @JsonIgnore
   private String receiveNo;
+  
+  /**
+   * 身分證號
+   */
+  @JsonIgnore
+  @Transient
+  private String rocId;
   
   /**
    * 序號
@@ -737,5 +745,13 @@ V:虛醫令,交付調劑之藥品空針
   public void setReceiveNo(String receiveNo) {
     this.receiveNo = receiveNo;
   }
- 
+
+  public String getRocId() {
+    return rocId;
+  }
+
+  public void setRocId(String rocId) {
+    this.rocId = rocId;
+  }
+
 }

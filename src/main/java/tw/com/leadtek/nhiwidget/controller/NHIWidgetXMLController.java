@@ -318,7 +318,7 @@ public class NHIWidgetXMLController extends BaseController {
       @ApiParam(name = "drugUse", value = "用量，多筆用空格隔開，未填請帶 0",
           example = "1") @RequestParam(required = false) String drugUse,
       @ApiParam(name = "inhCode", value = "院內碼",
-          example = "03001K") @RequestParam(required = false) String inhCode,
+          example = "C013") @RequestParam(required = false) String inhCode,
       @ApiParam(name = "inhCodeDrugUse", value = "院內碼用量",
           example = "03001K") @RequestParam(required = false) String inhCodeDrugUse,
       @ApiParam(value = "不包含ICD條件", example = "false") @RequestParam(required = false) Boolean notICD,

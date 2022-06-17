@@ -405,6 +405,7 @@ public class IntelligentService {
    */
   private List<MR> getMRByCode(String dataFormat, String applYm, String fieldName, String code,
       int max, boolean countEvery, Date startDate, Date endDate) {
+    System.out.println("fieldName=" + fieldName + "," + code);
     Specification<MR> spec = new Specification<MR>() {
 
       private static final long serialVersionUID = 1012L;
@@ -431,24 +432,58 @@ public class IntelligentService {
     if (countEvery) {
       List<MR> result = new ArrayList<MR>();
       List<MR> list = mrDao.findAll(spec);
+      List<MR> useCodeMR = new ArrayList<MR>();
+      List<Long> mrIdList = new ArrayList<Long>();
       for (MR mr : list) {
-        String compare = null;
         if ("icdAll".equals(fieldName)) {
-          compare = mr.getIcdAll();
-        } else if ("codeAll".equals(fieldName)) {
-          compare = mr.getCodeAll();
-        } else if ("inhCode".equals(fieldName)) {
-          compare = mr.getInhCode();
-        }
-        if (countStringAppear(compare, code) > max) {
+          //compare = mr.getIcdAll();
           result.add(mr);
+        } else {
+          if ( max == 0) {
+          //if (countStringAppear(compare, code) > max) {
+            result.add(mr);
+          } else {
+            // 查該筆病歷的指定醫令用量
+            useCodeMR.add(mr);
+            mrIdList.add(mr.getId());
+          }
         }
+      }
+      if (useCodeMR.size() > 0) {
+        return getOrderCodeCountOver(list, mrIdList, fieldName, code, max);
       }
       return result;
     } else if (mrDao.count(spec) > max) {
       return mrDao.findAll(spec);
     }
     return null;
+  }
+  
+  private List<MR> getOrderCodeCountOver(List<MR> mrList, List<Long> mrIdList, String fieldName,
+      String code, int max) {
+    List<MR> result = new ArrayList<MR>();
+    List<Long> matchedMrIdList = new ArrayList<Long>();
+    // "inhCode" : "codeAll";
+    if (fieldName.equals("codeAll")) {
+      matchedMrIdList = opdDao.getMrIdByOrderCodeCount(code, max, mrIdList);
+    } else if (fieldName.equals("inhCode")) {
+      matchedMrIdList = opdDao.getMrIdByInhCodeCount(code, max, mrIdList);
+    }
+    for (MR mr : mrList) {
+      int index = -1;
+      for (int i = matchedMrIdList.size() - 1; i >= 0; i--) {
+        Long matchId = matchedMrIdList.get(i);
+        if (mr.getId().longValue() == matchId.longValue()) {
+          result.add(mr);
+          index = i;
+          break;
+        }
+      }
+      if (index > -1) {
+        matchedMrIdList.remove(index);
+      }
+    }
+    return result;
   }
 
   /**
@@ -941,8 +976,9 @@ public class IntelligentService {
   private void processHighRatioSingle(String chineseYm, String dataFormat, CODE_THRESHOLD ct,
       int max, String wording, int conditionCode, List<INTELLIGENT> intelligentList) {
     String fieldName = ct.getCode() == null ? "inhCode" : "codeAll";
+    System.out.println("ct.code=" + ct.getCode() + ", inhCode=" + ct.getInhCode() + "," + ct.getCodeType());
     String code = ct.getCode() == null ? ct.getInhCode() : ct.getCode();
-    List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, ct.getCode(), max, true,
+    List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, max, true,
         ct.getStartDate(), ct.getEndDate());
     if (list != null) {
       String reason = (wording != null) ? String.format(wording, code, max) : null;

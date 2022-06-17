@@ -57,7 +57,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.jsonwebtoken.Claims;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
-import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.constant.ORDER_TYPE;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
@@ -83,7 +82,6 @@ import tw.com.leadtek.nhiwidget.model.CodeBase;
 import tw.com.leadtek.nhiwidget.model.CompareWarning;
 import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
-import tw.com.leadtek.nhiwidget.model.rdb.CODE_THRESHOLD;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DHead;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CAL;
@@ -102,7 +100,6 @@ import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_DData;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
-import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -1636,6 +1633,7 @@ public class NHIWidgetXMLService {
     Path<String> pathName = root.get("name");
     Path<String> icdName = root.get("icdAll");
     Path<String> codeName = root.get("codeAll");
+    Path<String> inhCode = root.get("inhCode");
     Path<String> subjective = root.get("subjective");
     Path<String> objective = root.get("objective");
     Path<String> drg = root.get("drgCode");
@@ -1646,7 +1644,7 @@ public class NHIWidgetXMLService {
           cb.like(pathInhClinicId, ss[i] + "%"), cb.like(pathName, ss[i] + "%"),
           cb.like(icdName, "%," + ss[i] + "%"), cb.like(codeName, "%," + ss[i] + "%"),
           cb.like(subjective, "%," + ss[i] + "%"), cb.like(objective, "%," + ss[i] + "%"),
-          cb.like(drg, "%," + ss[i] + "%")));
+          cb.like(drg, "%," + ss[i] + "%"), cb.like(inhCode, "%," + ss[i] + "%")));
     }
     return result;
   }
@@ -1878,6 +1876,7 @@ public class NHIWidgetXMLService {
     boolean notOrderCode =
         smrp.getNotOrderCode() == null ? false : smrp.getNotOrderCode().booleanValue();
     addPredicate(root, predicate, cb, "codeAll", smrp.getOrderCode(), true, false, notOrderCode);
+    addPredicate(root, predicate, cb, "inhCode", smrp.getInhCode(), true, false, notOrderCode);
     if (smrp.getDrugUse() != null && smrp.getDrugUse().length() > 0
         && smrp.getOrderCode() != null) {
       String orderCode = smrp.getOrderCode().startsWith("%,") ? smrp.getOrderCode().substring(2)
@@ -2147,13 +2146,7 @@ public class NHIWidgetXMLService {
           predicate.add(cb.equal(root.get(paramName), params));
         }
       } else {
-        if (isNot) {
-          // System.out.println("not like " + params + "%");
-          predicate.add(
-              cb.or(cb.notLike(root.get(paramName), params + "%"), cb.isNull(root.get(paramName))));
-        } else {
-          predicate.add(cb.like(root.get(paramName), params + "%"));
-        }
+        addPredicateStringLike(root, predicate, cb, paramName, params, isNot);
       }
     } else {
       String[] ss = params.split(" ");
@@ -2166,20 +2159,7 @@ public class NHIWidgetXMLService {
             predicates.add(cb.equal(root.get(paramName), ss[i]));
           }
         } else {
-          if (i > 0 && (paramName.equals("icdAll") || paramName.equals("icdcmOthers")
-              || paramName.equals("icdpcs") || paramName.equals("codeAll"))) {
-            if (isNot) {
-              predicates.add(cb.notLike(root.get(paramName), "%," + ss[i] + "%"));
-            } else {
-              predicates.add(cb.like(root.get(paramName), "%," + ss[i] + "%"));
-            }
-          } else {
-            if (isNot) {
-              predicates.add(cb.notLike(root.get(paramName), ss[i] + "%"));
-            } else {
-              predicates.add(cb.like(root.get(paramName), ss[i] + "%"));
-            }
-          }
+          addPredicateStringLike(root, predicates, cb, paramName, ss[i], isNot);
         }
       }
       Predicate[] pre = new Predicate[predicates.size()];
@@ -2191,6 +2171,25 @@ public class NHIWidgetXMLService {
         } else {
           predicate.add(cb.or(predicates.toArray(pre)));
         }
+      }
+    }
+  }
+  
+  private void addPredicateStringLike(Root<?> root, List<Predicate> predicate, CriteriaBuilder cb,
+      String paramName, String params, boolean isNot) {
+    if ((paramName.equals("icdAll") || paramName.equals("icdcmOthers")
+        || paramName.equals("icdpcs") || paramName.equals("codeAll") || paramName.equals("inhCode"))) {
+      System.out.println("paramName:" + paramName + ", like " +  "%," + params + "%");
+      if (isNot) {
+        predicate.add(cb.notLike(root.get(paramName), "%," + params + "%"));
+      } else {
+        predicate.add(cb.like(root.get(paramName), "%," + params + "%"));
+      }
+    } else {
+      if (isNot) {
+        predicate.add(cb.notLike(root.get(paramName), params + "%"));
+      } else {
+        predicate.add(cb.like(root.get(paramName), params + "%"));
       }
     }
   }
@@ -2435,9 +2434,13 @@ public class NHIWidgetXMLService {
 
         List<OP_P> oppList = oppDao.findByOpdIdOrderByOrderSeqNo(opD.getId());
         List<MO> moList = new ArrayList<MO>();
-        for (OP_P op_P : oppList) {
+        for (int i = 0; i < oppList.size(); i++) {
+          OP_P opp = oppList.get(i);
+          if (opp.getOrderSeqNo() == null) {
+            opp.setOrderSeqNo(i+1);
+          }
           MO mo = new MO();
-          mo.setOPPData(op_P, codeTableService);
+          mo.setOPPData(opp, codeTableService);
           moList.add(mo);
         }
         result.setMos(moList);
@@ -2447,9 +2450,13 @@ public class NHIWidgetXMLService {
 
         List<IP_P> ippList = ippDao.findByIpdIdOrderByOrderSeqNo(ipD.getId());
         List<MO> moList = new ArrayList<MO>();
-        for (IP_P ip_P : ippList) {
+        for (int i = 0; i < ippList.size(); i++) {
+          IP_P ipp = ippList.get(i);
+          if (ipp.getOrderSeqNo() == null) {
+            ipp.setOrderSeqNo(i+1);
+          }
           MO mo = new MO();
-          mo.setIPPData(ip_P, codeTableService);
+          mo.setIPPData(ipp, codeTableService);
           moList.add(mo);
         }
         result.setMos(moList);
@@ -3096,7 +3103,8 @@ public class NHIWidgetXMLService {
       int index = -1;
       for (int i = 0; i < moList.size(); i++) {
         MO mo = moList.get(i);
-        if (opp.getDrugNo().equals(mo.getDrugNo())) {
+        if ((opp.getDrugNo() == null && opp.getInhCode() != null && opp.getInhCode().equals(opp.getInhCode())) 
+          || opp.getDrugNo().equals(mo.getDrugNo())) {
           int applStatus = mo.getApplStatus();
           boolean dirty = false;
           if (opp.getTotalQ() != null && mo.getTotalQ() != null
@@ -3188,7 +3196,7 @@ public class NHIWidgetXMLService {
    */
   private boolean updateOpp(OP_P opp, MO mo) {
     boolean result = false;
-    if (opp.getOrderSeqNo().intValue() != mo.getOrderSeqNo().intValue()) {
+    if (opp.getOrderSeqNo() != null && opp.getOrderSeqNo().intValue() != mo.getOrderSeqNo().intValue()) {
       result = true;
       opp.setOrderSeqNo(mo.getOrderSeqNo());
     }
@@ -3996,20 +4004,10 @@ public class NHIWidgetXMLService {
   }
 
   public String removeDash(String s) {
-    if (s != null && s.indexOf('-') <= 2) {
+    if (s != null && s.indexOf('-') <= 2 && s.indexOf('-') > 0) {
       return s.substring(0, s.indexOf('-'));
     }
     return s;
-  }
-
-  private void beforeSaveMRAndOPD(long tid, MR mr, OP_D opd) {
-    StringBuffer sb = new StringBuffer();
-    sb.append(tid);
-    sb.append(",");
-    sb.append(opd.getCaseType());
-    sb.append(",");
-    sb.append(opd.getSeqNo());
-    mr.setObjective(sb.toString());
   }
 
   public String newMrNote(MrNotePayload note, String mrId, boolean isDelete) {
@@ -5400,6 +5398,9 @@ public class NHIWidgetXMLService {
   }
 
   public String removeSlash(String s) {
+    if (s == null || s.length() == 0) {
+      return null;
+    }
     StringBuffer sb = new StringBuffer();
     for (int i = 0; i < s.length(); i++) {
       if (s.charAt(i) == '/') {
@@ -5724,7 +5725,6 @@ public class NHIWidgetXMLService {
     if (list == null || list.size() == 0) {
       return "無drg記錄";
     }
-    List<DrgCalPayload> data = new ArrayList<DrgCalPayload>();
     for (DRG_CAL drgCal : list) {
       if (drgCal.getIcdCM1().equals(icd)) {
         String tmp = ipd.getIcdCm1();
@@ -5859,6 +5859,9 @@ public class NHIWidgetXMLService {
     }
     if (cw.getCompareBy() == 1) {
       // 只比對限定時間內的病歷
+      if (cw.getRollbackHour() == 0) {
+        return true;
+      }
       return (mr.getMrEndDate().getTime() + ((long) cw.getRollbackHour() * 60L * 60000L)) > System
           .currentTimeMillis();
     }
@@ -6088,7 +6091,7 @@ public class NHIWidgetXMLService {
     if (values.get("INH_NO") != null && values.get("INH_NO").length() > 0) {
       mr.setInhClinicId(values.get("INH_NO"));
     }
-    if (values.get("INH_OWN_EXP") != null) {
+    if (values.get("INH_OWN_EXP") != null && values.get("INH_OWN_EXP").length() > 0) {
       mr.setOwnExpense(Integer.parseInt(values.get("INH_OWN_EXP")));
     }
     mr.setClinic(values.get("CLINIC"));
@@ -6252,10 +6255,22 @@ public class NHIWidgetXMLService {
     if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
       if (values.get("APPL_STATUS").indexOf('.') > 0) {
         updateOppOwnExpense(result, values.get("APPL_STATUS"), values.get("CARD_NO"));
+        if (values.get("TOTAL_OW") != null && Double.parseDouble(values.get("TOTAL_OW")) == 0) {
+          // 減免
+          result.setUnitP(0f);
+        } else {
+          result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
+        }
       } else {
         int applStatus = Integer.parseInt(values.get("APPL_STATUS"));
         if (applStatus > 0) {
           updateOppOwnExpense(result, values.get("APPL_STATUS"), values.get("CARD_NO"));
+          if (values.get("TOTAL_OW") != null && Double.parseDouble(values.get("TOTAL_OW")) == 0) {
+            // 減免
+            result.setUnitP(0f);
+          } else {
+            result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
+          }
         } else {
           // = 0 走健保
           result.setApplStatus(APPL_STATUS_THIS_MONTH);
@@ -6280,7 +6295,7 @@ public class NHIWidgetXMLService {
     if (result.getTotalQ() == null && values.get("TOTAL_Q") != null && values.get("TOTAL_Q").length() > 0) {
       result.setTotalQ(Double.parseDouble(values.get("TOTAL_Q")));
     }
-    if (values.get("UNIT_P") != null && values.get("UNIT_P").length() > 0) {
+    if (result.getUnitP() == null && values.get("UNIT_P") != null && values.get("UNIT_P").length() > 0) {
       result.setUnitP(Float.parseFloat(values.get("UNIT_P")));
     }
     if (values.get("TOTAL_DOT") != null && values.get("TOTAL_DOT").length() > 0) {
@@ -6301,6 +6316,11 @@ public class NHIWidgetXMLService {
     if (values.get("END_TIME") != null && values.get("END_TIME").length() > 0) {
       result.setEndTime(DateTool.convertExcelDateTimeToChinese(values.get("END_TIME"), true));
     }
+    if (result.getStartTime() == null && result.getInhCode() != null && values.get("FUNC_DATE") != null) {
+      String date = removeSlash(values.get("FUNC_DATE"));
+      result.setStartTime(date + "0000");
+      result.setEndTime(result.getStartTime());
+    }
     result.setPrsnId(values.get("PRSN_ID"));
     result.setChrMark(values.get("CHR_MARK"));
     result.setImgSource(values.get("IMG_SOURCE"));
@@ -6312,6 +6332,7 @@ public class NHIWidgetXMLService {
     result.setCommHospId(values.get("COMM_HOSP_ID"));
     result.setDrugSerialNo(values.get("DRUG_SERIAL_NO"));
     result.setReceiveNo(values.get("RECEIVE_NO"));
+    result.setRocId(values.get("ROC_ID"));
     return result;
   }
 
@@ -6934,7 +6955,6 @@ public class NHIWidgetXMLService {
     // 避免重複insert
     List<MR> mrList = mrDao.findByApplYmAndDataFormatOrderById(applYm, XMLConstant.DATA_FORMAT_IP);
 
-    HashMap<String, String> payCodeType = getPayCodeType();
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       HSSFRow row = sheet.getRow(i);
@@ -7300,7 +7320,7 @@ public class NHIWidgetXMLService {
    * @return 病歷民國年月
    */
   private String readTheseOPD(XSSFSheet sheet) {
-    System.out.println("readTheseOPD");
+    System.out.println("readTheseOPD, isMASK=" + ISMASK);
     
     int titleRowIndex = 0;
     // 取得各欄位名稱的位置
@@ -7317,7 +7337,9 @@ public class NHIWidgetXMLService {
     
     // 避免重複insert
     List<MR> mrList = mrDao.findByMrEndDateAndDataFormatOrderById(XMLConstant.DATA_FORMAT_OP, orderDate[0], orderDate[1]);
+    //System.out.println("mrList:" + mrList.size() + "," +  orderDate[0] + " , " +  orderDate[1]);
     List<OP_D> opdList = opdDao.findByIDFromMR(orderDate[0], orderDate[1]);
+    //System.out.println("opdList:" + opdList.size());
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
     
     for (int i = titleRowIndex + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
@@ -7326,34 +7348,25 @@ public class NHIWidgetXMLService {
         // System.out.println("sheet:" + i + ", row=" + j + " is null");
         continue;
       }
-      values = ExcelUtil.readCellValue(columnMap, row);
+      values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
       // 存放有差異的欄位
       List<FILE_DIFF> diffList = null;
-      if (values.get("FUNC_END_DATE") != null && values.get("FUNC_END_DATE").length() > 0) {
-        values.put("FUNC_END_DATE", DateTool.removeSlashForChineseYear(values.get("FUNC_END_DATE")));
-      }
-      if (values.get("ROC_ID") == null && values.get("FUNC_DATE") == null) {
-        System.out.println("error row=" + i);
-      }
-      if (values.get("CARD_NO") != null && values.get("CARD_NO").length() > 0) {
-        String cardNo = values.get("CARD_NO");
-        int index = cardNo.indexOf('-');
-        if (index > -1) {
-          if (index < 3) {
-            values.put("CARD_NO", cardNo.substring(index + 1));
-          } else if (index > 3) {
-            values.put("CARD_NO", cardNo.substring(0, index));
-          }
-        }
-      }
+      
       //System.out.println(values.get("ROC_ID") + "," + values.get("CARD_NO"));
+      OP_D opdDB = null; 
       OP_D opd = findOpdByOpdValues(opdList, values);
-      if (opd.getFuncDate() == null) {
+      if (opd.getId() != null) {
+        opdDB = opd;
+        opd = getOpd(values);
+        opd.setId(opdDB.getId());
+        opd.setMrId(opdDB.getMrId());
+      }
+      if (opd.getCaseType() == null) {
         // 此 opd 為依據醫令清單建立，因此不需跑檢查更新記錄
         String funcType = opd.getFuncType();
-        updateOpd(opd, values);
+        // updateOpd(opd, values);
         if (funcType != null) {
-          // 病歷的科別是錯誤的
+          // 病歷的科別是錯誤的，改讀醫令的科別
           opd.setFuncType(funcType);
         }
       }
@@ -7392,7 +7405,7 @@ public class NHIWidgetXMLService {
    * @param sheet
    */
   private void readTheseOPP(XSSFSheet sheet) {
-    System.out.println("readTheseOPP");
+    System.out.println("readTheseOPP, isMASK=" + ISMASK);
     // 取得各欄位名稱的位置
     int titleRowIndex = 2;
     HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRowIndex), parameters.getByCat("OP_P"));
@@ -7400,40 +7413,43 @@ public class NHIWidgetXMLService {
     java.util.Date[] orderDate = new java.util.Date[2];
     orderDate[0] = DateTool.convertChineseToYear(orderDateString[0]);
     orderDate[1] = DateTool.convertChineseToYear(orderDateString[1]);
-    
+
     Date[] sqlDate = new Date[2];
     sqlDate[0] = new Date(orderDate[0].getTime());
     sqlDate[1] = new Date(orderDate[1].getTime());
-    
+
     String applYm = orderDateString[0].substring(0, 5);
     OP_T opt = getOpt(applYm);
     // 避免重複insert
-    List<MR> mrList = mrDao.getByDataFormatAndMrDateBetween(XMLConstant.DATA_FORMAT_OP, orderDate[0], orderDate[1]);
-    List<OP_D> opdList = opdDao.findByIDFromMR(sqlDate[0],  sqlDate[1]);
+    List<MR> mrList = mrDao.getByDataFormatAndMrDateBetween(XMLConstant.DATA_FORMAT_OP,
+        orderDate[0], orderDate[1]);
+    List<OP_D> opdList = opdDao.findByIDFromMR(sqlDate[0], sqlDate[1]);
     HashMap<String, Integer> rocIdDateCount = rocIdDateCount(opdList);
-    List<OP_P> oppList = oppDao.getByMrIdFromMR(orderDate[0],  orderDate[1]);
+    List<OP_P> oppList = oppDao.getByMrIdFromMR(orderDate[0], orderDate[1]);
     // 要存到 DB 的 batch
     List<OP_P> oppBatch = new ArrayList<OP_P>();
-    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
-    HashMap<String, String> payCodeType = getPayCodeType();
+    CompareWarning cw =
+        new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
     HashMap<String, String> values = null;
-    HashMap<Long, Integer> mrIdOwnExpense = new HashMap<Long, Integer>();
+    HashMap<String, List<OP_P>> oppsNew = aggregateTheseOPP(sheet, titleRowIndex + 1, columnMap);
+    
     for (int i = titleRowIndex + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       XSSFRow row = sheet.getRow(i);
       if (row == null || row.getCell(0) == null) {
         continue;
       }
-      values = ExcelUtil.readCellValue(columnMap, row);
-      values.put("FUNC_DATE", removeSlash(values.get("FUNC_DATE")));
-      if (ISMASK) {
-        values.put("ROC_ID", StringUtility.maskString(values.get("ROC_ID"), StringUtility.MASK_MOBILE));
-        values.put("NAME", StringUtility.maskString(values.get("NAME"), StringUtility.MASK_NAME));
-        values.put("PRSN_NAME", StringUtility.maskString(values.get("PRSN_NAME"), StringUtility.MASK_NAME));
+      values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
+      OP_P oppNew = findOppByOppValues(oppsNew, values);
+      if (oppNew == null) {
+        // 相同病歷相同醫令已處理過
+        continue; 
       }
       MR mr = null;
       OP_D opd = findOpdByTheseOpp(opdList, rocIdDateCount, values);
+
       if (opd == null) {
         mr = initialMrAndOpdByOpp(values);
+        mr.setApplYm(applYm);
         opd = newOpdByOpp(values);
         opd.setOptId(opt.getId());
         opd.setMrId(mr.getId());
@@ -7458,7 +7474,17 @@ public class NHIWidgetXMLService {
           mr.setIcdcm1(null);  
         }
       }
-
+      if (!oppNew.getStartTime().equals(oppNew.getEndTime())) {
+        if (!oppNew.getStartTime().substring(0, 7).equals(opd.getFuncDate()) ||
+            !oppNew.getEndTime().substring(0, 7).equals(opd.getFuncEndDate())){
+          opd.setFuncDate(oppNew.getStartTime().substring(0, 7));
+          opd.setFuncEndDate(oppNew.getEndTime().substring(0, 7));
+          opdDao.updateFuncTypeById(oppNew.getStartTime().substring(0, 7), oppNew.getEndTime().substring(0, 7), opd.getId());
+          
+          mr.setMrEndDate(DateTool.convertChineseToYear(opd.getFuncEndDate()));
+          mr.setMrDate(DateTool.convertChineseToYear(opd.getFuncDate()));
+        }
+      }
       // 存放有差異的欄位
       List<FILE_DIFF> diffList = null;
       if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value()
@@ -7467,10 +7493,13 @@ public class NHIWidgetXMLService {
         moDao.deleteByMrId(mr.getId());
       }
 
-      OP_P opp = findOppByOppValues(oppList, values, (mr == null) ? null : mr.getId());
-      //updateMrIdOwnExpense(mrIdOwnExpense, opp, mr.getId());
+      OP_P opp = findOppByOppValues(oppList, oppNew, (mr == null) ? null : mr.getId());
+
       if (diffList == null) {
-        if (opp.getId() != null && !updateOpp(opp, values)) {
+        if (opp == null) {
+          // DB 尚未有該筆醫令
+          opp = oppNew;
+        } else if (opp != null && !updateOpp(opp, oppNew)) {
           // 資料未異動
           continue;
         }
@@ -7485,11 +7514,10 @@ public class NHIWidgetXMLService {
             // 用主診斷碼是否為 null 當做mr是否要更新的依據
             mr.setIcdcm1(null);
           }
-          opp.setPayCodeType(payCodeType.get(opp.getDrugNo()));
         }
         if (opp.getInhCode() != null && opp.getInhCode().length() > 0) {
           if (mr.getInhCode() == null) {
-            mr.setInhCode(mr.getInhCode() + opp.getInhCode() + ",");
+            mr.setInhCode("," + opp.getInhCode() + ",");
           } else if (mr.getInhCode().indexOf("," + opp.getInhCode() + ",") < 0){
             mr.setInhCode(mr.getInhCode() + opp.getInhCode() + ",");
             // 用主診斷碼是否為 null 當做mr是否要更新的依據
@@ -7501,6 +7529,7 @@ public class NHIWidgetXMLService {
         maskOPP(opp, opd.getCaseType());
         opp.setUpdateAt(new java.util.Date());
         if (opp.getId() == null) {
+          // 還未存到DB
           oppList.add(opp);
         }
         oppBatch.add(opp);
@@ -7547,17 +7576,6 @@ public class NHIWidgetXMLService {
       oppDao.saveAll(oppBatch);
     }
     saveMrAndOpd(mrList, opdList, oppList);
-  }
-  
-  private void updateMrIdOwnExpense(HashMap<Long, Integer> mrIdOwnExpense, OP_P opp, Long mrId) {
-    if ("Y".equals(opp.getPayBy()) || "Z".equals(opp.getPayBy())) {
-      Integer ownExpense = mrIdOwnExpense.get(opp.getMrId());
-      if (ownExpense == null) {
-        mrIdOwnExpense.put(mrId, opp.getTotalDot());
-      } else {
-        mrIdOwnExpense.put(mrId, ownExpense + opp.getTotalDot());
-      }
-    }
   }
   
   public static String addICDCMDot(String s) {
@@ -7715,6 +7733,7 @@ public class NHIWidgetXMLService {
     result.setRocId(values.get("ROC_ID"));
     result.setPrsnName(values.get("PRSN_NAME"));
     result.setMrEndDate(DateTool.convertChineseToYear(values.get("FUNC_DATE")));
+    result.setMrDate(DateTool.convertChineseToYear(values.get("FUNC_DATE")));
     result.setUpdateAt(new java.util.Date());
     result.setOwnExpense(0);
     result = mrDao.save(result);
@@ -7723,45 +7742,85 @@ public class NHIWidgetXMLService {
   
   private void saveMrAndOpd(List<MR> mrList, List<OP_D> opdList, List<OP_P> oppList) {
     for (MR mr : mrList) {
+      // 自費金額
       int ownExpense = 0;
+      // 病歷點數
+      int total = 0;
+      // 用藥明細點數小計, drug_no length=10
+      int drugDot = 0;
+      // 診療明細點數小計, order type = 2
+      int treatDot = 0;
+      // 診察費點數, order type = 0
+      int diagDot = 0;
+      // 藥事服務費點數(調劑費), order type = 9
+      int dsvcDot = 0;
+      // 特殊材料明細點數小計, order type = 3
+      int metrDot = 0;
+      
       for(int i = oppList.size() - 1; i >=0 ; i--) {
-        if (oppList.get(i).getMrId() != mr.getId()) {
+        OP_P opp = oppList.get(i);
+        if (opp.getMrId() != mr.getId()) {
           continue;
         }
-        if ("Y".equals(oppList.get(i).getPayBy()) || "Z".equals(oppList.get(i).getPayBy()) ) {
-          ownExpense += oppList.get(i).getTotalDot();
-          oppList.remove(i);
+        total += opp.getTotalDot();
+        if ("Y".equals(opp.getPayBy()) || "Z".equals(opp.getPayBy()) ) {
+          ownExpense += opp.getTotalDot();
+        } else if (opp.getDrugNo() != null && opp.getDrugNo().length() == 10) {
+          drugDot += opp.getTotalDot();
+        } else if (opp.getDrugNo() != null && opp.getDrugNo().length() == 12) {
+          metrDot += opp.getTotalDot();
+        } else if ("2".equals(opp.getOrderType())) {
+          treatDot += opp.getTotalDot();
+        } else if ("0".equals(opp.getOrderType())) {
+          diagDot += opp.getTotalDot();
+        } else if ("9".equals(opp.getOrderType())) {
+          dsvcDot += opp.getTotalDot();
         }
+        oppList.remove(i);
       }
+
       if (mr.getOwnExpense().intValue() != ownExpense) {
         mr.setIcdcm1(null);
         mr.setOwnExpense(ownExpense);
       }
-      if (mr.getTotalDot() == null) {
-        mr.setTotalDot(mr.getOwnExpense());
-      }
-      if (mr.getIcdcm1() != null) {
-        continue;
-      }
       int opdIndex = -1;
-      for(int i=0; i<opdList.size();i++) {
+      for (int i = 0; i < opdList.size(); i++) {
         OP_D opd = opdList.get(i);
         if (opd.getMrId().longValue() == mr.getId().longValue()) {
           opdIndex = i;
           break;
         }
       }
-      OP_D opd = opdList.remove(opdIndex); 
-//      if (opd.getRocId().equals("S101840488")) {
-//        System.out.println("new func type=" + opd.getFuncType() + ", clinic=" + mr.getClinic());
-//      }
-      if (mr.getClinic() != null) {
+      OP_D opd = opdList.remove(opdIndex);
+      if (opd.getDrugDot() == null) {
+        opd.setDrugDot(drugDot);
+      } 
+      if (opd.getTreatDot() == null) {
+        opd.setTreatDot(treatDot);
+      }
+      if (opd.getMetrDot() == null) {
+        opd.setMetrDot(metrDot);
+      }
+      if (opd.getDiagDot() == null) {
+        opd.setDiagDot(diagDot);
+      }
+      if (opd.getDsvcDot() == null) {
+        opd.setDsvcDot(dsvcDot);
+      }
+      if (opd.getTotalDot() != null) {
+        mr.setTotalDot(opd.getTotalDot() + mr.getOwnExpense());
+      } else {
+        mr.setTotalDot(total);
+      }
+      
+      //if (mr.getClinic() != null) {
         // 該筆OP_D有讀過病歷檔，所以要更新科別，改以醫令科別為主
 //        if (opd.getRocId().equals("S101840488")) {
 //          System.out.println("new func type=" + opd.getFuncType() + ", id=" + opd.getId());
 //        }
-        opdDao.updateFuncTypeById(opd.getFuncType(), opd.getId());
-      }
+      opdDao.updateFuncTypeById(opd.getFuncType(), opd.getDrugDot(), opd.getTreatDot(), opd.getMetrDot(),
+        opd.getDiagDot(), opd.getDsvcDot(), opd.getId());
+      //}
       mr.setIcdcm1(opd.getIcdCm1());
       mr.setUpdateAt(new java.util.Date());
       mr.setdId(opd.getId());
@@ -7883,8 +7942,8 @@ public class NHIWidgetXMLService {
   
   private OP_D findOpdByOpdValues(List<OP_D> list, HashMap<String, String> values) {
     for (OP_D opd : list) {
-      if (opd.getFuncEndDate().equals(values.get("FUNC_END_DATE")) && opd.getRocId().equals(values.get("ROC_ID")) && 
-          opd.getPrsnName().equals(values.get("PRSN_NAME"))) {
+      if (opd.getFuncEndDate().equals(values.get("FUNC_END_DATE")) && opd.getRocId().equals(values.get("ROC_ID"))) {
+          //&& opd.getPrsnName().equals(values.get("PRSN_NAME"))) {
         if (opd.getCardNo() != null && opd.getCardNo().equals(values.get("CARD_NO"))) {
           return opd;
         }
@@ -7904,15 +7963,15 @@ public class NHIWidgetXMLService {
     return getOpd(values);
   }
   
-  private OP_P findOppByOppValues(List<OP_P> list, HashMap<String, String> values, Long mrId) {
+  private OP_P findOppByOppValues(List<OP_P> list, OP_P oppNew, Long mrId) {
     for (OP_P opp : list) {
       if (mrId != null && opp.getMrId().longValue() == mrId.longValue()) {
-        if (opp.getInhCode() != null && opp.getInhCode().equals(values.get("INH_CODE"))) {
+        if (opp.getInhCode() != null && opp.getInhCode().equals(oppNew.getInhCode())) {
           return opp;
         }
       }
     }
-    return getOpp(values);
+    return null;
   }
   
   private IP_D findIpdByIpdValues(List<IP_D> list, HashMap<String, String> values) {
@@ -8231,6 +8290,82 @@ public class NHIWidgetXMLService {
     return result;
   }
   
+  /**
+   * 將杏翔門診醫令清單中同一病患同科別同醫令的放在一起，數量相加
+   * @param sheet
+   * @param startRow
+   * @param columnMap
+   * @return
+   */
+  private HashMap<String, List<OP_P>> aggregateTheseOPP(XSSFSheet sheet, int startRow, HashMap<Integer, String> columnMap){
+    HashMap<String, List<OP_P>> result = new HashMap<String, List<OP_P>>();
+    HashMap<String, String> payCodeTypes = getPayCodeType();
+    for (int i = startRow; i < sheet.getPhysicalNumberOfRows(); i++) {
+      XSSFRow row = sheet.getRow(i);
+      if (row == null || row.getCell(0) == null) {
+        continue;
+      }
+      HashMap<String, String> values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
+      String key = values.get("ROC_ID") + values.get("CARD_NO") + values.get("FUNC_TYPE");
+      List<OP_P> oppList = result.get(key);
+      if (oppList == null) {
+        oppList = new ArrayList<OP_P>();
+        result.put(key, oppList);
+      }
+      boolean isFound = false;
+      for (OP_P opp : oppList) {
+        if (opp.getInhCode().equals(values.get("INH_CODE"))) {
+          // 院內碼
+          isFound = true;
+          if (opp.getApplStatus().intValue() == APPL_STATUS_OE) {
+            opp.setTotalQ(
+                opp.getTotalQ().doubleValue() + Double.parseDouble(values.get("APPL_STATUS")));
+          } else {
+            opp.setTotalQ(
+                opp.getTotalQ().doubleValue() + Double.parseDouble(values.get("TOTAL_Q")));
+          }
+          opp.setTotalDot((int) Math.round(opp.getTotalQ() * opp.getUnitP()));
+          if (values.get("FUNC_DATE") != null) {
+            long startTime = Long.valueOf(opp.getStartTime());
+            long endTime = Long.valueOf(opp.getEndTime());
+            long newTime = Long.valueOf(values.get("FUNC_DATE") + "0000");
+            if (newTime < startTime) {
+              opp.setStartTime(String.valueOf(newTime));
+            } else if (newTime > endTime) {
+              opp.setEndTime(String.valueOf(newTime));
+            }
+          }
+          break;
+        }
+      }
+      if (!isFound) {
+        OP_P opp = getOpp(values);
+        if (opp.getDrugNo() != null) {
+          if (opp.getDrugNo().length() == 10) {
+            // 藥費
+            opp.setPayCodeType("7");
+            // 醫令類別：用藥明細
+            opp.setOrderType("1");
+          } else if (opp.getDrugNo().length() == 12) {
+            // 衛材品項費
+            opp.setPayCodeType("23");
+            // 醫令類別：特殊材料
+            opp.setOrderType("3");
+          } else {
+            opp.setPayCodeType(payCodeTypes.get(opp.getDrugNo()));
+            if ("6".equals(opp.getPayCodeType())) {
+              // 6:調劑費 <-> order type 9:藥事服務費
+              opp.setOrderType("9");
+            }
+          }
+        }
+        opp.setUpdateAt(new java.util.Date());
+        oppList.add(opp);
+      }
+    }
+    return result;
+  }
+  
   private IP_D newIpdByIpp(IP_P ipp) {
     IP_D result = new IP_D();
     result.setFuncType(ipp.getFuncType());
@@ -8282,7 +8417,7 @@ public class NHIWidgetXMLService {
     }
     return mrDao.save(result);
   }
-  
+    
   /**
    * 更新 opp
    * 
@@ -8290,38 +8425,26 @@ public class NHIWidgetXMLService {
    * @param mo
    * @return true:資料有異動，false:資料無異動
    */
-  private boolean updateOpp(OP_P opp, HashMap<String, String> values) {
+  private boolean updateOpp(OP_P opp, OP_P newOPP) {
     boolean result = false;
-    if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
-      if (values.get("APPL_STATUS").indexOf('.') > 0) {
-        // 自費
-        if (opp.getApplStatus().intValue() != APPL_STATUS_OE) {
-          updateOppOwnExpense(opp, values.get("APPL_STATUS"), values.get("CARD_NO"));
-          result = true;
-        }
-      } else {
-        if (opp.getApplStatus().intValue() != APPL_STATUS_OE) {
-          updateOppOwnExpense(opp, values.get("APPL_STATUS"), values.get("CARD_NO"));
-          result = true;
-        }
-      }
-    } else {
-      opp.setApplStatus(APPL_STATUS_THIS_MONTH);
-      opp.setPayBy("N");
+    if (opp.getApplStatus().intValue() != newOPP.getApplStatus().intValue()) {
+      result = true;
+      opp.setApplStatus(newOPP.getApplStatus());
+      opp.setPayBy(newOPP.getPayBy());
     }
     
-    if (opp.getDrugUse() != null && !String.valueOf(opp.getDrugUse()).equals(values.get("DRUG_USE"))) {
+    if (opp.getDrugUse() != null && newOPP.getDrugUse() != null && opp.getDrugUse().doubleValue() != newOPP.getDrugUse().doubleValue()) {
       result = true;
-      opp.setDrugUse(Double.parseDouble(values.get("DRUG_USE")));
+      opp.setDrugUse(newOPP.getDrugUse());
     }
     if (opp.getDrugFre() != null) {
-      if (!opp.getDrugFre().equals(values.get("DRUG_FRE"))) {
+      if (!opp.getDrugFre().equals(newOPP.getDrugFre())) {
         result = true;
-        opp.setDrugFre(values.get("DRUG_FRE"));
+        opp.setDrugFre(newOPP.getDrugFre());
       }
-    } else if (values.get("DRUG_FRE") != null) {
+    } else if (newOPP.getDrugFre() != null) {
       result = true;
-      opp.setDrugFre(values.get("DRUG_FRE"));
+      opp.setDrugFre(newOPP.getDrugFre());
     }
     return result;
   }
@@ -8334,6 +8457,7 @@ public class NHIWidgetXMLService {
     result.setIdBirthYmd(values.get("ID_BIRTH_YMD"));
     result.setPrsnName(values.get("PRSN_NAME"));
     result.setFuncEndDate(values.get("FUNC_DATE"));
+    result.setFuncDate(values.get("FUNC_DATE"));
     result.setIcdCm1(addICDCMDot(values.get("ICD_CM_1")));
     result.setReceiveNo(values.get("RECEIVE_NO"));
     if (values.get("CARD_NO") != null && values.get("CARD_NO").length() > 0) {
@@ -8395,5 +8519,59 @@ public class NHIWidgetXMLService {
       }
     }
     return false;
+  }
+  
+  private HashMap<String, String> formatOPDValues(HashMap<String, String> values) {
+    HashMap<String, String> result = values;
+    result.put("FUNC_DATE", removeSlash(values.get("FUNC_DATE")));
+    result.put("ICD_CM_1", addICDCMDot(values.get("ICD_CM_1")));
+    if (values.get("FUNC_END_DATE") != null && values.get("FUNC_END_DATE").length() > 0) {
+      result.put("FUNC_END_DATE", DateTool.removeSlashForChineseYear(values.get("FUNC_END_DATE")));
+    }
+    if (values.get("CARD_NO") != null && values.get("CARD_NO").length() > 0) {
+      String cardNo = values.get("CARD_NO");
+      int index = cardNo.indexOf('-');
+      if (index > -1) {
+//        if (index < 3) {
+//          values.put("CARD_NO", cardNo.substring(index + 1));
+//        } else if (index > 3) {
+//          values.put("CARD_NO", cardNo.substring(0, index));
+//        }
+        result.put("CARD_NO", cardNo.substring(0, index));
+      }
+    }
+    if (ISMASK) {
+      result.put("ROC_ID", StringUtility.maskString(values.get("ROC_ID"), StringUtility.MASK_MOBILE));
+      result.put("NAME", StringUtility.maskString(values.get("NAME"), StringUtility.MASK_NAME));
+      result.put("PRSN_NAME", StringUtility.maskString(values.get("PRSN_NAME"), StringUtility.MASK_NAME));
+      result.put("PHAR_ID", StringUtility.maskString(values.get("PHAR_ID"), StringUtility.MASK_MOBILE));
+      result.put("PRSN_ID", StringUtility.maskString(values.get("PRSN_ID"), StringUtility.MASK_MOBILE));
+    }
+    return result;
+  }
+  
+  private OP_P findOppByOppValues(HashMap<String, List<OP_P>> map, HashMap<String, String> values) {
+    for (String key : map.keySet()) {
+      String keyNew = values.get("ROC_ID") + values.get("CARD_NO") + values.get("FUNC_TYPE");
+      if (!key.equals(keyNew)) {
+        continue;
+      }
+      List<OP_P> oppList = map.get(key);
+      if (oppList == null || oppList.size() == 0) {
+        return null;
+      }
+      int index = -1;
+      for (int i=0; i<oppList.size(); i++) {
+        OP_P opp = oppList.get(i);
+        if (opp.getInhCode().equals(values.get("INH_CODE"))) {
+          index = i;
+          break;
+        }
+      }
+      if (index > -1) {
+        return oppList.remove(index);
+      }
+    }
+    return null;
   }
 }

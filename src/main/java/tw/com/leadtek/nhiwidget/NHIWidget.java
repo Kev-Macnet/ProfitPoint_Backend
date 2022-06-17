@@ -16,12 +16,10 @@ public class NHIWidget extends SpringBootServletInitializer {
   }
 
   public static void main(String[] args) {
-	  try {
-		  SpringApplication.run(NHIWidget.class, args);
-	} catch (Exception e) {
-		// TODO: handle exception
-		System.out.println(e);
-	}
-    //SpringApplication.run(NHIWidget.class, args);
+    try {
+      SpringApplication.run(NHIWidget.class, args);
+    } catch (Exception e) {
+      System.out.println(e);
+    }
   }
 }
