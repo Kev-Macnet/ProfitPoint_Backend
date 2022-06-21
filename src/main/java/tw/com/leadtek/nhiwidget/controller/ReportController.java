@@ -470,6 +470,7 @@ public class ReportController extends BaseController {
 		return null;
 	}
   
+  @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
   @ApiOperation(value = "健保藥費概況-匯出", notes = "健保藥費概況-匯出")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/healthCareCostExport")
@@ -510,8 +511,8 @@ public class ReportController extends BaseController {
 			@ApiParam(name = "status", value = "案件狀態與各別數量(可複選)", example = "無須變更 評估不調整 優化完成 待確認 待處理 疑問標示")
 			@RequestParam(required = false) String status,
 			@ApiParam(name = "physical", value = "是否包含列出就醫清單", example = "true")@RequestParam(required = false) boolean physical,
-			@ApiParam(name = "startMonth", value = "開始月份", example = "2022/06") @RequestParam(required = false) String startMonth,
-			@ApiParam(name = "endMonth", value = "結束月份", example = "2022/07") @RequestParam(required = false) String endMonth) {
+			@ApiParam(name = "startMonth", value = "開始月份", example = "2022/01") @RequestParam(required = false) String startMonth,
+			@ApiParam(name = "endMonth", value = "結束月份", example = "2022/12") @RequestParam(required = false) String endMonth) {
 		
 		List<CaseStatusAndQuantity> results=new ArrayList<CaseStatusAndQuantity>();
 		

@@ -1,6 +1,7 @@
 package tw.com.leadtek.nhiwidget.payload.report;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 import io.swagger.annotations.ApiModel;
@@ -21,8 +22,8 @@ public class CaseStatusAndQuantity extends BaseResponse implements Serializable{
 	@ApiModelProperty(value="案件狀態與各別數量", required = true)
 	private Map<String, Integer> statusMap;
 
-	@ApiModelProperty(value="就醫清單", required = true)
-	private Map<String, String> physicalMap;
+	@ApiModelProperty(value="就醫編號清單", required = true)
+	private Map<String, List<String>> physicalMap;
 
 	public String getCalculateMonth() {
 		return calculateMonth;
@@ -40,11 +41,11 @@ public class CaseStatusAndQuantity extends BaseResponse implements Serializable{
 		this.statusMap = statusMap;
 	}
 
-	public Map<String, String> getPhysicalMap() {
+	public Map<String, List<String>> getPhysicalMap() {
 		return physicalMap;
 	}
 
-	public void setPhysicalMap(Map<String, String> physicalMap) {
+	public void setPhysicalMap(Map<String, List<String>> physicalMap) {
 		this.physicalMap = physicalMap;
 	}
 	

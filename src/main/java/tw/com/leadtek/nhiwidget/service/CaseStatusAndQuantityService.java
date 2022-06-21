@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.payload.report.CaseStatusAndQuantity;
 import tw.com.leadtek.tools.DateTool;
@@ -46,6 +47,9 @@ public class CaseStatusAndQuantityService {
 	
 	@Autowired
 	private OP_DDao opdDao;
+	
+	@Autowired
+	private IP_DDao ipdDao;
 
 	//案件狀態與各別數量數據
 	public List<CaseStatusAndQuantity> getData(boolean physical,String status,String sMonth,String eMonth) {
@@ -82,7 +86,7 @@ public class CaseStatusAndQuantityService {
 		  		endStr.append(DateTool.convertToChineseYear(format2.format(end.getTime())));
 		  		
   				Map<String, Integer> statusMap=new HashMap<String, Integer>();
-  				Map<String, String> physicalMap=new HashMap<String, String>();
+  				Map<String, List<String>> physicalMap=new HashMap<String, List<String>>();
 		  		
 		  		//取得案件狀態與各別數量數據
 		  		List<Object[]> objs =opdDao.findTStatusCount(startStr.toString(), endStr.toString());
@@ -120,6 +124,84 @@ public class CaseStatusAndQuantityService {
 				//包含就醫清單
 				if(physical) {
 					
+					for(int i=0;i<statusList.size();i++) {
+						physicalMap.put(statusList.get(i),new ArrayList<String>());
+					}
+					
+					List<Object[]> physicalOP=opdDao.findOPPhysical(startStr.toString(), endStr.toString());
+					List<Object[]> physicalIP=ipdDao.findIPPhysical(startStr.toString(), endStr.toString());
+					
+			  		for(int i=0;i<physicalOP.size();i++) {
+			  			if(physicalOP.get(i)[0]!=null && physicalOP.get(i)[1]!=null) {
+			  				Integer statusID=Integer.valueOf(physicalOP.get(i)[0].toString());
+			  				String INH_CLINIC_ID=physicalOP.get(i)[1].toString();
+			  				String statusCHI="";
+			  				
+			  				if(statusID==DISEASE_CLASSIFICATION_MANAGEMENT && statusList.contains("疾病分類管理")) {
+			  					statusCHI="疾病分類管理";
+			  				}
+			  				else if(statusID==CONFIRM && statusList.contains("待確認")) {
+			  					statusCHI="待確認";
+			  				}
+			  				else if(statusID==QUESTION_MARK && statusList.contains("疑問標示")) {
+			  					statusCHI="疑問標示";
+			  				}
+			  				else if(statusID==BE_PROCESSED && statusList.contains("待處理")) {
+			  					statusCHI="待處理";
+			  				}
+			  				else if(statusID==NO_NEED_CHANGE && statusList.contains("無須變更")) {
+			  					statusCHI="無須變更";
+			  				}
+			  				else if(statusID==OPTIMIZATION_COMPLETE && statusList.contains("優化完成")) {
+			  					statusCHI="優化完成";
+			  				}
+			  				else if(statusID==EVALUATION_NOT_ADJUST && statusList.contains("評估不調整")) {
+			  					statusCHI="評估不調整";
+			  				}
+			  				
+			  				if(!statusCHI.equals("")) {
+				  				List<String>clinic_idList= physicalMap.get(statusCHI);
+				  				clinic_idList.add(INH_CLINIC_ID);
+				  				physicalMap.put(statusCHI,clinic_idList);
+			  				}
+			  			}
+			  		}
+			  		
+			  		for(int i=0;i<physicalIP.size();i++) {
+			  			if(physicalIP.get(i)[0]!=null && physicalIP.get(i)[1]!=null) {
+			  				Integer statusID=Integer.valueOf(physicalIP.get(i)[0].toString());
+			  				String INH_CLINIC_ID=physicalIP.get(i)[1].toString();
+			  				String statusCHI="";
+			  				
+			  				if(statusID==DISEASE_CLASSIFICATION_MANAGEMENT && statusList.contains("疾病分類管理")) {
+			  					statusCHI="疾病分類管理";
+			  				}
+			  				else if(statusID==CONFIRM && statusList.contains("待確認")) {
+			  					statusCHI="待確認";
+			  				}
+			  				else if(statusID==QUESTION_MARK && statusList.contains("疑問標示")) {
+			  					statusCHI="疑問標示";
+			  				}
+			  				else if(statusID==BE_PROCESSED && statusList.contains("待處理")) {
+			  					statusCHI="待處理";
+			  				}
+			  				else if(statusID==NO_NEED_CHANGE && statusList.contains("無須變更")) {
+			  					statusCHI="無須變更";
+			  				}
+			  				else if(statusID==OPTIMIZATION_COMPLETE && statusList.contains("優化完成")) {
+			  					statusCHI="優化完成";
+			  				}
+			  				else if(statusID==EVALUATION_NOT_ADJUST && statusList.contains("評估不調整")) {
+			  					statusCHI="評估不調整";
+			  				}
+			  				
+			  				if(!statusCHI.equals("")) {
+				  				List<String>clinic_idList= physicalMap.get(statusCHI);
+				  				clinic_idList.add(INH_CLINIC_ID);
+				  				physicalMap.put(statusCHI,clinic_idList);
+			  				}
+			  			}
+			  		}
 				}
 				
 				caseStatusAndQuantity.setCalculateMonth(format1.format(start.getTime()));

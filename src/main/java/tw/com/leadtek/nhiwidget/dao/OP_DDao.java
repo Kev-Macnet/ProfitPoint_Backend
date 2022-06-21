@@ -50,6 +50,11 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "ON OP.STATUS = IP.STATUS ORDER BY OP.STATUS",nativeQuery=true)
   public List<Object[]>findTStatusCount(String smonth,String emonth);
   
+  //門急診就醫紀錄編號
+  @Query(value="SELECT MR.STATUS AS STATUS, MR.INH_CLINIC_ID AS CLINIC_ID "
+  		+ "FROM OP_D INNER JOIN MR ON OP_D.MR_ID =MR.ID WHERE OP_D.FUNC_END_DATE BETWEEN ?1 AND ?2", nativeQuery=true)
+  public List<Object[]> findOPPhysical(String smonth,String emonth);
+  
   //門急診病例總點數
   @Query(value="SELECT OP.OP_DOT FROM "
 	  		+ "(SELECT SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
