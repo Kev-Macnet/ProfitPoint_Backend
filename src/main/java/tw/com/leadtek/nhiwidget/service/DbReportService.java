@@ -20,13 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.dao.DRG_MONTHLYDao;
-import tw.com.leadtek.nhiwidget.dao.DRG_QUERY_CONDITIONDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.POINT_MONTHLYDao;
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
-import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
 import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.tools.StringUtility;
 
@@ -50,8 +48,6 @@ public class DbReportService {
 	@Autowired
 	private DRG_MONTHLYDao drgMonthlyDao;
 
-	@Autowired
-	private DRG_QUERY_CONDITIONDao drgqcDao;
 
 	public BaseResponse test() {
 		BaseResponse res = new BaseResponse();
