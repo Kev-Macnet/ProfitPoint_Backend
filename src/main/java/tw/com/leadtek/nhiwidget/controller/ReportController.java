@@ -243,6 +243,7 @@ public class ReportController extends BaseController {
 		return ResponseEntity.ok(reportService.getVisitsVariety(startDate, endDate, year, week));
 	}
 	
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得門急診/住院/出院人次變化-匯出", notes = "取得門急診/住院/出院人次變化-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/visitsVarietyExport")
