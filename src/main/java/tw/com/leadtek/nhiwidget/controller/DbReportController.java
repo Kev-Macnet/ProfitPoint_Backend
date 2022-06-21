@@ -103,7 +103,7 @@ public class DbReportController extends BaseController {
 //			result.setMessage("dateType為必填");
 //			return ResponseEntity.badRequest().body(result);
 //		}
-		if (dateType == "0") {
+		if (dateType.equals("0")) {
 			if (year.isEmpty() || month.isEmpty()) {
 				result.put("result",BaseResponse.ERROR);
 				result.put("message","dateType為0時，西元年或月為必填");

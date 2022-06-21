@@ -19,12 +19,14 @@ import org.hibernate.transform.Transformers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import tw.com.leadtek.nhiwidget.dao.DRG_MONTHLYDao;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.POINT_MONTHLYDao;
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
+import tw.com.leadtek.nhiwidget.payload.report.DrgQueryConditionPayload;
 import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.tools.StringUtility;
 
@@ -41,12 +43,6 @@ public class DbReportService {
 
 	@Autowired
 	private MRDao mrDao;
-
-	@Autowired
-	private CodeTableService codeTableService;
-
-	@Autowired
-	private DRG_MONTHLYDao drgMonthlyDao;
 
 
 	public BaseResponse test() {
@@ -295,7 +291,7 @@ public class DbReportService {
 			}
 		}
 		/// 日期格式: 0=年月帶入，1=日期區間
-		if (dateTypes == "0") {
+		if (dateTypes.equals("0")){
 			String[] years = StringUtility.splitBySpace(year);
 			String[] months = StringUtility.splitBySpace(month);
 
