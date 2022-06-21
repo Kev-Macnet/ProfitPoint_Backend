@@ -241,7 +241,7 @@ public class DbReportService {
 			drgCodeSql = drgCodeSql.substring(0, drgCodeSql.length() - 1);
 		}
 		/// 如果dataformat有值
-		if (dataFormats != null && drgCodes.length() > 0) {
+		if (dataFormats != null && dataFormats.length() > 0) {
 			String[] dataformatArr = StringUtility.splitBySpace(dataFormats);
 			for (String str : dataformatArr) {
 				dataformatList.add(str);
@@ -697,6 +697,8 @@ public class DbReportService {
 					selectColumn.append(where);
 					orderBy.append(" ORDER BY DRG_CODE ");
 					selectColumn.append(orderBy);
+					where = new StringBuffer("");
+					orderBy = new StringBuffer("");
 				}
 				/// 傳統sql語法組成資料
 				Query sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
@@ -1142,6 +1144,8 @@ public class DbReportService {
 					selectColumn.append(where);
 					orderBy.append(" ORDER BY DRG_CODE ");
 					selectColumn.append(orderBy);
+					where = new StringBuffer("");
+					orderBy = new StringBuffer("");
 				}
 				/// 傳統sql語法組成資料
 				Query sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
