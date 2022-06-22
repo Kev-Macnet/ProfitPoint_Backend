@@ -4,7 +4,6 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -537,4 +536,39 @@ public class ReportController extends BaseController {
 		
 		return ResponseEntity.ok(results);
 	}
+	
+	  @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
+	  @ApiOperation(value = "案件狀態與各別數量(可複選)-匯出", notes = "案件狀態與各別數量(可複選)-匯出")
+	  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+	  @GetMapping("/caseStatusAndQuantityExport")
+	  public ResponseEntity<BaseResponse> getCaseStatusAndQuantityExport(
+		 @ApiParam(name = "status", value = "案件狀態與各別數量(可複選)", example = "無須變更 評估不調整 優化完成 待確認 待處理 疑問標示")
+		 @RequestParam(required = false) String status,
+		 @ApiParam(name = "physical", value = "是否包含列出就醫清單", example = "true")@RequestParam(required = false) boolean physical,
+		 @ApiParam(name = "startMonth", value = "開始月份", example = "2022/01") @RequestParam(required = false) String startMonth,
+		 @ApiParam(name = "endMonth", value = "結束月份", example = "2022/12") @RequestParam(required = false) String endMonth,
+	     HttpServletResponse response){
+		  
+			List<CaseStatusAndQuantity> results=new ArrayList<CaseStatusAndQuantity>();
+			
+			if(status.length()==0) {
+				CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
+				caseStatusAndQuantity.setResult(BaseResponse.ERROR);
+				caseStatusAndQuantity.setMessage("無勾選案件狀態");
+			    return ResponseEntity.ok().body(caseStatusAndQuantity);
+			}
+			
+			if(startMonth!=null && endMonth!=null && !startMonth.equals("") && !endMonth.equals("") && !startMonth.equals("null") && !endMonth.equals("null")) {
+					results=caseStatusAndQuantityService.getData(physical,status,startMonth,endMonth);
+					caseStatusAndQuantityService.getDataExport(physical,results,startMonth,endMonth,response);
+			}
+			else {
+				CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
+				caseStatusAndQuantity.setResult(BaseResponse.ERROR);
+				caseStatusAndQuantity.setMessage("資料格式不正確");
+			    return ResponseEntity.badRequest().body(caseStatusAndQuantity);
+			}
+		  
+			return null;
+	  }
 }
