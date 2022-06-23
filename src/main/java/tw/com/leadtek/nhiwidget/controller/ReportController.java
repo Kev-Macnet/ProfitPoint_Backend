@@ -319,7 +319,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "健保藥費概況", notes = "健保藥費概況")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/healthCareCost")
-	public ResponseEntity<List<HealthCareCost>> getHealthCareCost(
+	public ResponseEntity<?> getHealthCareCost(
 			@ApiParam(name = "syear", value = "開始年份", example = "2022") @RequestParam(required = false) String syear,
 			@ApiParam(name = "season", value = "季度", example = "Q1") @RequestParam(required = false) String season) {
 
@@ -506,7 +506,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "案件狀態與各別數量(可複選)", notes = "案件狀態與各別數量(可複選)")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/caseStatusAndQuantity")
-	public ResponseEntity<List<CaseStatusAndQuantity>> getCaseStatusAndQuantity(
+	public ResponseEntity<?> getCaseStatusAndQuantity(
 			@ApiParam(name = "status", value = "案件狀態與各別數量(可複選)", example = "無須變更 評估不調整 優化完成 待確認 待處理 疑問標示")
 			@RequestParam(required = false) String status,
 			@ApiParam(name = "physical", value = "是否包含列出就醫清單", example = "true")@RequestParam(required = false) boolean physical,

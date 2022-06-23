@@ -12,8 +12,8 @@ public class ClassDoctorWeeklyDto {
     @NotNull()
     private String code;
     
-    @ApiModelProperty(value="各醫師每週案件數、總點數、總藥費", example="[{王曉明,[{週期:2021w1,100,100,100},{週期:2021w2,100,100,100}]}"
-    		+ ",{李曉明,[{週期:2021w1,100,100,100},{週期:2021w3,100,100,100}]}]", required=true, position=2)
+    @ApiModelProperty(value="各醫師每週案件數、總點數、總藥費", example="王曉明 週期:2021w1 100 100 100 週期:2021w2 100 100 100"
+    		+ "李曉明 週期:2021w1 100 100 100 週期:2021w3 100 100 100", required=true, position=2)
     @NotNull()
     private List<ClassDoctorDto_weekly>classDoctors;
 
