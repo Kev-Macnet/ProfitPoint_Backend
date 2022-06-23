@@ -267,10 +267,12 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   @Transactional
   @Modifying
-  @Query(value = "UPDATE IP_D SET FUNC_TYPE=?1, ANE_DOT=?2, DSVC_DOT=?3, DIAG_DOT=?4,"
-      + "DRUG_DOT=?5, INJT_DOT=?6, ROOM_DOT=?7, THRP_DOT=?8, AMIN_DOT=?9 WHERE ID=?10", nativeQuery = true)
-  public void updateFuncTypeById(String funcType, int aneDot, int dsvcDot,
-      int diagDot, int drugDot, int injtDot, int roomDot, int thrpDot, int aminDot, Long id);  
+  @Query(value = "UPDATE IP_D SET FUNC_TYPE=?1, APPL_START_DATE=?2, APPL_END_DATE=?3, "
+      + "ANE_DOT=?4, DSVC_DOT=?5, DIAG_DOT=?6, DRUG_DOT=?7, INJT_DOT=?8, ROOM_DOT=?9, "
+      + "THRP_DOT=?10, AMIN_DOT=?11, OWN_EXPENSE=?12 WHERE ID=?13", nativeQuery = true)
+  public void updateFuncTypeById(String funcType, String startDate, String endDate, 
+      int aneDot, int dsvcDot, int diagDot, int drugDot, int injtDot, int roomDot, 
+      int thrpDot, int aminDot, int ownExpense, Long id);  
   
   /**
    * 取得申報日期總人數

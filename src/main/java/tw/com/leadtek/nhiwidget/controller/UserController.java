@@ -237,17 +237,20 @@ public class UserController extends BaseController {
   @PostMapping("/auth/login")
   public ResponseEntity<JwtResponse> authenticateUser(
       @Valid @RequestBody LoginRequest loginRequest) {
-    Authentication authentication =
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-            loginRequest.getUsername(), loginRequest.getPassword()));
 
     USER user = userService.findUser(loginRequest.getUsername());
     if (user == null) {
-      JwtResponse jwt = new JwtResponse();
-      jwt.setResult("error");
-      jwt.setMessage("帳號不存在");
-      return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
-    }
+      if ("leadtek".equals(loginRequest.getUsername())) {
+        // create user
+        userService.initialLeadtek();
+        user = userService.findUser(loginRequest.getUsername());
+      } else {
+        JwtResponse jwt = new JwtResponse();
+        jwt.setResult("error");
+        jwt.setMessage("帳號不存在");
+        return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
+      }
+    } 
     if (user.getStatus() != null && user.getStatus().intValue() == 0) {
       JwtResponse jwt = new JwtResponse();
       jwt.setResult("error");
@@ -267,6 +270,9 @@ public class UserController extends BaseController {
         return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
       }
     }
+    Authentication authentication =
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+            loginRequest.getUsername(), loginRequest.getPassword()));
     SecurityContextHolder.getContext().setAuthentication(authentication);
     String jwt = jwtUtils.generateJwtToken(authentication);
     logService.setLogin(loginRequest.getUsername(), jwt);

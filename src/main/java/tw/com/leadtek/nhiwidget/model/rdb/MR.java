@@ -259,6 +259,10 @@ public class MR {
   @Column(name = "CLINIC")
   protected String clinic;
 
+  @ApiModelProperty(value = "申報狀態,1:本月申報,2:下月申報,3:放棄申報,4:內含,5:自費", required = false)
+  @Column(name = "APPL_STATUS")
+  protected Integer applStatus;
+  
   /**
    * 更新時間
    */
@@ -924,11 +928,14 @@ public class MR {
       this.applDot = ipd.getApplDot();
     }
     
+    if (ipd.getMedDot() != null) {
+      this.totalDot = ipd.getMedDot();
+    }
     if (ipd.getNonApplDot() != null) {
       this.totalDot += ipd.getNonApplDot();
     }
-    if (ipd.getPartDot() != null) {
-      this.totalDot += ipd.getPartDot();
+    if (ipd.getOwnExpense() != null) {
+      this.totalDot += ipd.getOwnExpense();
     }
     
     if (diffList != null && ipd.getTwDrgCode() != null && !ipd.getTwDrgCode().equals(drgCode)) {
@@ -1043,5 +1050,13 @@ public class MR {
   public void setClinic(String clinic) {
     this.clinic = clinic;
   }
-  
+
+  public Integer getApplStatus() {
+    return applStatus;
+  }
+
+  public void setApplStatus(Integer applStatus) {
+    this.applStatus = applStatus;
+  }
+
 }

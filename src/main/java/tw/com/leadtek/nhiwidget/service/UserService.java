@@ -105,7 +105,6 @@ public class UserService {
     }
     USER user = findUser(ur.getUsername());
     if (user != null) {
-      System.out.println("find user "+ user.getUsername());
       List<USER_DEPARTMENT> udList = userDepartmentDao.findByUserIdOrderByDepartmentId(user.getId());
         for (String department : departments) {
           DEPARTMENT dep = findDepartment(department);
@@ -117,7 +116,6 @@ public class UserService {
             }
           }
           if (isNewDepartment) {
-            System.out.println("add department " + department);
             USER_DEPARTMENT ud = new USER_DEPARTMENT();
             ud.setDepartmentId(dep.getId());
             ud.setUserId(user.getId());
@@ -133,9 +131,10 @@ public class UserService {
     user.setInhId(user.getUsername());
     if (user.getPassword() == null && user.getEmail() != null) {
       logger.info("sendEmail:" + user.getEmail());
-      String newPassword = generateCommonLangPassword();
-      emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
-          "系統隨機產生密碼:" + newPassword);
+//      String newPassword = generateCommonLangPassword();
+//      emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
+//          "系統隨機產生密碼:" + newPassword);
+      String newPassword = "test";
       user.setPassword(encoder.encode(newPassword));
       user.setStatus(USER.STATUS_CHANGE_PASSWORD);
     } else {
@@ -803,5 +802,17 @@ public class UserService {
       }
     }
     return null;
+  }
+  
+  public void initialLeadtek() {
+    UserRequest user = new UserRequest();
+    user.setDepartments("ADM");
+    user.setPassword("test");
+    user.setRocId("leadtek");
+    user.setDisplayName("leadtek");
+    user.setUsername("leadtek");
+    user.setRole("A");
+    user.setStatus(1);
+    newUser(user);
   }
 }

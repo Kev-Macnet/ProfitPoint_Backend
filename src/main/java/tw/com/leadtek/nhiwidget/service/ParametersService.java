@@ -1264,10 +1264,11 @@ public class ParametersService {
   }
 
   public String updateInfectiousStatus(String icd, boolean enable) {
-    CODE_TABLE ct = codeTableDao.findByCodeAndCat(icd.toUpperCase(), INFECTIOUS);
-    if (ct == null) {
+    List<CODE_TABLE> ctList = codeTableDao.findByCodeAndCat(icd.toUpperCase(), INFECTIOUS);
+    if (ctList == null || ctList.size() == 0) {
       return "ICD代碼 " + icd + " 不存在";
     }
+    CODE_TABLE ct = ctList.get(0);
     if (ct.getRemark() == null && enable) {
       // 都是 enable 狀態，不處理
       return null;

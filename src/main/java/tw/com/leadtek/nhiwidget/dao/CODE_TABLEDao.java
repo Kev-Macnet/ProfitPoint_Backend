@@ -14,7 +14,7 @@ public interface CODE_TABLEDao extends JpaRepository<CODE_TABLE, Long>, JpaSpeci
   
   public List<CODE_TABLE> findByCat(String cat);
   
-  public CODE_TABLE findByCodeAndCat(String code, String cat);
+  public List<CODE_TABLE> findByCodeAndCat(String code, String cat);
   
   public CODE_TABLE findByDescChiAndCat(String desc, String cat);
   

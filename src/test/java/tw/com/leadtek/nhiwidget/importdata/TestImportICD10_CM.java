@@ -968,10 +968,12 @@ public class TestImportICD10_CM {
   }
 
   public void saveICD10DB(String code, String category, String descTw, String descEn, long redisId) {
-    ICD10 icd = icd10Dao.findByCode(code.toUpperCase());
-    if (icd != null) {
+    List<ICD10> icdList  = icd10Dao.findByCode(code.toUpperCase());
+    if (icdList != null) {
       return;
     }
+    ICD10 icd = icdList.get(0);
+    
     icd = new ICD10();
     icd.setCat(category.split("-")[1]);
     icd.setCode(code.toUpperCase());

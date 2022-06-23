@@ -187,4 +187,16 @@ public class CODE_TABLE {
     }
     return result;
   }
+  
+  /**
+   * 不複製 cat, remark 等欄位
+   * @param ct
+   */
+  public void clone(CODE_TABLE ct) {
+    this.code = ct.getCode();
+    this.descChi = ct.getDescChi();
+    this.descEn = ct.getDescEn();
+    this.id = ct.getId();
+    this.parentCode = ct.getParentCode();
+  }
 }

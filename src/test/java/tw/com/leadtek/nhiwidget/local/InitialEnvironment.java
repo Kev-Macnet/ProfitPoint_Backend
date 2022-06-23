@@ -287,8 +287,8 @@ public class InitialEnvironment {
         }
       }
       System.out.println(ct.getCat() + "," + ct.getCode() + "," + ct.getDescChi());
-      CODE_TABLE ctInDB = ctDao.findByCodeAndCat(ct.getCode(), groupName);
-      if (ctInDB == null || ctInDB.getDescChi() == null) {
+      List<CODE_TABLE> ctList = ctDao.findByCodeAndCat(ct.getCode(), groupName);
+      if (ctList == null || ctList.size() == 0) {
         ctDao.save(ct);
       }
     }

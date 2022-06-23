@@ -13,8 +13,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.text.DecimalFormat;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -32,11 +32,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import tw.com.leadtek.nhiwidget.NHIWidget;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
@@ -192,9 +190,9 @@ public class Infectious {
           if (ct.getDescChi() == null) {
             ct.setDescChi(row.getCell(1).getStringCellValue().trim());
           }
-          CODE_TABLE ctDB = ctDao.findByCodeAndCat(ct.getCode(), CATEGORY);
-          if (ctDB != null) {
-            ct.setId(ctDB.getId());
+          List<CODE_TABLE> ctList = ctDao.findByCodeAndCat(ct.getCode(), CATEGORY);
+          if (ctList != null && ctList.size() > 0) {
+            ct.setId(ctList.get(0).getId());
           }
           ctDao.save(ct);
           updateICD10(ct);
@@ -213,10 +211,11 @@ public class Infectious {
   }
   
   public void updateICD10(CODE_TABLE ct) {
-    ICD10 icd = icdDao.findByCode(ct.getCode());
-    if (icd == null) {
+    List<ICD10> icdList = icdDao.findByCode(ct.getCode());
+    if (icdList == null) {
       return;
     }
+    ICD10 icd = icdList.get(0);
     icd.setInfectious(1);
     icd.setInfCat(ct.getParentCode());
     icdDao.save(icd);

@@ -405,7 +405,7 @@ public class IntelligentService {
    */
   private List<MR> getMRByCode(String dataFormat, String applYm, String fieldName, String code,
       int max, boolean countEvery, Date startDate, Date endDate) {
-    System.out.println("fieldName=" + fieldName + "," + code);
+    
     Specification<MR> spec = new Specification<MR>() {
 
       private static final long serialVersionUID = 1012L;

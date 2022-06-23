@@ -83,6 +83,14 @@ public class SystemController extends BaseController {
   
   private final static String INIT_FILE_CODE_TABLE = "CODE_TABLE";
   
+  private final static String INIT_FILE_ICDCM = "ICD-10-CM";
+  
+  private final static String INIT_FILE_ICDPCS = "ICD-10-PCS";
+  
+  private final static String INIT_FILE_ATC = "ATC";
+  
+  private final static String INIT_FILE_INFECTIOUS = "法定傳染病";
+  
   @Autowired
   private DrgCalService drgCalService;
 
@@ -854,6 +862,14 @@ public class SystemController extends BaseController {
       String filepath =  (System.getProperty("os.name").toLowerCase().startsWith("windows")) ? dirPath + "\\" + file.getOriginalFilename() :
         dirPath + "/" + file.getOriginalFilename();
       File saveFile = new File(filepath);
+      if (saveFile.exists() && saveFile.length() > 0) {
+        try {
+          saveFile.delete();
+        } catch (Exception e) {
+          logger.error("delete exist file", e);
+          return returnAPIResult("檔案已存在");
+        }
+      }
       try {
         file.transferTo(saveFile);
       } catch (IllegalStateException e) {
@@ -867,7 +883,19 @@ public class SystemController extends BaseController {
         initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_LINYUAN, 0);
       } else if (saveFile.getName().indexOf(INIT_FILE_CODE_TABLE) > -1) {
         initial.importCODE_TABLEToRDB(saveFile, "CODE_TABLE");
-      }  else if (saveFile.getName().endsWith(".xls")) {
+      } else if (saveFile.getName().indexOf(INIT_FILE_ICDCM) > 0) {
+        System.out.println("importICD10ToRedis ICD10-CM");
+        initial.importICD10ToRedis(saveFile, "ICD10-CM");
+      } else if (saveFile.getName().indexOf(INIT_FILE_ICDPCS) > 0) {
+        System.out.println("importICD10ToRedis ICD10-PCS");
+        initial.importICD10ToRedis(saveFile, "ICD10-PCS");
+      } else if (saveFile.getName().indexOf(INIT_FILE_ATC) > -1) {
+        System.out.println("import ATC");
+        initial.importATC(saveFile);
+      } else if (saveFile.getName().indexOf(INIT_FILE_INFECTIOUS) > -1) {
+        System.out.println("import Infectious");
+        initial.importInfectious(saveFile);
+      } else if (saveFile.getName().endsWith(".xls")) {
         HSSFWorkbook workbook = null;
         if (saveFile.getName().toUpperCase().indexOf("OPD") > -1) {
           workbook = new HSSFWorkbook(new FileInputStream(saveFile));
@@ -894,8 +922,18 @@ public class SystemController extends BaseController {
           workbook.close();
         }
       } else if (saveFile.getName().endsWith(".xlsx")) {
-        XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(saveFile));
-        xmlService.readTheseSheet(workbook.getSheetAt(0));
+        XSSFWorkbook workbook = null;
+
+        try {
+          workbook = new XSSFWorkbook(new FileInputStream(saveFile));
+          xmlService.readTheseSheet(workbook.getSheetAt(0));
+        } catch (Exception e) {
+          logger.error("delete exist file", e);
+        } finally {
+          if (workbook != null) {
+            workbook.close();
+          }
+        }
       } else {
         systemService.importFileThread(saveFile);
       }
