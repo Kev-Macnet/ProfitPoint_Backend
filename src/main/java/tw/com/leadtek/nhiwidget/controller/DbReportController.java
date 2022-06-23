@@ -95,14 +95,10 @@ public class DbReportController extends BaseController {
 			@ApiParam(name = "isLastM", value = "上個月同條件相比", example = "false") @RequestParam(required = false) boolean isLastM,
 			@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) boolean isLastY)
 			throws ParseException {
-//		DrgQueryConditionPayload result = new DrgQueryConditionPayload();
+
 		Map<String, Object> result = new HashMap<String, Object>();
 
-//		if(dateType == null) {
-//			result.setResult(BaseResponse.ERROR);
-//			result.setMessage("dateType為必填");
-//			return ResponseEntity.badRequest().body(result);
-//		}
+
 		if (dateType.equals("0")) {
 			if (year.isEmpty() || month.isEmpty()) {
 				result.put("result", BaseResponse.ERROR);
@@ -183,6 +179,46 @@ public class DbReportController extends BaseController {
 				drgCodes, dataFormats, funcTypes, medNames, icdcms, medLogCodes, applMin, applMax, icdAll, payCode,
 				inhCode, isShowDRGList, isLastM, isLastY, response);
 		return null;
+	}
+	
+	@ApiOperation(value = "取得自費項目清單", notes = "取得自費項目清單")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/ownExpenseQueryCondition")
+	public ResponseEntity<Map<String, Object>> getOwnExpenseQueryCondition(
+			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = true) String betweenSDate,
+			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = true) String betweenEDate,
+			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = true) String dataFormats,
+			@ApiParam(name = "funcTypes", value = "科別，若為多筆資料，用空格隔開，05 06", example = "") @RequestParam(required = false) String funcTypes,
+			@ApiParam(name = "medNames", value = "醫護姓名，若為多筆資料，用空格隔開，R A ", example = "") @RequestParam(required = false) String medNames,
+			@ApiParam(name = "icdAll", value = "不分區ICD碼，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String icdAll,
+			@ApiParam(name = "payCode", value = "支付標準代碼", example = "") @RequestParam(required = false) String payCode,
+			@ApiParam(name = "inhCode", value = "院內碼", example = "") @RequestParam(required = false) String inhCode,
+			@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) boolean isLastY,
+			@ApiParam(name = "isShowOwnExpense", value = "自費分項列出", example = "false") @RequestParam(required = false) boolean isShowOwnExpense)
+			throws ParseException {
+
+		Map<String, Object> result = new HashMap<String, Object>();
+		
+		if(betweenSDate == null || betweenSDate.isEmpty()) {
+			result.put("result", BaseResponse.ERROR);
+			result.put("message", "起始日必填");
+			return ResponseEntity.badRequest().body(result);
+		}
+		
+		if(betweenEDate == null || betweenEDate.isEmpty()) {
+			result.put("result", BaseResponse.ERROR);
+			result.put("message", "迄日必填");
+			return ResponseEntity.badRequest().body(result);
+		}
+		
+		if(dataFormats == null || dataFormats.isEmpty() ) {
+			result.put("result", BaseResponse.ERROR);
+			result.put("message", "就醫類別必填");
+			return ResponseEntity.badRequest().body(result);
+		}
+		
+		
+		return ResponseEntity.ok(dbService.getOwnExpenseQueryCondition(betweenSDate, betweenEDate, dataFormats, funcTypes, medNames, icdAll, payCode, inhCode, isLastY, isShowOwnExpense));
 	}
 
 }
