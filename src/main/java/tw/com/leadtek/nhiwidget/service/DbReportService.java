@@ -18,7 +18,12 @@ import org.hibernate.SQLQuery;
 import org.hibernate.transform.Transformers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.swagger.annotations.ApiModelProperty;
+import io.swagger.annotations.ApiParam;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.POINT_MONTHLYDao;
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
@@ -26,6 +31,7 @@ import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionDetail;
+import tw.com.leadtek.nhiwidget.payload.report.DatabaseCalculateExportFactor;
 //import tw.com.leadtek.nhiwidget.payload.report.DrgQueryConditionPayload;
 import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.tools.StringUtility;
@@ -49,6 +55,138 @@ public class DbReportService {
 		res.setMessage("isdone");
 		res.setResult("ok");
 		return res;
+	}
+	
+	//目錄
+	public DatabaseCalculateExportFactor getDatabaseCalculateContents(String exportType,Boolean withLaborProtection,String classFee,String feeApply,Boolean isShowSelfFeeList,
+			Boolean isShowPhysicalList,String caseStatus, String year,String month,String betweenSDate,String betweenEDate,String sections,String drgCodes,String dataFormats,
+			String funcTypes, String medNames,String icdcms,String medLogCodes,Integer applMin,Integer applMax,String icdAll,String payCode,String inhCode, Boolean isShowDRGList,
+			Boolean isLastM,Boolean isLastY) {
+		
+			DatabaseCalculateExportFactor databaseCalculateExportFactor=new DatabaseCalculateExportFactor();
+			databaseCalculateExportFactor.setExportName(exportType);
+			
+			switch (exportType) {
+			case "達成率與超額數":
+			    databaseCalculateExportFactor.setYear(year);
+			    databaseCalculateExportFactor.setMonth(month);
+			    databaseCalculateExportFactor.setLastM(isLastM);
+			    databaseCalculateExportFactor.setLastY(isLastY);
+				break;
+			case "DRG案件數分佈佔率與定額、實際點數":
+				databaseCalculateExportFactor.setShowDRGList(isShowDRGList);
+				databaseCalculateExportFactor.setSections(sections);
+				databaseCalculateExportFactor.setDrgCodes(drgCodes);
+				
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdcms(icdcms);
+				databaseCalculateExportFactor.setMedLogCodes(medLogCodes);
+				databaseCalculateExportFactor.setApplMin(applMin);
+				databaseCalculateExportFactor.setApplMax(applMax);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setLastM(isLastM);
+			    databaseCalculateExportFactor.setLastY(isLastY);
+				break;
+			case "申報分配佔率與點數、金額":
+				databaseCalculateExportFactor.setWithLaborProtection(withLaborProtection);
+				databaseCalculateExportFactor.setClassFee(classFee);
+				
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdcms(icdcms);
+				databaseCalculateExportFactor.setMedLogCodes(medLogCodes);
+				databaseCalculateExportFactor.setApplMin(applMin);
+				databaseCalculateExportFactor.setApplMax(applMax);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setLastM(isLastM);
+			    databaseCalculateExportFactor.setLastY(isLastY);
+				break;
+			case "醫令項目與執行量":
+				databaseCalculateExportFactor.setFeeApply(feeApply);
+				
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setLastM(isLastM);
+			    databaseCalculateExportFactor.setLastY(isLastY);
+				break;
+			case "自費項目清單":
+				databaseCalculateExportFactor.setShowSelfFeeList(isShowSelfFeeList);
+				
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setLastY(isLastY);
+				break;
+			case "核刪件數資訊":
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setLastM(isLastM);
+			    databaseCalculateExportFactor.setLastY(isLastY);
+				break;
+			case "總額外點數":
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdcms(icdcms);
+				databaseCalculateExportFactor.setMedLogCodes(medLogCodes);
+				databaseCalculateExportFactor.setApplMin(applMin);
+				databaseCalculateExportFactor.setApplMax(applMax);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+				break;
+			case "案件狀態與各別數量(可複選)":
+				databaseCalculateExportFactor.setShowPhysicalList(isShowPhysicalList);
+				databaseCalculateExportFactor.setCaseStatus(caseStatus);
+				
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				break;
+			default:
+				databaseCalculateExportFactor.setResult(BaseResponse.ERROR);
+				databaseCalculateExportFactor.setMessage("未知的報表類型");
+				return databaseCalculateExportFactor;
+			}
+			
+			return databaseCalculateExportFactor;
 	}
 
 	/**

@@ -2,8 +2,11 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -16,12 +19,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiModelProperty;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
+import tw.com.leadtek.nhiwidget.payload.report.CaseStatusAndQuantity;
+import tw.com.leadtek.nhiwidget.payload.report.DatabaseCalculateExportFactor;
+import tw.com.leadtek.nhiwidget.service.CaseStatusAndQuantityService;
 import tw.com.leadtek.nhiwidget.service.DbReportExportService;
 import tw.com.leadtek.nhiwidget.service.DbReportService;
 
@@ -36,6 +43,197 @@ public class DbReportController extends BaseController {
 	private DbReportService dbService;
 	@Autowired
 	private DbReportExportService dbExportService;
+	
+	@Autowired
+	private CaseStatusAndQuantityService caseStatusAndQuantityService;
+	
+	@ApiOperation(value = "資料庫統計匯出條件目錄", notes = "資料庫統計匯出條件目錄")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/databaseCalculateContents")
+	public ResponseEntity<Map<String, Object>>getDatabaseCalculateContents(
+	@ApiParam(name = "exportType", value = "報表類型", example = "案件狀態與各別數量(可複選)") @RequestParam(required = false) String exportType,
+	@ApiParam(name = "withLaborProtection", value = "健保狀態(單選) 健保(含勞保) or 健保(不含勞保)", example = "false") @RequestParam(required = false) Boolean withLaborProtection,
+	@ApiParam(name = "classFee", value = "費用分類 多選用空格隔開", example = "門診診察費 品質支付服務 復健治療費") @RequestParam(required = false) String classFee,
+	@ApiParam(name = "feeApply", value = "費用申報狀態(可複選) 多選用空格隔開", example = "自費 健保") @RequestParam(required = false) String feeApply,
+	@ApiParam(name = "isShowSelfFeeList", value = "自費分項列出", example = "false") @RequestParam(required = false) Boolean isShowSelfFeeList,
+	@ApiParam(name = "isShowPhysicalList", value = "就醫清單列出", example = "false") @RequestParam(required = false) Boolean isShowPhysicalList,
+	@ApiParam(name = "caseStatus", value = "顯示案件狀態，若為多筆資料，用空格隔開", example = "無須變更 評估不調整 優化完成 待確認 待處理 疑問標示") @RequestParam(required = false) String caseStatus,
+	@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2020 2021 2022") @RequestParam(required = false) String year,
+	@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = false) String month,
+	@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2022-01-01") @RequestParam(required = false) String betweenSDate,
+	@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2022-06-01") @RequestParam(required = false) String betweenEDate,
+	@ApiParam(name = "sections", value = "顯示區間，若為多筆資料，用空格隔開", example = "A B1 B2 C") @RequestParam(required = false) String sections,
+	@ApiParam(name = "drgCodes", value = "指定DRG代碼，若為多筆資料，用空格隔開", example = " ") @RequestParam(required = false) String drgCodes,
+	@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all totalop op em ip") @RequestParam(required = false) String dataFormats,
+	@ApiParam(name = "funcTypes", value = "科別，若為多筆資料，用空格隔開，05 06", example = "05 06 AA") @RequestParam(required = false) String funcTypes,
+	@ApiParam(name = "medNames", value = "醫護姓名，若為多筆資料，用空格隔開，R A ", example = "E121***289 F120***434") @RequestParam(required = false) String medNames,
+	@ApiParam(name = "icdcms", value = "病歷編號，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "Z01.411 Z01.412") @RequestParam(required = false) String icdcms,
+	@ApiParam(name = "medLogCodes", value = "就醫紀錄編號，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "Z01.411 Z01.412") @RequestParam(required = false) String medLogCodes,
+	@ApiParam(name = "applMin", value = "單筆申報點數(最小)", example = "1") @RequestParam(required = false) Integer applMin,
+	@ApiParam(name = "applMax", value = "單筆申報點數(最大)", example = "10") @RequestParam(required = false) Integer applMax,
+	@ApiParam(name = "icdAll", value = "不分區ICD碼，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "Z01.411 Z01.412") @RequestParam(required = false) String icdAll,
+	@ApiParam(name = "payCode", value = "支付標準代碼", example = " ") @RequestParam(required = false) String payCode,
+	@ApiParam(name = "inhCode", value = "院內碼", example = " ") @RequestParam(required = false) String inhCode,
+	@ApiParam(name = "isShowDRGList", value = "DRG項目列出", example = "false") @RequestParam(required = false) Boolean isShowDRGList,
+	@ApiParam(name = "isLastM", value = "上個月同條件相比", example = "false") @RequestParam(required = false) Boolean isLastM,
+	@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) Boolean isLastY){
+		
+		DatabaseCalculateExportFactor databaseCalculateExportFactor=dbService.getDatabaseCalculateContents(exportType,withLaborProtection,classFee,feeApply,isShowSelfFeeList,isShowPhysicalList,caseStatus,
+				year,month,betweenSDate,betweenEDate,sections,drgCodes,dataFormats,funcTypes,medNames,icdcms, medLogCodes,applMin,applMax,icdAll,payCode,inhCode,isShowDRGList,
+				isLastM,isLastY);
+		
+		Map<String, Object> result=new TreeMap<String, Object>();
+
+		if(databaseCalculateExportFactor.getExportName()!=null && !databaseCalculateExportFactor.getExportName().equals("")) {
+			result.put("報表類型", databaseCalculateExportFactor.getExportName());
+		}
+		if(databaseCalculateExportFactor.isShowDRGList()!=null) {
+			result.put("DRG項目列出", databaseCalculateExportFactor.isShowDRGList());
+		}
+	    if(databaseCalculateExportFactor.getSections()!=null && !databaseCalculateExportFactor.getSections().equals("")) {
+	    	result.put("顯示區間(可複選)", databaseCalculateExportFactor.getSections());
+	    }
+	    if(databaseCalculateExportFactor.getDrgCodes()!=null && !databaseCalculateExportFactor.getDrgCodes().equals("")) {
+	    	result.put("指定DRG代碼(可複選)", databaseCalculateExportFactor.getDrgCodes());
+	    }
+	    if(databaseCalculateExportFactor.getWithLaborProtection()!=null) {
+	    	result.put("健保(是否含勞保)", databaseCalculateExportFactor.getWithLaborProtection());
+	    }
+	    if(databaseCalculateExportFactor.getClassFee()!=null && !databaseCalculateExportFactor.getClassFee().equals("")) {
+	    	result.put("費用分類(可複選)", databaseCalculateExportFactor.getClassFee());
+	    }
+	    if(databaseCalculateExportFactor.getFeeApply()!=null && !databaseCalculateExportFactor.getFeeApply().equals("")) {
+	    	result.put("費用申報狀態(可複選)", databaseCalculateExportFactor.getFeeApply());
+	    }
+		 if(databaseCalculateExportFactor.isShowSelfFeeList()!=null) {
+		 	result.put("自費分項列出", databaseCalculateExportFactor.isShowSelfFeeList());
+		 }
+		if(databaseCalculateExportFactor.isShowPhysicalList()!=null) {
+			result.put("就醫清單列出", databaseCalculateExportFactor.isShowPhysicalList());
+		}
+		if(databaseCalculateExportFactor.getCaseStatus()!=null && !databaseCalculateExportFactor.getCaseStatus().equals("")) {
+			result.put("案件狀態(可複選)", databaseCalculateExportFactor.getCaseStatus());
+		}
+		if(databaseCalculateExportFactor.getYear()!=null && !databaseCalculateExportFactor.getYear().equals("")) {
+			result.put("西元年(可複選)", databaseCalculateExportFactor.getYear());
+		}
+		if(databaseCalculateExportFactor.getMonth()!=null && !databaseCalculateExportFactor.getMonth().equals("")) {
+			result.put("月份(可複選)", databaseCalculateExportFactor.getMonth());
+		}
+		if(databaseCalculateExportFactor.getBetweenSDate()!=null && !databaseCalculateExportFactor.getBetweenSDate().equals("")) {
+			result.put("起始日", databaseCalculateExportFactor.getBetweenSDate());
+		}
+		if(databaseCalculateExportFactor.getBetweenEDate()!=null && !databaseCalculateExportFactor.getBetweenEDate().equals("")) {
+			result.put("迄日", databaseCalculateExportFactor.getBetweenEDate());
+		}
+		if(databaseCalculateExportFactor.getDataFormats()!=null && !databaseCalculateExportFactor.getDataFormats().equals("")) {
+			result.put("就醫類別(可複選)", databaseCalculateExportFactor.getDataFormats());
+		}
+		if(databaseCalculateExportFactor.getFuncTypes()!=null && !databaseCalculateExportFactor.getFuncTypes().equals("")) {
+			result.put("科別(可複選)", databaseCalculateExportFactor.getFuncTypes());
+		}
+		if(databaseCalculateExportFactor.getMedNames()!=null && !databaseCalculateExportFactor.getMedNames().equals("")) {
+			result.put("醫護姓名(可複選)", databaseCalculateExportFactor.getMedNames());
+		}
+		if(databaseCalculateExportFactor.getIcdcms()!=null && !databaseCalculateExportFactor.getIcdcms().equals("")) {
+			result.put("病歷編號(可複選)", databaseCalculateExportFactor.getIcdcms());
+		}
+		 if(databaseCalculateExportFactor.getMedLogCodes()!=null && !databaseCalculateExportFactor.getMedLogCodes().equals("")) {
+		 	result.put("就醫紀錄編號(可複選)", databaseCalculateExportFactor.getMedLogCodes());
+		 }
+		if(databaseCalculateExportFactor.getApplMin()!=null) {
+			result.put("單筆申報點數(最小)", databaseCalculateExportFactor.getApplMin());
+		}
+		if(databaseCalculateExportFactor.getApplMax()!=null) {
+			result.put("單筆申報點數(最大)", databaseCalculateExportFactor.getApplMax());
+		}
+		if(databaseCalculateExportFactor.getIcdAll()!=null && !databaseCalculateExportFactor.getIcdAll().equals("")) {
+			result.put("不分區ICD碼(可複選)", databaseCalculateExportFactor.getIcdAll());
+		}
+		if(databaseCalculateExportFactor.getPayCode()!=null && !databaseCalculateExportFactor.getPayCode().equals("")) {
+			result.put("支付標準代碼", databaseCalculateExportFactor.getPayCode());
+		}
+		if(databaseCalculateExportFactor.getInhCode()!=null && !databaseCalculateExportFactor.getInhCode().equals("")) {
+			result.put("院內碼", databaseCalculateExportFactor.getInhCode());
+		}
+		if(databaseCalculateExportFactor.isLastM()!=null) {
+			result.put("上個月同條件相比", databaseCalculateExportFactor.isLastM());
+		}
+		if(databaseCalculateExportFactor.isLastY()!=null) {
+			result.put("去年同期時段相比", databaseCalculateExportFactor.isLastY());
+		}
+		
+	  return ResponseEntity.ok(result);
+	}
+	
+	@ApiOperation(value = "案件狀態與各別數量(可複選)", notes = "案件狀態與各別數量(可複選)")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/caseStatusAndQuantity")
+	public ResponseEntity<?> getCaseStatusAndQuantity(
+			@ApiParam(name = "status", value = "案件狀態與各別數量(可複選)", example = "無須變更 評估不調整 優化完成 待確認 待處理 疑問標示")
+			@RequestParam(required = false) String status,
+			@ApiParam(name = "physical", value = "是否包含列出就醫清單", example = "true")@RequestParam(required = false) boolean physical,
+			@ApiParam(name = "startMonth", value = "開始月份", example = "2022/01") @RequestParam(required = false) String startMonth,
+			@ApiParam(name = "endMonth", value = "結束月份", example = "2022/12") @RequestParam(required = false) String endMonth) {
+		
+		List<CaseStatusAndQuantity> results=new ArrayList<CaseStatusAndQuantity>();
+		
+		if(status.length()==0) {
+			CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
+			caseStatusAndQuantity.setResult(BaseResponse.ERROR);
+			caseStatusAndQuantity.setMessage("無勾選案件狀態");
+			results.add(caseStatusAndQuantity);
+		    return ResponseEntity.ok().body(results);
+		}
+		
+		if(startMonth!=null && endMonth!=null && !startMonth.equals("") && !endMonth.equals("") && !startMonth.equals("null") && !endMonth.equals("null")) {
+				results=caseStatusAndQuantityService.getData(physical,status,startMonth,endMonth);
+		}
+		else {
+			CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
+			caseStatusAndQuantity.setResult(BaseResponse.ERROR);
+			caseStatusAndQuantity.setMessage("資料格式不正確");
+			results.add(caseStatusAndQuantity);
+		    return ResponseEntity.badRequest().body(results);
+		}
+		
+		return ResponseEntity.ok(results);
+	}
+	
+	  @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
+	  @ApiOperation(value = "案件狀態與各別數量(可複選)-匯出", notes = "案件狀態與各別數量(可複選)-匯出")
+	  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+	  @GetMapping("/caseStatusAndQuantityExport")
+	  public ResponseEntity<BaseResponse> getCaseStatusAndQuantityExport(
+		 @ApiParam(name = "status", value = "案件狀態與各別數量(可複選)", example = "無須變更 評估不調整 優化完成 待確認 待處理 疑問標示")
+		 @RequestParam(required = false) String status,
+		 @ApiParam(name = "physical", value = "是否包含列出就醫清單", example = "true")@RequestParam(required = false) boolean physical,
+		 @ApiParam(name = "startMonth", value = "開始月份", example = "2022/01") @RequestParam(required = false) String startMonth,
+		 @ApiParam(name = "endMonth", value = "結束月份", example = "2022/12") @RequestParam(required = false) String endMonth,
+	     HttpServletResponse response){
+		  
+			List<CaseStatusAndQuantity> results=new ArrayList<CaseStatusAndQuantity>();
+			
+			if(status.length()==0) {
+				CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
+				caseStatusAndQuantity.setResult(BaseResponse.ERROR);
+				caseStatusAndQuantity.setMessage("無勾選案件狀態");
+			    return ResponseEntity.ok().body(caseStatusAndQuantity);
+			}
+			
+			if(startMonth!=null && endMonth!=null && !startMonth.equals("") && !endMonth.equals("") && !startMonth.equals("null") && !endMonth.equals("null")) {
+					results=caseStatusAndQuantityService.getData(physical,status,startMonth,endMonth);
+					caseStatusAndQuantityService.getDataExport(physical,results,startMonth,endMonth,response);
+			}
+			else {
+				CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
+				caseStatusAndQuantity.setResult(BaseResponse.ERROR);
+				caseStatusAndQuantity.setMessage("資料格式不正確");
+			    return ResponseEntity.badRequest().body(caseStatusAndQuantity);
+			}
+		  
+			return null;
+	  }
 
 	@ApiOperation(value = "取得hello", notes = "取得hello")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
