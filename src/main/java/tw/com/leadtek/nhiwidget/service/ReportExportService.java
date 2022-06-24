@@ -93,11 +93,44 @@ public class ReportExportService {
 		/// 轉成民國年月
 		String endDate = inputDate.substring(0, inputDate.length() - 2);
 		/// 呼叫上面api
-		PointMRPayload pointData = reportService.getMonthlyReportApplCount(year, month);
+		PointMRPayload pointData = new PointMRPayload();
+		POINT_MONTHLY model = new POINT_MONTHLY();
+		try {
+			
+			 pointData = reportService.getMonthlyReportApplCount(year, month);
+			 model = pointData.getCurrent();
+		}
+		catch(Exception e) {
+			HSSFWorkbook workbook = new HSSFWorkbook();
+			HSSFSheet sheet = workbook.createSheet("工作表");
+			String fileNameStr = "單月各科健保申報量與人次報表" + "_" + endDate;
+			String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+			String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+					? FILE_PATH + "\\" + fileName
+					: FILE_PATH + "/" + fileName;
+			File file = new File(filepath);
+			response.reset();
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Access-Control-Allow-Methods", "*");
+			response.setHeader("Content-Disposition",
+					"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+			response.setContentType("application/octet-stream;charset=utf8");
+//			response.setContentType("application/vnd.ms-excel;charset=utf8");
+
+			/// 最後由outputstream輸出
+			OutputStream out = response.getOutputStream();
+
+			workbook.write(out);
+			out.flush();
+			out.close();
+			workbook.close();
+			return;
+			
+		}
+		
 		String[] tableHeaderNum = { "門急診/住院", "門急診", "門診", "門診(早)", "門診(中)", "門診(晚)", "急診", "住院", "出院" };
 		String[] tableCellHeader = { "單月各科人次比\n門急診/住院(含手術)", "人次", "比例", "", "單月各科人次比\n門急診(含手術)", "人次", "比例", "" };
 
-		POINT_MONTHLY model = pointData.getCurrent();
 		String sheetName = "單月各科健保申報量與人次報表" + "_" + endDate;
 
 		// 建立新工作簿 sheet1
@@ -123,7 +156,7 @@ public class ReportExportService {
 
 		cell = row.createCell(1);
 		cell.setCellValue(year + "/" + monthStr);
-
+		try {
 		HSSFRow row2 = sheet.createRow(2);
 		for (int i = 0; i < tableHeaderNum.length; i++) {
 			HSSFCell cell2 = row2.createCell(1 + i);
@@ -476,153 +509,158 @@ public class ReportExportService {
 				"人次" };
 		VisitsVarietyPayload model2 = pointData.getVisitsVarietyPayload();
 		List<String> functypes = pointData.getFuncTypes();
+		int funCount = 0;
 		for (String str : functypes) {
 			if (str.equals("不分科")) {
-				int cellIndex = 0;
-				/// 第二頁籤 sheet2
-				sheet = workbook.createSheet("申報點數趨勢圖(全院)");
-				// 建立行,行號作為引數傳遞給createRow()方法,第一行從0開始計算
-				row = sheet.createRow(0);
-				// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
-				cell = row.createCell(0);
-				// 設定單元格的值,即A1的值(第一行,第一列)
-				cell.setCellValue("全院");
-				HSSFRow row1 = sheet.createRow(1);
-				CellStyle style1 = workbook.createCellStyle();
-				style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
-				style1.setVerticalAlignment(VerticalAlignment.CENTER);
+				if(funCount == 0) {
+					int cellIndex = 0;
+					/// 第二頁籤 sheet2
+					sheet = workbook.createSheet("申報點數趨勢圖(全院)");
+					// 建立行,行號作為引數傳遞給createRow()方法,第一行從0開始計算
+					row = sheet.createRow(0);
+					// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
+					cell = row.createCell(0);
+					// 設定單元格的值,即A1的值(第一行,第一列)
+					cell.setCellValue("全院");
+					HSSFRow row1 = sheet.createRow(1);
+					CellStyle style1 = workbook.createCellStyle();
+					style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
+					style1.setVerticalAlignment(VerticalAlignment.CENTER);
 
-				for (int i = 0; i < tableHeader.length; i++) {
-					HSSFCell cell1 = row1.createCell(i);
+					for (int i = 0; i < tableHeader.length; i++) {
+						HSSFCell cell1 = row1.createCell(i);
 
-					switch (i) {
-					case 0:
-						cell1 = row1.createCell(i);
-						cell1.setCellValue(tableHeader[i]);
-						cell1.setCellStyle(style1);
-						sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 2));
-						break;
-					case 3:
-						cell1 = row1.createCell(i);
-						cell1.setCellValue(tableHeader[i]);
-						cell1.setCellStyle(style1);
-						sheet.addMergedRegion(new CellRangeAddress(1, 1, 3, 5));
-						break;
-					case 6:
-						cell1 = row1.createCell(i);
-						cell1.setCellValue(tableHeader[i]);
-						cell1.setCellStyle(style1);
-						sheet.addMergedRegion(new CellRangeAddress(1, 1, 6, 8));
-						break;
-					case 9:
-						cell1 = row1.createCell(i);
-						cell1.setCellValue(tableHeader[i]);
-						cell1.setCellStyle(style1);
-						sheet.addMergedRegion(new CellRangeAddress(1, 1, 9, 10));
-						break;
-					case 11:
-						cell1 = row1.createCell(i);
-						cell1.setCellValue(tableHeader[i]);
-						cell1.setCellStyle(style1);
-						sheet.addMergedRegion(new CellRangeAddress(1, 1, 11, 12));
-						break;
-					case 13:
-						cell1 = row1.createCell(i);
-						cell1.setCellValue(tableHeader[i]);
-						cell1.setCellStyle(style1);
-						sheet.addMergedRegion(new CellRangeAddress(1, 1, 13, 14));
-						break;
-					default:
-						break;
+						switch (i) {
+						case 0:
+							cell1 = row1.createCell(i);
+							cell1.setCellValue(tableHeader[i]);
+							cell1.setCellStyle(style1);
+							sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 2));
+							break;
+						case 3:
+							cell1 = row1.createCell(i);
+							cell1.setCellValue(tableHeader[i]);
+							cell1.setCellStyle(style1);
+							sheet.addMergedRegion(new CellRangeAddress(1, 1, 3, 5));
+							break;
+						case 6:
+							cell1 = row1.createCell(i);
+							cell1.setCellValue(tableHeader[i]);
+							cell1.setCellStyle(style1);
+							sheet.addMergedRegion(new CellRangeAddress(1, 1, 6, 8));
+							break;
+						case 9:
+							cell1 = row1.createCell(i);
+							cell1.setCellValue(tableHeader[i]);
+							cell1.setCellStyle(style1);
+							sheet.addMergedRegion(new CellRangeAddress(1, 1, 9, 10));
+							break;
+						case 11:
+							cell1 = row1.createCell(i);
+							cell1.setCellValue(tableHeader[i]);
+							cell1.setCellStyle(style1);
+							sheet.addMergedRegion(new CellRangeAddress(1, 1, 11, 12));
+							break;
+						case 13:
+							cell1 = row1.createCell(i);
+							cell1.setCellValue(tableHeader[i]);
+							cell1.setCellStyle(style1);
+							sheet.addMergedRegion(new CellRangeAddress(1, 1, 13, 14));
+							break;
+						default:
+							break;
+						}
 					}
-				}
-				row2 = sheet.createRow(2);
-				for (int i = 0; i < tableHeader2.length; i++) {
-					HSSFCell cell2 = row2.createCell(i);
-					cell2.setCellValue(tableHeader2[i]);
-					cell2.setCellStyle(style1);
-				}
-				cellIndex = 0;
-				NameValueList3 nvlAll3 = model2.getAllMap3().get(str);
-				NameValueList3 nvlOp3 = model2.getOpemMap3().get(str);
-				NameValueList3 nvlip3 = model2.getIpMap3().get(str);
-				NameValueList nvlLeave = model2.getLeaveMap().get(str);
-				NameValueList nvlOp = model2.getOpemMap().get(str);
-				NameValueList nvlIp = model2.getIpMap().get(str);
-
-				HSSFRow rows = sheet.createRow(3);
-				/// 不知為何，poi如果直向寫入會發生值消失問題，這邊用一般橫向資料增長
-				for (int i = 0; i < nvlAll3.getNames().size(); i++) {
-					HSSFCell cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlAll3.getNames().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlAll3.getValues2().get(i).doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlAll3.getValues().get(i).doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlOp3.getNames().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlOp3.getValues2().get(i).doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlOp3.getValues().get(i).doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlip3.getNames().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlip3.getValues2().get(i).doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlip3.getValues().get(i).doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlOp.getNames().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlOp.getValues().get(i).doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlIp.getNames().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlIp.getValues().get(i).doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlLeave.getNames().get(i));
-					cellIndex++;
-					cells = rows.createCell(cellIndex + i);
-					cells.setCellValue(nvlLeave.getValues().get(i).doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					rows = sheet.createRow(4 + i);
+					row2 = sheet.createRow(2);
+					for (int i = 0; i < tableHeader2.length; i++) {
+						HSSFCell cell2 = row2.createCell(i);
+						cell2.setCellValue(tableHeader2[i]);
+						cell2.setCellStyle(style1);
+					}
 					cellIndex = 0;
-					cellIndex--;
-					if (i >= 1) {
-						cellIndex -= i;
+					NameValueList3 nvlAll3 = model2.getAllMap3().get(str);
+					NameValueList3 nvlOp3 = model2.getOpemMap3().get(str);
+					NameValueList3 nvlip3 = model2.getIpMap3().get(str);
+					NameValueList nvlLeave = model2.getLeaveMap().get(str);
+					NameValueList nvlOp = model2.getOpemMap().get(str);
+					NameValueList nvlIp = model2.getIpMap().get(str);
+
+					HSSFRow rows = sheet.createRow(3);
+					/// 不知為何，poi如果直向寫入會發生值消失問題，這邊用一般橫向資料增長
+					for (int i = 0; i < nvlAll3.getNames().size(); i++) {
+						HSSFCell cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlAll3.getNames().get(i));
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlAll3.getValues2().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlAll3.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlOp3.getNames().get(i));
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlOp3.getValues2().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlOp3.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlip3.getNames().get(i));
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlip3.getValues2().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlip3.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlOp.getNames().get(i));
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlOp.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlIp.getNames().get(i));
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlIp.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlLeave.getNames().get(i));
+						cellIndex++;
+						cells = rows.createCell(cellIndex + i);
+						cells.setCellValue(nvlLeave.getValues().get(i).doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						rows = sheet.createRow(4 + i);
+						cellIndex = 0;
+						cellIndex--;
+						if (i >= 1) {
+							cellIndex -= i;
+						}
+						cells.setCellStyle(cellFormatStyle);
 					}
-					cells.setCellStyle(cellFormatStyle);
+					/// auto size
+					for (int i = 0; i < tableHeader.length; i++) {
+						sheet.autoSizeColumn(i);
+						sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+					}
+					funCount++;
 				}
-				/// auto size
-				for (int i = 0; i < tableHeader.length; i++) {
-					sheet.autoSizeColumn(i);
-					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
-				}
+				
 
 			}
 		}
-		try {
+		
 			for (String str : functypes) {
 				if (!str.equals("不分科")) {
 					/// 略過沒有資料的科別
@@ -823,8 +861,38 @@ public class ReportExportService {
 		String inputDate = DateTool.convertToChineseYear(year + monthStr + "00");
 		/// 轉成民國年月
 		String endDate = inputDate.substring(0, inputDate.length() - 2);
+		PointMRPayload pointData = new PointMRPayload();
+		try {
+			pointData = reportService.getMonthlyReport(year, month);
+		}catch(Exception e) {
+			
+			// 建立新工作簿
+			HSSFWorkbook workbook = new HSSFWorkbook();
+			HSSFSheet sheet = workbook.createSheet("工作表");
+			String fileNameStr = "單月健保點數總表" + "_" + endDate;
+			String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+			String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+					? FILE_PATH + "\\" + fileName
+					: FILE_PATH + "/" + fileName;
+			File file = new File(filepath);
+			response.reset();
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Access-Control-Allow-Methods", "*");
+			response.setHeader("Content-Disposition",
+					"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+			response.setContentType("application/octet-stream;charset=utf8");
+//			response.setContentType("application/vnd.ms-excel;charset=utf8");
 
-		PointMRPayload pointData = reportService.getMonthlyReport(year, month);
+			/// 最後由outputstream輸出
+			OutputStream out = response.getOutputStream();
+
+			workbook.write(out);
+			out.flush();
+			out.close();
+			workbook.close();
+		}
+		
+		
 		POINT_MONTHLY cModel = pointData.getCurrent();
 		POINT_MONTHLY yModel = pointData.getLastY();
 		POINT_MONTHLY mModel = pointData.getLastM();
@@ -872,7 +940,7 @@ public class ReportExportService {
 
 		int cellIndex = 0;
 		int rowIndex = 0;
-
+try {
 		for (int y = 0; y < tableRowHeaders1.length; y++) {
 			HSSFRow rows = sheet.createRow(y);
 			HSSFCell cells = rows.createCell(cellIndex);
@@ -881,170 +949,173 @@ public class ReportExportService {
 
 			cellIndex++;
 			cells = rows.createCell(cellIndex);
-			switch (y) {
-			case 0:
-				cells.setCellValue(dateStr);
-				cells.setCellStyle(cellHeadDataStyle);
-				break;
-			case 1:
-				cells.setCellValue(type);
-				cells.setCellStyle(cellHeadDataStyle);
-				break;
-			case 2:
-				cells.setCellValue(cModel.getAssignedAll().doubleValue());
-				cells.setCellStyle(cellFormatStyle);
-				break;
-			case 3:
-				cells.setCellValue(cModel.getApplAll().doubleValue());
-				cells.setCellStyle(cellFormatStyle);
-				break;
-			case 4:
-				cells.setCellValue(cModel.getPartAll().doubleValue());
-				cells.setCellStyle(cellFormatStyle);
-				break;
-			case 5:
-				cells.setCellValue(cModel.getChronic().doubleValue());
-				cells.setCellStyle(cellFormatStyle);
-				break;
-			case 6:
-				cells.setCellValue(cModel.getRemaining().doubleValue());
-				cells.setCellStyle(cellFormatStyle);
-				break;
-
-			case 8:
-				for (int x = 0; x < tableCellHeaders1.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					cells.setCellValue(tableCellHeaders1[x]);
-					cells.setCellStyle(cellHeadStyle);
-				}
-				break;
-			case 9:
-				for (int x = 0; x < tableCellHeaders1.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cells.setCellValue(cModel.getPartAll().doubleValue());
-						break;
-					case 1:
-						cells.setCellValue(cModel.getPartOpAll().doubleValue());
-						break;
-					case 2:
-						cells.setCellValue(cModel.getPartOp().doubleValue());
-						break;
-					case 3:
-						cells.setCellValue(cModel.getPartEm().doubleValue());
-						break;
-					case 4:
-						cells.setCellValue(cModel.getPartIp().doubleValue());
-						break;
-					default:
-						break;
-					}
-					cells.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 10:
-				for (int x = 0; x < tableCellHeaders1.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cells.setCellValue(cModel.getApplAll().doubleValue());
-						break;
-					case 1:
-						cells.setCellValue(cModel.getApplOpAll().doubleValue());
-						break;
-					case 2:
-						cells.setCellValue(cModel.getApplOp().doubleValue());
-						break;
-					case 3:
-						cells.setCellValue(cModel.getApplEm().doubleValue());
-						break;
-					case 4:
-						cells.setCellValue(cModel.getApplIp().doubleValue());
-						break;
-					default:
-						break;
-					}
-					cells.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 11:
-				for (int x = 0; x < tableCellHeaders1.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cells.setCellValue(cModel.getTotalAll().doubleValue());
-						break;
-					case 1:
-						cells.setCellValue(cModel.getTotalOpAll().doubleValue());
-						break;
-					case 2:
-						cells.setCellValue(cModel.getTotalOp().doubleValue());
-						break;
-					case 3:
-						cells.setCellValue(cModel.getTotalEm().doubleValue());
-						break;
-					case 4:
-						cells.setCellValue(cModel.getTotalIp().doubleValue());
-						break;
-					default:
-						break;
-					}
-					cells.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 12:
-				for (int x = 0; x < tableCellHeaders1.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cells.setCellValue(cModel.getAssignedAll().doubleValue());
-						break;
-					case 1:
-						cells.setCellValue(cModel.getAssignedOpAll().doubleValue());
-						break;
-					case 2:
-						cells.setCellValue("-");
-						break;
-					case 3:
-						cells.setCellValue("-");
-						break;
-					case 4:
-						cells.setCellValue(cModel.getAssignedIp().doubleValue());
-						break;
-					default:
-						break;
-					}
-					cells.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 13:
-				for (int x = 0; x < tableCellHeaders1.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cells.setCellValue(String.valueOf(cModel.getRateAll()) + "%");
-						break;
-					case 1:
-						cells.setCellValue(String.valueOf(cModel.getRateOpAll()) + "%");
-						break;
-					case 2:
-						cells.setCellValue("-");
-						break;
-					case 3:
-						cells.setCellValue("-");
-						break;
-					case 4:
-						cells.setCellValue(String.valueOf(cModel.getRateIp()) + "%");
-						break;
-					default:
-						break;
-					}
+			if(cModel != null) {
+				
+				switch (y) {
+				case 0:
+					cells.setCellValue(dateStr);
 					cells.setCellStyle(cellHeadDataStyle);
+					break;
+				case 1:
+					cells.setCellValue(type);
+					cells.setCellStyle(cellHeadDataStyle);
+					break;
+				case 2:
+					cells.setCellValue(cModel.getAssignedAll().doubleValue());
+					cells.setCellStyle(cellFormatStyle);
+					break;
+				case 3:
+					cells.setCellValue(cModel.getApplAll().doubleValue());
+					cells.setCellStyle(cellFormatStyle);
+					break;
+				case 4:
+					cells.setCellValue(cModel.getPartAll().doubleValue());
+					cells.setCellStyle(cellFormatStyle);
+					break;
+				case 5:
+					cells.setCellValue(cModel.getChronic().doubleValue());
+					cells.setCellStyle(cellFormatStyle);
+					break;
+				case 6:
+					cells.setCellValue(cModel.getRemaining().doubleValue());
+					cells.setCellStyle(cellFormatStyle);
+					break;
+					
+				case 8:
+					for (int x = 0; x < tableCellHeaders1.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						cells.setCellValue(tableCellHeaders1[x]);
+						cells.setCellStyle(cellHeadStyle);
+					}
+					break;
+				case 9:
+					for (int x = 0; x < tableCellHeaders1.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cells.setCellValue(cModel.getPartAll().doubleValue());
+							break;
+						case 1:
+							cells.setCellValue(cModel.getPartOpAll().doubleValue());
+							break;
+						case 2:
+							cells.setCellValue(cModel.getPartOp().doubleValue());
+							break;
+						case 3:
+							cells.setCellValue(cModel.getPartEm().doubleValue());
+							break;
+						case 4:
+							cells.setCellValue(cModel.getPartIp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cells.setCellStyle(cellFormatStyle);
+					}
+					break;
+				case 10:
+					for (int x = 0; x < tableCellHeaders1.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cells.setCellValue(cModel.getApplAll().doubleValue());
+							break;
+						case 1:
+							cells.setCellValue(cModel.getApplOpAll().doubleValue());
+							break;
+						case 2:
+							cells.setCellValue(cModel.getApplOp().doubleValue());
+							break;
+						case 3:
+							cells.setCellValue(cModel.getApplEm().doubleValue());
+							break;
+						case 4:
+							cells.setCellValue(cModel.getApplIp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cells.setCellStyle(cellFormatStyle);
+					}
+					break;
+				case 11:
+					for (int x = 0; x < tableCellHeaders1.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cells.setCellValue(cModel.getTotalAll().doubleValue());
+							break;
+						case 1:
+							cells.setCellValue(cModel.getTotalOpAll().doubleValue());
+							break;
+						case 2:
+							cells.setCellValue(cModel.getTotalOp().doubleValue());
+							break;
+						case 3:
+							cells.setCellValue(cModel.getTotalEm().doubleValue());
+							break;
+						case 4:
+							cells.setCellValue(cModel.getTotalIp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cells.setCellStyle(cellFormatStyle);
+					}
+					break;
+				case 12:
+					for (int x = 0; x < tableCellHeaders1.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cells.setCellValue(cModel.getAssignedAll().doubleValue());
+							break;
+						case 1:
+							cells.setCellValue(cModel.getAssignedOpAll().doubleValue());
+							break;
+						case 2:
+							cells.setCellValue("-");
+							break;
+						case 3:
+							cells.setCellValue("-");
+							break;
+						case 4:
+							cells.setCellValue(cModel.getAssignedIp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cells.setCellStyle(cellFormatStyle);
+					}
+					break;
+				case 13:
+					for (int x = 0; x < tableCellHeaders1.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cells.setCellValue(String.valueOf(cModel.getRateAll()) + "%");
+							break;
+						case 1:
+							cells.setCellValue(String.valueOf(cModel.getRateOpAll()) + "%");
+							break;
+						case 2:
+							cells.setCellValue("-");
+							break;
+						case 3:
+							cells.setCellValue("-");
+							break;
+						case 4:
+							cells.setCellValue(String.valueOf(cModel.getRateIp()) + "%");
+							break;
+						default:
+							break;
+						}
+						cells.setCellStyle(cellHeadDataStyle);
+					}
+					break;
+				default:
+					break;
 				}
-				break;
-			default:
-				break;
 			}
 
 			cellIndex = 0;
@@ -1091,429 +1162,432 @@ public class ReportExportService {
 
 			cellIndex++;
 			cells = rows.createCell(cellIndex);
-			switch (y) {
-			case 0:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					cellss.setCellValue(tableCellHeders2[x]);
-					cellss.setCellStyle(cellStyle2);
-				}
-				cells.setCellStyle(cellTitleStyle2);
-				break;
-			case 1:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(cModel.getTotalAll().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue(mModel.getTotalAll().doubleValue());
-						break;
-					case 2:
-						cellss.setCellValue(yModel.getTotalAll().doubleValue());
-						break;
-					default:
-						break;
+			if(cModel != null && mModel != null) {
+				
+				switch (y) {
+				case 0:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						cellss.setCellValue(tableCellHeders2[x]);
+						cellss.setCellStyle(cellStyle2);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 2:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(cModel.getAssignedAll().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue(mModel.getAssignedAll().doubleValue());
-						break;
-					case 2:
-						cellss.setCellValue(yModel.getAssignedAll().doubleValue());
-						break;
-					default:
-						break;
+					cells.setCellStyle(cellTitleStyle2);
+					break;
+				case 1:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(cModel.getTotalAll().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue(mModel.getTotalAll().doubleValue());
+							break;
+						case 2:
+							cellss.setCellValue(yModel.getTotalAll().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 3:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffAllLastM().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 2:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(cModel.getAssignedAll().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue(mModel.getAssignedAll().doubleValue());
+							break;
+						case 2:
+							cellss.setCellValue(yModel.getAssignedAll().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 4:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffAllLastY().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 3:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffAllLastM().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 5:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					cellss.setCellValue(tableCellHeders2[x]);
-					cellss.setCellStyle(cellStyle2);
-				}
-				cells.setCellStyle(cellTitleStyle2);
-				break;
-			case 6:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(cModel.getTotalOpAll().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue(mModel.getTotalOpAll().doubleValue());
-						break;
-					case 2:
-						cellss.setCellValue(yModel.getTotalOpAll().doubleValue());
-						break;
-					default:
-						break;
+					break;
+				case 4:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffAllLastY().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 7:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(cModel.getAssignedOpAll().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue(mModel.getAssignedOpAll().doubleValue());
-						break;
-					case 2:
-						cellss.setCellValue(yModel.getAssignedOpAll().doubleValue());
-						break;
-					default:
-						break;
+					break;
+				case 5:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						cellss.setCellValue(tableCellHeders2[x]);
+						cellss.setCellStyle(cellStyle2);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 8:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffOpAllLastM().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					cells.setCellStyle(cellTitleStyle2);
+					break;
+				case 6:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(cModel.getTotalOpAll().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue(mModel.getTotalOpAll().doubleValue());
+							break;
+						case 2:
+							cellss.setCellValue(yModel.getTotalOpAll().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 9:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffOpAllLastY().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 7:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(cModel.getAssignedOpAll().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue(mModel.getAssignedOpAll().doubleValue());
+							break;
+						case 2:
+							cellss.setCellValue(yModel.getAssignedOpAll().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 10:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					cellss.setCellValue(tableCellHeders2[x]);
-					cellss.setCellStyle(cellStyle2);
-				}
-				cells.setCellStyle(cellTitleStyle2);
-				break;
-			case 11:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(cModel.getTotalOp().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue(mModel.getTotalOp().doubleValue());
-						break;
-					case 2:
-						cellss.setCellValue(yModel.getTotalOp().doubleValue());
-						break;
-					default:
-						break;
+					break;
+				case 8:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffOpAllLastM().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 12:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue("-");
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 9:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffOpAllLastY().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellStyle2);
-				}
-				break;
-			case 13:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffOpLastM().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 10:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						cellss.setCellValue(tableCellHeders2[x]);
+						cellss.setCellStyle(cellStyle2);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 14:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffOpLastY().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					cells.setCellStyle(cellTitleStyle2);
+					break;
+				case 11:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(cModel.getTotalOp().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue(mModel.getTotalOp().doubleValue());
+							break;
+						case 2:
+							cellss.setCellValue(yModel.getTotalOp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 15:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					cellss.setCellValue(tableCellHeders2[x]);
-					cellss.setCellStyle(cellStyle2);
-				}
-				cells.setCellStyle(cellTitleStyle2);
-				break;
-			case 16:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(cModel.getTotalEm().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue(mModel.getTotalEm().doubleValue());
-						break;
-					case 2:
-						cellss.setCellValue(yModel.getTotalEm().doubleValue());
-						break;
-					default:
-						break;
+					break;
+				case 12:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue("-");
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellStyle2);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 17:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue("-");
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 13:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffOpLastM().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellStyle2);
-				}
-				break;
-			case 18:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffEmLastM());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 14:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffOpLastY().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellStyle2);
-				}
-				break;
-			case 19:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffEmLastY().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 15:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						cellss.setCellValue(tableCellHeders2[x]);
+						cellss.setCellStyle(cellStyle2);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 20:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					cellss.setCellValue(tableCellHeders2[x]);
-					cellss.setCellStyle(cellStyle2);
-				}
-				cells.setCellStyle(cellTitleStyle2);
-				break;
-			case 21:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(cModel.getTotalIp().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue(mModel.getTotalIp().doubleValue());
-						break;
-					case 2:
-						cellss.setCellValue(yModel.getTotalIp().doubleValue());
-						break;
-					default:
-						break;
+					cells.setCellStyle(cellTitleStyle2);
+					break;
+				case 16:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(cModel.getTotalEm().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue(mModel.getTotalEm().doubleValue());
+							break;
+						case 2:
+							cellss.setCellValue(yModel.getTotalEm().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 22:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(cModel.getAssignedIp().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue(mModel.getAssignedIp().doubleValue());
-						break;
-					case 2:
-						cellss.setCellValue(yModel.getAssignedIp().doubleValue());
-						break;
-					default:
-						break;
+					break;
+				case 17:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue("-");
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellStyle2);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 23:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffIpLastM().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 18:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffEmLastM());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellStyle2);
 					}
-					cellss.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 24:
-				for (int x = 0; x < tableCellHeders2.length; x++) {
-					HSSFCell cellss = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cellss.setCellValue(pointData.getDiffIpLastY().doubleValue());
-						break;
-					case 1:
-						cellss.setCellValue("-");
-						break;
-					case 2:
-						cellss.setCellValue("-");
-						break;
-					default:
-						break;
+					break;
+				case 19:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffEmLastY().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
 					}
-					cellss.setCellStyle(cellFormatStyle);
+					break;
+				case 20:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						cellss.setCellValue(tableCellHeders2[x]);
+						cellss.setCellStyle(cellStyle2);
+					}
+					cells.setCellStyle(cellTitleStyle2);
+					break;
+				case 21:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(cModel.getTotalIp().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue(mModel.getTotalIp().doubleValue());
+							break;
+						case 2:
+							cellss.setCellValue(yModel.getTotalIp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
+					}
+					break;
+				case 22:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(cModel.getAssignedIp().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue(mModel.getAssignedIp().doubleValue());
+							break;
+						case 2:
+							cellss.setCellValue(yModel.getAssignedIp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
+					}
+					break;
+				case 23:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffIpLastM().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
+					}
+					break;
+				case 24:
+					for (int x = 0; x < tableCellHeders2.length; x++) {
+						HSSFCell cellss = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cellss.setCellValue(pointData.getDiffIpLastY().doubleValue());
+							break;
+						case 1:
+							cellss.setCellValue("-");
+							break;
+						case 2:
+							cellss.setCellValue("-");
+							break;
+						default:
+							break;
+						}
+						cellss.setCellStyle(cellFormatStyle);
+					}
+					break;
+				default:
+					break;
 				}
-				break;
-			default:
-				break;
 			}
 			cellIndex = 0;
 		}
@@ -1548,73 +1622,76 @@ public class ReportExportService {
 
 			cellIndex++;
 			cells = rows.createCell(cellIndex);
-			switch (y) {
-			case 0:
-				for (int x = 0; x < tableCellHeaders3.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					cells.setCellValue(tableCellHeaders3[x]);
-					cells.setCellStyle(cellStyle3);
-				}
-				break;
-			case 1:
-				for (int x = 0; x < tableCellHeaders3.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cells.setCellValue(cModel.getPatientOp().doubleValue());
-						break;
-					case 1:
-						cells.setCellValue(cModel.getPatientEm().doubleValue());
-						break;
-					case 2:
-						cells.setCellValue(cModel.getPatientIp().doubleValue());
-						break;
-					default:
-						break;
+			if(cModel != null) {
+				
+				switch (y) {
+				case 0:
+					for (int x = 0; x < tableCellHeaders3.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						cells.setCellValue(tableCellHeaders3[x]);
+						cells.setCellStyle(cellStyle3);
 					}
-					cells.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 2:
-				for (int x = 0; x < tableCellHeaders3.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cells.setCellValue(cModel.getPatientOp().doubleValue() - mModel.getPatientOp().doubleValue());
-						break;
-					case 1:
-						cells.setCellValue(cModel.getPatientEm().doubleValue() - mModel.getPatientEm().doubleValue());
-						break;
-					case 2:
-						cells.setCellValue(cModel.getPatientIp().doubleValue() - mModel.getPatientIp().doubleValue());
-						break;
-					default:
-						break;
+					break;
+				case 1:
+					for (int x = 0; x < tableCellHeaders3.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cells.setCellValue(cModel.getPatientOp().doubleValue());
+							break;
+						case 1:
+							cells.setCellValue(cModel.getPatientEm().doubleValue());
+							break;
+						case 2:
+							cells.setCellValue(cModel.getPatientIp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cells.setCellStyle(cellFormatStyle);
 					}
-					cells.setCellStyle(cellFormatStyle);
-				}
-				break;
-			case 3:
-				for (int x = 0; x < tableCellHeaders3.length; x++) {
-					cells = rows.createCell(cellIndex + x);
-					switch (x) {
-					case 0:
-						cells.setCellValue(cModel.getPatientOp().doubleValue() - yModel.getPatientOp().doubleValue());
-						break;
-					case 1:
-						cells.setCellValue(cModel.getPatientEm().doubleValue() - yModel.getPatientEm().doubleValue());
-						break;
-					case 2:
-						cells.setCellValue(cModel.getPatientIp().doubleValue() - yModel.getPatientIp().doubleValue());
-						break;
-					default:
-						break;
+					break;
+				case 2:
+					for (int x = 0; x < tableCellHeaders3.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cells.setCellValue(cModel.getPatientOp().doubleValue() - mModel.getPatientOp().doubleValue());
+							break;
+						case 1:
+							cells.setCellValue(cModel.getPatientEm().doubleValue() - mModel.getPatientEm().doubleValue());
+							break;
+						case 2:
+							cells.setCellValue(cModel.getPatientIp().doubleValue() - mModel.getPatientIp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cells.setCellStyle(cellFormatStyle);
 					}
-					cells.setCellStyle(cellFormatStyle);
+					break;
+				case 3:
+					for (int x = 0; x < tableCellHeaders3.length; x++) {
+						cells = rows.createCell(cellIndex + x);
+						switch (x) {
+						case 0:
+							cells.setCellValue(cModel.getPatientOp().doubleValue() - yModel.getPatientOp().doubleValue());
+							break;
+						case 1:
+							cells.setCellValue(cModel.getPatientEm().doubleValue() - yModel.getPatientEm().doubleValue());
+							break;
+						case 2:
+							cells.setCellValue(cModel.getPatientIp().doubleValue() - yModel.getPatientIp().doubleValue());
+							break;
+						default:
+							break;
+						}
+						cells.setCellStyle(cellFormatStyle);
+					}
+					break;
+				default:
+					break;
 				}
-				break;
-			default:
-				break;
 			}
 			cellIndex = 0;
 		}
@@ -1624,6 +1701,9 @@ public class ReportExportService {
 			sheet.autoSizeColumn(i);
 			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
 		}
+}catch(Exception e) {
+	e.printStackTrace();
+}
 
 		String fileNameStr = "單月健保點數總表" + "_" + endDate;
 		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
@@ -1668,6 +1748,33 @@ public class ReportExportService {
 		String dateStr = year + week + "w";
 
 		AchievementWeekly awData = reportService.getAchievementWeekly(cal);
+		
+		if(awData.getMonthTotal() == null) {
+			HSSFWorkbook workbook = new HSSFWorkbook();
+			HSSFSheet sheet = workbook.createSheet("工作表");
+			String fileNameStr = "健保申報總額達成趨勢圖" + "_" + dateStr;
+			String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+			String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+					? FILE_PATH + "\\" + fileName
+					: FILE_PATH + "/" + fileName;
+			File file = new File(filepath);
+			response.reset();
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Access-Control-Allow-Methods", "*");
+			response.setHeader("Content-Disposition",
+					"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+			response.setContentType("application/octet-stream;charset=utf8");
+//			response.setContentType("application/vnd.ms-excel;charset=utf8");
+
+			/// 最後由outputstream輸出
+			OutputStream out = response.getOutputStream();
+
+			workbook.write(out);
+			out.flush();
+			out.close();
+			workbook.close();
+			return;
+		}
 
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
@@ -2432,8 +2539,37 @@ public class ReportExportService {
 		String endDate = inputDate.substring(0, inputDate.length() - 2);
 
 		String dateStr = year + "/" + month;
+		DRGMonthlyPayload drgData = new DRGMonthlyPayload();
+		try {
+			
+			drgData = reportService.getDrgMonthly(year, month);
+			
+		}catch(Exception e) {
+			HSSFWorkbook workbook = new HSSFWorkbook();
+			HSSFSheet sheet = workbook.createSheet("工作表");
+			String fileNameStr = "DRG分配比例月報表_" + endDate;
+			String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+			String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+					? FILE_PATH + "\\" + fileName
+					: FILE_PATH + "/" + fileName;
+			File file = new File(filepath);
+			response.reset();
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Access-Control-Allow-Methods", "*");
+			response.setHeader("Content-Disposition",
+					"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+			response.setContentType("application/octet-stream;charset=utf8");
+//			response.setContentType("application/vnd.ms-excel;charset=utf8");
 
-		DRGMonthlyPayload drgData = reportService.getDrgMonthly(year, month);
+			/// 最後由outputstream輸出
+			OutputStream out = response.getOutputStream();
+
+			workbook.write(out);
+			out.flush();
+			out.close();
+			workbook.close();
+			return;
+		}
 
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
@@ -2784,7 +2920,7 @@ public class ReportExportService {
 				cellIndex++;
 				cell = row.createCell(cellIndex);
 				cell.setCellValue(v2Val2.doubleValue());
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(cellFormatStyle);
 
 				row = sheet.createRow(rowIndex + v1);
 				cellIndex = 0;
@@ -2844,8 +2980,37 @@ public class ReportExportService {
 		String endDate = inputDate.substring(0, inputDate.length() - 2);
 
 		String dateStr = year + "/" + month;
+		DRGMonthlyPayload drgData = new DRGMonthlyPayload();
+		try {
+			
+			 drgData = reportService.getDrgMonthlyAllFuncType(year, month);
+		}catch(Exception e) {
+			// 建立新工作簿
+			HSSFWorkbook workbook = new HSSFWorkbook();
+			HSSFSheet sheet = workbook.createSheet("工作表");
+			String fileNameStr = "DRG各科分配比例月報表_" + endDate;
+			String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+			String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+					? FILE_PATH + "\\" + fileName
+					: FILE_PATH + "/" + fileName;
+			File file = new File(filepath);
+			response.reset();
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Access-Control-Allow-Methods", "*");
+			response.setHeader("Content-Disposition",
+					"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+			response.setContentType("application/octet-stream;charset=utf8");
+//			response.setContentType("application/vnd.ms-excel;charset=utf8");
 
-		DRGMonthlyPayload drgData = reportService.getDrgMonthlyAllFuncType(year, month);
+			/// 最後由outputstream輸出
+			OutputStream out = response.getOutputStream();
+
+			workbook.write(out);
+			out.flush();
+			out.close();
+			workbook.close();
+			return;
+		}
 
 		List<CODE_TABLE> ctModelList = codeTableDao.findByCat("FUNC_TYPE");
 
@@ -3356,8 +3521,36 @@ public class ReportExportService {
 		String endDate = inputDate.substring(0, inputDate.length() - 2);
 
 		String dateStr = year + "/" + month;
+		DRGMonthlySectionPayload drgData = new DRGMonthlySectionPayload();
+		try {
+			drgData = reportService.getDrgMonthlySection(year, month);
+		}catch(Exception e) {
+			HSSFWorkbook workbook = new HSSFWorkbook();
+			HSSFSheet sheet = workbook.createSheet("工作表");
+			String fileNameStr = "DRG各科別各區分配資訊報表_" + endDate;
+			String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+			String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+					? FILE_PATH + "\\" + fileName
+					: FILE_PATH + "/" + fileName;
+			File file = new File(filepath);
+			response.reset();
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Access-Control-Allow-Methods", "*");
+			response.setHeader("Content-Disposition",
+					"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+			response.setContentType("application/octet-stream;charset=utf8");
+//			response.setContentType("application/vnd.ms-excel;charset=utf8");
 
-		DRGMonthlySectionPayload drgData = reportService.getDrgMonthlySection(year, month);
+			/// 最後由outputstream輸出
+			OutputStream out = response.getOutputStream();
+
+			workbook.write(out);
+			out.flush();
+			out.close();
+			workbook.close();
+			return;
+		}
+
 
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
@@ -3440,7 +3633,7 @@ public class ReportExportService {
 			row = sheet.createRow(4);
 			for (int x = 0; x < tableCellHeaders2.length; x++) {
 				cell = row.createCell(x);
-				cell.setCellValue(tableCellHeaders[x]);
+				cell.setCellValue(tableCellHeaders2[x]);
 				cell.setCellStyle(cellStyle);
 			}
 
@@ -3468,7 +3661,7 @@ public class ReportExportService {
 			row = sheet.createRow(6);
 			for (int x = 0; x < tableCellHeaders3.length; x++) {
 				cell = row.createCell(x);
-				cell.setCellValue(tableCellHeaders[x]);
+				cell.setCellValue(tableCellHeaders3[x]);
 				cell.setCellStyle(cellStyle);
 			}
 
@@ -3977,44 +4170,44 @@ public class ReportExportService {
 					cellIndex = 1;
 					break;
 				case 3:/// DRG案件佔率
-					Long tPointA = 0L;
-					Long tPointB1 = 0L;
-					Long tPointB2 = 0L;
-					Long tPointC = 0L;
+					Long tQuantityA = 0L;
+					Long tQuantityB1 = 0L;
+					Long tQuantityB2 = 0L;
+					Long tQuantityC = 0L;
 					/// 總計各區總點數
 					for (int v = 0; v < sectonA.size(); v++) {
 
-						tPointA += sectonA.get(v).getPoint();
-						tPointB1 += sectonA.get(v).getPoint();
-						tPointB2 += sectonA.get(v).getPoint();
-						tPointC += sectonA.get(v).getPoint();
+						tQuantityA += sectonA.get(v).getQuantity();
+						tQuantityB1 += sectonB1.get(v).getQuantity();
+						tQuantityB2 += sectonB2.get(v).getQuantity();
+						tQuantityC += sectonC.get(v).getQuantity();
 					}
 
 					for (int x = 0; x < tableCellHeadersList.size(); x++) {
 						if (tableCellHeadersList.get(x).equals(sectonA.get(x).getName())) {
 							cell = row.createCell(cellIndex);
 							double d = Math.round(
-									sectonA.get(x).getPoint().doubleValue() / tPointA.doubleValue() * 100.0 * 100.0)
+									sectonA.get(x).getQuantity().doubleValue() / tQuantityA.doubleValue() * 100.0 * 100.0)
 									/ 100.0;
 							cell.setCellValue(d + "%");
 							cell.setCellStyle(cellStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
 							d = Math.round(
-									sectonB1.get(x).getPoint().doubleValue() / tPointB1.doubleValue() * 100.0 * 100.0)
+									sectonB1.get(x).getQuantity().doubleValue() / tQuantityB1.doubleValue() * 100.0 * 100.0)
 									/ 100.0;
 							cell.setCellValue(d + "%");
 							cell.setCellStyle(cellStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
 							d = Math.round(
-									sectonB2.get(x).getPoint().doubleValue() / tPointB2.doubleValue() * 100.0 * 100.0)
+									sectonB2.get(x).getQuantity().doubleValue() / tQuantityB2.doubleValue() * 100.0 * 100.0)
 									/ 100.0;
 							cell.setCellValue(d + "%");
 							cell.setCellStyle(cellStyle);
 							cellIndex++;
 							d = Math.round(
-									sectonC.get(x).getPoint().doubleValue() / tPointC.doubleValue() * 100.0 * 100.0)
+									sectonC.get(x).getQuantity().doubleValue() / tQuantityC.doubleValue() * 100.0 * 100.0)
 									/ 100.0;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(d + "%");
@@ -4199,10 +4392,10 @@ public class ReportExportService {
 					}
 
 					/// 欄位A5
-					NameValueList2 nvlA = drgData.getWeeklyAMap().get("不分科");
-					NameValueList2 nvlB1 = drgData.getWeeklyB1Map().get("不分科");
-					NameValueList2 nvlB2 = drgData.getWeeklyB2Map().get("不分科");
-					NameValueList2 nvlC = drgData.getWeeklyCMap().get("不分科");
+					NameValueList2 nvlA = drgData.getWeeklyAMap().get(funcName);
+					NameValueList2 nvlB1 = drgData.getWeeklyB1Map().get(funcName);
+					NameValueList2 nvlB2 = drgData.getWeeklyB2Map().get(funcName);
+					NameValueList2 nvlC = drgData.getWeeklyCMap().get(funcName);
 					row = sheet.createRow(4);
 					cellIndex = 0;
 					rowIndex = 5;

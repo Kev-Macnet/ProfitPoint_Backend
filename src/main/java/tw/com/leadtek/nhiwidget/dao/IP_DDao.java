@@ -24,6 +24,11 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   public List<IP_D> findByMrId(Long mrid);
   
+  //住院就醫紀錄編號
+  @Query(value="SELECT MR.STATUS AS STATUS, MR.INH_CLINIC_ID AS CLINIC_ID "
+  		+ "FROM IP_D INNER JOIN MR ON IP_D.MR_ID =MR.ID WHERE IP_D.OUT_DATE BETWEEN ?1 AND ?2", nativeQuery=true)
+  public List<Object[]> findIPPhysical(String smonth,String emonth);
+  
   //住院病例總點數
   @Query(value="SELECT IP.IP_DOT FROM "
   		+ "(SELECT (SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP", nativeQuery=true)
