@@ -2,15 +2,24 @@ package tw.com.leadtek.nhiwidget.payload.report;
 
 import java.io.Serializable;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+@ApiModel("自費項目清單詳細")
 public class OwnExpenseQueryConditionDetail implements Serializable {
 
 	private static final long serialVersionUID = -5816469250165326547L;
-	
+	@ApiModelProperty(value = "就醫類別", required = false)
 	private String dataFormat;
+	@ApiModelProperty(value = "科別", required = false)
 	private String funcType;
+	@ApiModelProperty(value = "科別中文", required = false)
 	private String descChi;
+	@ApiModelProperty(value = "自費案件數", required = false)
 	private Long quantity;
+	@ApiModelProperty(value = "自費金額", required = false)
 	private Long expense;
+	@ApiModelProperty(value = "醫護人員", required = false)
+	private String prsnId;
 
 	public String getFuncType() {
 		return funcType;
@@ -51,5 +60,15 @@ public class OwnExpenseQueryConditionDetail implements Serializable {
 	public void setDataFormat(String dataFormat) {
 		this.dataFormat = dataFormat;
 	}
+
+	public String getPrsnId() {
+		return prsnId;
+	}
+
+	public void setPrsnId(String prsnId) {
+		this.prsnId = prsnId;
+	}
+	
+	
 
 }

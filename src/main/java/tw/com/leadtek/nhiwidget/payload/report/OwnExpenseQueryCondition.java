@@ -13,9 +13,9 @@ public class OwnExpenseQueryCondition extends BaseResponse implements Serializab
 
 	private static final long serialVersionUID = -6963338333989451514L;
 
-	@ApiModelProperty(value = "不分科案件數", required = false)
+	@ApiModelProperty(value = "不分區案件數", required = false)
 	private Long allQuantity;
-	@ApiModelProperty(value = "不分科自費總金額", required = false)
+	@ApiModelProperty(value = "不分區自費總金額", required = false)
 	private Long allExpense;
 	@ApiModelProperty(value = "門急診案件數", required = false)
 	private Long opAllQuantity;
