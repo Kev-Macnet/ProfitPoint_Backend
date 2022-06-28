@@ -74,24 +74,72 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   @Query(value="SELECT FUNC_TYPE ,SUM(T_DOT) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
   public List<Object[]> findClassOP_TDot(List<Integer>ids);
   
+  //各科別門急診/住院病例總點數
+  @Query(value="SELECT OP.OP_FT,IP.IP_FT, IFNULL(OP.OP_DOT,0) + IFNULL(IP.IP_DOT,0) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT,SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
+  		+ "FULL JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "ON OP.OP_FT=IP.IP_FT", nativeQuery=true)
+  public List<Object[]> findClassAll_TDot(List<Integer>ids,List<Integer>ids2);
+  
   //各科別門急診案件數
   @Query(value="SELECT FUNC_TYPE, COUNT(T_DOT) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
   public List<Object[]> findClassOPCount(List<Integer>ids);
   
-  //各科別門急診總藥品點數or總藥費
+  //各科別門急診/住院案件數
+  @Query(value="SELECT OP.OP_FT,IP.IP_FT, IFNULL(OP.OP_CASE,0) + IFNULL(IP.IP_CASE,0) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT, COUNT(T_DOT) AS OP_CASE FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
+  		+ "FULL JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_CASE FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "ON OP.OP_FT=IP.IP_FT", nativeQuery=true)
+  public List<Object[]> findClassAllCount(List<Integer>ids,List<Integer>ids2);
+  
+  //各科別門急診總藥品點數(總藥費)
   @Query(value="SELECT FUNC_TYPE,SUM(DRUG_DOT) AS OP_DOT FROM "
   		+ "OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE",nativeQuery=true)
-  public List<Object[]> findByOptIdAndGroupByFuncType(List<Integer>ids);
+  public List<Object[]> findClassOPDrugDot(List<Integer>ids);
+  
+  //各科別門急診/住院總藥品點數(總藥費)
+  @Query(value="SELECT OP.OP_FT,IP.IP_FT, IFNULL(OP.OP_DOT,0) + IFNULL(IP.IP_DOT,0) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT,SUM(DRUG_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
+  		+ "FULL JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT,SUM(DRUG_DOT) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "ON OP.OP_FT=IP.IP_FT",nativeQuery=true)
+  public List<Object[]> findClassAllDrugDot(List<Integer>ids,List<Integer>ids2);
   
   //各科別各醫師門急診案件數、病歷實際總點數、總藥品點數(總藥費)
   @Query(value="SELECT FUNC_TYPE, PRSN_ID ,COUNT(T_DOT),SUM(T_DOT),"
   		+ "SUM(DRUG_DOT) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE ,PRSN_ID ",nativeQuery=true)
   public List<Object[]>findOPClassDoctor(List<Integer>ids);
   
+  //各科別各醫師門急診/住院案件數、病歷實際總點數、總藥品點數(總藥費)
+  @Query(value="SELECT OP.OP_FT,IP.IP_FT,OP.OP_PI,IP.IP_PI,"
+  		+ "IFNULL(OP.OP_CASE,0) + IFNULL(IP.IP_CASE,0) , IFNULL(OP.OP_DOT,0) + IFNULL(IP.IP_DOT,0) , IFNULL(OP.OP_DRUG,0) + IFNULL(IP.IP_DRUG,0)"
+  		+ " FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT,PRSN_ID AS OP_PI,COUNT(T_DOT) AS OP_CASE,SUM(T_DOT) AS OP_DOT,"
+  		+ " SUM(DRUG_DOT) AS OP_DRUG FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE ,PRSN_ID ) OP"
+  		+ " FULL JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT,PRSN_ID AS IP_PI,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_CASE ,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT,"
+  		+ " SUM(DRUG_DOT) AS IP_DRUG FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE ,PRSN_ID ) IP"
+  		+ " ON OP.OP_FT=IP.IP_FT AND OP.OP_PI=IP.IP_PI",nativeQuery=true)
+  public List<Object[]>findAllClassDoctor(List<Integer>ids,List<Integer>ids2);
+  
   //各科別各醫師每週門急診案件數、病歷實際總點數、總藥品點數(總藥費)
   @Query(value="SELECT FUNC_TYPE, PRSN_ID,COUNT(T_DOT) ,SUM(T_DOT), SUM(DRUG_DOT) "
   		+ "FROM OP_D WHERE FUNC_END_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID ORDER BY PRSN_ID",nativeQuery=true)
   public List<Object[]>findOPClassDoctorWeekly(String sdate,String edate);
+  
+  //各科別各醫師每週門急診/住院案件數、病歷實際總點數、總藥品點數(總藥費)
+  @Query(value="SELECT OP.OP_FT , OP.OP_PI ,IP.IP_FT , IP.IP_PI , ( IFNULL(OP.C,0) +  IFNULL(IP.C,0) ) , ( IFNULL(OP.DOT,0) +  IFNULL(IP.DOT,0) ) , ( IFNULL(OP.DRUG,0) + IFNULL(IP.DRUG,0) ) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT, PRSN_ID AS OP_PI,COUNT(T_DOT) AS C,SUM(T_DOT) AS DOT, SUM(DRUG_DOT) AS DRUG FROM OP_D WHERE FUNC_END_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID) OP "
+  		+ "FULL JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT, PRSN_ID AS IP_PI,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS C,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS DOT,SUM(DRUG_DOT) AS DRUG FROM IP_D WHERE OUT_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID) IP "
+  		+ "ON OP.OP_FT = IP.IP_FT AND OP.OP_PI = IP.IP_PI",nativeQuery=true)
+	  public List<Object[]>findAllClassDoctorWeekly(String sdate,String edate);
   
   @Query(value = "SELECT SEQ_NO, ID, ROC_ID, FUNC_DATE, MR_ID, ID_BIRTH_YMD FROM OP_D WHERE OPT_ID= ?1 ", nativeQuery = true)
   public List<Object[]> findByOptIdSimple(Long optId);

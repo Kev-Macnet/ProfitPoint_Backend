@@ -11,12 +11,12 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFCell;
@@ -130,21 +130,30 @@ public class HealthCareCostService {
 			
 			codeTableList=code_TABLEDao.findByCatOrderByCode("FUNC_TYPE");
 			
-			//週期結束時間
-			String weekDate="";
+			//找出週期結束時間
+			List<Integer>seasonSort=new ArrayList<Integer>();
 			for(int i=0;i<seasons.length;i++) {
-				if(seasons[i].equals("Q1")) {
-					weekDate="0331";
-				}
-				else if(seasons[i].equals("Q2")) {
-					weekDate="0630";
-				}
-				else if(seasons[i].equals("Q3")) {
-					weekDate="0930";
-				}
-				else if(seasons[i].equals("Q4")) {
-					weekDate="1231";
-				}
+				 String[]s=seasons[i].split("Q");
+				 seasonSort.add(Integer.valueOf(s[1]));
+			}
+			int targetSeason=Collections.max(seasonSort);
+			
+			String weekDate="";
+			switch (targetSeason) {
+			case 1:
+				weekDate="0331";
+				break;
+			case 2:
+				weekDate="0630";
+				break;
+			case 3:
+				weekDate="0930";
+				break;
+			case 4:
+				weekDate="1231";
+				break;
+			default:
+				break;
 			}
 			
 			String chineseYear = DateTool.convertToChineseYear(year);
@@ -152,9 +161,18 @@ public class HealthCareCostService {
 			for(int i=0;i<seasons.length;i++) {
 				
 				List<String> seasonList=new ArrayList<String>();
-				StringBuilder monthA=new StringBuilder();
-				StringBuilder monthB=new StringBuilder();
-				StringBuilder monthC=new StringBuilder();
+				StringBuffer monthA=new StringBuffer();
+				StringBuffer monthB=new StringBuffer();
+				StringBuffer monthC=new StringBuffer();
+				StringBuffer targetSeasonStr=new StringBuffer();
+				boolean isTargetSeason=false;
+				
+				targetSeasonStr.append("Q");
+				targetSeasonStr.append(targetSeason);
+				
+				if(seasons[i].equals(targetSeasonStr.toString())) {
+					isTargetSeason=true;
+				}
 				
 				if(seasons[i].equals("Q1")) {
 					monthA.append(chineseYear);
@@ -167,7 +185,8 @@ public class HealthCareCostService {
 					seasonList.add(monthA.toString());
 					seasonList.add(monthB.toString());
 					seasonList.add(monthC.toString());
-					results.add(statisticData(seasons[i],seasonList,year,weekDate));
+					
+					results.add(statisticData(seasons[i],seasonList,year,weekDate,isTargetSeason));
 				}
 				else if(seasons[i].equals("Q2")) {
 					monthA.append(chineseYear);
@@ -180,7 +199,7 @@ public class HealthCareCostService {
 					seasonList.add(monthA.toString());
 					seasonList.add(monthB.toString());
 					seasonList.add(monthC.toString());
-					results.add(statisticData(seasons[i],seasonList,year,weekDate));
+					results.add(statisticData(seasons[i],seasonList,year,weekDate,isTargetSeason));
 				}
 				else if(seasons[i].equals("Q3")) {
 					monthA.append(chineseYear);
@@ -193,7 +212,7 @@ public class HealthCareCostService {
 					seasonList.add(monthA.toString());
 					seasonList.add(monthB.toString());
 					seasonList.add(monthC.toString());
-					results.add(statisticData(seasons[i],seasonList,year,weekDate));
+					results.add(statisticData(seasons[i],seasonList,year,weekDate,isTargetSeason));
 				}
 				else if(seasons[i].equals("Q4")) {
 					monthA.append(chineseYear);
@@ -206,7 +225,7 @@ public class HealthCareCostService {
 					seasonList.add(monthA.toString());
 					seasonList.add(monthB.toString());
 					seasonList.add(monthC.toString());
-					results.add(statisticData(seasons[i],seasonList,year,weekDate));
+					results.add(statisticData(seasons[i],seasonList,year,weekDate,isTargetSeason));
 				}
 				else {
 					  HealthCareCost healthCareCost=new HealthCareCost();
@@ -485,7 +504,7 @@ public class HealthCareCostService {
 						HSSFRow row5 = drugFeeSheet_All.createRow(cellIndex+4);
 						HSSFRow row6 = drugFeeSheet_All.createRow(cellIndex+5);
 						
-						StringBuilder titleName=new StringBuilder();
+						StringBuffer titleName=new StringBuffer();
 						titleName.append(results.get(i).getSeason());
 						titleName.append("各科別藥費佔比(門急診/住院)");
 						
@@ -833,7 +852,7 @@ public class HealthCareCostService {
 	  public void classDrugFeeDiffTemplate(String season,String str,HSSFRow row0,HSSFRow row1,HSSFRow row2,
 			  HSSFCellStyle cellStyle_left,List<ClassDrugFeeDto> multi_classAllFeeDiff,String multi_AllFeeDiff) {
 		  
-		  	StringBuilder title=new StringBuilder();
+		  	StringBuffer title=new StringBuffer();
 		  	title.append(season+str);
 		  	
 			addRowCell(row0,0,title.toString(),null);
@@ -857,7 +876,7 @@ public class HealthCareCostService {
 			  String dot,List<ClassDrugDotDto>classTDot,String drugFee,List<ClassDrugDotDto>classDrugFee,
 			  String drugFeeRate,List<ClassDrugFeeDto>classDrugFeeRate) {
 		    
-		  	StringBuilder title=new StringBuilder();
+		  	StringBuffer title=new StringBuffer();
 		  	title.append(season+str);
 		  
 			addRowCell(row0,0,title.toString(),null);
@@ -904,26 +923,27 @@ public class HealthCareCostService {
 			addRowCell(row5,3,drugFeeRate,cellStyle_left);
 	  }
 	  
-	 @SuppressWarnings("unchecked")
-	public HealthCareCost statisticData(String seasonStr,List<String> seasonList,String year,String weekDate) {
+
+	@SuppressWarnings("unchecked")
+	public HealthCareCost statisticData(String seasonStr,List<String> seasonList,String year,String weekDate,boolean isTargetSeason) {
 		  
 			//門急診/住院 1.病例總點數 2.總藥費 3.藥費佔率 4.案件數
-		  	  StringBuilder OP_AllDot=new StringBuilder();
-			  StringBuilder OP_AllDrugFee=new StringBuilder();
-			  StringBuilder OP_AllRate=new StringBuilder();
-			  StringBuilder AllCount=new StringBuilder();
+		  	  StringBuffer OP_AllDot=new StringBuffer();
+			  StringBuffer OP_AllDrugFee=new StringBuffer();
+			  StringBuffer OP_AllRate=new StringBuffer();
+			  StringBuffer AllCount=new StringBuffer();
 			  //門急診/住院總藥費差異
-			  StringBuilder FeeDiff=new StringBuilder();
+			  StringBuffer FeeDiff=new StringBuffer();
 				//門急診 1.病例總點數 2.總藥費 3.藥費佔率 4.案件數
-			  StringBuilder OP_Dot=new StringBuilder();
-			  StringBuilder OP_DrugFee=new StringBuilder();
-			  StringBuilder OP_Rate=new StringBuilder();
-			  StringBuilder OPCount=new StringBuilder();
+			  StringBuffer OP_Dot=new StringBuffer();
+			  StringBuffer OP_DrugFee=new StringBuffer();
+			  StringBuffer OP_Rate=new StringBuffer();
+			  StringBuffer OPCount=new StringBuffer();
 				//住院 1.病例總點數 2.總藥費 3.藥費佔率 4.案件數
-			  StringBuilder IP_Dot=new StringBuilder();
-			  StringBuilder IP_DrugFee=new StringBuilder();
-			  StringBuilder IP_Rate=new StringBuilder();
-			  StringBuilder IPCount=new StringBuilder();
+			  StringBuffer IP_Dot=new StringBuffer();
+			  StringBuffer IP_DrugFee=new StringBuffer();
+			  StringBuffer IP_Rate=new StringBuffer();
+			  StringBuffer IPCount=new StringBuffer();
 		  
 			// 各科別門急診/住院總藥品點數(總藥費)
 			List<ClassDrugDotDto> classOP_AllList=initDotList();
@@ -963,13 +983,15 @@ public class HealthCareCostService {
 		  
 			try {
 				
-				objects=calculateFeeWeekly(classDoctorWeekly,year,weekDate);
-				
-				if(objects[0]!=null) {
-					classDoctorWeekly=(List<ClassDoctorWeeklyDto>) objects[0];
-				}
-				if(objects[1]!=null) {
-					weekly=(List<String>) objects[1];
+				//如果是多季度的最後一季，才統計各科別各醫師每周藥費、案件數
+				if(isTargetSeason) {
+					objects=calculateFeeWeekly(classDoctorWeekly,year,weekDate);	
+					if(objects[0]!=null) {
+						classDoctorWeekly=(List<ClassDoctorWeeklyDto>) objects[0];
+					}
+					if(objects[1]!=null) {
+						weekly=(List<String>) objects[1];
+					}
 				}
 				
 				//門急診/住院 1.病例總點數 2.總藥費 3.藥費佔率 4.案件數
@@ -1042,6 +1064,8 @@ public class HealthCareCostService {
 				List<Object[]>OP_ClassTDot=opdDao.findClassOP_TDot(optDao.findByFeeYmListOrderById(seasonList));
 				//各科別住院總病歷點數
 				List<Object[]>IP_ClassTDot=ipdDao.findClassIP_TDot(iptDao.findByFeeYmListOrderById(seasonList));
+				//各科別門急診/住院總病歷點數
+				List<Object[]>All_ClassTDot=opdDao.findClassAll_TDot(optDao.findByFeeYmListOrderById(seasonList),iptDao.findByFeeYmListOrderById(seasonList));
 				
 				for(int a=0;a<classOP_TDot.size();a++) {
 					String code=classOP_TDot.get(a).getCode();
@@ -1051,8 +1075,8 @@ public class HealthCareCostService {
 						if(code.equals(OP_ClassTDot.get(b)[0].toString())) {
 							if(OP_ClassTDot.get(b)[1]!=null) {
 								classDrugDotDto.setDot(OP_ClassTDot.get(b)[1].toString());
+								classOP_TDot.set(a, classDrugDotDto);
 							}
-							classOP_TDot.set(a, classDrugDotDto);
 						}
 					}
 				}
@@ -1065,8 +1089,8 @@ public class HealthCareCostService {
 						if(code.equals(IP_ClassTDot.get(b)[0].toString())) {
 							if(IP_ClassTDot.get(b)[1]!=null) {
 								classDrugDotDto.setDot(IP_ClassTDot.get(b)[1].toString());
+								classIP_TDot.set(a, classDrugDotDto);
 							}
-							classIP_TDot.set(a, classDrugDotDto);
 						}
 					}
 				}
@@ -1074,56 +1098,59 @@ public class HealthCareCostService {
 				//各科別門急診/住院總病歷點數
 				for(int a=0;a<classAll_TDot.size();a++) {
 					String code=classAll_TDot.get(a).getCode();
-					int num1=checkIntgerNull(classAll_TDot.get(a).getDot());
 					ClassDrugDotDto classDrugDotDto=classAll_TDot.get(a);
 					
-					for(int b=0;b<OP_ClassTDot.size();b++) {
-						if(code.equals(OP_ClassTDot.get(b)[0].toString())) {
-							if(OP_ClassTDot.get(b)[1]!=null) {
-								int num2=checkIntgerNull(OP_ClassTDot.get(b)[1]);
-								int num3=num1+num2;
-								classDrugDotDto.setDot(String.valueOf(num3));
-							}
-							classAll_TDot.set(a,classDrugDotDto);
+					for(int b=0;b<All_ClassTDot.size();b++) {
+						String code2="";
+						String dot="";
+						
+						if(All_ClassTDot.get(b)[0]!=null) {
+							code2=All_ClassTDot.get(b)[0].toString();
 						}
-					}
-				}
-				
-				for(int a=0;a<classAll_TDot.size();a++) {
-					String code=classAll_TDot.get(a).getCode();
-					int num1=checkIntgerNull(classAll_TDot.get(a).getDot());
-					ClassDrugDotDto classDrugDotDto=classAll_TDot.get(a);
-					
-					for(int b=0;b<IP_ClassTDot.size();b++) {
-						if(code.equals(IP_ClassTDot.get(b)[0].toString())) {
-							if(IP_ClassTDot.get(b)[1]!=null) {
-								int num2=checkIntgerNull(IP_ClassTDot.get(b)[1]);
-								int num3=num1+num2;
-								classDrugDotDto.setDot(String.valueOf(num3));
-							}
+						else {
+							code2=All_ClassTDot.get(b)[1].toString();
+						}
+						
+						if(All_ClassTDot.get(b)[2]!=null) {
+							dot=All_ClassTDot.get(b)[2].toString();
+						}
+						
+						if(code.equals(code2)) {
+							classDrugDotDto.setDot(dot);
 							classAll_TDot.set(a,classDrugDotDto);
 						}
 					}
 				}
 				
 				//取得各科別門急診總藥品點數
-				List<Object[]>OP_ClassDrugDot=opdDao.findByOptIdAndGroupByFuncType(optDao.findByFeeYmListOrderById(seasonList));
+				List<Object[]>OP_ClassDrugDot=opdDao.findClassOPDrugDot(optDao.findByFeeYmListOrderById(seasonList));
 				//取得各科別住院總藥品點數
-				List<Object[]>IP_ClassDrugDot=ipdDao.findByIptIdAndGroupByFuncType(iptDao.findByFeeYmListOrderById(seasonList));
+				List<Object[]>IP_ClassDrugDot=ipdDao.findClassIPDrugDot(iptDao.findByFeeYmListOrderById(seasonList));
+				//取得各科別門急診/住院總藥品點數
+				List<Object[]>All_ClassDrugDot=opdDao.findClassAllDrugDot(optDao.findByFeeYmListOrderById(seasonList),iptDao.findByFeeYmListOrderById(seasonList));
 				
 				//各科別門急診/住院總藥品點數
 				for(int a=0;a<classOP_AllList.size();a++) {
 					String code=classOP_AllList.get(a).getCode();
-					int num1=checkIntgerNull(classOP_AllList.get(a).getDot());
 					ClassDrugDotDto classDrugDotDto=classOP_AllList.get(a);
 					
-					for(int b=0;b<OP_ClassDrugDot.size();b++) {
-						if(code.equals(OP_ClassDrugDot.get(b)[0].toString())) {
-							if(OP_ClassDrugDot.get(b)[1]!=null) {
-								int num2=checkIntgerNull(OP_ClassDrugDot.get(b)[1]);
-								int num3=num1+num2;
-								classDrugDotDto.setDot(String.valueOf(num3));
-							}
+					for(int b=0;b<All_ClassDrugDot.size();b++) {
+						String code2="";
+						String drugDot="";
+						
+						if(All_ClassDrugDot.get(b)[0]!=null) {
+							code2=All_ClassDrugDot.get(b)[0].toString();
+						}
+						else {
+							code2=All_ClassDrugDot.get(b)[1].toString();
+						}
+						
+						if(All_ClassDrugDot.get(b)[2]!=null) {
+							drugDot=All_ClassDrugDot.get(b)[2].toString();
+						}
+						
+						if(code.equals(code2)) {
+							classDrugDotDto.setDot(drugDot);
 							classOP_AllList.set(a, classDrugDotDto);
 						}
 					}
@@ -1138,27 +1165,8 @@ public class HealthCareCostService {
 						if(code.equals(OP_ClassDrugDot.get(b)[0].toString())) {	
 							if(OP_ClassDrugDot.get(b)[1]!=null) {
 								classDrugDotDto.setDot(OP_ClassDrugDot.get(b)[1].toString());
+								classOPList.set(a, classDrugDotDto);
 							}
-							classOPList.set(a, classDrugDotDto);
-						}
-					}
-				}
-				
-				//各科別門急診/住院總藥品點數
-				for(int a=0;a<classOP_AllList.size();a++) {
-					String code=classOP_AllList.get(a).getCode();
-					int num1=checkIntgerNull(classOP_AllList.get(a).getDot());
-					ClassDrugDotDto classDrugDotDto=classOP_AllList.get(a);
-					
-					for(int b=0;b<IP_ClassDrugDot.size();b++) {
-						if(code.equals(IP_ClassDrugDot.get(b)[0].toString())) {
-							if(IP_ClassDrugDot.get(b)[1]!=null) {
-								int num2=checkIntgerNull(IP_ClassDrugDot.get(b)[1]);
-								int num3=num1+num2;
-								classDrugDotDto.setDot(String.valueOf(num3));
-							}
-							classOP_AllList.set(a,classDrugDotDto);
-							
 						}
 					}
 				}
@@ -1172,9 +1180,8 @@ public class HealthCareCostService {
 						if(code.equals(IP_ClassDrugDot.get(b)[0].toString())) {
 							if(IP_ClassDrugDot.get(b)[1]!=null) {
 								classDrugDotDto.setDot(IP_ClassDrugDot.get(b)[1].toString());
+								classIPList.set(a,classDrugDotDto);
 							}
-							classIPList.set(a,classDrugDotDto);
-							
 						}
 					}
 				}
@@ -1185,49 +1192,36 @@ public class HealthCareCostService {
 				FeeDiff.append(String.valueOf(currentFee-lastFee));
 				
 				//各科別門急診總藥費(去年同一季)
-				List<Object[]>last_OP_ClassDrugFee=opdDao.findByOptIdAndGroupByFuncType(optDao.findByFeeYmListOrderById(getLastSeason(seasonList)));
-				//各科別住院總藥費(去年同一季)
-				List<Object[]>last_IP_ClassDrugFee=ipdDao.findByIptIdAndGroupByFuncType(iptDao.findByFeeYmListOrderById(getLastSeason(seasonList)));
+				List<Object[]>last_All_ClassDrugFee=opdDao.findClassAllDrugDot(optDao.findByFeeYmListOrderById(getLastSeason(seasonList)),iptDao.findByFeeYmListOrderById(getLastSeason(seasonList)));
 				
-				//各科別門急診/住院總藥費(去年同一季)------------------------------------------------
-				
+				//各科別門急診/住院總藥費(去年同一季)
 				for(int a=0;a<lastDrugFee.size();a++) {
 					String code=lastDrugFee.get(a).getCode();
-					int num1=checkIntgerNull(lastDrugFee.get(a).getFee());
 					ClassDrugFeeDto classDrugFeeDto=lastDrugFee.get(a);
 					
-					for(int b=0;b<last_OP_ClassDrugFee.size();b++) {
-						if(code.equals(last_OP_ClassDrugFee.get(b)[0].toString())) {
-							if(last_OP_ClassDrugFee.get(b)[1]!=null) {
-								int num2=checkIntgerNull(last_OP_ClassDrugFee.get(b)[1]);
-								int num3=num1+num2;
-								classDrugFeeDto.setFee(String.valueOf(num3));
-							}
+					for(int b=0;b<last_All_ClassDrugFee.size();b++) {
+						String code2="";
+						String drugFee="";
+						
+						if(last_All_ClassDrugFee.get(b)[0]!=null) {
+							code2=last_All_ClassDrugFee.get(b)[0].toString();
+						}
+						else {
+							code2=last_All_ClassDrugFee.get(b)[1].toString();
+						}
+						
+						if(last_All_ClassDrugFee.get(b)[2]!=null) {
+							drugFee=last_All_ClassDrugFee.get(b)[2].toString();
+						}
+						
+						if(code.equals(code2)) {
+							classDrugFeeDto.setFee(drugFee);
 							lastDrugFee.set(a, classDrugFeeDto);
 						}
 					}
 				}
 				
-				for(int a=0;a<lastDrugFee.size();a++) {
-					String code=lastDrugFee.get(a).getCode();
-					int num1=checkIntgerNull(lastDrugFee.get(a).getFee());
-					ClassDrugFeeDto classDrugFeeDto=lastDrugFee.get(a);
-					
-					for(int b=0;b<last_IP_ClassDrugFee.size();b++) {
-						if(code.equals(last_IP_ClassDrugFee.get(b)[0].toString())) {
-							if(last_IP_ClassDrugFee.get(b)[1]!=null) {
-								int num2=checkIntgerNull(last_IP_ClassDrugFee.get(b)[1]);
-								int num3=num1+num2;
-								classDrugFeeDto.setFee(String.valueOf(num3));
-							}
-							lastDrugFee.set(a, classDrugFeeDto);
-						}
-					}
-				}
-				
-				//-----------------------------------------------------------------------------
-				
-				//各科別門急診/住院總藥費差異(與去年同一季相比)---------------------------------------
+				//各科別門急診/住院總藥費差異(與去年同一季相比)
 				for(int a=0;a<classDrugFeeDiff.size();a++) {
 					String code=classDrugFeeDiff.get(a).getCode();
 					ClassDrugFeeDto classDrugFeeDto=classDrugFeeDiff.get(a);
@@ -1255,8 +1249,6 @@ public class HealthCareCostService {
 						}
 					}
 				}
-				
-				//----------------------------------------------------------------------------
 				
 				//各科別門急診/住院藥費佔率
 				for(int a=0;a<classAllDrugFeeRate.size();a++) {
@@ -1351,6 +1343,8 @@ public class HealthCareCostService {
 				List<Object[]>class_op_case_count=opdDao.findClassOPCount(optDao.findByFeeYmListOrderById(seasonList));
 				//各科別住院案件數
 				List<Object[]>class_ip_case_count=ipdDao.findClassIPCount(iptDao.findByFeeYmListOrderById(seasonList));
+				//各科別門急診案件數
+				List<Object[]>class_all_case_count=opdDao.findClassAllCount(optDao.findByFeeYmListOrderById(seasonList),iptDao.findByFeeYmListOrderById(seasonList));
 				
 				for(int a=0;a<classOPCaseCount.size();a++) {
 					String code=classOPCaseCount.get(a).getCode();
@@ -1383,73 +1377,71 @@ public class HealthCareCostService {
 					String code=classAllCaseCount.get(a).getCode();
 					String desc_chi=classAllCaseCount.get(a).getDesc_chi();
 					
-					for(int b=0;b<classOPCaseCount.size();b++) {
-						if(code.equals(classOPCaseCount.get(b).getCode())) {
-							classAllCaseCount.set(a, new ClassCaseCountDto(desc_chi, code, classOPCaseCount.get(b).getCaseCount()));
+					for(int b=0;b<class_all_case_count.size();b++) {
+						String code2="";
+						String caseCount="";
+						
+						if(class_all_case_count.get(b)[0]!=null) {
+							code2=class_all_case_count.get(b)[0].toString();
+						}
+						else {
+							code2=class_all_case_count.get(b)[1].toString();
+						}
+						
+						if(class_all_case_count.get(b)[2]!=null) {
+							caseCount=class_all_case_count.get(b)[2].toString();
+						}
+						
+						if(code.equals(code2)) {
+							classAllCaseCount.set(a,new ClassCaseCountDto(desc_chi, code, caseCount));
 						}
 					}
 				}
-				
-				for(int a=0;a<classAllCaseCount.size();a++) {
-					String code=classAllCaseCount.get(a).getCode();
-					String desc_chi=classAllCaseCount.get(a).getDesc_chi();
-					int num1=checkIntgerNull(classAllCaseCount.get(a).getCaseCount());
-					
-					for(int b=0;b<classIPCaseCount.size();b++) {
-						if(code.equals(classIPCaseCount.get(b).getCode())) {
-							int num2=checkIntgerNull(classIPCaseCount.get(b).getCaseCount());
-							int num3=num1+num2;
-							classAllCaseCount.set(a, new ClassCaseCountDto(desc_chi, code,String.valueOf(num3)));
-						}
-					}
-				}
-				
-				//各科別各醫師門急診案件數、總病歷點數、藥品點數(總藥費)
-				List<Object[]>classDoctorOP=opdDao.findOPClassDoctor(optDao.findByFeeYmListOrderById(seasonList));
-				//各科別各醫師住院案件數、總病歷點數、藥品點數(總藥費)
-				List<Object[]>classDoctorIP=ipdDao.findIPClassDoctor(iptDao.findByFeeYmListOrderById(seasonList));
-				
+
 				//各科別各醫師門急診/住院案件數、總病歷點數、藥品點數(總藥費)
-				for(int a=0;a<classDoctorAll.size();a++) {
-					String desc_chi=classDoctorAll.get(a).getDesc_chi();
-					String code=classDoctorAll.get(a).getCode();
-					Map<String,CaseDotFeeDto> doctors=classDoctorAll.get(a).getDoctors();
-					
-					for(int b=0;b<classDoctorOP.size();b++) {
-						if(code.equals(classDoctorOP.get(b)[0].toString())) {
-								if(classDoctorOP.get(b)[1]!=null) {
-									String doctorID=classDoctorOP.get(b)[1].toString();
-									int caseCount=checkIntgerNull(classDoctorOP.get(b)[2]);
-									int dot=checkIntgerNull(classDoctorOP.get(b)[3]);
-									int fee=checkIntgerNull(classDoctorOP.get(b)[4]);
-									doctors.put(doctorID,new CaseDotFeeDto("",caseCount,dot,fee));
-									classDoctorAll.set(a,new ClassDoctorDto(desc_chi,code,doctors));
-								}
-						}
-					}
-				}
+				List<Object[]>classDoctor_All=opdDao.findAllClassDoctor(optDao.findByFeeYmListOrderById(seasonList),iptDao.findByFeeYmListOrderById(seasonList));
 				
 				for(int a=0;a<classDoctorAll.size();a++) {
 					String desc_chi=classDoctorAll.get(a).getDesc_chi();
 					String code=classDoctorAll.get(a).getCode();
 					Map<String,CaseDotFeeDto> doctors=classDoctorAll.get(a).getDoctors();
 					
-					for(int b=0;b<classDoctorIP.size();b++) {
-						if(code.equals(classDoctorIP.get(b)[0].toString()) && classDoctorIP.get(b)[1]!=null){
-							if(doctors.containsKey(classDoctorIP.get(b)[1].toString())==true) {
-								String doctorID=classDoctorIP.get(b)[1].toString();
-								int caseCount=checkIntgerNull(classDoctorIP.get(b)[2]);
-								int dot=checkIntgerNull(classDoctorIP.get(b)[3]);
-								int fee=checkIntgerNull(classDoctorIP.get(b)[4]);
-								
-								int caseCountAll=doctors.get(doctorID).getCaseCount();
-								int dotAll=doctors.get(doctorID).getDot();
-								int feeAll=doctors.get(doctorID).getDrugFee();
-								
-								doctors.replace(doctorID,new CaseDotFeeDto("",caseCount+caseCountAll,
-										dot+dotAll, fee+feeAll));
-								classDoctorAll.set(a,new ClassDoctorDto(desc_chi,code,doctors));
-							}
+					for(int b=0;b<classDoctor_All.size();b++) {
+						String code2="";
+						String doctorName="";
+						Integer caseCount=0;
+						Integer dot=0;
+						Integer fee=0;
+						
+						if(classDoctor_All.get(b)[0]!=null) {
+							code2=classDoctor_All.get(b)[0].toString();
+						}
+						else {
+							code2=classDoctor_All.get(b)[1].toString();
+						}
+						
+						if(classDoctor_All.get(b)[2]!=null) {
+							doctorName=classDoctor_All.get(b)[2].toString();
+						}
+						else {
+							doctorName=classDoctor_All.get(b)[3].toString();
+						}
+						
+						if(classDoctor_All.get(b)[4]!=null) {
+							caseCount=Integer.valueOf(classDoctor_All.get(b)[4].toString());
+						}
+						
+						if(classDoctor_All.get(b)[5]!=null) {
+							dot=Integer.valueOf(classDoctor_All.get(b)[5].toString());
+						}
+						
+						if(classDoctor_All.get(b)[6]!=null) {
+							fee=Integer.valueOf(classDoctor_All.get(b)[6].toString());
+						}
+						
+						if(code.equals(code2)){
+							doctors.put(doctorName,new CaseDotFeeDto("",caseCount,dot,fee));
+							classDoctorAll.set(a,new ClassDoctorDto(desc_chi,code,doctors));
 						}
 					}
 				}
@@ -1560,7 +1552,7 @@ public class HealthCareCostService {
 		  try {
 			  	DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 			  
-			  	StringBuilder yearDay=new StringBuilder();
+			  	StringBuffer yearDay=new StringBuffer();
 			  	yearDay.append(year);
 			  	yearDay.append(day);
 			  
@@ -1583,6 +1575,7 @@ public class HealthCareCostService {
 			  	
 				List<String> codes = new ArrayList<String>();
 				List<String> doctors = new ArrayList<String>();
+				int count=0;
 				
 				do {
 					Date start = cal.getTime();
@@ -1593,170 +1586,102 @@ public class HealthCareCostService {
 					String weekStart = DateTool.convertToChineseYear(dateFormat.format(start));
 					String weekEnd= DateTool.convertToChineseYear(dateFormat.format(end));
 					
-					//各科別各醫師門急診每週健保藥費
-					List<Object[]>classDoctorOP=opdDao.findOPClassDoctorWeekly(weekStart, weekEnd);
-					//各科別各醫師住院每週健保藥費
-					List<Object[]>classDoctorIP=ipdDao.findIPClassDoctorWeekly(weekStart, weekEnd);
+					//各科別各醫師門急診/住院每週健保藥費
+					List<Object[]>classDoctorAll=opdDao.findAllClassDoctorWeekly(weekStart, weekEnd);
 				  	
 					//年分/週
-					StringBuilder week=new StringBuilder();
+					StringBuffer week=new StringBuffer();
 					week.append(cal.get(Calendar.YEAR));
 					week.append("w");
 					week.append(cal.get(Calendar.WEEK_OF_YEAR));
 					
-					weekly.add(week.toString());
-					
-					//各科別各醫師門急診/住院每週健保藥費
-					for(int i=0;i<classDoctorOP.size();i++) {
-						if(classDoctorOP.get(i)!=null) {
-							String code="";
-							String doctorName="";
-							Integer caseCount=0;
-							Integer dot=0;
-							Integer drugFee=0;
-							if(classDoctorOP.get(i)[0]!=null) {
-								code=classDoctorOP.get(i)[0].toString();
-							}
-							if(classDoctorOP.get(i)[1]!=null) {
-								doctorName=classDoctorOP.get(i)[1].toString();
-							}
-							if(classDoctorOP.get(i)[2]!=null) {
-								caseCount=Integer.parseInt(classDoctorOP.get(i)[2].toString());
-							}
-							if(classDoctorOP.get(i)[3]!=null) {
-								dot=Integer.parseInt(classDoctorOP.get(i)[3].toString());
-							}
-							if(classDoctorOP.get(i)[4]!=null) {
-								drugFee=Integer.parseInt(classDoctorOP.get(i)[4].toString());
-							}
-							
-							if(codes.contains(code)) {
-								if(doctors.contains(doctorName)) {
-									
-									for(int j=0;j<classDoctorWeekly.size();j++) {
-										ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
-										if(code.equals(cw.getCode())) {
-											List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
-											for(int k=0;k<classDoctorDtos_weekly.size();k++) {
-												if(doctorName.equals(classDoctorDtos_weekly.get(k).getDoctorName())) {
-													List<CaseDotFeeDto>caseDotFeeDtos=classDoctorDtos_weekly.get(k).getCaseDotFeeWeekly();
-													caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
-													classDoctorDtos_weekly.set(k,new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
-												}
-											}
-											classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
-										}
-									}
-									
-								}
-								else {
-									for(int j=0;j<classDoctorWeekly.size();j++) {
-										ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
-										if(code.equals(cw.getCode())) {
-											List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
-											List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
-											caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
-											classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
-											classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
-										}
-									}
-									doctors.add(doctorName);
-								}
-							}
-							else {
-								List<ClassDoctorDto_weekly> classDoctorDtos_weekly=new ArrayList<ClassDoctorDto_weekly>();
-								List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
+					if(count!=0) {
+						weekly.add(week.toString());
+						
+						for(int i=0;i<classDoctorAll.size();i++) {
+							if(classDoctorAll.get(i)!=null) {
+								StringBuffer code=new StringBuffer();
+								StringBuffer doctorName=new StringBuffer();
+								Integer caseCount=0;
+								Integer dot=0;
+								Integer drugFee=0;
 								
-								caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
-								classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
-								classDoctorWeekly.add(new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
+								if(classDoctorAll.get(i)[0]!=null) {
+									code.append(classDoctorAll.get(i)[0].toString());
+								}
+								else{
+									if(classDoctorAll.get(i)[2]!=null) {
+										code.append(classDoctorAll.get(i)[2].toString());
+									}
+								}
 								
-								codes.add(code);
-								doctors.add(doctorName);
-							}
-						}
-					}
-					
-					for(int i=0;i<classDoctorIP.size();i++) {
-						if(classDoctorIP.get(i)!=null) {
-							String code="";
-							String doctorName="";
-							Integer caseCount=0;
-							Integer dot=0;
-							Integer drugFee=0;
-							if(classDoctorIP.get(i)[0]!=null) {
-								code=classDoctorIP.get(i)[0].toString();
-							}
-							if(classDoctorIP.get(i)[1]!=null) {
-								doctorName=classDoctorIP.get(i)[1].toString();
-							}
-							if(classDoctorIP.get(i)[2]!=null) {
-								caseCount=Integer.parseInt(classDoctorIP.get(i)[2].toString());
-							}
-							if(classDoctorIP.get(i)[3]!=null) {
-								dot=Integer.parseInt(classDoctorIP.get(i)[3].toString());
-							}
-							if(classDoctorIP.get(i)[4]!=null) {
-								drugFee=Integer.parseInt(classDoctorIP.get(i)[4].toString());
-							}
-							
-							if(codes.contains(code)) {
-								if(doctors.contains(doctorName)) {
-									
-									for(int j=0;j<classDoctorWeekly.size();j++) {
-										ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
-										if(code.equals(cw.getCode())) {
-											List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
-											for(int k=0;k<classDoctorDtos_weekly.size();k++) {
-												if(doctorName.equals(classDoctorDtos_weekly.get(k).getDoctorName())) {
-													List<CaseDotFeeDto>caseDotFeeDtos=classDoctorDtos_weekly.get(k).getCaseDotFeeWeekly();
-													for(int z=0;z<caseDotFeeDtos.size();z++) {
-														String weekStr=caseDotFeeDtos.get(z).getWeek();
-														if(week.toString().equals(weekStr)) {
-															int oldCaseCount=caseDotFeeDtos.get(z).getCaseCount();
-															int oldDot=caseDotFeeDtos.get(z).getDot();
-															int oldDrugFee=caseDotFeeDtos.get(z).getDrugFee();
-															caseDotFeeDtos.get(z).setCaseCount(oldCaseCount + caseCount);
-															caseDotFeeDtos.get(z).setDot(oldDot + dot);
-															caseDotFeeDtos.get(z).setDrugFee(oldDrugFee + drugFee);
+								if(classDoctorAll.get(i)[1]!=null) {
+									doctorName.append(classDoctorAll.get(i)[1].toString());
+								}
+								else{
+									if(classDoctorAll.get(i)[3]!=null) {
+										doctorName.append(classDoctorAll.get(i)[3].toString());
+									}
+								}
+								
+								if(classDoctorAll.get(i)[4]!=null) {
+									caseCount=Integer.parseInt(classDoctorAll.get(i)[4].toString());
+								}
+								if(classDoctorAll.get(i)[5]!=null) {
+									dot=Integer.parseInt(classDoctorAll.get(i)[5].toString());
+								}
+								if(classDoctorAll.get(i)[6]!=null) {
+									drugFee=Integer.parseInt(classDoctorAll.get(i)[6].toString());
+								}
+								
+								if(codes.contains(code.toString())) {
+										if(doctors.contains(doctorName.toString())) {
+											
+											for(int j=0;j<classDoctorWeekly.size();j++) {
+												ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
+												if(code.toString().equals(cw.getCode())) {
+													List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
+													for(int k=0;k<classDoctorDtos_weekly.size();k++) {
+														if(doctorName.toString().equals(classDoctorDtos_weekly.get(k).getDoctorName())) {
+															List<CaseDotFeeDto>caseDotFeeDtos=classDoctorDtos_weekly.get(k).getCaseDotFeeWeekly();
+															caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+															classDoctorDtos_weekly.set(k,new ClassDoctorDto_weekly(doctorName.toString(),caseDotFeeDtos));
 														}
 													}
-													classDoctorDtos_weekly.set(k,new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
+													classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code.toString(),classDoctorDtos_weekly));
 												}
 											}
-											classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
+											
+										}
+										else {
+											for(int j=0;j<classDoctorWeekly.size();j++) {
+												ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
+												if(code.toString().equals(cw.getCode())) {
+													List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
+													List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
+													caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+													classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName.toString(),caseDotFeeDtos));
+													classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code.toString(),classDoctorDtos_weekly));
+												}
+											}
+											doctors.add(doctorName.toString());
 										}
 									}
-									
-								}
 								else {
-									for(int j=0;j<classDoctorWeekly.size();j++) {
-										ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
-										if(code.equals(cw.getCode())) {
-											List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
-											List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
-											caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
-											classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
-											classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
-										}
-									}
-									doctors.add(doctorName);
+									List<ClassDoctorDto_weekly> classDoctorDtos_weekly=new ArrayList<ClassDoctorDto_weekly>();
+									List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
+									
+									caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+									classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName.toString(),caseDotFeeDtos));
+									classDoctorWeekly.add(new ClassDoctorWeeklyDto(code.toString(),classDoctorDtos_weekly));
+									
+									codes.add(code.toString());
+									doctors.add(doctorName.toString());
 								}
-							}
-							else {
-								List<ClassDoctorDto_weekly> classDoctorDtos_weekly=new ArrayList<ClassDoctorDto_weekly>();
-								List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
-								
-								caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
-								classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName,caseDotFeeDtos));
-								classDoctorWeekly.add(new ClassDoctorWeeklyDto(code,classDoctorDtos_weekly));
-								
-								codes.add(code);
-								doctors.add(doctorName);
 							}
 						}
 					}
-					
+					count++;
 					cal.add(Calendar.DAY_OF_YEAR, 1);
 					
 				} while (cal.before(calMax));
@@ -1764,7 +1689,7 @@ public class HealthCareCostService {
 				
 		  }
 		  catch (Exception e) {
-//				  e.printStackTrace();
+				  e.printStackTrace();
 				  logger.info("calculateFeeWeekly error {}",e);
 		  }
 		  
@@ -1776,7 +1701,7 @@ public class HealthCareCostService {
 	  public List<ClassDoctorDto> initDoctorDotList(){
 		  List<ClassDoctorDto>list=new ArrayList<ClassDoctorDto>();
 		  for(int i=0;i<codeTableList.size();i++) {
-			  list.add(new ClassDoctorDto(codeTableList.get(i).getDescChi(),codeTableList.get(i).getCode(),new HashedMap<String, CaseDotFeeDto>()));
+			  list.add(new ClassDoctorDto(codeTableList.get(i).getDescChi(),codeTableList.get(i).getCode(),new HashMap<String, CaseDotFeeDto>()));
 		  }
 		  return list;
 	  }
@@ -1809,7 +1734,7 @@ public class HealthCareCostService {
 	  public List<String> getLastSeason(List<String> current){
 		  
 		  List<String>last=new ArrayList<String>();
-		  StringBuilder day=new StringBuilder();
+		  StringBuffer day=new StringBuffer();
 		  
 		  for(int i=0;i<current.size();i++) {
 			  Date date;

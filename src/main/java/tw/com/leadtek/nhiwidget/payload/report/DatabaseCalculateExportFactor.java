@@ -44,6 +44,9 @@ public class DatabaseCalculateExportFactor extends BaseResponse implements Seria
     private String caseStatus;
     
     //共用條件
+    @ApiModelProperty(value="日期類型: 0=年月帶入，1=日期區間", example="0", required=false)
+    private String dateType;
+    
     @ApiModelProperty(value="西元年，若為多筆資料，用空格隔開，dateType=0時必填", example="2021 2022", required=false)
     private String year;
     
@@ -95,19 +98,11 @@ public class DatabaseCalculateExportFactor extends BaseResponse implements Seria
     @ApiModelProperty(value="報表名稱", example="案件狀態與各別數量(可複選)",required=false)
     private String exportName;
 
-	public String getExportName() {
-		return exportName;
-	}
-
-	public void setExportName(String exportName) {
-		this.exportName = exportName;
-	}
-
-	public Boolean isShowDRGList() {
+	public Boolean getIsShowDRGList() {
 		return isShowDRGList;
 	}
 
-	public void setShowDRGList(Boolean isShowDRGList) {
+	public void setIsShowDRGList(Boolean isShowDRGList) {
 		this.isShowDRGList = isShowDRGList;
 	}
 
@@ -151,19 +146,19 @@ public class DatabaseCalculateExportFactor extends BaseResponse implements Seria
 		this.feeApply = feeApply;
 	}
 
-	public Boolean isShowSelfFeeList() {
+	public Boolean getIsShowSelfFeeList() {
 		return isShowSelfFeeList;
 	}
 
-	public void setShowSelfFeeList(Boolean isShowSelfFeeList) {
+	public void setIsShowSelfFeeList(Boolean isShowSelfFeeList) {
 		this.isShowSelfFeeList = isShowSelfFeeList;
 	}
 
-	public Boolean isShowPhysicalList() {
+	public Boolean getIsShowPhysicalList() {
 		return isShowPhysicalList;
 	}
 
-	public void setShowPhysicalList(Boolean isShowPhysicalList) {
+	public void setIsShowPhysicalList(Boolean isShowPhysicalList) {
 		this.isShowPhysicalList = isShowPhysicalList;
 	}
 
@@ -173,6 +168,14 @@ public class DatabaseCalculateExportFactor extends BaseResponse implements Seria
 
 	public void setCaseStatus(String caseStatus) {
 		this.caseStatus = caseStatus;
+	}
+
+	public String getDateType() {
+		return dateType;
+	}
+
+	public void setDateType(String dateType) {
+		this.dateType = dateType;
 	}
 
 	public String getYear() {
@@ -287,20 +290,28 @@ public class DatabaseCalculateExportFactor extends BaseResponse implements Seria
 		this.inhCode = inhCode;
 	}
 
-	public Boolean isLastM() {
+	public Boolean getIsLastM() {
 		return isLastM;
 	}
 
-	public void setLastM(Boolean isLastM) {
+	public void setIsLastM(Boolean isLastM) {
 		this.isLastM = isLastM;
 	}
 
-	public Boolean isLastY() {
+	public Boolean getIsLastY() {
 		return isLastY;
 	}
 
-	public void setLastY(Boolean isLastY) {
+	public void setIsLastY(Boolean isLastY) {
 		this.isLastY = isLastY;
+	}
+
+	public String getExportName() {
+		return exportName;
+	}
+
+	public void setExportName(String exportName) {
+		this.exportName = exportName;
 	}
     
     

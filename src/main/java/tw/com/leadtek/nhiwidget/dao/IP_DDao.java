@@ -52,10 +52,10 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   @Query(value="SELECT FUNC_TYPE ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) FROM IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
   public List<Object[]> findClassIPCount(List<Integer>ids);
   
-  //各科別住院總藥品點數or總藥費
+  //各科別住院總藥品點數(總藥費)
   @Query(value="SELECT FUNC_TYPE,SUM(DRUG_DOT) AS IP_DOT FROM "
   		+ "IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE",nativeQuery=true)
-  public List<Object[]> findByIptIdAndGroupByFuncType(List<Integer>ids);
+  public List<Object[]> findClassIPDrugDot(List<Integer>ids);
   
   //各科別各醫師住院案件數、病歷實際總點數、總藥品點數(總藥費)
   @Query(value="SELECT FUNC_TYPE,PRSN_ID ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)),(SUM(MED_DOT)+SUM(NON_APPL_DOT))"

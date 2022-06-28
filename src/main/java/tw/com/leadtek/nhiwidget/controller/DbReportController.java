@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiModelProperty;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -51,6 +50,7 @@ public class DbReportController extends BaseController {
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/databaseCalculateContents")
 	public ResponseEntity<Map<String, Object>>getDatabaseCalculateContents(
+	@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = false) String dateType,
 	@ApiParam(name = "exportType", value = "報表類型", example = "案件狀態與各別數量(可複選)") @RequestParam(required = false) String exportType,
 	@ApiParam(name = "withLaborProtection", value = "健保狀態(單選) 健保(含勞保) or 健保(不含勞保)", example = "false") @RequestParam(required = false) Boolean withLaborProtection,
 	@ApiParam(name = "classFee", value = "費用分類 多選用空格隔開", example = "門診診察費 品質支付服務 復健治療費") @RequestParam(required = false) String classFee,
@@ -78,17 +78,20 @@ public class DbReportController extends BaseController {
 	@ApiParam(name = "isLastM", value = "上個月同條件相比", example = "false") @RequestParam(required = false) Boolean isLastM,
 	@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) Boolean isLastY){
 		
-		DatabaseCalculateExportFactor databaseCalculateExportFactor=dbService.getDatabaseCalculateContents(exportType,withLaborProtection,classFee,feeApply,isShowSelfFeeList,isShowPhysicalList,caseStatus,
+		DatabaseCalculateExportFactor databaseCalculateExportFactor=dbService.getDatabaseCalculateContents(dateType,exportType,withLaborProtection,classFee,feeApply,isShowSelfFeeList,isShowPhysicalList,caseStatus,
 				year,month,betweenSDate,betweenEDate,sections,drgCodes,dataFormats,funcTypes,medNames,icdcms, medLogCodes,applMin,applMax,icdAll,payCode,inhCode,isShowDRGList,
 				isLastM,isLastY);
 		
 		Map<String, Object> result=new TreeMap<String, Object>();
 
+		if(databaseCalculateExportFactor.getDateType()!=null && !databaseCalculateExportFactor.getDateType().equals("")) {
+			result.put("日期類型: 0=年月帶入，1=日期區間", databaseCalculateExportFactor.getDateType());
+		}
 		if(databaseCalculateExportFactor.getExportName()!=null && !databaseCalculateExportFactor.getExportName().equals("")) {
 			result.put("報表類型", databaseCalculateExportFactor.getExportName());
 		}
-		if(databaseCalculateExportFactor.isShowDRGList()!=null) {
-			result.put("DRG項目列出", databaseCalculateExportFactor.isShowDRGList());
+		if(databaseCalculateExportFactor.getIsShowDRGList()!=null) {
+			result.put("DRG項目列出", databaseCalculateExportFactor.getIsShowDRGList());
 		}
 	    if(databaseCalculateExportFactor.getSections()!=null && !databaseCalculateExportFactor.getSections().equals("")) {
 	    	result.put("顯示區間(可複選)", databaseCalculateExportFactor.getSections());
@@ -105,11 +108,11 @@ public class DbReportController extends BaseController {
 	    if(databaseCalculateExportFactor.getFeeApply()!=null && !databaseCalculateExportFactor.getFeeApply().equals("")) {
 	    	result.put("費用申報狀態(可複選)", databaseCalculateExportFactor.getFeeApply());
 	    }
-		 if(databaseCalculateExportFactor.isShowSelfFeeList()!=null) {
-		 	result.put("自費分項列出", databaseCalculateExportFactor.isShowSelfFeeList());
+		 if(databaseCalculateExportFactor.getIsShowSelfFeeList()!=null) {
+		 	result.put("自費分項列出", databaseCalculateExportFactor.getIsShowSelfFeeList());
 		 }
-		if(databaseCalculateExportFactor.isShowPhysicalList()!=null) {
-			result.put("就醫清單列出", databaseCalculateExportFactor.isShowPhysicalList());
+		if(databaseCalculateExportFactor.getIsShowPhysicalList()!=null) {
+			result.put("就醫清單列出", databaseCalculateExportFactor.getIsShowPhysicalList());
 		}
 		if(databaseCalculateExportFactor.getCaseStatus()!=null && !databaseCalculateExportFactor.getCaseStatus().equals("")) {
 			result.put("案件狀態(可複選)", databaseCalculateExportFactor.getCaseStatus());
@@ -156,14 +159,60 @@ public class DbReportController extends BaseController {
 		if(databaseCalculateExportFactor.getInhCode()!=null && !databaseCalculateExportFactor.getInhCode().equals("")) {
 			result.put("院內碼", databaseCalculateExportFactor.getInhCode());
 		}
-		if(databaseCalculateExportFactor.isLastM()!=null) {
-			result.put("上個月同條件相比", databaseCalculateExportFactor.isLastM());
+		if(databaseCalculateExportFactor.getIsLastM()!=null) {
+			result.put("上個月同條件相比", databaseCalculateExportFactor.getIsLastM());
 		}
-		if(databaseCalculateExportFactor.isLastY()!=null) {
-			result.put("去年同期時段相比", databaseCalculateExportFactor.isLastY());
+		if(databaseCalculateExportFactor.getIsLastY()!=null) {
+			result.put("去年同期時段相比", databaseCalculateExportFactor.getIsLastY());
 		}
 		
 	  return ResponseEntity.ok(result);
+	}
+	
+	@ApiOperation(value = "醫令項目與執行量", notes = "醫令項目與執行量")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/medicalOrder")
+	public ResponseEntity<Map<String, Object>> getMedicalOrder(
+			@ApiParam(name = "feeApply", value = "費用申報狀態(可複選) 多選用空格隔開", example = "自費 健保") @RequestParam(required = false) String feeApply,
+			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2020 2021 2022") @RequestParam(required = true) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = true) String month,
+			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = false) String betweenSDate,
+			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = false) String betweenEDate,
+			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "") @RequestParam(required = false) String dataFormats,
+			@ApiParam(name = "funcTypes", value = "科別，若為多筆資料，用空格隔開，05 06", example = "") @RequestParam(required = false) String funcTypes,
+			@ApiParam(name = "medNames", value = "醫護姓名，若為多筆資料，用空格隔開，R A ", example = "") @RequestParam(required = false) String medNames,
+			@ApiParam(name = "icdAll", value = "不分區ICD碼，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String icdAll,
+			@ApiParam(name = "payCode", value = "支付標準代碼", example = "") @RequestParam(required = false) String payCode,
+			@ApiParam(name = "inhCode", value = "院內碼", example = "") @RequestParam(required = false) String inhCode,
+			@ApiParam(name = "isLastM", value = "上個月同條件相比", example = "false") @RequestParam(required = false) boolean isLastM,
+			@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) boolean isLastY){
+			
+			Map<String, Object>result=new HashMap<String, Object>();
+		
+			if(feeApply.equals("") || feeApply==null) {
+				result.put("result", BaseResponse.ERROR);
+				result.put("message", "費用申報狀態不可為空");
+				return ResponseEntity.badRequest().body(result);
+			}
+			
+			if (dateType.equals("0")) {
+				if (year.isEmpty() || month.isEmpty()) {
+					result.put("result", BaseResponse.ERROR);
+					result.put("message","dateType為0時，西元年或月為必填");
+					return ResponseEntity.badRequest().body(result);
+				}
+			} 
+			else {
+				if (betweenSDate.isEmpty() || betweenEDate.isEmpty()) {
+					result.put("result", BaseResponse.ERROR);
+					result.put("message","dateType為1時，日期區間起迄日為必填");
+					return ResponseEntity.badRequest().body(result);
+				}
+			}
+			
+			return ResponseEntity.ok(dbService.getMedicalOrder(feeApply,dateType,year,month,betweenSDate,betweenEDate,dataFormats,funcTypes,
+					medNames,icdAll,payCode,inhCode,isLastM,isLastY));
 	}
 	
 	@ApiOperation(value = "案件狀態與各別數量(可複選)", notes = "案件狀態與各別數量(可複選)")
@@ -183,7 +232,7 @@ public class DbReportController extends BaseController {
 			caseStatusAndQuantity.setResult(BaseResponse.ERROR);
 			caseStatusAndQuantity.setMessage("無勾選案件狀態");
 			results.add(caseStatusAndQuantity);
-		    return ResponseEntity.ok().body(results);
+		    return ResponseEntity.badRequest().body(results);
 		}
 		
 		if(startMonth!=null && endMonth!=null && !startMonth.equals("") && !endMonth.equals("") && !startMonth.equals("null") && !endMonth.equals("null")) {
@@ -218,7 +267,7 @@ public class DbReportController extends BaseController {
 				CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
 				caseStatusAndQuantity.setResult(BaseResponse.ERROR);
 				caseStatusAndQuantity.setMessage("無勾選案件狀態");
-			    return ResponseEntity.ok().body(caseStatusAndQuantity);
+			    return ResponseEntity.badRequest().body(caseStatusAndQuantity);
 			}
 			
 			if(startMonth!=null && endMonth!=null && !startMonth.equals("") && !endMonth.equals("") && !startMonth.equals("null") && !endMonth.equals("null")) {

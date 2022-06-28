@@ -59,7 +59,7 @@ public class DbReportService {
 	}
 	
 	//目錄
-	public DatabaseCalculateExportFactor getDatabaseCalculateContents(String exportType,Boolean withLaborProtection,String classFee,String feeApply,Boolean isShowSelfFeeList,
+	public DatabaseCalculateExportFactor getDatabaseCalculateContents(String dateType,String exportType,Boolean withLaborProtection,String classFee,String feeApply,Boolean isShowSelfFeeList,
 			Boolean isShowPhysicalList,String caseStatus, String year,String month,String betweenSDate,String betweenEDate,String sections,String drgCodes,String dataFormats,
 			String funcTypes, String medNames,String icdcms,String medLogCodes,Integer applMin,Integer applMax,String icdAll,String payCode,String inhCode, Boolean isShowDRGList,
 			Boolean isLastM,Boolean isLastY) {
@@ -69,16 +69,23 @@ public class DbReportService {
 			
 			switch (exportType) {
 			case "達成率與超額數":
+				databaseCalculateExportFactor.setDateType("0");
 			    databaseCalculateExportFactor.setYear(year);
 			    databaseCalculateExportFactor.setMonth(month);
-			    databaseCalculateExportFactor.setLastM(isLastM);
-			    databaseCalculateExportFactor.setLastY(isLastY);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
 				break;
 			case "DRG案件數分佈佔率與定額、實際點數":
-				databaseCalculateExportFactor.setShowDRGList(isShowDRGList);
+				if(isShowDRGList) {
+					drgCodes="";
+					isLastM=false;
+					isLastY=false;
+				}
+				databaseCalculateExportFactor.setIsShowDRGList(isShowDRGList);
 				databaseCalculateExportFactor.setSections(sections);
 				databaseCalculateExportFactor.setDrgCodes(drgCodes);
 				
+				databaseCalculateExportFactor.setDateType(dateType);
 				databaseCalculateExportFactor.setYear(year);
 				databaseCalculateExportFactor.setMonth(month);
 				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
@@ -93,13 +100,14 @@ public class DbReportService {
 				databaseCalculateExportFactor.setIcdAll(icdAll);
 				databaseCalculateExportFactor.setPayCode(payCode);
 				databaseCalculateExportFactor.setInhCode(inhCode);
-			    databaseCalculateExportFactor.setLastM(isLastM);
-			    databaseCalculateExportFactor.setLastY(isLastY);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
 				break;
 			case "申報分配佔率與點數、金額":
 				databaseCalculateExportFactor.setWithLaborProtection(withLaborProtection);
 				databaseCalculateExportFactor.setClassFee(classFee);
 				
+				databaseCalculateExportFactor.setDateType("0");
 				databaseCalculateExportFactor.setYear(year);
 				databaseCalculateExportFactor.setMonth(month);
 				databaseCalculateExportFactor.setDataFormats(dataFormats);
@@ -112,12 +120,13 @@ public class DbReportService {
 				databaseCalculateExportFactor.setIcdAll(icdAll);
 				databaseCalculateExportFactor.setPayCode(payCode);
 				databaseCalculateExportFactor.setInhCode(inhCode);
-			    databaseCalculateExportFactor.setLastM(isLastM);
-			    databaseCalculateExportFactor.setLastY(isLastY);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
 				break;
 			case "醫令項目與執行量":
 				databaseCalculateExportFactor.setFeeApply(feeApply);
 				
+				databaseCalculateExportFactor.setDateType(dateType);
 				databaseCalculateExportFactor.setYear(year);
 				databaseCalculateExportFactor.setMonth(month);
 				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
@@ -128,12 +137,13 @@ public class DbReportService {
 				databaseCalculateExportFactor.setIcdAll(icdAll);
 				databaseCalculateExportFactor.setPayCode(payCode);
 				databaseCalculateExportFactor.setInhCode(inhCode);
-			    databaseCalculateExportFactor.setLastM(isLastM);
-			    databaseCalculateExportFactor.setLastY(isLastY);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
 				break;
 			case "自費項目清單":
-				databaseCalculateExportFactor.setShowSelfFeeList(isShowSelfFeeList);
+				databaseCalculateExportFactor.setIsShowSelfFeeList(isShowSelfFeeList);
 				
+				databaseCalculateExportFactor.setDateType("1");
 				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
 				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
 				databaseCalculateExportFactor.setDataFormats(dataFormats);
@@ -142,9 +152,10 @@ public class DbReportService {
 				databaseCalculateExportFactor.setIcdAll(icdAll);
 				databaseCalculateExportFactor.setPayCode(payCode);
 				databaseCalculateExportFactor.setInhCode(inhCode);
-			    databaseCalculateExportFactor.setLastY(isLastY);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
 				break;
 			case "核刪件數資訊":
+				databaseCalculateExportFactor.setDateType(dateType);
 				databaseCalculateExportFactor.setYear(year);
 				databaseCalculateExportFactor.setMonth(month);
 				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
@@ -155,10 +166,11 @@ public class DbReportService {
 				databaseCalculateExportFactor.setIcdAll(icdAll);
 				databaseCalculateExportFactor.setPayCode(payCode);
 				databaseCalculateExportFactor.setInhCode(inhCode);
-			    databaseCalculateExportFactor.setLastM(isLastM);
-			    databaseCalculateExportFactor.setLastY(isLastY);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
 				break;
 			case "總額外點數":
+				databaseCalculateExportFactor.setDateType(dateType);
 				databaseCalculateExportFactor.setYear(year);
 				databaseCalculateExportFactor.setMonth(month);
 				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
@@ -175,9 +187,10 @@ public class DbReportService {
 				databaseCalculateExportFactor.setInhCode(inhCode);
 				break;
 			case "案件狀態與各別數量(可複選)":
-				databaseCalculateExportFactor.setShowPhysicalList(isShowPhysicalList);
+				databaseCalculateExportFactor.setIsShowPhysicalList(isShowPhysicalList);
 				databaseCalculateExportFactor.setCaseStatus(caseStatus);
 				
+				databaseCalculateExportFactor.setDateType("1");
 				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
 				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
 				break;
@@ -188,6 +201,184 @@ public class DbReportService {
 			}
 			
 			return databaseCalculateExportFactor;
+	}
+	
+	//醫令項目與執行量
+	public  Map<String, Object> getMedicalOrder(String feeApply,String dateType,String year,String month,String betweenSDate,String betweenEDate,
+			String dataFormats,String funcTypes,String medNames,String icdAll,
+			String payCode,String inhCode,boolean isLastM,boolean isLastY) {
+		
+		Map<String, Object> result = new HashMap<String, Object>();
+		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
+		
+		/// 費用申報狀態(可複選)
+		List<String> feeApplyList = new ArrayList<String>();
+		String feeApplySql = "";
+		/// 就醫類別
+		List<String> dataformatList = new ArrayList<String>();
+		String dateformatSql = "";
+		/// 科別
+		List<String> funcTypeList = new ArrayList<String>();
+		String funcTypeSql = "";
+		/// 醫護姓名
+		List<String> medNameList = new ArrayList<String>();
+		String medNameSql = "";
+		/// 不分區ICD碼
+		List<String> icdAllList = new ArrayList<String>();
+		String icdAllSql = "";
+
+		//如果feeApply有值
+		if (feeApply != null && feeApply.length() > 0) {
+			String[] feeApplyArr = StringUtility.splitBySpace(feeApply);
+			for (String str : feeApplyArr) {
+				feeApplyList.add(str);
+			}
+		}
+		/// 如果dataformat有值
+		if (dataFormats != null && dataFormats.length() > 0) {
+			String[] dataformatArr = StringUtility.splitBySpace(dataFormats);
+			for (String str : dataformatArr) {
+				dataformatList.add(str);
+			}
+		}
+		/// 如果functype有值
+		if (funcTypes != null && funcTypes.length() > 0) {
+			String[] funcTypeArr = StringUtility.splitBySpace(funcTypes);
+			for (String str : funcTypeArr) {
+				funcTypeList.add(str);
+				funcTypeSql += "'" + str + "',";
+			}
+			funcTypeSql = funcTypeSql.substring(0, funcTypeSql.length() - 1);
+		}
+		/// 如果medNames有值
+		if (medNames != null && medNames.length() > 0) {
+			String[] medNameArr = StringUtility.splitBySpace(medNames);
+			for (String str : medNameArr) {
+				medNameList.add(str);
+				medNameSql += "'" + str + "',";
+			}
+			medNameSql = medNameSql.substring(0, medNameSql.length() - 1);
+		}
+		/// 如果icdAll有值
+		if (icdAll != null && icdAll.length() > 0) {
+			String[] icdAllArr = StringUtility.splitBySpace(icdAll);
+			for (String str : icdAllArr) {
+				icdAllList.add(str);
+			}
+		}
+
+		/// 日期格式: 0=年月帶入，1=日期區間
+		if (dateType.equals("0")) {
+			String[] years = StringUtility.splitBySpace(year);
+			String[] months = StringUtility.splitBySpace(month);
+
+			List<Object> yList = Arrays.asList(years);
+			List<Object> mList = Arrays.asList(months);
+			Map<String, Object> map = new HashMap<String, Object>();
+			List<Map<String, Object>> mapList = new ArrayList<Map<String, Object>>();
+			/// 如果年月為多個，則不能用上個月同條件相比
+			if (years.length > 1) {
+				isLastM = false;
+			}
+			if (isLastM) {
+				for (String str : months) {
+					int m = Integer.valueOf(str.replace("0", ""));
+					int y = Integer.valueOf(years[0]);
+					/// 如果是一月的話
+					if (m == 1) {
+						y -= 1;
+						/// 跨年份
+						yList.add(y);
+						mList.add(12);
+						map.put("YM", String.valueOf(y * 100 + 12));
+						map.put("Value", "M");
+						String append = String.valueOf((y + 1) * 100 + m);
+						append = append.substring(0, append.length() - 2) + "/"
+								+ append.substring(append.length() - 2, append.length());
+						map.put("displayName", "上個月同條件相比");
+					} else {
+						yList.add(years[0]);
+						mList.add(m - 1);
+						map.put("YM", String.valueOf((y * 100) + (m - 1)));
+						map.put("Value", "M");
+						String append = String.valueOf((y) * 100 + m);
+						append = append.substring(0, append.length() - 2) + "/"
+								+ append.substring(append.length() - 2, append.length());
+						map.put("displayName", "上個月同條件相比");
+					}
+				}
+				mapList.add(map);
+				map = new HashMap<String, Object>();
+			}
+
+			if (isLastY) {
+				int i = 0;
+				for (String str : years) {
+					int y = Integer.valueOf(str);
+					int m = Integer.valueOf(months[i].replace("0", ""));
+					y -= 1;
+					yList.add(y);
+					mList.add(m);
+					map.put("YM", String.valueOf((y * 100) + m));
+					map.put("Value", "Y");
+					String append = String.valueOf((y + 1) * 100 + m);
+					append = append.substring(0, append.length() - 2) + "/"
+							+ append.substring(append.length() - 2, append.length());
+					map.put("displayName", "去年同期時段相比");
+					mapList.add(map);
+					map = new HashMap<String, Object>();
+					i++;
+
+				}
+			}
+			List<String> sList = new ArrayList<String>();
+			for (int i = 0; i < yList.size(); i++) {
+				sList.add(yList.get(i).toString() + mList.get(i).toString());
+			}
+
+			List<Integer> yearMonthBetweenInt = findYearMonth(yList, mList);
+			List<String> yearMonthBetweenStr = findYearMonthStr(yList, mList);
+			/// 這裡做排序，name才會對應正確值
+			Collections.sort(yearMonthBetweenInt);
+			Collections.sort(yearMonthBetweenStr);
+			
+			/// 查詢欄位
+			StringBuffer selectColumn = new StringBuffer("");
+			/// 條件
+			StringBuffer where = new StringBuffer("");
+			/// groupBy
+			StringBuffer groupBy = new StringBuffer("");
+			/// orderBy
+			StringBuffer orderBy = new StringBuffer("");
+
+			for (int i = 0; i < yearMonthBetweenStr.size(); i++) {
+				logger.info("醫令項目與執行量報表年月: {}",yearMonthBetweenStr.get(i));
+				
+				selectColumn.append(" SELECT * FROM  ");
+				for (String str : dataformatList) {
+					switch (str) {
+					case "all":
+						break;
+					case "totalop":
+						break;
+					case "op":
+						break;
+					case "em":
+						break;
+					case "ip":
+						break;
+					default:
+						logger.info("醫令項目與執行量報表: 未知的就醫類別");
+						break;
+					}
+				}
+			}
+		}
+		else {
+			
+		}
+		
+		return result;
 	}
 
 	/**
@@ -491,7 +682,6 @@ public class DbReportService {
 
 				}
 			}
-			System.out.println(mapList.toString());
 			List<String> sList = new ArrayList<String>();
 			for (int i = 0; i < yList.size(); i++) {
 				sList.add(yList.get(i).toString() + mList.get(i).toString());
@@ -603,6 +793,10 @@ public class DbReportService {
 					selectColumn.append(where);
 					where = new StringBuffer("");
 				}
+				
+				System.out.println(selectColumn.toString());
+				System.out.println("-----------------------");
+				
 				if (isShowDRGList || drgCodeList.size() > 0) {
 					selectColumn.append(" UNION ALL ");
 					selectColumn.append(" SELECT '" + yearMonthBetweenStr.get(i)
@@ -1746,6 +1940,11 @@ public class DbReportService {
 			}
 			//// 最後添加一個無意義與句避免 “,”使sql錯誤
 			selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+			
+			System.out.println("第一階段");
+			System.out.println(selectColumn.toString());
+			System.out.println("----------------------------------");
+			
 			/// 傳統sql語法組成資料
 			Query sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 			sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
@@ -2173,6 +2372,11 @@ public class DbReportService {
 					break;
 				}
 			}
+			
+			System.out.println("第2階段");
+			System.out.println(selectColumn.toString());
+			System.out.println("----------------------------------");
+			
 			/// 傳統sql語法組成資料
 			sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 			sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
