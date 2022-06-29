@@ -4,6 +4,9 @@
 package tw.com.leadtek.nhiwidget.payload.report;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -132,6 +135,12 @@ public class PeriodPointPayload extends BaseResponse implements Serializable {
   
   @ApiModelProperty(value = "醫療費用自費比例與金額", required = true)
   private PointQuantityList ownExpByOrderType;
+  
+  @ApiModelProperty(value = "醫療費用比例與點數列表", required = true)
+  private List<Map<String,Object>> payByOrderTypeList;
+  
+  @ApiModelProperty(value = "醫療費用自費比例與金額列表", required = true)
+  private List<Map<String,Object>> ownExpByOrderTypeList;
     
   public PeriodPointPayload() {
     
@@ -456,5 +465,23 @@ public class PeriodPointPayload extends BaseResponse implements Serializable {
   public void setApplNoPartPointIp(Long applNoPartPointIp) {
     this.applNoPartPointIp = applNoPartPointIp;
   }
+
+	public List<Map<String,Object>> getPayByOrderTypeList() {
+		return payByOrderTypeList;
+	}
+	
+	public void setPayByOrderTypeList(List<Map<String,Object>> payByOrderTypeList) {
+		this.payByOrderTypeList = payByOrderTypeList;
+	}
+
+	public List<Map<String,Object>> getOwnExpByOrderTypeList() {
+		return ownExpByOrderTypeList;
+	}
+
+	public void setOwnExpByOrderTypeList(List<Map<String,Object>> ownExpByOrderTypeList) {
+		this.ownExpByOrderTypeList = ownExpByOrderTypeList;
+	}
+  
+  
  
 }

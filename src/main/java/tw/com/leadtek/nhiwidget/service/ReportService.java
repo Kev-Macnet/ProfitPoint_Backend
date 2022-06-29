@@ -415,9 +415,22 @@ public class ReportService {
 
 		result.setApplByFuncType(getApplPointGroupByFuncType(s, e));
 		result.setPartByFuncType(getPartPointGroupByFuncType(s, e));
-		result.setPayByOrderType(getPointGroupByOrderType(s, e));
+		result.setPayByOrderType(getPointGroupByOrderType(s, e, ""));
 		result.setOwnExpByFuncType(getOwnExpenseGroupByFuncType(s, e));
-		result.setOwnExpByOrderType(getOwnExpenseGroupByOrderType(s, e));
+		result.setOwnExpByOrderType(getOwnExpenseGroupByOrderType(s, e, ""));
+//		result.setPayByOrderTypeList(getPointGroupByOrderTypeList(s, e));
+//		result.setOwnExpByOrderTypeList(getOwnExpenseGroupByOrderTypeList(s, e));
+		return result;
+	}
+	
+	public PeriodPointPayload getPeriodPointByFunctype(Date sdate, Date edate, String funcType) {
+		PeriodPointPayload result = new PeriodPointPayload();
+		java.sql.Date s = new java.sql.Date(sdate.getTime());
+		java.sql.Date e = new java.sql.Date(edate.getTime());
+
+
+		result.setPayByOrderType(getPointGroupByOrderType(s, e, funcType));
+		result.setOwnExpByOrderType(getOwnExpenseGroupByOrderType(s, e, funcType));
 		return result;
 	}
 
@@ -547,10 +560,20 @@ public class ReportService {
 		return result;
 	}
 
-	public PointQuantityList getPointGroupByOrderType(java.sql.Date s, java.sql.Date e) {
+	public PointQuantityList getPointGroupByOrderType(java.sql.Date s, java.sql.Date e, String funcType) {
 		PointQuantityList result = new PointQuantityList();
 		// 門急診各科申報總數
-		List<Object[]> list = oppDao.findPointGroupByPayCodeType(s, e);
+		List<Object[]> list = new ArrayList<Object[]>();
+		if(!funcType.isEmpty() && funcType.equals("00")) {
+			funcType = "";
+		}
+		if(funcType.isEmpty()) {
+			list = oppDao.findPointGroupByPayCodeType(s, e);
+		}
+		else {
+			
+			list = oppDao.findPointAndFuncTypeGroupByPayCodeType(s, e, funcType);
+		}
 		if (list != null && list.size() > 0) {
 			for (Object[] objects : list) {
 				NameCodePointQuantity npq = new NameCodePointQuantity();
@@ -572,7 +595,13 @@ public class ReportService {
 				result.addOp(npq);
 			}
 		}
-		list = ippDao.findPointGroupByPayCodeType(s, e);
+		if(funcType.isEmpty()) {
+			list = ippDao.findPointGroupByPayCodeType(s, e);
+		}
+		else {
+			
+			list = ippDao.findPointAndFuncTypeGroupByPayCodeType(s, e, funcType);
+		}
 		if (list != null && list.size() > 0) {
 			for (Object[] objects : list) {
 				NameCodePointQuantity npq = new NameCodePointQuantity();
@@ -597,10 +626,19 @@ public class ReportService {
 		return result;
 	}
 
-	public PointQuantityList getOwnExpenseGroupByOrderType(java.sql.Date s, java.sql.Date e) {
+	public PointQuantityList getOwnExpenseGroupByOrderType(java.sql.Date s, java.sql.Date e, String funcType) {
 		PointQuantityList result = new PointQuantityList();
+		List<Object[]> list = new ArrayList<Object[]>();
+		if(!funcType.isEmpty() && funcType.equals("00")) {
+			funcType = "";
+		}
 		// 門急診各科申報總數
-		List<Object[]> list = oppDao.findOwnExpensePointGroupByPayCodeType(s, e);
+		if(funcType.isEmpty()) {
+			list = oppDao.findOwnExpensePointGroupByPayCodeType(s, e);
+		}
+		else {
+			list = oppDao.findOwnExpensePointAndFuncTypeGroupByPayCodeType(s, e, funcType);
+		}
 		if (list != null && list.size() > 0) {
 			for (Object[] objects : list) {
 				NameCodePointQuantity npq = new NameCodePointQuantity();
@@ -622,7 +660,14 @@ public class ReportService {
 				result.addOp(npq);
 			}
 		}
-		list = ippDao.findOwnExpenseGroupByPayCodeType(s, e);
+		if(funcType.isEmpty()) {
+			
+			list = ippDao.findOwnExpenseGroupByPayCodeType(s, e);
+		}
+		else {
+			list = ippDao.findOwnExpenseAndFuncTypeGroupByPayCodeType(s, e, funcType);
+
+		}
 		if (list != null && list.size() > 0) {
 			for (Object[] objects : list) {
 				NameCodePointQuantity npq = new NameCodePointQuantity();
@@ -646,6 +691,7 @@ public class ReportService {
 		}
 		return result;
 	}
+	
 
 	public POINT_WEEKLY calculatePointByWeek(Date sdate, Date edate, List<String> funcTypes) {
 		if (!checkWeekday(sdate, Calendar.SUNDAY) || !checkWeekday(edate, Calendar.SATURDAY)) {
@@ -908,6 +954,36 @@ public class ReportService {
 		java.sql.Date e = new java.sql.Date(edate.getTime());
 		List<POINT_WEEKLY> list = pointWeeklyDao.findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e,
 				XMLConstant.FUNC_TYPE_ALL);
+		int count = 0;
+		for (POINT_WEEKLY pw : list) {
+			String name = pw.getPyear() + " w" + pw.getPweek();
+			result.getIp().add(name, pw.getIp());
+			result.getOp().add(name, pw.getOp());
+			result.getOwnExpIp().add(name, pw.getOwnExpIp());
+			result.getOwnExpOp().add(name, pw.getOwnExpOp());
+			count++;
+			if (count >= 52) {
+				break;
+			}
+		}
+		return result;
+	}
+	
+	public PeriodPointWeeklyPayload getPeroidPointWeeklyByFunctype(Date edate, String funcType) {
+		PeriodPointWeeklyPayload result = new PeriodPointWeeklyPayload();
+		java.sql.Date e = new java.sql.Date(edate.getTime());
+		List<POINT_WEEKLY> list = new ArrayList<POINT_WEEKLY>();
+		if(funcType != null && funcType.equals("00")) {
+			funcType = "";
+		}
+		if(funcType.isEmpty()) {
+			list = pointWeeklyDao.findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e,
+					XMLConstant.FUNC_TYPE_ALL);
+		}
+		else {
+			list = pointWeeklyDao.findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e,
+					funcType);
+		}
 		int count = 0;
 		for (POINT_WEEKLY pw : list) {
 			String name = pw.getPyear() + " w" + pw.getPweek();

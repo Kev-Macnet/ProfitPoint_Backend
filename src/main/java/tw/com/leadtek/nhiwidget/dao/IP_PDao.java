@@ -54,6 +54,16 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
   public List<Object[]> findPointGroupByPayCodeType(Date sdate, Date edate);
   
   /**
+   * 住院各醫令類別點數列表
+   * @param sdate
+   * @param edate
+   * @return [醫令代碼, 加總點數, 件數]
+   */
+  @Query(value = "SELECT IP_P.PAY_CODE_TYPE , SUM(TOTAL_DOT), COUNT(MR.ID) FROM MR, IP_P " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_P.MR_ID = MR.ID AND TOTAL_DOT > 0 AND MR.FUNC_TYPE = ?3 GROUP BY IP_P.PAY_CODE_TYPE", nativeQuery = true)
+  public List<Object[]> findPointAndFuncTypeGroupByPayCodeType(Date sdate, Date edate, String funcType);
+  
+  /**
    * 住院各醫令類別自費點數
    * @param sdate
    * @param edate
@@ -63,6 +73,17 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
       "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_P.MR_ID = MR.ID AND IP_P.TOTAL_DOT > 0 "
       + "AND IP_P.ORDER_TYPE='E' GROUP BY IP_P.PAY_CODE_TYPE", nativeQuery = true)
   public List<Object[]> findOwnExpenseGroupByPayCodeType(Date sdate, Date edate);
+  
+  /**
+   * 住院各醫令類別自費點數列表
+   * @param sdate
+   * @param edate
+   * @return [醫令代碼, 加總點數, 件數]
+   */
+  @Query(value = "SELECT IP_P.PAY_CODE_TYPE , SUM(IP_P.TOTAL_DOT), COUNT(MR.ID) FROM MR, IP_P " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_P.MR_ID = MR.ID AND IP_P.TOTAL_DOT > 0 "
+      + "AND IP_P.ORDER_TYPE='E' AND MR.FUNC_TYPE = ?3 GROUP BY IP_P.PAY_CODE_TYPE", nativeQuery = true)
+  public List<Object[]> findOwnExpenseAndFuncTypeGroupByPayCodeType(Date sdate, Date edate,String funcType);
   
   /**
    *  取得醫令碼與支付標準代碼相同的所有醫令

@@ -97,11 +97,65 @@ public class ReportController extends BaseController {
 		}
 		return ResponseEntity.ok(reportService.getPeriodPoint(startDate, endDate));
 	}
+	
+	@ApiOperation(value = "取得費用業務依照科別-點數", notes = "取得費用業務依照科別-點數")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/periodPointByFunctype")
+	public ResponseEntity<PeriodPointPayload> getPeriodPointByFunctype(
+			@ApiParam(name = "sdate", value = "起始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
+			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
+			@ApiParam(name = "funcType", value = "科別", example = "01") @RequestParam(required = false) String funcType
+			) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		Date startDate = null;
+		Date endDate = null;
+		try {
+			startDate = sdf.parse(sdate);
+			endDate = sdf.parse(edate);
+		} catch (ParseException e) {
+			PeriodPointPayload result = new PeriodPointPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("日期格式不正確");
+			return ResponseEntity.badRequest().body(result);
+		}
+		if(funcType == null) {
+			PeriodPointPayload result = new PeriodPointPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("科別為必填");
+		}
+		return ResponseEntity.ok(reportService.getPeriodPointByFunctype(startDate, endDate, funcType));
+	}
 
-	@ApiOperation(value = "取得費用業務-每周趨勢資料", notes = "取得費用業務-每周趨勢資料")
+	@ApiOperation(value = "取得費用業務依照科別-每周趨勢資料", notes = "取得費用業務依照科別-每周趨勢資料")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/periodPointWeekly")
 	public ResponseEntity<PeriodPointWeeklyPayload> getPeriodPointWeekly(
+			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
+			@ApiParam(name = "funcType", value = "科別", example = "01") @RequestParam(required = false) String funcType
+			) {
+
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		Date endDate = null;
+		try {
+			endDate = sdf.parse(edate);
+		} catch (ParseException e) {
+			PeriodPointWeeklyPayload result = new PeriodPointWeeklyPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("日期格式不正確");
+			return ResponseEntity.badRequest().body(result);
+		}
+		if(funcType == null) {
+			PeriodPointPayload result = new PeriodPointPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("科別為必填");
+		}
+		return ResponseEntity.ok(reportService.getPeroidPointWeeklyByFunctype(endDate, funcType));
+	}
+	
+	@ApiOperation(value = "取得費用業務-每周趨勢資料", notes = "取得費用業務-每周趨勢資料")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/periodPointWeeklyByFunctype")
+	public ResponseEntity<PeriodPointWeeklyPayload> getPeriodPointWeeklyByFunctype(
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate) {
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
