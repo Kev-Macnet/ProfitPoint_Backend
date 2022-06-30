@@ -173,20 +173,20 @@ public class DbReportController extends BaseController {
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/medicalOrder")
 	public ResponseEntity<Map<String, Object>> getMedicalOrder(
-			@ApiParam(name = "feeApply", value = "費用申報狀態(可複選) 多選用空格隔開", example = "自費 健保") @RequestParam(required = false) String feeApply,
+			@ApiParam(name = "feeApply", value = "費用申報狀態(可複選)，多選用空格隔開，自費 健保", example = "自費 健保") @RequestParam(required = false) String feeApply,
 			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
 			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2020 2021 2022") @RequestParam(required = true) String year,
 			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = true) String month,
 			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = false) String betweenSDate,
 			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = false) String betweenEDate,
-			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "") @RequestParam(required = false) String dataFormats,
+			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = false) String dataFormats,
 			@ApiParam(name = "funcTypes", value = "科別，若為多筆資料，用空格隔開，05 06", example = "") @RequestParam(required = false) String funcTypes,
 			@ApiParam(name = "medNames", value = "醫護姓名，若為多筆資料，用空格隔開，R A ", example = "") @RequestParam(required = false) String medNames,
 			@ApiParam(name = "icdAll", value = "不分區ICD碼，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String icdAll,
 			@ApiParam(name = "payCode", value = "支付標準代碼", example = "") @RequestParam(required = false) String payCode,
 			@ApiParam(name = "inhCode", value = "院內碼", example = "") @RequestParam(required = false) String inhCode,
 			@ApiParam(name = "isLastM", value = "上個月同條件相比", example = "false") @RequestParam(required = false) boolean isLastM,
-			@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) boolean isLastY){
+			@ApiParam(name = "isLastY", value = "去年同期時段同條件相比", example = "false") @RequestParam(required = false) boolean isLastY){
 			
 			Map<String, Object>result=new HashMap<String, Object>();
 		
@@ -211,8 +211,15 @@ public class DbReportController extends BaseController {
 				}
 			}
 			
-			return ResponseEntity.ok(dbService.getMedicalOrder(feeApply,dateType,year,month,betweenSDate,betweenEDate,dataFormats,funcTypes,
-					medNames,icdAll,payCode,inhCode,isLastM,isLastY));
+			try {
+				result=dbService.getMedicalOrder(feeApply,dateType,year,month,betweenSDate,betweenEDate,dataFormats,funcTypes,
+						medNames,icdAll,payCode,inhCode,isLastM,isLastY);
+			} catch (Exception e) {
+				// TODO: handle exception
+//				e.printStackTrace();
+			}
+			
+			return ResponseEntity.ok(result);
 	}
 	
 	@ApiOperation(value = "案件狀態與各別數量(可複選)", notes = "案件狀態與各別數量(可複選)")
