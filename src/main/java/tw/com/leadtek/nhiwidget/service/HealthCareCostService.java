@@ -825,9 +825,11 @@ public class HealthCareCostService {
 						: FILE_PATH + "/" + fileName;
 				File file = new File(filepath);
 				response.reset();
-				response.setHeader("Content-Disposition",
-						"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
-				response.setContentType("application/vnd.ms-excel;charset=utf8");
+		    response.setHeader("Access-Control-Allow-Origin", "*");
+		    response.setHeader("Access-Control-Allow-Methods", "*");
+		    response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+		    response.setContentType("application/octet-stream;charset=utf8");
 
 				workbook.write(response.getOutputStream());
 				workbook.close();
