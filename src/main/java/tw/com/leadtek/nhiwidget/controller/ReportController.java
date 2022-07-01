@@ -128,7 +128,7 @@ public class ReportController extends BaseController {
 
 	@ApiOperation(value = "取得費用業務依照科別-每周趨勢資料", notes = "取得費用業務依照科別-每周趨勢資料")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
-	@GetMapping("/periodPointWeekly")
+	@GetMapping("/periodPointWeeklyByFunctype")
 	public ResponseEntity<PeriodPointWeeklyPayload> getPeriodPointWeekly(
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
 			@ApiParam(name = "funcType", value = "科別", example = "01") @RequestParam(required = false) String funcType
@@ -154,7 +154,7 @@ public class ReportController extends BaseController {
 	
 	@ApiOperation(value = "取得費用業務-每周趨勢資料", notes = "取得費用業務-每周趨勢資料")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
-	@GetMapping("/periodPointWeeklyByFunctype")
+	@GetMapping("/periodPointWeekly")
 	public ResponseEntity<PeriodPointWeeklyPayload> getPeriodPointWeeklyByFunctype(
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate) {
 
@@ -551,4 +551,29 @@ public class ReportController extends BaseController {
 	
     return null;
   }
+  
+  @ApiOperation(value = "取得費用業務-點數-匯出", notes = "取得費用業務-點數-匯出")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/periodPointExport")
+	public ResponseEntity<BaseResponse> getPeriodPointExport(
+			@ApiParam(name = "sdate", value = "起始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
+			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
+			@ApiParam(name = "funcType", value = "科別", example = "01") @RequestParam(required = false) String funcType,
+			HttpServletResponse response
+			) throws ParseException, IOException {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		Date startDate = null;
+		Date endDate = null;
+		try {
+			startDate = sdf.parse(sdate);
+			endDate = sdf.parse(edate);
+		} catch (ParseException e) {
+			PeriodPointPayload result = new PeriodPointPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("日期格式不正確");
+			return ResponseEntity.badRequest().body(result);
+		}
+		reportExportService.getPeriodPointExport(sdate, edate, funcType, response);
+		return null;
+	}
 }

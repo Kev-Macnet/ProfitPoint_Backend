@@ -4,15 +4,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.poi.hssf.model.RowBlocksReader;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
@@ -41,8 +45,11 @@ import tw.com.leadtek.nhiwidget.payload.report.NameCodePointQuantity;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList2;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList3;
+import tw.com.leadtek.nhiwidget.payload.report.PeriodPointPayload;
+import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointPeriod;
+import tw.com.leadtek.nhiwidget.payload.report.PointQuantityList;
 import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriod;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriodDetail;
@@ -96,11 +103,10 @@ public class ReportExportService {
 		PointMRPayload pointData = new PointMRPayload();
 		POINT_MONTHLY model = new POINT_MONTHLY();
 		try {
-			
-			 pointData = reportService.getMonthlyReportApplCount(year, month);
-			 model = pointData.getCurrent();
-		}
-		catch(Exception e) {
+
+			pointData = reportService.getMonthlyReportApplCount(year, month);
+			model = pointData.getCurrent();
+		} catch (Exception e) {
 			HSSFWorkbook workbook = new HSSFWorkbook();
 			HSSFSheet sheet = workbook.createSheet("工作表");
 			String fileNameStr = "單月各科健保申報量與人次報表" + "_" + endDate;
@@ -125,9 +131,9 @@ public class ReportExportService {
 			out.close();
 			workbook.close();
 			return;
-			
+
 		}
-		
+
 		String[] tableHeaderNum = { "門急診/住院", "門急診", "門診", "門診(早)", "門診(中)", "門診(晚)", "急診", "住院", "出院" };
 		String[] tableCellHeader = { "單月各科人次比\n門急診/住院(含手術)", "人次", "比例", "", "單月各科人次比\n門急診(含手術)", "人次", "比例", "" };
 
@@ -157,510 +163,509 @@ public class ReportExportService {
 		cell = row.createCell(1);
 		cell.setCellValue(year + "/" + monthStr);
 		try {
-		HSSFRow row2 = sheet.createRow(2);
-		for (int i = 0; i < tableHeaderNum.length; i++) {
-			HSSFCell cell2 = row2.createCell(1 + i);
-			cell2.setCellValue(tableHeaderNum[i]);
-			cell2.setCellStyle(cellStyle);
-		}
-
-		HSSFRow row3 = sheet.createRow(3);
-		HSSFCell cell3 = row3.createCell(0);
-		cell3.setCellValue("申報總點數");
-		for (int i = 0; i < 9; i++) {
-			HSSFCell cell3_2 = row3.createCell(1 + i);
-			cell3_2.setCellStyle(cellFormatStyle);
-			switch (i) {
-			case 0:
-				cell3_2.setCellValue(model.getTotalAll().doubleValue());
-				break;
-			case 1:
-				cell3_2.setCellValue(model.getTotalOpAll().doubleValue());
-				break;
-			case 2:
-				cell3_2.setCellValue(model.getTotalOp().doubleValue());
-				break;
-			case 3:
-				break;
-			case 4:
-				break;
-			case 5:
-				break;
-			case 6:
-				cell3_2.setCellValue(model.getTotalEm().doubleValue());
-				break;
-			case 7:
-				cell3_2.setCellValue(model.getTotalIp().doubleValue());
-				break;
-			case 8:
-				cell3_2.setCellValue("-");
-				break;
-			default:
-				break;
-
+			HSSFRow row2 = sheet.createRow(2);
+			for (int i = 0; i < tableHeaderNum.length; i++) {
+				HSSFCell cell2 = row2.createCell(1 + i);
+				cell2.setCellValue(tableHeaderNum[i]);
+				cell2.setCellStyle(cellStyle);
 			}
 
-		}
+			HSSFRow row3 = sheet.createRow(3);
+			HSSFCell cell3 = row3.createCell(0);
+			cell3.setCellValue("申報總點數");
+			for (int i = 0; i < 9; i++) {
+				HSSFCell cell3_2 = row3.createCell(1 + i);
+				cell3_2.setCellStyle(cellFormatStyle);
+				switch (i) {
+				case 0:
+					cell3_2.setCellValue(model.getTotalAll().doubleValue());
+					break;
+				case 1:
+					cell3_2.setCellValue(model.getTotalOpAll().doubleValue());
+					break;
+				case 2:
+					cell3_2.setCellValue(model.getTotalOp().doubleValue());
+					break;
+				case 3:
+					break;
+				case 4:
+					break;
+				case 5:
+					break;
+				case 6:
+					cell3_2.setCellValue(model.getTotalEm().doubleValue());
+					break;
+				case 7:
+					cell3_2.setCellValue(model.getTotalIp().doubleValue());
+					break;
+				case 8:
+					cell3_2.setCellValue("-");
+					break;
+				default:
+					break;
 
-		HSSFRow row4 = sheet.createRow(4);
-		HSSFCell cell4 = row4.createCell(0);
-		cell4.setCellValue("總人次(含手術)");
-		// todo
-		for (int i = 0; i < 9; i++) {
-			HSSFCell cell4_2 = row4.createCell(1 + i);
-			cell4_2.setCellStyle(cellFormatStyle);
-			switch (i) {
-			case 0:
-				cell4_2.setCellValue(Double.valueOf(pointData.getPatient_total_count()));
-				break;
-			case 1:
-				cell4_2.setCellValue(Double.valueOf(pointData.getPatient_op_count()));
-				break;
-			case 2:
-				cell4_2.setCellValue(model.getPatientOp().doubleValue());
-				break;
-			case 3:
-				break;
-			case 4:
-				break;
-			case 5:
-				break;
-			case 6:
-				cell4_2.setCellValue(model.getPatientEm().doubleValue());
-				break;
-			case 7:
-				cell4_2.setCellValue(Double.valueOf(pointData.getPatient_ip_count()));
-				break;
-			case 8:
-				cell4_2.setCellValue(model.getPatientIp().doubleValue());
-				break;
-			default:
-				break;
-
-			}
-
-		}
-
-		HSSFRow row6 = sheet.createRow(6);
-		HSSFCell cell6 = row6.createCell(0);
-		cell6.setCellValue("單月各科人次比\n門急診/住院(含手術)");
-		HSSFCellStyle cellStyle6 = workbook.createCellStyle();
-		cellStyle6.setWrapText(true);
-		cell6.setCellStyle(cellStyle6);
-		row6.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
-		for (int i = 0; i < pointData.getTotalPieCountData().size(); i++) {
-			HSSFCell cell6_2 = row6.createCell(1 + i);
-			Map<String, Object> map = pointData.getTotalPieCountData().get(i);
-			cell6_2.setCellValue(map.get("DESC_CHI").toString());
-			HSSFCellStyle cellStyle6_2 = workbook.createCellStyle();
-			cellStyle6_2.setFont(font);
-			cell6_2.setCellStyle(cellStyle6_2);
-		}
-
-		HSSFRow row7 = sheet.createRow(7);
-		HSSFCell cell7 = row7.createCell(0);
-		cell7.setCellValue("人次");
-		for (int i = 0; i < pointData.getTotalPieCountData().size(); i++) {
-			HSSFCell cell7_2 = row7.createCell(1 + i);
-			Map<String, Object> map = pointData.getTotalPieCountData().get(i);
-			cell7_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
-			cell7_2.setCellStyle(cellFormatStyle);
-		}
-
-		HSSFRow row8 = sheet.createRow(8);
-		HSSFCell cell8 = row8.createCell(0);
-		cell8.setCellValue("比例");
-		for (int i = 0; i < pointData.getTotalPieCountData().size(); i++) {
-			HSSFCell cell8_2 = row8.createCell(1 + i);
-			Map<String, Object> map = pointData.getTotalPieCountData().get(i);
-			float f = Float.valueOf(map.get("PERCENT").toString());
-			String str = String.format("%.02f", f);
-			cell8_2.setCellValue(str + "%");
-		}
-
-		HSSFRow row10 = sheet.createRow(10);
-		HSSFCell cell10 = row10.createCell(0);
-		cell10.setCellValue("單月各科人次比\n門急診(含手術)");
-		HSSFCellStyle cellStyle10 = workbook.createCellStyle();
-		cellStyle10.setWrapText(true);
-		cell10.setCellStyle(cellStyle6);
-		row10.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
-		for (int i = 0; i < pointData.getOpPieCountData().size(); i++) {
-			HSSFCell cell10_2 = row10.createCell(1 + i);
-			Map<String, Object> map = pointData.getOpPieCountData().get(i);
-			cell10_2.setCellValue(map.get("DESC_CHI").toString());
-			HSSFCellStyle cellStyle10_2 = workbook.createCellStyle();
-			cellStyle10_2.setFont(font);
-			cell10_2.setCellStyle(cellStyle10_2);
-		}
-
-		HSSFRow row11 = sheet.createRow(11);
-		HSSFCell cell11 = row11.createCell(0);
-		cell11.setCellValue("人次");
-		for (int i = 0; i < pointData.getOpPieCountData().size(); i++) {
-			HSSFCell cell11_2 = row11.createCell(1 + i);
-			Map<String, Object> map = pointData.getOpPieCountData().get(i);
-			cell11_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
-			cell11_2.setCellStyle(cellFormatStyle);
-		}
-		HSSFRow row12 = sheet.createRow(12);
-		HSSFCell cell12 = row12.createCell(0);
-		cell12.setCellValue("比例");
-		for (int i = 0; i < pointData.getOpPieCountData().size(); i++) {
-			HSSFCell cell12_2 = row12.createCell(1 + i);
-			Map<String, Object> map = pointData.getOpPieCountData().get(i);
-			float f = Float.valueOf(map.get("PERCENT").toString());
-			String str = String.format("%.02f", f);
-			cell12_2.setCellValue(str + "%");
-		}
-		///
-		HSSFRow row14 = sheet.createRow(14);
-		HSSFCell cell14 = row14.createCell(0);
-		cell14.setCellValue("單月各科人次比\n住院(含手術)");
-		HSSFCellStyle cellStyle14 = workbook.createCellStyle();
-		cellStyle14.setWrapText(true);
-		cell14.setCellStyle(cellStyle14);
-		row14.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
-		for (int i = 0; i < pointData.getIpPieCountData().size(); i++) {
-			HSSFCell cell14_2 = row14.createCell(1 + i);
-			Map<String, Object> map = pointData.getIpPieCountData().get(i);
-			cell14_2.setCellValue(map.get("DESC_CHI").toString());
-			HSSFCellStyle cellStyle14_2 = workbook.createCellStyle();
-			cellStyle14_2.setFont(font);
-			cell14_2.setCellStyle(cellStyle14_2);
-		}
-
-		HSSFRow row15 = sheet.createRow(15);
-		HSSFCell cell15 = row15.createCell(0);
-		cell15.setCellValue("人次");
-		for (int i = 0; i < pointData.getIpPieCountData().size(); i++) {
-			HSSFCell cell15_2 = row15.createCell(1 + i);
-			Map<String, Object> map = pointData.getIpPieCountData().get(i);
-			cell15_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
-			cell15_2.setCellStyle(cellFormatStyle);
-		}
-		HSSFRow row16 = sheet.createRow(16);
-		HSSFCell cell16 = row16.createCell(0);
-		cell16.setCellValue("比例");
-		for (int i = 0; i < pointData.getIpPieCountData().size(); i++) {
-			HSSFCell cell16_2 = row16.createCell(1 + i);
-			Map<String, Object> map = pointData.getIpPieCountData().get(i);
-			float f = Float.valueOf(map.get("PERCENT").toString());
-			String str = String.format("%.02f", f);
-			cell16_2.setCellValue(str + "%");
-		}
-		///
-		HSSFRow row18 = sheet.createRow(18);
-		HSSFCell cell18 = row18.createCell(0);
-		cell18.setCellValue("單月各科人次比\n出院(含手術)");
-		HSSFCellStyle cellStyle18 = workbook.createCellStyle();
-		cellStyle18.setWrapText(true);
-		cell18.setCellStyle(cellStyle18);
-		row18.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
-		for (int i = 0; i < pointData.getIpPieOutCountData().size(); i++) {
-			HSSFCell cell18_2 = row18.createCell(1 + i);
-			Map<String, Object> map = pointData.getIpPieOutCountData().get(i);
-			cell18_2.setCellValue(map.get("DESC_CHI").toString());
-			HSSFCellStyle cellStyle18_2 = workbook.createCellStyle();
-			cellStyle18_2.setFont(font);
-			cell18_2.setCellStyle(cellStyle18_2);
-		}
-
-		HSSFRow row19 = sheet.createRow(19);
-		HSSFCell cell19 = row19.createCell(0);
-		cell19.setCellValue("人次");
-		for (int i = 0; i < pointData.getIpPieOutCountData().size(); i++) {
-			HSSFCell cell19_2 = row19.createCell(1 + i);
-			Map<String, Object> map = pointData.getIpPieOutCountData().get(i);
-			cell19_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
-			cell19_2.setCellStyle(cellFormatStyle);
-		}
-		HSSFRow row20 = sheet.createRow(20);
-		HSSFCell cell20 = row20.createCell(0);
-		cell20.setCellValue("比例");
-		for (int i = 0; i < pointData.getIpPieOutCountData().size(); i++) {
-			HSSFCell cell20_2 = row20.createCell(1 + i);
-			Map<String, Object> map = pointData.getIpPieOutCountData().get(i);
-			float f = Float.valueOf(map.get("PERCENT").toString());
-			String str = String.format("%.02f", f);
-			cell20_2.setCellValue(str + "%");
-		}
-
-		///
-		HSSFRow row22 = sheet.createRow(22);
-		HSSFCell cell22 = row22.createCell(0);
-		cell22.setCellValue("單月各科申報點數比\n門急診/出院(含手術)");
-		HSSFCellStyle cellStyle22 = workbook.createCellStyle();
-		cellStyle22.setWrapText(true);
-		cell22.setCellStyle(cellStyle22);
-		row22.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
-		for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
-			HSSFCell cell22_2 = row22.createCell(1 + i);
-			Map<String, Object> map = pointData.getTotalPieDotData().get(i);
-			cell22_2.setCellValue(map.get("DESC_CHI").toString());
-			HSSFCellStyle cellStyle22_2 = workbook.createCellStyle();
-			cellStyle22_2.setFont(font);
-			cell22_2.setCellStyle(cellStyle22_2);
-		}
-
-		HSSFRow row23 = sheet.createRow(23);
-		HSSFCell cell23 = row23.createCell(0);
-		cell23.setCellValue("點數");
-		for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
-			HSSFCell cell23_2 = row23.createCell(1 + i);
-			Map<String, Object> map = pointData.getTotalPieDotData().get(i);
-			cell23_2.setCellValue(Double.valueOf(map.get("SUM").toString()));
-			cell23_2.setCellStyle(cellFormatStyle);
-		}
-		HSSFRow row24 = sheet.createRow(24);
-		HSSFCell cell24 = row24.createCell(0);
-		cell24.setCellValue("比例");
-		for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
-			HSSFCell cell24_2 = row24.createCell(1 + i);
-			Map<String, Object> map = pointData.getTotalPieDotData().get(i);
-			float f = Float.valueOf(map.get("PERCENT").toString());
-			String str = String.format("%.02f", f);
-			cell24_2.setCellValue(str + "%");
-		}
-
-		///
-		HSSFRow row26 = sheet.createRow(26);
-		HSSFCell cell26 = row26.createCell(0);
-		cell26.setCellValue("單月各科申報點數比\n門急診(含手術)");
-		HSSFCellStyle cellStyle26 = workbook.createCellStyle();
-		cellStyle26.setWrapText(true);
-		cell26.setCellStyle(cellStyle26);
-		row26.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
-		for (int i = 0; i < pointData.getOpPieDotData().size(); i++) {
-			HSSFCell cell26_2 = row26.createCell(1 + i);
-			Map<String, Object> map = pointData.getOpPieDotData().get(i);
-			cell26_2.setCellValue(map.get("DESC_CHI").toString());
-			HSSFCellStyle cellStyle26_2 = workbook.createCellStyle();
-			cellStyle26_2.setFont(font);
-			cell26_2.setCellStyle(cellStyle26_2);
-		}
-
-		HSSFRow row27 = sheet.createRow(27);
-		HSSFCell cell27 = row27.createCell(0);
-		cell27.setCellValue("點數");
-		for (int i = 0; i < pointData.getOpPieDotData().size(); i++) {
-			HSSFCell cell27_2 = row27.createCell(1 + i);
-			Map<String, Object> map = pointData.getOpPieDotData().get(i);
-			cell27_2.setCellValue(Double.valueOf(map.get("SUM").toString()));
-			cell27_2.setCellStyle(cellFormatStyle);
-		}
-		HSSFRow row28 = sheet.createRow(28);
-		HSSFCell cell28 = row28.createCell(0);
-		cell28.setCellValue("比例");
-		for (int i = 0; i < pointData.getOpPieDotData().size(); i++) {
-			HSSFCell cell28_2 = row28.createCell(1 + i);
-			Map<String, Object> map = pointData.getOpPieDotData().get(i);
-			float f = Float.valueOf(map.get("PERCENT").toString());
-			String str = String.format("%.02f", f);
-			cell28_2.setCellValue(str + "%");
-		}
-
-		///
-		HSSFRow row30 = sheet.createRow(30);
-		HSSFCell cell30 = row30.createCell(0);
-		cell30.setCellValue("單月各科申報點數比\n住院(含手術)");
-		HSSFCellStyle cellStyle30 = workbook.createCellStyle();
-		cellStyle30.setWrapText(true);
-		cell30.setCellStyle(cellStyle30);
-		row30.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
-		for (int i = 0; i < pointData.getIpPieDotData().size(); i++) {
-			HSSFCell cell30_2 = row30.createCell(1 + i);
-			Map<String, Object> map = pointData.getIpPieDotData().get(i);
-			cell30_2.setCellValue(map.get("DESC_CHI").toString());
-			HSSFCellStyle cellStyle30_2 = workbook.createCellStyle();
-			cellStyle30_2.setFont(font);
-			cell30_2.setCellStyle(cellStyle30_2);
-		}
-
-		HSSFRow row31 = sheet.createRow(31);
-		HSSFCell cell31 = row31.createCell(0);
-		cell31.setCellValue("點數");
-		for (int i = 0; i < pointData.getIpPieDotData().size(); i++) {
-			HSSFCell cell31_2 = row31.createCell(1 + i);
-			Map<String, Object> map = pointData.getIpPieDotData().get(i);
-			cell31_2.setCellValue(Double.valueOf(map.get("SUM").toString()));
-			cell31_2.setCellStyle(cellFormatStyle);
-		}
-		HSSFRow row32 = sheet.createRow(32);
-		HSSFCell cell32 = row32.createCell(0);
-		cell32.setCellValue("比例");
-		for (int i = 0; i < pointData.getIpPieDotData().size(); i++) {
-			HSSFCell cell32_2 = row32.createCell(1 + i);
-			Map<String, Object> map = pointData.getIpPieDotData().get(i);
-			float f = Float.valueOf(map.get("PERCENT").toString());
-			String str = String.format("%.02f", f);
-			cell32_2.setCellValue(str + "%");
-		}
-
-		/// 最後設定autosize
-		for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
-			sheet.autoSizeColumn(i);
-			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
-		}
-		/// 新建工作表
-		String[] tableHeader = { "門急診/住院申報總點數趨勢圖", "", "", "門急診申報總點數趨勢圖", "", "", "住院申報總點數趨勢圖", "", "", "門急診人數趨勢圖", "",
-				"住院人數趨勢圖", "", "出院人數趨勢圖", "" };
-		String[] tableHeader2 = { "週數", "點數", "案件數", "週數", "點數", "案件數", "週數", "點數", "案件數", "週數", "人次", "週數", "人次", "週數",
-				"人次" };
-		VisitsVarietyPayload model2 = pointData.getVisitsVarietyPayload();
-		List<String> functypes = pointData.getFuncTypes();
-		int funCount = 0;
-		for (String str : functypes) {
-			if (str.equals("不分科")) {
-				if(funCount == 0) {
-					int cellIndex = 0;
-					/// 第二頁籤 sheet2
-					sheet = workbook.createSheet("申報點數趨勢圖(全院)");
-					// 建立行,行號作為引數傳遞給createRow()方法,第一行從0開始計算
-					row = sheet.createRow(0);
-					// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
-					cell = row.createCell(0);
-					// 設定單元格的值,即A1的值(第一行,第一列)
-					cell.setCellValue("全院");
-					HSSFRow row1 = sheet.createRow(1);
-					CellStyle style1 = workbook.createCellStyle();
-					style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
-					style1.setVerticalAlignment(VerticalAlignment.CENTER);
-
-					for (int i = 0; i < tableHeader.length; i++) {
-						HSSFCell cell1 = row1.createCell(i);
-
-						switch (i) {
-						case 0:
-							cell1 = row1.createCell(i);
-							cell1.setCellValue(tableHeader[i]);
-							cell1.setCellStyle(style1);
-							sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 2));
-							break;
-						case 3:
-							cell1 = row1.createCell(i);
-							cell1.setCellValue(tableHeader[i]);
-							cell1.setCellStyle(style1);
-							sheet.addMergedRegion(new CellRangeAddress(1, 1, 3, 5));
-							break;
-						case 6:
-							cell1 = row1.createCell(i);
-							cell1.setCellValue(tableHeader[i]);
-							cell1.setCellStyle(style1);
-							sheet.addMergedRegion(new CellRangeAddress(1, 1, 6, 8));
-							break;
-						case 9:
-							cell1 = row1.createCell(i);
-							cell1.setCellValue(tableHeader[i]);
-							cell1.setCellStyle(style1);
-							sheet.addMergedRegion(new CellRangeAddress(1, 1, 9, 10));
-							break;
-						case 11:
-							cell1 = row1.createCell(i);
-							cell1.setCellValue(tableHeader[i]);
-							cell1.setCellStyle(style1);
-							sheet.addMergedRegion(new CellRangeAddress(1, 1, 11, 12));
-							break;
-						case 13:
-							cell1 = row1.createCell(i);
-							cell1.setCellValue(tableHeader[i]);
-							cell1.setCellStyle(style1);
-							sheet.addMergedRegion(new CellRangeAddress(1, 1, 13, 14));
-							break;
-						default:
-							break;
-						}
-					}
-					row2 = sheet.createRow(2);
-					for (int i = 0; i < tableHeader2.length; i++) {
-						HSSFCell cell2 = row2.createCell(i);
-						cell2.setCellValue(tableHeader2[i]);
-						cell2.setCellStyle(style1);
-					}
-					cellIndex = 0;
-					NameValueList3 nvlAll3 = model2.getAllMap3().get(str);
-					NameValueList3 nvlOp3 = model2.getOpemMap3().get(str);
-					NameValueList3 nvlip3 = model2.getIpMap3().get(str);
-					NameValueList nvlLeave = model2.getLeaveMap().get(str);
-					NameValueList nvlOp = model2.getOpemMap().get(str);
-					NameValueList nvlIp = model2.getIpMap().get(str);
-
-					HSSFRow rows = sheet.createRow(3);
-					/// 不知為何，poi如果直向寫入會發生值消失問題，這邊用一般橫向資料增長
-					for (int i = 0; i < nvlAll3.getNames().size(); i++) {
-						HSSFCell cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlAll3.getNames().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlAll3.getValues2().get(i).doubleValue());
-						cells.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlAll3.getValues().get(i).doubleValue());
-						cells.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlOp3.getNames().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlOp3.getValues2().get(i).doubleValue());
-						cells.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlOp3.getValues().get(i).doubleValue());
-						cells.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlip3.getNames().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlip3.getValues2().get(i).doubleValue());
-						cells.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlip3.getValues().get(i).doubleValue());
-						cells.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlOp.getNames().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlOp.getValues().get(i).doubleValue());
-						cells.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlIp.getNames().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlIp.getValues().get(i).doubleValue());
-						cells.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlLeave.getNames().get(i));
-						cellIndex++;
-						cells = rows.createCell(cellIndex + i);
-						cells.setCellValue(nvlLeave.getValues().get(i).doubleValue());
-						cells.setCellStyle(cellFormatStyle);
-						rows = sheet.createRow(4 + i);
-						cellIndex = 0;
-						cellIndex--;
-						if (i >= 1) {
-							cellIndex -= i;
-						}
-						cells.setCellStyle(cellFormatStyle);
-					}
-					/// auto size
-					for (int i = 0; i < tableHeader.length; i++) {
-						sheet.autoSizeColumn(i);
-						sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
-					}
-					funCount++;
 				}
-				
 
 			}
-		}
-		
+
+			HSSFRow row4 = sheet.createRow(4);
+			HSSFCell cell4 = row4.createCell(0);
+			cell4.setCellValue("總人次(含手術)");
+			// todo
+			for (int i = 0; i < 9; i++) {
+				HSSFCell cell4_2 = row4.createCell(1 + i);
+				cell4_2.setCellStyle(cellFormatStyle);
+				switch (i) {
+				case 0:
+					cell4_2.setCellValue(Double.valueOf(pointData.getPatient_total_count()));
+					break;
+				case 1:
+					cell4_2.setCellValue(Double.valueOf(pointData.getPatient_op_count()));
+					break;
+				case 2:
+					cell4_2.setCellValue(model.getPatientOp().doubleValue());
+					break;
+				case 3:
+					break;
+				case 4:
+					break;
+				case 5:
+					break;
+				case 6:
+					cell4_2.setCellValue(model.getPatientEm().doubleValue());
+					break;
+				case 7:
+					cell4_2.setCellValue(Double.valueOf(pointData.getPatient_ip_count()));
+					break;
+				case 8:
+					cell4_2.setCellValue(model.getPatientIp().doubleValue());
+					break;
+				default:
+					break;
+
+				}
+
+			}
+
+			HSSFRow row6 = sheet.createRow(6);
+			HSSFCell cell6 = row6.createCell(0);
+			cell6.setCellValue("單月各科人次比\n門急診/住院(含手術)");
+			HSSFCellStyle cellStyle6 = workbook.createCellStyle();
+			cellStyle6.setWrapText(true);
+			cell6.setCellStyle(cellStyle6);
+			row6.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
+			for (int i = 0; i < pointData.getTotalPieCountData().size(); i++) {
+				HSSFCell cell6_2 = row6.createCell(1 + i);
+				Map<String, Object> map = pointData.getTotalPieCountData().get(i);
+				cell6_2.setCellValue(map.get("DESC_CHI").toString());
+				HSSFCellStyle cellStyle6_2 = workbook.createCellStyle();
+				cellStyle6_2.setFont(font);
+				cell6_2.setCellStyle(cellStyle6_2);
+			}
+
+			HSSFRow row7 = sheet.createRow(7);
+			HSSFCell cell7 = row7.createCell(0);
+			cell7.setCellValue("人次");
+			for (int i = 0; i < pointData.getTotalPieCountData().size(); i++) {
+				HSSFCell cell7_2 = row7.createCell(1 + i);
+				Map<String, Object> map = pointData.getTotalPieCountData().get(i);
+				cell7_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
+				cell7_2.setCellStyle(cellFormatStyle);
+			}
+
+			HSSFRow row8 = sheet.createRow(8);
+			HSSFCell cell8 = row8.createCell(0);
+			cell8.setCellValue("比例");
+			for (int i = 0; i < pointData.getTotalPieCountData().size(); i++) {
+				HSSFCell cell8_2 = row8.createCell(1 + i);
+				Map<String, Object> map = pointData.getTotalPieCountData().get(i);
+				float f = Float.valueOf(map.get("PERCENT").toString());
+				String str = String.format("%.02f", f);
+				cell8_2.setCellValue(str + "%");
+			}
+
+			HSSFRow row10 = sheet.createRow(10);
+			HSSFCell cell10 = row10.createCell(0);
+			cell10.setCellValue("單月各科人次比\n門急診(含手術)");
+			HSSFCellStyle cellStyle10 = workbook.createCellStyle();
+			cellStyle10.setWrapText(true);
+			cell10.setCellStyle(cellStyle6);
+			row10.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
+			for (int i = 0; i < pointData.getOpPieCountData().size(); i++) {
+				HSSFCell cell10_2 = row10.createCell(1 + i);
+				Map<String, Object> map = pointData.getOpPieCountData().get(i);
+				cell10_2.setCellValue(map.get("DESC_CHI").toString());
+				HSSFCellStyle cellStyle10_2 = workbook.createCellStyle();
+				cellStyle10_2.setFont(font);
+				cell10_2.setCellStyle(cellStyle10_2);
+			}
+
+			HSSFRow row11 = sheet.createRow(11);
+			HSSFCell cell11 = row11.createCell(0);
+			cell11.setCellValue("人次");
+			for (int i = 0; i < pointData.getOpPieCountData().size(); i++) {
+				HSSFCell cell11_2 = row11.createCell(1 + i);
+				Map<String, Object> map = pointData.getOpPieCountData().get(i);
+				cell11_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
+				cell11_2.setCellStyle(cellFormatStyle);
+			}
+			HSSFRow row12 = sheet.createRow(12);
+			HSSFCell cell12 = row12.createCell(0);
+			cell12.setCellValue("比例");
+			for (int i = 0; i < pointData.getOpPieCountData().size(); i++) {
+				HSSFCell cell12_2 = row12.createCell(1 + i);
+				Map<String, Object> map = pointData.getOpPieCountData().get(i);
+				float f = Float.valueOf(map.get("PERCENT").toString());
+				String str = String.format("%.02f", f);
+				cell12_2.setCellValue(str + "%");
+			}
+			///
+			HSSFRow row14 = sheet.createRow(14);
+			HSSFCell cell14 = row14.createCell(0);
+			cell14.setCellValue("單月各科人次比\n住院(含手術)");
+			HSSFCellStyle cellStyle14 = workbook.createCellStyle();
+			cellStyle14.setWrapText(true);
+			cell14.setCellStyle(cellStyle14);
+			row14.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
+			for (int i = 0; i < pointData.getIpPieCountData().size(); i++) {
+				HSSFCell cell14_2 = row14.createCell(1 + i);
+				Map<String, Object> map = pointData.getIpPieCountData().get(i);
+				cell14_2.setCellValue(map.get("DESC_CHI").toString());
+				HSSFCellStyle cellStyle14_2 = workbook.createCellStyle();
+				cellStyle14_2.setFont(font);
+				cell14_2.setCellStyle(cellStyle14_2);
+			}
+
+			HSSFRow row15 = sheet.createRow(15);
+			HSSFCell cell15 = row15.createCell(0);
+			cell15.setCellValue("人次");
+			for (int i = 0; i < pointData.getIpPieCountData().size(); i++) {
+				HSSFCell cell15_2 = row15.createCell(1 + i);
+				Map<String, Object> map = pointData.getIpPieCountData().get(i);
+				cell15_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
+				cell15_2.setCellStyle(cellFormatStyle);
+			}
+			HSSFRow row16 = sheet.createRow(16);
+			HSSFCell cell16 = row16.createCell(0);
+			cell16.setCellValue("比例");
+			for (int i = 0; i < pointData.getIpPieCountData().size(); i++) {
+				HSSFCell cell16_2 = row16.createCell(1 + i);
+				Map<String, Object> map = pointData.getIpPieCountData().get(i);
+				float f = Float.valueOf(map.get("PERCENT").toString());
+				String str = String.format("%.02f", f);
+				cell16_2.setCellValue(str + "%");
+			}
+			///
+			HSSFRow row18 = sheet.createRow(18);
+			HSSFCell cell18 = row18.createCell(0);
+			cell18.setCellValue("單月各科人次比\n出院(含手術)");
+			HSSFCellStyle cellStyle18 = workbook.createCellStyle();
+			cellStyle18.setWrapText(true);
+			cell18.setCellStyle(cellStyle18);
+			row18.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
+			for (int i = 0; i < pointData.getIpPieOutCountData().size(); i++) {
+				HSSFCell cell18_2 = row18.createCell(1 + i);
+				Map<String, Object> map = pointData.getIpPieOutCountData().get(i);
+				cell18_2.setCellValue(map.get("DESC_CHI").toString());
+				HSSFCellStyle cellStyle18_2 = workbook.createCellStyle();
+				cellStyle18_2.setFont(font);
+				cell18_2.setCellStyle(cellStyle18_2);
+			}
+
+			HSSFRow row19 = sheet.createRow(19);
+			HSSFCell cell19 = row19.createCell(0);
+			cell19.setCellValue("人次");
+			for (int i = 0; i < pointData.getIpPieOutCountData().size(); i++) {
+				HSSFCell cell19_2 = row19.createCell(1 + i);
+				Map<String, Object> map = pointData.getIpPieOutCountData().get(i);
+				cell19_2.setCellValue(Double.valueOf(map.get("COUNT").toString()));
+				cell19_2.setCellStyle(cellFormatStyle);
+			}
+			HSSFRow row20 = sheet.createRow(20);
+			HSSFCell cell20 = row20.createCell(0);
+			cell20.setCellValue("比例");
+			for (int i = 0; i < pointData.getIpPieOutCountData().size(); i++) {
+				HSSFCell cell20_2 = row20.createCell(1 + i);
+				Map<String, Object> map = pointData.getIpPieOutCountData().get(i);
+				float f = Float.valueOf(map.get("PERCENT").toString());
+				String str = String.format("%.02f", f);
+				cell20_2.setCellValue(str + "%");
+			}
+
+			///
+			HSSFRow row22 = sheet.createRow(22);
+			HSSFCell cell22 = row22.createCell(0);
+			cell22.setCellValue("單月各科申報點數比\n門急診/出院(含手術)");
+			HSSFCellStyle cellStyle22 = workbook.createCellStyle();
+			cellStyle22.setWrapText(true);
+			cell22.setCellStyle(cellStyle22);
+			row22.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
+			for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
+				HSSFCell cell22_2 = row22.createCell(1 + i);
+				Map<String, Object> map = pointData.getTotalPieDotData().get(i);
+				cell22_2.setCellValue(map.get("DESC_CHI").toString());
+				HSSFCellStyle cellStyle22_2 = workbook.createCellStyle();
+				cellStyle22_2.setFont(font);
+				cell22_2.setCellStyle(cellStyle22_2);
+			}
+
+			HSSFRow row23 = sheet.createRow(23);
+			HSSFCell cell23 = row23.createCell(0);
+			cell23.setCellValue("點數");
+			for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
+				HSSFCell cell23_2 = row23.createCell(1 + i);
+				Map<String, Object> map = pointData.getTotalPieDotData().get(i);
+				cell23_2.setCellValue(Double.valueOf(map.get("SUM").toString()));
+				cell23_2.setCellStyle(cellFormatStyle);
+			}
+			HSSFRow row24 = sheet.createRow(24);
+			HSSFCell cell24 = row24.createCell(0);
+			cell24.setCellValue("比例");
+			for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
+				HSSFCell cell24_2 = row24.createCell(1 + i);
+				Map<String, Object> map = pointData.getTotalPieDotData().get(i);
+				float f = Float.valueOf(map.get("PERCENT").toString());
+				String str = String.format("%.02f", f);
+				cell24_2.setCellValue(str + "%");
+			}
+
+			///
+			HSSFRow row26 = sheet.createRow(26);
+			HSSFCell cell26 = row26.createCell(0);
+			cell26.setCellValue("單月各科申報點數比\n門急診(含手術)");
+			HSSFCellStyle cellStyle26 = workbook.createCellStyle();
+			cellStyle26.setWrapText(true);
+			cell26.setCellStyle(cellStyle26);
+			row26.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
+			for (int i = 0; i < pointData.getOpPieDotData().size(); i++) {
+				HSSFCell cell26_2 = row26.createCell(1 + i);
+				Map<String, Object> map = pointData.getOpPieDotData().get(i);
+				cell26_2.setCellValue(map.get("DESC_CHI").toString());
+				HSSFCellStyle cellStyle26_2 = workbook.createCellStyle();
+				cellStyle26_2.setFont(font);
+				cell26_2.setCellStyle(cellStyle26_2);
+			}
+
+			HSSFRow row27 = sheet.createRow(27);
+			HSSFCell cell27 = row27.createCell(0);
+			cell27.setCellValue("點數");
+			for (int i = 0; i < pointData.getOpPieDotData().size(); i++) {
+				HSSFCell cell27_2 = row27.createCell(1 + i);
+				Map<String, Object> map = pointData.getOpPieDotData().get(i);
+				cell27_2.setCellValue(Double.valueOf(map.get("SUM").toString()));
+				cell27_2.setCellStyle(cellFormatStyle);
+			}
+			HSSFRow row28 = sheet.createRow(28);
+			HSSFCell cell28 = row28.createCell(0);
+			cell28.setCellValue("比例");
+			for (int i = 0; i < pointData.getOpPieDotData().size(); i++) {
+				HSSFCell cell28_2 = row28.createCell(1 + i);
+				Map<String, Object> map = pointData.getOpPieDotData().get(i);
+				float f = Float.valueOf(map.get("PERCENT").toString());
+				String str = String.format("%.02f", f);
+				cell28_2.setCellValue(str + "%");
+			}
+
+			///
+			HSSFRow row30 = sheet.createRow(30);
+			HSSFCell cell30 = row30.createCell(0);
+			cell30.setCellValue("單月各科申報點數比\n住院(含手術)");
+			HSSFCellStyle cellStyle30 = workbook.createCellStyle();
+			cellStyle30.setWrapText(true);
+			cell30.setCellStyle(cellStyle30);
+			row30.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
+			for (int i = 0; i < pointData.getIpPieDotData().size(); i++) {
+				HSSFCell cell30_2 = row30.createCell(1 + i);
+				Map<String, Object> map = pointData.getIpPieDotData().get(i);
+				cell30_2.setCellValue(map.get("DESC_CHI").toString());
+				HSSFCellStyle cellStyle30_2 = workbook.createCellStyle();
+				cellStyle30_2.setFont(font);
+				cell30_2.setCellStyle(cellStyle30_2);
+			}
+
+			HSSFRow row31 = sheet.createRow(31);
+			HSSFCell cell31 = row31.createCell(0);
+			cell31.setCellValue("點數");
+			for (int i = 0; i < pointData.getIpPieDotData().size(); i++) {
+				HSSFCell cell31_2 = row31.createCell(1 + i);
+				Map<String, Object> map = pointData.getIpPieDotData().get(i);
+				cell31_2.setCellValue(Double.valueOf(map.get("SUM").toString()));
+				cell31_2.setCellStyle(cellFormatStyle);
+			}
+			HSSFRow row32 = sheet.createRow(32);
+			HSSFCell cell32 = row32.createCell(0);
+			cell32.setCellValue("比例");
+			for (int i = 0; i < pointData.getIpPieDotData().size(); i++) {
+				HSSFCell cell32_2 = row32.createCell(1 + i);
+				Map<String, Object> map = pointData.getIpPieDotData().get(i);
+				float f = Float.valueOf(map.get("PERCENT").toString());
+				String str = String.format("%.02f", f);
+				cell32_2.setCellValue(str + "%");
+			}
+
+			/// 最後設定autosize
+			for (int i = 0; i < pointData.getTotalPieDotData().size(); i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+			/// 新建工作表
+			String[] tableHeader = { "門急診/住院申報總點數趨勢圖", "", "", "門急診申報總點數趨勢圖", "", "", "住院申報總點數趨勢圖", "", "", "門急診人數趨勢圖",
+					"", "住院人數趨勢圖", "", "出院人數趨勢圖", "" };
+			String[] tableHeader2 = { "週數", "點數", "案件數", "週數", "點數", "案件數", "週數", "點數", "案件數", "週數", "人次", "週數", "人次",
+					"週數", "人次" };
+			VisitsVarietyPayload model2 = pointData.getVisitsVarietyPayload();
+			List<String> functypes = pointData.getFuncTypes();
+			int funCount = 0;
+			for (String str : functypes) {
+				if (str.equals("不分科")) {
+					if (funCount == 0) {
+						int cellIndex = 0;
+						/// 第二頁籤 sheet2
+						sheet = workbook.createSheet("申報點數趨勢圖(全院)");
+						// 建立行,行號作為引數傳遞給createRow()方法,第一行從0開始計算
+						row = sheet.createRow(0);
+						// 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
+						cell = row.createCell(0);
+						// 設定單元格的值,即A1的值(第一行,第一列)
+						cell.setCellValue("全院");
+						HSSFRow row1 = sheet.createRow(1);
+						CellStyle style1 = workbook.createCellStyle();
+						style1.setAlignment(HorizontalAlignment.CENTER);// 水平置中
+						style1.setVerticalAlignment(VerticalAlignment.CENTER);
+
+						for (int i = 0; i < tableHeader.length; i++) {
+							HSSFCell cell1 = row1.createCell(i);
+
+							switch (i) {
+							case 0:
+								cell1 = row1.createCell(i);
+								cell1.setCellValue(tableHeader[i]);
+								cell1.setCellStyle(style1);
+								sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 2));
+								break;
+							case 3:
+								cell1 = row1.createCell(i);
+								cell1.setCellValue(tableHeader[i]);
+								cell1.setCellStyle(style1);
+								sheet.addMergedRegion(new CellRangeAddress(1, 1, 3, 5));
+								break;
+							case 6:
+								cell1 = row1.createCell(i);
+								cell1.setCellValue(tableHeader[i]);
+								cell1.setCellStyle(style1);
+								sheet.addMergedRegion(new CellRangeAddress(1, 1, 6, 8));
+								break;
+							case 9:
+								cell1 = row1.createCell(i);
+								cell1.setCellValue(tableHeader[i]);
+								cell1.setCellStyle(style1);
+								sheet.addMergedRegion(new CellRangeAddress(1, 1, 9, 10));
+								break;
+							case 11:
+								cell1 = row1.createCell(i);
+								cell1.setCellValue(tableHeader[i]);
+								cell1.setCellStyle(style1);
+								sheet.addMergedRegion(new CellRangeAddress(1, 1, 11, 12));
+								break;
+							case 13:
+								cell1 = row1.createCell(i);
+								cell1.setCellValue(tableHeader[i]);
+								cell1.setCellStyle(style1);
+								sheet.addMergedRegion(new CellRangeAddress(1, 1, 13, 14));
+								break;
+							default:
+								break;
+							}
+						}
+						row2 = sheet.createRow(2);
+						for (int i = 0; i < tableHeader2.length; i++) {
+							HSSFCell cell2 = row2.createCell(i);
+							cell2.setCellValue(tableHeader2[i]);
+							cell2.setCellStyle(style1);
+						}
+						cellIndex = 0;
+						NameValueList3 nvlAll3 = model2.getAllMap3().get(str);
+						NameValueList3 nvlOp3 = model2.getOpemMap3().get(str);
+						NameValueList3 nvlip3 = model2.getIpMap3().get(str);
+						NameValueList nvlLeave = model2.getLeaveMap().get(str);
+						NameValueList nvlOp = model2.getOpemMap().get(str);
+						NameValueList nvlIp = model2.getIpMap().get(str);
+
+						HSSFRow rows = sheet.createRow(3);
+						/// 不知為何，poi如果直向寫入會發生值消失問題，這邊用一般橫向資料增長
+						for (int i = 0; i < nvlAll3.getNames().size(); i++) {
+							HSSFCell cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlAll3.getNames().get(i));
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlAll3.getValues2().get(i).doubleValue());
+							cells.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlAll3.getValues().get(i).doubleValue());
+							cells.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlOp3.getNames().get(i));
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlOp3.getValues2().get(i).doubleValue());
+							cells.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlOp3.getValues().get(i).doubleValue());
+							cells.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlip3.getNames().get(i));
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlip3.getValues2().get(i).doubleValue());
+							cells.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlip3.getValues().get(i).doubleValue());
+							cells.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlOp.getNames().get(i));
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlOp.getValues().get(i).doubleValue());
+							cells.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlIp.getNames().get(i));
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlIp.getValues().get(i).doubleValue());
+							cells.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlLeave.getNames().get(i));
+							cellIndex++;
+							cells = rows.createCell(cellIndex + i);
+							cells.setCellValue(nvlLeave.getValues().get(i).doubleValue());
+							cells.setCellStyle(cellFormatStyle);
+							rows = sheet.createRow(4 + i);
+							cellIndex = 0;
+							cellIndex--;
+							if (i >= 1) {
+								cellIndex -= i;
+							}
+							cells.setCellStyle(cellFormatStyle);
+						}
+						/// auto size
+						for (int i = 0; i < tableHeader.length; i++) {
+							sheet.autoSizeColumn(i);
+							sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+						}
+						funCount++;
+					}
+
+				}
+			}
+
 			for (String str : functypes) {
 				if (!str.equals("不分科")) {
 					/// 略過沒有資料的科別
@@ -864,8 +869,8 @@ public class ReportExportService {
 		PointMRPayload pointData = new PointMRPayload();
 		try {
 			pointData = reportService.getMonthlyReport(year, month);
-		}catch(Exception e) {
-			
+		} catch (Exception e) {
+
 			// 建立新工作簿
 			HSSFWorkbook workbook = new HSSFWorkbook();
 			HSSFSheet sheet = workbook.createSheet("工作表");
@@ -891,8 +896,7 @@ public class ReportExportService {
 			out.close();
 			workbook.close();
 		}
-		
-		
+
 		POINT_MONTHLY cModel = pointData.getCurrent();
 		POINT_MONTHLY yModel = pointData.getLastY();
 		POINT_MONTHLY mModel = pointData.getLastM();
@@ -940,770 +944,776 @@ public class ReportExportService {
 
 		int cellIndex = 0;
 		int rowIndex = 0;
-try {
-		for (int y = 0; y < tableRowHeaders1.length; y++) {
-			HSSFRow rows = sheet.createRow(y);
-			HSSFCell cells = rows.createCell(cellIndex);
-			cells.setCellValue(tableRowHeaders1[y]);
-			cells.setCellStyle(cellStyle);
+		try {
+			for (int y = 0; y < tableRowHeaders1.length; y++) {
+				HSSFRow rows = sheet.createRow(y);
+				HSSFCell cells = rows.createCell(cellIndex);
+				cells.setCellValue(tableRowHeaders1[y]);
+				cells.setCellStyle(cellStyle);
 
-			cellIndex++;
-			cells = rows.createCell(cellIndex);
-			if(cModel != null) {
-				
-				switch (y) {
-				case 0:
-					cells.setCellValue(dateStr);
-					cells.setCellStyle(cellHeadDataStyle);
-					break;
-				case 1:
-					cells.setCellValue(type);
-					cells.setCellStyle(cellHeadDataStyle);
-					break;
-				case 2:
-					cells.setCellValue(cModel.getAssignedAll().doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					break;
-				case 3:
-					cells.setCellValue(cModel.getApplAll().doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					break;
-				case 4:
-					cells.setCellValue(cModel.getPartAll().doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					break;
-				case 5:
-					cells.setCellValue(cModel.getChronic().doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					break;
-				case 6:
-					cells.setCellValue(cModel.getRemaining().doubleValue());
-					cells.setCellStyle(cellFormatStyle);
-					break;
-					
-				case 8:
-					for (int x = 0; x < tableCellHeaders1.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						cells.setCellValue(tableCellHeaders1[x]);
-						cells.setCellStyle(cellHeadStyle);
-					}
-					break;
-				case 9:
-					for (int x = 0; x < tableCellHeaders1.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cells.setCellValue(cModel.getPartAll().doubleValue());
-							break;
-						case 1:
-							cells.setCellValue(cModel.getPartOpAll().doubleValue());
-							break;
-						case 2:
-							cells.setCellValue(cModel.getPartOp().doubleValue());
-							break;
-						case 3:
-							cells.setCellValue(cModel.getPartEm().doubleValue());
-							break;
-						case 4:
-							cells.setCellValue(cModel.getPartIp().doubleValue());
-							break;
-						default:
-							break;
-						}
-						cells.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 10:
-					for (int x = 0; x < tableCellHeaders1.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cells.setCellValue(cModel.getApplAll().doubleValue());
-							break;
-						case 1:
-							cells.setCellValue(cModel.getApplOpAll().doubleValue());
-							break;
-						case 2:
-							cells.setCellValue(cModel.getApplOp().doubleValue());
-							break;
-						case 3:
-							cells.setCellValue(cModel.getApplEm().doubleValue());
-							break;
-						case 4:
-							cells.setCellValue(cModel.getApplIp().doubleValue());
-							break;
-						default:
-							break;
-						}
-						cells.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 11:
-					for (int x = 0; x < tableCellHeaders1.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cells.setCellValue(cModel.getTotalAll().doubleValue());
-							break;
-						case 1:
-							cells.setCellValue(cModel.getTotalOpAll().doubleValue());
-							break;
-						case 2:
-							cells.setCellValue(cModel.getTotalOp().doubleValue());
-							break;
-						case 3:
-							cells.setCellValue(cModel.getTotalEm().doubleValue());
-							break;
-						case 4:
-							cells.setCellValue(cModel.getTotalIp().doubleValue());
-							break;
-						default:
-							break;
-						}
-						cells.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 12:
-					for (int x = 0; x < tableCellHeaders1.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cells.setCellValue(cModel.getAssignedAll().doubleValue());
-							break;
-						case 1:
-							cells.setCellValue(cModel.getAssignedOpAll().doubleValue());
-							break;
-						case 2:
-							cells.setCellValue("-");
-							break;
-						case 3:
-							cells.setCellValue("-");
-							break;
-						case 4:
-							cells.setCellValue(cModel.getAssignedIp().doubleValue());
-							break;
-						default:
-							break;
-						}
-						cells.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 13:
-					for (int x = 0; x < tableCellHeaders1.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cells.setCellValue(String.valueOf(cModel.getRateAll()) + "%");
-							break;
-						case 1:
-							cells.setCellValue(String.valueOf(cModel.getRateOpAll()) + "%");
-							break;
-						case 2:
-							cells.setCellValue("-");
-							break;
-						case 3:
-							cells.setCellValue("-");
-							break;
-						case 4:
-							cells.setCellValue(String.valueOf(cModel.getRateIp()) + "%");
-							break;
-						default:
-							break;
-						}
+				cellIndex++;
+				cells = rows.createCell(cellIndex);
+				if (cModel != null) {
+
+					switch (y) {
+					case 0:
+						cells.setCellValue(dateStr);
 						cells.setCellStyle(cellHeadDataStyle);
-					}
-					break;
-				default:
-					break;
-				}
-			}
+						break;
+					case 1:
+						cells.setCellValue(type);
+						cells.setCellStyle(cellHeadDataStyle);
+						break;
+					case 2:
+						cells.setCellValue(cModel.getAssignedAll().doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						break;
+					case 3:
+						cells.setCellValue(cModel.getApplAll().doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						break;
+					case 4:
+						cells.setCellValue(cModel.getPartAll().doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						break;
+					case 5:
+						cells.setCellValue(cModel.getChronic().doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						break;
+					case 6:
+						cells.setCellValue(cModel.getRemaining().doubleValue());
+						cells.setCellStyle(cellFormatStyle);
+						break;
 
+					case 8:
+						for (int x = 0; x < tableCellHeaders1.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							cells.setCellValue(tableCellHeaders1[x]);
+							cells.setCellStyle(cellHeadStyle);
+						}
+						break;
+					case 9:
+						for (int x = 0; x < tableCellHeaders1.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(cModel.getPartAll().doubleValue());
+								break;
+							case 1:
+								cells.setCellValue(cModel.getPartOpAll().doubleValue());
+								break;
+							case 2:
+								cells.setCellValue(cModel.getPartOp().doubleValue());
+								break;
+							case 3:
+								cells.setCellValue(cModel.getPartEm().doubleValue());
+								break;
+							case 4:
+								cells.setCellValue(cModel.getPartIp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellFormatStyle);
+						}
+						break;
+					case 10:
+						for (int x = 0; x < tableCellHeaders1.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(cModel.getApplAll().doubleValue());
+								break;
+							case 1:
+								cells.setCellValue(cModel.getApplOpAll().doubleValue());
+								break;
+							case 2:
+								cells.setCellValue(cModel.getApplOp().doubleValue());
+								break;
+							case 3:
+								cells.setCellValue(cModel.getApplEm().doubleValue());
+								break;
+							case 4:
+								cells.setCellValue(cModel.getApplIp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellFormatStyle);
+						}
+						break;
+					case 11:
+						for (int x = 0; x < tableCellHeaders1.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(cModel.getTotalAll().doubleValue());
+								break;
+							case 1:
+								cells.setCellValue(cModel.getTotalOpAll().doubleValue());
+								break;
+							case 2:
+								cells.setCellValue(cModel.getTotalOp().doubleValue());
+								break;
+							case 3:
+								cells.setCellValue(cModel.getTotalEm().doubleValue());
+								break;
+							case 4:
+								cells.setCellValue(cModel.getTotalIp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellFormatStyle);
+						}
+						break;
+					case 12:
+						for (int x = 0; x < tableCellHeaders1.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(cModel.getAssignedAll().doubleValue());
+								break;
+							case 1:
+								cells.setCellValue(cModel.getAssignedOpAll().doubleValue());
+								break;
+							case 2:
+								cells.setCellValue("-");
+								break;
+							case 3:
+								cells.setCellValue("-");
+								break;
+							case 4:
+								cells.setCellValue(cModel.getAssignedIp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellFormatStyle);
+						}
+						break;
+					case 13:
+						for (int x = 0; x < tableCellHeaders1.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(String.valueOf(cModel.getRateAll()) + "%");
+								break;
+							case 1:
+								cells.setCellValue(String.valueOf(cModel.getRateOpAll()) + "%");
+								break;
+							case 2:
+								cells.setCellValue("-");
+								break;
+							case 3:
+								cells.setCellValue("-");
+								break;
+							case 4:
+								cells.setCellValue(String.valueOf(cModel.getRateIp()) + "%");
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellHeadDataStyle);
+						}
+						break;
+					default:
+						break;
+					}
+				}
+
+				cellIndex = 0;
+			}
+			/// 最後設定autosize
+			for (int i = 0; i < tableRowHeaders1.length; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
 			cellIndex = 0;
-		}
-		/// 最後設定autosize
-		for (int i = 0; i < tableRowHeaders1.length; i++) {
-			sheet.autoSizeColumn(i);
-			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
-		}
-		cellIndex = 0;
-		rowIndex = 0;
-		String[] tableCellHeders2 = { "單月", "上月", "去年同期" };
-		String[] tableRowHeders2 = { "門急診／住院", "申報點數", "分配點數", "上月差額", "去年同期差額", "門急診", "申報點數", "分配點數", "上月差額",
-				"去年同期差額", "門診", "申報點數", "分配點數", "上月差額", "去年同期差額", "急診", "申報點數", "分配點數", "上月差額", "去年同期差額", "住院", "申報點數",
-				"分配點數", "上月差額", "去年同期差額" };
-		// 新建工作表 sheet2
-		sheet = workbook.createSheet("門急診和住院");
-		Font font = workbook.createFont();
+			rowIndex = 0;
+			String[] tableCellHeders2 = { "單月", "上月", "去年同期" };
+			String[] tableRowHeders2 = { "門急診／住院", "申報點數", "分配點數", "上月差額", "去年同期差額", "門急診", "申報點數", "分配點數", "上月差額",
+					"去年同期差額", "門診", "申報點數", "分配點數", "上月差額", "去年同期差額", "急診", "申報點數", "分配點數", "上月差額", "去年同期差額", "住院",
+					"申報點數", "分配點數", "上月差額", "去年同期差額" };
+			// 新建工作表 sheet2
+			sheet = workbook.createSheet("門急診和住院");
+			Font font = workbook.createFont();
 //		font.setColor(HSSFColor.HSSFColorPredefined.RED.getIndex());
-		font.setBold(true);
+			font.setBold(true);
 
-		HSSFCellStyle cellStyle2 = workbook.createCellStyle();
-		cellStyle2.setBorderBottom(BorderStyle.MEDIUM);
-		cellStyle2.setBorderTop(BorderStyle.MEDIUM);
-		cellStyle2.setBorderLeft(BorderStyle.MEDIUM);
-		cellStyle2.setBorderRight(BorderStyle.MEDIUM);
-		cellStyle2.setAlignment(HorizontalAlignment.LEFT);
-		cellStyle2.setVerticalAlignment(VerticalAlignment.CENTER);
+			HSSFCellStyle cellStyle2 = workbook.createCellStyle();
+			cellStyle2.setBorderBottom(BorderStyle.MEDIUM);
+			cellStyle2.setBorderTop(BorderStyle.MEDIUM);
+			cellStyle2.setBorderLeft(BorderStyle.MEDIUM);
+			cellStyle2.setBorderRight(BorderStyle.MEDIUM);
+			cellStyle2.setAlignment(HorizontalAlignment.LEFT);
+			cellStyle2.setVerticalAlignment(VerticalAlignment.CENTER);
 
-		HSSFCellStyle cellTitleStyle2 = workbook.createCellStyle();
-		cellTitleStyle2.setBorderBottom(BorderStyle.MEDIUM);
-		cellTitleStyle2.setBorderTop(BorderStyle.MEDIUM);
-		cellTitleStyle2.setBorderLeft(BorderStyle.MEDIUM);
-		cellTitleStyle2.setBorderRight(BorderStyle.MEDIUM);
-		cellTitleStyle2.setAlignment(HorizontalAlignment.LEFT);
-		cellTitleStyle2.setVerticalAlignment(VerticalAlignment.CENTER);
-		cellTitleStyle2.setFont(font);
+			HSSFCellStyle cellTitleStyle2 = workbook.createCellStyle();
+			cellTitleStyle2.setBorderBottom(BorderStyle.MEDIUM);
+			cellTitleStyle2.setBorderTop(BorderStyle.MEDIUM);
+			cellTitleStyle2.setBorderLeft(BorderStyle.MEDIUM);
+			cellTitleStyle2.setBorderRight(BorderStyle.MEDIUM);
+			cellTitleStyle2.setAlignment(HorizontalAlignment.LEFT);
+			cellTitleStyle2.setVerticalAlignment(VerticalAlignment.CENTER);
+			cellTitleStyle2.setFont(font);
 
-		for (int y = 0; y < tableRowHeders2.length; y++) {
-			HSSFRow rows = sheet.createRow(y);
-			HSSFCell cells = rows.createCell(cellIndex);
-			cells.setCellValue(tableRowHeders2[y]);
-			cells.setCellStyle(cellStyle);
+			for (int y = 0; y < tableRowHeders2.length; y++) {
+				HSSFRow rows = sheet.createRow(y);
+				HSSFCell cells = rows.createCell(cellIndex);
+				cells.setCellValue(tableRowHeders2[y]);
+				cells.setCellStyle(cellStyle);
 
-			cellIndex++;
-			cells = rows.createCell(cellIndex);
-			if(cModel != null && mModel != null) {
-				
-				switch (y) {
-				case 0:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						cellss.setCellValue(tableCellHeders2[x]);
-						cellss.setCellStyle(cellStyle2);
-					}
-					cells.setCellStyle(cellTitleStyle2);
-					break;
-				case 1:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(cModel.getTotalAll().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue(mModel.getTotalAll().doubleValue());
-							break;
-						case 2:
-							cellss.setCellValue(yModel.getTotalAll().doubleValue());
-							break;
-						default:
-							break;
+				cellIndex++;
+				cells = rows.createCell(cellIndex);
+				if (cModel != null && mModel != null) {
+
+					switch (y) {
+					case 0:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							cellss.setCellValue(tableCellHeders2[x]);
+							cellss.setCellStyle(cellStyle2);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 2:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(cModel.getAssignedAll().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue(mModel.getAssignedAll().doubleValue());
-							break;
-						case 2:
-							cellss.setCellValue(yModel.getAssignedAll().doubleValue());
-							break;
-						default:
-							break;
+						cells.setCellStyle(cellTitleStyle2);
+						break;
+					case 1:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(cModel.getTotalAll().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue(mModel.getTotalAll().doubleValue());
+								break;
+							case 2:
+								cellss.setCellValue(yModel.getTotalAll().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 3:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffAllLastM().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 2:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(cModel.getAssignedAll().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue(mModel.getAssignedAll().doubleValue());
+								break;
+							case 2:
+								cellss.setCellValue(yModel.getAssignedAll().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 4:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffAllLastY().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 3:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffAllLastM().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 5:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						cellss.setCellValue(tableCellHeders2[x]);
-						cellss.setCellStyle(cellStyle2);
-					}
-					cells.setCellStyle(cellTitleStyle2);
-					break;
-				case 6:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(cModel.getTotalOpAll().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue(mModel.getTotalOpAll().doubleValue());
-							break;
-						case 2:
-							cellss.setCellValue(yModel.getTotalOpAll().doubleValue());
-							break;
-						default:
-							break;
+						break;
+					case 4:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffAllLastY().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 7:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(cModel.getAssignedOpAll().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue(mModel.getAssignedOpAll().doubleValue());
-							break;
-						case 2:
-							cellss.setCellValue(yModel.getAssignedOpAll().doubleValue());
-							break;
-						default:
-							break;
+						break;
+					case 5:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							cellss.setCellValue(tableCellHeders2[x]);
+							cellss.setCellStyle(cellStyle2);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 8:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffOpAllLastM().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						cells.setCellStyle(cellTitleStyle2);
+						break;
+					case 6:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(cModel.getTotalOpAll().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue(mModel.getTotalOpAll().doubleValue());
+								break;
+							case 2:
+								cellss.setCellValue(yModel.getTotalOpAll().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 9:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffOpAllLastY().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 7:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(cModel.getAssignedOpAll().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue(mModel.getAssignedOpAll().doubleValue());
+								break;
+							case 2:
+								cellss.setCellValue(yModel.getAssignedOpAll().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 10:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						cellss.setCellValue(tableCellHeders2[x]);
-						cellss.setCellStyle(cellStyle2);
-					}
-					cells.setCellStyle(cellTitleStyle2);
-					break;
-				case 11:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(cModel.getTotalOp().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue(mModel.getTotalOp().doubleValue());
-							break;
-						case 2:
-							cellss.setCellValue(yModel.getTotalOp().doubleValue());
-							break;
-						default:
-							break;
+						break;
+					case 8:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffOpAllLastM().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 12:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue("-");
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 9:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffOpAllLastY().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellStyle2);
-					}
-					break;
-				case 13:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffOpLastM().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 10:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							cellss.setCellValue(tableCellHeders2[x]);
+							cellss.setCellStyle(cellStyle2);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 14:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffOpLastY().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						cells.setCellStyle(cellTitleStyle2);
+						break;
+					case 11:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(cModel.getTotalOp().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue(mModel.getTotalOp().doubleValue());
+								break;
+							case 2:
+								cellss.setCellValue(yModel.getTotalOp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 15:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						cellss.setCellValue(tableCellHeders2[x]);
-						cellss.setCellStyle(cellStyle2);
-					}
-					cells.setCellStyle(cellTitleStyle2);
-					break;
-				case 16:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(cModel.getTotalEm().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue(mModel.getTotalEm().doubleValue());
-							break;
-						case 2:
-							cellss.setCellValue(yModel.getTotalEm().doubleValue());
-							break;
-						default:
-							break;
+						break;
+					case 12:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue("-");
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellStyle2);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 17:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue("-");
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 13:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffOpLastM().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellStyle2);
-					}
-					break;
-				case 18:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffEmLastM());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 14:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffOpLastY().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellStyle2);
-					}
-					break;
-				case 19:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffEmLastY().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 15:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							cellss.setCellValue(tableCellHeders2[x]);
+							cellss.setCellStyle(cellStyle2);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 20:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						cellss.setCellValue(tableCellHeders2[x]);
-						cellss.setCellStyle(cellStyle2);
-					}
-					cells.setCellStyle(cellTitleStyle2);
-					break;
-				case 21:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(cModel.getTotalIp().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue(mModel.getTotalIp().doubleValue());
-							break;
-						case 2:
-							cellss.setCellValue(yModel.getTotalIp().doubleValue());
-							break;
-						default:
-							break;
+						cells.setCellStyle(cellTitleStyle2);
+						break;
+					case 16:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(cModel.getTotalEm().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue(mModel.getTotalEm().doubleValue());
+								break;
+							case 2:
+								cellss.setCellValue(yModel.getTotalEm().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 22:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(cModel.getAssignedIp().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue(mModel.getAssignedIp().doubleValue());
-							break;
-						case 2:
-							cellss.setCellValue(yModel.getAssignedIp().doubleValue());
-							break;
-						default:
-							break;
+						break;
+					case 17:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue("-");
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellStyle2);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 23:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffIpLastM().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 18:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffEmLastM());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellStyle2);
 						}
-						cellss.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 24:
-					for (int x = 0; x < tableCellHeders2.length; x++) {
-						HSSFCell cellss = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cellss.setCellValue(pointData.getDiffIpLastY().doubleValue());
-							break;
-						case 1:
-							cellss.setCellValue("-");
-							break;
-						case 2:
-							cellss.setCellValue("-");
-							break;
-						default:
-							break;
+						break;
+					case 19:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffEmLastY().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
 						}
-						cellss.setCellStyle(cellFormatStyle);
+						break;
+					case 20:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							cellss.setCellValue(tableCellHeders2[x]);
+							cellss.setCellStyle(cellStyle2);
+						}
+						cells.setCellStyle(cellTitleStyle2);
+						break;
+					case 21:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(cModel.getTotalIp().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue(mModel.getTotalIp().doubleValue());
+								break;
+							case 2:
+								cellss.setCellValue(yModel.getTotalIp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
+						}
+						break;
+					case 22:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(cModel.getAssignedIp().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue(mModel.getAssignedIp().doubleValue());
+								break;
+							case 2:
+								cellss.setCellValue(yModel.getAssignedIp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
+						}
+						break;
+					case 23:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffIpLastM().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
+						}
+						break;
+					case 24:
+						for (int x = 0; x < tableCellHeders2.length; x++) {
+							HSSFCell cellss = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cellss.setCellValue(pointData.getDiffIpLastY().doubleValue());
+								break;
+							case 1:
+								cellss.setCellValue("-");
+								break;
+							case 2:
+								cellss.setCellValue("-");
+								break;
+							default:
+								break;
+							}
+							cellss.setCellStyle(cellFormatStyle);
+						}
+						break;
+					default:
+						break;
 					}
-					break;
-				default:
-					break;
 				}
+				cellIndex = 0;
 			}
+
+			/// 最後設定autosize
+			for (int i = 0; i < tableRowHeders2.length; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+
+			/// sheet3
+			String[] tableRowHeaders3 = { "", "單月", "上月差額", "去年同期差額" };
+			String[] tableCellHeaders3 = { "門診", "急診", "出院" };
 			cellIndex = 0;
-		}
+			rowIndex = 0;
+			// 新建工作表 sheet3
+			sheet = workbook.createSheet("人次");
 
-		/// 最後設定autosize
-		for (int i = 0; i < tableRowHeders2.length; i++) {
-			sheet.autoSizeColumn(i);
-			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
-		}
+			HSSFCellStyle cellStyle3 = workbook.createCellStyle();
+			cellStyle3.setBorderBottom(BorderStyle.MEDIUM);
+			cellStyle3.setBorderTop(BorderStyle.MEDIUM);
+			cellStyle3.setBorderLeft(BorderStyle.MEDIUM);
+			cellStyle3.setBorderRight(BorderStyle.MEDIUM);
+			cellStyle3.setAlignment(HorizontalAlignment.LEFT);
+			cellStyle3.setVerticalAlignment(VerticalAlignment.CENTER);
 
-		/// sheet3
-		String[] tableRowHeaders3 = { "", "單月", "上月差額", "去年同期差額" };
-		String[] tableCellHeaders3 = { "門診", "急診", "出院" };
-		cellIndex = 0;
-		rowIndex = 0;
-		// 新建工作表 sheet3
-		sheet = workbook.createSheet("人次");
+			for (int y = 0; y < tableRowHeaders3.length; y++) {
+				HSSFRow rows = sheet.createRow(y);
+				HSSFCell cells = rows.createCell(cellIndex);
+				cells.setCellValue(tableRowHeaders3[y]);
+				cells.setCellStyle(cellStyle);
 
-		HSSFCellStyle cellStyle3 = workbook.createCellStyle();
-		cellStyle3.setBorderBottom(BorderStyle.MEDIUM);
-		cellStyle3.setBorderTop(BorderStyle.MEDIUM);
-		cellStyle3.setBorderLeft(BorderStyle.MEDIUM);
-		cellStyle3.setBorderRight(BorderStyle.MEDIUM);
-		cellStyle3.setAlignment(HorizontalAlignment.LEFT);
-		cellStyle3.setVerticalAlignment(VerticalAlignment.CENTER);
+				cellIndex++;
+				cells = rows.createCell(cellIndex);
+				if (cModel != null) {
 
-		for (int y = 0; y < tableRowHeaders3.length; y++) {
-			HSSFRow rows = sheet.createRow(y);
-			HSSFCell cells = rows.createCell(cellIndex);
-			cells.setCellValue(tableRowHeaders3[y]);
-			cells.setCellStyle(cellStyle);
-
-			cellIndex++;
-			cells = rows.createCell(cellIndex);
-			if(cModel != null) {
-				
-				switch (y) {
-				case 0:
-					for (int x = 0; x < tableCellHeaders3.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						cells.setCellValue(tableCellHeaders3[x]);
-						cells.setCellStyle(cellStyle3);
-					}
-					break;
-				case 1:
-					for (int x = 0; x < tableCellHeaders3.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cells.setCellValue(cModel.getPatientOp().doubleValue());
-							break;
-						case 1:
-							cells.setCellValue(cModel.getPatientEm().doubleValue());
-							break;
-						case 2:
-							cells.setCellValue(cModel.getPatientIp().doubleValue());
-							break;
-						default:
-							break;
+					switch (y) {
+					case 0:
+						for (int x = 0; x < tableCellHeaders3.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							cells.setCellValue(tableCellHeaders3[x]);
+							cells.setCellStyle(cellStyle3);
 						}
-						cells.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 2:
-					for (int x = 0; x < tableCellHeaders3.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cells.setCellValue(cModel.getPatientOp().doubleValue() - mModel.getPatientOp().doubleValue());
-							break;
-						case 1:
-							cells.setCellValue(cModel.getPatientEm().doubleValue() - mModel.getPatientEm().doubleValue());
-							break;
-						case 2:
-							cells.setCellValue(cModel.getPatientIp().doubleValue() - mModel.getPatientIp().doubleValue());
-							break;
-						default:
-							break;
+						break;
+					case 1:
+						for (int x = 0; x < tableCellHeaders3.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(cModel.getPatientOp().doubleValue());
+								break;
+							case 1:
+								cells.setCellValue(cModel.getPatientEm().doubleValue());
+								break;
+							case 2:
+								cells.setCellValue(cModel.getPatientIp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellFormatStyle);
 						}
-						cells.setCellStyle(cellFormatStyle);
-					}
-					break;
-				case 3:
-					for (int x = 0; x < tableCellHeaders3.length; x++) {
-						cells = rows.createCell(cellIndex + x);
-						switch (x) {
-						case 0:
-							cells.setCellValue(cModel.getPatientOp().doubleValue() - yModel.getPatientOp().doubleValue());
-							break;
-						case 1:
-							cells.setCellValue(cModel.getPatientEm().doubleValue() - yModel.getPatientEm().doubleValue());
-							break;
-						case 2:
-							cells.setCellValue(cModel.getPatientIp().doubleValue() - yModel.getPatientIp().doubleValue());
-							break;
-						default:
-							break;
+						break;
+					case 2:
+						for (int x = 0; x < tableCellHeaders3.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(
+										cModel.getPatientOp().doubleValue() - mModel.getPatientOp().doubleValue());
+								break;
+							case 1:
+								cells.setCellValue(
+										cModel.getPatientEm().doubleValue() - mModel.getPatientEm().doubleValue());
+								break;
+							case 2:
+								cells.setCellValue(
+										cModel.getPatientIp().doubleValue() - mModel.getPatientIp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellFormatStyle);
 						}
-						cells.setCellStyle(cellFormatStyle);
+						break;
+					case 3:
+						for (int x = 0; x < tableCellHeaders3.length; x++) {
+							cells = rows.createCell(cellIndex + x);
+							switch (x) {
+							case 0:
+								cells.setCellValue(
+										cModel.getPatientOp().doubleValue() - yModel.getPatientOp().doubleValue());
+								break;
+							case 1:
+								cells.setCellValue(
+										cModel.getPatientEm().doubleValue() - yModel.getPatientEm().doubleValue());
+								break;
+							case 2:
+								cells.setCellValue(
+										cModel.getPatientIp().doubleValue() - yModel.getPatientIp().doubleValue());
+								break;
+							default:
+								break;
+							}
+							cells.setCellStyle(cellFormatStyle);
+						}
+						break;
+					default:
+						break;
 					}
-					break;
-				default:
-					break;
 				}
+				cellIndex = 0;
 			}
-			cellIndex = 0;
-		}
 
-		/// 最後設定autosize
-		for (int i = 0; i < tableRowHeaders3.length; i++) {
-			sheet.autoSizeColumn(i);
-			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			/// 最後設定autosize
+			for (int i = 0; i < tableRowHeaders3.length; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-}catch(Exception e) {
-	e.printStackTrace();
-}
 
 		String fileNameStr = "單月健保點數總表" + "_" + endDate;
 		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
@@ -1748,8 +1758,8 @@ try {
 		String dateStr = year + week + "w";
 
 		AchievementWeekly awData = reportService.getAchievementWeekly(cal);
-		
-		if(awData.getMonthTotal() == null) {
+
+		if (awData.getMonthTotal() == null) {
 			HSSFWorkbook workbook = new HSSFWorkbook();
 			HSSFSheet sheet = workbook.createSheet("工作表");
 			String fileNameStr = "健保申報總額達成趨勢圖" + "_" + dateStr;
@@ -2541,10 +2551,10 @@ try {
 		String dateStr = year + "/" + month;
 		DRGMonthlyPayload drgData = new DRGMonthlyPayload();
 		try {
-			
+
 			drgData = reportService.getDrgMonthly(year, month);
-			
-		}catch(Exception e) {
+
+		} catch (Exception e) {
 			HSSFWorkbook workbook = new HSSFWorkbook();
 			HSSFSheet sheet = workbook.createSheet("工作表");
 			String fileNameStr = "DRG分配比例月報表_" + endDate;
@@ -2982,9 +2992,9 @@ try {
 		String dateStr = year + "/" + month;
 		DRGMonthlyPayload drgData = new DRGMonthlyPayload();
 		try {
-			
-			 drgData = reportService.getDrgMonthlyAllFuncType(year, month);
-		}catch(Exception e) {
+
+			drgData = reportService.getDrgMonthlyAllFuncType(year, month);
+		} catch (Exception e) {
 			// 建立新工作簿
 			HSSFWorkbook workbook = new HSSFWorkbook();
 			HSSFSheet sheet = workbook.createSheet("工作表");
@@ -3524,7 +3534,7 @@ try {
 		DRGMonthlySectionPayload drgData = new DRGMonthlySectionPayload();
 		try {
 			drgData = reportService.getDrgMonthlySection(year, month);
-		}catch(Exception e) {
+		} catch (Exception e) {
 			HSSFWorkbook workbook = new HSSFWorkbook();
 			HSSFSheet sheet = workbook.createSheet("工作表");
 			String fileNameStr = "DRG各科別各區分配資訊報表_" + endDate;
@@ -3550,7 +3560,6 @@ try {
 			workbook.close();
 			return;
 		}
-
 
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
@@ -4186,29 +4195,25 @@ try {
 					for (int x = 0; x < tableCellHeadersList.size(); x++) {
 						if (tableCellHeadersList.get(x).equals(sectonA.get(x).getName())) {
 							cell = row.createCell(cellIndex);
-							double d = Math.round(
-									sectonA.get(x).getQuantity().doubleValue() / tQuantityA.doubleValue() * 100.0 * 100.0)
-									/ 100.0;
+							double d = Math.round(sectonA.get(x).getQuantity().doubleValue() / tQuantityA.doubleValue()
+									* 100.0 * 100.0) / 100.0;
 							cell.setCellValue(d + "%");
 							cell.setCellStyle(cellStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							d = Math.round(
-									sectonB1.get(x).getQuantity().doubleValue() / tQuantityB1.doubleValue() * 100.0 * 100.0)
-									/ 100.0;
+							d = Math.round(sectonB1.get(x).getQuantity().doubleValue() / tQuantityB1.doubleValue()
+									* 100.0 * 100.0) / 100.0;
 							cell.setCellValue(d + "%");
 							cell.setCellStyle(cellStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							d = Math.round(
-									sectonB2.get(x).getQuantity().doubleValue() / tQuantityB2.doubleValue() * 100.0 * 100.0)
-									/ 100.0;
+							d = Math.round(sectonB2.get(x).getQuantity().doubleValue() / tQuantityB2.doubleValue()
+									* 100.0 * 100.0) / 100.0;
 							cell.setCellValue(d + "%");
 							cell.setCellStyle(cellStyle);
 							cellIndex++;
-							d = Math.round(
-									sectonC.get(x).getQuantity().doubleValue() / tQuantityC.doubleValue() * 100.0 * 100.0)
-									/ 100.0;
+							d = Math.round(sectonC.get(x).getQuantity().doubleValue() / tQuantityC.doubleValue() * 100.0
+									* 100.0) / 100.0;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(d + "%");
 							cell.setCellStyle(cellStyle);
@@ -4952,6 +4957,2182 @@ try {
 			// TODO: handle exception
 //			e.printStackTrace();
 		}
+	}
+
+	/**
+	 * 費用業務-匯出
+	 * 
+	 * @param sDate
+	 * @param eDate
+	 * @param funcType
+	 * @param response
+	 * @throws ParseException
+	 * @throws IOException
+	 */
+	public void getPeriodPointExport(String sDate, String eDate, String funcType, HttpServletResponse response)
+			throws ParseException, IOException {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		Date startDate = null;
+		Date endDate = null;
+		startDate = sdf.parse(sDate);
+		endDate = sdf.parse(eDate);
+		PeriodPointPayload ppModel = reportService.getPeriodPoint(startDate, endDate);
+		PeriodPointPayload ppftModel = reportService.getPeriodPointByFunctype(startDate, endDate, funcType);
+		PeriodPointWeeklyPayload ppwModel = reportService.getPeroidPointWeekly(endDate);
+		PeriodPointWeeklyPayload ppwftModel = reportService.getPeroidPointWeeklyByFunctype(endDate, funcType);
+
+		// 建立新工作簿
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		// 樣式
+		HSSFCellStyle cellStyle = workbook.createCellStyle();
+		cellStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellStyle.setBorderRight(BorderStyle.MEDIUM);
+
+		HSSFCellStyle cellTitleStyle = workbook.createCellStyle();
+		cellTitleStyle.setAlignment(HorizontalAlignment.CENTER);
+		cellTitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellTitleStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
+
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
+		int cellIndex = 0;
+		int rowIndex = 0;
+
+		/// 新建工作表
+		HSSFSheet sheet = workbook.createSheet("費用業務");
+		String[] tableCellHeaders = { "門急診/住院", "門急診", "門診(早)", "門診(中)", "門診(晚)", "急診", "住院" };
+		String[] tableRowHeaders = { "總案件數(含)手術", "病例點數(含自費)", "申請總點數", "部分負擔點數", "申報總點數", "自費總金額", "不申報點數" };
+
+		/// 欄位A1
+		HSSFRow row = sheet.createRow(0);
+		HSSFCell cell = row.createCell(0);
+		cell.setCellValue("費用日期區間");
+		cell.setCellStyle(cellStyle);
+
+		/// 欄位B1
+		cell = row.createCell(1);
+		cell.setCellValue(sDate + "~" + eDate);
+		cell.setCellStyle(cellStyle);
+
+		/// 欄位A3
+		row = sheet.createRow(2);
+		cell = row.createCell(1);
+		cellIndex = 1;
+		for (String str : tableCellHeaders) {
+			cell.setCellValue(str);
+			cell.setCellStyle(cellStyle);
+			cellIndex++;
+			cell = row.createCell(cellIndex);
+		}
+
+		/// 欄位A4
+		row = sheet.createRow(3);
+		cellIndex = 0;
+		rowIndex = 4;
+		for (int y = 0; y < tableRowHeaders.length; y++) {
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableRowHeaders[y]);
+			cell.setCellStyle(cellStyle);
+
+			switch (y) {
+			case 0:
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getQuantityAll() == null ? 0 : ppModel.getQuantityAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getQuantityOpAll() == null ? 0 : ppModel.getQuantityOpAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getQuantityOpM() == null ? 0 : ppModel.getQuantityOpM().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getQuantityOpN() == null ? 0 : ppModel.getQuantityOpN().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getQuantityOpE() == null ? 0 : ppModel.getQuantityOpE().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getQuantityEm() == null ? 0 : ppModel.getQuantityEm().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getQuantityIp() == null ? 0 : ppModel.getQuantityIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+
+				cellIndex = 0;
+				break;
+			case 1:
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPointAll() == null ? 0 : ppModel.getPointAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPointOpAll() == null ? 0 : ppModel.getPointOpAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPointOpM() == null ? 0 : ppModel.getPointOpM().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPointOpN() == null ? 0 : ppModel.getPointOpN().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPointOpE() == null ? 0 : ppModel.getPointOpE().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPointEm() == null ? 0 : ppModel.getPointEm().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPointIp() == null ? 0 : ppModel.getPointIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+
+				cellIndex = 0;
+				break;
+			case 2:
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(
+						ppModel.getApplNoPartPointAll() == null ? 0 : ppModel.getApplNoPartPointAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getApplNoPartPointOpAll() == null ? 0
+						: ppModel.getApplNoPartPointOpAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(
+						ppModel.getApplNoPartPointOpM() == null ? 0 : ppModel.getApplNoPartPointOpM().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(
+						ppModel.getApplNoPartPointOpN() == null ? 0 : ppModel.getApplNoPartPointOpN().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(
+						ppModel.getApplNoPartPointOpE() == null ? 0 : ppModel.getApplNoPartPointOpE().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(
+						ppModel.getApplNoPartPointEm() == null ? 0 : ppModel.getApplNoPartPointEm().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(
+						ppModel.getApplNoPartPointIp() == null ? 0 : ppModel.getApplNoPartPointIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+
+				cellIndex = 0;
+				break;
+			case 3:
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPartPointAll() == null ? 0 : ppModel.getPartPointAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPartPointOpAll() == null ? 0 : ppModel.getPartPointOpAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPartPointOpM() == null ? 0 : ppModel.getPartPointOpM().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPartPointOpN() == null ? 0 : ppModel.getPartPointOpN().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPartPointOpE() == null ? 0 : ppModel.getPartPointOpE().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPartPointEm() == null ? 0 : ppModel.getPartPointEm().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getPartPointIp() == null ? 0 : ppModel.getPartPointIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+
+				cellIndex = 0;
+				break;
+			case 4:
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getApplPointAll() == null ? 0 : ppModel.getApplPointAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getApplPointOpAll() == null ? 0 : ppModel.getApplPointOpAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getApplPointOpM() == null ? 0 : ppModel.getApplPointOpM().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getApplPointOpN() == null ? 0 : ppModel.getApplPointOpN().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getApplPointOpE() == null ? 0 : ppModel.getApplPointOpE().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getApplPointEm() == null ? 0 : ppModel.getApplPointEm().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getApplPointIp() == null ? 0 : ppModel.getApplPointIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+
+				cellIndex = 0;
+				break;
+			case 5:
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getOwnExpAll() == null ? 0 : ppModel.getOwnExpAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getOwnExpOpAll() == null ? 0 : ppModel.getOwnExpOpAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getOwnExpOpM() == null ? 0 : ppModel.getOwnExpOpM().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getOwnExpOpN() == null ? 0 : ppModel.getOwnExpOpN().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getOwnExpOpE() == null ? 0 : ppModel.getOwnExpOpE().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getOwnExpEm() == null ? 0 : ppModel.getOwnExpEm().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getOwnExpIp() == null ? 0 : ppModel.getOwnExpIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+
+				cellIndex = 0;
+				break;
+			case 6:
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getNoApplAll() == null ? 0 : ppModel.getNoApplAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getNoApplOpAll() == null ? 0 : ppModel.getNoApplOpAll().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getNoApplOpM() == null ? 0 : ppModel.getNoApplOpM().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getNoApplOpN() == null ? 0 : ppModel.getNoApplOpN().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getNoApplOpE() == null ? 0 : ppModel.getNoApplOpE().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getNoApplEm() == null ? 0 : ppModel.getNoApplEm().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(ppModel.getNoApplIp() == null ? 0 : ppModel.getNoApplIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+
+				cellIndex = 0;
+				break;
+			}
+			cellIndex = 0;
+			row = sheet.createRow(rowIndex + y);
+
+		}
+		/// 最後設定autosize
+		for (int i = 0; i < tableCellHeaders.length + 2; i++) {
+			sheet.autoSizeColumn(i);
+			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+		}
+
+		/// 新建工作表
+		cellIndex = 0;
+		rowIndex = 0;
+		sheet = workbook.createSheet("各科申報總點數");
+		tableCellHeaders = new String[] { "各科申報總點數\n門急診/住院(含手術)", "申報點數", "案件數", "比例" };
+		String[] tableCellHeaders2 = { "各科申報總點數\n住院(含手術)", "申報點數", "案件數", "比例" };
+		String[] tableCellHeaders3 = { "各科申報總點數\n門急診(含手術)", "申報點數", "案件數", "比例" };
+		List<NameCodePointQuantity> npqAllList = ppModel.getApplByFuncType().getAll();
+		List<NameCodePointQuantity> npqIpList = ppModel.getApplByFuncType().getIp();
+		List<NameCodePointQuantity> npqOpList = ppModel.getApplByFuncType().getOp();
+		rowIndex = 1;
+		/// 欄位A2
+		for (int y = 0; y < tableCellHeaders.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getQuantity() == null ? 0
+								: npqAllList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
+						double d = Math.round(
+								point.doubleValue() / ppModel.getApplPointAll().doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A7
+		for (int y = 0; y < tableCellHeaders2.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders2[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getQuantity() == null ? 0
+								: npqIpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
+						double d = Math.round(
+								point.doubleValue() / ppModel.getApplPointIp().doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A12
+		for (int y = 0; y < tableCellHeaders3.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders3[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getQuantity() == null ? 0
+								: npqOpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
+						double d = Math.round(
+								point.doubleValue() / ppModel.getApplPointOp().doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+
+		/// 最後設定autosize
+		if (npqAllList.size() > 0) {
+
+			for (int i = 0; i < npqAllList.size(); i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+		} else {
+			for (int i = 0; i < tableCellHeaders.length + 2; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+		}
+
+		/// 新建工作表
+		cellIndex = 0;
+		rowIndex = 0;
+		sheet = workbook.createSheet("各科部分負擔點數");
+		tableCellHeaders = new String[] { "各科部分負擔點數\n門急診/住院(含手術)", "部分負擔點數", "案件數", "比例" };
+		tableCellHeaders2 = new String[] { "各科部分負擔點數\n住院(含手術)", "部分負擔點數", "案件數", "比例" };
+		tableCellHeaders3 = new String[] { "各科部分負擔點數\n門急診(含手術)", "部分負擔點數", "案件數", "比例" };
+		npqAllList = ppModel.getPartByFuncType().getAll();
+		npqIpList = ppModel.getPartByFuncType().getIp();
+		npqOpList = ppModel.getPartByFuncType().getOp();
+
+		rowIndex = 1;
+		/// 欄位A2
+		for (int y = 0; y < tableCellHeaders.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getQuantity() == null ? 0
+								: npqAllList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
+						double d = Math.round(
+								point.doubleValue() / ppModel.getApplPointAll().doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A7
+		for (int y = 0; y < tableCellHeaders2.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders2[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getQuantity() == null ? 0
+								: npqIpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
+						double d = Math.round(
+								point.doubleValue() / ppModel.getApplPointIp().doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A12
+		for (int y = 0; y < tableCellHeaders3.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders3[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getQuantity() == null ? 0
+								: npqOpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
+						double d = Math.round(
+								point.doubleValue() / ppModel.getApplPointOp().doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+
+		/// 最後設定autosize
+		if (npqAllList.size() > 0) {
+
+			for (int i = 0; i < npqAllList.size(); i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+		} else {
+			for (int i = 0; i < tableCellHeaders.length + 2; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+		}
+
+		/// 新建工作表
+		cellIndex = 0;
+		rowIndex = 0;
+		sheet = workbook.createSheet("各科自費總金額");
+		tableCellHeaders = new String[] { "各科自費總金額\n門急診/住院(含手術)", "自費點數", "案件數", "比例" };
+		tableCellHeaders2 = new String[] { "各科自費總金額數\n住院(含手術)", "自費點數", "案件數", "比例" };
+		tableCellHeaders3 = new String[] { "各科自費總金額\n門急診(含手術)", "自費點數", "案件數", "比例" };
+		npqAllList = ppModel.getOwnExpByFuncType().getAll();
+		npqIpList = ppModel.getOwnExpByFuncType().getIp();
+		npqOpList = ppModel.getOwnExpByFuncType().getOp();
+
+		rowIndex = 1;
+		/// 欄位A2
+		for (int y = 0; y < tableCellHeaders.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getQuantity() == null ? 0
+								: npqAllList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
+						double d = Math.round(
+								point.doubleValue() / ppModel.getApplPointAll().doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A7
+		for (int y = 0; y < tableCellHeaders2.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders2[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getQuantity() == null ? 0
+								: npqIpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
+						double d = Math.round(
+								point.doubleValue() / ppModel.getApplPointIp().doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A12
+		for (int y = 0; y < tableCellHeaders3.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders3[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getQuantity() == null ? 0
+								: npqOpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
+						double d = Math.round(
+								point.doubleValue() / ppModel.getApplPointOp().doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+
+		/// 最後設定autosize
+		if (npqAllList.size() > 0) {
+
+			for (int i = 0; i < npqAllList.size(); i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+		} else {
+			for (int i = 0; i < tableCellHeaders.length + 2; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+		}
+
+		/// 新建工作表
+		cellIndex = 0;
+		rowIndex = 0;
+		sheet = workbook.createSheet("(全院)");
+		tableCellHeaders = new String[] { "門急診/住院(含手術)", "申報點數", "醫令數量", "比例" };
+		tableCellHeaders2 = new String[] { "住院(含手術)", "申報點數", "醫令數量", "比例" };
+		tableCellHeaders3 = new String[] { "門急診(含手術)", "申報點數", "醫令數量", "比例" };
+		String[] tableCellHeaders4 = { "門急診/住院(含手術)", "自費點數", "醫令數量", "比例" };
+		String[] tableCellHeaders5 = { "住院(含手術)", "自費點數", "醫令數量", "比例" };
+		String[] tableCellHeaders6 = { "門急診(含手術)", "自費點數", "醫令數量", "比例" };
+		npqAllList = ppModel.getPayByOrderType().getAll();
+		npqIpList = ppModel.getPayByOrderType().getIp();
+		npqOpList = ppModel.getPayByOrderType().getOp();
+		if (npqAllList.size() > 0) {
+			Long point = 0L;
+			Long quantity = 0L;
+			NameCodePointQuantity n = new NameCodePointQuantity();
+			for (NameCodePointQuantity npq : npqAllList) {
+				point += npq.getPoint();
+				quantity += npq.getQuantity();
+			}
+			n.setName("全品項");
+			n.setCode("00");
+			n.setPoint(point);
+			n.setQuantity(quantity);
+			npqAllList.add(0, n);
+		}
+		if (npqIpList.size() > 0) {
+			Long point = 0L;
+			Long quantity = 0L;
+			NameCodePointQuantity n = new NameCodePointQuantity();
+			for (NameCodePointQuantity npq : npqIpList) {
+				point += npq.getPoint();
+				quantity += npq.getQuantity();
+			}
+			n.setName("全品項");
+			n.setCode("00");
+			n.setPoint(point);
+			n.setQuantity(quantity);
+			npqIpList.add(0, n);
+		}
+		if (npqOpList.size() > 0) {
+			Long point = 0L;
+			Long quantity = 0L;
+			NameCodePointQuantity n = new NameCodePointQuantity();
+			for (NameCodePointQuantity npq : npqOpList) {
+				point += npq.getPoint();
+				quantity += npq.getQuantity();
+			}
+			n.setName("全品項");
+			n.setCode("00");
+			n.setPoint(point);
+			n.setQuantity(quantity);
+			npqOpList.add(0, n);
+		}
+
+		/// 欄位A2
+		row = sheet.createRow(1);
+		cell = row.createCell(0);
+		cell.setCellValue("醫療費用比例與申報點數");
+		cell.setCellStyle(cellStyle);
+
+		rowIndex = 2;
+		/// 欄位A3
+		for (int y = 0; y < tableCellHeaders.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getQuantity() == null ? 0
+								: npqAllList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqAllList.size() > 0) {
+					Long allPoint = npqAllList.get(0).getPoint();
+					for (int v = 0; v < npqAllList.size(); v++) {
+						Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
+						double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A7
+		for (int y = 0; y < tableCellHeaders2.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders2[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getQuantity() == null ? 0
+								: npqIpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqIpList.size() > 0) {
+					Long allPoint = npqIpList.get(0).getPoint();
+					for (int v = 0; v < npqIpList.size(); v++) {
+						Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
+						double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A12
+		for (int y = 0; y < tableCellHeaders3.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders3[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getQuantity() == null ? 0
+								: npqOpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqOpList.size() > 0) {
+					Long allPoint = npqOpList.get(0).getPoint();
+					for (int v = 0; v < npqOpList.size(); v++) {
+						Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
+						double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+		/// 欄位A18
+		row = sheet.createRow(rowIndex);
+		cell = row.createCell(0);
+		cell.setCellValue("醫療費用自費比例與申報點數");
+		cell.setCellStyle(cellStyle);
+
+		npqAllList = ppModel.getOwnExpByOrderType().getAll();
+		npqIpList = ppModel.getOwnExpByOrderType().getIp();
+		npqOpList = ppModel.getOwnExpByOrderType().getOp();
+		if (npqAllList.size() > 0) {
+			Long point = 0L;
+			Long quantity = 0L;
+			NameCodePointQuantity n = new NameCodePointQuantity();
+			for (NameCodePointQuantity npq : npqAllList) {
+				point += npq.getPoint();
+				quantity += npq.getQuantity();
+			}
+			n.setName("全品項");
+			n.setCode("00");
+			n.setPoint(point);
+			n.setQuantity(quantity);
+			npqAllList.add(0, n);
+		}
+		if (npqIpList.size() > 0) {
+			Long point = 0L;
+			Long quantity = 0L;
+			NameCodePointQuantity n = new NameCodePointQuantity();
+			for (NameCodePointQuantity npq : npqIpList) {
+				point += npq.getPoint();
+				quantity += npq.getQuantity();
+			}
+			n.setName("全品項");
+			n.setCode("00");
+			n.setPoint(point);
+			n.setQuantity(quantity);
+			npqIpList.add(0, n);
+		}
+		if (npqOpList.size() > 0) {
+			Long point = 0L;
+			Long quantity = 0L;
+			NameCodePointQuantity n = new NameCodePointQuantity();
+			for (NameCodePointQuantity npq : npqOpList) {
+				point += npq.getPoint();
+				quantity += npq.getQuantity();
+			}
+			n.setName("全品項");
+			n.setCode("00");
+			n.setPoint(point);
+			n.setQuantity(quantity);
+			npqOpList.add(0, n);
+		}
+		rowIndex++;
+		/// 欄位A19
+		for (int y = 0; y < tableCellHeaders4.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders4[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getQuantity() == null ? 0
+								: npqAllList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqAllList.size() > 0) {
+					Long allPoint = npqAllList.get(0).getPoint();
+					for (int v = 0; v < npqAllList.size(); v++) {
+						Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
+						double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A7
+		for (int y = 0; y < tableCellHeaders5.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders5[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqIpList.size() > 0) {
+					for (int v = 0; v < npqIpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqIpList.get(v).getQuantity() == null ? 0
+								: npqIpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqIpList.size() > 0) {
+					Long allPoint = npqIpList.get(0).getPoint();
+					for (int v = 0; v < npqIpList.size(); v++) {
+						Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
+						double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+		rowIndex = row.getRowNum() + 2;
+		cellIndex = 0;
+
+		/// 欄位A12
+		for (int y = 0; y < tableCellHeaders6.length; y++) {
+			row = sheet.createRow(rowIndex + y);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(tableCellHeaders6[y]);
+			cell.setCellStyle(cellStyle);
+			switch (y) {
+			case 0:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 1:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(
+								npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 2:
+				if (npqOpList.size() > 0) {
+					for (int v = 0; v < npqOpList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqOpList.get(v).getQuantity() == null ? 0
+								: npqOpList.get(v).getQuantity().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			case 3:
+				if (npqOpList.size() > 0) {
+					Long allPoint = npqOpList.get(0).getPoint();
+					for (int v = 0; v < npqOpList.size(); v++) {
+						Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
+						double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(d + "%");
+						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				break;
+			}
+		}
+
+		/// 最後設定autosize
+		if (npqAllList.size() > 0) {
+
+			for (int i = 0; i < npqAllList.size(); i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+		} else {
+			for (int i = 0; i < tableCellHeaders.length + 2; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+		}
+
+		if (funcType != null && !funcType.equals("00")) {
+			/// 新建工作表
+			cellIndex = 0;
+			rowIndex = 0;
+			List<CODE_TABLE> ctList = codeTableDao.findByCodeAndCat(funcType, "FUNC_TYPE");
+			sheet = workbook.createSheet("(" + ctList.get(0).getDescChi() + ")");
+			tableCellHeaders = new String[] { "門急診/住院(含手術)", "申報點數", "醫令數量", "比例" };
+			tableCellHeaders2 = new String[] { "住院(含手術)", "申報點數", "醫令數量", "比例" };
+			tableCellHeaders3 = new String[] { "門急診(含手術)", "申報點數", "醫令數量", "比例" };
+			tableCellHeaders4 = new String[] { "門急診/住院(含手術)", "自費點數", "醫令數量", "比例" };
+			tableCellHeaders5 = new String[] { "住院(含手術)", "自費點數", "醫令數量", "比例" };
+			tableCellHeaders6 = new String[] { "門急診(含手術)", "自費點數", "醫令數量", "比例" };
+			npqAllList = ppftModel.getPayByOrderType().getAll();
+			npqIpList = ppftModel.getPayByOrderType().getIp();
+			npqOpList = ppftModel.getPayByOrderType().getOp();
+			if (npqAllList.size() > 0) {
+				Long point = 0L;
+				Long quantity = 0L;
+				NameCodePointQuantity n = new NameCodePointQuantity();
+				for (NameCodePointQuantity npq : npqAllList) {
+					point += npq.getPoint();
+					quantity += npq.getQuantity();
+				}
+				n.setName("全品項");
+				n.setCode("00");
+				n.setPoint(point);
+				n.setQuantity(quantity);
+				npqAllList.add(0, n);
+			}
+			if (npqIpList.size() > 0) {
+				Long point = 0L;
+				Long quantity = 0L;
+				NameCodePointQuantity n = new NameCodePointQuantity();
+				for (NameCodePointQuantity npq : npqIpList) {
+					point += npq.getPoint();
+					quantity += npq.getQuantity();
+				}
+				n.setName("全品項");
+				n.setCode("00");
+				n.setPoint(point);
+				n.setQuantity(quantity);
+				npqIpList.add(0, n);
+			}
+			if (npqOpList.size() > 0) {
+				Long point = 0L;
+				Long quantity = 0L;
+				NameCodePointQuantity n = new NameCodePointQuantity();
+				for (NameCodePointQuantity npq : npqOpList) {
+					point += npq.getPoint();
+					quantity += npq.getQuantity();
+				}
+				n.setName("全品項");
+				n.setCode("00");
+				n.setPoint(point);
+				n.setQuantity(quantity);
+				npqOpList.add(0, n);
+			}
+			/// 欄位A1
+			row = sheet.createRow(0);
+			cell = row.createCell(0);
+			cell.setCellValue("科別名：");
+			cell.setCellStyle(cellStyle);
+			/// 欄位B1
+			cell = row.createCell(1);
+			cell.setCellValue(ctList.get(0).getDescChi());
+			cell.setCellStyle(cellStyle);
+
+			/// 欄位A2
+			row = sheet.createRow(2);
+			cell = row.createCell(0);
+			cell.setCellValue("醫療費用比例與申報點數");
+			cell.setCellStyle(cellStyle);
+
+			rowIndex = 3;
+			/// 欄位A3
+			for (int y = 0; y < tableCellHeaders.length; y++) {
+				row = sheet.createRow(rowIndex + y);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(tableCellHeaders[y]);
+				cell.setCellStyle(cellStyle);
+				switch (y) {
+				case 0:
+					if (npqAllList.size() > 0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqAllList.get(v).getName());
+							cell.setCellStyle(cellStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 1:
+					if (npqAllList.size() > 0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqAllList.get(v).getPoint() == null ? 0
+									: npqAllList.get(v).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 2:
+					if (npqAllList.size() > 0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqAllList.get(v).getQuantity() == null ? 0
+									: npqAllList.get(v).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 3:
+					if (npqAllList.size() > 0) {
+						Long allPoint = npqAllList.get(0).getPoint();
+						for (int v = 0; v < npqAllList.size(); v++) {
+							Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
+							double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				}
+			}
+			rowIndex = row.getRowNum() + 2;
+			cellIndex = 0;
+
+			/// 欄位A7
+			for (int y = 0; y < tableCellHeaders2.length; y++) {
+				row = sheet.createRow(rowIndex + y);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(tableCellHeaders2[y]);
+				cell.setCellStyle(cellStyle);
+				switch (y) {
+				case 0:
+					if (npqIpList.size() > 0) {
+						for (int v = 0; v < npqIpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqIpList.get(v).getName());
+							cell.setCellStyle(cellStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 1:
+					if (npqIpList.size() > 0) {
+						for (int v = 0; v < npqIpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqIpList.get(v).getPoint() == null ? 0
+									: npqIpList.get(v).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 2:
+					if (npqIpList.size() > 0) {
+						for (int v = 0; v < npqIpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqIpList.get(v).getQuantity() == null ? 0
+									: npqIpList.get(v).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 3:
+					if (npqIpList.size() > 0) {
+						Long allPoint = npqIpList.get(0).getPoint();
+						for (int v = 0; v < npqIpList.size(); v++) {
+							Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
+							double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				}
+			}
+			rowIndex = row.getRowNum() + 2;
+			cellIndex = 0;
+
+			/// 欄位A12
+			for (int y = 0; y < tableCellHeaders3.length; y++) {
+				row = sheet.createRow(rowIndex + y);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(tableCellHeaders3[y]);
+				cell.setCellStyle(cellStyle);
+				switch (y) {
+				case 0:
+					if (npqOpList.size() > 0) {
+						for (int v = 0; v < npqOpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqOpList.get(v).getName());
+							cell.setCellStyle(cellStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 1:
+					if (npqOpList.size() > 0) {
+						for (int v = 0; v < npqOpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqOpList.get(v).getPoint() == null ? 0
+									: npqOpList.get(v).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 2:
+					if (npqOpList.size() > 0) {
+						for (int v = 0; v < npqOpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqOpList.get(v).getQuantity() == null ? 0
+									: npqOpList.get(v).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 3:
+					if (npqOpList.size() > 0) {
+						Long allPoint = npqOpList.get(0).getPoint();
+						for (int v = 0; v < npqOpList.size(); v++) {
+							Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
+							double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				}
+			}
+
+			rowIndex = row.getRowNum() + 2;
+			cellIndex = 0;
+			/// 欄位A18
+			row = sheet.createRow(rowIndex);
+			cell = row.createCell(0);
+			cell.setCellValue("醫療費用自費比例與申報點數");
+			cell.setCellStyle(cellStyle);
+
+			npqAllList = ppftModel.getOwnExpByOrderType().getAll();
+			npqIpList = ppftModel.getOwnExpByOrderType().getIp();
+			npqOpList = ppftModel.getOwnExpByOrderType().getOp();
+			if (npqAllList.size() > 0) {
+				Long point = 0L;
+				Long quantity = 0L;
+				NameCodePointQuantity n = new NameCodePointQuantity();
+				for (NameCodePointQuantity npq : npqAllList) {
+					point += npq.getPoint();
+					quantity += npq.getQuantity();
+				}
+				n.setName("全品項");
+				n.setCode("00");
+				n.setPoint(point);
+				n.setQuantity(quantity);
+				npqAllList.add(0, n);
+			}
+			if (npqIpList.size() > 0) {
+				Long point = 0L;
+				Long quantity = 0L;
+				NameCodePointQuantity n = new NameCodePointQuantity();
+				for (NameCodePointQuantity npq : npqIpList) {
+					point += npq.getPoint();
+					quantity += npq.getQuantity();
+				}
+				n.setName("全品項");
+				n.setCode("00");
+				n.setPoint(point);
+				n.setQuantity(quantity);
+				npqIpList.add(0, n);
+			}
+			if (npqOpList.size() > 0) {
+				Long point = 0L;
+				Long quantity = 0L;
+				NameCodePointQuantity n = new NameCodePointQuantity();
+				for (NameCodePointQuantity npq : npqOpList) {
+					point += npq.getPoint();
+					quantity += npq.getQuantity();
+				}
+				n.setName("全品項");
+				n.setCode("00");
+				n.setPoint(point);
+				n.setQuantity(quantity);
+				npqOpList.add(0, n);
+			}
+			rowIndex++;
+			/// 欄位A19
+			for (int y = 0; y < tableCellHeaders4.length; y++) {
+				row = sheet.createRow(rowIndex + y);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(tableCellHeaders4[y]);
+				cell.setCellStyle(cellStyle);
+				switch (y) {
+				case 0:
+					if (npqAllList.size() > 0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqAllList.get(v).getName());
+							cell.setCellStyle(cellStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 1:
+					if (npqAllList.size() > 0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqAllList.get(v).getPoint() == null ? 0
+									: npqAllList.get(v).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 2:
+					if (npqAllList.size() > 0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqAllList.get(v).getQuantity() == null ? 0
+									: npqAllList.get(v).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 3:
+					if (npqAllList.size() > 0) {
+						Long allPoint = npqAllList.get(0).getPoint();
+						for (int v = 0; v < npqAllList.size(); v++) {
+							Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
+							double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				}
+			}
+			rowIndex = row.getRowNum() + 2;
+			cellIndex = 0;
+
+			/// 欄位A7
+			for (int y = 0; y < tableCellHeaders5.length; y++) {
+				row = sheet.createRow(rowIndex + y);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(tableCellHeaders5[y]);
+				cell.setCellStyle(cellStyle);
+				switch (y) {
+				case 0:
+					if (npqIpList.size() > 0) {
+						for (int v = 0; v < npqIpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqIpList.get(v).getName());
+							cell.setCellStyle(cellStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 1:
+					if (npqIpList.size() > 0) {
+						for (int v = 0; v < npqIpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqIpList.get(v).getPoint() == null ? 0
+									: npqIpList.get(v).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 2:
+					if (npqIpList.size() > 0) {
+						for (int v = 0; v < npqIpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqIpList.get(v).getQuantity() == null ? 0
+									: npqIpList.get(v).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 3:
+					if (npqIpList.size() > 0) {
+						Long allPoint = npqIpList.get(0).getPoint();
+						for (int v = 0; v < npqIpList.size(); v++) {
+							Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
+							double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				}
+			}
+			rowIndex = row.getRowNum() + 2;
+			cellIndex = 0;
+
+			/// 欄位A12
+			for (int y = 0; y < tableCellHeaders6.length; y++) {
+				row = sheet.createRow(rowIndex + y);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(tableCellHeaders6[y]);
+				cell.setCellStyle(cellStyle);
+				switch (y) {
+				case 0:
+					if (npqOpList.size() > 0) {
+						for (int v = 0; v < npqOpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqOpList.get(v).getName());
+							cell.setCellStyle(cellStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 1:
+					if (npqOpList.size() > 0) {
+						for (int v = 0; v < npqOpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqOpList.get(v).getPoint() == null ? 0
+									: npqOpList.get(v).getPoint().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 2:
+					if (npqOpList.size() > 0) {
+						for (int v = 0; v < npqOpList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqOpList.get(v).getQuantity() == null ? 0
+									: npqOpList.get(v).getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				case 3:
+					if (npqOpList.size() > 0) {
+						Long allPoint = npqOpList.get(0).getPoint();
+						for (int v = 0; v < npqOpList.size(); v++) {
+							Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
+							double d = Math.round(point.doubleValue() / allPoint.doubleValue() * 100.0 * 100.0) / 100.0;
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(d + "%");
+							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					break;
+				}
+			}
+
+			/// 最後設定autosize
+			if (npqAllList.size() > 0) {
+
+				for (int i = 0; i < npqAllList.size(); i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+			} else {
+				for (int i = 0; i < tableCellHeaders.length + 2; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+			}
+		}
+
+		/// 新建工作表
+		cellIndex = 0;
+		rowIndex = 0;
+		sheet = workbook.createSheet("(全院)趨勢圖");
+		tableCellHeaders = new String[] { "門急診申報點數趨勢圖", "門急診自費趨勢圖", "住院申報點數趨勢圖", "住院自費趨勢圖" };
+		tableCellHeaders2 = new String[] { "週數", "點數", "週數", "點數", "週數", "點數", "週數", "點數" };
+		NameValueList nvOp = ppwModel.getOp();
+		NameValueList nvIp = ppwModel.getIp();
+		NameValueList nveOp = ppwModel.getOwnExpOp();
+		NameValueList nveIp = ppwModel.getOwnExpIp();
+		/// 欄位A2
+		row = sheet.createRow(1);
+		cell = row.createCell(0);
+		cell.setCellValue("全院");
+		cell.setCellStyle(cellStyle);
+
+		/// 欄位A3
+		row = sheet.createRow(2);
+		int y1 = 2;
+		int y2 = 2;
+		int x1 = 0;
+		int x2 = 1;
+		for (String name : tableCellHeaders) {
+			for (int i = 0; i < 2; i++) {
+				cell = row.createCell(cellIndex + i);
+				cell.setCellStyle(cellTitleStyle);
+				if (i == 0) {
+
+					cell.setCellValue(name);
+				}
+			}
+			/// merge欄位
+			sheet.addMergedRegion(new CellRangeAddress(y1, y2, x1, x2));
+			x1 += 2;
+			x2 += 2;
+			cellIndex += 2;
+		}
+		cellIndex = 0;
+		rowIndex = 3;
+		row = sheet.createRow(rowIndex);
+		for (String name : tableCellHeaders2) {
+			cell = row.createCell(cellIndex);
+			cell.setCellValue(name);
+			cell.setCellStyle(cellStyle);
+			cellIndex++;
+		}
+		cellIndex = 0;
+		rowIndex = 4;
+		if (nvOp.getNames() != null && nvOp.getNames().size() > 0) {
+			for (int v = 0; v < nvOp.getNames().size(); v++) {
+				/// 門急診申報點數
+				row = sheet.createRow(rowIndex + v);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(nvOp.getNames().get(v));
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(nvOp.getValues().get(v).doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				/// 門急診自費
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(nveOp.getNames().get(v));
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(nveOp.getValues().get(v).doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				/// 住院申報點數
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(nvIp.getNames().get(v));
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(nvIp.getValues().get(v).doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				/// 住院自費
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(nveIp.getNames().get(v));
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(nveIp.getValues().get(v).doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+
+				cellIndex = 0;
+			}
+		}
+
+		/// 最後autosize
+		for (int i = 0; i < tableCellHeaders2.length; i++) {
+			sheet.autoSizeColumn(i);
+			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+		}
+
+		/// 如果有單選趨勢圖
+		if (funcType != null && !funcType.equals("00")) {/// 新建工作表
+			/// 新建工作表
+			cellIndex = 0;
+			rowIndex = 0;
+			List<CODE_TABLE> ctList = codeTableDao.findByCodeAndCat(funcType, "FUNC_TYPE");
+			String sheetName = "("+ctList.get(0).getDescChi()+")趨勢圖";
+			System.out.println(sheetName);
+			sheet = workbook.createSheet(sheetName);
+			tableCellHeaders = new String[] { "門急診申報點數趨勢圖", "門急診自費趨勢圖", "住院申報點數趨勢圖", "住院自費趨勢圖" };
+			tableCellHeaders2 = new String[] { "週數", "點數", "週數", "點數", "週數", "點數", "週數", "點數" };
+			nvOp = ppwftModel.getOp();
+			nvIp = ppwftModel.getIp();
+			nveOp = ppwftModel.getOwnExpOp();
+			nveIp = ppwftModel.getOwnExpIp();
+			/// 欄位A2
+			row = sheet.createRow(1);
+			cell = row.createCell(0);
+			cell.setCellValue("全院");
+			cell.setCellStyle(cellStyle);
+
+			/// 欄位A3
+			row = sheet.createRow(2);
+			y1 = 2;
+			y2 = 2;
+			x1 = 0;
+			x2 = 1;
+			for (String name : tableCellHeaders) {
+				for (int i = 0; i < 2; i++) {
+					cell = row.createCell(cellIndex + i);
+					cell.setCellStyle(cellTitleStyle);
+					if (i == 0) {
+
+						cell.setCellValue(name);
+					}
+				}
+				/// merge欄位
+				sheet.addMergedRegion(new CellRangeAddress(y1, y2, x1, x2));
+				x1 += 2;
+				x2 += 2;
+				cellIndex += 2;
+			}
+			cellIndex = 0;
+			rowIndex = 3;
+			row = sheet.createRow(rowIndex);
+			for (String name : tableCellHeaders2) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(name);
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+			}
+			cellIndex = 0;
+			rowIndex = 4;
+
+			if (nvOp.getNames() != null && nvOp.getNames().size() > 0) {
+				for (int v = 0; v < nvOp.getNames().size(); v++) {
+					/// 門急診申報點數
+					row = sheet.createRow(rowIndex + v);
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(nvOp.getNames().get(v));
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(nvOp.getValues().get(v).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					/// 門急診自費
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(nveOp.getNames().get(v));
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(nveOp.getValues().get(v).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					/// 住院申報點數
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(nvIp.getNames().get(v));
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(nvIp.getValues().get(v).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					/// 住院自費
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(nveIp.getNames().get(v));
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(nveIp.getValues().get(v).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+
+					cellIndex = 0;
+				}
+			}
+
+			/// 最後autosize
+			for (int i = 0; i < tableCellHeaders2.length; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+
+		}
+
+		String fileNameStr = "費用業務報表";
+		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+				? FILE_PATH + "\\" + fileName
+				: FILE_PATH + "/" + fileName;
+		File file = new File(filepath);
+		response.reset();
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
+		response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+		response.setContentType("application/octet-stream;charset=utf8");
+//		response.setContentType("application/vnd.ms-excel;charset=utf8");
+
+		/// 最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
+
+		workbook.write(out);
+		out.flush();
+		out.close();
+		workbook.close();
+
 	}
 
 }
