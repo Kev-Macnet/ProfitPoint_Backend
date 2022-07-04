@@ -1038,6 +1038,24 @@ public class ReportService {
 		}
 		drgMonthlyAll.setYm(Integer.parseInt(adYM));
 		drgMonthlyAll.setFuncType(XMLConstant.FUNC_TYPE_ALL);
+		if(drgMonthlyAll.getSectionA() != null && drgMonthlyAll.getSectionA() > 0) {
+			///初始化functype 00資料，不然跑下面回圈會疊加重複
+			drgMonthlyAll.setSectionA(0L);
+			drgMonthlyAll.setSectionB1(0L);
+			drgMonthlyAll.setSectionB2(0L);
+			drgMonthlyAll.setSectionC(0L);
+
+			drgMonthlyAll.setSectionAAppl(0L);
+			drgMonthlyAll.setSectionB1Appl(0L);
+			drgMonthlyAll.setSectionB2Appl(0L);
+			drgMonthlyAll.setSectionCAppl(0L);
+
+			drgMonthlyAll.setSectionAActual(0L);
+			drgMonthlyAll.setSectionB1Actual(0L);
+			drgMonthlyAll.setSectionB2Actual(0L);
+			drgMonthlyAll.setSectionCActual(0L);
+		}		
+		
 
 		List<String> funcTypes = getAllDRGFuncTypes(chineseYM);
 		for (String funcType : funcTypes) {
