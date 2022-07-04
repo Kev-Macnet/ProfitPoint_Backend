@@ -1546,15 +1546,28 @@ public class ReportService {
 		java.sql.Date lastEdate = null;
 		int daysDiff = (int) ((edate.getTime() - sdate.getTime()) / 86400000L);
 		Calendar cal = Calendar.getInstance();
+		Calendar calDiif = Calendar.getInstance();
 		cal.setTimeInMillis(sdate.getTime());
+		calDiif.setTimeInMillis(sdate.getTime());
 		if (daysDiff <= 30) {
 			// 30天抓上個月同區間
 			cal.add(Calendar.MONTH, -1);
 			lastSdate = new java.sql.Date(cal.getTimeInMillis());
-
-			cal.setTimeInMillis(edate.getTime());
-			cal.add(Calendar.MONTH, -1);
-			lastEdate = new java.sql.Date(cal.getTimeInMillis());
+			///取得輸入起始日之月底日，做比對用
+			calDiif.set(Calendar.DAY_OF_MONTH, calDiif.getActualMaximum(Calendar.DAY_OF_MONTH));
+			Date thisEdate = new java.sql.Date(calDiif.getTimeInMillis());
+		    ///如果輸入的結束日為月底，走這裡，抓月底資料
+			if(thisEdate.equals(edate)) {
+				cal.add(Calendar.MONTH, 1);
+				cal.set(Calendar.DAY_OF_MONTH, 0);
+				lastEdate = new java.sql.Date(cal.getTimeInMillis());
+			}
+			else {
+			    ///如果輸入的結束日為月底，走這裡，不抓月底資料
+				cal.setTimeInMillis(edate.getTime());
+				cal.add(Calendar.MONTH, -1);
+				lastEdate = new java.sql.Date(cal.getTimeInMillis());
+			}
 		} else {
 			cal.add(Calendar.DAY_OF_YEAR, -1);
 			lastEdate = new java.sql.Date(cal.getTimeInMillis());
