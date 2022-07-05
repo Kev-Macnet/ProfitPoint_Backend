@@ -29,7 +29,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
-import tw.com.leadtek.nhiwidget.payload.report.CaseStatusAndQuantity;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
 import tw.com.leadtek.nhiwidget.payload.report.HealthCareCost;
@@ -37,7 +36,6 @@ import tw.com.leadtek.nhiwidget.payload.report.PeriodPointPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsVarietyPayload;
-import tw.com.leadtek.nhiwidget.service.CaseStatusAndQuantityService;
 import tw.com.leadtek.nhiwidget.service.HealthCareCostService;
 import tw.com.leadtek.nhiwidget.service.ReportExportService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
@@ -54,13 +52,10 @@ public class ReportController extends BaseController {
 
 	@Autowired
 	private HealthCareCostService healthCareCostService;
-	
-	@Autowired
-	private CaseStatusAndQuantityService caseStatusAndQuantityService;
 
 	@Autowired
 	private ReportExportService reportExportService;
-
+	
 	@ApiOperation(value = "取得健保點數月報表", notes = "取得健保點數月報表")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/monthlyPoint")
@@ -102,11 +97,65 @@ public class ReportController extends BaseController {
 		}
 		return ResponseEntity.ok(reportService.getPeriodPoint(startDate, endDate));
 	}
+	
+	@ApiOperation(value = "取得費用業務依照科別-點數", notes = "取得費用業務依照科別-點數")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/periodPointByFunctype")
+	public ResponseEntity<PeriodPointPayload> getPeriodPointByFunctype(
+			@ApiParam(name = "sdate", value = "起始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
+			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
+			@ApiParam(name = "funcType", value = "科別", example = "01") @RequestParam(required = false) String funcType
+			) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		Date startDate = null;
+		Date endDate = null;
+		try {
+			startDate = sdf.parse(sdate);
+			endDate = sdf.parse(edate);
+		} catch (ParseException e) {
+			PeriodPointPayload result = new PeriodPointPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("日期格式不正確");
+			return ResponseEntity.badRequest().body(result);
+		}
+		if(funcType == null) {
+			PeriodPointPayload result = new PeriodPointPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("科別為必填");
+		}
+		return ResponseEntity.ok(reportService.getPeriodPointByFunctype(startDate, endDate, funcType));
+	}
 
+	@ApiOperation(value = "取得費用業務依照科別-每周趨勢資料", notes = "取得費用業務依照科別-每周趨勢資料")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/periodPointWeeklyByFunctype")
+	public ResponseEntity<PeriodPointWeeklyPayload> getPeriodPointWeekly(
+			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
+			@ApiParam(name = "funcType", value = "科別", example = "01") @RequestParam(required = false) String funcType
+			) {
+
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		Date endDate = null;
+		try {
+			endDate = sdf.parse(edate);
+		} catch (ParseException e) {
+			PeriodPointWeeklyPayload result = new PeriodPointWeeklyPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("日期格式不正確");
+			return ResponseEntity.badRequest().body(result);
+		}
+		if(funcType == null) {
+			PeriodPointPayload result = new PeriodPointPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("科別為必填");
+		}
+		return ResponseEntity.ok(reportService.getPeroidPointWeeklyByFunctype(endDate, funcType));
+	}
+	
 	@ApiOperation(value = "取得費用業務-每周趨勢資料", notes = "取得費用業務-每周趨勢資料")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/periodPointWeekly")
-	public ResponseEntity<PeriodPointWeeklyPayload> getPeriodPointWeekly(
+	public ResponseEntity<PeriodPointWeeklyPayload> getPeriodPointWeeklyByFunctype(
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate) {
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
@@ -503,72 +552,28 @@ public class ReportController extends BaseController {
     return null;
   }
   
-	@ApiOperation(value = "案件狀態與各別數量(可複選)", notes = "案件狀態與各別數量(可複選)")
+  @ApiOperation(value = "取得費用業務-點數-匯出", notes = "取得費用業務-點數-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
-	@GetMapping("/caseStatusAndQuantity")
-	public ResponseEntity<?> getCaseStatusAndQuantity(
-			@ApiParam(name = "status", value = "案件狀態與各別數量(可複選)", example = "無須變更 評估不調整 優化完成 待確認 待處理 疑問標示")
-			@RequestParam(required = false) String status,
-			@ApiParam(name = "physical", value = "是否包含列出就醫清單", example = "true")@RequestParam(required = false) boolean physical,
-			@ApiParam(name = "startMonth", value = "開始月份", example = "2022/01") @RequestParam(required = false) String startMonth,
-			@ApiParam(name = "endMonth", value = "結束月份", example = "2022/12") @RequestParam(required = false) String endMonth) {
-		
-		List<CaseStatusAndQuantity> results=new ArrayList<CaseStatusAndQuantity>();
-		
-		if(status.length()==0) {
-			CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
-			caseStatusAndQuantity.setResult(BaseResponse.ERROR);
-			caseStatusAndQuantity.setMessage("無勾選案件狀態");
-			results.add(caseStatusAndQuantity);
-		    return ResponseEntity.ok().body(results);
+	@GetMapping("/periodPointExport")
+	public ResponseEntity<BaseResponse> getPeriodPointExport(
+			@ApiParam(name = "sdate", value = "起始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
+			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
+			@ApiParam(name = "funcType", value = "科別", example = "01") @RequestParam(required = false) String funcType,
+			HttpServletResponse response
+			) throws ParseException, IOException {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		Date startDate = null;
+		Date endDate = null;
+		try {
+			startDate = sdf.parse(sdate);
+			endDate = sdf.parse(edate);
+		} catch (ParseException e) {
+			PeriodPointPayload result = new PeriodPointPayload();
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("日期格式不正確");
+			return ResponseEntity.badRequest().body(result);
 		}
-		
-		if(startMonth!=null && endMonth!=null && !startMonth.equals("") && !endMonth.equals("") && !startMonth.equals("null") && !endMonth.equals("null")) {
-				results=caseStatusAndQuantityService.getData(physical,status,startMonth,endMonth);
-		}
-		else {
-			CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
-			caseStatusAndQuantity.setResult(BaseResponse.ERROR);
-			caseStatusAndQuantity.setMessage("資料格式不正確");
-			results.add(caseStatusAndQuantity);
-		    return ResponseEntity.badRequest().body(results);
-		}
-		
-		return ResponseEntity.ok(results);
+		reportExportService.getPeriodPointExport(sdate, edate, funcType, response);
+		return null;
 	}
-	
-	  @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
-	  @ApiOperation(value = "案件狀態與各別數量(可複選)-匯出", notes = "案件狀態與各別數量(可複選)-匯出")
-	  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
-	  @GetMapping("/caseStatusAndQuantityExport")
-	  public ResponseEntity<BaseResponse> getCaseStatusAndQuantityExport(
-		 @ApiParam(name = "status", value = "案件狀態與各別數量(可複選)", example = "無須變更 評估不調整 優化完成 待確認 待處理 疑問標示")
-		 @RequestParam(required = false) String status,
-		 @ApiParam(name = "physical", value = "是否包含列出就醫清單", example = "true")@RequestParam(required = false) boolean physical,
-		 @ApiParam(name = "startMonth", value = "開始月份", example = "2022/01") @RequestParam(required = false) String startMonth,
-		 @ApiParam(name = "endMonth", value = "結束月份", example = "2022/12") @RequestParam(required = false) String endMonth,
-	     HttpServletResponse response){
-		  
-			List<CaseStatusAndQuantity> results=new ArrayList<CaseStatusAndQuantity>();
-			
-			if(status.length()==0) {
-				CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
-				caseStatusAndQuantity.setResult(BaseResponse.ERROR);
-				caseStatusAndQuantity.setMessage("無勾選案件狀態");
-			    return ResponseEntity.ok().body(caseStatusAndQuantity);
-			}
-			
-			if(startMonth!=null && endMonth!=null && !startMonth.equals("") && !endMonth.equals("") && !startMonth.equals("null") && !endMonth.equals("null")) {
-					results=caseStatusAndQuantityService.getData(physical,status,startMonth,endMonth);
-					caseStatusAndQuantityService.getDataExport(physical,results,startMonth,endMonth,response);
-			}
-			else {
-				CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
-				caseStatusAndQuantity.setResult(BaseResponse.ERROR);
-				caseStatusAndQuantity.setMessage("資料格式不正確");
-			    return ResponseEntity.badRequest().body(caseStatusAndQuantity);
-			}
-		  
-			return null;
-	  }
 }

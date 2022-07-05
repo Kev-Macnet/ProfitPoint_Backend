@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,14 +19,22 @@ import org.hibernate.SQLQuery;
 import org.hibernate.transform.Transformers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.swagger.annotations.ApiModelProperty;
+import io.swagger.annotations.ApiParam;
+import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.POINT_MONTHLYDao;
+import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionDetail;
+import tw.com.leadtek.nhiwidget.payload.report.DatabaseCalculateExportFactor;
 //import tw.com.leadtek.nhiwidget.payload.report.DrgQueryConditionPayload;
 import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.tools.StringUtility;
@@ -34,6 +43,8 @@ import tw.com.leadtek.tools.StringUtility;
 public class DbReportService {
 
 	private Logger logger = LogManager.getLogger();
+	private final static int APPL_STATUS_SELF_FEE=5;
+	private List<CODE_TABLE> codeTableList;
 
 	@Autowired
 	private POINT_MONTHLYDao pointMonthlyDao;
@@ -43,12 +54,3073 @@ public class DbReportService {
 
 	@Autowired
 	private MRDao mrDao;
+	
+	@Autowired
+	private CODE_TABLEDao code_TABLEDao;
 
 	public BaseResponse test() {
 		BaseResponse res = new BaseResponse();
 		res.setMessage("isdone");
 		res.setResult("ok");
 		return res;
+	}
+	
+	//目錄
+	public DatabaseCalculateExportFactor getDatabaseCalculateContents(String dateType,String exportType,Boolean withLaborProtection,String classFee,String feeApply,Boolean isShowSelfFeeList,
+			Boolean isShowPhysicalList,String caseStatus, String year,String month,String betweenSDate,String betweenEDate,String sections,String drgCodes,String dataFormats,
+			String funcTypes, String medNames,String icdcms,String medLogCodes,Integer applMin,Integer applMax,String icdAll,String payCode,String inhCode, Boolean isShowDRGList,
+			Boolean isLastM,Boolean isLastY) {
+		
+			DatabaseCalculateExportFactor databaseCalculateExportFactor=new DatabaseCalculateExportFactor();
+			databaseCalculateExportFactor.setExportName(exportType);
+			
+			switch (exportType) {
+			case "達成率與超額數":
+				databaseCalculateExportFactor.setDateType("0");
+			    databaseCalculateExportFactor.setYear(year);
+			    databaseCalculateExportFactor.setMonth(month);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
+				break;
+			case "DRG案件數分佈佔率與定額、實際點數":
+				if(isShowDRGList) {
+					drgCodes="";
+					isLastM=false;
+					isLastY=false;
+				}
+				databaseCalculateExportFactor.setIsShowDRGList(isShowDRGList);
+				databaseCalculateExportFactor.setSections(sections);
+				databaseCalculateExportFactor.setDrgCodes(drgCodes);
+				
+				databaseCalculateExportFactor.setDateType(dateType);
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdcms(icdcms);
+				databaseCalculateExportFactor.setMedLogCodes(medLogCodes);
+				databaseCalculateExportFactor.setApplMin(applMin);
+				databaseCalculateExportFactor.setApplMax(applMax);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
+				break;
+			case "申報分配佔率與點數、金額":
+				databaseCalculateExportFactor.setWithLaborProtection(withLaborProtection);
+				databaseCalculateExportFactor.setClassFee(classFee);
+				
+				databaseCalculateExportFactor.setDateType("0");
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdcms(icdcms);
+				databaseCalculateExportFactor.setMedLogCodes(medLogCodes);
+				databaseCalculateExportFactor.setApplMin(applMin);
+				databaseCalculateExportFactor.setApplMax(applMax);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
+				break;
+			case "醫令項目與執行量":
+				databaseCalculateExportFactor.setFeeApply(feeApply);
+				
+				databaseCalculateExportFactor.setDateType(dateType);
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
+				break;
+			case "自費項目清單":
+				databaseCalculateExportFactor.setIsShowSelfFeeList(isShowSelfFeeList);
+				
+				databaseCalculateExportFactor.setDateType("1");
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
+				break;
+			case "核刪件數資訊":
+				databaseCalculateExportFactor.setDateType(dateType);
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+			    databaseCalculateExportFactor.setIsLastM(isLastM);
+			    databaseCalculateExportFactor.setIsLastY(isLastY);
+				break;
+			case "總額外點數":
+				databaseCalculateExportFactor.setDateType(dateType);
+				databaseCalculateExportFactor.setYear(year);
+				databaseCalculateExportFactor.setMonth(month);
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				databaseCalculateExportFactor.setDataFormats(dataFormats);
+				databaseCalculateExportFactor.setFuncTypes(funcTypes);
+				databaseCalculateExportFactor.setMedNames(medNames);
+				databaseCalculateExportFactor.setIcdcms(icdcms);
+				databaseCalculateExportFactor.setMedLogCodes(medLogCodes);
+				databaseCalculateExportFactor.setApplMin(applMin);
+				databaseCalculateExportFactor.setApplMax(applMax);
+				databaseCalculateExportFactor.setIcdAll(icdAll);
+				databaseCalculateExportFactor.setPayCode(payCode);
+				databaseCalculateExportFactor.setInhCode(inhCode);
+				break;
+			case "案件狀態與各別數量(可複選)":
+				databaseCalculateExportFactor.setIsShowPhysicalList(isShowPhysicalList);
+				databaseCalculateExportFactor.setCaseStatus(caseStatus);
+				
+				databaseCalculateExportFactor.setDateType("1");
+				databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+				databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+				break;
+			default:
+				databaseCalculateExportFactor.setResult(BaseResponse.ERROR);
+				databaseCalculateExportFactor.setMessage("未知的報表類型");
+				return databaseCalculateExportFactor;
+			}
+			
+			return databaseCalculateExportFactor;
+	}
+	
+	/*醫令項目與執行量
+	 *@param feeApply 費用申報狀態，健保 自費
+	 *@param dateType 時間區間型態
+	 *@param year 年 dateType=0，需填入
+	 *@param month 月 dateType=0，需填入
+	 *@param betweenSDate 起始時間 dateType=1，需填入
+	 *@param betweenEDate 結束時間 dateType=1，需填入
+	 *@param dataFormats 就醫類型
+	 *@param funcTypes 科別
+	 *@param medNames 醫護名
+	 *@param icdAll 不分區icd碼
+	 *@param payCode 支付標準代碼
+	 *@param inhCode 院內碼
+	 *@param isLastM 上個月同條件相比
+	 *@param isLastY 去年同時期同條件相比
+	 * */
+	@SuppressWarnings("unchecked")
+	public  Map<String, Object> getMedicalOrder(String feeApply,String dateType,String year,String month,String betweenSdate,String betweenEdate,
+			String dataFormats,String funcTypes,String medNames,String icdAll,
+			String payCode,String inhCode,boolean isLastM,boolean isLastY) {
+		
+		codeTableList=code_TABLEDao.findByCatOrderByCode("FUNC_TYPE");
+		
+		Map<String, Object> result = new HashMap<String, Object>();
+		List<Map<String, Object>> lastDateList = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
+		List<Map<String,Object>> sqlMapListWithCodeTable = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> sqlMapListWithMedName = new ArrayList<Map<String, Object>>();
+		
+		/// 費用申報狀態(可複選)
+		List<String> feeApplyList = new ArrayList<String>();
+		String feeApplySql = "";
+		/// 就醫類別
+		List<String> dataformatList = new ArrayList<String>();
+		String dateformatSql = "";
+		/// 科別
+		List<String> funcTypeList = new ArrayList<String>();
+		String funcTypeSql = "";
+		/// 醫護姓名
+		List<String> medNameList = new ArrayList<String>();
+		String medNameSql = "";
+		/// 不分區ICD碼
+		List<String> icdAllList = new ArrayList<String>();
+		String icdAllSql = "";
+
+		//如果feeApply有值
+		if (feeApply != null && feeApply.length() > 0) {
+			String[] feeApplyArr = StringUtility.splitBySpace(feeApply);
+			for (String str : feeApplyArr) {
+				feeApplyList.add(str);
+			}
+		}
+		/// 如果dataformat有值
+		if (dataFormats != null && dataFormats.length() > 0) {
+			String[] dataformatArr = StringUtility.splitBySpace(dataFormats);
+			for (String str : dataformatArr) {
+				dataformatList.add(str);
+			}
+		}
+		/// 如果functype有值
+		if (funcTypes != null && funcTypes.length() > 0) {
+			String[] funcTypeArr = StringUtility.splitBySpace(funcTypes);
+			for (String str : funcTypeArr) {
+				funcTypeList.add(str);
+				funcTypeSql += "'" + str + "',";
+			}
+			funcTypeSql = funcTypeSql.substring(0, funcTypeSql.length() - 1);
+		}
+		/// 如果medNames有值
+		if (medNames != null && medNames.length() > 0) {
+			String[] medNameArr = StringUtility.splitBySpace(medNames);
+			for (String str : medNameArr) {
+				medNameList.add(str);
+				medNameSql += "'" + str + "',";
+			}
+			medNameSql = medNameSql.substring(0, medNameSql.length() - 1);
+		}
+		/// 如果icdAll有值
+		if (icdAll != null && icdAll.length() > 0) {
+			String[] icdAllArr = StringUtility.splitBySpace(icdAll);
+			for (String str : icdAllArr) {
+				icdAllList.add(str);
+			}
+		}
+
+		/// 日期格式: 0=年月帶入，1=日期區間
+		if (dateType.equals("0")) {
+			
+			String[] years = StringUtility.splitBySpace(year);
+			String[] months = StringUtility.splitBySpace(month);
+
+			List<Object> yList = Arrays.asList(years);
+			List<Object> mList = Arrays.asList(months);
+			Map<String, Object> map = new HashMap<String, Object>();
+			/// 如果年月為多個，則不能用上個月同條件相比
+			if (years.length > 1) {
+				isLastM = false;
+			}
+			if (isLastM) {
+				for (String str : months) {
+					int m = Integer.valueOf(str.replace("0", ""));
+					int y = Integer.valueOf(years[0]);
+					/// 如果是一月的話
+					if (m == 1) {
+						y -= 1;
+						/// 跨年份
+						yList.add(y);
+						mList.add(12);
+						map.put("YM", String.valueOf(y * 100 + 12));
+						map.put("Value", "M");
+						String append = String.valueOf((y + 1) * 100 + m);
+						append = append.substring(0, append.length() - 2) + "/"
+								+ append.substring(append.length() - 2, append.length());
+						map.put("displayName", "上個月同條件相比");
+					} else {
+						yList.add(years[0]);
+						mList.add(m - 1);
+						map.put("YM", String.valueOf((y * 100) + (m - 1)));
+						map.put("Value", "M");
+						String append = String.valueOf((y) * 100 + m);
+						append = append.substring(0, append.length() - 2) + "/"
+								+ append.substring(append.length() - 2, append.length());
+						map.put("displayName", "上個月同條件相比");
+					}
+				}
+				lastDateList.add(map);
+				map = new HashMap<String, Object>();
+			}
+
+			if (isLastY) {
+				int i = 0;
+				for (String str : years) {
+					int y = Integer.valueOf(str);
+					int m = Integer.valueOf(months[i].replace("0", ""));
+					y -= 1;
+					yList.add(y);
+					mList.add(m);
+					map.put("YM", String.valueOf((y * 100) + m));
+					map.put("Value", "Y");
+					String append = String.valueOf((y + 1) * 100 + m);
+					append = append.substring(0, append.length() - 2) + "/"
+							+ append.substring(append.length() - 2, append.length());
+					map.put("displayName", "去年同期時段相比");
+					lastDateList.add(map);
+					map = new HashMap<String, Object>();
+					i++;
+
+				}
+			}
+			List<String> sList = new ArrayList<String>();
+			for (int i = 0; i < yList.size(); i++) {
+				sList.add(yList.get(i).toString() + mList.get(i).toString());
+			}
+
+			List<Integer> yearMonthBetweenInt = findYearMonth(yList, mList);
+			List<String> yearMonthBetweenStr = findYearMonthStr(yList, mList);
+			/// 這裡做排序，name才會對應正確值
+			Collections.sort(yearMonthBetweenInt);
+			Collections.sort(yearMonthBetweenStr);
+			
+			/// 查詢欄位
+			StringBuffer selectColumn = new StringBuffer("");
+			/// 條件
+			StringBuffer where = new StringBuffer("");
+			/// groupBy
+			StringBuffer groupBy = new StringBuffer("");
+			/// orderBy
+			StringBuffer orderBy = new StringBuffer("");
+
+			for (int i = 0; i < yearMonthBetweenStr.size(); i++) {
+				logger.info("醫令項目與執行量報表年月: {}",yearMonthBetweenStr.get(i));
+				
+				/*
+				 * 指定年月內依照就醫類別統計的案件數、自費金額、申報總點數(病歷總點數)
+				 * 就醫類別:不分區、門急診、門診、急診、住院
+				 * 篩選條件:費用申請類型(自費or健保)、科名、醫護名、不分區ICD碼、支付標準代碼、院內碼
+				*/
+				
+				Query sqlQuery = null;
+				Map<String, Object> dataFormatObject=new HashMap<String, Object>();
+				List<Map<String, Object>> dataMap=new ArrayList<Map<String,Object>>();
+				
+				for (String str : dataformatList) {
+					switch (str) {
+						case "all":
+							selectColumn.append("SELECT * FROM (SELECT COUNT(ID) AS ALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+			
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+							
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+						   	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+							
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+							
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) a, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE),0) ALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0  ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) b, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS ALL_DOT FROM MR WHERE OWN_EXPENSE > 0  ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+							
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+			
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+			
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) c, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("date", yearMonthBetweenStr.get(i));
+							dataFormatObject.put("dataFormat", "不分區");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						case "totalop":
+							selectColumn.append(
+									"SELECT * FROM (SELECT COUNT(ID) AS OPALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) d, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE),0) OPALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) e, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS OPALL_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) f, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("date", yearMonthBetweenStr.get(i));
+							dataFormatObject.put("dataFormat", "門急診");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						case "op":
+							selectColumn.append(
+									"SELECT * FROM (SELECT COUNT(ID) AS OP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) g, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) OP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) h, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS OP_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) i, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("date", yearMonthBetweenStr.get(i));
+							dataFormatObject.put("dataFormat", "門診");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						case "em":
+							selectColumn.append(
+									"SELECT * FROM (SELECT COUNT(ID) AS EM_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) j, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) EM_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) k, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS EM_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) l, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("date", yearMonthBetweenStr.get(i));
+							dataFormatObject.put("dataFormat", "急診");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						case "ip":
+							selectColumn.append("SELECT * FROM (SELECT COUNT(ID) AS IP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) m, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE),0) IP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) n, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS IP_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+							where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) o, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("date", yearMonthBetweenStr.get(i));
+							dataFormatObject.put("dataFormat", "住院");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						default:
+							logger.info("醫令項目與執行量報表: 未知的就醫類別");
+							result.put("result", BaseResponse.ERROR);
+							result.put("message","醫令項目與執行量報表: 未知的就醫類別");
+							return result;
+					}
+				}
+				
+				/*
+				 * 指定年月內依照就醫類別統計指定科別(或是全部科別)的案件數、自費金額、申報總點數(病歷總點數)
+				 * 就醫類別:不分區、門急診、門診、急診、住院
+				 * 篩選條件:費用申請類型(自費or健保)、科名、醫護名、不分區ICD碼、支付標準代碼、院內碼
+				*/
+				Map<String, Object> obj=new HashMap<String, Object>();
+				List<Map<String, Object>> dataMap2=new ArrayList<Map<String,Object>>();
+				
+				for (String str : dataformatList) {
+					switch (str) {
+					case "all":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+						
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataAll=initList(dataMap2,"不分區");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("date", yearMonthBetweenStr.get(i));
+						obj.put("dataFormat", "不分區");
+						obj.put("classData",dataAll);
+						
+//						System.out.println(resultData.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					case "totalop":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+						
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataOPAll=initList(dataMap2,"門急診");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("date", yearMonthBetweenStr.get(i));
+						obj.put("dataFormat", "門急診");
+						obj.put("classData", dataOPAll);
+						
+//						System.out.println(resultData2.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					case "op":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataOP=initList(dataMap2,"門診");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("date", yearMonthBetweenStr.get(i));
+						obj.put("dataFormat", "門診");
+						obj.put("classData", dataOP);
+						
+//						System.out.println(resultData3.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					case "em":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND FUNC_TYPE = '22'  ");
+						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataEM=initList(dataMap2,"急診");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("date", yearMonthBetweenStr.get(i));
+						obj.put("dataFormat", "急診");
+						obj.put("classData", dataEM);
+						
+//						System.out.println(resultData4.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					case "ip":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+						
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+						
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataIP=initList(dataMap2,"住院");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("date", yearMonthBetweenStr.get(i));
+						obj.put("dataFormat", "住院");
+						obj.put("classData", dataIP);
+						
+//						System.out.println(resultData5.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					}
+				}
+				
+				/*
+				 * 指定年月內依照就醫類別統計指定醫護人員的案件數、自費金額、申報總點數(病歷總點數)
+				 * 就醫類別:不分區、門急診、門診、急診、住院
+				 * 篩選條件:費用申請類型(自費or健保)、科名、醫護名、不分區ICD碼、支付標準代碼、院內碼
+				*/
+				
+				Map<String, Object> dataFormatObject3=new HashMap<String, Object>();
+				List<Map<String, Object>> dataMap3=new ArrayList<Map<String,Object>>();
+				
+				if(medNameList.size() > 0) {
+					for(int v=0; v < medNameList.size(); v++) {
+						for (String str : dataformatList) {
+							switch (str) {
+							case "all":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID,  '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								selectColumn.append(
+										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+	
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+	
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+	
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
+								dataFormatObject3.put("dataFormat", "不分區");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+								
+							case "totalop":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
+								selectColumn.append(
+										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
+								dataFormatObject3.put("dataFormat", "門急診");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+								
+							case "op":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								selectColumn.append(
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
+								dataFormatObject3.put("dataFormat", "門診");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+								
+							case "em":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								selectColumn.append(
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
+								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
+								dataFormatObject3.put("dataFormat", "急診");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+								
+							case "ip":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
+								selectColumn.append(
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
+								dataFormatObject3.put("dataFormat", "住院");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+							
+							default:
+								break;
+							}
+						}
+					}
+					
+				}
+			}
+		}
+		else {
+			/// 查詢日期為指定區間
+			Map<String, Object> map = new HashMap<String, Object>();
+			List<Map<String, Object>> mapList=new ArrayList<Map<String,Object>>();
+
+			map.put("sDate", betweenSdate);
+			map.put("eDate", betweenEdate);
+			map.put("displayName", "");
+			mapList.add(map);
+			map = new HashMap<String, Object>();
+			if (isLastY) {
+				String sdate = betweenSdate;
+				String edate = betweenEdate;
+				int sy = Integer.parseInt(sdate.substring(0, 4));
+				int ey = Integer.parseInt(edate.substring(0, 4));
+				sdate = String.valueOf(sy - 1) + betweenSdate.substring(4, betweenSdate.length());
+				edate = String.valueOf(ey - 1) + betweenEdate.substring(4, betweenEdate.length());
+				map.put("sDate", sdate);
+				map.put("eDate", edate);
+				map.put("displayName", "去年同期時段相比");
+				mapList.add(map);
+				lastDateList.add(map);
+				map = new HashMap<String, Object>();
+			}
+			
+			/// 查詢欄位
+			StringBuffer selectColumn = new StringBuffer("");
+			/// 條件
+			StringBuffer where = new StringBuffer("");
+			/// groupBy
+			StringBuffer groupBy = new StringBuffer("");
+			/// orderBy
+			StringBuffer orderBy = new StringBuffer("");
+			
+			for (int i = 0; i < mapList.size(); i++) {
+				logger.info("醫令項目與執行量報表時段區間: {}",mapList.get(i).toString());
+				String sd = mapList.get(i).get("sDate").toString();
+				String ed = mapList.get(i).get("eDate").toString();
+				
+				/*
+				 * 指定年月內依照就醫類別統計的案件數、自費金額、申報總點數(病歷總點數)
+				 * 就醫類別:不分區、門急診、門診、急診、住院
+				 * 篩選條件:費用申請類型(自費or健保)、科名、醫護名、不分區ICD碼、支付標準代碼、院內碼
+				*/
+				
+				Query sqlQuery = null;
+				Map<String, Object> dataFormatObject=new HashMap<String, Object>();
+				List<Map<String, Object>> dataMap=new ArrayList<Map<String,Object>>();
+				
+				for (String str : dataformatList) {
+					switch (str) {
+						case "all":
+							selectColumn.append("SELECT * FROM (SELECT COUNT(ID) AS ALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+			
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+							
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+						   	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+							
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+							
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) a, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE),0) ALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0  ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) b, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS ALL_DOT FROM MR WHERE OWN_EXPENSE > 0  ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+							
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+			
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+			
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) c, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("startDate", sd);
+							dataFormatObject.put("endDate", ed);
+							dataFormatObject.put("dataFormat", "不分區");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						case "totalop":
+							selectColumn.append(
+									"SELECT * FROM (SELECT COUNT(ID) AS OPALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) d, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE),0) OPALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) e, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS OPALL_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) f, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("startDate", sd);
+							dataFormatObject.put("endDate", ed);
+							dataFormatObject.put("dataFormat", "門急診");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						case "op":
+							selectColumn.append(
+									"SELECT * FROM (SELECT COUNT(ID) AS OP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) g, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) OP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) h, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS OP_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) i, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("startDate", sd);
+							dataFormatObject.put("endDate", ed);
+							dataFormatObject.put("dataFormat", "門診");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						case "em":
+							selectColumn.append(
+									"SELECT * FROM (SELECT COUNT(ID) AS EM_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) j, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) EM_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) k, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS EM_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) l, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("startDate", sd);
+							dataFormatObject.put("endDate", ed);
+							dataFormatObject.put("dataFormat", "急診");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						case "ip":
+							selectColumn.append("SELECT * FROM (SELECT COUNT(ID) AS IP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) m, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE),0) IP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) n, ");
+							selectColumn.append(where);
+							where = new StringBuffer("");
+							
+							selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS IP_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+							where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							
+							if(feeApplyList.size() == 1) {
+								if(feeApplyList.get(0).equals("自費")) {
+									where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								}
+								else {
+									where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+								}
+							}
+							
+							if (funcTypeList.size() > 0)
+								where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+							if (medNameList.size() > 0)
+								where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+	
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+	
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							/// 條件最後添加別名
+							where.append(" ) o, ");
+							selectColumn.append(where);
+							
+							//// 最後添加一個無意義語句避免 “,”使sql錯誤
+							selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+							
+							/// 傳統sql語法組成資料
+							sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+							sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+							dataMap=new ArrayList<Map<String,Object>>();
+							dataMap = sqlQuery.getResultList();
+							
+							dataFormatObject=new HashMap<String, Object>();
+							dataFormatObject.put("startDate", sd);
+							dataFormatObject.put("endDate", ed);
+							dataFormatObject.put("dataFormat", "住院");
+							dataFormatObject.put("data", dataMap);
+							
+							sqlMapList.add(dataFormatObject);
+							selectColumn = new StringBuffer("");
+							entityManager.close();
+
+							selectColumn = new StringBuffer("");
+							where = new StringBuffer("");
+							
+							break;
+							
+						default:
+							logger.info("醫令項目與執行量報表: 未知的就醫類別");
+							result.put("result", BaseResponse.ERROR);
+							result.put("message","醫令項目與執行量報表: 未知的就醫類別");
+							return result;
+					}
+				}
+				
+				/*
+				 * 指定年月內依照就醫類別統計指定科別(或是全部科別)的案件數、自費金額、申報總點數(病歷總點數)
+				 * 就醫類別:不分區、門急診、門診、急診、住院
+				 * 篩選條件:費用申請類型(自費or健保)、科名、醫護名、不分區ICD碼、支付標準代碼、院內碼
+				*/
+				Map<String, Object> obj=new HashMap<String, Object>();
+				List<Map<String, Object>> dataMap2=new ArrayList<Map<String,Object>>();
+				
+				for (String str : dataformatList) {
+					switch (str) {
+					case "all":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+						
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataAll=initList(dataMap2,"不分區");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("startDate", sd);
+						obj.put("endDate", ed);
+						obj.put("dataFormat", "不分區");
+						obj.put("classData",dataAll);
+						
+//						System.out.println(resultData.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					case "totalop":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+						
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataOPAll=initList(dataMap2,"門急診");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("startDate", sd);
+						obj.put("endDate", ed);
+						obj.put("dataFormat", "門急診");
+						obj.put("classData", dataOPAll);
+						
+//						System.out.println(resultData2.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					case "op":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataOP=initList(dataMap2,"門診");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("startDate", sd);
+						obj.put("endDate", ed);
+						obj.put("dataFormat", "門診");
+						obj.put("classData", dataOP);
+						
+//						System.out.println(resultData3.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					case "em":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND FUNC_TYPE = '22'  ");
+						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataEM=initList(dataMap2,"急診");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("startDate", sd);
+						obj.put("endDate", ed);
+						obj.put("dataFormat", "急診");
+						obj.put("classData", dataEM);
+						
+//						System.out.println(resultData4.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					case "ip":
+//						if (selectColumn.length() > 0) {
+//							selectColumn.append(" UNION ALL ");
+//						}
+						selectColumn.append(" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+						selectColumn.append(
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						
+						if(feeApplyList.size() == 1) {
+							if(feeApplyList.get(0).equals("自費")) {
+								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+							}
+							else {
+								where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+							}
+						}
+						
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+						
+						/// 傳統sql語法組成資料
+						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+						dataMap2=new ArrayList<Map<String,Object>>();
+						dataMap2 = sqlQuery.getResultList();
+						
+						List<Map<String, Object>> dataIP=initList(dataMap2,"住院");
+						
+						obj=new HashMap<String, Object>();
+						obj.put("startDate", sd);
+						obj.put("endDate", ed);
+						obj.put("dataFormat", "住院");
+						obj.put("classData", dataIP);
+						
+//						System.out.println(resultData5.size());
+						
+						sqlMapListWithCodeTable.add(obj);
+						
+//						if (i > 0) {
+//							/// 存放去年資料
+//							sqlMapList2_2.addAll(dataMap);
+//						} else {
+//							/// 存放指定期間資料
+//							sqlMapList2.addAll(dataMap);
+//						}
+						selectColumn = new StringBuffer("");
+						entityManager.close();
+						
+						selectColumn = new StringBuffer("");
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						orderBy = new StringBuffer("");
+						
+						break;
+						
+					}
+				}
+				
+				/*
+				 * 指定年月內依照就醫類別統計指定醫護人員的案件數、自費金額、申報總點數(病歷總點數)
+				 * 就醫類別:不分區、門急診、門診、急診、住院
+				 * 篩選條件:費用申請類型(自費or健保)、科名、醫護名、不分區ICD碼、支付標準代碼、院內碼
+				*/
+				
+				Map<String, Object> dataFormatObject3=new HashMap<String, Object>();
+				List<Map<String, Object>> dataMap3=new ArrayList<Map<String,Object>>();
+				
+				if(medNameList.size() > 0) {
+					for(int v=0; v < medNameList.size(); v++) {
+						for (String str : dataformatList) {
+							switch (str) {
+							case "all":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID,  '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								selectColumn.append(
+										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+	
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+	
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+	
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+	
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+	
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("startDate", sd);
+								dataFormatObject3.put("endDate", ed);
+								dataFormatObject3.put("dataFormat", "不分區");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+								
+							case "totalop":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
+								selectColumn.append(
+										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("startDate", sd);
+								dataFormatObject3.put("endDate", ed);
+								dataFormatObject3.put("dataFormat", "門急診");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+								
+							case "op":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								selectColumn.append(
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("startDate", sd);
+								dataFormatObject3.put("endDate", ed);
+								dataFormatObject3.put("dataFormat", "門診");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+								
+							case "em":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								selectColumn.append(
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
+								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("startDate", sd);
+								dataFormatObject3.put("endDate", ed);
+								dataFormatObject3.put("dataFormat", "急診");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+								
+							case "ip":
+//								if (selectColumn.length() > 0) {
+//									selectColumn.append(" UNION ALL ");
+//								}
+								selectColumn.append(" SELECT '"+medNameList.get(v)+"' AS PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
+								selectColumn.append(
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								
+								if(feeApplyList.size() == 1) {
+									if(feeApplyList.get(0).equals("自費")) {
+										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+									}
+									else {
+										where.append(" AND APPL_STATUS != " + APPL_STATUS_SELF_FEE + " ");
+									}
+								}
+								
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + medNameList.get(v) + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+
+								/// 傳統sql語法組成資料
+								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+								dataMap3=new ArrayList<Map<String,Object>>();
+								dataMap3 = sqlQuery.getResultList();
+								
+								dataFormatObject3=new HashMap<String, Object>();
+								dataFormatObject3.put("startDate", sd);
+								dataFormatObject3.put("endDate", ed);
+								dataFormatObject3.put("dataFormat", "住院");
+								dataFormatObject3.put("medName", medNameList.get(v));
+								dataFormatObject3.put("data", dataMap3);
+								
+								sqlMapListWithMedName.add(dataFormatObject3);
+								
+								selectColumn = new StringBuffer("");
+								entityManager.close();
+								
+								selectColumn = new StringBuffer("");
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+								
+								break;
+							
+							default:
+								break;
+							}
+						}
+					}
+					
+				}
+			}
+		}
+		
+		result.put("result", "success");
+		result.put("message", null);
+		result.put("lastDate", lastDateList);
+		result.put("dataList", sqlMapList);
+		result.put("classDataList", sqlMapListWithCodeTable);
+		result.put("medDataList", sqlMapListWithMedName);
+		
+		return result;
 	}
 
 	/**
@@ -352,7 +3424,6 @@ public class DbReportService {
 
 				}
 			}
-			System.out.println(mapList.toString());
 			List<String> sList = new ArrayList<String>();
 			for (int i = 0; i < yList.size(); i++) {
 				sList.add(yList.get(i).toString() + mList.get(i).toString());
@@ -464,6 +3535,7 @@ public class DbReportService {
 					selectColumn.append(where);
 					where = new StringBuffer("");
 				}
+				
 				if (isShowDRGList || drgCodeList.size() > 0) {
 					selectColumn.append(" UNION ALL ");
 					selectColumn.append(" SELECT '" + yearMonthBetweenStr.get(i)
@@ -1267,6 +4339,7 @@ public class DbReportService {
 		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> sqlMapList2 = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> sqlMapList2_2 = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> sqlMapList3 = new ArrayList<Map<String, Object>>();
 		/// 就醫類別
 		List<String> dataformatList = new ArrayList<String>();
 		String dateformatSql = "";
@@ -1299,8 +4372,17 @@ public class DbReportService {
 		if (medNames != null && medNames.length() > 0) {
 			String[] medNameArr = StringUtility.splitBySpace(medNames);
 			for (String str : medNameArr) {
-				medNameList.add(str);
-				medNameSql += "'" + str + "',";
+				if(funcTypes != null && funcTypes.length() > 0) {
+					String name = str.substring(str.indexOf("-") + 1, str.length());
+					medNameList.add(name);
+					medNameSql += "'" + name + "',";
+					
+				}
+				else {
+					
+					medNameList.add(str);
+					medNameSql += "'" + str + "',";
+				}
 			}
 			medNameSql = medNameSql.substring(0, medNameSql.length() - 1);
 		}
@@ -1347,7 +4429,7 @@ public class DbReportService {
 		for (int i = 0; i < mapList.size(); i++) {
 			String sd = mapList.get(i).get("sDate").toString();
 			String ed = mapList.get(i).get("eDate").toString();
-			
+
 			/// 先計算出期間內的總筆數
 			selectColumn.append(" SELECT * FROM  ");
 			for (String str : dataformatList) {
@@ -1368,13 +4450,14 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) a, ");
 					selectColumn.append(where);
-					selectColumn.append(" (SELECT IFNULL(SUM(OWN_EXPENSE),0) ALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0  ");
+					selectColumn
+							.append(" (SELECT IFNULL(SUM(OWN_EXPENSE),0) ALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0  ");
 					where = new StringBuffer("");
 					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
@@ -1390,10 +4473,10 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) b, ");
 					selectColumn.append(where);
 					where = new StringBuffer("");
@@ -1415,10 +4498,10 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) c, ");
 					selectColumn.append(where);
 					selectColumn.append(
@@ -1438,10 +4521,10 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) d, ");
 					selectColumn.append(where);
 					where = new StringBuffer("");
@@ -1463,10 +4546,10 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) e, ");
 					selectColumn.append(where);
 					selectColumn.append(
@@ -1486,10 +4569,10 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) f, ");
 					selectColumn.append(where);
 					where = new StringBuffer("");
@@ -1511,10 +4594,10 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) g, ");
 					selectColumn.append(where);
 					selectColumn.append(
@@ -1534,10 +4617,10 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) h, ");
 					selectColumn.append(where);
 					where = new StringBuffer("");
@@ -1559,10 +4642,10 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) i, ");
 					selectColumn.append(where);
 					selectColumn.append(
@@ -1582,10 +4665,10 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					///條件最後添加別名
+					/// 條件最後添加別名
 					where.append(" ) j, ");
 					selectColumn.append(where);
 					where = new StringBuffer("");
@@ -1596,6 +4679,7 @@ public class DbReportService {
 			}
 			//// 最後添加一個無意義與句避免 “,”使sql錯誤
 			selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+			
 			/// 傳統sql語法組成資料
 			Query sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 			sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
@@ -1604,17 +4688,20 @@ public class DbReportService {
 			sqlMapList.addAll(dataMap);
 			selectColumn = new StringBuffer("");
 			entityManager.close();
-			
+
 			selectColumn = new StringBuffer("");
 			where = new StringBuffer("");
-			
-			///第二段sql
+
+			/// 第二段sql
 			for (String str : dataformatList) {
 				switch (str) {
 				case "all":
-					if(selectColumn.length() > 0) {selectColumn.append(" UNION ALL ");}
+					if (selectColumn.length() > 0) {
+						selectColumn.append(" UNION ALL ");
+					}
 					selectColumn.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-					selectColumn.append(" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+					selectColumn.append(
+							" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -1629,25 +4716,27 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					
+
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					///
-					
-					if(isShowOwnExpense) {
+
+					if (isShowOwnExpense) {
 						selectColumn.append(" UNION ALL ");
-						selectColumn.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						}
-						else {
-							selectColumn.append(" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+						selectColumn
+								.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+							selectColumn.append(
+									" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+						} else {
+							selectColumn.append(
+									" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 						}
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
@@ -1663,30 +4752,31 @@ public class DbReportService {
 
 						if (payCode != null && payCode.length() > 0)
 							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-						
+
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
 							groupBy.append(" GROUP BY IP_P.ORDER_CODE , CODE_TABLE.DESC_CHI ) ");
-						}
-						else {
+						} else {
 							groupBy.append(" GROUP BY IP_P.ORDER_CODE) ");
 						}
-						
+
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
-						
+
 						where = new StringBuffer("");
 						groupBy = new StringBuffer("");
 						selectColumn.append(" UNION ALL ");
-						selectColumn.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+						selectColumn
+								.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+							selectColumn.append(
+									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+						} else {
+							selectColumn.append(
+									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 						}
-						else {
-							selectColumn.append(" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						}
-						
+
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
 							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -1701,27 +4791,28 @@ public class DbReportService {
 
 						if (payCode != null && payCode.length() > 0)
 							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-						
+
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
 							groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-						}
-						else {
+						} else {
 							groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
 						}
-						
+
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
 						selectColumn.append(orderBy);
 						where = new StringBuffer("");
 						groupBy = new StringBuffer("");
 						orderBy = new StringBuffer("");
-						
+
 					}
 					break;
 				case "totalop":
-					if(selectColumn.length() > 0) {selectColumn.append(" UNION ALL ");}
+					if (selectColumn.length() > 0) {
+						selectColumn.append(" UNION ALL ");
+					}
 					selectColumn.append(" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 					selectColumn.append(
 							" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
@@ -1739,7 +4830,7 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
@@ -1749,16 +4840,18 @@ public class DbReportService {
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					///
-					if(isShowOwnExpense) {
+					if (isShowOwnExpense) {
 						selectColumn.append(" UNION ALL ");
-						selectColumn.append(" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+						selectColumn
+								.append(" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+							selectColumn.append(
+									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+						} else {
+							selectColumn.append(
+									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
 						}
-						else {
-							selectColumn.append(" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
-						}
-						
+
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
 							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -1773,16 +4866,15 @@ public class DbReportService {
 
 						if (payCode != null && payCode.length() > 0)
 							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-						
+
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
 							groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-						}
-						else {
+						} else {
 							groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
 						}
-						
+
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
 						selectColumn.append(orderBy);
@@ -1792,7 +4884,9 @@ public class DbReportService {
 					}
 					break;
 				case "op":
-					if(selectColumn.length() > 0) {selectColumn.append(" UNION ALL ");}
+					if (selectColumn.length() > 0) {
+						selectColumn.append(" UNION ALL ");
+					}
 					selectColumn.append(" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 					selectColumn.append(
 							" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
@@ -1810,7 +4904,7 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
@@ -1820,16 +4914,18 @@ public class DbReportService {
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					///
-					if(isShowOwnExpense) {
+					if (isShowOwnExpense) {
 						selectColumn.append(" UNION ALL ");
-						selectColumn.append(" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE <> '22' ");
+						selectColumn
+								.append(" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+							selectColumn.append(
+									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE <> '22' ");
+						} else {
+							selectColumn.append(
+									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
 						}
-						else {
-							selectColumn.append(" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
-						}
-						
+
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
 							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -1844,16 +4940,15 @@ public class DbReportService {
 
 						if (payCode != null && payCode.length() > 0)
 							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-						
+
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
 							groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-						}
-						else {
+						} else {
 							groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
 						}
-						
+
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
 						selectColumn.append(orderBy);
@@ -1863,7 +4958,9 @@ public class DbReportService {
 					}
 					break;
 				case "em":
-					if(selectColumn.length() > 0) {selectColumn.append(" UNION ALL ");}
+					if (selectColumn.length() > 0) {
+						selectColumn.append(" UNION ALL ");
+					}
 					selectColumn.append(" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 					selectColumn.append(
 							" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
@@ -1881,7 +4978,7 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
@@ -1891,15 +4988,17 @@ public class DbReportService {
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					///
-					if(isShowOwnExpense) {
+					if (isShowOwnExpense) {
 						selectColumn.append(" UNION ALL ");
-						selectColumn.append(" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
-						}
-						else {
-							
-							selectColumn.append(" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
+						selectColumn
+								.append(" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+							selectColumn.append(
+									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
+						} else {
+
+							selectColumn.append(
+									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
 						}
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
@@ -1915,13 +5014,12 @@ public class DbReportService {
 
 						if (payCode != null && payCode.length() > 0)
 							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-						
+
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
 							groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-						}
-						else {
+						} else {
 							groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
 						}
 						selectColumn.append(where);
@@ -1933,7 +5031,9 @@ public class DbReportService {
 					}
 					break;
 				case "ip":
-					if(selectColumn.length() > 0) {selectColumn.append(" UNION ALL ");}
+					if (selectColumn.length() > 0) {
+						selectColumn.append(" UNION ALL ");
+					}
 					selectColumn.append(" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 					selectColumn.append(
 							" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
@@ -1951,7 +5051,7 @@ public class DbReportService {
 
 					if (payCode != null && payCode.length() > 0)
 						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					
+
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
@@ -1961,15 +5061,17 @@ public class DbReportService {
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					///
-					if(isShowOwnExpense) {
+					if (isShowOwnExpense) {
 						selectColumn.append(" UNION ALL ");
-						selectColumn.append(" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						}
-						else {
-							
-							selectColumn.append(" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+						selectColumn
+								.append(" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+							selectColumn.append(
+									" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+						} else {
+
+							selectColumn.append(
+									" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 						}
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
@@ -1985,13 +5087,12 @@ public class DbReportService {
 
 						if (payCode != null && payCode.length() > 0)
 							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-						
+
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if(funcTypeList.size() > 0 && medNameList.size() > 0) {
+						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
 							groupBy.append(" GROUP BY IP_P.ORDER_CODE , CODE_TABLE.DESC_CHI ) ");
-						}
-						else {
+						} else {
 							groupBy.append(" GROUP BY IP_P.ORDER_CODE) ");
 						}
 						selectColumn.append(where);
@@ -2006,36 +5107,474 @@ public class DbReportService {
 					break;
 				}
 			}
+			
 			/// 傳統sql語法組成資料
 			sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 			sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
 			dataMap.clear();
 			dataMap = sqlQuery.getResultList();
-			if(i > 0) {
-				///存放去年資料
+			if (i > 0) {
+				/// 存放去年資料
 				sqlMapList2_2.addAll(dataMap);
-			}
-			else {
-				///存放指定期間資料
+			} else {
+				/// 存放指定期間資料
 				sqlMapList2.addAll(dataMap);
 			}
 			selectColumn = new StringBuffer("");
 			entityManager.close();
+			
+			selectColumn = new StringBuffer("");
+			where = new StringBuffer("");
+			groupBy = new StringBuffer("");
+			orderBy = new StringBuffer("");
+			///第三段sql，獨立取得醫護人員資料
+			if(medNames != null && medNames.length() > 0) {
+				String[] nameSplit = StringUtility.splitBySpace(medNames);
+				for(int v=0; v < nameSplit.length; v++) {
+					for (String str : dataformatList) {
+						switch (str) {
+						case "all":
+							if (selectColumn.length() > 0) {
+								selectColumn.append(" UNION ALL ");
+							}
+							selectColumn.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID,  '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+							selectColumn.append(
+									" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
-		    
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							///
+
+							if (isShowOwnExpense) {
+								selectColumn.append(" UNION ALL ");
+								selectColumn
+										.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									selectColumn.append(
+											" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+								} else {
+									selectColumn.append(
+											" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+								}
+								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									groupBy.append(" GROUP BY IP_P.ORDER_CODE , CODE_TABLE.DESC_CHI ) ");
+								} else {
+									groupBy.append(" GROUP BY IP_P.ORDER_CODE) ");
+								}
+
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								selectColumn.append(" UNION ALL ");
+								selectColumn
+										.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									selectColumn.append(
+											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+								} else {
+									selectColumn.append(
+											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+								}
+
+								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
+								} else {
+									groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
+								}
+
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+								selectColumn.append(orderBy);
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+
+							}
+							break;
+						case "totalop":
+							if (selectColumn.length() > 0) {
+								selectColumn.append(" UNION ALL ");
+							}
+							selectColumn.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+							selectColumn.append(
+									" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							///
+							if (isShowOwnExpense) {
+								selectColumn.append(" UNION ALL ");
+								selectColumn
+										.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									selectColumn.append(
+											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+								} else {
+									selectColumn.append(
+											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+								}
+
+								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
+								} else {
+									groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
+								}
+
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+								selectColumn.append(orderBy);
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+							}
+							break;
+						case "op":
+							if (selectColumn.length() > 0) {
+								selectColumn.append(" UNION ALL ");
+							}
+							selectColumn.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+							selectColumn.append(
+									" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							///
+							if (isShowOwnExpense) {
+								selectColumn.append(" UNION ALL ");
+								selectColumn
+										.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									selectColumn.append(
+											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE <> '22' ");
+								} else {
+									selectColumn.append(
+											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
+								}
+
+								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
+								} else {
+									groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
+								}
+
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+								selectColumn.append(orderBy);
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+							}
+							break;
+						case "em":
+							if (selectColumn.length() > 0) {
+								selectColumn.append(" UNION ALL ");
+							}
+							selectColumn.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+							selectColumn.append(
+									" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							///
+							if (isShowOwnExpense) {
+								selectColumn.append(" UNION ALL ");
+								selectColumn
+										.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									selectColumn.append(
+											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
+								} else {
+
+									selectColumn.append(
+											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
+								}
+								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
+								} else {
+									groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
+								}
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+								selectColumn.append(orderBy);
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+							}
+							break;
+						case "ip":
+							if (selectColumn.length() > 0) {
+								selectColumn.append(" UNION ALL ");
+							}
+							selectColumn.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+							selectColumn.append(
+									" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							///
+							if (isShowOwnExpense) {
+								selectColumn.append(" UNION ALL ");
+								selectColumn
+										.append(" SELECT '"+nameSplit[v]+"' AS PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									selectColumn.append(
+											" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+								} else {
+
+									selectColumn.append(
+											" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+								}
+								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								if (funcTypeList.size() > 0)
+									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+								if (medNameList.size() > 0)
+									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+
+								if (icdAllList.size() > 0)
+									for (String s : icdAllList) {
+										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+									}
+
+								if (payCode != null && payCode.length() > 0)
+									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+								if (inhCode != null && inhCode.length() > 0)
+									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
+									groupBy.append(" GROUP BY IP_P.ORDER_CODE , CODE_TABLE.DESC_CHI ) ");
+								} else {
+									groupBy.append(" GROUP BY IP_P.ORDER_CODE) ");
+								}
+								selectColumn.append(where);
+								selectColumn.append(groupBy);
+								selectColumn.append(orderBy);
+								where = new StringBuffer("");
+								groupBy = new StringBuffer("");
+								orderBy = new StringBuffer("");
+							}
+							break;
+						default:
+							break;
+						}
+					}
+				}
+				/// 傳統sql語法組成資料
+				sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+				sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+				dataMap.clear();
+				dataMap = sqlQuery.getResultList();
+				if (i > 0) {
+					/// 存放去年資料
+					sqlMapList2_2.addAll(dataMap);
+				} else {
+					/// 存放指定期間資料
+					sqlMapList2.addAll(dataMap);
+				}
+				selectColumn = new StringBuffer("");
+				entityManager.close();
+			}
+			
+
 		}
 		if (sqlMapList.size() > 1) {
 			sqlMapList.get(0).put("displayName", "");
 			sqlMapList.get(1).put("displayName", "去年同期時段相比");
 		}
-		System.out.println("sqlMapList2.size -> " + sqlMapList2.size());
 		
-		List<OwnExpenseQueryCondition> modelList = mapToObj(sqlMapList, sqlMapList2,sqlMapList2_2);
-	
+
+		List<OwnExpenseQueryCondition> modelList = mapToObj(sqlMapList, sqlMapList2, sqlMapList2_2, isShowOwnExpense, funcTypes, medNames);
+
 		result.put("result", "success");
 		result.put("message", null);
 		result.put("dataList", modelList);
-		
 
 		return result;
 	}
@@ -2113,8 +5652,16 @@ public class DbReportService {
 
 	}
 
-	///自費sqlMap轉物件
-	private List<OwnExpenseQueryCondition> mapToObj(List<Map<String,Object>> sqlList,List<Map<String,Object>> sqlList2,List<Map<String,Object>> sqlList2_2) {
+	/**
+	 * 自費sqlMap轉物件
+	 * 
+	 * @param sqlList[總案件數＆總金額]
+	 * @param sqlList2[detail資料]
+	 * @param sqlList2_2[去年detail資料]
+	 * @return
+	 */
+	private List<OwnExpenseQueryCondition> mapToObj(List<Map<String, Object>> sqlList,
+			List<Map<String, Object>> sqlList2, List<Map<String, Object>> sqlList2_2, boolean isShowOwnExpense, String funcTypes, String medNames) {
 		OwnExpenseQueryCondition model = new OwnExpenseQueryCondition();
 		OwnExpenseQueryConditionDetail detail = new OwnExpenseQueryConditionDetail();
 		List<OwnExpenseQueryCondition> modelList = new ArrayList<OwnExpenseQueryCondition>();
@@ -2123,231 +5670,142 @@ public class DbReportService {
 		List<OwnExpenseQueryConditionDetail> opList = new ArrayList<OwnExpenseQueryConditionDetail>();
 		List<OwnExpenseQueryConditionDetail> emList = new ArrayList<OwnExpenseQueryConditionDetail>();
 		List<OwnExpenseQueryConditionDetail> ipList = new ArrayList<OwnExpenseQueryConditionDetail>();
-		
-		for(Map<String,Object> map : sqlList) {
-			Object aq =  map.get("ALL_QUANTITY");
-			Object ae =  map.get("ALL_EXPENSE");
-			Object opaq =  map.get("OPALL_QUANTITY");
-			Object opae =  map.get("OPALL_EXPENSE");
-			Object oq =  map.get("OP_QUANTITY");
-			Object oe =  map.get("OP_EXPENSE");
-			Object eq =  map.get("EM_QUANTITY");
-			Object ee =  map.get("EM_EXPENSE");
-			Object iq =  map.get("IP_QUANTITY");
-			Object ie =  map.get("IP_EXPENSE");
+
+		for (Map<String, Object> map : sqlList) {
+			Object aq = map.get("ALL_QUANTITY");
+			Object ae = map.get("ALL_EXPENSE");
+			Object opaq = map.get("OPALL_QUANTITY");
+			Object opae = map.get("OPALL_EXPENSE");
+			Object oq = map.get("OP_QUANTITY");
+			Object oe = map.get("OP_EXPENSE");
+			Object eq = map.get("EM_QUANTITY");
+			Object ee = map.get("EM_EXPENSE");
+			Object iq = map.get("IP_QUANTITY");
+			Object ie = map.get("IP_EXPENSE");
 			Object disName = map.get("displayName");
-			
-			if(aq != null) {
+
+			if (aq != null) {
 				model.setAllQuantity(Long.parseLong(aq.toString()));
 				model.setAllExpense(Long.parseLong(ae.toString()));
 			}
-			if(opaq != null) {
+			if (opaq != null) {
 				model.setOpAllQuantity(Long.parseLong(opaq.toString()));
 				model.setOpAllExpense(Long.parseLong(opae.toString()));
 			}
-			if(oq != null) {
+			if (oq != null) {
 				model.setOpQuantity(Long.parseLong(oq.toString()));
 				model.setOpExpense(Long.parseLong(oe.toString()));
 			}
-			if(eq != null) {
+			if (eq != null) {
 				model.setEmQuantity(Long.parseLong(eq.toString()));
 				model.setEmExpense(Long.parseLong(ee.toString()));
 			}
-			if(iq != null) {
+			if (iq != null) {
 				model.setIpQuantity(Long.parseLong(iq.toString()));
 				model.setIpExpense(Long.parseLong(ie.toString()));
 			}
-			if(disName != null) {
-				
+			if (disName != null) {
+
 				model.setDisplayName(disName.toString());
-				
-				if(disName.toString().length() == 0) {
-					
-					for(Map<String,Object> m2 : sqlList2) {
+
+				if (disName.toString().length() == 0) {
+
+					for (Map<String, Object> m2 : sqlList2) {
 						Object df = m2.get("DATA_FORMAT");
 						Object ft = m2.get("FUNC_TYPE");
 						Object dc = m2.get("DESC_CHI");
 						Object q = m2.get("QUANTITY");
 						Object e = m2.get("EXPENSE");
-						switch(df.toString()) {
+						Object pi = m2.get("PRSN_ID");
+						detail.setDataFormat(df.toString());
+						if (dc != null) {
+							detail.setDescChi(dc.toString());
+						}
+						if (ft != null) {
+							detail.setFuncType(ft.toString());
+						}
+						if (q != null) {
+							detail.setQuantity(Long.parseLong(q.toString()));
+						}
+						if (e != null) {
+							detail.setExpense(Long.parseLong(e.toString()));
+						}
+						if(pi != null) {
+							detail.setPrsnId(pi.toString());
+						}
+						switch (df.toString()) {
 						case "不分區":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
 							allList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						case "門急診":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
+
 							opAllList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						case "門診":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
+
 							opList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						case "急診":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
+
 							emList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						case "住院":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
+
 							ipList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						}
 					}
-				}
-				else {
-					for(Map<String,Object> m2 : sqlList2_2) {
+				} else {
+					for (Map<String, Object> m2 : sqlList2_2) {
 						Object df = m2.get("DATA_FORMAT");
 						Object ft = m2.get("FUNC_TYPE");
 						Object dc = m2.get("DESC_CHI");
 						Object q = m2.get("QUANTITY");
 						Object e = m2.get("EXPENSE");
-						switch(df.toString()) {
+						Object pi = m2.get("PRSN_ID");
+						detail.setDataFormat(df.toString());
+						if (dc != null) {
+							detail.setDescChi(dc.toString());
+						}
+						if (ft != null) {
+							detail.setFuncType(ft.toString());
+						}
+						if (q != null) {
+							detail.setQuantity(Long.parseLong(q.toString()));
+						}
+						if (e != null) {
+							detail.setExpense(Long.parseLong(e.toString()));
+						}
+						if(pi != null) {
+							detail.setPrsnId(pi.toString());
+						}
+						switch (df.toString()) {
 						case "不分區":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
 							allList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						case "門急診":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
+
 							opAllList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						case "門診":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
+
 							opList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						case "急診":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
+
 							emList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						case "住院":
-							detail.setDataFormat(df.toString());
-							if(dc != null) {
-								detail.setDescChi(dc.toString());
-							}
-							if(ft != null) {
-								detail.setFuncType(ft.toString());
-							}
-							if(q != null) {
-								detail.setQuantity(Long.parseLong(q.toString()));
-							}
-							if(e != null) {
-								detail.setExpense(Long.parseLong(e.toString()));
-							}
+
 							ipList.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
@@ -2355,121 +5813,410 @@ public class DbReportService {
 					}
 
 				}
-			}
-			else {
-				for(Map<String,Object> m2 : sqlList2) {
+			} else {
+				for (Map<String, Object> m2 : sqlList2) {
 					Object df = m2.get("DATA_FORMAT");
 					Object ft = m2.get("FUNC_TYPE");
 					Object dc = m2.get("DESC_CHI");
 					Object q = m2.get("QUANTITY");
 					Object e = m2.get("EXPENSE");
-					switch(df.toString()) {
+					Object pi = m2.get("PRSN_ID");
+					detail.setDataFormat(df.toString());
+					if (dc != null) {
+						detail.setDescChi(dc.toString());
+					}
+					if (ft != null) {
+						detail.setFuncType(ft.toString());
+					}
+					if (q != null) {
+						detail.setQuantity(Long.parseLong(q.toString()));
+					}
+					if (e != null) {
+						detail.setExpense(Long.parseLong(e.toString()));
+					}
+					if(pi != null) {
+						detail.setPrsnId(pi.toString());
+					}
+					switch (df.toString()) {
 					case "不分區":
-						detail.setDataFormat(df.toString());
-						if(dc != null) {
-							detail.setDescChi(dc.toString());
-						}
-						if(ft != null) {
-							detail.setFuncType(ft.toString());
-						}
-						if(q != null) {
-							detail.setQuantity(Long.parseLong(q.toString()));
-						}
-						if(e != null) {
-							detail.setExpense(Long.parseLong(e.toString()));
-						}
 						allList.add(detail);
 						detail = new OwnExpenseQueryConditionDetail();
 						break;
 					case "門急診":
-						detail.setDataFormat(df.toString());
-						if(dc != null) {
-							detail.setDescChi(dc.toString());
-						}
-						if(ft != null) {
-							detail.setFuncType(ft.toString());
-						}
-						if(q != null) {
-							detail.setQuantity(Long.parseLong(q.toString()));
-						}
-						if(e != null) {
-							detail.setExpense(Long.parseLong(e.toString()));
-						}
+
 						opAllList.add(detail);
 						detail = new OwnExpenseQueryConditionDetail();
 						break;
 					case "門診":
-						detail.setDataFormat(df.toString());
-						if(dc != null) {
-							detail.setDescChi(dc.toString());
-						}
-						if(ft != null) {
-							detail.setFuncType(ft.toString());
-						}
-						if(q != null) {
-							detail.setQuantity(Long.parseLong(q.toString()));
-						}
-						if(e != null) {
-							detail.setExpense(Long.parseLong(e.toString()));
-						}
+
 						opList.add(detail);
 						detail = new OwnExpenseQueryConditionDetail();
 						break;
 					case "急診":
-						detail.setDataFormat(df.toString());
-						if(dc != null) {
-							detail.setDescChi(dc.toString());
-						}
-						if(ft != null) {
-							detail.setFuncType(ft.toString());
-						}
-						if(q != null) {
-							detail.setQuantity(Long.parseLong(q.toString()));
-						}
-						if(e != null) {
-							detail.setExpense(Long.parseLong(e.toString()));
-						}
+
 						emList.add(detail);
 						detail = new OwnExpenseQueryConditionDetail();
 						break;
 					case "住院":
-						detail.setDataFormat(df.toString());
-						if(dc != null) {
-							detail.setDescChi(dc.toString());
-						}
-						if(ft != null) {
-							detail.setFuncType(ft.toString());
-						}
-						if(q != null) {
-							detail.setQuantity(Long.parseLong(q.toString()));
-						}
-						if(e != null) {
-							detail.setExpense(Long.parseLong(e.toString()));
-						}
+
 						ipList.add(detail);
 						detail = new OwnExpenseQueryConditionDetail();
 						break;
 					}
 				}
 			}
-			
+
 			model.setAllList(allList);
-			model.setOpAllList(opAllList);		
+			model.setOpAllList(opAllList);
 			model.setOpList(opList);
 			model.setEmList(emList);
 			model.setIpList(ipList);
 			modelList.add(model);
-		    model = new OwnExpenseQueryCondition(); 
-		    allList = new ArrayList<OwnExpenseQueryConditionDetail>();
-		    opAllList = new ArrayList<OwnExpenseQueryConditionDetail>();
-		    opList = new ArrayList<OwnExpenseQueryConditionDetail>();
-		    emList = new ArrayList<OwnExpenseQueryConditionDetail>();
-		    ipList = new ArrayList<OwnExpenseQueryConditionDetail>();
-		    
-		
+			model = new OwnExpenseQueryCondition();
+			allList = new ArrayList<OwnExpenseQueryConditionDetail>();
+			opAllList = new ArrayList<OwnExpenseQueryConditionDetail>();
+			opList = new ArrayList<OwnExpenseQueryConditionDetail>();
+			emList = new ArrayList<OwnExpenseQueryConditionDetail>();
+			ipList = new ArrayList<OwnExpenseQueryConditionDetail>();
 		}
-		
+
+		/// 將指定區間與去年資料筆數同步
+		if (modelList.size() > 1) {
+			List<OwnExpenseQueryConditionDetail> all = modelList.get(0).getAllList();
+			List<OwnExpenseQueryConditionDetail> allLast = modelList.get(1).getAllList();
+			List<OwnExpenseQueryConditionDetail> opAll = modelList.get(0).getOpAllList();
+			List<OwnExpenseQueryConditionDetail> opAllLast = modelList.get(1).getOpAllList();
+			List<OwnExpenseQueryConditionDetail> op = modelList.get(0).getOpList();
+			List<OwnExpenseQueryConditionDetail> opLast = modelList.get(1).getOpList();
+			List<OwnExpenseQueryConditionDetail> em = modelList.get(0).getEmList();
+			List<OwnExpenseQueryConditionDetail> emLast = modelList.get(1).getEmList();
+			List<OwnExpenseQueryConditionDetail> ip = modelList.get(0).getIpList();
+			List<OwnExpenseQueryConditionDetail> ipLast = modelList.get(1).getIpList();
+			detail = new OwnExpenseQueryConditionDetail();
+			boolean isSame = false;
+			try {
+				/// 不分科
+				if (all.size() > 0) {
+					/// 將區間和去年比數作同步，方便取資料
+					for (OwnExpenseQueryConditionDetail allModel : all) {
+						String ft = allModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allLastModel : allLast) {
+							String ftl = allLastModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allModel.getDataFormat());
+							detail.setDescChi(allModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allModel.getPrsnId());
+							allLast.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+
+					isSame = false;
+					for (OwnExpenseQueryConditionDetail allLastModel : allLast) {
+						String ftl = allLastModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allModel : all) {
+							String ft = allModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allLastModel.getDataFormat());
+							detail.setDescChi(allLastModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allLastModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allLastModel.getPrsnId());
+							all.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+					Collections.sort(allLast, mapComparatorFT);
+					Collections.sort(all, mapComparatorFT);
+
+				}
+				/// 門急診
+				if (opAll.size() > 0) {
+					/// 將區間和去年比數作同步，方便取資料
+					for (OwnExpenseQueryConditionDetail allModel : opAll) {
+						String ft = allModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allLastModel : opAllLast) {
+							String ftl = allLastModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allModel.getDataFormat());
+							detail.setDescChi(allModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allModel.getPrsnId());
+							opAllLast.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+
+					isSame = false;
+					for (OwnExpenseQueryConditionDetail allLastModel : opAllLast) {
+						String ftl = allLastModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allModel : opAll) {
+							String ft = allModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allLastModel.getDataFormat());
+							detail.setDescChi(allLastModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allLastModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allLastModel.getPrsnId());
+							opAll.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+					Collections.sort(opAll, mapComparatorFT);
+					Collections.sort(opAllLast, mapComparatorFT);
+
+				}
+				/// 門診
+				if (op.size() > 0) {
+					/// 將區間和去年比數作同步，方便取資料
+					for (OwnExpenseQueryConditionDetail allModel : op) {
+						String ft = allModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allLastModel : opLast) {
+							String ftl = allLastModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allModel.getDataFormat());
+							detail.setDescChi(allModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allModel.getPrsnId());
+							opLast.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+
+					isSame = false;
+					for (OwnExpenseQueryConditionDetail allLastModel : opLast) {
+						String ftl = allLastModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allModel : op) {
+							String ft = allModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allLastModel.getDataFormat());
+							detail.setDescChi(allLastModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allLastModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allLastModel.getPrsnId());
+							op.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+					Collections.sort(op, mapComparatorFT);
+					Collections.sort(opLast, mapComparatorFT);
+
+				}
+				/// 急診
+				if (em.size() > 0) {
+					/// 將區間和去年比數作同步，方便取資料
+					for (OwnExpenseQueryConditionDetail allModel : em) {
+						String ft = allModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allLastModel : emLast) {
+							String ftl = allLastModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allModel.getDataFormat());
+							detail.setDescChi(allModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allModel.getPrsnId());
+							emLast.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+
+					isSame = false;
+					for (OwnExpenseQueryConditionDetail allLastModel : emLast) {
+						String ftl = allLastModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allModel : em) {
+							String ft = allModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allLastModel.getDataFormat());
+							detail.setDescChi(allLastModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allLastModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allLastModel.getPrsnId());
+							em.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+					Collections.sort(em, mapComparatorFT);
+					Collections.sort(emLast, mapComparatorFT);
+
+				}
+				/// 住院
+				if (ip.size() > 0) {
+					/// 將區間和去年比數作同步，方便取資料
+					for (OwnExpenseQueryConditionDetail allModel : ip) {
+						String ft = allModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allLastModel : ipLast) {
+							String ftl = allLastModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allModel.getDataFormat());
+							detail.setDescChi(allModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allModel.getPrsnId());
+							ipLast.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+
+					isSame = false;
+					for (OwnExpenseQueryConditionDetail allLastModel : ipLast) {
+						String ftl = allLastModel.getFuncType();
+						for (OwnExpenseQueryConditionDetail allModel : ip) {
+							String ft = allModel.getFuncType();
+							if (ft.equals(ftl)) {
+								isSame = true;
+								break;
+							}
+						}
+						if (!isSame) {
+
+							detail.setDataFormat(allLastModel.getDataFormat());
+							detail.setDescChi(allLastModel.getDescChi());
+							detail.setExpense(0L);
+							detail.setFuncType(allLastModel.getFuncType());
+							detail.setQuantity(0L);
+							detail.setPrsnId(allLastModel.getPrsnId());
+							ip.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+						}
+						isSame = false;
+					}
+					Collections.sort(ip, mapComparatorFT);
+					Collections.sort(ipLast, mapComparatorFT);
+
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		}
+
 		return modelList;
 	}
 
+	public Comparator<OwnExpenseQueryConditionDetail> mapComparatorFT = new Comparator<OwnExpenseQueryConditionDetail>() {
+		public int compare(OwnExpenseQueryConditionDetail m1, OwnExpenseQueryConditionDetail m2) {
+			return m1.getFuncType().compareTo(m2.getFuncType());
+		}
+	};
+	
+	public List<Map<String, Object>> initList(List<Map<String, Object>> data,String str){
+		
+		List<Map<String, Object>> result=new ArrayList<Map<String,Object>>();
+		
+		for(int i=0;i<codeTableList.size();i++) {
+			Map<String, Object> map= new HashMap<String, Object>();
+			map.put("EXPENSE", 0);
+			map.put("DOT", 0);
+			map.put("FUNC_TYPE",codeTableList.get(i).getCode());
+			map.put("DESC_CHI",codeTableList.get(i).getDescChi());
+			map.put("DATA_FORMAT",str);
+			map.put("QUANTITY",0);
+			
+			result.add(map);
+		}
+		
+		for(int i=0;i<result.size();i++) {
+			String func=(String) result.get(i).get("FUNC_TYPE");
+			String chi=(String) result.get(i).get("DESC_CHI");
+			
+			for(int j=0;j<data.size();j++) {
+				String func2=(String) data.get(j).get("FUNC_TYPE");
+				String chi2=(String) data.get(j).get("DESC_CHI");
+				
+				if(func.equals(func2) && chi.equals(chi2)) {
+					Integer exp=Integer.valueOf(data.get(j).get("EXPENSE").toString());
+					Integer dot=Integer.valueOf(data.get(j).get("DOT").toString());
+					Integer qua=Integer.valueOf(data.get(j).get("QUANTITY").toString());
+					
+					Map<String, Object> map= new HashMap<String, Object>();
+					map.put("EXPENSE", exp);
+					map.put("DOT", dot);
+					map.put("FUNC_TYPE",func);
+					map.put("DESC_CHI",chi);
+					map.put("DATA_FORMAT",str);
+					map.put("QUANTITY",qua);
+					
+					result.set(i, map);
+				}
+			}
+		}
+		
+		return result;
+	}
 }

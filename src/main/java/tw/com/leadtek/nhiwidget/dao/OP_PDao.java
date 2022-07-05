@@ -42,6 +42,14 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
   public List<Object[]> findPointGroupByPayCodeType(Date startDate, Date endDate);
   
   /**
+   * 門診各醫令類別點數列表
+   * @return [醫令代碼, 加總點數, 件數]
+   */
+  @Query(value = "SELECT OP_P.PAY_CODE_TYPE, SUM(TOTAL_DOT), COUNT(MR.ID) FROM MR, OP_P " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND OP_P.MR_ID = MR.ID AND TOTAL_DOT > 0 AND MR.FUNC_TYPE = ?3 GROUP BY OP_P.PAY_CODE_TYPE", nativeQuery = true)
+  public List<Object[]> findPointAndFuncTypeGroupByPayCodeType(Date startDate, Date endDate, String funcType);
+  
+  /**
    * 門診各醫令類別自費點數
    * @return [醫令代碼, 加總點數, 件數]
    */
@@ -49,6 +57,15 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
       "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND OP_P.MR_ID = MR.ID AND TOTAL_DOT > 0 "
       + "AND MR.OWN_EXPENSE > 0 GROUP BY OP_P.PAY_CODE_TYPE", nativeQuery = true)
   public List<Object[]> findOwnExpensePointGroupByPayCodeType(Date startDate, Date endDate);
+  
+  /**
+   * 門診各醫令類別自費點數
+   * @return [醫令代碼, 加總點數, 件數]
+   */
+  @Query(value = "SELECT OP_P.PAY_CODE_TYPE, SUM(OWN_EXPENSE), COUNT(1) FROM MR, OP_P " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND OP_P.MR_ID = MR.ID AND TOTAL_DOT > 0 "
+      + "AND MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = ?3 GROUP BY OP_P.PAY_CODE_TYPE", nativeQuery = true)
+  public List<Object[]> findOwnExpensePointAndFuncTypeGroupByPayCodeType(Date startDate, Date endDate,String funcType);
   
   /**
    *  取得醫令碼與支付標準代碼相同的所有醫令
