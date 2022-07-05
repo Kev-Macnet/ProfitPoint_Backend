@@ -17,7 +17,7 @@ public class PtQualityServiceService {
     @Autowired
     private PtQualityServiceDao ptQualityServiceDao;
     
-    private String Category = "品質支付服務"; 
+    public static final String Category = "品質支付服務"; 
     
     public java.util.Map<String, Object> findQualityService(long ptId) {
         java.util.Map<String, Object> retMap;

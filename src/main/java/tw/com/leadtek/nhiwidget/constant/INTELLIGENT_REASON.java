@@ -4,7 +4,7 @@
 package tw.com.leadtek.nhiwidget.constant;
 
 public enum INTELLIGENT_REASON {
-  UNKNOWN(0),
+  XML(0),             // 匯完申報檔、病歷檔後的AI條件檢查
   VIOLATE(1),         // 違反支付準則項目-支付準則條件
   RARE_ICD(2),        // 罕見ICD應用
   HIGH_RATIO(3),      // 應用比例偏高醫令

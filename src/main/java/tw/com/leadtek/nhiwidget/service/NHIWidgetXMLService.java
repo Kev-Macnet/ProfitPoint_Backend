@@ -57,6 +57,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.jsonwebtoken.Claims;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
+import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.constant.ORDER_TYPE;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
@@ -182,6 +183,9 @@ public class NHIWidgetXMLService {
   public final static String[] OWN_EXPENSE_TO_PART = new String[] {"REG1", "REGEMG"};
   
   private final int IGNORE_STATUS = 100;
+  
+  // 有新申報檔匯入後最快 3 分鐘開始跑檢查條件及報表 
+  private final int CHECK_ALL_AFTER_UPLOAD_WAIT_SECOND = 180;
 
   /**
    * 針對姓名、證號是否隱碼
@@ -7311,12 +7315,53 @@ public class NHIWidgetXMLService {
     }
   }
   
-  private void recalculateRareICD(String chineseYm) {
+  public void checkAll(long importUsedTime) {
+    boolean waitCheckAllFinished = false;
+    long extendTime = (importUsedTime < (CHECK_ALL_AFTER_UPLOAD_WAIT_SECOND * 1000))
+        ? CHECK_ALL_AFTER_UPLOAD_WAIT_SECOND * 1000
+        : importUsedTime;
+    long startRunningTime = is.getIntelligentRunningTime(INTELLIGENT_REASON.XML.value());
+    if (startRunningTime > 0) {
+      // 已經在跑所有條件檢查，就不處理
+      if (startRunningTime > System.currentTimeMillis()) {
+        // 等待執行
+        is.extendIntelligentRunning(INTELLIGENT_REASON.XML.value(), extendTime);
+        return;
+      }
+      if (startRunningTime <= System.currentTimeMillis()) {
+        // 正在執行
+        waitCheckAllFinished = true;
+      }
+    }
+    
+    final boolean waitUntilFinished = waitCheckAllFinished;
     Thread thread = new Thread(new Runnable() {
 
       @Override
       public void run() {
-        is.calculateRareICD(chineseYm);
+        boolean needWaitUntilFinished = waitUntilFinished;
+        do {
+          try {
+            Thread.sleep(5000);
+            System.out.println("wait to run checkAll");
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+          long startRunningTime = is.getIntelligentRunningTime(INTELLIGENT_REASON.XML.value());
+          if (needWaitUntilFinished) {
+            if (startRunningTime < 0) {
+              // 已完成
+              is.extendIntelligentRunning(INTELLIGENT_REASON.XML.value(), extendTime);
+              needWaitUntilFinished = false;
+            }
+          } else {
+            if (startRunningTime < System.currentTimeMillis()) {
+              // 等待時間已過，開始執行
+              break;
+            }
+          }
+        } while(true);
+        is.checkAllIntelligentCondition();
       }
     });
     thread.start();
@@ -7327,24 +7372,18 @@ public class NHIWidgetXMLService {
    * @param sheet
    */
   public void readTheseSheet(XSSFSheet sheet) {
-    String rareIcd = parameters.getOneValueByName("INTELLIGENT_CONFIG", "RARE_ICD");
-    boolean runRareICD = (rareIcd != null && "1".equals(rareIcd));
+    long startImport = System.currentTimeMillis();
     if (THESE_OPP.equals(sheet.getRow(0).getCell(0).getStringCellValue())) {
       readTheseOPP(sheet);
     } else if (THESE_OPD.equals(sheet.getRow(0).getCell(0).getStringCellValue())) {
-      String chineseYm = readTheseOPD(sheet);
-      if (runRareICD) {
-        recalculateRareICD(chineseYm); 
-      }
+      readTheseOPD(sheet);
     } else if (THESE_IPD.equals(sheet.getRow(0).getCell(0).getStringCellValue())) {
-      String chineseYm = readTheseIPD(sheet);
-      if (runRareICD) {
-        recalculateRareICD(chineseYm); 
-      }
+      readTheseIPD(sheet);
     } else if (THESE_IPP.equals(sheet.getRow(0).getCell(0).getStringCellValue())) {
       readTheseIPP(sheet);
     }
-    
+    long usedTime = System.currentTimeMillis() - startImport;
+    checkAll(usedTime); 
   }
   
   /**

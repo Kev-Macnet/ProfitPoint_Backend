@@ -16,7 +16,7 @@ public class PtBoneMarrowTransFeeService {
     @Autowired
     private PtBoneMarrowTransFeeDao ptBoneMarrowTransFeeDao;
     
-    private String Category = "輸血及骨髓移植費"; 
+    public final static String Category = "輸血及骨髓移植費"; 
     
     public java.util.Map<String, Object> findBoneMarrowTransFee(long ptId) {
         java.util.Map<String, Object> retMap;

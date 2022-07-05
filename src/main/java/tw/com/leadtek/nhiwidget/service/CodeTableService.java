@@ -166,12 +166,24 @@ public class CodeTableService {
     return ctDao.findByCatOrderByCode("INFECTIOUS");
   }
   
-  public List<String> convertFuncTypeToName(List<String> funcTypes) {
+  public List<String> convertFuncTypeToNameList(List<String> funcTypes) {
     List<String> result = new ArrayList<String>();
     for (int i = 0; i < funcTypes.size(); i++) {
       result.add(getDesc("FUNC_TYPE", funcTypes.get(i)));
     }
     return result;
+  }
+  
+  public String convertFuncTypeToName(List<String> funcTypes) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < funcTypes.size(); i++) {
+      sb.append(getDesc("FUNC_TYPE", funcTypes.get(i)));
+      sb.append("、");
+    }
+    if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '、') {
+      sb.deleteCharAt(sb.length() - 1);
+    }
+    return sb.toString();
   }
   
   public String convertFuncTypecToFuncType(String funcTypec) {

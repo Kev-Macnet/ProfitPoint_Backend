@@ -16,7 +16,7 @@ public class PtRadiationFeeService {
     @Autowired
     private PtRadiationFeeDao ptRadiationFeeDao;
     
-    private String Category = "放射線診療費"; 
+    public static final String Category = "放射線診療費"; 
     
     public java.util.Map<String, Object> findRadiationFee(long ptId) {
         java.util.Map<String, Object> retMap;

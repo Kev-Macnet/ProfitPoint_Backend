@@ -104,7 +104,7 @@ public class SystemService {
   public final static String FILE_PATH = "download";
   
   /**
-   * 
+   * 違反支付準則 
    */
   public final static String MENU_VIOLATE = "/violate";
   
@@ -179,6 +179,9 @@ public class SystemService {
 
   @Autowired
   private ParametersService parametersService;
+  
+  @Autowired
+  private IntelligentService is;
 
   public ATCListResponse getATC(String code, String note, String orderBy,
       Boolean asc, int perPage, int page) {
@@ -1425,8 +1428,28 @@ public class SystemService {
 
       @Override
       public void run() {
+        long checkAllTime = is.getIntelligentRunningTime(INTELLIGENT_REASON.XML.value());
+        if (checkAllTime > 0) {
+          if (checkAllTime > System.currentTimeMillis()) {
+            // 等待執行中，等匯完申報檔後再跑檢查智能提示條件
+            is.setIntelligentRunningTime(INTELLIGENT_REASON.XML.value(), Long.MAX_VALUE);
+          } else {
+            // 正在執行
+          }
+        }
+        long startImport = System.currentTimeMillis();
         importFile(file);
         logger.info("importFileThread " + file.getAbsolutePath() + " done");
+        long usedTime = System.currentTimeMillis() - startImport;
+        if (checkAllTime > 0) {
+          if (checkAllTime > System.currentTimeMillis()) {
+            // 等待執行中，將跑檢查智能提示條件改為10秒後，避免每5秒檢查到開始跑
+            is.setIntelligentRunningTime(INTELLIGENT_REASON.XML.value(), System.currentTimeMillis() + 10000);
+          } else {
+            // 正在執行
+          }
+        }
+        xmlService.checkAll((long) (usedTime));
       }
     });
     thread.start();
@@ -1512,6 +1535,7 @@ public class SystemService {
   }
   
   public void refreshMRFromFolder(File[] files) {
+    boolean hasNewFile = false;
     List<FILE_DOWNLOAD> oldFiles = downloadDao.findAllByUserIdOrderByUpdateAtDesc(0L);
     for (File file : files) {
       if (!file.getName().endsWith(".xlsx") || file.getName().indexOf('~') > -1) {
@@ -1552,6 +1576,7 @@ public class SystemService {
       try {
         workbook = new XSSFWorkbook(new FileInputStream(file));
         xmlService.readTheseSheet(workbook.getSheetAt(0));
+        hasNewFile = true;
       } catch (FileNotFoundException e) {
         e.printStackTrace();
       } catch (IOException e) {
@@ -1565,6 +1590,9 @@ public class SystemService {
           }
         }
       }
+    }
+    if (hasNewFile) {
+      xmlService.checkAll(0L);
     }
   }
   

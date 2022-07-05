@@ -2,7 +2,7 @@ package tw.com.leadtek.nhiwidget.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtWardFeeDao;
@@ -17,7 +17,7 @@ public class PtWardFeeService {
     @Autowired
     private PtWardFeeDao ptWardFeeDao;
     
-    private String Category = "病房費"; 
+    public final static String Category = "病房費"; 
     
     public java.util.Map<String, Object> findWardFee(long ptId) {
         java.util.Map<String, Object> retMap;
@@ -89,5 +89,32 @@ public class PtWardFeeService {
         return ret;
     }
 
-    
+    public PtWardFeePl findPtWardFeePl(long ptId) {
+      PtWardFeePl result = new PtWardFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptWardFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              result.setMin_stay_enable((Short) detail.get("min_stay_enable"));
+              result.setMin_stay((Short) detail.get("min_stay"));
+              result.setMax_stay_enable((Short) detail.get("max_stay_enable"));
+              result.setMax_stay((Short) detail.get("max_stay"));
+              result.setExclude_nhi_no_enable((Short) detail.get("exclude_nhi_no_enable"));
+              result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
+          }
+      } 
+      return result;
+  }
 }

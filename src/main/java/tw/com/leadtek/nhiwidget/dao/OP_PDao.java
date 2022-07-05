@@ -295,4 +295,29 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
     @Query(value = "SELECT DISTINCT (DRUG_NO), ORDER_TYPE FROM op_p WHERE ORDER_TYPE IS NOT NULL " + 
         "and ORDER_TYPE <> '4' and length (DRUG_NO) < 10 GROUP BY DRUG_NO , ORDER_TYPE", nativeQuery = true)
     public List<Map<String,Object>> getDrugNoAndOrderType();
+    
+    @Query(value = "SELECT MR_ID FROM OP_P WHERE ORDER_TYPE=?1 AND MR_ID IN ?2", nativeQuery = true)
+    public List<Long> getMrIdByOrderTypeAndMrId(String orderType, List<Long> mrIdList);
+    
+    /**
+     * 取得單一門診就醫紀錄應用數量,超過 max 次數的病歷id
+     * @param orderCode
+     * @param mrIdList
+     * @param max
+     * @return
+     */
+    @Query(value = "SELECT a.MR_ID FROM (" + 
+        "SELECT MR_ID, SUM(TOTAL_Q) AS total FROM op_p WHERE DRUG_NO =?1 AND mr_id IN ?2 " + 
+        "GROUP BY mr_id) A WHERE total >= ?3", nativeQuery = true)
+    public List<Object[]> getMrIdByOrderCodeCount(String orderCode, List<Long> mrIdList, int max);
+    
+    /**
+     * 取得醫令的起始與結束時間，計算該筆醫令是否符合需滿n小時或超過n小時不能使用
+     * @param orderCode
+     * @param mrIdList
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, START_TIME, END_TIME, TOTAL_Q FROM op_p "
+        + "WHERE DRUG_NO = ?1 AND MR_ID IN ?2 ORDER BY MR_ID, START_TIME", nativeQuery = true)
+    public List<Object[]> getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(String orderCode, List<Long> mrIdList);
 }

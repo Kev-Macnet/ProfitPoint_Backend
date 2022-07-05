@@ -1049,7 +1049,7 @@ public class ReportService {
 		DRGMonthlyPayload result = new DRGMonthlyPayload(pointMonthlyDao.findByYm(year * 100 + month));
 		List<String> funcTypes = getAllDRGFuncTypes(String.valueOf((year - 1911) * 100 + month));
 		funcTypes.add(0, XMLConstant.FUNC_TYPE_ALL);
-		List<String> funcTypeName = codeTableService.convertFuncTypeToName(funcTypes);
+		List<String> funcTypeName = codeTableService.convertFuncTypeToNameList(funcTypes);
 		result.setFuncTypes(funcTypeName);
 		java.sql.Date lastDay = getLastDayOfMonth(year, month);
 
@@ -1082,7 +1082,7 @@ public class ReportService {
 		DRGMonthlySectionPayload result = new DRGMonthlySectionPayload(pointMonthlyDao.findByYm(year * 100 + month));
 		List<String> funcTypes = getAllDRGFuncTypes(String.valueOf((year - 1911) * 100 + month));
 		funcTypes.add(0, XMLConstant.FUNC_TYPE_ALL);
-		List<String> funcTypeNames = codeTableService.convertFuncTypeToName(funcTypes);
+		List<String> funcTypeNames = codeTableService.convertFuncTypeToNameList(funcTypes);
 		result.setFuncTypes(funcTypeNames);
 
 		java.sql.Date lastDay = getLastDayOfMonth(year, month);

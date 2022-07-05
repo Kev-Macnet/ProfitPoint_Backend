@@ -2,7 +2,6 @@ package tw.com.leadtek.nhiwidget.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricWardFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtPsychiatricWardFeeDao;
@@ -17,7 +16,7 @@ public class PtPsychiatricWardFeeService {
     @Autowired
     private PtPsychiatricWardFeeDao ptPsychiatricWardFeeDao;
     
-    private String Category = "精神慢性病房費"; 
+    public final static String Category = "精神慢性病房費"; 
     
     public java.util.Map<String, Object> findPsychiatricWardFee(long ptId) {
         java.util.Map<String, Object> retMap;
@@ -77,5 +76,28 @@ public class PtPsychiatricWardFeeService {
         return ret;
     }
 
+    public PtPsychiatricWardFeePl findPtPsychiatricWardFeePl(long ptId) {
+      PtPsychiatricWardFeePl result = new PtPsychiatricWardFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptPsychiatricWardFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              result.setNeed_pass_review_enable((Short) detail.get("need_pass_review_enable"));
+          }
+      } 
+      return result;
+    }  
     
 }

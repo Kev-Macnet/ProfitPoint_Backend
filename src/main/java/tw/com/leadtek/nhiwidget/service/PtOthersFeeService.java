@@ -16,7 +16,7 @@ public class PtOthersFeeService {
     @Autowired
     private PtOthersFeeDao ptOthersFeeDao;
     
-    private String Category = "不分類"; 
+    public final static String Category = "不分類"; 
     
     public java.util.Map<String, Object> findOthersFee(long ptId) {
         java.util.Map<String, Object> retMap;

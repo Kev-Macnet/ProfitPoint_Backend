@@ -51,6 +51,7 @@ import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentRecord;
 import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentResponse;
 import tw.com.leadtek.nhiwidget.payload.intelligent.PilotProject;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
+import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.Utility;
 
@@ -102,9 +103,12 @@ public class IntelligentService {
 
   @Autowired
   private PlanConditionService planConditionService;
+  
+  @Autowired
+  private ViolatePaymentTermsService vpts;
 
-  // 存放目前是否有智能提示助理正在處理，避免同時跑造成server loading過高
-  private static HashMap<Integer, Boolean> runningIntelligent = new HashMap<Integer, Boolean>();
+  // 存放目前是否有智能提示助理正在處理，及開始跑的時間，避免同時跑造成server loading過高
+  private static HashMap<Integer, Long> runningIntelligent = new HashMap<Integer, Long>();
 
   @Autowired
   private EntityManager em;
@@ -702,6 +706,9 @@ public class IntelligentService {
       ig.setUpdateAt(new Date());
       if (batch != null) {
         batch.add(ig);
+        if (batch.size() % XMLConstant.BATCH == 0) {
+          saveIntelligentBatch(batch);
+        }
       } else {
         intelligentDao.save(ig);
       }
@@ -717,6 +724,9 @@ public class IntelligentService {
             intelligent.setUpdateAt(new Date());
             if (batch != null) {
               batch.add(intelligent);
+              if (batch.size() % XMLConstant.BATCH == 0) {
+                saveIntelligentBatch(batch);
+              }
             } else {
               intelligentDao.save(intelligent);
             }
@@ -1281,13 +1291,13 @@ public class IntelligentService {
     }
     if (old.getIpTimes6mStatus() != null && old.getIpTimes6mStatus().intValue() == 1) {
       String reason = (wordingHighRatio6M != null)
-          ? String.format(wordingHighRatio6M, code, old.getOpTimes6m().intValue())
+          ? String.format(wordingHighRatio6M, code, old.getIpTimes6m().intValue())
           : null;
       parametersService.deleteIntelligent(conditionCode, code, reason);
     }
     if (old.getOpTimes6mStatus() != null && old.getOpTimes6mStatus().intValue() == 1) {
       String reason = (wordingHighRatio6M != null)
-          ? String.format(wordingHighRatio6M, code, old.getIpTimes6m().intValue())
+          ? String.format(wordingHighRatio6M, code, old.getOpTimes6m().intValue())
           : null;
       parametersService.deleteIntelligent(conditionCode, code, reason);
     }
@@ -1783,15 +1793,41 @@ public class IntelligentService {
   }
 
   public synchronized boolean isIntelligentRunning(int intelligentCode) {
-    Boolean running = runningIntelligent.get(new Integer(intelligentCode));
-    if (running == null) {
+    Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
+    if (runningTime == null) {
       return false;
     }
-    return running.booleanValue();
+    return runningTime > 0;
   }
 
   public synchronized void setIntelligentRunning(int intelligentCode, boolean isRunning) {
-    runningIntelligent.put(new Integer(intelligentCode), new Boolean(isRunning));
+    if (isRunning) {
+      runningIntelligent.put(new Integer(intelligentCode), new Long(System.currentTimeMillis()));
+    } else {
+      runningIntelligent.put(new Integer(intelligentCode), new Long(-1));
+    }
+  }
+  
+  public synchronized void extendIntelligentRunning(int intelligentCode, long second) {
+    Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
+    if (runningTime == null || runningTime < 0) {
+      runningTime = System.currentTimeMillis();
+    } 
+    if (runningTime < Long.MAX_VALUE) {
+      runningIntelligent.put(new Integer(intelligentCode), new Long(runningTime + second * 1000));
+    }
+  }
+  
+  public synchronized void setIntelligentRunningTime(int intelligentCode, long time) {
+    runningIntelligent.put(new Integer(intelligentCode), time);
+  }
+  
+  public synchronized long getIntelligentRunningTime(int intelligentCode) {
+    Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
+    if (runningTime == null) {
+      runningTime = -1L;
+    }
+    return runningTime.longValue();
   }
   
   public void recalculateAICostThread() {
@@ -2243,5 +2279,31 @@ public class IntelligentService {
       }
     }
     return result;
+  }
+  
+  /**
+   * 匯完申報檔、病歷檔後，做智能提示掃描
+   */
+  public void checkAllIntelligentCondition() {
+    System.out.println("start checkAll");
+    String rareIcd = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "RARE_ICD");
+    boolean runRareICD = (rareIcd != null && "1".equals(rareIcd));
+    if (runRareICD) {
+      //calculateRareICD(chineseYm)
+    }
+    List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
+    
+   // vpts.checkFee(pt, batch);
+  }
+  
+  public void saveIntelligentBatch(List<INTELLIGENT> batch) {
+    if (batch == null) {
+      return;
+    }
+    if (batch.size() > 0) {
+      intelligentDao.saveAll(batch);
+      intelligentDao.flush();
+      batch.clear();
+    }
   }
 }

@@ -559,19 +559,19 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認
    */
-  @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') ", nativeQuery = true)
+  @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like ?3 ", nativeQuery = true)
  public List<MR> getIntelligentMR(String sDate, String eDate, String code);
   
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認，門診
    */
-   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') and data_format = '10' ", nativeQuery = true)
+   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like ?3 and data_format = '10' ", nativeQuery = true)
   public List<MR> getIntelligentMRO(String sDate, String eDate, String code);
    
    /**
     * 取得列在智能提示中的病歷，近一年違規且狀態為待確認，住院
     */
-   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') and data_format = '20' ", nativeQuery = true)
+   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like ?3 and data_format = '20' ", nativeQuery = true)
   public List<MR> getIntelligentMRH(String sDate, String eDate, String code);
   
   /**
@@ -642,8 +642,8 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    */
   @Query(value = "select distinct temp.id from "
   		+ "(select mr.* from mr, op_p "
-  		+ "where mr.id = op_p.mr_id and mr.code_all like concat('%',op_p.drug_no, '%') and mr.id in (?1))temp, pay_code "
-  		+ "where temp.code_all like concat('%',pay_code.code, '%') and pay_code.code_type = ?2 ", nativeQuery = true)
+  		+ "where mr.id = op_p.mr_id and mr.code_all like concat(concat('%',op_p.drug_no), '%') and mr.id in (?1))temp, pay_code "
+  		+ "where temp.code_all like concat(concat('%',pay_code.code), '%') and pay_code.code_type = ?2 ", nativeQuery = true)
   public List<Map<String,Object>> getIdByOPandPaycode(List<String> mrid, String codeType);
   /**
    * 住院
@@ -681,4 +681,50 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   
   @Query(value = "SELECT * FROM mr WHERE DATA_FORMAT = ?1 AND MR_END_DATE >= ?2 AND MR_END_DATE <= ?3", nativeQuery = true)
   public List<MR> getByDataFormatAndMrDateBetween(String dataFormat, java.util.Date startDate, java.util.Date endDate);
+  
+  /**
+   * 取得所有使用該醫令的病歷數
+   * @param code
+   * @return
+   */
+  @Query(value = "SELECT COUNT(1) FROM mr WHERE CODE_ALL LIKE ?1", nativeQuery = true)
+  public List<Long> getCountByCodeLike(String code);
+  
+  /**
+   * 取得指定時間內所有使用該醫令的病歷
+   * @param code
+   * @return
+   */
+  public List<MR> findByCodeAllContaining(String code);
+
+  @Query(value = "SELECT * FROM mr WHERE CODE_ALL LIKE ?1 AND MR_END_DATE >= ?2 "
+      + " AND MR_END_DATE <= ?3", nativeQuery = true)
+  public List<MR> getMRByCodeLikeAndMrEndDate(String code, java.util.Date startDate, java.util.Date endDate);
+
+  @Query(value = "SELECT * FROM mr WHERE UPDATE_AT > ?1", nativeQuery = true)
+  public List<MR> getTodayUpdatedMR(Date date);
+  
+  /**
+   * 找出在該院使用該組醫令次數超過max次的病患證號
+   * @param code
+   * @param max
+   * @return
+   */
+  @Query(value = "SELECT a.ROC_ID FROM (SELECT ROC_ID, COUNT(ROC_ID) AS total "
+      + "FROM MR WHERE CODE_ALL LIKE ?1 GROUP BY ROC_ID) A WHERE total > ?2", nativeQuery = true)
+  public List<String> getRocIdByCodeTimes(String code, int max);
+  
+  /**
+   * 取得該科含指定醫令的病歷數及該科的所有病歷數
+   * @param mrIdList
+   * @param funcType
+   * @param orderCode
+   * @return
+   */
+  @Query(value = "SELECT a.use_order_code, b.total_mr FROM " + 
+      "(SELECT count(id) AS use_order_code FROM mr WHERE id IN ?1" + 
+      "AND FUNC_TYPE = ?2 AND CODE_ALL LIKE ?3) a," + 
+      "(SELECT count(id) AS total_mr FROM mr WHERE id IN ?1" + 
+      "AND FUNC_TYPE = ?2) b", nativeQuery = true)
+  public List<Object[]> getMrCountByFuncTypeAndOrderCode(List<Long> mrIdList, String funcType, String orderCode);
 }

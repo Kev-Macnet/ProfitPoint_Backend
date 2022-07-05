@@ -16,7 +16,7 @@ public class PtPsychiatricFeeService {
     @Autowired
     private PtPsychiatricFeeDao ptPsychiatricFeeDao;
     
-    private String Category = "精神醫療治療費"; 
+    public final static String Category = "精神醫療治療費"; 
     
     public java.util.Map<String, Object> findPsychiatricFee(long ptId) {
         java.util.Map<String, Object> retMap;

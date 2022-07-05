@@ -72,6 +72,7 @@ import tw.com.leadtek.nhiwidget.payload.RareICDListResponse;
 import tw.com.leadtek.nhiwidget.payload.RareICDPayload;
 import tw.com.leadtek.nhiwidget.payload.SameATCListPayload;
 import tw.com.leadtek.nhiwidget.payload.SameATCListResponse;
+import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.Utility;
 
@@ -133,6 +134,9 @@ public class ParametersService {
   
   @Autowired
   private RedisService redisService;
+  
+  @Autowired
+  private ViolatePaymentTermsService vpts;
   
   private static HashMap<String, String> parameters;
   
@@ -204,6 +208,7 @@ public class ParametersService {
         logDataService.createDrgBatchFile(drgPath, drgEXE);
       }
     }
+    vpts.updateWordings(true);
   }
 
   public AssignedPointsListResponse getAssignedPoints(Date sdate, Date edate, String orderBy,
@@ -2091,24 +2096,37 @@ public class ParametersService {
     return result;
   }
   
+  /**
+   * 取得DB中符合 date 參數最舊/最新的時間，最舊為當月的1日，最新為
+   * @param date
+   * @param isStart
+   * @return
+   */
   public Calendar getMinMaxCalendar(Date date, boolean isStart) {
     Calendar cal = Calendar.getInstance();
     cal.setTime(date);
     cal.set(Calendar.DAY_OF_MONTH, 1);
+    if (!isStart) {
+      // 取月底
+      cal.add(Calendar.MONTH, 1);
+      cal.add(Calendar.DAY_OF_YEAR, -1);
+    }
     int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1 ;
     // 目前所有病歷最早的一筆
     String mrDate = (isStart) ? mrDao.getMinYm() : mrDao.getMaxYm();
     if (mrDate == null) {
       return null;
-    }
+    } 
     int mrDateInt = Integer.parseInt(mrDate) + 191100;
     if (isStart) {
       if (mrDateInt > adYM) {
+        // 給定date比病歷最舊日期還早，改用病歷最舊日期
         cal.set(Calendar.YEAR, mrDateInt / 100);
         cal.set(Calendar.MONTH, (mrDateInt % 100) - 1);
       }
     } else {
       if (mrDateInt < adYM) {
+        // 給定date比病歷最新日期還晚，改用病歷最新日期
         cal.set(Calendar.YEAR, mrDateInt / 100);
         cal.set(Calendar.MONTH, (mrDateInt % 100) - 1);
       }

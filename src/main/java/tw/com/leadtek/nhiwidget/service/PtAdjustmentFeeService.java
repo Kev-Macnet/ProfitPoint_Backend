@@ -17,7 +17,7 @@ public class PtAdjustmentFeeService {
     @Autowired
     private PtAdjustmentFeeDao ptAdjustmentFeeDao;
     
-    private String Category = "調劑費"; //調劑費 (Adjustment fee)
+    public final static String Category = "調劑費"; //調劑費 (Adjustment fee)
     
     public java.util.Map<String, Object> findAdjustmentFee(long ptId) {
         java.util.Map<String, Object> retMap;

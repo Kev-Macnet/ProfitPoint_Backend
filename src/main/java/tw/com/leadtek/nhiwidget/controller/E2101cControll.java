@@ -208,6 +208,7 @@ public class E2101cControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtInjectionFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -239,6 +240,7 @@ public class E2101cControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtInjectionFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -260,6 +262,7 @@ public class E2101cControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtInjectionFeeService.Category, 0, false);
             int status = ptInjectionFeeService.deleteInjectionFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
@@ -317,6 +320,7 @@ public class E2101cControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtQualityServiceService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -348,6 +352,7 @@ public class E2101cControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtQualityServiceService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -369,6 +374,7 @@ public class E2101cControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtQualityServiceService.Category, 0, false);
             int status = ptQualityServiceService.deleteQualityService(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
@@ -426,6 +432,7 @@ public class E2101cControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtInpatientCareService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -457,6 +464,7 @@ public class E2101cControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtInpatientCareService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -478,6 +486,7 @@ public class E2101cControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtInpatientCareService.Category, 0, false);
             int status = ptInpatientCareService.deleteInpatientCare(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
@@ -535,6 +544,7 @@ public class E2101cControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtRehabilitationFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
@@ -566,6 +576,7 @@ public class E2101cControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtRehabilitationFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -587,6 +598,7 @@ public class E2101cControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtRehabilitationFeeService.Category, 0, false);
             int status = ptRehabilitationFeeService.deleteRehabilitationFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);

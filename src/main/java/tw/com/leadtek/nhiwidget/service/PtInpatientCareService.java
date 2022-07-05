@@ -15,7 +15,7 @@ public class PtInpatientCareService {
     private PaymentTermsDao paymentTermsDao;
     
     
-    private String Category = "住院安寧療護"; 
+    public static final String Category = "住院安寧療護"; 
     
     public java.util.Map<String, Object> findInpatientCare(long ptId) {
         java.util.Map<String, Object> retMap;

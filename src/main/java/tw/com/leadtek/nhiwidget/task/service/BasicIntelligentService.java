@@ -75,16 +75,16 @@ public class BasicIntelligentService {
 		if(isHospital && isOutpatien) {
 			
 			/// 該支付準則區間病歷表,全部
-			mrList = mrDao.getIntelligentMR(sDateStr, eDateStr, nhi_no);
+			mrList = mrDao.getIntelligentMR(sDateStr, eDateStr,  "%," + nhi_no + ",%");
 		}
 		else if(!isOutpatien || !isHospital) {
 			if(isOutpatien) {
 				/// 該支付準則區間病歷表,門診
-				mrList = mrDao.getIntelligentMRO(sDateStr, eDateStr, nhi_no);
+				mrList = mrDao.getIntelligentMRO(sDateStr, eDateStr, "%," + nhi_no + ",%");
 			}
 			else if(isHospital) {
 				/// 該支付準則區間病歷表,住院
-				mrList = mrDao.getIntelligentMRH(sDateStr, eDateStr, nhi_no);
+				mrList = mrDao.getIntelligentMRH(sDateStr, eDateStr, "%," + nhi_no + ",%");
 			}
 		}
 		/// 存放mrID
@@ -286,8 +286,8 @@ public class BasicIntelligentService {
 						String rocid2 = map2.get("ROC_ID").toString();
 						String eDate2 = map2.get("END_TIME").toString();
 						if (rocid.equals(rocid2)) {
-							Date firstDate =  DateTool.convertChineseToYears(eDate);
-							Date secondDate =  DateTool.convertChineseToYears(eDate2);
+							Date firstDate =  DateTool.convertChineseToYears(eDate, null);
+							Date secondDate =  DateTool.convertChineseToYears(eDate2, null);
 							///日期比對相減取得相差天數
 							long diff = this.dayBetween(secondDate,firstDate);
 					
@@ -367,8 +367,8 @@ public class BasicIntelligentService {
 						String rocid2 = map2.get("ROC_ID").toString();
 						String eDate2 = map2.get("END_TIME").toString();
 						if (rocid.equals(rocid2)) {
-							Date firstDate =  DateTool.convertChineseToYears(eDate);
-							Date secondDate =  DateTool.convertChineseToYears(eDate2);
+							Date firstDate =  DateTool.convertChineseToYears(eDate, null);
+							Date secondDate =  DateTool.convertChineseToYears(eDate2, null);
 							///日期比對相減取得相差天數
 							long diff = this.dayBetween(secondDate,firstDate);
 							/// 如果小於設定數值則寫入

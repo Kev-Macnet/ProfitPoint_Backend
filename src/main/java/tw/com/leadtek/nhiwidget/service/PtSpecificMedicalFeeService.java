@@ -16,7 +16,7 @@ public class PtSpecificMedicalFeeService {
     @Autowired
     private PtSpecificMedicalFeeDao ptSpecificMedicalFeeDao;
     
-    private String Category = "特定診療檢查費"; 
+    public final static String Category = "特定診療檢查費"; 
     
     public java.util.Map<String, Object> findSpecificMedicalFee(long ptId) {
         java.util.Map<String, Object> retMap;

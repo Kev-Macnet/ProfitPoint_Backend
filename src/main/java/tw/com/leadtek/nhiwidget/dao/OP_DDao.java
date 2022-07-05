@@ -150,7 +150,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       + "(SELECT SUM(NO_APPL) AS NO_APPL_OP_ALL FROM MR, OP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND OP_D.MR_ID = MR.ID) r,"
       + "(SELECT SUM(NO_APPL) AS NO_APPL_OP FROM MR, OP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE <> '22') s,"
       + "(SELECT SUM(NO_APPL) AS NO_APPL_EM FROM MR, OP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE = '22') t,"
-      + "(SELECT SUM(NON_APPL_DOT) AS NO_APPL_IP, SUM(MED_DOT) AS MED_DOT FROM MR, IP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND IP_D.MR_ID = MR.ID) u",
+      + "(SELECT SUM(NO_APPL) AS NO_APPL_IP, SUM(MED_DOT) AS MED_DOT FROM MR, IP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND IP_D.MR_ID = MR.ID) u",
       nativeQuery = true)
   public List<Object[]> findPeriodPoint(Date sdate1, Date edate1);
   
@@ -269,7 +269,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "join op_p opp on opd.id = opp.opd_id  "
   		+ "join pt_payment_terms ppt on  opp.drug_no = ppt.nhi_no  "
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id  "
-  		+ "where pof.no_dentisit = 1   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "where pof.no_dentisit = 1   and opd.case_type in  ('11','12','13','14','16','17','19','21','22','23','24','25','28') "
   		+ "and opd.mr_id in (?1) ", nativeQuery = true)
   public List<Map<String, Object>> getValidByNoDentisit(List<String> mrId);
   
@@ -282,7 +282,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "join op_p opp on opd.id = opp.opd_id  "
   		+ "join pt_payment_terms ppt on  opp.drug_no = ppt.nhi_no  "
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
-  		+ "where pof.no_chi_medicine = 1   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "where pof.no_chi_medicine = 1   and opd.case_type in  ('11','12','13','14','16','17','19','21','22','23','24','25','28') "
 	  	+ "and opd.mr_id in (?1) ", nativeQuery = true)
 	  public List<Map<String, Object>> getValidByNoChiMedicine(List<String> mrId);
   
@@ -398,4 +398,29 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       "UNION (" + 
       "SELECT mr_id FROM IP_P WHERE INH_CODE =?1 AND TOTAL_Q > ?2 AND MR_ID IN ?3)", nativeQuery=true)
   public List<Long> getMrIdByInhCodeCount(String orderCode, int quantity, List<Long>ids);
+  
+  /**
+   * 取得符合指定 CASE_TYPE及MR_ID的MR_ID
+   * @param mrId
+   * @return
+   */
+  @Query(value = "SELECT MR_ID FROM OP_D WHERE MR_ID IN ?1 AND case_type IN ?2", nativeQuery = true)
+  public List<Long> getMrIdByCaseTypeAndByMrId(List<Long> mrId, List<String> caseType);
+  
+  /**
+   * 取得不符合指定 PART_NO及MR_ID的MR_ID，用來找出限定山地離島的病歷id
+   * @param mrId
+   * @return
+   */
+  @Query(value = "SELECT MR_ID FROM OP_D WHERE MR_ID IN ?1 AND PART_NO <> ?2", nativeQuery = true)
+  public List<Long> getMrIdByPartNoAndByMrId(List<Long> mrId, String partNo);
+
+  @Query(value = "SELECT MR_ID, FUNC_DATE, FUNC_END_DATE, ID_BIRTH_YMD, NB_BIRTHDAY FROM OP_D WHERE MR_ID IN ?1 ", nativeQuery = true)
+  public List<Object[]> getMrIdBirthdayByMrId(List<Long> mrId);
+
+  @Query(value = "SELECT PRSN_ID, COUNT(PRSN_ID) FROM OP_D WHERE MR_ID IN ?1 GROUP BY PRSN_ID", nativeQuery = true)
+  public List<Object[]> getPrsnIdCountByMrId(List<Long> mrId);
+
+  @Query(value = "SELECT PHAR_ID, COUNT(PHAR_ID) FROM OP_D WHERE MR_ID IN ?1 GROUP BY PHAR_ID", nativeQuery = true)
+  public List<Object[]> getPharIdCountByMrId(List<Long> mrId);
 }

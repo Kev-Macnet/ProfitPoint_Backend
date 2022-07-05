@@ -17,7 +17,7 @@ public class PtSurgeryFeeService {
     @Autowired
     private PtSurgeryFeeDao ptSurgeryFeeDao;
     
-    private String Category = "手術費"; 
+    public final static String Category = "手術費"; 
     
     public java.util.Map<String, Object> findSurgeryFee(long ptId) {
         java.util.Map<String, Object> retMap;
@@ -98,6 +98,41 @@ public class PtSurgeryFeeService {
         }
         return ret;
     }
-
     
+    public PtSurgeryFeePl findSurgeryFeePl(long ptId) {
+      PtSurgeryFeePl result = new PtSurgeryFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptSurgeryFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              result.setLim_age_enable(checkDBColumnType(detail.get("lim_age_enable")));
+              result.setLim_age(checkDBColumnType(detail.get("lim_age")));
+              result.setLim_division_enable(checkDBColumnType(detail.get("lim_division_enable")));
+              result.setLst_division(paymentTermsDao.filterLimDivision(ptId));
+              result.setExclude_nhi_no_enable(checkDBColumnType(detail.get("exclude_nhi_no_enable")));
+              result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
+          }
+      } 
+      return result;
+    }
+    
+    private int checkDBColumnType(Object obj) {
+      if (obj instanceof Integer) {
+        return (Integer) obj;  
+      } else {
+        return (Short) obj;
+      }
+    }
 }

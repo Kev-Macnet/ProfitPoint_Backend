@@ -1,12 +1,19 @@
 package tw.com.leadtek.nhiwidget.service;
 
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.dto.PaymentTermsPl;
 import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
+import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
+import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.task.service.PtInpatientFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
@@ -17,6 +24,8 @@ import tw.com.leadtek.tools.Utility;
 public class PaymentTermsService {
 //    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
+    protected Logger logger = LogManager.getLogger();
+  
     @Autowired
     private PaymentTermsDao paymentTermsDao;
     
@@ -27,6 +36,60 @@ public class PaymentTermsService {
     private PtInpatientFeeService ptInpatientFeeService;
     
     @Autowired
+    private PtWardFeeService ptWardFeeService;
+    
+    @Autowired
+    private PtPsychiatricWardFeeService ptPsychiatricWardFeeService;
+    
+    @Autowired
+    private PtSurgeryFeeService ptSurgeryFeeService;
+    
+    @Autowired
+    private PtTreatmentFeeService ptTreatmentFeeService;
+    
+    @Autowired 
+    private PtNutritionalFeeService ptNutritionalFeeService;
+    
+    @Autowired
+    private PtAdjustmentFeeService ptAdjustmentFeeService;
+    
+    @Autowired
+    private PtMedicineFeeService ptMedicineFeeService;
+    
+    @Autowired
+    private PtInjectionFeeService ptInjectionFeeService;
+    
+    @Autowired
+    private PtRadiationFeeService ptRadiationFeeService;
+    
+    @Autowired
+    private PtQualityServiceService ptQualityServiceService;
+    
+    @Autowired
+    private PtInpatientCareService ptInpatientCareService;
+    
+    @Autowired
+    private PtRehabilitationFeeService ptRehabilitationFeeService;
+    
+    @Autowired
+    private PtPsychiatricFeeService ptPsychiatricFeeService;
+    
+    @Autowired
+    private PtBoneMarrowTransFeeService ptBoneMarrowTransFeeService;
+    
+    @Autowired
+    private PtPlasterBandageFeeService ptPlasterBandageFeeService;
+    
+    @Autowired
+    private PtAnesthesiaFeeService ptAnesthesiaFeeService;
+    
+    @Autowired
+    private PtSpecificMedicalFeeService ptSpecificMedicalFeeService;
+    
+    @Autowired
+    private PtOthersFeeService ptOthersFeeService;
+    
+    @Autowired
     private PtOutpatientFeeServiceTask ptOutpatientFeeServiceTask;
     
     @Autowired
@@ -34,6 +97,12 @@ public class PaymentTermsService {
     
     @Autowired
     private ParametersService parametersService;
+    
+    @Autowired
+    private ViolatePaymentTermsService vpts;
+    
+    @Autowired
+    private IntelligentService is;
 
     public java.util.Map<String, Object> searchPaymentTerms(String feeNo, String nhiNo, String category, 
             java.util.Date startDate, java.util.Date endDate, int pageSize, int pageIndex,
@@ -100,32 +169,21 @@ public class PaymentTermsService {
     
     
     public int updateActive(long id, String category, int state) {
-        int result = paymentTermsDao.updatePaymentTermsActive(id, category, state);
-        if (PtOutpatientFeeService.Category.equals(category)) {
-          PtOutpatientFeePl pt = ptOutpatientFeeService.findPtOutpatientFeePl(id);
-          if (state == 0) {
-            parametersService.deleteIntelligent(INTELLIGENT_REASON.VIOLATE.value(), pt.getNhi_no(), null);
-          } else if (state == 1 && !"0".equals(parametersService.getParameter("VIOLATE"))) {
-            try {
-              ptOutpatientFeeServiceTask.vaidOutpatientFee(pt);
-            } catch (ParseException e) {
-              e.printStackTrace();
-            }
-          }
-        } else if (PtInpatientFeeService.Category.equals(category)) {
-          PtInpatientFeePl pt = ptInpatientFeeService.findPtInpatientFeePl(id);
-          if (state == 0) {
-            parametersService.deleteIntelligent(INTELLIGENT_REASON.VIOLATE.value(), pt.getNhi_no(),
-                null);
-          } else if (state == 1 && !"0".equals(parametersService.getParameter("VIOLATE"))) {
-            try {
-              ptInpatientFeeServiceTask.validInpatienFee(pt);
-            } catch (ParseException e) {
-              e.printStackTrace();
-            }
-          }
+      if (is.isIntelligentRunning(INTELLIGENT_REASON.VIOLATE.value())){
+        return -1;
+      }
+      Map<String, Object> master = paymentTermsDao.findPaymentTerms(id, category);
+      if (!master.isEmpty()) {
+        //System.out.println("updateActive id:" + id  + "(" + category + ") state=" + state + ", db:" + master.get("active"));
+        if (checkDBColumnType(master.get("active")) == state) {
+          // 狀態一樣，不異動
+          return -1;
         }
+        int result = paymentTermsDao.updatePaymentTermsActive(id, category, state);
+        updateActiveByThread(id, category, state, false);
         return result;
+      }
+      return -1;
     }
     
     private String findUserRole(String userName) {
@@ -181,5 +239,124 @@ public class PaymentTermsService {
                 idx++;
             }
         }
+    }
+    
+    /**
+     * 避免執行違反支付準則條件時間讓user等待過久，且防止user短時間內重複按多次，用thread執行
+     * @param id
+     * @param category
+     */
+    public void updateActiveByThread(long id, String category, int state, boolean useThread) {
+      PaymentTermsPl pt = findRealPaymentTerms(id, category);
+      if (pt == null) {
+        return;
+      }
+      long time = is.getIntelligentRunningTime(INTELLIGENT_REASON.VIOLATE.value());
+      if (state == 1 && time == id) {
+        // 表示正在執行同一組支付代碼是否違反條件判斷
+        return;
+      }
+        Thread thread = new Thread(new Runnable() {
+
+          @Override
+          public void run() {
+            logger.info("start run " + id + " checkFee");
+            int waitTimes = 0;
+            do {
+              try {
+                Thread.sleep(500);
+              } catch (InterruptedException e) {
+                e.printStackTrace();
+              }
+              waitTimes++;
+              if ((waitTimes % 600000) == 0) {
+                logger.info("updateActiveByThread wait " + id + " for " + waitTimes + " times");
+              }
+            } while (is.isIntelligentRunning(INTELLIGENT_REASON.VIOLATE.value()));
+            if (state == 0) {
+              is.setIntelligentRunning(INTELLIGENT_REASON.VIOLATE.value(), true);
+            } else {
+              is.setIntelligentRunningTime(INTELLIGENT_REASON.VIOLATE.value(), id);
+            }
+            
+            parametersService.deleteIntelligent(INTELLIGENT_REASON.VIOLATE.value(), pt.getNhi_no(),
+                null);
+            if (state == 1 && !"0".equals(parametersService.getParameter("VIOLATE"))) {
+              List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
+              try {
+                vpts.checkFee(pt, batch);
+                //System.out.println("finish checkFee");
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
+              is.saveIntelligentBatch(batch);
+            }
+            is.setIntelligentRunning(INTELLIGENT_REASON.VIOLATE.value(), false);
+            logger.info("start run " + id + " checkFee finished");
+          }
+        });
+        if (useThread) {
+          thread.start();
+        } else {
+          thread.run();
+        }
+    }
+    
+    private int checkDBColumnType(Object obj) {
+      if (obj instanceof Integer) {
+        return (Integer) obj;  
+      } else {
+        return (Short) obj;
+      }
+    }
+    
+    private PaymentTermsPl findRealPaymentTerms(long id, String category) {
+      PaymentTermsPl result = null;
+      if (PtOutpatientFeeService.Category.equals(category)) {
+        result = ptOutpatientFeeService.findPtOutpatientFeePl(id);
+      } else if (PtInpatientFeeService.Category.equals(category)) {
+        result = ptInpatientFeeService.findPtInpatientFeePl(id);
+      } else if (PtWardFeeService.Category.equals(category)) {
+        result = ptWardFeeService.findPtWardFeePl(id);
+      } else if (PtPsychiatricWardFeeService.Category.equals(category)) {
+        result = ptPsychiatricWardFeeService.findPtPsychiatricWardFeePl(id);
+      } else if (PtSurgeryFeeService.Category.equals(category)) {
+        result = ptSurgeryFeeService.findSurgeryFeePl(id);
+      } else if (PtTreatmentFeeService.Category.equals(category)) {
+        result = ptTreatmentFeeService.findPtTreatmentFeePl(id);
+      } else if (PtNutritionalFeeService.Category.equals(category)) {
+        result = ptNutritionalFeeService.findPtNutritionalFeePl(id);
+      }
+//      } else if (PtInpatientFeeService.Category.equals(category) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } else if (PtInpatientFeeService.Category.equals(category)) {
+//        result = ptInpatientFeeService.
+//      } 
+      if (result == null || result.getNhi_no() == null) {
+        return null;
+      }
+      return result;
     }
 }

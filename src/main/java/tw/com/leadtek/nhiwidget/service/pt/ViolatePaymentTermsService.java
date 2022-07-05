@@ -1,0 +1,1200 @@
+/**
+ * Created on 2022/6/27.
+ */
+package tw.com.leadtek.nhiwidget.service.pt;
+
+import java.math.BigInteger;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
+import tw.com.leadtek.nhiwidget.dao.IP_DDao;
+import tw.com.leadtek.nhiwidget.dao.IP_PDao;
+import tw.com.leadtek.nhiwidget.dao.MRDao;
+import tw.com.leadtek.nhiwidget.dao.OP_DDao;
+import tw.com.leadtek.nhiwidget.dao.OP_PDao;
+import tw.com.leadtek.nhiwidget.dao.PT_PAYMENT_TERMSDao;
+import tw.com.leadtek.nhiwidget.dto.PaymentTermsPl;
+import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtNutritionalFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtPsychiatricWardFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
+import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
+import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
+import tw.com.leadtek.nhiwidget.service.CodeTableService;
+import tw.com.leadtek.nhiwidget.service.IntelligentService;
+import tw.com.leadtek.nhiwidget.service.ParametersService;
+import tw.com.leadtek.tools.DateTool;
+
+/**
+ * 計算違反支付準則服務
+ * 
+ * @author kenlai
+ *
+ */
+@Service
+public class ViolatePaymentTermsService {
+  
+  /**
+   * 急診觀察床–病房費
+   */
+  private final static String[] EMERGENCY_WARD = new String[] { "03073A", "03074B", "03018A", "03019B",};
+
+  @Autowired
+  private MRDao mrDao;
+
+  @Autowired
+  private OP_DDao opdDao;
+
+  @Autowired
+  private OP_PDao oppDao;
+  
+  @Autowired
+  private IP_DDao ipdDao;
+  
+  @Autowired
+  private IP_PDao ippDao;
+
+  @Autowired
+  private PT_PAYMENT_TERMSDao ptDao;
+
+  @Autowired
+  private IntelligentService is;
+
+  @Autowired
+  private ParametersService ps;
+  
+  @Autowired
+  private CodeTableService cts;
+
+  private static HashMap<String, String> wordings;
+
+  /**
+   * 牙醫案件分類代碼
+   */
+  private static List<String> caseTypeDentist;
+
+  /**
+   * 中醫案件分類代碼
+   */
+  private static List<String> caseTypeCM;
+
+  public void updateWordings(boolean forceUpdate) {
+    if (wordings == null || forceUpdate) {
+      wordings = new HashMap<String, String>();
+      List<PARAMETERS> parameters = ps.getByCat("INTELLIGENT");
+      for (PARAMETERS p : parameters) {
+        if (p.getName().startsWith("VIOLATE")) {
+          wordings.put(p.getName(), p.getValue());
+        }
+      }
+      caseTypeDentist = new ArrayList<String>();
+      caseTypeDentist.add("11");
+      caseTypeDentist.add("12");
+      caseTypeDentist.add("13");
+      caseTypeDentist.add("14");
+      caseTypeDentist.add("16");
+      caseTypeDentist.add("17");
+      caseTypeDentist.add("19");
+
+      caseTypeCM = new ArrayList<String>();
+      caseTypeDentist.add("21");
+      caseTypeDentist.add("22");
+      caseTypeDentist.add("23");
+      caseTypeDentist.add("24");
+      caseTypeDentist.add("25");
+      caseTypeDentist.add("28");
+      caseTypeDentist.add("29");
+      caseTypeDentist.add("30");
+      caseTypeDentist.add("31");
+    }
+  }
+
+  /**
+   * 取得整個DB有使用該醫令的病歷數
+   * 
+   * @param code
+   * @return
+   */
+  public int getCountOfUseCodeMR(String code) {
+    List<Long> countList = mrDao.getCountByCodeLike("%," + code + ",%");
+    if (countList != null && countList.size() > 0) {
+      return countList.get(0).intValue();
+    }
+    return 0;
+  }
+
+  /**
+   * 檢查支付代碼適用的病歷型態(data_format)
+   * 
+   * @param pt
+   * @param mrList 有使用 pt.NHI_NO 的病歷 list
+   * @param batch
+   */
+  private void checkDataFormat(PaymentTermsPl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    if (pt.getOutpatient_type() == 1 && pt.getHospitalized_type() == 1) {
+      // 門急診及住院皆適用
+      return;
+    }
+    if (pt.getOutpatient_type() == 0) {
+      String wording = String.format(wordings.get("VIOLATE_DATA_FORMAT"), pt.getNhi_no(), "門診");
+      for (MR mr : mrList) {
+        if (XMLConstant.DATA_FORMAT_OP.equals(mr.getDataFormat())) {
+          if ((pt instanceof PtInpatientFeePl) && mr.getFuncType() == "22") {
+            // 急診會用到住院診察費
+          } else {
+            is.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), pt.getNhi_no(), wording,
+                true, batch);
+          }
+        }
+      }
+    }
+    if (pt.getHospitalized_type() == 0) {
+      String wording = String.format(wordings.get("VIOLATE_DATA_FORMAT"), pt.getNhi_no(), "住院");
+      for (MR mr : mrList) {
+        if (XMLConstant.DATA_FORMAT_IP.equals(mr.getDataFormat())) {
+          is.insertIntelligent(mr, INTELLIGENT_REASON.VIOLATE.value(), pt.getNhi_no(), wording,
+              true, batch);
+        }
+      }
+    }
+  }
+
+  /**
+   * 檢查支付代碼適用的病歷型態(data_format)
+   * 
+   * @param pt
+   * @param mrList 有使用 pt.NHI_NO 的病歷 list
+   * @param batch
+   */
+  private void checkDentistAndCM(PtOutpatientFeePl pt, List<MR> mrList, List<Long> mrIdList,
+      List<INTELLIGENT> batch) {
+    // 不含牙科
+    if (pt.getNo_dentisit() == 1) {
+      String wording = String.format(wordings.get("VIOLATE_DENTIST_CM"), pt.getNhi_no(), "牙科");
+      List<Long> violateMrId = opdDao.getMrIdByCaseTypeAndByMrId(mrIdList, caseTypeDentist);
+      insertIntelligent(mrList, violateMrId, batch, pt.getNhi_no(), wording);
+    }
+    // 不含中醫
+    if (pt.getNo_chi_medicine() == 1) {
+      String wording = String.format(wordings.get("VIOLATE_DENTIST_CM"), pt.getNhi_no(), "中醫");
+      List<Long> violateMrId = opdDao.getMrIdByCaseTypeAndByMrId(mrIdList, caseTypeCM);
+      insertIntelligent(mrList, violateMrId, batch, pt.getNhi_no(), wording);
+    }
+  }
+
+  /**
+   * 檢查該病歷是否有調劑費，只有門診診察費用到
+   * 
+   * @param pt
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkDispensing(PtOutpatientFeePl pt, List<MR> mrList, List<Long> mrIdList,
+      List<INTELLIGENT> batch) {
+    if (pt.getNo_service_charge() != 1) {
+      return;
+    }
+    String wording = String.format(wordings.get("VIOLATE_ORDER_TYPE_9"), pt.getNhi_no());
+    // 9 為藥事服務費(調劑費)
+    List<Long> violateMrId = oppDao.getMrIdByOrderTypeAndMrId("9", mrIdList);
+    insertIntelligent(mrList, violateMrId, batch, pt.getNhi_no(), wording);
+  }
+
+  /**
+   * 限定山地離島區域申報使用，只有門診診察費用到
+   * @param pt
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkOutIsland(PtOutpatientFeePl pt, List<MR> mrList, List<Long> mrIdList,
+      List<INTELLIGENT> batch) {
+    if (pt.getLim_out_islands() != 1) {
+      return;
+    }
+    String wording = String.format(wordings.get("VIOLATE_OUTLAND"), pt.getNhi_no());
+    // 007 為離島免除部分負擔
+    List<Long> violateMrId = opdDao.getMrIdByPartNoAndByMrId(mrIdList, "007");
+    insertIntelligent(mrList, violateMrId, batch, pt.getNhi_no(), wording);
+  }
+
+  /**
+   * 限定假日加計使用，只有門診診察費用到
+   * @param pt
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkHoliday(PtOutpatientFeePl pt, List<MR> mrList, List<Long> mrIdList,
+      List<INTELLIGENT> batch) {
+    if (pt.getLim_holiday() != 1) {
+      return;
+    }
+    String wording = String.format(wordings.get("VIOLATE_HOLIDAY"), pt.getNhi_no());
+    List<MR> violateMr = new ArrayList<MR>();
+    Calendar cal = Calendar.getInstance();
+    for (MR mr : mrList) {
+      boolean violate = true;
+      // 就診日期或就醫結束日期是假日即可
+      cal.setTime(mr.getMrEndDate());
+      if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY
+          || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
+        violate = false;
+      }
+      cal.setTime(mr.getMrDate());
+      if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY
+          || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
+        violate = false;
+      }
+      if (violate) {
+        violateMr.add(mr);
+      }
+    }
+    insertIntelligent(violateMr, batch, pt.getNhi_no(), wording);
+  }
+
+  /**
+   * 不可與任一支付標準代碼並存單一就醫紀錄
+   * @param isEnable
+   * @param nhiNo
+   * @param excludeNhiNoList
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkExcludeOrderCode(boolean isEnable, String nhiNo, List<String> excludeNhiNoList,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String excludeOrderCode = stringListToString(excludeNhiNoList);
+//    System.out.println("checkExcludeOrderCode isEnable=" + isEnable + ", orderCode=" + nhiNo + 
+//        " exclude:" + excludeNhiNoList.get(0) + ", total=" + excludeOrderCode);
+    String wording =
+        String.format(wordings.get("VIOLATE_EXCLUDE_ORDER_CODE"), nhiNo, excludeOrderCode);
+    List<MR> violateMr = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      for (String excludeNhiNo : excludeNhiNoList) {
+        String code = "," + excludeNhiNo + ",";
+        if (mr.getCodeAll().indexOf(code) > -1) {
+          violateMr.add(mr);
+          break;
+        }
+      }
+    }
+    System.out.println("checkExcludeOrderCode mr list size=" + violateMr.size());
+    insertIntelligent(violateMr, batch, nhiNo, wording);
+  }
+
+  /**
+   * 需與以下任一支付標準代碼並存，方可進行申報 
+   * @param isEnable
+   * @param nhiNo
+   * @param includeNhiNoList
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkIncludeOrderCode(boolean isEnable, String nhiNo, List<String> includeNhiNoList,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String includeOrderCode = stringListToString(includeNhiNoList);
+    String wording =
+        String.format(wordings.get("VIOLATE_INCLUDE_ORDER_CODE"), nhiNo, includeOrderCode);
+    List<MR> violateMr = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      int count = 0;
+      for (String includeNhiNo : includeNhiNoList) {
+        String code = "," + includeNhiNo + ",";
+        if (mr.getCodeAll().indexOf(code) > -1) {
+          count++;
+        }
+      }
+      if (count == 0) {
+        violateMr.add(mr);
+      }
+    }
+    insertIntelligent(violateMr, batch, nhiNo, wording);
+  }
+
+  /**
+   * 檢查年齡限制
+   * @param isEnable 是否要檢查
+   * @param isOP 是否為門診
+   * @param nhiNo 支付代碼
+   * @param ageType 判斷邏輯
+   * @param age 步數
+   * @param mrList 病歷清單
+   * @param mrIdList 病歷id清單
+   * @param batch 批次儲存INTELLIGENT table
+   */
+  private void checkAge(boolean isEnable, boolean isOP, String nhiNo, int ageType, int age, List<MR> mrList,
+      List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    StringBuffer sb = new StringBuffer();
+    if (ageType == 1) {
+      sb.append("未滿");
+    } else if (ageType == 2) {
+      sb.append("大於等於");
+    } else if (ageType == 3) {
+      sb.append("小於等於");
+    }
+    sb.append(age);
+    String wording = String.format(wordings.get("VIOLATE_AGE"), nhiNo, sb.toString());
+
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    List<Object[]> data = (isOP) ? opdDao.getMrIdBirthdayByMrId(mrIdList) : ipdDao.getMrIdBirthdayByMrId(mrIdList);
+    if (data == null || data.size() == 0) {
+      return;
+    }
+    
+    for (Object[] obj : data) {
+      String rocBirth = (String) obj[3];
+      /// 如果新生日期不為空
+      if (obj[4] != null && ((String) obj[4]).length() > 0) {
+        rocBirth = (String) obj[4];
+      }
+      String funcDate = (obj[2] == null) ? (String) obj[1] : (String) obj[2];
+      checkAge(((BigInteger) obj[0]).longValue(), ageType, age, rocBirth, funcDate,
+          violateMrIdList);
+    }
+    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
+  }
+  
+  private void checkAge(long mrId, int ageType, int age, String rocBirth, String funcDate, List<Long> violateMrIdList ) {
+    int birthYear = Integer.parseInt(rocBirth.substring(0, 3));
+    int birthMonthDate = Integer.parseInt(rocBirth.substring(3, 7));
+   
+    int funcEndYear = Integer.parseInt(funcDate.substring(0, 3));
+    int funcEndMonthDate = Integer.parseInt(funcDate.substring(3, 7));
+
+    int diffY = funcEndYear - birthYear;
+    if (funcEndMonthDate < birthMonthDate) {
+      // 未過生日
+      diffY--;
+    }
+
+    switch (ageType) {
+      case 1: // 需未滿 age歲
+        if (age <= diffY) {
+          violateMrIdList.add(mrId);
+        }
+        break;
+      case 2: // 需>= age歲
+        if (age > diffY) {
+          violateMrIdList.add(mrId);
+        }
+        break;
+      case 3: // 需<= age歲
+        if (age < diffY) {
+          violateMrIdList.add(mrId);
+        }
+        break;
+    }
+  }
+  
+  /**
+   * 檢查是否符合限定科別
+   * @param isEnable
+   * @param nhiNo
+   * @param funcTypeList
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkFuncType(boolean isEnable, String nhiNo, List<String> funcTypeList,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String funcTypeString = appendStringListToString(funcTypeList);
+    String[] funcTypeCodeList = new String[funcTypeList.size()];
+    for (int i=0; i< funcTypeList.size(); i++) {
+      funcTypeCodeList[i] = cts.getCodeByDesc("FUNC_TYPE", funcTypeList.get(i));
+    }
+    String wording =
+        String.format(wordings.get("VIOLATE_FUNC_TYPE"), nhiNo, funcTypeString);
+    List<MR> violateMr = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      int count = 0;
+      for (String funcType : funcTypeCodeList) {
+        if (mr.getFuncType().equals(funcType)) {
+          count++;
+          break;
+        }
+      }
+      if (count == 0) {
+        violateMr.add(mr);
+      }
+    }
+    insertIntelligent(violateMr, batch, nhiNo, wording);
+  }
+  
+  private void checkCountOfUniquePrsn(boolean isEnable, String nhiNo, int max, List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    List<String> prsnIds = new ArrayList<String>();
+    List<Object[]> opData = opdDao.getPrsnIdCountByMrId(mrIdList);
+    for (Object[] obj : opData) {
+      int count = (obj[1] instanceof Long) ? ((Long) obj[1]).intValue() : ((BigInteger) obj[1]).intValue();
+      if (count > max) {
+        prsnIds.add((String) obj[0]);
+      }
+    }
+  
+    for (String prsnId : prsnIds) {
+      List<MR> violateMr = new ArrayList<MR>();
+      for (MR mr : mrList) {
+        if (mr.getPrsnId().equals(prsnId)) {
+          violateMr.add(mr);
+        }
+      }
+      String wording =
+        String.format(wordings.get("VIOLATE_PRSN"), nhiNo, prsnId, String.valueOf(max));
+      insertIntelligent(violateMr, batch, nhiNo, wording);
+    }
+    //@Query(value = "SELECT PRSN_ID, COUNT(PRSN_ID) FROM OP_D WHERE MR_ID IN ?1 GROUP BY PRSN_ID", nativeQuery = true)
+    //public List<Object[]> getPrsnIdCountByMrId(List<Long> mrId);
+  }
+  
+  /**
+   * 檢查單一住院就醫紀錄應用數量,限定<=次數
+   * @param isEnable
+   * @param nhiNo
+   * @param funcTypeList
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkIPUseTimes(boolean isEnable, String nhiNo, int max,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording =
+        String.format(wordings.get("VIOLATE_TIMES"), nhiNo, "住院", String.valueOf(max));
+    List<Object[]> ids = ippDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max);
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    for (Object[] obj : ids) {
+      violateMrIdList.add(((BigInteger) obj[0]).longValue());
+    }
+    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
+  }
+  
+  /**
+   * 檢查單一急診就醫紀錄應用數量,限定<=次數，目前只出現在 02005B
+   */
+  private void checkOrderCodeUseTimesWithEM(boolean isEnable, String nhiNo, int max,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording =
+        String.format(wordings.get("VIOLATE_TIMES"), nhiNo, "急診", String.valueOf(max));
+    
+    // 有用到急診觀察病房費的病歷
+//    List<Long> useEmWardMrIdList = new ArrayList<Long>();
+//    for (MR mr : mrList) {
+//      for (String ward : EMERGENCY_WARD) {
+//        String code = "," + ward + ",";
+//        if (mr.getCodeAll().indexOf(code) > -1) {
+//          useEmWardMrIdList.add(mr.getId());
+//          break;
+//        }
+//      }
+//    }
+    List<Long> useEmWardMrIdList = mrIdList;
+    List<Object[]> ids = ippDao.getMrIdByOrderCodeCount(nhiNo, useEmWardMrIdList, max);
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    for (Object[] obj : ids) {
+      violateMrIdList.add(((BigInteger) obj[0]).longValue());
+    }
+    
+    ids = oppDao.getMrIdByOrderCodeCount(nhiNo, useEmWardMrIdList, max);
+    for (Object[] obj : ids) {
+      violateMrIdList.add(((BigInteger) obj[0]).longValue());
+    }
+    
+    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
+  }
+  
+  /**
+   * 檢查單一就醫紀錄應用數量,限定<=次數
+   * @param isEnable
+   * @param nhiNo
+   * @param funcTypeList
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkAllUseTimes(boolean isEnable, String nhiNo, int max,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording =
+        String.format(wordings.get("VIOLATE_TIMES"), nhiNo, "", String.valueOf(max));
+    List<Object[]> ids = ippDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max);
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    for (Object[] obj : ids) {
+      violateMrIdList.add(((BigInteger) obj[0]).longValue());
+    }
+    ids = oppDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max);
+    for (Object[] obj : ids) {
+      violateMrIdList.add(((BigInteger) obj[0]).longValue());
+    }
+    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
+  }
+  
+  /**
+   * 每組病歷號碼，每院限申報次數
+   * @param isEnable
+   * @param nhiNo
+   * @param max
+   * @param mrList
+   * @param batch
+   */
+  private void checkUseTimesInAllMr(boolean isEnable, String nhiNo, int max,
+      List<MR> mrList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording =
+        String.format(wordings.get("VIOLATE_ROCID_TIMES"), nhiNo, String.valueOf(max));
+    
+    List<String> rocIdList = mrDao.getRocIdByCodeTimes("%," + nhiNo + ",%", max);
+    List<MR> violateMr = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      for (String rocId : rocIdList) {
+        if (mr.getRocId().equals(rocId)) {
+          violateMr.add(mr);
+          break;
+        }
+      }
+    }
+    insertIntelligent(violateMr, batch, nhiNo, wording);
+  }
+  
+  /**
+   * 檢查住院診察費病歷內是否有門診診察費
+   */
+  private void checkIPWithOP(boolean isEnable, String nhiNo, List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording = String.format(wordings.get("VIOLATE_IP_WITH_OP"), nhiNo);
+
+    List<Object[]> ids = ippDao.getMrIdByOrderPayTypeAndOrderCode(mrIdList);
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    for (Object[] obj : ids) {
+      violateMrIdList.add(((BigInteger) obj[0]).longValue());
+    }
+    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
+  }
+  
+  /**
+   * 入住時間滿 小時，方可申報此支付標準代碼
+   * @param isEnable
+   * @param nhiNo
+   * @param limitHour
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkIpHours(boolean isEnable, String nhiNo, int limitType, int limitHour, List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording = null;
+    if (limitType == 2) {
+      wording = String.format(wordings.get("VIOLATE_IP_HOURS_GREATERTHAN"), nhiNo, String.valueOf(limitHour));
+    } else if (limitType == 3) {
+      wording = String.format(wordings.get("VIOLATE_IP_HOURS_LESSTHAN"), nhiNo, String.valueOf(limitHour));
+    }
+
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
+    List<Object[]> ippData =
+        ippDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, mrIdList);
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    checkStartTimeAndEndTime(limitType, limitHour, violateMrIdList, ippData, sdf);
+    
+    List<Object[]> oppData =
+        oppDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, mrIdList);
+    checkStartTimeAndEndTime(limitType, limitHour, violateMrIdList, oppData, sdf);
+    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
+  }
+  
+  private void checkStartTimeAndEndTime(int limitType, int limitHour, List<Long> violateMrIdList,
+      List<Object[]> ippData, SimpleDateFormat sdf) {
+    for (Object[] obj : ippData) {
+      Date sDate = DateTool.convertChineseToYears((String) obj[1], sdf);
+      Date eDate = DateTool.convertChineseToYears((String) obj[2], sdf);
+
+      int diffHour = hoursBetween(sDate, eDate);
+      if (limitType == 2) {
+        // 未滿不可申報
+        if (diffHour < limitHour) {
+          violateMrIdList.add(((BigInteger) obj[0]).longValue());
+        }
+      } else if (limitType == 3) {
+        // 超過不可申報
+        if (diffHour > limitHour) {
+          violateMrIdList.add(((BigInteger) obj[0]).longValue());
+        }
+      }
+    }
+  }
+  
+  /**
+   * 檢查是否包含以下任一ICD診斷碼
+   * @param isEnable
+   * @param nhiNo
+   * @param funcTypeList
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkICD(boolean isEnable, String nhiNo, List<String> icdList, List<MR> mrList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String icdString = appendStringListToString(icdList);
+    String wording =
+        String.format(wordings.get("VIOLATE_INCLUDE_ICD"), nhiNo, icdString);
+    List<MR> violateMr = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      int count = 0;
+      for (String icd : icdList) {
+        if (mr.getIcdAll().indexOf("," + icd + ",") > -1) {
+          count++;
+          break;
+        }
+      }
+      if (count == 0) {
+        violateMr.add(mr);
+      }
+    }
+    insertIntelligent(violateMr, batch, nhiNo, wording);
+  }
+  
+  /**
+   * 檢查支付準則限定每n日不可超過x次
+   */
+  private void checkUseTimesEveryDay(boolean isEnable, String nhiNo, int days, int max,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+
+    String wording = null; 
+    if (days == 1) {
+      wording = String.format(wordings.get("VIOLATE_DAILY_MAX"), nhiNo, "日", String.valueOf(max));
+    } else {
+      wording = String.format(wordings.get("VIOLATE_DAILY_MAX"), nhiNo, days + "日內", String.valueOf(max));
+    }
+    checkUseTimesEveryDayByDataFormat(true, nhiNo, days, max, mrList, mrIdList, batch, wording);
+    checkUseTimesEveryDayByDataFormat(false, nhiNo, days, max, mrList, mrIdList, batch, wording);
+  }
+  
+  private void checkUseTimesEveryDayByDataFormat(boolean isOp, String nhiNo, int days, 
+      int max, List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch, String wording) {
+    // 1. 先檢查總數有沒有超過 max
+    List<Object[]> ids = (isOp) ? oppDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max)
+        : ippDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max);
+    if (ids == null || ids.size() == 0) {
+      return;
+    }
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    for (Object[] obj : ids) {
+      violateMrIdList.add(((BigInteger) obj[0]).longValue());
+    }
+ 
+    // 2. 再檢查天數，將有超過的一個一個調出來看 end_time - start_time , 用量 / 天數，取得每天使用量
+    List<Object[]> data =
+        (isOp) ? oppDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, violateMrIdList)
+            : ippDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, violateMrIdList);
+    //System.out.println("checkUseTimesEveryDayByDataFormat violateMr size=" + violateMrIdList.size() + ", order count=" + data.size());
+    // 存在違反規則的 MR ID
+    HashMap<Long, String> mrIdMap = new HashMap<Long, String>();
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
+    int daysSum = 0;
+    int total = 0;
+    long lastMrId = 0;
+    for (Object[] obj : data) {
+      long mrId = ((BigInteger) obj[0]).longValue();
+      if (lastMrId != mrId) {
+        daysSum = 0;
+        total = 0;
+        lastMrId = mrId;
+      }
+      String startTime = (String) obj[1];
+      String endTime = (String) obj[2];
+      if (mrIdMap.containsKey(new Long(mrId))) {
+        continue;
+      }
+      if (days == 1) {
+        // 每日不可超過 max 次數
+        if (startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
+          // 同一天
+          if (((Double) obj[3]).intValue() > max){
+            mrIdMap.put(mrId, "");
+          }
+        } else {
+          int diffDays = diffDays(startTime, endTime, sdf);
+          int totalQ = ((Double) obj[3]).intValue();
+          double avg = (double) totalQ / (double) diffDays;
+          if (avg > max) {
+            mrIdMap.put(mrId, "");
+          }
+        }
+      } else {
+        if (startTime == null || endTime == null || startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
+          // 同一天
+          daysSum++;
+          total += ((Double) obj[3]).intValue();
+        } else {
+          daysSum += diffDays(startTime, endTime, sdf);
+          total += ((Double) obj[3]).intValue();
+        }
+        if (daysSum <= days && total > max) {
+          mrIdMap.put(mrId, "");
+        }
+      }
+    }
+    if (mrIdMap.size() == 0) {
+      return;
+    }
+    violateMrIdList = new ArrayList<Long>();
+    for (Long mrId : mrIdMap.keySet()) {
+      violateMrIdList.add(mrId);
+    }
+    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
+  }
+  
+  private void checkUseTimesAfterDay(boolean isEnable, String nhiNo, int days, int max,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    // 1. 先檢查總數有沒有超過 max
+    List<Object[]> ids = ippDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max);
+    if (ids == null || ids.size() == 0) {
+      return;
+    }
+    String wording = String.format(wordings.get("VIOLATE_OVER_DAYS"), nhiNo, String.valueOf(days), String.valueOf(max));
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    for (Object[] obj : ids) {
+      violateMrIdList.add(((BigInteger) obj[0]).longValue());
+    }
+ 
+    // 2. 再檢查天數，將有超過的一個一個調出來看 end_time - 住院時間
+    List<Object[]> data = ippDao.getMrDateAndMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, violateMrIdList);
+    System.out.println("checkUseTimesEveryDayByDataFormat violateMr size=" + violateMrIdList.size() + ", order count=" + data.size());
+    // 存在違反規則的 MR ID
+    HashMap<Long, String> mrIdMap = new HashMap<Long, String>();
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
+    int total = 0;
+    long lastMrId = 0;
+    Date mrDate = null;
+    try {
+      for (Object[] obj : data) {
+        long mrId = ((BigInteger) obj[0]).longValue();
+        if (mrIdMap.containsKey(new Long(mrId))) {
+          continue;
+        }
+        if (lastMrId != mrId) {
+          total = 0;
+          mrDate = (Date) obj[1];
+          lastMrId = mrId;
+        }
+        //String startTime = (String) obj[2];
+        String endTime = (String) obj[3];
+        Date endDate = sdf.parse(endTime);
+        
+        if ((daysBetween(mrDate, endDate) + 1) > days) {
+          total += ((Double) obj[4]).intValue();
+        }
+        if (total > max) {
+          mrIdMap.put(mrId, "");
+        }
+      }
+    } catch (ParseException e) {
+      e.printStackTrace();
+    }
+    if (mrIdMap.size() == 0) {
+      return;
+    }
+    violateMrIdList = new ArrayList<Long>();
+    for (Long mrId : mrIdMap.keySet()) {
+      violateMrIdList.add(mrId);
+    }
+    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
+  }
+  
+  /**
+   * 每月申報數量，不可超過該科門診就診人次之百分之 ?
+   * @param isEnable
+   * @param nhiNo
+   * @param funcTypeList
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkFuncTypePercent(boolean isEnable, String nhiNo, int percentMax, List<MR> mrList,
+      List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording =
+        String.format(wordings.get("VIOLATE_FUNC_TYPE_PERCENT"), nhiNo, String.valueOf(percentMax));
+    
+    Set<String> funcTypes = findDistinctFuncType(mrList);
+    List<String> violateFuncTypes = new ArrayList<String>();
+    for (String funcType : funcTypes) {
+      List<Object[]> data = mrDao.getMrCountByFuncTypeAndOrderCode(mrIdList, funcType, nhiNo);
+      double percent = ((BigInteger) data.get(0)[0]).doubleValue() * 100 / ((BigInteger) data.get(0)[1]).doubleValue();
+      if (percent > (double) percentMax) {
+        violateFuncTypes.add(funcType);
+      }
+    }
+    
+    List<MR> violateMr = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      for (String funcType : violateFuncTypes) {
+        if (mr.getFuncType().equals(funcType)) {
+          violateMr.add(mr);
+          break;
+        }
+      }
+    }
+    insertIntelligent(violateMr, batch, nhiNo, wording);
+  }
+  
+  private void checkPlan() {
+    // TODO unknown case
+  }
+
+  private void insertIntelligent(List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch,
+      String nhiNo, String wording) {
+    if (mrIdList.size() == 0) {
+      return;
+    }
+    List<MR> violateMrList = getMrByMrId(mrList, mrIdList);
+    insertIntelligent(violateMrList, batch, nhiNo, wording);
+  }
+
+  private void insertIntelligent(List<MR> mrList, List<INTELLIGENT> batch, String nhiNo,
+      String wording) {
+    for (MR violateMr : mrList) {
+      is.insertIntelligent(violateMr, INTELLIGENT_REASON.VIOLATE.value(), nhiNo, wording, true,
+          batch);
+    }
+  }
+
+  /**
+   * 檢查支付準則
+   * 
+   * @pt 支付準則object
+   */
+  public void checkFee(PaymentTermsPl pt, List<INTELLIGENT> batch) {
+    if (pt instanceof PtOutpatientFeePl) {
+      // 需計算到單一醫師執行此醫令單月上限，所以要每月每月跑
+      checkFeeByMonth(pt, batch);
+    } else {
+      int countOfMR = getCountOfUseCodeMR(pt.getNhi_no());
+      if (countOfMR < 1000) {
+        // 整個DB不到1000筆，一次處理全部
+        List<MR> mrList = mrDao.findByCodeAllContaining("," + pt.getNhi_no() + ",");
+        checkFee(pt, mrList, batch);
+      } else {
+        // by 年月處理
+        checkFeeByMonth(pt, batch);
+      }
+    }
+  }
+  
+  public void checkFeeByMonth(PaymentTermsPl pt, List<INTELLIGENT> batch) {
+    Calendar calMin = ps.getMinMaxCalendar(new Date(pt.getStart_date()), true);
+    if (calMin.getTimeInMillis() > pt.getStart_date()) {
+      Calendar ptStart = Calendar.getInstance();
+      ptStart.setTimeInMillis(pt.getStart_date());
+      if (ptStart.get(Calendar.YEAR) == calMin.get(Calendar.YEAR)
+          && ptStart.get(Calendar.MONTH) == calMin.get(Calendar.MONTH)) {
+        // 同年同月，以 pt.start_date 為起始日
+        calMin.setTimeInMillis(pt.getStart_date());
+      }
+    }
+    Calendar calMax = ps.getMinMaxCalendar(new Date(pt.getEnd_date()), false);
+    //System.out.println("calMin=" + DateTool.getChineseYmDate(calMin) + ", calMax=" + DateTool.getChineseYmDate(calMax));
+    Calendar cal = calMin;
+    do {
+      Date start = cal.getTime();
+      cal.add(Calendar.MONTH, 1);
+      // 到月底
+      cal.add(Calendar.DAY_OF_YEAR, -1);
+      if (cal.getTimeInMillis() > calMax.getTimeInMillis()) {
+        cal = calMax;
+      }
+      Date end = cal.getTime();
+      List<MR> mrList = mrDao.getMRByCodeLikeAndMrEndDate("%," + pt.getNhi_no() + ",%", start, end);
+//      System.out.println("checkFee:" + pt.getNhi_no() + ", from " + start + " to " + end
+//          + ", mrList=" + mrList.size());
+      checkFee(pt, mrList, batch);
+      is.saveIntelligentBatch(batch);
+      // 回到下個月月初
+      cal.add(Calendar.DAY_OF_YEAR, 1);
+    } while (cal.getTimeInMillis() < calMax.getTimeInMillis());
+  }
+
+  private void checkFee(PaymentTermsPl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    checkDataFormat(pt, mrList, batch);
+    if (pt instanceof PtOutpatientFeePl) {
+      checkOutpatientFee((PtOutpatientFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtInpatientFeePl) {
+      checkInpatientFee((PtInpatientFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtWardFeePl) {
+      checkWardFee((PtWardFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtPsychiatricWardFeePl) {
+      checkPsychiatricWardFee((PtPsychiatricWardFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtSurgeryFeePl) {
+      checkSurgeryFee((PtSurgeryFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtTreatmentFeePl) {
+      checkTreatmentFee((PtTreatmentFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtNutritionalFeePl) {
+      checkNutritionalFee((PtNutritionalFeePl) pt, mrList, batch);
+    }
+  }
+
+  private List<Long> getMrId(List<MR> mrList, String nhiNo) {
+    List<Long> result = new ArrayList<Long>();
+    for (MR mr : mrList) {
+      if (nhiNo != null) {
+        if (mr.getCodeAll().indexOf("," + nhiNo + ",") < 0) {
+          continue;
+        }
+      }
+      result.add(mr.getId());
+    }
+    return result;
+  }
+
+  private List<MR> getMrByMrId(List<MR> mrList, List<Long> mrIdList) {
+    List<MR> result = new ArrayList<MR>();
+    for (Long mrId : mrIdList) {
+      for (MR mr : mrList) {
+        if (mr.getId().longValue() == mrId.longValue()) {
+          result.add(mr);
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  private String stringListToString(List<String> strList) {
+    StringBuffer sb = new StringBuffer();
+    for (String string : strList) {
+      sb.append(string);
+      sb.append(",");
+    }
+    if (sb.length() > 0 && sb.charAt(sb.length() - 1) == ',') {
+      sb.deleteCharAt(sb.length() - 1);
+    }
+    return sb.toString();
+  }
+  
+  /**
+   * 檢查門診診察費
+   * 
+   * @param pt 門診診察費object
+   * @param mrList 有使用該醫令的病歷list
+   */
+  public void checkOutpatientFee(PtOutpatientFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    checkDentistAndCM(pt, mrList, mrIdList, batch);
+    checkDispensing(pt, mrList, mrIdList, batch);
+    checkOutIsland(pt, mrList, mrIdList, batch);
+    checkHoliday(pt, mrList, mrIdList, batch);
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch);
+    checkAge(pt.getLim_age_enable() == 1, true, pt.getNhi_no(), pt.getLim_age_type(), pt.getLim_age(), mrList, mrIdList, batch);
+    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList, mrIdList, batch);
+    checkCountOfUniquePrsn(pt.getLim_max_enable() == 1, pt.getNhi_no(), pt.getLim_max(), mrList, mrIdList, batch);
+  }
+
+  /**
+   * 檢查門診診察費
+   * 
+   * @param pt 住院診察費object
+   * @param mrList 有使用該醫令的病歷list
+   */
+  public void checkInpatientFee(PtInpatientFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch);
+    checkIncludeOrderCode(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_co_nhi_no(),
+        mrList, mrIdList, batch);
+    // 單一住院就醫紀錄應用數量,限定小於等於n次
+    checkIPUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(), mrList, mrIdList, batch);
+    // 單一急診就醫紀錄應用數量,限定<=次數
+    checkOrderCodeUseTimesWithEM(pt.getMax_emergency_enable() == 1, pt.getNhi_no(), pt.getMax_emergency(), mrList, mrIdList, batch);
+    // 每組病歷號碼，每院限申報次數
+    checkUseTimesInAllMr(pt.getMax_patient_no_enable() == 1, pt.getNhi_no(), pt.getMax_patient_no(), mrList, batch);
+    // 違反支付準則限定不可與門診診察費並存
+    checkIPWithOP(pt.getNo_coexist_enable() == 1, pt.getNhi_no(), mrList, mrIdList, batch);
+  }
+  
+  /**
+   * 檢查病房費
+   * 
+   * @param pt 病房費object
+   * @param mrList 有使用該醫令的病歷list
+   */
+  public void checkWardFee(PtWardFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch);
+    checkIpHours(pt.getMin_stay_enable() == 1, pt.getNhi_no(), 2, pt.getMin_stay(), mrList, mrIdList, batch);
+    checkIpHours(pt.getMax_stay_enable() == 1, pt.getNhi_no(), 3, pt.getMax_stay(), mrList, mrIdList, batch);
+  }
+  
+  /**
+   * 檢查精神慢性病房費
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkPsychiatricWardFee(PtPsychiatricWardFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    
+  }
+  
+  /**
+   * 檢查手術費
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkSurgeryFee(PtSurgeryFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch);
+    checkAge(pt.getLim_age_enable() == 1, true, pt.getNhi_no(), 3, pt.getLim_age(), mrList, mrIdList, batch);
+    checkAge(pt.getLim_age_enable() == 1, false, pt.getNhi_no(), 3, pt.getLim_age(), mrList, mrIdList, batch);
+    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList, mrIdList, batch);
+  }
+  
+  /**
+   * 檢查治療處置費
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkTreatmentFee(PtTreatmentFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    //不可與此支付標準代碼並存單一就醫紀錄一併申報
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch);
+    checkIncludeOrderCode(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_co_nhi_no(),
+        mrList, mrIdList, batch);
+    checkAge(pt.getMax_age_enable() == 1, true, pt.getNhi_no(), 2, pt.getMax_age(), mrList,
+        mrIdList, batch);
+    checkAge(pt.getMax_age_enable() == 1, false, pt.getNhi_no(), 2, pt.getMax_age(), mrList,
+        mrIdList, batch);
+    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList,
+        mrIdList, batch);
+    checkAllUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
+        mrList, mrIdList, batch);
+    //  單一就醫紀錄上，每日限定應用<= 次
+    checkUseTimesEveryDay(pt.getMax_daily_enable() == 1, pt.getNhi_no(), 1, pt.getMax_daily(), mrList,
+        mrIdList, batch);
+    // 單一就醫紀錄上，每 ? 日內，限定應用<= ? 次
+    checkUseTimesEveryDay(pt.getEvery_nday_enable() == 1, pt.getNhi_no(), pt.getEvery_nday_days(),
+        pt.getEvery_nday_times(), mrList, mrIdList, batch);
+    // 同患者限定每<= ? 日，總申報次數<= ? 次
+    checkUseTimesEveryDay(pt.getPatient_nday_enable() == 1 , pt.getNhi_no(), pt.getPatient_nday_days(),
+        pt.getPatient_nday_times(), mrList, mrIdList, batch);
+    // 每組病歷號碼，每院限申報次數
+    checkUseTimesInAllMr(pt.getMax_patient_enable()  == 1, pt.getNhi_no(), pt.getMax_patient(), mrList, batch);
+    // 檢查是否包含以下任一ICD診斷碼
+    checkICD(pt.getInclude_icd_no_enable() == 1, pt.getNhi_no(), pt.getLst_icd_no(), mrList, batch);
+    // 每月申報數量，不可超過該科門診就診人次之百分之 ?
+    checkFuncTypePercent(pt.getMax_month_enable() == 1, pt.getNhi_no(), pt.getMax_month_percentage(), mrList, mrIdList, batch);
+  }
+  
+  public void checkNutritionalFee(PtNutritionalFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    //不可與此支付標準代碼並存單一就醫紀錄一併申報
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch);
+    // 單一住院就醫紀錄應用數量,限定小於等於n次
+    checkIPUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(), mrList, mrIdList, batch);
+    //  單一就醫紀錄上，每日限定應用<= 次
+    checkUseTimesEveryDay(pt.getMax_daily_enable() == 1, pt.getNhi_no(), 1, pt.getMax_daily(), mrList,
+        mrIdList, batch);
+    // 單一就醫紀錄上，每 ? 日內，限定應用<= ? 次
+    checkUseTimesEveryDay(pt.getEvery_nday_enable() == 1, pt.getNhi_no(), pt.getEvery_nday_days(),
+        pt.getEvery_nday_times(), mrList, mrIdList, batch);
+    // 單一就醫紀錄上，超過 ? 日後，超出天數部份，限定應用<= ? 次
+    checkUseTimesAfterDay(pt.getOver_nday_enable()== 1, pt.getNhi_no(), pt.getOver_nday_days(), pt.getOver_nday_times(),
+        mrList, mrIdList, batch);
+  }
+  
+  public String appendStringListToString(List<String> list) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < list.size(); i++) {
+      sb.append(list.get(i));
+      sb.append("、");
+    }
+    if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '、') {
+      sb.deleteCharAt(sb.length() - 1);
+    }
+    return sb.toString();
+  }
+
+  public static int hoursBetween(Date start, Date end) {
+    long diff = end.getTime() - start.getTime();
+    return (int)((diff / 1000) / 3600);
+  }
+  
+  public static int daysBetween(Date start, Date end) {
+    long diff = end.getTime() - start.getTime();
+    return (int)(((diff / 1000) / 3600) / 24);
+  }
+  
+  public static int diffDays(String startTime, String endTime, SimpleDateFormat sdf) {
+    Date sDate = DateTool.convertChineseToYears(startTime, sdf);
+    Date eDate = DateTool.convertChineseToYears(endTime, sdf);
+
+    return daysBetween(sDate, eDate);
+  }
+
+  private Set<String> findDistinctFuncType(List<MR> mrList) {
+    HashMap<String, String> map = new HashMap<String, String>();
+    for (MR mr : mrList) {
+      if (map.containsKey(mr.getFuncType())) {
+        continue;
+      }
+      map.put(mr.getFuncType(), "");
+    }
+    return map.keySet() ;
+  }
+}

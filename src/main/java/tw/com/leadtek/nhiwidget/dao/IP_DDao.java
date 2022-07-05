@@ -212,7 +212,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   		+ "join ip_p ipp on ipd.id = ipp.ipd_id "
   		+ "join pt_payment_terms ppt on  ipp.order_code = ppt.nhi_no "
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
-  		+ "where pof.no_dentisit = 1   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "where pof.no_dentisit = 1   and ipd.case_type in  ('11','12','13','14','16','17','19','21','22','23','24','25','28') "
   		+ "and ipd.mr_id in (?1) ", nativeQuery = true)
   public List<Map<String, Object>> getValidByNoDentisit(List<String> mrId);
   
@@ -225,7 +225,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
 	  		+ "join ip_p ipp on ipd.id = ipp.ipd_id "
 	  		+ "join pt_payment_terms ppt on  ipp.order_code = ppt.nhi_no "
 	  		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
-	  		+ "where pof.no_chi_medicine = 1   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+	  		+ "where pof.no_chi_medicine = 1   and ipd.case_type in  ('11','12','13','14','16','17','19','21','22','23','24','25','28') "
 	  		+ "and ipd.mr_id in (?1) ", nativeQuery = true)
 	  public List<Map<String, Object>> getValidByNoChiMedicine(List<String> mrId);
   /**
@@ -363,4 +363,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   @Query(value = "SELECT DISTINCT (ORDER_CODE), ORDER_TYPE FROM ip_p where ORDER_TYPE IS NOT NULL \r\n" + 
       "and ORDER_TYPE <> '4' and length (ORDER_CODE) <10 GROUP BY ORDER_CODE , ORDER_TYPE", nativeQuery = true)
   public List<Map<String,Object>> getOrderCodeAndOrderType();
+  
+  @Query(value = "SELECT MR_ID, APPL_END_DATE, APPL_START_DATE, ID_BIRTH_YMD, NB_BIRTHDAY FROM IP_D WHERE MR_ID IN ?1 ", nativeQuery = true)
+  public List<Object[]> getMrIdBirthdayByMrId(List<Long> mrId);
 }

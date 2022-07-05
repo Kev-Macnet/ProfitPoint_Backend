@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.drg;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -26,6 +27,7 @@ import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.OP_TDao;
+import tw.com.leadtek.nhiwidget.dao.PT_PAYMENT_TERMSDao;
 import tw.com.leadtek.nhiwidget.importdata.ImportJsonFile;
 import tw.com.leadtek.nhiwidget.model.DrgCalculate;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
@@ -35,6 +37,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_T;
+import tw.com.leadtek.nhiwidget.model.rdb.PT_PAYMENT_TERMS;
 import tw.com.leadtek.nhiwidget.payload.MO;
 import tw.com.leadtek.nhiwidget.payload.MRDetail;
 import tw.com.leadtek.nhiwidget.payload.intelligent.PilotProject;
@@ -44,6 +47,7 @@ import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
+import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.SendHTTP;
 
@@ -80,6 +84,9 @@ public class TestDrgCalService {
   
   @Autowired
   private IP_PDao ippDao;
+  
+  @Autowired
+  private PT_PAYMENT_TERMSDao ptDao;
 
   @Autowired
   private IntelligentService is;
@@ -160,7 +167,7 @@ public class TestDrgCalService {
   /**
    * 更新 POINT_MONTHLY table(健保點數月報表)的值 
    */
-  //@Ignore
+  @Ignore
   @Test
   public void calculatePointMonthly() {
     Calendar cal = Calendar.getInstance();
@@ -625,5 +632,53 @@ public class TestDrgCalService {
   public void testPilotProject(){
     is.calculatePilotProject(17L, true);
     is.calculatePilotProject(18L, true);
+  }
+  
+  @Ignore
+  @Test
+  public void testMR() {
+    System.out.println("testMR");
+    List<String> caseType = getDentistCaseType();
+    String payCode = "12031C";
+    List<MR> mrList = mrDao.getIntelligentMR("2022-03-01", "2022-03-31", "%," + payCode + ",%");
+    List<Long> mrIdList = new ArrayList<Long>();
+    for (MR mr : mrList) {
+      System.out.println("id=" + mr.getId() + ", codeAll=" + mr.getCodeAll());
+      mrIdList.add(mr.getId());
+    }
+    List<Long> dentistMrId = opdDao.getMrIdByCaseTypeAndByMrId(mrIdList, caseType)  ;
+    for (Long long1 : dentistMrId) {
+      System.out.println("dentist mrId=" + long1);
+    }
+  }
+  
+  private List<String> getDentistCaseType(){
+    List<String> result = new ArrayList<String>();
+    result.add("09");
+    result.add("01");
+    result.add("02");
+    return result;
+  }
+
+  @Ignore
+  @Test
+  public void testPtPaymentTermsMR() {
+    List<PT_PAYMENT_TERMS> list = ptDao.findAll();
+    for (PT_PAYMENT_TERMS pt : list) {
+      List<Long> countList = mrDao.getCountByCodeLike("%," + pt.getNhiNo() + ",%");
+      if (countList != null && countList.size() > 0) {
+        System.out.println(pt.getNhiNo() + ":" + countList.get(0));
+      }
+    }
+  }
+
+  @Ignore
+  @Test
+  public void testDaysBetween() {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
+    String startTime = "10811100000";
+    String endTime = "10811160000";
+    int day = ViolatePaymentTermsService.diffDays(startTime, endTime, sdf);
+    System.out.println(startTime + " to " + endTime + " need " + day + " days.");
   }
 }

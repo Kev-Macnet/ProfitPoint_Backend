@@ -63,9 +63,10 @@ public class DateTool {
    * 將民國年月日轉成西元年月日, 若只有年月，會自動改為yyyMM01
    * 
    * @param date ex:11102140000
-   * @return Date, yyyyMMddHHmm
+   * @param sdf SimpleDateFormat(yyyyMMddHHmm)
+   * @return Date yyyyMMddHHmm
    */
-  public static Date convertChineseToYears(String date) {
+  public static Date convertChineseToYears(String date, SimpleDateFormat sdf) {
     if (date == null) {
       return null;
     }
@@ -74,7 +75,9 @@ public class DateTool {
     }
     long minguo = Long.valueOf(date);
     long dateInt = Long.valueOf("191100000000") + minguo;
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
+    if (sdf == null) {
+      sdf = new SimpleDateFormat("yyyyMMddHHmm");
+    }
     try {
       return sdf.parse(String.valueOf(dateInt));
     } catch (ParseException e) {
@@ -214,6 +217,16 @@ public class DateTool {
    */
   public static int getChineseYm(Calendar cal) {
     return (cal.get(Calendar.YEAR) - 1911) * 100 + cal.get(Calendar.MONTH) + 1;
+  }
+  
+  /**
+   * 帶入Calendar，回傳該時間的民國年月
+   * 
+   * @param cal
+   * @return 民國年月，i.e. 11011
+   */
+  public static int getChineseYmDate(Calendar cal) {
+    return (cal.get(Calendar.YEAR) - 1911) * 10000 + (cal.get(Calendar.MONTH) + 1) * 100 + cal.get(Calendar.DAY_OF_MONTH);
   }
 
   /**

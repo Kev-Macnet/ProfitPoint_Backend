@@ -14,8 +14,7 @@ public class PtPlasterBandageFeeService {
     @Autowired
     private PaymentTermsDao paymentTermsDao;
     
-    
-    private String Category = "石膏繃帶費"; 
+    public final static String Category = "石膏繃帶費"; 
     
     public java.util.Map<String, Object> findPlasterBandageFee(long ptId) {
         java.util.Map<String, Object> retMap;
