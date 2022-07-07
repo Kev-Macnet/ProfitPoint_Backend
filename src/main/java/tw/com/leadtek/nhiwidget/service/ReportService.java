@@ -405,12 +405,12 @@ public class ReportService {
 			result.setApplPointAll(result.getApplPointOpAll() + result.getApplPointIp());
 
 			// 原始總點數
-			result.setPointAll(result.getApplPointAll() + result.getOwnExpAll());
 			result.setPointEm(result.getApplPointEm() + result.getOwnExpEm());
 			// 住院: 醫療費用+不計入醫療費用點數合計+自費
 			result.setPointIp(getLongValue(obj[21]) + result.getNoApplIp() + result.getOwnExpIp());
 			result.setPointOp(result.getApplPointOp() + result.getOwnExpOp());
 			result.setPointOpAll(result.getPointOp() + result.getPointEm());
+			result.setPointAll(result.getPointOpAll() + result.getPointIp());
 		}
 
 		result.setApplByFuncType(getApplPointGroupByFuncType(s, e));
@@ -1132,7 +1132,15 @@ public class ReportService {
 
 	public DRGMonthlyPayload getDrgMonthly(int year, int month) {
 		DRGMonthlyPayload result = new DRGMonthlyPayload(pointMonthlyDao.findByYm(year * 100 + month));
-
+		String mStr = String.valueOf(month);
+		if(month < 10) {
+			mStr = "0"+ String.valueOf(month);
+		}
+		String ym = String.valueOf(year) + "-" + mStr;
+		///取得病例總點數
+		Map<String,Object> pMap =  pointMonthlyDao.getIpPointByDate(ym);
+		result.setMedPointIp(Long.valueOf(pMap.get("IP_DOT").toString()));
+		result.setMedNoOwnPointIp(Long.valueOf(pMap.get("IP_DOT_NOOWN").toString()));
 		result.getFuncTypes().add(FUNC_TYPE_ALL_NAME);
 		java.sql.Date lastDay = getLastDayOfMonth(year, month);
 		addQuantityAndPoint(result, XMLConstant.FUNC_TYPE_ALL, FUNC_TYPE_ALL_NAME, lastDay);
@@ -1145,6 +1153,16 @@ public class ReportService {
 		funcTypes.add(0, XMLConstant.FUNC_TYPE_ALL);
 		List<String> funcTypeName = codeTableService.convertFuncTypeToNameList(funcTypes);
 		result.setFuncTypes(funcTypeName);
+		String mStr = String.valueOf(month);
+		if(month < 10) {
+			mStr = "0"+ String.valueOf(month);
+		}
+		String ym = String.valueOf(year) + "-" + mStr;
+		///取得病例總點數
+		Map<String,Object> pMap =  pointMonthlyDao.getIpPointByDate(ym);
+		result.setMedPointIp(Long.valueOf(pMap.get("IP_DOT").toString()));
+		result.setMedNoOwnPointIp(Long.valueOf(pMap.get("IP_DOT_NOOWN").toString()));
+		
 		java.sql.Date lastDay = getLastDayOfMonth(year, month);
 
 		for (int i = 0; i < funcTypes.size(); i++) {
@@ -1174,6 +1192,15 @@ public class ReportService {
 
 	public DRGMonthlySectionPayload getDrgMonthlySection(int year, int month) {
 		DRGMonthlySectionPayload result = new DRGMonthlySectionPayload(pointMonthlyDao.findByYm(year * 100 + month));
+		String mStr = String.valueOf(month);
+		if(month < 10) {
+			mStr = "0"+ String.valueOf(month);
+		}
+		String ym = String.valueOf(year) + "-" + mStr;
+		///取得病例總點數
+		Map<String,Object> pMap =  pointMonthlyDao.getIpPointByDate(ym);
+		result.setMedPointIp(Long.valueOf(pMap.get("IP_DOT").toString()));
+		result.setMedNoOwnPointIp(Long.valueOf(pMap.get("IP_DOT_NOOWN").toString()));
 		List<String> funcTypes = getAllDRGFuncTypes(String.valueOf((year - 1911) * 100 + month));
 		funcTypes.add(0, XMLConstant.FUNC_TYPE_ALL);
 		List<String> funcTypeNames = codeTableService.convertFuncTypeToNameList(funcTypes);
