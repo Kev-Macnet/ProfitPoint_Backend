@@ -1030,7 +1030,8 @@ public class ReportService {
 
 		String chineseYM = ymToROCYM(ym);
 		String adYM = ymToADYM(ym);
-
+		///2020-01格式
+		String formatAdYM = adYM.substring(0, adYM.length() - 2) + "-" + adYM.substring(4, adYM.length());
 		DRG_MONTHLY drgMonthlyAll = drgMonthlyDao.findByYmAndFuncType(Integer.parseInt(adYM),
 				XMLConstant.FUNC_TYPE_ALL);
 		if (drgMonthlyAll == null) {
@@ -1068,7 +1069,7 @@ public class ReportService {
 			}
 			pm.setYm(Integer.parseInt(adYM));
 			pm.setFuncType(funcType);
-			List<Object[]> list = mrDao.findDRGCountAndDotByApplYmGroupByDrgSection(chineseYM, funcType);
+			List<Object[]> list = mrDao.findDRGCountAndDotByApplYmGroupByDrgSection(formatAdYM, funcType);
 			if (list != null && list.size() > 0) {
 				for (Object[] obj : list) {
 					String section = (String) obj[0];
@@ -2017,7 +2018,7 @@ public class ReportService {
 
 		PointMRPayload result = new PointMRPayload();
 
-		result.setFuncTypes(findAllFuncTypesName(true));
+		result.setFuncTypes(findAllFuncTypesName(false));
 		/// 取得返回當月資料
 		result.setCurrent(pointMonthlyDao.findByYm(year * 100 + month));
 		/// 返回門急診人數

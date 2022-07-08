@@ -177,7 +177,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @return
    */
   @Query(value="SELECT DRG_SECTION , COUNT(1) AS DRG_COUNT, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS APPLY, "
-      + "SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS ACTUAL FROM MR, IP_D WHERE APPL_YM = ?1 AND "
+      + "SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS ACTUAL FROM MR, IP_D WHERE MR.MR_END_DATE LIKE CONCAT(?1,'%')  AND "
       + "DRG_SECTION IS NOT NULL AND MR.ID = IP_D.MR_ID AND MR.FUNC_TYPE = ?2 GROUP BY DRG_SECTION ", nativeQuery = true)
   public List<Object[]> findDRGCountAndDotByApplYmGroupByDrgSection(String ym, String funcType);
   
