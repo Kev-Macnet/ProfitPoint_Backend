@@ -523,9 +523,9 @@ public class DbReportController extends BaseController {
 	public ResponseEntity<Map<String, Object>> getAchievePointQueryCondition(
 			@ApiParam(name = "nhiStatus", value = "健保狀態，1=含勞保、2＝不含勞保，必填", example = "1") @RequestParam(required = true) String nhiStatus,
 			@ApiParam(name = "payCodeType", value = "費用分類，若為多筆資料，用空格隔開，", example = "1 2") @RequestParam(required = false) String payCodeType,
-			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2021 2021 2021") @RequestParam(required = true) String year,
-			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = true) String month,
-			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "") @RequestParam(required = false) String dataFormats,
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，必填", example = "2021 2021 2021") @RequestParam(required = true) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，必填", example = "1 2 3") @RequestParam(required = true) String month,
+			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = false) String dataFormats,
 			@ApiParam(name = "funcTypes", value = "科別，若為多筆資料，用空格隔開，05 06", example = "") @RequestParam(required = false) String funcTypes,
 			@ApiParam(name = "medNames", value = "醫護姓名，若為多筆資料，用空格隔開，R A ", example = "") @RequestParam(required = false) String medNames,
 			@ApiParam(name = "icdcms", value = "病歷編號，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String icdcms,
@@ -544,6 +544,37 @@ public class DbReportController extends BaseController {
 
 		
 		return ResponseEntity.ok(dbService.getAchievePointQueryCondition(nhiStatus, payCodeType, year, month, dataFormats, funcTypes, medNames, icdcms, medLogCodes, applMin, applMax, icdAll, payCode, inhCode, isLastM, isLastY));
+	}
+	
+	@ApiOperation(value = "取得申報分配佔率與點數、金額-匯出", notes = "取得申報分配佔率與點數、金額-匯出")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/achievePointQueryConditionExport")
+	public ResponseEntity<BaseResponse> getAchievePointQueryConditionExport(
+			@ApiParam(name = "nhiStatus", value = "健保狀態，1=含勞保、2＝不含勞保，必填", example = "1") @RequestParam(required = true) String nhiStatus,
+			@ApiParam(name = "payCodeType", value = "費用分類，若為多筆資料，用空格隔開，", example = "1 2") @RequestParam(required = false) String payCodeType,
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，必填", example = "2021 2021 2021") @RequestParam(required = true) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，必填", example = "1 2 3") @RequestParam(required = true) String month,
+			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = false) String dataFormats,
+			@ApiParam(name = "funcTypes", value = "科別，若為多筆資料，用空格隔開，05 06", example = "") @RequestParam(required = false) String funcTypes,
+			@ApiParam(name = "medNames", value = "醫護姓名，若為多筆資料，用空格隔開，R A ", example = "") @RequestParam(required = false) String medNames,
+			@ApiParam(name = "icdcms", value = "病歷編號，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String icdcms,
+			@ApiParam(name = "medLogCodes", value = "就醫紀錄編號，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String medLogCodes,
+			@ApiParam(name = "applMin", value = "單筆申報點數(最小)", example = "1") @RequestParam(required = false) Long applMin,
+			@ApiParam(name = "applMax", value = "單筆申報點數(最大)", example = "1") @RequestParam(required = false) Long applMax,
+			@ApiParam(name = "icdAll", value = "不分區ICD碼，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String icdAll,
+			@ApiParam(name = "payCode", value = "支付標準代碼", example = "") @RequestParam(required = false) String payCode,
+			@ApiParam(name = "inhCode", value = "院內碼", example = "") @RequestParam(required = false) String inhCode,
+			@ApiParam(name = "isLastM", value = "上個月同條件相比", example = "false") @RequestParam(required = false) boolean isLastM,
+			@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) boolean isLastY,
+			HttpServletResponse response
+			)
+			throws ParseException, IOException {
+
+		Map<String, Object> result = new HashMap<String, Object>();
+		dbExportService.getAchievePointQueryConditionExport(nhiStatus, payCodeType, year, month, dataFormats, funcTypes, medNames, icdcms, medLogCodes, applMin, applMax, icdAll, payCode, inhCode, isLastM, isLastY, response);
+
+		
+		return null;
 	}
 
 }

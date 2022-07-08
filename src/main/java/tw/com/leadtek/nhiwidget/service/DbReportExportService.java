@@ -3,7 +3,6 @@ package tw.com.leadtek.nhiwidget.service;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -29,6 +28,10 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
+import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.nhiwidget.payload.report.AchievePointQueryCondition;
+import tw.com.leadtek.nhiwidget.payload.report.AchievePointQueryConditionDetail;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionDetail;
@@ -44,6 +47,11 @@ public class DbReportExportService {
 
 	@Autowired
 	private DbReportService dbrService;
+
+	@Autowired
+	private CODE_TABLEDao code_TABLEDao;
+
+	private List<CODE_TABLE> codeTableList;
 
 	public final static String FILE_PATH = "download";
 
@@ -2101,30 +2109,30 @@ public class DbReportExportService {
 		List<OwnExpenseQueryConditionDetail> emList = model.getEmList();
 		List<OwnExpenseQueryConditionDetail> ipList = model.getIpList();
 
-
 		boolean isLast = false;
 		List<OwnExpenseQueryConditionDetail> buildList = new ArrayList<OwnExpenseQueryConditionDetail>();
-		if(allList.size() > 0 && (opAllList.size()==0 && opList.size()==0 && emList.size()==0 && ipList.size()==0)) {
+		if (allList.size() > 0
+				&& (opAllList.size() == 0 && opList.size() == 0 && emList.size() == 0 && ipList.size() == 0)) {
 			buildList.addAll(allList);
-		}
-		else if(opAllList.size() > 0 && (allList.size()==0 && opList.size()==0 && emList.size()==0 && ipList.size()==0)) {
+		} else if (opAllList.size() > 0
+				&& (allList.size() == 0 && opList.size() == 0 && emList.size() == 0 && ipList.size() == 0)) {
 			buildList.addAll(opAllList);
-		}
-		else if(opList.size() > 0 && (opAllList.size()==0 && allList.size()==0 && emList.size()==0 && ipList.size()==0)) {
+		} else if (opList.size() > 0
+				&& (opAllList.size() == 0 && allList.size() == 0 && emList.size() == 0 && ipList.size() == 0)) {
 			buildList.addAll(opList);
-		}
-		else if(emList.size() > 0 && (opAllList.size()==0 && opList.size()==0 && allList.size()==0 && ipList.size()==0)) {
+		} else if (emList.size() > 0
+				&& (opAllList.size() == 0 && opList.size() == 0 && allList.size() == 0 && ipList.size() == 0)) {
 			buildList.addAll(emList);
-		}
-		else if(ipList.size() > 0 && (opAllList.size()==0 && opList.size()==0 && emList.size()==0 && allList.size()==0)) {
+		} else if (ipList.size() > 0
+				&& (opAllList.size() == 0 && opList.size() == 0 && emList.size() == 0 && allList.size() == 0)) {
 			buildList.addAll(ipList);
-		}
-		else if(allList.size() > 0 || (opAllList.size() > 0 || opList.size() > 0 || emList.size() > 0 || ipList.size() > 0)) {
+		} else if (allList.size() > 0
+				|| (opAllList.size() > 0 || opList.size() > 0 || emList.size() > 0 || ipList.size() > 0)) {
 			buildList.addAll(ipList);
 		}
 		try {
-			for(int i=0; i < buildList.size(); i++) {
-				if(buildList.get(i).getPrsnId() != null && buildList.get(i).getPrsnId().length() > 0) {
+			for (int i = 0; i < buildList.size(); i++) {
+				if (buildList.get(i).getPrsnId() != null && buildList.get(i).getPrsnId().length() > 0) {
 					continue;
 				}
 				row = sheet.createRow(rowIndex);
@@ -2142,10 +2150,10 @@ public class DbReportExportService {
 				sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
 				cellIndex++;
 				cell = row.createCell(cellIndex);
-				if(allList.size() > 0 && dataFormatAppend.contains("不分區")) {
+				if (allList.size() > 0 && dataFormatAppend.contains("不分區")) {
 					int v = 0;
-					for(OwnExpenseQueryConditionDetail m : allList) {
-						if(buildList.get(i).getFuncType().equals(m.getFuncType())) {
+					for (OwnExpenseQueryConditionDetail m : allList) {
+						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 							cell.setCellValue(modelList.get(0).getAllList().get(v).getQuantity().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
@@ -2170,15 +2178,14 @@ public class DbReportExportService {
 						}
 						v++;
 					}
-				}
-				else if(allList.size() == 0 && dataFormatAppend.contains("不分區")){
+				} else if (allList.size() == 0 && dataFormatAppend.contains("不分區")) {
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					if(isLastY) {
+					if (isLastY) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
@@ -2186,12 +2193,12 @@ public class DbReportExportService {
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 					}
-					
+
 				}
-				if(opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
+				if (opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
 					int v = 0;
-					for(OwnExpenseQueryConditionDetail m : opAllList) {
-						if(buildList.get(i).getFuncType().equals(m.getFuncType())) {
+					for (OwnExpenseQueryConditionDetail m : opAllList) {
+						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 							cell.setCellValue(modelList.get(0).getOpAllList().get(v).getQuantity().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
@@ -2216,15 +2223,14 @@ public class DbReportExportService {
 						}
 						v++;
 					}
-				}
-				else if(opAllList.size() == 0 && dataFormatAppend.contains("門急診")){
+				} else if (opAllList.size() == 0 && dataFormatAppend.contains("門急診")) {
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					if(isLastY) {
+					if (isLastY) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
@@ -2233,10 +2239,10 @@ public class DbReportExportService {
 						cell = row.createCell(cellIndex);
 					}
 				}
-				if(opList.size() > 0 && dataFormatAppend.contains("門診")) {
-					for(OwnExpenseQueryConditionDetail m : opList) {
+				if (opList.size() > 0 && dataFormatAppend.contains("門診")) {
+					for (OwnExpenseQueryConditionDetail m : opList) {
 						int v = 0;
-						if(buildList.get(i).getFuncType().equals(m.getFuncType())) {
+						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 							cell.setCellValue(modelList.get(0).getOpList().get(v).getQuantity().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
@@ -2261,15 +2267,14 @@ public class DbReportExportService {
 						}
 						v++;
 					}
-				}
-				else if(opList.size() == 0 && dataFormatAppend.contains("門診")){
+				} else if (opList.size() == 0 && dataFormatAppend.contains("門診")) {
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					if(isLastY) {
+					if (isLastY) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
@@ -2278,10 +2283,10 @@ public class DbReportExportService {
 						cell = row.createCell(cellIndex);
 					}
 				}
-				if(emList.size() > 0 && dataFormatAppend.contains("急診")) {
+				if (emList.size() > 0 && dataFormatAppend.contains("急診")) {
 					int v = 0;
-					for(OwnExpenseQueryConditionDetail m : emList) {
-						if(buildList.get(i).getFuncType().equals(m.getFuncType())) {
+					for (OwnExpenseQueryConditionDetail m : emList) {
+						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 							cell.setCellValue(modelList.get(0).getEmList().get(v).getQuantity().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
@@ -2306,15 +2311,14 @@ public class DbReportExportService {
 						}
 						v++;
 					}
-				}
-				else if(emList.size() == 0 && dataFormatAppend.contains("急診")){
+				} else if (emList.size() == 0 && dataFormatAppend.contains("急診")) {
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					if(isLastY) {
+					if (isLastY) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
@@ -2323,10 +2327,10 @@ public class DbReportExportService {
 						cell = row.createCell(cellIndex);
 					}
 				}
-				if(ipList.size() > 0 && dataFormatAppend.contains("住院")) {
+				if (ipList.size() > 0 && dataFormatAppend.contains("住院")) {
 					int v = 0;
-					for(OwnExpenseQueryConditionDetail m : ipList) {
-						if(buildList.get(i).getFuncType().equals(m.getFuncType())) {
+					for (OwnExpenseQueryConditionDetail m : ipList) {
+						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 							cell.setCellValue(modelList.get(0).getIpList().get(v).getQuantity().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
@@ -2351,15 +2355,14 @@ public class DbReportExportService {
 						}
 						v++;
 					}
-				}
-				else if(ipList.size() == 0 && dataFormatAppend.contains("住院")){
+				} else if (ipList.size() == 0 && dataFormatAppend.contains("住院")) {
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellStyle(cellFormatStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					if(isLastY) {
+					if (isLastY) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
@@ -2368,29 +2371,29 @@ public class DbReportExportService {
 						cell = row.createCell(cellIndex);
 					}
 				}
-				rowIndex ++;
+				rowIndex++;
 				cellIndex = 0;
-				
+
 			}
-			
-			///如果醫護人員，資料要獨立顯示
-			if((medNames != null && medNames.length() > 0)) {
+
+			/// 如果醫護人員，資料要獨立顯示
+			if ((medNames != null && medNames.length() > 0)) {
 				List<OwnExpenseQueryConditionDetail> showMedList = new ArrayList<OwnExpenseQueryConditionDetail>();
 				List<OwnExpenseQueryConditionDetail> showMedList2 = new ArrayList<OwnExpenseQueryConditionDetail>();
-				for(int i=0; i < buildList.size(); i++) {
-					if(buildList.get(i).getPrsnId() != null && buildList.get(i).getPrsnId().length() > 0) {
+				for (int i = 0; i < buildList.size(); i++) {
+					if (buildList.get(i).getPrsnId() != null && buildList.get(i).getPrsnId().length() > 0) {
 						showMedList.add(buildList.get(i));
 					}
 				}
-				///sort
-				Collections.sort(showMedList,mapComparatorPI);
+				/// sort
+				Collections.sort(showMedList, mapComparatorPI);
 				String pName = "";
 				rowIndex = row.getRowNum() + 1;
-				for(int i=0; i < showMedList.size(); i++) {
+				for (int i = 0; i < showMedList.size(); i++) {
 					row = sheet.createRow(rowIndex + i);
 					cell = row.createCell(cellIndex);
-					if(!pName.equals(showMedList.get(i).getPrsnId())) {
-						
+					if (!pName.equals(showMedList.get(i).getPrsnId())) {
+
 						cell.setCellValue(showMedList.get(i).getPrsnId());
 						cell.setCellStyle(cellTitleStyle);
 						cellIndex++;
@@ -2403,9 +2406,9 @@ public class DbReportExportService {
 						cellIndex = 0;
 						cell = row.createCell(cellIndex);
 					}
-					
+
 					if (showMedList.get(i).getFuncType().length() < 3) {
-						
+
 						cell.setCellValue(showMedList.get(i).getDescChi());
 					} else {
 						cell.setCellValue(showMedList.get(i).getFuncType());
@@ -2417,10 +2420,11 @@ public class DbReportExportService {
 					sheet.addMergedRegion(new CellRangeAddress(rowIndex + i, rowIndex + i, 0, 1));
 					cellIndex++;
 					cell = row.createCell(cellIndex);
-					if(allList.size() > 0 && dataFormatAppend.contains("不分區")) {
+					if (allList.size() > 0 && dataFormatAppend.contains("不分區")) {
 						int v = 0;
-						for(OwnExpenseQueryConditionDetail m : allList) {
-							if(showMedList.get(i).getFuncType().equals(m.getFuncType()) && showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+						for (OwnExpenseQueryConditionDetail m : allList) {
+							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
+									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
 								cell.setCellValue(modelList.get(0).getAllList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
@@ -2445,15 +2449,14 @@ public class DbReportExportService {
 							}
 							v++;
 						}
-					}
-					else if(allList.size() == 0 && dataFormatAppend.contains("不分區")){
+					} else if (allList.size() == 0 && dataFormatAppend.contains("不分區")) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						if(isLastY) {
+						if (isLastY) {
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
@@ -2461,18 +2464,20 @@ public class DbReportExportService {
 							cellIndex++;
 							cell = row.createCell(cellIndex);
 						}
-						
+
 					}
-					if(opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
+					if (opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
 						int v = 0;
-						for(OwnExpenseQueryConditionDetail m : opAllList) {
-							if(showMedList.get(i).getFuncType().equals(m.getFuncType()) && showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+						for (OwnExpenseQueryConditionDetail m : opAllList) {
+							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
+									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
 								cell.setCellValue(modelList.get(0).getOpAllList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
 								cell = row.createCell(cellIndex);
 								if (modelList.size() > 1) {
-									cell.setCellValue(modelList.get(1).getOpAllList().get(v).getQuantity().doubleValue());
+									cell.setCellValue(
+											modelList.get(1).getOpAllList().get(v).getQuantity().doubleValue());
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
@@ -2482,7 +2487,8 @@ public class DbReportExportService {
 								cellIndex++;
 								cell = row.createCell(cellIndex);
 								if (modelList.size() > 1) {
-									cell.setCellValue(modelList.get(1).getOpAllList().get(v).getExpense().doubleValue());
+									cell.setCellValue(
+											modelList.get(1).getOpAllList().get(v).getExpense().doubleValue());
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
@@ -2491,15 +2497,14 @@ public class DbReportExportService {
 							}
 							v++;
 						}
-					}
-					else if(opAllList.size() == 0 && dataFormatAppend.contains("門急診")){
+					} else if (opAllList.size() == 0 && dataFormatAppend.contains("門急診")) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						if(isLastY) {
+						if (isLastY) {
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
@@ -2508,10 +2513,11 @@ public class DbReportExportService {
 							cell = row.createCell(cellIndex);
 						}
 					}
-					if(opList.size() > 0 && dataFormatAppend.contains("門診")) {
-						for(OwnExpenseQueryConditionDetail m : opList) {
+					if (opList.size() > 0 && dataFormatAppend.contains("門診")) {
+						for (OwnExpenseQueryConditionDetail m : opList) {
 							int v = 0;
-							if(showMedList.get(i).getFuncType().equals(m.getFuncType()) && showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
+									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
 								cell.setCellValue(modelList.get(0).getOpList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
@@ -2536,15 +2542,14 @@ public class DbReportExportService {
 							}
 							v++;
 						}
-					}
-					else if(opList.size() == 0 && dataFormatAppend.contains("門診")){
+					} else if (opList.size() == 0 && dataFormatAppend.contains("門診")) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						if(isLastY) {
+						if (isLastY) {
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
@@ -2553,10 +2558,11 @@ public class DbReportExportService {
 							cell = row.createCell(cellIndex);
 						}
 					}
-					if(emList.size() > 0 && dataFormatAppend.contains("急診")) {
+					if (emList.size() > 0 && dataFormatAppend.contains("急診")) {
 						int v = 0;
-						for(OwnExpenseQueryConditionDetail m : emList) {
-							if(showMedList.get(i).getFuncType().equals(m.getFuncType()) && showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+						for (OwnExpenseQueryConditionDetail m : emList) {
+							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
+									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
 								cell.setCellValue(modelList.get(0).getEmList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
@@ -2581,15 +2587,14 @@ public class DbReportExportService {
 							}
 							v++;
 						}
-					}
-					else if(emList.size() == 0 && dataFormatAppend.contains("急診")){
+					} else if (emList.size() == 0 && dataFormatAppend.contains("急診")) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						if(isLastY) {
+						if (isLastY) {
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
@@ -2598,10 +2603,11 @@ public class DbReportExportService {
 							cell = row.createCell(cellIndex);
 						}
 					}
-					if(ipList.size() > 0 && dataFormatAppend.contains("住院")) {
+					if (ipList.size() > 0 && dataFormatAppend.contains("住院")) {
 						int v = 0;
-						for(OwnExpenseQueryConditionDetail m : ipList) {
-							if(showMedList.get(i).getFuncType().equals(m.getFuncType()) && showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+						for (OwnExpenseQueryConditionDetail m : ipList) {
+							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
+									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
 								cell.setCellValue(modelList.get(0).getIpList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
@@ -2626,15 +2632,14 @@ public class DbReportExportService {
 							}
 							v++;
 						}
-					}
-					else if(ipList.size() == 0 && dataFormatAppend.contains("住院")){
+					} else if (ipList.size() == 0 && dataFormatAppend.contains("住院")) {
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellStyle(cellFormatStyle);
 						cellIndex++;
 						cell = row.createCell(cellIndex);
-						if(isLastY) {
+						if (isLastY) {
 							cell.setCellStyle(cellFormatStyle);
 							cellIndex++;
 							cell = row.createCell(cellIndex);
@@ -2646,7 +2651,7 @@ public class DbReportExportService {
 					cellIndex = 0;
 				}
 			}
-		}catch(Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
@@ -2672,7 +2677,666 @@ public class DbReportExportService {
 		workbook.close();
 
 	}
+
+	/**
+	 * 取得申報分配佔率與點數、金額-匯出
+	 * 
+	 * @param nhiStatus
+	 * @param payCodeType
+	 * @param year
+	 * @param month
+	 * @param dataFormats
+	 * @param funcTypes
+	 * @param medNames
+	 * @param icdcms
+	 * @param medLogCodes
+	 * @param applMin
+	 * @param applMax
+	 * @param icdAll
+	 * @param payCode
+	 * @param inhCode
+	 * @param isLastM
+	 * @param isLastY
+	 * @param response
+	 * @throws IOException
+	 */
+	public void getAchievePointQueryConditionExport(String nhiStatus, String payCodeType, String year, String month,
+			String dataFormats, String funcTypes, String medNames, String icdcms, String medLogCodes, Long applMin,
+			Long applMax, String icdAll, String payCode, String inhCode, boolean isLastM, boolean isLastY,
+			HttpServletResponse response) throws IOException {
+
+		Map<String, Object> dataMap = dbrService.getAchievePointQueryCondition(nhiStatus, payCodeType, year, month,
+				dataFormats, funcTypes, medNames, icdcms, medLogCodes, applMin, applMax, icdAll, payCode, inhCode,
+				isLastM, isLastY);
+
+		@SuppressWarnings("unchecked")
+		List<AchievePointQueryCondition> modelList = (List<AchievePointQueryCondition>) dataMap.get("data");
+
+		// 建立新工作簿
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		// 樣式
+		HSSFCellStyle cellStyle = workbook.createCellStyle();
+		cellStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellStyle.setBorderRight(BorderStyle.MEDIUM);
+
+		HSSFCellStyle cellTitleStyle = workbook.createCellStyle();
+		cellTitleStyle.setAlignment(HorizontalAlignment.CENTER);
+		cellTitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellTitleStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellTitleStyle.setWrapText(true);
+
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
+		int cellIndex = 0;
+		int rowIndex = 0;
+		if (modelList.size() > 0) {
+			HSSFSheet sheet = workbook.createSheet("申報分配佔率與點數、金額");/// 欄位A1
+			HSSFRow row = sheet.createRow(0);
+			HSSFCell cell = row.createCell(0);
+			cell.setCellValue("統計月份");
+			cell.setCellStyle(cellStyle);
+			/// 欄位B1
+			cell = row.createCell(1);
+			cellIndex = 2;
+			String searchDate = "";
+			for (int x = 0; x < modelList.size(); x++) {
+				if (modelList.get(x).getDisplayName().isEmpty()) {
+					searchDate = modelList.get(x).getDate();
+					cell.setCellValue(modelList.get(x).getDate());
+					cell.setCellStyle(cellStyle);
+					cell = row.createCell(cellIndex);
+					cellIndex++;
+				}
+			}
+
+			/// 欄位B3
+			cell = row.createCell(cellIndex);
+			if (isLastM && isLastY) {
+				cell.setCellValue("上個月同條件相比");
+				cell.setCellStyle(cellStyle);
+				cell = row.createCell(3);
+				cell.setCellValue("去年同期時段相比");
+				cell.setCellStyle(cellStyle);
+			} else {
+				if (isLastM) {
+					cell.setCellValue("上個月同條件相比");
+					cell.setCellStyle(cellStyle);
+				}
+				if (isLastY) {
+					cell.setCellValue("去年同期時段相比");
+					cell.setCellStyle(cellStyle);
+				}
+			}
+
+			/// 欄位A2
+			row = sheet.createRow(1);
+			cell = row.createCell(0);
+			cell.setCellValue("狀態");
+			cell.setCellStyle(cellStyle);
+
+			cell = row.createCell(1);
+			if (nhiStatus.equals("1")) {
+				cell.setCellValue("健保(含勞保)");
+			} else {
+				cell.setCellValue("健保(不含勞保)");
+			}
+			cell.setCellStyle(cellStyle);
+
+			cell = row.createCell(2);
+			cell.setCellValue("分類");
+			cell.setCellStyle(cellStyle);
+			cellIndex = 3;
+			if (payCodeType != null && payCodeType.length() > 0) {
+				String[] split = StringUtility.splitBySpace(payCodeType);
+				for (String str : split) {
+					cell = row.createCell(cellIndex);
+					codeTableList = code_TABLEDao.findByCodeAndCat(str, "PAY_CODE_TYPE");
+					String name = codeTableList.get(0).getDescChi();
+					cell.setCellValue(name);
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+				}
+			}
+			cellIndex = 0;
+			rowIndex = 2;
+			row = sheet.createRow(rowIndex);
+			List<String> dataFormatList = new ArrayList<String>();
+			if (dataFormats != null && dataFormats.length() > 0) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("就醫類別");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				String[] split = StringUtility.splitBySpace(dataFormats);
+				String cellValue = "";
+				for (String str : split) {
+					switch (str) {
+					case "all":
+						cellValue += "不分區" + "、";
+						break;
+					case "totalop":
+						cellValue += "門急診" + "、";
+						break;
+					case "op":
+						cellValue += "門診" + "、";
+						break;
+					case "em":
+						cellValue += "急診" + "、";
+						break;
+					case "ip":
+						cellValue += "住院" + "、";
+						break;
+					}
+				}
+
+				cellValue = cellValue.substring(0, cellValue.length() - 1);
+				split = cellValue.split("、");
+				for (String s : split) {
+					dataFormatList.add(s);
+				}
+				cell.setCellValue(cellValue);
+				cell.setCellStyle(cellTitleStyle);
+
+				rowIndex++;
+			}
+			cellIndex = 0;
+			/// 欄位A
+			row = sheet.createRow(rowIndex);
+			if (funcTypes != null && funcTypes.length() > 0) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("科別");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(funcTypes);
+				cell.setCellStyle(cellTitleStyle);
+				cellIndex++;
+				if (medNames == null || medNames.length() == 0)
+					rowIndex++;
+			}
+
+			if (medNames != null && medNames.length() > 0) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("醫護");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(medNames);
+				cell.setCellStyle(cellTitleStyle);
+				cellIndex++;
+				if (funcTypes == null || funcTypes.length() == 0)
+					rowIndex++;
+			}
+			if ((funcTypes != null && funcTypes.length() > 0) && (medNames != null && medNames.length() > 0))
+				rowIndex++;
+
+			cellIndex = 0;
+			/// 欄位A
+			row = sheet.createRow(rowIndex);
+			if (icdcms != null && icdcms.length() > 0) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("病歷編號");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(icdcms);
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				if (medLogCodes == null || medLogCodes.length() == 0)
+					rowIndex++;
+			}
+			if (medLogCodes != null && medLogCodes.length() > 0) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("就醫記錄");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(medLogCodes);
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				if (icdcms == null || icdcms.length() == 0)
+					rowIndex++;
+			}
+			if ((icdcms != null && icdcms.length() > 0) && (medLogCodes != null && medLogCodes.length() > 0))
+				rowIndex++;
+
+			cellIndex = 0;
+			/// 欄位A
+			row = sheet.createRow(rowIndex);
+			if (applMax > 0 && applMin > 0) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("單筆申報點數");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("最小點數:");
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(applMin);
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("最大點數:");
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(applMax);
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				if (icdAll == null || icdAll.length() == 0)
+					rowIndex++;
+			}
+			if (icdAll != null && icdAll.length() > 0) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("不分區ICD碼");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(icdAll);
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				if (applMax == 0 && applMin == 0)
+					rowIndex++;
+			}
+			if ((icdAll != null && icdAll.length() > 0) && (applMin > 0 && applMax > 0))
+				rowIndex++;
+
+			cellIndex = 0;
+			/// 欄位A
+			row = sheet.createRow(rowIndex);
+			if (payCode != null && payCode.length() > 0) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("支付標準代碼");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(payCode);
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				if (inhCode == null || inhCode.length() == 0)
+					rowIndex++;
+			}
+			if (inhCode != null && inhCode.length() > 0) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("院內碼");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(inhCode);
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				if (payCode == null || payCode.length() == 0)
+					rowIndex++;
+			}
+			if ((payCode != null && payCode.length() > 0) && (inhCode != null && inhCode.length() > 0))
+				rowIndex++;
+
+			cellIndex = 0;
+			rowIndex++;
+
+			row = sheet.createRow(rowIndex);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue("統計月份: " + searchDate);
+			cell.setCellStyle(cellStyle);
+			cellIndex++;
+			for (String str : dataFormatList) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(str);
+				cell.setCellStyle(cellTitleStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellStyle(cellTitleStyle);
+				cellIndex++;
+			}
+			int x1 = 1;
+			int x2 = 2;
+			/// merge
+			for (String str : dataFormatList) {
+
+				sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, x1, x2));
+				x1 += 2;
+				x2 += 2;
+			}
+
+			/// 欄位A
+			cellIndex = 0;
+			rowIndex++;
+
+			/// 將資料拆分現在、去年、上月
+			List<AchievePointQueryCondition> nowList = new ArrayList<AchievePointQueryCondition>();
+			List<AchievePointQueryCondition> lastMList = new ArrayList<AchievePointQueryCondition>();
+			List<AchievePointQueryCondition> lastYList = new ArrayList<AchievePointQueryCondition>();
+			for (int y = 0; y < modelList.size(); y++) {
+				if (modelList.get(y).getDisplayName().isEmpty()) {
+					nowList.add(modelList.get(y));
+				} else if (modelList.get(y).getDisplayName().contains("上個月")) {
+					lastMList.add(modelList.get(y));
+				} else if (modelList.get(y).getDisplayName().contains("去年")) {
+					lastYList.add(modelList.get(y));
+				}
+			}
+			/// 欄位B
+			for (int y = 0; y < nowList.size(); y++) {
+				row = sheet.createRow(rowIndex);
+				cell = row.createCell(cellIndex);
+				/// 所輸入查詢日期
+				cell.setCellValue("本月申報總點數");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				rowIndex = loopsheet(sheet, cell, row, cellStyle, cellFormatStyle, nowList, dataFormatList, payCode, inhCode, cellIndex, rowIndex, x1, x2, y);
+				///如果上月資料存在
+				if(lastMList.size() > 0) {
+					rowIndex += 2;
+					cellIndex = 0;
+					row = sheet.createRow(rowIndex);
+					cell = row.createCell(cellIndex);
+					cell.setCellValue("上個月同條件申報總點數");
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					rowIndex = loopsheet(sheet, cell, row, cellStyle, cellFormatStyle, lastMList, dataFormatList, payCode, inhCode, cellIndex, rowIndex, x1, x2, y);
+				}
+				///如果去年資料存在
+				if(lastYList.size() > 0) {
+					rowIndex += 2;
+					cellIndex = 0;
+					row = sheet.createRow(rowIndex);
+					cell = row.createCell(cellIndex);
+					cell.setCellValue("去年同期時段相比申報總點數");
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					rowIndex = loopsheet(sheet, cell, row, cellStyle, cellFormatStyle, lastMList, dataFormatList, payCode, inhCode, cellIndex, rowIndex, x1, x2, y);
+				}
+				rowIndex++;
+				cellIndex = 0;
+			}
+			
+			/// 最後設定autosize
+			for (int i = 0; i < dataFormatList.size() *2 ; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+			}
+
+		} else {
+			HSSFSheet sheet = workbook.createSheet("工作表");
+		}
+
+		String fileNameStr = "申報分配佔率與點數金額報表";
+		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+				? FILE_PATH + "\\" + fileName
+				: FILE_PATH + "/" + fileName;
+		File file = new File(filepath);
+		response.reset();
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
+		response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+		response.setContentType("application/octet-stream;charset=utf8");
+
+		/// 最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
+
+		workbook.write(out);
+		out.flush();
+		out.close();
+		workbook.close();
+	}
 	
+	@SuppressWarnings("unused")
+	private int loopsheet(HSSFSheet sheet, HSSFCell cell,HSSFRow row,HSSFCellStyle cellStyle, HSSFCellStyle cellFormatStyle,List<AchievePointQueryCondition> modelList,List<String> dataFormatList, String payCode, String inhCode, int cellIndex, int rowIndex, int x1, int x2, int y ) {
+		
+		for (String str : dataFormatList) {
+			cell = row.createCell(cellIndex);
+			switch (str) {
+			case "不分區":
+				cell.setCellValue(modelList.get(y).getAllDot().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellStyle(cellFormatStyle);
+				break;
+			case "門急診":
+				cell.setCellValue(modelList.get(y).getOpAllDot().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellStyle(cellFormatStyle);
+				break;
+			case "門診":
+				cell.setCellValue(modelList.get(y).getOpDot().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellStyle(cellFormatStyle);
+				break;
+			case "急診":
+				cell.setCellValue(modelList.get(y).getEmDot().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellStyle(cellFormatStyle);
+				break;
+			case "住院":
+				cell.setCellValue(modelList.get(y).getIpDot().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellStyle(cellFormatStyle);
+				break;
+			}
+			cellIndex++;
+		}
+		x1 = 1;
+		x2 = 2;
+		/// merge
+		for (String str : dataFormatList) {
+
+			sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, x1, x2));
+			x1 += 2;
+			x2 += 2;
+		}
+		rowIndex++;
+		cellIndex = 0;
+
+		List<AchievePointQueryConditionDetail> plist = modelList.get(y).getPayCodeTypeList() == null
+				? new ArrayList<AchievePointQueryConditionDetail>()
+				: modelList.get(y).getPayCodeTypeList();
+		if (plist.size() > 0) {
+			for (AchievePointQueryConditionDetail detail : plist) {
+				row = sheet.createRow(rowIndex);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(detail.getName() + "/費用占率");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				for (String str : dataFormatList) {
+					cell = row.createCell(cellIndex);
+					switch (str) {
+					case "不分區":
+						cell.setCellValue(detail.getAllPayCodeTypeDot().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(detail.getAllPayCodeTypeDotPercent() + "%");
+						cell.setCellStyle(cellFormatStyle);
+						break;
+					case "門急診":
+						cell.setCellValue(detail.getOpAllPayCodeTypeDot().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(detail.getOpAllPayCodeTypeDotPercent() + "%");
+						cell.setCellStyle(cellFormatStyle);
+						break;
+					case "門診":
+						cell.setCellValue(detail.getOpPayCodeTypeDot().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(detail.getOpPayCodeTypeDotPercent() + "%");
+						cell.setCellStyle(cellFormatStyle);
+						break;
+					case "急診":
+						cell.setCellValue(detail.getEmPayCodeTypeDot().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(detail.getEmPayCodeTypeDotPercent() + "%");
+						cell.setCellStyle(cellFormatStyle);
+						break;
+					case "住院":
+						cell.setCellValue(detail.getIpPayCodeTypeDot().doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(detail.getIpPayCodeTypeDotPercent() + "%");
+						cell.setCellStyle(cellFormatStyle);
+						break;
+					}
+					cellIndex++;
+				}
+				rowIndex++;
+				cellIndex = 0;
+
+			}
+		}
+		cellIndex = 0;
+		if (payCode != null && payCode.length() > 0) {
+			row = sheet.createRow(rowIndex);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue("支付準則代碼" + payCode + "/費用占率");
+			cell.setCellStyle(cellStyle);
+			cellIndex++;
+			for (String str : dataFormatList) {
+				cell = row.createCell(cellIndex);
+				switch (str) {
+				case "不分區":
+					cell.setCellValue(modelList.get(y).getAllPayCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getAllPayCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				case "門急診":
+					cell.setCellValue(modelList.get(y).getOpAllPayCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getOpAllPayCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				case "門診":
+					cell.setCellValue(modelList.get(y).getOpPayCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getOpPayCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				case "急診":
+					cell.setCellValue(modelList.get(y).getEmPayCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getEmPayCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				case "住院":
+					cell.setCellValue(modelList.get(y).getIpPayCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getIpPayCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				}
+				cellIndex++;
+			}
+		}
+		cellIndex = 0;
+		if (inhCode != null && inhCode.length() > 0) {
+			row = sheet.createRow(rowIndex);
+			cell = row.createCell(cellIndex);
+			cell.setCellValue("院內碼" + payCode + "/費用占率");
+			cell.setCellStyle(cellStyle);
+			cellIndex++;
+			for (String str : dataFormatList) {
+				cell = row.createCell(cellIndex);
+				switch (str) {
+				case "不分區":
+					cell.setCellValue(modelList.get(y).getAllInhCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getAllInhCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				case "門急診":
+					cell.setCellValue(modelList.get(y).getOpAllInhCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getOpAllInhCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				case "門診":
+					cell.setCellValue(modelList.get(y).getOpInhCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getOpInhCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				case "急診":
+					cell.setCellValue(modelList.get(y).getEmInhCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getEmInhCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				case "住院":
+					cell.setCellValue(modelList.get(y).getIpInhCodeDot().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(y).getIpInhCodeDotPercent() + "%");
+					cell.setCellStyle(cellFormatStyle);
+					break;
+				}
+				cellIndex++;
+			}
+		}
+		return row.getRowNum();
+	}
+
 	public Comparator<OwnExpenseQueryConditionDetail> mapComparatorPI = new Comparator<OwnExpenseQueryConditionDetail>() {
 		public int compare(OwnExpenseQueryConditionDetail m1, OwnExpenseQueryConditionDetail m2) {
 			return m1.getPrsnId().compareTo(m2.getPrsnId());

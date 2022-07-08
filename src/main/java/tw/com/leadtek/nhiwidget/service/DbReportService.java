@@ -7010,7 +7010,7 @@ public class DbReportService {
 						}
 					}
 					if (payCode != null && payCode.length() > 0) {
-						selectColumn.append("(SELECT APPL_OP + PART_OP  AS EM_PAYCODE_DOT  FROM ");
+						selectColumn.append("(SELECT APPL_EM + PART_EM  AS EM_PAYCODE_DOT  FROM ");
 						/// 申報點數-門急診
 						if (nhiStatus.equals("1")) {
 							/// 含勞保
@@ -7291,7 +7291,7 @@ public class DbReportService {
 
 					}
 					if (payCode != null && payCode.length() > 0) {
-						selectColumn.append("(SELECT  APPL_IP  + PART_IP AS IP_DOT  FROM ");
+						selectColumn.append("(SELECT  APPL_IP  + PART_IP AS IP_PAYCODE_DOT  FROM ");
 						/// 申報點數-住院
 						if (nhiStatus.equals("1")) {
 							/// 含勞保
@@ -7369,7 +7369,7 @@ public class DbReportService {
 						selectColumn.append(" )p5, ");
 					}
 					if (inhCode != null && inhCode.length() > 0) {
-						selectColumn.append("(SELECT  APPL_IP  + PART_IP AS IP_DOT  FROM ");
+						selectColumn.append("(SELECT  APPL_IP  + PART_IP AS IP_INHCODE_DOT  FROM ");
 						/// 申報點數-住院
 						if (nhiStatus.equals("1")) {
 							/// 含勞保
@@ -8135,7 +8135,7 @@ public class DbReportService {
 				model.setOpAllPayCodeDot(Long.valueOf(oapd.toString()));
 				double d = Math.round((Long.valueOf(oapd.toString())).doubleValue()
 						/ (Long.valueOf(oad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
-				model.setOpAllInhCodeDotPercent(d);
+				model.setOpAllPayCodeDotPercent(d);
 			}
 
 			if (opd != null) {
