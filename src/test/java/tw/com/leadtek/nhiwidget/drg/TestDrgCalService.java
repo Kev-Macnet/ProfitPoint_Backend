@@ -3,12 +3,14 @@
  */
 package tw.com.leadtek.nhiwidget.drg;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,6 +50,7 @@ import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
 import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
+import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.SendHTTP;
 
@@ -99,6 +102,9 @@ public class TestDrgCalService {
   
   @Autowired
   private ParametersService parametersService; 
+  
+  @Autowired
+  private PaymentTermsDao paymentTermsDao;
   
   /**
    * 計算所有住院病歷的 DRG 代碼、區間、定額
@@ -680,5 +686,22 @@ public class TestDrgCalService {
     String endTime = "10811160000";
     int day = ViolatePaymentTermsService.diffDays(startTime, endTime, sdf);
     System.out.println(startTime + " to " + endTime + " need " + day + " days.");
+
+  }
+  
+  @Test
+  public void testPayCodeType() {
+      HashMap<String, String> map = nhiService.getPayCodeType();
+      String key ="00102B";
+      System.out.println(key + ":" + map.get(key));
+      key ="14051C";
+
+      List<Map<String, Object>> lst =
+          paymentTermsDao.searchPaymentTerms("", "", "", null, null, 0, 1000000, "id", "asc");
+      for (Map<String, Object> map2 : lst) {
+        // ID, ACTIVE, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY
+        System.out.println(map2.get("id") + ", active=" + map2.get("active") + ", nhiNo="
+            + map2.get("nhi_no") + ", category=" + map2.get("category"));
+      }
   }
 }

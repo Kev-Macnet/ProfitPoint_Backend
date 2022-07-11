@@ -4,6 +4,7 @@
 package tw.com.leadtek.nhiwidget.service;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -40,8 +41,8 @@ import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
+import tw.com.leadtek.nhiwidget.dto.PaymentTermsPl;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_CONFLICT;
-import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_THRESHOLD;
 import tw.com.leadtek.nhiwidget.model.rdb.ICDCM_DRUG_ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
@@ -52,6 +53,7 @@ import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentResponse;
 import tw.com.leadtek.nhiwidget.payload.intelligent.PilotProject;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
+import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.Utility;
 
@@ -59,13 +61,13 @@ import tw.com.leadtek.tools.Utility;
 public class IntelligentService {
 
   private Logger logger = LogManager.getLogger();
-  
+
   public final static String MENU_CLINCAL = "/intelligent?menu=clincal";
-  
+
   public final static String MENU_SUSPECTED = "/intelligent?menu=suspected";
-  
+
   public final static String MENU_DRG_SUGGESTION = "/intelligent?menu=drgSuggestion";
-  
+
   private final static float DRUG_DIFF_PERCENT = 0.1f;
 
   @Autowired
@@ -97,13 +99,13 @@ public class IntelligentService {
 
   @Autowired
   private AIDao aiDao;
-  
+
   @Autowired
   private ICDCM_DRUG_ATCDao idaDao;
 
   @Autowired
   private PlanConditionService planConditionService;
-  
+
   @Autowired
   private ViolatePaymentTermsService vpts;
 
@@ -112,6 +114,15 @@ public class IntelligentService {
 
   @Autowired
   private EntityManager em;
+
+  @Autowired
+  private PaymentTermsDao paymentTermsDao;
+  
+  @Autowired
+  private PaymentTermsService paymentTermsService;
+  
+  @Autowired
+  private ViolatePaymentTermsService violatePaymentTermsService;
 
   public IntelligentResponse getIntelligent(UserDetailsImpl user, String menu, java.sql.Date sDate,
       java.sql.Date eDate, Integer minPoints, Integer maxPoints, String funcType, String funcTypec,
@@ -199,9 +210,10 @@ public class IntelligentService {
   }
 
   private List<Predicate> getIntelligentPredicate(CriteriaBuilder cb, Root<INTELLIGENT> root,
-      CriteriaQuery<?> query, String menu, java.sql.Date sDate,  java.sql.Date eDate, Integer minPoints,
-      Integer maxPoints, String funcType, String funcTypec, String prsnId, String prsnName,
-      String code, String inhCode, String icd, Integer reason, String applYm, String dataFormat) {
+      CriteriaQuery<?> query, String menu, java.sql.Date sDate, java.sql.Date eDate,
+      Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
+      String prsnName, String code, String inhCode, String icd, Integer reason, String applYm,
+      String dataFormat) {
     List<Predicate> result = new ArrayList<Predicate>();
     if (sDate != null && eDate != null) {
       addSearchDateParameter(result, cb, root, sDate, eDate);
@@ -221,7 +233,7 @@ public class IntelligentService {
     addPredicate(root, result, cb, "inhCode", inhCode, true, false, true);
     addPredicate(root, result, cb, "icd", icd, true, false, true);
     addPredicate(root, result, cb, "applYm", applYm, true, false, false);
-    if (dataFormat != null && dataFormat.indexOf(XMLConstant.DATA_FORMAT_IP) > -1 
+    if (dataFormat != null && dataFormat.indexOf(XMLConstant.DATA_FORMAT_IP) > -1
         && dataFormat.indexOf(XMLConstant.DATA_FORMAT_OP) > -1) {
       dataFormat = null;
     }
@@ -234,8 +246,8 @@ public class IntelligentService {
       if ("0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         result.add(cb.equal(root.get("conditionCode"), Integer.MAX_VALUE));
       } else {
-       result.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.COST_DIFF.value(),
-          INTELLIGENT_REASON.IP_DAYS.value()));
+        result.add(cb.between(root.get("conditionCode"), INTELLIGENT_REASON.COST_DIFF.value(),
+            INTELLIGENT_REASON.IP_DAYS.value()));
       }
     } else {
       result.add(cb.equal(root.get("conditionCode"), Integer.MAX_VALUE));
@@ -243,17 +255,17 @@ public class IntelligentService {
     result.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
     return result;
   }
-  
-  private void addSearchDateParameter(List<Predicate> predicate, CriteriaBuilder cb, Root<INTELLIGENT> root, 
-      Date sdate, Date edate) {
+
+  private void addSearchDateParameter(List<Predicate> predicate, CriteriaBuilder cb,
+      Root<INTELLIGENT> root, Date sdate, Date edate) {
     predicate.add(cb.or(
-        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP), 
+        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP),
             cb.or(
-        cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
-            cb.lessThanOrEqualTo(root.get("startDate"), edate)),
-        cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
-            cb.lessThanOrEqualTo(root.get("endDate"), edate)))), 
-        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP), 
+                cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+                    cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+                cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+                    cb.lessThanOrEqualTo(root.get("endDate"), edate)))),
+        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP),
             cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
             cb.lessThanOrEqualTo(root.get("endDate"), edate))));
   }
@@ -296,9 +308,10 @@ public class IntelligentService {
     }
   }
 
-  public List<Tuple> groupByConditionCode(String menu, java.sql.Date sDate, java.sql.Date eDate, Integer minPoints,
-      Integer maxPoints, String funcType, String funcTypec, String prsnId, String prsnName,
-      String code, String inhCode, String icd, Integer reason, String applYm, String dataFormat) {
+  public List<Tuple> groupByConditionCode(String menu, java.sql.Date sDate, java.sql.Date eDate,
+      Integer minPoints, Integer maxPoints, String funcType, String funcTypec, String prsnId,
+      String prsnName, String code, String inhCode, String icd, Integer reason, String applYm,
+      String dataFormat) {
     CriteriaBuilder cb = em.getCriteriaBuilder();
     CriteriaQuery<Tuple> query = cb.createTupleQuery();
     Root<INTELLIGENT> root = query.from(INTELLIGENT.class);
@@ -385,7 +398,7 @@ public class IntelligentService {
     Calendar cal = DateTool.chineseYmToCalendar(chineseYm);
     int avg = get6MAvgByCode(dataFormat, cal, ct.getCode(), true);
     List<MR> list = getMRByCode(dataFormat, String.valueOf(chineseYm), "icdAll", ct.getCode(),
-        avg + max, false , ct.getStartDate(), ct.getEndDate());
+        avg + max, false, ct.getStartDate(), ct.getEndDate());
     if (list != null) {
       int over = list.size() - avg;
       for (MR mr : list) {
@@ -409,7 +422,7 @@ public class IntelligentService {
    */
   private List<MR> getMRByCode(String dataFormat, String applYm, String fieldName, String code,
       int max, boolean countEvery, Date startDate, Date endDate) {
-    
+
     Specification<MR> spec = new Specification<MR>() {
 
       private static final long serialVersionUID = 1012L;
@@ -440,11 +453,11 @@ public class IntelligentService {
       List<Long> mrIdList = new ArrayList<Long>();
       for (MR mr : list) {
         if ("icdAll".equals(fieldName)) {
-          //compare = mr.getIcdAll();
+          // compare = mr.getIcdAll();
           result.add(mr);
         } else {
-          if ( max == 0) {
-          //if (countStringAppear(compare, code) > max) {
+          if (max == 0) {
+            // if (countStringAppear(compare, code) > max) {
             result.add(mr);
           } else {
             // 查該筆病歷的指定醫令用量
@@ -462,7 +475,7 @@ public class IntelligentService {
     }
     return null;
   }
-  
+
   private List<MR> getOrderCodeCountOver(List<MR> mrList, List<Long> mrIdList, String fieldName,
       String code, int max) {
     List<MR> result = new ArrayList<MR>();
@@ -745,7 +758,90 @@ public class IntelligentService {
     }
     return false;
   }
-  
+
+  /**
+   * 寫入/刪除智能提示案件
+   * 
+   * @param mr MR table 的病歷
+   * @param conditionCode 智能提示代碼
+   * @param reasonCode ICD診斷碼/醫令
+   * @param reason 提示文字
+   * @param enable true:新增，false:移除
+   * @return
+   */
+  public boolean insertIntelligentNoUpdateMrStatus(MR mr, int conditionCode, String reasonCode,
+      String reason, boolean enable, List<INTELLIGENT> batch) {
+    List<INTELLIGENT> list = null;
+    if (conditionCode == INTELLIGENT_REASON.PILOT_PROJECT.value()) {
+      list = intelligentDao.findByRocIdAndConditionCodeAndReasonCode(mr.getRocId(),
+          INTELLIGENT_REASON.PILOT_PROJECT.value(), reasonCode);
+    } else {
+      list = intelligentDao.findByMrIdAndConditionCodeAndReasonCode(mr.getId(), conditionCode,
+          reasonCode);
+    }
+
+    if (enable && (list == null || list.size() == 0)) {
+      INTELLIGENT ig = new INTELLIGENT();
+      ig.setApplDot(mr.getTotalDot());
+      ig.setDataFormat(mr.getDataFormat());
+      ig.setCode(mr.getCodeAll());
+      ig.setConditionCode(conditionCode);
+      ig.setEndDate(mr.getMrEndDate());
+      ig.setFuncType(mr.getFuncType());
+      ig.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", mr.getFuncType()));
+      ig.setIcd(mr.getIcdAll());
+      ig.setInhClinicId(mr.getInhClinicId());
+      ig.setInhCode(mr.getInhMrId());
+      ig.setMrId(mr.getId());
+      ig.setPrsnName(mr.getPrsnName());
+      ig.setPrsnId(mr.getPrsnId());
+      ig.setReason(reason);
+      ig.setReasonCode(reasonCode);
+      ig.setStartDate(mr.getMrDate());
+      ig.setStatus(MR_STATUS.WAIT_CONFIRM.value());
+      ig.setRocId(mr.getRocId());
+      ig.setApplYm(mr.getApplYm());
+      ig.setUpdateAt(new Date());
+      if (batch != null) {
+        batch.add(ig);
+        if (batch.size() % XMLConstant.BATCH == 0) {
+          saveIntelligentBatch(batch);
+        }
+      } else {
+        intelligentDao.save(ig);
+      }
+      return true;
+    } else if (list != null) {
+      for (INTELLIGENT intelligent : list) {
+        if (enable) {
+          if (intelligent.getReason() != null && !intelligent.getReason().equals(reason)) {
+            intelligent.setReason(reason);
+            intelligent.setReasonCode(reasonCode);
+            intelligent.setUpdateAt(new Date());
+            if (batch != null) {
+              batch.add(intelligent);
+              if (batch.size() % XMLConstant.BATCH == 0) {
+                saveIntelligentBatch(batch);
+              }
+            } else {
+              intelligentDao.save(intelligent);
+            }
+          }
+        } else {
+          if (intelligent.getReason() == null || (intelligent.getReason().equals(reason)
+              || reasonCode.equals(intelligent.getReasonCode()))) {
+            if (mr.getStatus().intValue() == MR_STATUS.WAIT_CONFIRM.value()) {
+              mr.setStatus(MR_STATUS.NO_CHANGE.value());
+              mrDao.updateMrStauts(MR_STATUS.NO_CHANGE.value(), mr.getId());
+            }
+            intelligentDao.deleteById(intelligent.getId());
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   /**
    * 寫入/刪除智能提示案件
    * 
@@ -886,12 +982,10 @@ public class IntelligentService {
 
   public void calculateInfectious(String applYm, String code, String wording, boolean isEnable) {
     String reason = (wording != null) ? String.format(wording, code) : null;
-    List<MR> list = getMRByCode(null, applYm, "icdAll", code, 0, false, 
-        null, null);
+    List<MR> list = getMRByCode(null, applYm, "icdAll", code, 0, false, null, null);
     if (list != null) {
       for (MR mr : list) {
-        insertIntelligent(mr, INTELLIGENT_REASON.INFECTIOUS.value(), code, reason,
-            isEnable , null);
+        insertIntelligent(mr, INTELLIGENT_REASON.INFECTIOUS.value(), code, reason, isEnable, null);
       }
     }
   }
@@ -960,7 +1054,7 @@ public class IntelligentService {
           Long lastTime = patientLastTime.get(mr.getRocId() + mr.getName());
           long diff = lastTime.longValue() - mr.getMrEndDate().getTime();
           int diffDays = (int) (diff / 86400000);
-         
+
           if (lastTime.longValue() - mr.getMrEndDate().getTime() < maxDay) {
             int total = count.intValue() + appearCount;
             patientCount.put(mr.getRocId() + mr.getName(), new Integer(total));
@@ -986,7 +1080,8 @@ public class IntelligentService {
   private void processHighRatioSingle(String chineseYm, String dataFormat, CODE_THRESHOLD ct,
       int max, String wording, int conditionCode, List<INTELLIGENT> intelligentList) {
     String fieldName = ct.getCode() == null ? "inhCode" : "codeAll";
-    System.out.println("ct.code=" + ct.getCode() + ", inhCode=" + ct.getInhCode() + "," + ct.getCodeType());
+    System.out.println(
+        "ct.code=" + ct.getCode() + ", inhCode=" + ct.getInhCode() + "," + ct.getCodeType());
     String code = ct.getCode() == null ? ct.getInhCode() : ct.getCode();
     List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, max, true,
         ct.getStartDate(), ct.getEndDate());
@@ -1036,7 +1131,7 @@ public class IntelligentService {
       }
     }
     if (count > max) {
-      List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false, 
+      List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false,
           ct.getStartDate(), ct.getEndDate());
       if (list != null) {
         String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
@@ -1086,7 +1181,7 @@ public class IntelligentService {
     int avg6m = (int) (count6M / 6);
 
     if (count1M > (avg6m + max)) {
-      List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false, 
+      List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false,
           ct.getStartDate(), ct.getEndDate());
       if (list != null) {
         String reason = (wording != null) ? String.format(wording, code, max) : null;
@@ -1427,7 +1522,8 @@ public class IntelligentService {
           sb.deleteCharAt(sb.length() - 1);
         }
         sb.append(")");
-        insertIntelligent(mr, INTELLIGENT_REASON.SAME_ATC.value(), atcCode, sb.toString(), true, null);
+        insertIntelligent(mr, INTELLIGENT_REASON.SAME_ATC.value(), atcCode, sb.toString(), true,
+            null);
       }
     }
   }
@@ -1807,21 +1903,21 @@ public class IntelligentService {
       runningIntelligent.put(new Integer(intelligentCode), new Long(-1));
     }
   }
-  
+
   public synchronized void extendIntelligentRunning(int intelligentCode, long second) {
     Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
     if (runningTime == null || runningTime < 0) {
       runningTime = System.currentTimeMillis();
-    } 
+    }
     if (runningTime < Long.MAX_VALUE) {
       runningIntelligent.put(new Integer(intelligentCode), new Long(runningTime + second * 1000));
     }
   }
-  
+
   public synchronized void setIntelligentRunningTime(int intelligentCode, long time) {
     runningIntelligent.put(new Integer(intelligentCode), time);
   }
-  
+
   public synchronized long getIntelligentRunningTime(int intelligentCode) {
     Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
     if (runningTime == null) {
@@ -1829,7 +1925,7 @@ public class IntelligentService {
     }
     return runningTime.longValue();
   }
-  
+
   public void recalculateAICostThread() {
     Thread thread = new Thread(new Runnable() {
 
@@ -1840,11 +1936,11 @@ public class IntelligentService {
     });
     thread.start();
   }
-  
+
   public void recalculateAICost() {
     parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.INFECTIOUS.value());
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
-    
+
     Calendar cal = Calendar.getInstance();
 
     cal.set(Calendar.DAY_OF_MONTH, 1);
@@ -1909,8 +2005,8 @@ public class IntelligentService {
 
     insertIntelligentForAICost(list, wordUl, wordLl);
 
-    list = aiDao.costDiffOP(startDate, endDate,
-        XMLConstant.DATA_FORMAT_IP, applYm, costDiffUl, costDiffll);
+    list = aiDao.costDiffOP(startDate, endDate, XMLConstant.DATA_FORMAT_IP, applYm, costDiffUl,
+        costDiffll);
 
     insertIntelligentForAICost(list, wordUl, wordLl);
   }
@@ -1933,17 +2029,17 @@ public class IntelligentService {
       if (t_dot > up) {
         float per = ((t_dot - up) * 100) / up;
         reason = String.format(wordUl + "%", mr.getId().toString(), mr.getIcdcm1(),
-            (int)(Math.floor(up)), df.format(per));
+            (int) (Math.floor(up)), df.format(per));
       } else if (t_dot < down) {
         float per = ((down - t_dot) * 100) / down;
-        reason = String.format(wordLl + "%", mr.getId(), mr.getIcdcm1(),
-            (int)(Math.floor(down)), df.format(per));
+        reason = String.format(wordLl + "%", mr.getId(), mr.getIcdcm1(), (int) (Math.floor(down)),
+            df.format(per));
       }
       insertIntelligent(mr, INTELLIGENT_REASON.COST_DIFF.value(), mr.getIcdcm1().toString(), reason,
           true, null);
     }
   }
-  
+
   public void recalculateAIIpDaysThread() {
     Thread thread = new Thread(new Runnable() {
 
@@ -1954,11 +2050,11 @@ public class IntelligentService {
     });
     thread.start();
   }
-  
+
   public void recalculateAIIpDays() {
     parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
-    
+
     Calendar cal = Calendar.getInstance();
 
     cal.set(Calendar.DAY_OF_MONTH, 1);
@@ -2013,24 +2109,24 @@ public class IntelligentService {
     java.sql.Date sDate = new java.sql.Date(cal.getTimeInMillis());
     cal.add(Calendar.YEAR, -1);
     java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
-    
+
     cal.add(Calendar.YEAR, 1);
     cal.add(Calendar.DAY_OF_YEAR, -1);
     cal.set(Calendar.HOUR_OF_DAY, 23);
     cal.set(Calendar.MINUTE, 59);
     cal.set(Calendar.SECOND, 59);
     java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
-    
+
     cal.add(Calendar.DAY_OF_YEAR, 1);
     cal.add(Calendar.MONTH, 1);
     cal.add(Calendar.DAY_OF_YEAR, -1);
     java.sql.Date eDate = new java.sql.Date(cal.getTimeInMillis());
-    
+
     List<Map<String, Object>> list = aiDao.ipDays(startDate, endDate, sDate, eDate, days);
-    //(startDate, endDate, XMLConstant.DATA_FORMAT_OP, applYm, costDiffUl, costDiffll);
+    // (startDate, endDate, XMLConstant.DATA_FORMAT_OP, applYm, costDiffUl, costDiffll);
     insertIntelligentForIpDays(list, wording);
   }
-  
+
   private void insertIntelligentForIpDays(List<Map<String, Object>> list, String wording) {
     for (Map<String, Object> map : list) {
       Optional<MR> optional = mrDao.findById(Long.parseLong(map.get("MR_ID").toString()));
@@ -2056,7 +2152,7 @@ public class IntelligentService {
           true, null);
     }
   }
-  
+
   public void recalculateAIOrderDrugThread() {
     Thread thread = new Thread(new Runnable() {
 
@@ -2067,14 +2163,14 @@ public class IntelligentService {
     });
     thread.start();
   }
-  
+
   /**
    * 重新計算所有病歷的用藥差異
    */
   public void recalculateAIOrderDrug() {
     parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
-    
+
     Calendar cal = Calendar.getInstance();
 
     cal.set(Calendar.DAY_OF_MONTH, 1);
@@ -2107,7 +2203,7 @@ public class IntelligentService {
     logger.info("recalculateAIOrderDrug done");
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), false);
   }
-  
+
   /**
    * 計算AI功能用藥差異
    * 
@@ -2127,20 +2223,23 @@ public class IntelligentService {
     java.sql.Date startDate = new java.sql.Date(cal.getTimeInMillis());
     cal.add(Calendar.MONTH, 1);
     java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
-    
+
     getDrugDiff(wording, XMLConstant.DATA_FORMAT_OP, startDate, endDate);
     getDrugDiff(wording, XMLConstant.DATA_FORMAT_IP, startDate, endDate);
-    //List<Map<String, Object>> list = aiDao.icdcmDrugCountOP(endDate);
-    //(startDate, endDate, XMLConstant.DATA_FORMAT_OP, applYm, costDiffUl, costDiffll);
-   // insertIntelligentForIpDays(list, wording);
+    // List<Map<String, Object>> list = aiDao.icdcmDrugCountOP(endDate);
+    // (startDate, endDate, XMLConstant.DATA_FORMAT_OP, applYm, costDiffUl, costDiffll);
+    // insertIntelligentForIpDays(list, wording);
   }
-  
-  private void getDrugDiff(String wording, String dataFormat, java.sql.Date sdate, java.sql.Date edate) {
+
+  private void getDrugDiff(String wording, String dataFormat, java.sql.Date sdate,
+      java.sql.Date edate) {
     List<ICDCM_DRUG_ATC> diff = idaDao.getDiffList(dataFormat, DRUG_DIFF_PERCENT);
-    //System.out.println("dataFormat=" + dataFormat + " diff size=" + diff.size() + "," + sdate + "," + edate);
+    // System.out.println("dataFormat=" + dataFormat + " diff size=" + diff.size() + "," + sdate +
+    // "," + edate);
     HashMap<String, String> icdAtcDrug = getIcdDiffTopMap(diff);
     HashMap<String, List<ICDCM_DRUG_ATC>> icdMap = getIcdDiffMap(diff);
-    List<MR> mrList = mrDao.getMrByIcdcm(new ArrayList<String>(icdMap.keySet()), dataFormat, sdate, edate);
+    List<MR> mrList =
+        mrDao.getMrByIcdcm(new ArrayList<String>(icdMap.keySet()), dataFormat, sdate, edate);
     List<INTELLIGENT> intelligentBatch = new ArrayList<INTELLIGENT>();
     for (MR mr : mrList) {
       List<ICDCM_DRUG_ATC> list = icdMap.get(mr.getIcdcm1());
@@ -2148,10 +2247,12 @@ public class IntelligentService {
         if (mr.getCodeAll().indexOf("," + ida.getDrug() + ",") > -1) {
           // 符合用藥比例偏低
           // 病歷編號%s主診斷%s，醫師%s使用藥品%s與常態(%s)選擇有差異
-          String reason = String.format(wording, mr.getInhMrId() == null ? mr.getId().toString() : mr.getInhMrId().toString(),
-              mr.getIcdcm1(), mr.getPrsnName() == null ? mr.getPrsnId() : mr.getPrsnName(), ida.getDrug(),
-                  icdAtcDrug.get(mr.getIcdcm1() + ida.getAtc()));
-          insertIntelligent(mr, INTELLIGENT_REASON.ORDER_DRUG.value(), ida.getDrug(), reason, true, intelligentBatch);
+          String reason = String.format(wording,
+              mr.getInhMrId() == null ? mr.getId().toString() : mr.getInhMrId().toString(),
+              mr.getIcdcm1(), mr.getPrsnName() == null ? mr.getPrsnId() : mr.getPrsnName(),
+              ida.getDrug(), icdAtcDrug.get(mr.getIcdcm1() + ida.getAtc()));
+          insertIntelligent(mr, INTELLIGENT_REASON.ORDER_DRUG.value(), ida.getDrug(), reason, true,
+              intelligentBatch);
           if (intelligentBatch.size() > XMLConstant.BATCH) {
             intelligentDao.saveAll(intelligentBatch);
             intelligentBatch.clear();
@@ -2164,7 +2265,7 @@ public class IntelligentService {
       intelligentBatch.clear();
     }
   }
-  
+
   private void initialAIOrderDrug() {
     java.sql.Date endDate = getIcdcmDrugAtcDataEndDate(XMLConstant.DATA_FORMAT_OP);
     if (endDate != null) {
@@ -2188,7 +2289,7 @@ public class IntelligentService {
     }
     return null;
   }
-  
+
   private void updateIcdcmDrugAtc(String dataFormat, java.sql.Date endDate) {
     idaDao.deleteByDataFormat(dataFormat);
     List<Map<String, Object>> list = null;
@@ -2229,9 +2330,10 @@ public class IntelligentService {
       saveBatch.clear();
     }
   }
-  
+
   /**
    * 取得ICD+ATC使用率較低的藥物
+   * 
    * @param list
    * @return
    */
@@ -2251,9 +2353,10 @@ public class IntelligentService {
     }
     return result;
   }
-  
+
   /**
    * 取得ICD+ATC最常用的前二組藥物名
+   * 
    * @param list
    * @return
    */
@@ -2280,22 +2383,46 @@ public class IntelligentService {
     }
     return result;
   }
-  
+
   /**
    * 匯完申報檔、病歷檔後，做智能提示掃描
    */
   public void checkAllIntelligentCondition() {
-    System.out.println("start checkAll");
+    List<MR> mrList = mrDao.getTodayUpdatedMR();
+    List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
+    logger.info("start checkAllIntelligentCondition");
     String rareIcd = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "RARE_ICD");
     boolean runRareICD = (rareIcd != null && "1".equals(rareIcd));
     if (runRareICD) {
-      //calculateRareICD(chineseYm)
+      // calculateRareICD(chineseYm)
     }
-    List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
     
-   // vpts.checkFee(pt, batch);
+    checkAllViolation(mrList, batch);
   }
-  
+
+  public void checkAllViolation(List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Map<String, Object>> lst =
+        paymentTermsDao.searchPaymentTerms("", "", "", null, null, 0, 1000000, "id", "asc");
+    for (Map<String, Object> map2 : lst) {
+      if ((Integer) map2.get("active") == 0) {
+        continue;
+      }
+      PaymentTermsPl pt = paymentTermsService.findRealPaymentTerms(
+          ((BigInteger) map2.get("id")).longValue(), (String) map2.get("category"));
+      if (pt == null) {
+        continue;
+      }
+      try {
+        violatePaymentTermsService.checkFee(pt, mrList, batch);
+        //System.out.println("finish checkFee");
+        saveIntelligentBatch(batch);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+
   public void saveIntelligentBatch(List<INTELLIGENT> batch) {
     if (batch == null) {
       return;

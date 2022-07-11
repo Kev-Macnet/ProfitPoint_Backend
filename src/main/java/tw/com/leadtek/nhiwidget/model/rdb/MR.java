@@ -194,6 +194,10 @@ public class MR {
   @ApiModelProperty(value = "申請點數", example = "1234", required = false)
   @Column(name = "APPL_DOT")
   protected Integer applDot;
+  
+  @ApiModelProperty(value = "申報點數", example = "1234", required = false)
+  @Column(name = "REPORT_DOT")
+  protected Long reportDot;
 
   /**
    * 核刪點數
@@ -306,6 +310,7 @@ public class MR {
     this.drgCode = ipd.getTwDrgCode();
     this.icdAll = "," + ipd.getIcdCm1() + ",";
     this.applDot = ipd.getApplDot();
+    this.reportDot = ipd.getApplDot().longValue() + ipd.getPartDot().longValue();
     this.ownExpense = ipd.getOwnExpense();
     this.updateAt = new Date();
   }
@@ -333,6 +338,7 @@ public class MR {
     }
     this.icdAll = "," + opd.getIcdCm1() + ",";
     this.applDot = opd.getTotalApplDot();
+    this.reportDot = opd.getTotalApplDot().longValue() + opd.getPartDot().longValue();
     this.ownExpense = 0;
     this.updateAt = new Date();
   }
@@ -927,6 +933,7 @@ public class MR {
     } else {
       this.applDot = ipd.getApplDot();
     }
+    this.reportDot = ipd.getApplDot().longValue() + ipd.getPartDot().longValue();
     
     if (ipd.getMedDot() != null) {
       this.totalDot = ipd.getMedDot();
@@ -1028,6 +1035,10 @@ public class MR {
     } else {
       this.applDot = opd.getTotalApplDot();
     }
+    if (opd.getPartDot() == null) {
+      opd.setPartDot(0);
+    }
+    this.reportDot = this.applDot.longValue() + opd.getPartDot().longValue();
     
 //    if (diffList != null && (opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()) != this.ownExpense) {
 //      FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", String.valueOf(opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()));
@@ -1057,6 +1068,14 @@ public class MR {
 
   public void setApplStatus(Integer applStatus) {
     this.applStatus = applStatus;
+  }
+
+  public Long getReportDot() {
+    return reportDot;
+  }
+
+  public void setReportDot(Long reportDot) {
+    this.reportDot = reportDot;
   }
 
 }

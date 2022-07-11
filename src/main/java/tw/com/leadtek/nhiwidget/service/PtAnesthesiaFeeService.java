@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.dto.PtAnesthesiaFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtAnesthesiaFeeDao;
 import tw.com.leadtek.tools.Utility;
@@ -111,5 +112,49 @@ public class PtAnesthesiaFeeService {
         return ret;
     }
 
+    public PtAnesthesiaFeePl findPtAnesthesiaFeePl(long ptId) {
+      PtAnesthesiaFeePl result = new PtAnesthesiaFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptAnesthesiaFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              // 需與以下任一支付標準代碼並存(開關)
+              result.setCoexist_nhi_no_enable((Short) detail.get("coexist_nhi_no_enable"));
+              result.setLst_co_nhi_no(paymentTermsDao.filterCoexistNhiNo(ptId));
+              // 科別限制
+              result.setLim_division_enable(checkDBColumnType(detail.get("lim_division_enable")));
+              result.setLst_division(paymentTermsDao.filterLimDivision(ptId));
+              // 單一就醫紀錄上，須包含以下任一DRG代碼
+              result.setInclude_drg_no_enable(checkDBColumnType(detail.get("include_drg_no_enable")));
+              result.setLst_drg_no(paymentTermsDao.filterDrgNo(ptId));
+              // 單一就醫紀錄上，應用 >= 次時，首次執行須滿 ? 分鐘，方可進行下一次，間隔超過 ? 分鐘
+              result.setOver_times_enable(checkDBColumnType(detail.get("over_times_enable")));
+              result.setOver_times_first_n(checkDBColumnType(detail.get("over_times_first_n")));
+              result.setOver_times_n(checkDBColumnType(detail.get("over_times_first_n")));
+              result.setOver_times_next_n(checkDBColumnType(detail.get("over_times_next_n")));
+          }
+      } 
+      return result;
+    }   
+    
+    private int checkDBColumnType(Object obj) {
+      if (obj instanceof Integer) {
+        return (Integer) obj;
+      } else {
+        return (Short) obj;
+      }
+    }
     
 }

@@ -1037,6 +1037,11 @@ public class NHIWidgetXMLService {
   }
 
   private void maskIPD(IP_D ipd) {
+    if (ISMASK) {
+      ipd.setRocId(StringUtility.maskString(ipd.getRocId(), StringUtility.MASK_MOBILE));
+      ipd.setName(StringUtility.maskString(ipd.getName(), StringUtility.MASK_NAME));
+      ipd.setPrsnId(StringUtility.maskString(ipd.getPrsnId(), StringUtility.MASK_MOBILE));
+    }
     ipd.setIcdCm1(StringUtility.formatICDtoUpperCase(ipd.getIcdCm1()));
     ipd.setIcdCm2(StringUtility.formatICDtoUpperCase(ipd.getIcdCm2()));
     ipd.setIcdCm3(StringUtility.formatICDtoUpperCase(ipd.getIcdCm3()));
@@ -2100,8 +2105,9 @@ public class NHIWidgetXMLService {
     result.setWaitConfirm(getMRStatusCount(smrp));
     smrp.setStatus(String.valueOf(MR_STATUS.WAIT_PROCESS.value()));
     result.setWaitProcess(getMRStatusCount(smrp));
-    smrp.setStatus(originalStatus);
+    smrp.setStatus(null);
     result.setDrg(getMRDRGCount(smrp));
+    smrp.setStatus(originalStatus);
   }
 
   private int getMRStatusCount(SearchMRParameters smrp) {
@@ -2208,7 +2214,6 @@ public class NHIWidgetXMLService {
       String paramName, String params, boolean isNot) {
     if ((paramName.equals("icdAll") || paramName.equals("icdcmOthers")
         || paramName.equals("icdpcs") || paramName.equals("codeAll") || paramName.equals("inhCode"))) {
-      //System.out.println("paramName:" + paramName + ", like " +  "%," + params + "%");
       if (isNot) {
         predicate.add(cb.notLike(root.get(paramName), "%," + params + "%"));
       } else {
@@ -5505,7 +5510,7 @@ public class NHIWidgetXMLService {
     mc.setTotalMr(getMRCount(cb, query, root, predicates, hp));
 
     // 5 為自費案件
-    predicates.add(cb.notEqual(root.get("applStatus"), 5));
+    predicates.add(cb.or(cb.notEqual(root.get("applStatus"), 5), cb.isNull(root.get("applStatus"))));
     retrieveMRApplyCount(cb, query, root, predicates, hp, mc);
   }
 
@@ -5921,7 +5926,7 @@ public class NHIWidgetXMLService {
    * 
    * @return
    */
-  private HashMap<String, String> getPayCodeType() {
+  public HashMap<String, String> getPayCodeType() {
     List<CODE_TABLE> codeTable = getCodeTable("PAY_CODE_TYPE");
     // 費用分類名稱, 費用分類代碼
     HashMap<String, String> payCodeType = new HashMap<String, String>();
@@ -7343,6 +7348,7 @@ public class NHIWidgetXMLService {
         do {
           try {
             Thread.sleep(5000);
+            logger.info("wait to run checkAll");
             System.out.println("wait to run checkAll");
           } catch (InterruptedException e) {
             e.printStackTrace();
@@ -7383,7 +7389,7 @@ public class NHIWidgetXMLService {
       readTheseIPP(sheet);
     }
     long usedTime = System.currentTimeMillis() - startImport;
-    checkAll(usedTime); 
+    checkAll(usedTime);
   }
   
   /**
@@ -8338,6 +8344,24 @@ public class NHIWidgetXMLService {
         }
         if (!isFound) {
           ippListDB.add(ipp);
+          if (ipp.getOrderCode() != null) {
+            if (mr.getCodeAll() == null) {
+              mr.setCodeAll("," + ipp.getOrderCode() + ",");
+              isIpdDirty = true;
+            } else if (mr.getCodeAll().indexOf("," + ipp.getOrderCode() + ",") < 0){
+              mr.setCodeAll(mr.getCodeAll() + ipp.getOrderCode() + ",");
+              isIpdDirty = true;
+            }
+          }
+          if (ipp.getInhCode() != null && ipp.getInhCode().length() > 0) {
+            if (mr.getInhCode() == null) {
+              mr.setInhCode("," + ipp.getInhCode() + ",");
+              isIpdDirty = true;
+            } else if (mr.getInhCode().indexOf("," + ipp.getInhCode() + ",") < 0){
+              mr.setInhCode(mr.getInhCode() + ipp.getInhCode() + ",");
+              isIpdDirty = true;
+            }
+          }
         }
 
         ippBatch.add(ipp);

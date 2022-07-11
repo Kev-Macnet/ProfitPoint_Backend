@@ -192,6 +192,11 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "UPDATE MR SET STATUS=?1 WHERE ID=?2", nativeQuery = true)
   public void updateMrStauts(Integer status, Long id);
   
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE MR SET STATUS=?1 WHERE ID IN ?2", nativeQuery = true)
+  public void updateMultiMrStauts(Integer status, List<Long> idList);
+  
   /**
    * 取得被智能提示助理標示需確認的病歷
    * @param conditionCode
@@ -705,6 +710,15 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<MR> getTodayUpdatedMR(Date date);
   
   /**
+   * 找出該病患使用該組醫令次數
+   * @param orderCode
+   * @return
+   */
+  @Query(value = "SELECT ROC_ID, COUNT(ROC_ID) FROM MR WHERE CODE_ALL LIKE ?1 "
+      + " AND ROC_ID IN ?2 GROUP BY ROC_ID", nativeQuery = true)
+  public List<Object[]> getRocIdByCodeTimes(String orderCode, List<String> rocIds);
+  
+  /**
    * 找出在該院使用該組醫令次數超過max次的病患證號
    * @param code
    * @param max
@@ -722,9 +736,31 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @return
    */
   @Query(value = "SELECT a.use_order_code, b.total_mr FROM " + 
-      "(SELECT count(id) AS use_order_code FROM mr WHERE id IN ?1" + 
+      "(SELECT count(id) AS use_order_code FROM mr WHERE APPL_YM = ?1 " + 
       "AND FUNC_TYPE = ?2 AND CODE_ALL LIKE ?3) a," + 
-      "(SELECT count(id) AS total_mr FROM mr WHERE id IN ?1" + 
+      "(SELECT count(id) AS total_mr FROM mr WHERE APPL_YM = ?1 " + 
       "AND FUNC_TYPE = ?2) b", nativeQuery = true)
-  public List<Object[]> getMrCountByFuncTypeAndOrderCode(List<Long> mrIdList, String funcType, String orderCode);
+  public List<Object[]> getMrCountByFuncTypeAndOrderCode(String applYm, String funcType, String orderCode);
+  
+  /**
+   * 取得同一病患使用該支付代碼(注射)的間隔日期
+   * @param orderCode
+   * @return
+   */
+  @Query(value = "SELECT ID, ROC_ID, MR_END_DATE FROM mr WHERE CODE_ALL LIKE ?1 ORDER BY ROC_ID , MR_END_DATE ", nativeQuery = true)
+  public List<Object[]> getMrEndDateByOrderCode(String orderCode);
+  
+  /**
+   * 取得同一病患使用該支付代碼年月。
+   * sample:SELECT ROC_ID, APPL_YM FROM mr WHERE CODE_ALL LIKE '%,P1409C,%' AND ROC_ID IS NOT NULL ORDER BY ROC_ID
+   * @param orderCode
+   * @param rocIdList
+   * @return
+   */
+  @Query(value = "SELECT ROC_ID, MR_END_DATE, APPL_YM, ID FROM mr WHERE CODE_ALL "
+      + "LIKE ?1 AND ROC_ID IN ?2 ORDER BY ROC_ID, MR_END_DATE ", nativeQuery = true)
+  public List<Object[]> getRocIdAndUseCountAndApplYm(String orderCode, List<String> rocIdList);
+
+  @Query(value = "SELECT * FROM mr WHERE UPDATE_AT  >= CURRENT_DATE", nativeQuery = true)
+  public List<MR> getTodayUpdatedMR();
 }

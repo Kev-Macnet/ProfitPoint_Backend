@@ -1,6 +1,5 @@
 package tw.com.leadtek.nhiwidget.service;
 
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,8 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.dto.PaymentTermsPl;
-import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
-import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
 import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
 import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
@@ -260,7 +257,7 @@ public class PaymentTermsService {
 
           @Override
           public void run() {
-            logger.info("start run " + id + " checkFee");
+            logger.info("start run " + id + " checkFee:" + pt.getNhi_no());
             int waitTimes = 0;
             do {
               try {
@@ -269,8 +266,8 @@ public class PaymentTermsService {
                 e.printStackTrace();
               }
               waitTimes++;
-              if ((waitTimes % 600000) == 0) {
-                logger.info("updateActiveByThread wait " + id + " for " + waitTimes + " times");
+              if ((waitTimes % 60) == 0) {
+                logger.info("updateActiveByThread wait " + id + ":" + pt.getNhi_no() + " for " + waitTimes + " times");
               }
             } while (is.isIntelligentRunning(INTELLIGENT_REASON.VIOLATE.value()));
             if (state == 0) {
@@ -284,6 +281,7 @@ public class PaymentTermsService {
             if (state == 1 && !"0".equals(parametersService.getParameter("VIOLATE"))) {
               List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
               try {
+                logger.info("start run " + id + " checkFee wait " + waitTimes + " times.");
                 vpts.checkFee(pt, batch);
                 //System.out.println("finish checkFee");
               } catch (Exception e) {
@@ -292,7 +290,7 @@ public class PaymentTermsService {
               is.saveIntelligentBatch(batch);
             }
             is.setIntelligentRunning(INTELLIGENT_REASON.VIOLATE.value(), false);
-            logger.info("start run " + id + " checkFee finished");
+            logger.info("start run " + id + " checkFee finished:" + pt.getNhi_no());
           }
         });
         if (useThread) {
@@ -310,7 +308,7 @@ public class PaymentTermsService {
       }
     }
     
-    private PaymentTermsPl findRealPaymentTerms(long id, String category) {
+    public PaymentTermsPl findRealPaymentTerms(long id, String category) {
       PaymentTermsPl result = null;
       if (PtOutpatientFeeService.Category.equals(category)) {
         result = ptOutpatientFeeService.findPtOutpatientFeePl(id);
@@ -326,34 +324,30 @@ public class PaymentTermsService {
         result = ptTreatmentFeeService.findPtTreatmentFeePl(id);
       } else if (PtNutritionalFeeService.Category.equals(category)) {
         result = ptNutritionalFeeService.findPtNutritionalFeePl(id);
+      } else if (PtAdjustmentFeeService.Category.equals(category)) {
+        result = ptAdjustmentFeeService.findPtAdjustmentFeePl(id);
+      } else if (PtMedicineFeeService.Category.equals(category)) {
+        result = ptMedicineFeeService.findPtMedicineFeePl(id);
+      } else if (PtRadiationFeeService.Category.equals(category)) {
+        result = ptRadiationFeeService.findPtRadiationFeePl(id);
+      } else if (PtInjectionFeeService.Category.equals(category)) {
+        result = ptInjectionFeeService.findPtInjectionFeePl(id);
+      } else if (PtQualityServiceService.Category.equals(category)) {
+        result = ptQualityServiceService.findPtQualityServicePl(id);
+      } else if (PtRehabilitationFeeService.Category.equals(category)) {
+        result = ptRehabilitationFeeService.findPtRehabilitationFeePl(id);
+      } else if (PtPsychiatricFeeService.Category.equals(category)) {
+        result = ptPsychiatricFeeService.findPtPsychiatricFeePl(id); 
+      } else if (PtBoneMarrowTransFeeService.Category.equals(category)) {
+        result = ptBoneMarrowTransFeeService.findPtBoneMarrowTransFeePl(id);
+      } else if (PtAnesthesiaFeeService.Category.equals(category)) {
+        result = ptAnesthesiaFeeService.findPtAnesthesiaFeePl(id);
+      } else if (PtSpecificMedicalFeeService.Category.equals(category)) {
+        result = ptSpecificMedicalFeeService.findPtSpecificMedicalFeePl(id);
+      } else if (PtOthersFeeService.Category.equals(category)) {
+        result = ptOthersFeeService.findPtOthersFeePl(id);
       }
-//      } else if (PtInpatientFeeService.Category.equals(category) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } else if (PtInpatientFeeService.Category.equals(category)) {
-//        result = ptInpatientFeeService.
-//      } 
+   
       if (result == null || result.getNhi_no() == null) {
         return null;
       }

@@ -2,7 +2,6 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -99,7 +97,8 @@ public class E2101cControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
-                retMap.put("message", "新增成功。/id="+ptId);
+                paymentTermsService.updateActiveByThread(ptId, PtRadiationFeeService.Category, params.getActive(), true);
+                retMap.put("message", "新增成功。id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -130,6 +129,7 @@ public class E2101cControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtRadiationFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
             } else {
                 retMap.put("message", "修改失敗!");
@@ -151,6 +151,7 @@ public class E2101cControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtRadiationFeeService.Category, 0, false);
             int status = ptRadiationFeeService.deleteRadiationFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
@@ -545,7 +546,7 @@ public class E2101cControll {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 paymentTermsService.updateActiveByThread(ptId, PtRehabilitationFeeService.Category, params.getActive(), true);
-                retMap.put("message", "新增成功。/id="+ptId);
+                retMap.put("message", "新增成功。id="+ptId);
             } else {
                 retMap.put("message", "新增失敗!");
             }

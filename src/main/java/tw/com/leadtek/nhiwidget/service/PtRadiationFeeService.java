@@ -2,7 +2,7 @@ package tw.com.leadtek.nhiwidget.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtRadiationFeeDao;
@@ -109,5 +109,46 @@ public class PtRadiationFeeService {
         return ret;
     }
 
+    public PtRadiationFeePl findPtRadiationFeePl(long ptId) {
+      PtRadiationFeePl result = new PtRadiationFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptRadiationFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              //不可與此支付標準代碼並存單一就醫紀錄一併申報(開關)
+              result.setExclude_nhi_no_enable(checkDBColumnType(detail.get("exclude_nhi_no_enable")));
+              result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
+              //並存單一就醫紀錄待申報時，需提示有無特別原由
+              result.setNotify_nhi_no_enable(checkDBColumnType(detail.get("notify_nhi_no_enable")));
+              result.setLst_ntf_nhi_no(paymentTermsDao.filterNotifyNhiNo(ptId));
+              // 需與以下任一支付標準代碼並存(開關)
+              result.setCoexist_nhi_no_enable((Short) detail.get("coexist_nhi_no_enable"));
+              result.setLst_co_nhi_no(paymentTermsDao.filterCoexistNhiNo(ptId));
+              // 每組病歷號碼，每院限申報次數
+              result.setMax_inpatient_enable(checkDBColumnType(detail.get("max_inpatient_enable")));
+              result.setMax_inpatient(checkDBColumnType(detail.get("max_inpatient")));
+          }
+      } 
+      return result;
+    }   
     
+    private int checkDBColumnType(Object obj) {
+      if (obj instanceof Integer) {
+        return (Integer) obj;
+      } else {
+        return (Short) obj;
+      }
+    }
 }
