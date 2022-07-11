@@ -1847,212 +1847,241 @@ public class ReportService {
 		String inputDate = DateTool.convertToChineseYear(year + monthStr + "00");
 		/// 轉成民國年月
 		String endDate = inputDate.substring(0, inputDate.length() - 2);
+		try {
+			POINT_MONTHLY pmModel =	pointMonthlyDao.findByYm(year * 100 + month);
+			/// 取得門急診人數
+			int patient_op = oppDao.getFuncEndDateCount(endDate);
+			patient_op = pmModel.getPatientOp().intValue() + pmModel.getPatientEm().intValue();
+			List<IP_D> ipdList = ipdDao.getApplCountByApplYM(endDate);
+			/// 住院人數
+			int patient_ip = ipdList.size();
+			patient_ip = pmModel.getIpQuantity().intValue();
+
+			List<Map<String, Object>> mrList = ipdDao.getMrDataByApplYMNull();
+			int out_count = 0;
+			int in_count = 0;
+			/// 如果病例無申報日
+			if (mrList.size() > 0) {
+				for (Map<String, Object> map : mrList) {
+					/// 先以出院日為主
+					if (map.get("OUT_DATE") != null && map.get("OUT_DATE").toString().contains(endDate)) {
+						out_count++;
+					}
+					if (map.get("OUT_DATE") == null) {
+						/// 再以住院日為主
+						if (map.get("IN_DATE").toString().contains(endDate)) {
+							in_count++;
+						}
+					}
+
+				}
+			}
+			/// 最終住院人數
+			int finalPatient_ip = patient_ip + out_count + in_count;
+			finalPatient_ip = patient_ip;
+			/// 取得門急診圓餅圖資料 人
+			List<Map<String, Object>> opPieCountData = opdDao.getOPPieCountData(endDate);
+
+			/// 取得住院圓餅圖資料 人
+			List<Map<String, Object>> ipPieCountData = ipdDao.getIPPieCountData(endDate);
+			List<Map<String, Object>> collectionList = new ArrayList<Map<String, Object>>();
+			List<Map<String, Object>> collectionList2 = new ArrayList<Map<String, Object>>();
+			List<Map<String, Object>> peoplePie = new ArrayList<Map<String, Object>>();
+			Map<String, Object> ojectMap = new HashMap<String, Object>();
+			/// 將門診和急診list加一起
+			collectionList.addAll(opPieCountData);
+			collectionList.addAll(ipPieCountData);
+			collectionList2.addAll(collectionList);
+			if (opPieCountData.size() > 0) {
+				/// 將門急診和住院資料+在一起
+				int opPieCountTotal = opdDao.getOPPieCountTotal(endDate);
+				int ipPieCountTotal = ipdDao.getIPPieCountTotal(endDate);
+				for (Map<String, Object> op : opPieCountData) {
+					String opFt = op.get("FUNC_TYPE").toString();
+					String opDC = op.get("DESC_CHI").toString();
+					int opC = Integer.parseInt(op.get("COUNT").toString());
+					for (Map<String, Object> ip : ipPieCountData) {
+						String ipFt = ip.get("FUNC_TYPE").toString();
+						String ipDC = ip.get("DESC_CHI").toString();
+						int ipC = Integer.parseInt(ip.get("COUNT").toString());
+						///將相同科別+在一起
+						if (opFt.equals(ipFt)) {
+							ojectMap.put("FUNC_TYPE", ipFt);
+							ojectMap.put("DESC_CHI", ipDC);
+							ojectMap.put("COUNT", String.valueOf(opC + ipC));
+							float fp = Float.valueOf(ojectMap.get("COUNT").toString());
+							String tt = String.valueOf(opPieCountTotal + ipPieCountTotal);
+							float m = (fp / Float.valueOf(tt)) * 100;
+							String str = String.format("%.02f", m);
+							ojectMap.put("PERCENT", str);
+							peoplePie.add(ojectMap);
+							ojectMap = new HashMap<String, Object>();
+						}
+					}
+				}
+				
+				///將所有的物件一一減掉
+				for(int x=0; x < 2; x++) {
+					for(int i=0; i< peoplePie.size(); i++) {
+						String pFt = peoplePie.get(i).get("FUNC_TYPE").toString();
+						for(int y=0; y < collectionList.size(); y++) {
+							String cFt = collectionList.get(y).get("FUNC_TYPE").toString();
+							if(pFt.equals(cFt)) {
+								collectionList2.remove(y);
+								break;
+							}
+						}
+						collectionList.clear();
+						collectionList.addAll(collectionList2);
+					}
+				}
+			}
+			
+			/// 將最後結果add倒要顯示集合
+			peoplePie.addAll(collectionList2);
+
+			SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
+			Calendar cal_s = DateTool.chineseYmToCalendar2(endDate);
+			System.out.print(cal_s.getTime());
+			cal_s.add(Calendar.MONTH, -1);
+			cal_s.set(Calendar.DAY_OF_MONTH, 1);
+			System.out.print(cal_s.getTime());
+			String firstDate = format.format(cal_s.getTime());
+
+			Calendar cal_e = DateTool.chineseYmToCalendar2(endDate);
+			cal_e.add(Calendar.MONTH, -1);
+			cal_e.set(Calendar.DAY_OF_MONTH, cal_e.getActualMaximum(Calendar.DAY_OF_MONTH));
+			String lastDate = format.format(cal_e.getTime());
+
+			/// 取得出院圓餅圖資料
+			List<Map<String, Object>> ipPieOutCountData = ipdDao.getIPPieOutCountData(firstDate, lastDate);
+
+			/// 取得門急診圓餅圖資料 點數
+			List<Map<String, Object>> opPieDotData = opdDao.getOPPieDotData(endDate);
+			/// 取得住院圓餅圖資料 點數
+			List<Map<String, Object>> ipPieDotData = ipdDao.getIPPieDotData(endDate);
+			List<Map<String, Object>> dotPie = new ArrayList<Map<String, Object>>();
+			collectionList.clear();
+			collectionList2.clear();
+			collectionList.addAll(opPieDotData);
+			collectionList.addAll(ipPieDotData);
+			collectionList2.addAll(collectionList);
+			if (opPieDotData.size() > 0) {
+				/// 將門急診和住院資料+在一起
+				int opPieDotTotal = opdDao.getOPPieDotTotal(endDate);
+				int ipPieDoTotal = ipdDao.getIPPieDotTotal(endDate);
+				for (Map<String, Object> op : opPieDotData) {
+					String opFt = op.get("FUNC_TYPE").toString();
+					String opDC = op.get("DESC_CHI").toString();
+					int opC = Integer.parseInt(op.get("SUM").toString());
+					for (Map<String, Object> ip : ipPieDotData) {
+						String ipFt = ip.get("FUNC_TYPE").toString();
+						String ipDC = ip.get("DESC_CHI").toString();
+						int ipC = Integer.parseInt(ip.get("SUM").toString());
+						if (opFt.equals(ipFt)) {
+							ojectMap.put("FUNC_TYPE", ipFt);
+							ojectMap.put("DESC_CHI", ipDC);
+							ojectMap.put("SUM", String.valueOf(opC + ipC));
+							float fp = Float.valueOf(ojectMap.get("SUM").toString());
+							String tt = String.valueOf(opPieDotTotal + ipPieDoTotal);
+							float m = (fp / Float.valueOf(tt)) * 100;
+							String str = String.format("%.02f", m);
+							ojectMap.put("PERCENT", str);
+							dotPie.add(ojectMap);
+							ojectMap = new HashMap<String, Object>();
+						}
+					}
+				}
+
+				for(int x=0; x < 2; x++) {
+					for(int i=0; i<dotPie.size(); i++) {
+						String pFt = dotPie.get(i).get("FUNC_TYPE").toString();
+						for(int y=0; y<collectionList.size(); y++) {
+							String cFt = collectionList.get(y).get("FUNC_TYPE").toString();
+							if (pFt.equals(cFt)) {
+								collectionList2.remove(y);
+								break;
+							}
+						}
+						collectionList.clear();
+						collectionList.addAll(collectionList2);
+					}
+				}
+				
+			}
+			/// 將最後結果add倒要顯示集合
+			dotPie.addAll(collectionList2);
+
+			PointMRPayload result = new PointMRPayload();
+
+			result.setFuncTypes(findAllFuncTypesName(false));
+			/// 取得返回當月資料
+			result.setCurrent(pointMonthlyDao.findByYm(year * 100 + month));
+			/// 返回門急診人數
+			result.setPatient_op_count(patient_op);
+			/// 返回住院人數
+			result.setPatient_ip_count(finalPatient_ip);
+			/// 返回門急診/住院人數
+			result.setPatient_total_count(patient_op + finalPatient_ip);
+			/// 返回門急診人數圓餅
+			Collections.sort(opPieCountData, mapComparator);
+			result.setOpPieCountData(opPieCountData);
+			/// 返回出院人數圓餅
+			Collections.sort(ipPieOutCountData, mapComparator);
+			result.setIpPieOutCountData(ipPieOutCountData);
+			/// 返回住院人數圓餅
+			Collections.sort(ipPieCountData, mapComparator);
+			result.setIpPieCountData(ipPieCountData);
+			/// 返回 門急診＋住院人數園餅
+			Collections.sort(peoplePie, mapComparator);
+			result.setTotalPieCountData(peoplePie);
+			/// 返回門急診點數圓餅
+			Collections.sort(opPieDotData, mapComparator);
+			result.setOpPieDotData(opPieDotData);
+			/// 返回住院點數圓餅
+			Collections.sort(ipPieDotData, mapComparator);
+			result.setIpPieDotData(ipPieDotData);
+			/// 返回 門急診＋住院點數園餅
+			Collections.sort(dotPie, mapComparator);
+			result.setTotalPieDotData(dotPie);
+			/// 返回趨勢圖資料
+			VisitsVarietyPayload res = new VisitsVarietyPayload();
+			result.setVisitsVarietyPayload(getVistAndPointWeekly(res, String.valueOf(year), monthStr));
+
+			return result;
+		}catch(Exception e) {
+			PointMRPayload result = new PointMRPayload();
+			
+			result.setFuncTypes(findAllFuncTypesName(false));
+			/// 取得返回當月資料
+			result.setCurrent(pointMonthlyDao.findByYm(year * 100 + month));
+			/// 返回門急診人數
+			result.setPatient_op_count(0);
+			/// 返回住院人數
+			result.setPatient_ip_count(0);
+			/// 返回門急診/住院人數
+			result.setPatient_total_count(0);
+			result.setOpPieCountData(null);
+			
+			result.setIpPieOutCountData(null);
 		
-		POINT_MONTHLY pmModel =	pointMonthlyDao.findByYm(year * 100 + month);
-		/// 取得門急診人數
-		int patient_op = oppDao.getFuncEndDateCount(endDate);
-		patient_op = pmModel.getPatientOp().intValue() + pmModel.getPatientEm().intValue();
-		List<IP_D> ipdList = ipdDao.getApplCountByApplYM(endDate);
-		/// 住院人數
-		int patient_ip = ipdList.size();
-		patient_ip = pmModel.getIpQuantity().intValue();
+			result.setIpPieCountData(null);
+		
+			result.setTotalPieCountData(null);
 
-		List<Map<String, Object>> mrList = ipdDao.getMrDataByApplYMNull();
-		int out_count = 0;
-		int in_count = 0;
-		/// 如果病例無申報日
-		if (mrList.size() > 0) {
-			for (Map<String, Object> map : mrList) {
-				/// 先以出院日為主
-				if (map.get("OUT_DATE") != null && map.get("OUT_DATE").toString().contains(endDate)) {
-					out_count++;
-				}
-				if (map.get("OUT_DATE") == null) {
-					/// 再以住院日為主
-					if (map.get("IN_DATE").toString().contains(endDate)) {
-						in_count++;
-					}
-				}
-
-			}
+			result.setOpPieDotData(null);
+	
+			result.setIpPieDotData(null);
+		
+			result.setTotalPieDotData(null);
+			
+			result.setVisitsVarietyPayload(null);
+			
+			result.setResult("error");
+			result.setMessage("查無該期間資料");
+			return result;
 		}
-		/// 最終住院人數
-		int finalPatient_ip = patient_ip + out_count + in_count;
-		finalPatient_ip = patient_ip;
-		/// 取得門急診圓餅圖資料 人
-		List<Map<String, Object>> opPieCountData = opdDao.getOPPieCountData(endDate);
-
-		/// 取得住院圓餅圖資料 人
-		List<Map<String, Object>> ipPieCountData = ipdDao.getIPPieCountData(endDate);
-		List<Map<String, Object>> collectionList = new ArrayList<Map<String, Object>>();
-		List<Map<String, Object>> collectionList2 = new ArrayList<Map<String, Object>>();
-		List<Map<String, Object>> peoplePie = new ArrayList<Map<String, Object>>();
-		Map<String, Object> ojectMap = new HashMap<String, Object>();
-		/// 將門診和急診list加一起
-		collectionList.addAll(opPieCountData);
-		collectionList.addAll(ipPieCountData);
-		collectionList2.addAll(collectionList);
-
-		if (opPieCountData.size() > 0) {
-			/// 將門急診和住院資料+在一起
-			int opPieCountTotal = opdDao.getOPPieCountTotal(endDate);
-			int ipPieCountTotal = ipdDao.getIPPieCountTotal(endDate);
-			for (Map<String, Object> op : opPieCountData) {
-				String opFt = op.get("FUNC_TYPE").toString();
-				String opDC = op.get("DESC_CHI").toString();
-				int opC = Integer.parseInt(op.get("COUNT").toString());
-				for (Map<String, Object> ip : ipPieCountData) {
-					String ipFt = ip.get("FUNC_TYPE").toString();
-					String ipDC = ip.get("DESC_CHI").toString();
-					int ipC = Integer.parseInt(ip.get("COUNT").toString());
-					if (opFt.equals(ipFt)) {
-						ojectMap.put("FUNC_TYPE", ipFt);
-						ojectMap.put("DESC_CHI", ipDC);
-						ojectMap.put("COUNT", String.valueOf(opC + ipC));
-						float fp = Float.valueOf(ojectMap.get("COUNT").toString());
-						String tt = String.valueOf(opPieCountTotal + ipPieCountTotal);
-						float m = (fp / Float.valueOf(tt)) * 100;
-						String str = String.format("%.02f", m);
-						ojectMap.put("PERCENT", str);
-						peoplePie.add(ojectMap);
-						ojectMap = new HashMap<String, Object>();
-					}
-				}
-			}
-			int del = 0;
-			for (Map<String, Object> p : peoplePie) {
-				String pFt = p.get("FUNC_TYPE").toString();
-				for (Map<String, Object> col : collectionList) {
-					String colFt = col.get("FUNC_TYPE").toString();
-					if (colFt.equals(pFt)) {
-						if (del == collectionList2.size()) {
-							collectionList2.remove(del - 1);
-						} else {
-							collectionList2.remove(del);
-						}
-					}
-					del++;
-				}
-				collectionList.clear();
-				collectionList.addAll(collectionList2);
-				del = 0;
-			}
-		}
-		/// 將最後結果add倒要顯示集合
-		peoplePie.addAll(collectionList2);
-
-		SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
-		Calendar cal_s = DateTool.chineseYmToCalendar2(endDate);
-		System.out.print(cal_s.getTime());
-		cal_s.add(Calendar.MONTH, -1);
-		cal_s.set(Calendar.DAY_OF_MONTH, 1);
-		System.out.print(cal_s.getTime());
-		String firstDate = format.format(cal_s.getTime());
-
-		Calendar cal_e = DateTool.chineseYmToCalendar2(endDate);
-		cal_e.add(Calendar.MONTH, -1);
-		cal_e.set(Calendar.DAY_OF_MONTH, cal_e.getActualMaximum(Calendar.DAY_OF_MONTH));
-		String lastDate = format.format(cal_e.getTime());
-
-		/// 取得出院圓餅圖資料
-		List<Map<String, Object>> ipPieOutCountData = ipdDao.getIPPieOutCountData(firstDate, lastDate);
-
-		/// 取得門急診圓餅圖資料 點數
-		List<Map<String, Object>> opPieDotData = opdDao.getOPPieDotData(endDate);
-		/// 取得住院圓餅圖資料 點數
-		List<Map<String, Object>> ipPieDotData = ipdDao.getIPPieDotData(endDate);
-		List<Map<String, Object>> dotPie = new ArrayList<Map<String, Object>>();
-		collectionList.clear();
-		collectionList2.clear();
-		collectionList.addAll(opPieDotData);
-		collectionList.addAll(ipPieDotData);
-		collectionList2.addAll(collectionList);
-		if (opPieDotData.size() > 0) {
-			/// 將門急診和住院資料+在一起
-			int opPieDotTotal = opdDao.getOPPieDotTotal(endDate);
-			int ipPieDoTotal = ipdDao.getIPPieDotTotal(endDate);
-			for (Map<String, Object> op : opPieDotData) {
-				String opFt = op.get("FUNC_TYPE").toString();
-				String opDC = op.get("DESC_CHI").toString();
-				int opC = Integer.parseInt(op.get("SUM").toString());
-				for (Map<String, Object> ip : ipPieDotData) {
-					String ipFt = ip.get("FUNC_TYPE").toString();
-					String ipDC = ip.get("DESC_CHI").toString();
-					int ipC = Integer.parseInt(ip.get("SUM").toString());
-					if (opFt.equals(ipFt)) {
-						ojectMap.put("FUNC_TYPE", ipFt);
-						ojectMap.put("DESC_CHI", ipDC);
-						ojectMap.put("SUM", String.valueOf(opC + ipC));
-						float fp = Float.valueOf(ojectMap.get("SUM").toString());
-						String tt = String.valueOf(opPieDotTotal + ipPieDoTotal);
-						float m = (fp / Float.valueOf(tt)) * 100;
-						String str = String.format("%.02f", m);
-						ojectMap.put("PERCENT", str);
-						dotPie.add(ojectMap);
-						ojectMap = new HashMap<String, Object>();
-					}
-				}
-			}
-
-			int del = 0;
-			for (Map<String, Object> p : dotPie) {
-				String pFt = p.get("FUNC_TYPE").toString();
-				for (Map<String, Object> col : collectionList) {
-					String colFt = col.get("FUNC_TYPE").toString();
-					if (colFt.equals(pFt)) {
-						if (del == collectionList2.size()) {
-							collectionList2.remove(del - 1);
-						} else {
-							collectionList2.remove(del);
-						}
-					}
-					del++;
-				}
-				collectionList.clear();
-				collectionList.addAll(collectionList2);
-				del = 0;
-			}
-		}
-		/// 將最後結果add倒要顯示集合
-		dotPie.addAll(collectionList2);
-
-		PointMRPayload result = new PointMRPayload();
-
-		result.setFuncTypes(findAllFuncTypesName(false));
-		/// 取得返回當月資料
-		result.setCurrent(pointMonthlyDao.findByYm(year * 100 + month));
-		/// 返回門急診人數
-		result.setPatient_op_count(patient_op);
-		/// 返回住院人數
-		result.setPatient_ip_count(finalPatient_ip);
-		/// 返回門急診/住院人數
-		result.setPatient_total_count(patient_op + finalPatient_ip);
-		/// 返回門急診人數圓餅
-		Collections.sort(opPieCountData, mapComparator);
-		result.setOpPieCountData(opPieCountData);
-		/// 返回出院人數圓餅
-		Collections.sort(ipPieOutCountData, mapComparator);
-		result.setIpPieOutCountData(ipPieOutCountData);
-		/// 返回住院人數圓餅
-		Collections.sort(ipPieCountData, mapComparator);
-		result.setIpPieCountData(ipPieCountData);
-		/// 返回 門急診＋住院人數園餅
-		Collections.sort(peoplePie, mapComparator);
-		result.setTotalPieCountData(peoplePie);
-		/// 返回門急診點數圓餅
-		Collections.sort(opPieDotData, mapComparator);
-		result.setOpPieDotData(opPieDotData);
-		/// 返回住院點數圓餅
-		Collections.sort(ipPieDotData, mapComparator);
-		result.setIpPieDotData(ipPieDotData);
-		/// 返回 門急診＋住院點數園餅
-		Collections.sort(dotPie, mapComparator);
-		result.setTotalPieDotData(dotPie);
-		/// 返回趨勢圖資料
-		VisitsVarietyPayload res = new VisitsVarietyPayload();
-		result.setVisitsVarietyPayload(getVistAndPointWeekly(res, String.valueOf(year), monthStr));
-
-		return result;
+		
 	}
 	
 	public Comparator<Map<String, Object>> mapComparator = new Comparator<Map<String, Object>>() {
