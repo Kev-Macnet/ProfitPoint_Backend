@@ -284,7 +284,10 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
       "(SELECT SUM(T_DOT) AS ALL_APPL FROM MR WHERE MR_END_DATE >= ?9 AND MR_END_DATE <= ?10) ALL_APPL," + 
       "(SELECT SUM(T_DOT) AS OP_APPL FROM MR WHERE MR_END_DATE >= ?11 AND MR_END_DATE <= ?12 AND DATA_FORMAT='10') OP_APPL," + 
       "(SELECT SUM(T_DOT) AS EM_APPL FROM MR WHERE MR_END_DATE >= ?13 AND MR_END_DATE <= ?14 AND DATA_FORMAT='10' AND FUNC_TYPE='22') EM_APPL," + 
-      "(SELECT SUM(T_DOT) AS IP_APPL FROM MR WHERE MR_END_DATE >= ?15 AND MR_END_DATE <= ?16 AND DATA_FORMAT='20') IP_APPL", nativeQuery = true)
+      "(SELECT SUM(T_DOT) AS IP_APPL FROM MR WHERE MR_END_DATE >= ?15 AND MR_END_DATE <= ?16 AND DATA_FORMAT='20') IP_APPL, "+
+      "(SELECT SUM(APPL_DOT) AS IP_APPLDOT FROM MR WHERE MR_END_DATE >= ?15 AND MR_END_DATE <= ?16 AND DATA_FORMAT='20') a, "+
+      "(SELECT SUM(PART_DOT) AS PART_IP FROM MR, IP_D WHERE MR_END_DATE >= ?15 AND MR_END_DATE <= ?16  AND IP_D.MR_ID = MR.ID) p"
+      , nativeQuery = true)
   public List<Object[]> getPointPeriod(Date s1, Date e1, Date s2, Date e2, Date s3, Date e3,
       Date s4, Date e4, Date s5, Date e5, Date s6, Date e6, Date s7, Date e7, Date s8, Date e8);
   
