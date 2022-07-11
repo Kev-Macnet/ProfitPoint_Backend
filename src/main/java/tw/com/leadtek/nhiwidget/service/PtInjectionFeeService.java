@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.dto.PtInjectionFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtInjectionFeeDao;
 import tw.com.leadtek.tools.Utility;
@@ -88,5 +89,43 @@ public class PtInjectionFeeService {
         return ret;
     }
 
+    public PtInjectionFeePl findPtInjectionFeePl(long ptId) {
+      PtInjectionFeePl result = new PtInjectionFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptInjectionFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              //不可與此支付標準代碼並存單一就醫紀錄一併申報(開關)
+              result.setExclude_nhi_no_enable(checkDBColumnType(detail.get("exclude_nhi_no_enable")));
+              result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
+              // 每組病歷號碼，每院限申報次數
+              result.setMax_inpatient_enable(checkDBColumnType(detail.get("max_inpatient_enable")));
+              result.setMax_inpatient(checkDBColumnType(detail.get("max_inpatient")));
+              // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
+              result.setInterval_nday_enable(checkDBColumnType(detail.get("interval_nday_enable")));
+              result.setInterval_nday(checkDBColumnType(detail.get("interval_nday")));
+          }
+      } 
+      return result;
+    }   
     
+    private int checkDBColumnType(Object obj) {
+      if (obj instanceof Integer) {
+        return (Integer) obj;
+      } else {
+        return (Short) obj;
+      }
+    }
 }

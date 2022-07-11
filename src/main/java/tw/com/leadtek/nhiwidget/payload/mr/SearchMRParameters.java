@@ -787,7 +787,7 @@ public class SearchMRParameters extends HomepageParameters {
       String inhCodeDrugUse) {
     this.notOrderCode = notOrderCode;
     if (orderCode != null) {
-      this.orderCode = "%," + orderCode.trim().toUpperCase();
+      this.orderCode = orderCode.trim().toUpperCase();
     }
     this.drugUse = drugUse;
     if (inhCode != null) {

@@ -1,9 +1,13 @@
 package tw.com.leadtek.nhiwidget.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import tw.com.leadtek.nhiwidget.dto.PtInjectionFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtQualityServicePl;
+import tw.com.leadtek.nhiwidget.dto.ptNhiNoTimes;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtQualityServiceDao;
 import tw.com.leadtek.tools.Utility;
@@ -91,5 +95,54 @@ public class PtQualityServiceService {
         return ret;
     }
 
+    public PtQualityServicePl findPtQualityServicePl(long ptId) {
+      PtQualityServicePl result = new PtQualityServicePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptQualityServiceDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              // 限定同患者執行過 ? 支付標準代碼，>= ? 次，方可申報
+              result.setCoexist_nhi_no_enable((Short) detail.get("coexist_nhi_no_enable"));
+              List<Map<String, Object>> mapList =  paymentTermsDao.filterCoexistNhiNoTimes(ptId);
+              List<ptNhiNoTimes> ptNhiNoTimesList = new ArrayList<ptNhiNoTimes>();
+              for (Map<String, Object> map : mapList) {
+                ptNhiNoTimes pt = new ptNhiNoTimes();
+                pt.setNhi_no((String) map.get("nhi_no"));
+                pt.setTimes(checkDBColumnType(map.get("times")));
+                ptNhiNoTimesList.add(pt);
+              }
+              result.setLst_co_nhi_no(ptNhiNoTimesList);
+              
+              // 限定同患者累積申報此支付標準代碼， ? 日內 <= ? 次
+              result.setEvery_nday_enable(checkDBColumnType(detail.get("every_nday_enable")));
+              result.setEvery_nday_days(checkDBColumnType(detail.get("every_nday_days")));
+              result.setEvery_nday_times(checkDBColumnType(detail.get("every_nday_times")));
+              
+              // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
+              result.setInterval_nday_enable(checkDBColumnType(detail.get("interval_nday_enable")));
+              result.setInterval_nday(checkDBColumnType(detail.get("interval_nday")));
+          }
+      } 
+      return result;
+    }   
     
+    private int checkDBColumnType(Object obj) {
+      if (obj instanceof Integer) {
+        return (Integer) obj;
+      } else {
+        return (Short) obj;
+      }
+    }
 }

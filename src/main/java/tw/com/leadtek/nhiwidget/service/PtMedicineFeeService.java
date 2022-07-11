@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.dto.PtMedicineFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtMedicineFeeDao;
 import tw.com.leadtek.tools.Utility;
@@ -77,5 +78,40 @@ public class PtMedicineFeeService {
         return ret;
     }
 
+    public PtMedicineFeePl findPtMedicineFeePl(long ptId) {
+      PtMedicineFeePl result = new PtMedicineFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptMedicineFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              //每件給藥日數不得超過 ? 日
+              result.setMax_nday_enable(checkDBColumnType(detail.get("max_nday_enable")));
+              result.setMax_nday(checkDBColumnType(detail.get("max_nday")));
+          }
+      } 
+      return result;
+    }   
     
+    private int checkDBColumnType(Object obj) {
+      if (obj == null) {
+        return 0;
+      }
+      if (obj instanceof Integer) {
+        return (Integer) obj;
+      } else {
+        return (Short) obj;
+      }
+    }
 }

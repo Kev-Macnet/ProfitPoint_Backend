@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtRehabilitationFeeDao;
 import tw.com.leadtek.tools.Utility;
@@ -125,5 +126,51 @@ public class PtRehabilitationFeeService {
         return ret;
     }
 
+    public PtRehabilitationFeePl findPtRehabilitationFeePl(long ptId) {
+      PtRehabilitationFeePl result = new PtRehabilitationFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptRehabilitationFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              //不可與此支付標準代碼並存單一就醫紀錄一併申報(開關)
+              result.setExclude_nhi_no_enable(checkDBColumnType(detail.get("exclude_nhi_no_enable")));
+              result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
+              // 限定同患者執行過 ? 支付標準代碼， <= ? 日，申報過此支付代碼
+              result.setCoexist_nhi_no_enable((Short) detail.get("coexist_nhi_no_enable"));
+              result.setLst_co_nhi_no(paymentTermsDao.filterCoexistNhiNo(ptId));
+              result.setMin_coexist(checkDBColumnType(detail.get("min_coexist")));
+              // 科別限制
+              result.setLim_division_enable(checkDBColumnType(detail.get("lim_division_enable")));
+              result.setLst_division(paymentTermsDao.filterLimDivision(ptId));
+              // 同患者限定每<= ? 日，總申報次數<= ? 次
+              result.setPatient_nday_enable(checkDBColumnType(detail.get("patient_nday_enable")));
+              result.setPatient_nday_days(checkDBColumnType(detail.get("patient_nday_days")));
+              result.setPatient_nday_times(checkDBColumnType(detail.get("patient_nday_times")));
+              // 單一就醫紀錄上，須包含以下任一ICD診斷碼
+              result.setInclude_icd_no_enable(checkDBColumnType(detail.get("include_icd_no_enable")));
+              result.setLst_icd_no(paymentTermsDao.filterIncludeIcdNo(ptId));
+          }
+      } 
+      return result;
+    }   
     
+    private int checkDBColumnType(Object obj) {
+      if (obj instanceof Integer) {
+        return (Integer) obj;
+      } else {
+        return (Short) obj;
+      }
+    }
 }

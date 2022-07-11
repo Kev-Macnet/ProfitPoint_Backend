@@ -11,10 +11,13 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import org.apache.poi.util.SystemOutLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
@@ -23,13 +26,25 @@ import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.PT_PAYMENT_TERMSDao;
 import tw.com.leadtek.nhiwidget.dto.PaymentTermsPl;
+import tw.com.leadtek.nhiwidget.dto.PtAdjustmentFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtAnesthesiaFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtBoneMarrowTransFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtInjectionFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtMedicineFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtNutritionalFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtOthersFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtOutpatientFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricWardFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtQualityServicePl;
+import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtSpecificMedicalFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
+import tw.com.leadtek.nhiwidget.dto.ptNhiNoTimes;
 import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
@@ -46,11 +61,12 @@ import tw.com.leadtek.tools.DateTool;
  */
 @Service
 public class ViolatePaymentTermsService {
-  
+
   /**
    * 急診觀察床–病房費
    */
-  private final static String[] EMERGENCY_WARD = new String[] { "03073A", "03074B", "03018A", "03019B",};
+  private final static String[] EMERGENCY_WARD =
+      new String[] {"03073A", "03074B", "03018A", "03019B",};
 
   @Autowired
   private MRDao mrDao;
@@ -60,10 +76,10 @@ public class ViolatePaymentTermsService {
 
   @Autowired
   private OP_PDao oppDao;
-  
+
   @Autowired
   private IP_DDao ipdDao;
-  
+
   @Autowired
   private IP_PDao ippDao;
 
@@ -75,7 +91,7 @@ public class ViolatePaymentTermsService {
 
   @Autowired
   private ParametersService ps;
-  
+
   @Autowired
   private CodeTableService cts;
 
@@ -216,6 +232,7 @@ public class ViolatePaymentTermsService {
 
   /**
    * 限定山地離島區域申報使用，只有門診診察費用到
+   * 
    * @param pt
    * @param mrList
    * @param mrIdList
@@ -234,6 +251,7 @@ public class ViolatePaymentTermsService {
 
   /**
    * 限定假日加計使用，只有門診診察費用到
+   * 
    * @param pt
    * @param mrList
    * @param mrIdList
@@ -264,11 +282,12 @@ public class ViolatePaymentTermsService {
         violateMr.add(mr);
       }
     }
-    insertIntelligent(violateMr, batch, pt.getNhi_no(), wording);
+    insertIntelligent(violateMr, null, batch, pt.getNhi_no(), wording);
   }
 
   /**
    * 不可與任一支付標準代碼並存單一就醫紀錄
+   * 
    * @param isEnable
    * @param nhiNo
    * @param excludeNhiNoList
@@ -277,15 +296,16 @@ public class ViolatePaymentTermsService {
    * @param batch
    */
   private void checkExcludeOrderCode(boolean isEnable, String nhiNo, List<String> excludeNhiNoList,
-      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch, boolean isNotify) {
     if (!isEnable) {
       return;
     }
     String excludeOrderCode = stringListToString(excludeNhiNoList);
-//    System.out.println("checkExcludeOrderCode isEnable=" + isEnable + ", orderCode=" + nhiNo + 
-//        " exclude:" + excludeNhiNoList.get(0) + ", total=" + excludeOrderCode);
-    String wording =
-        String.format(wordings.get("VIOLATE_EXCLUDE_ORDER_CODE"), nhiNo, excludeOrderCode);
+    // System.out.println("checkExcludeOrderCode isEnable=" + isEnable + ", orderCode=" + nhiNo +
+    // " exclude:" + excludeNhiNoList.get(0) + ", total=" + excludeOrderCode);
+    String wording = isNotify
+        ? String.format(wordings.get("VIOLATE_EXCLUDE_ORDER_CODE_NOTIFY"), nhiNo, excludeOrderCode)
+        : String.format(wordings.get("VIOLATE_EXCLUDE_ORDER_CODE"), nhiNo, excludeOrderCode);
     List<MR> violateMr = new ArrayList<MR>();
     for (MR mr : mrList) {
       for (String excludeNhiNo : excludeNhiNoList) {
@@ -296,12 +316,12 @@ public class ViolatePaymentTermsService {
         }
       }
     }
-    System.out.println("checkExcludeOrderCode mr list size=" + violateMr.size());
-    insertIntelligent(violateMr, batch, nhiNo, wording);
+    insertIntelligent(violateMr, null, batch, nhiNo, wording);
   }
 
   /**
-   * 需與以下任一支付標準代碼並存，方可進行申報 
+   * 需與以下任一支付標準代碼並存，方可進行申報
+   * 
    * @param isEnable
    * @param nhiNo
    * @param includeNhiNoList
@@ -315,6 +335,8 @@ public class ViolatePaymentTermsService {
       return;
     }
     String includeOrderCode = stringListToString(includeNhiNoList);
+    System.out.println("checkIncludeOrderCode " + nhiNo + " check order code=" + includeOrderCode
+        + ", mr size=" + mrList.size());
     String wording =
         String.format(wordings.get("VIOLATE_INCLUDE_ORDER_CODE"), nhiNo, includeOrderCode);
     List<MR> violateMr = new ArrayList<MR>();
@@ -330,11 +352,58 @@ public class ViolatePaymentTermsService {
         violateMr.add(mr);
       }
     }
-    insertIntelligent(violateMr, batch, nhiNo, wording);
+    insertIntelligent(violateMr, null, batch, nhiNo, wording);
+  }
+
+  /**
+   * 限定同患者執行過 ? 支付標準代碼，>= ? 次，方可申報
+   * 
+   * @param isEnable
+   * @param nhiNo
+   * @param includeNhiNoList
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkUserIncludeOrderCodeTimes(boolean isEnable, String nhiNo,
+      List<String> includeNhiNoList, int minimum, List<MR> mrList, List<Long> mrIdList,
+      List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String includeOrderCode = stringListToString(includeNhiNoList);
+    String wording = String.format(wordings.get("VIOLATE_INCLUDE_ORDER_CODE_TIMES"), nhiNo,
+        includeOrderCode, String.valueOf(minimum));
+    List<String> rocIds = getRocIdList(mrList);
+
+    HashMap<String, Integer> rocIdCountMap = new HashMap<String, Integer>();
+    for (String orderCode : includeNhiNoList) {
+      List<Object[]> rocIdCount = mrDao.getRocIdByCodeTimes("%," + orderCode + ",%", rocIds);
+      for (Object[] obj : rocIdCount) {
+        Integer count = rocIdCountMap.get((String) obj[0]);
+        if (count == null) {
+          rocIdCountMap.put((String) obj[0], ((BigInteger) obj[1]).intValue());
+        } else {
+          rocIdCountMap.put((String) obj[0], ((BigInteger) obj[1]).intValue() + count.intValue());
+        }
+      }
+    }
+
+    List<MR> violateMr = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      Integer count = rocIdCountMap.get(mr.getRocId());
+      if (count == null) {
+        violateMr.add(mr);
+      } else if (count < minimum) {
+        violateMr.add(mr);
+      }
+    }
+    insertIntelligent(violateMr, null, batch, nhiNo, wording);
   }
 
   /**
    * 檢查年齡限制
+   * 
    * @param isEnable 是否要檢查
    * @param isOP 是否為門診
    * @param nhiNo 支付代碼
@@ -344,8 +413,8 @@ public class ViolatePaymentTermsService {
    * @param mrIdList 病歷id清單
    * @param batch 批次儲存INTELLIGENT table
    */
-  private void checkAge(boolean isEnable, boolean isOP, String nhiNo, int ageType, int age, List<MR> mrList,
-      List<Long> mrIdList, List<INTELLIGENT> batch) {
+  private void checkAge(boolean isEnable, boolean isOP, String nhiNo, int ageType, int age,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
     }
@@ -361,11 +430,12 @@ public class ViolatePaymentTermsService {
     String wording = String.format(wordings.get("VIOLATE_AGE"), nhiNo, sb.toString());
 
     List<Long> violateMrIdList = new ArrayList<Long>();
-    List<Object[]> data = (isOP) ? opdDao.getMrIdBirthdayByMrId(mrIdList) : ipdDao.getMrIdBirthdayByMrId(mrIdList);
+    List<Object[]> data =
+        (isOP) ? opdDao.getMrIdBirthdayByMrId(mrIdList) : ipdDao.getMrIdBirthdayByMrId(mrIdList);
     if (data == null || data.size() == 0) {
       return;
     }
-    
+
     for (Object[] obj : data) {
       String rocBirth = (String) obj[3];
       /// 如果新生日期不為空
@@ -378,11 +448,12 @@ public class ViolatePaymentTermsService {
     }
     insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
   }
-  
-  private void checkAge(long mrId, int ageType, int age, String rocBirth, String funcDate, List<Long> violateMrIdList ) {
+
+  private void checkAge(long mrId, int ageType, int age, String rocBirth, String funcDate,
+      List<Long> violateMrIdList) {
     int birthYear = Integer.parseInt(rocBirth.substring(0, 3));
     int birthMonthDate = Integer.parseInt(rocBirth.substring(3, 7));
-   
+
     int funcEndYear = Integer.parseInt(funcDate.substring(0, 3));
     int funcEndMonthDate = Integer.parseInt(funcDate.substring(3, 7));
 
@@ -410,9 +481,10 @@ public class ViolatePaymentTermsService {
         break;
     }
   }
-  
+
   /**
    * 檢查是否符合限定科別
+   * 
    * @param isEnable
    * @param nhiNo
    * @param funcTypeList
@@ -427,11 +499,10 @@ public class ViolatePaymentTermsService {
     }
     String funcTypeString = appendStringListToString(funcTypeList);
     String[] funcTypeCodeList = new String[funcTypeList.size()];
-    for (int i=0; i< funcTypeList.size(); i++) {
+    for (int i = 0; i < funcTypeList.size(); i++) {
       funcTypeCodeList[i] = cts.getCodeByDesc("FUNC_TYPE", funcTypeList.get(i));
     }
-    String wording =
-        String.format(wordings.get("VIOLATE_FUNC_TYPE"), nhiNo, funcTypeString);
+    String wording = String.format(wordings.get("VIOLATE_FUNC_TYPE"), nhiNo, funcTypeString);
     List<MR> violateMr = new ArrayList<MR>();
     for (MR mr : mrList) {
       int count = 0;
@@ -445,22 +516,24 @@ public class ViolatePaymentTermsService {
         violateMr.add(mr);
       }
     }
-    insertIntelligent(violateMr, batch, nhiNo, wording);
+    insertIntelligent(violateMr, null, batch, nhiNo, wording);
   }
-  
-  private void checkCountOfUniquePrsn(boolean isEnable, String nhiNo, int max, List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+
+  private void checkCountOfUniquePrsn(boolean isEnable, String nhiNo, int max, List<MR> mrList,
+      List<Long> mrIdList, List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
     }
     List<String> prsnIds = new ArrayList<String>();
     List<Object[]> opData = opdDao.getPrsnIdCountByMrId(mrIdList);
     for (Object[] obj : opData) {
-      int count = (obj[1] instanceof Long) ? ((Long) obj[1]).intValue() : ((BigInteger) obj[1]).intValue();
+      int count =
+          (obj[1] instanceof Long) ? ((Long) obj[1]).intValue() : ((BigInteger) obj[1]).intValue();
       if (count > max) {
         prsnIds.add((String) obj[0]);
       }
     }
-  
+
     for (String prsnId : prsnIds) {
       List<MR> violateMr = new ArrayList<MR>();
       for (MR mr : mrList) {
@@ -469,15 +542,17 @@ public class ViolatePaymentTermsService {
         }
       }
       String wording =
-        String.format(wordings.get("VIOLATE_PRSN"), nhiNo, prsnId, String.valueOf(max));
-      insertIntelligent(violateMr, batch, nhiNo, wording);
+          String.format(wordings.get("VIOLATE_PRSN"), nhiNo, prsnId, String.valueOf(max));
+      insertIntelligent(violateMr, null, batch, nhiNo, wording);
     }
-    //@Query(value = "SELECT PRSN_ID, COUNT(PRSN_ID) FROM OP_D WHERE MR_ID IN ?1 GROUP BY PRSN_ID", nativeQuery = true)
-    //public List<Object[]> getPrsnIdCountByMrId(List<Long> mrId);
+    // @Query(value = "SELECT PRSN_ID, COUNT(PRSN_ID) FROM OP_D WHERE MR_ID IN ?1 GROUP BY PRSN_ID",
+    // nativeQuery = true)
+    // public List<Object[]> getPrsnIdCountByMrId(List<Long> mrId);
   }
-  
+
   /**
    * 檢查單一住院就醫紀錄應用數量,限定<=次數
+   * 
    * @param isEnable
    * @param nhiNo
    * @param funcTypeList
@@ -485,13 +560,12 @@ public class ViolatePaymentTermsService {
    * @param mrIdList
    * @param batch
    */
-  private void checkIPUseTimes(boolean isEnable, String nhiNo, int max,
-      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+  private void checkIPUseTimes(boolean isEnable, String nhiNo, int max, List<MR> mrList,
+      List<Long> mrIdList, List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
     }
-    String wording =
-        String.format(wordings.get("VIOLATE_TIMES"), nhiNo, "住院", String.valueOf(max));
+    String wording = String.format(wordings.get("VIOLATE_TIMES"), nhiNo, "住院", String.valueOf(max));
     List<Object[]> ids = ippDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max);
     List<Long> violateMrIdList = new ArrayList<Long>();
     for (Object[] obj : ids) {
@@ -499,7 +573,7 @@ public class ViolatePaymentTermsService {
     }
     insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
   }
-  
+
   /**
    * 檢查單一急診就醫紀錄應用數量,限定<=次數，目前只出現在 02005B
    */
@@ -508,37 +582,37 @@ public class ViolatePaymentTermsService {
     if (!isEnable) {
       return;
     }
-    String wording =
-        String.format(wordings.get("VIOLATE_TIMES"), nhiNo, "急診", String.valueOf(max));
-    
+    String wording = String.format(wordings.get("VIOLATE_TIMES"), nhiNo, "急診", String.valueOf(max));
+
     // 有用到急診觀察病房費的病歷
-//    List<Long> useEmWardMrIdList = new ArrayList<Long>();
-//    for (MR mr : mrList) {
-//      for (String ward : EMERGENCY_WARD) {
-//        String code = "," + ward + ",";
-//        if (mr.getCodeAll().indexOf(code) > -1) {
-//          useEmWardMrIdList.add(mr.getId());
-//          break;
-//        }
-//      }
-//    }
+    // List<Long> useEmWardMrIdList = new ArrayList<Long>();
+    // for (MR mr : mrList) {
+    // for (String ward : EMERGENCY_WARD) {
+    // String code = "," + ward + ",";
+    // if (mr.getCodeAll().indexOf(code) > -1) {
+    // useEmWardMrIdList.add(mr.getId());
+    // break;
+    // }
+    // }
+    // }
     List<Long> useEmWardMrIdList = mrIdList;
     List<Object[]> ids = ippDao.getMrIdByOrderCodeCount(nhiNo, useEmWardMrIdList, max);
     List<Long> violateMrIdList = new ArrayList<Long>();
     for (Object[] obj : ids) {
       violateMrIdList.add(((BigInteger) obj[0]).longValue());
     }
-    
+
     ids = oppDao.getMrIdByOrderCodeCount(nhiNo, useEmWardMrIdList, max);
     for (Object[] obj : ids) {
       violateMrIdList.add(((BigInteger) obj[0]).longValue());
     }
-    
+
     insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
   }
-  
+
   /**
    * 檢查單一就醫紀錄應用數量,限定<=次數
+   * 
    * @param isEnable
    * @param nhiNo
    * @param funcTypeList
@@ -546,13 +620,12 @@ public class ViolatePaymentTermsService {
    * @param mrIdList
    * @param batch
    */
-  private void checkAllUseTimes(boolean isEnable, String nhiNo, int max,
-      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+  private void checkAllUseTimes(boolean isEnable, String nhiNo, int max, List<MR> mrList,
+      List<Long> mrIdList, List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
     }
-    String wording =
-        String.format(wordings.get("VIOLATE_TIMES"), nhiNo, "", String.valueOf(max));
+    String wording = String.format(wordings.get("VIOLATE_TIMES"), nhiNo, "", String.valueOf(max));
     List<Object[]> ids = ippDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max);
     List<Long> violateMrIdList = new ArrayList<Long>();
     for (Object[] obj : ids) {
@@ -564,23 +637,23 @@ public class ViolatePaymentTermsService {
     }
     insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
   }
-  
+
   /**
    * 每組病歷號碼，每院限申報次數
+   * 
    * @param isEnable
    * @param nhiNo
    * @param max
    * @param mrList
    * @param batch
    */
-  private void checkUseTimesInAllMr(boolean isEnable, String nhiNo, int max,
-      List<MR> mrList, List<INTELLIGENT> batch) {
+  private void checkUseTimesInAllMr(boolean isEnable, String nhiNo, int max, List<MR> mrList,
+      List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
     }
-    String wording =
-        String.format(wordings.get("VIOLATE_ROCID_TIMES"), nhiNo, String.valueOf(max));
-    
+    String wording = String.format(wordings.get("VIOLATE_ROCID_TIMES"), nhiNo, String.valueOf(max));
+
     List<String> rocIdList = mrDao.getRocIdByCodeTimes("%," + nhiNo + ",%", max);
     List<MR> violateMr = new ArrayList<MR>();
     for (MR mr : mrList) {
@@ -591,13 +664,14 @@ public class ViolatePaymentTermsService {
         }
       }
     }
-    insertIntelligent(violateMr, batch, nhiNo, wording);
+    insertIntelligent(violateMr, null, batch, nhiNo, wording);
   }
-  
+
   /**
    * 檢查住院診察費病歷內是否有門診診察費
    */
-  private void checkIPWithOP(boolean isEnable, String nhiNo, List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+  private void checkIPWithOP(boolean isEnable, String nhiNo, List<MR> mrList, List<Long> mrIdList,
+      List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
     }
@@ -610,9 +684,10 @@ public class ViolatePaymentTermsService {
     }
     insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
   }
-  
+
   /**
    * 入住時間滿 小時，方可申報此支付標準代碼
+   * 
    * @param isEnable
    * @param nhiNo
    * @param limitHour
@@ -620,15 +695,18 @@ public class ViolatePaymentTermsService {
    * @param mrIdList
    * @param batch
    */
-  private void checkIpHours(boolean isEnable, String nhiNo, int limitType, int limitHour, List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+  private void checkIpHours(boolean isEnable, String nhiNo, int limitType, int limitHour,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
     }
     String wording = null;
     if (limitType == 2) {
-      wording = String.format(wordings.get("VIOLATE_IP_HOURS_GREATERTHAN"), nhiNo, String.valueOf(limitHour));
+      wording = String.format(wordings.get("VIOLATE_IP_HOURS_GREATERTHAN"), nhiNo,
+          String.valueOf(limitHour));
     } else if (limitType == 3) {
-      wording = String.format(wordings.get("VIOLATE_IP_HOURS_LESSTHAN"), nhiNo, String.valueOf(limitHour));
+      wording = String.format(wordings.get("VIOLATE_IP_HOURS_LESSTHAN"), nhiNo,
+          String.valueOf(limitHour));
     }
 
     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
@@ -636,13 +714,13 @@ public class ViolatePaymentTermsService {
         ippDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, mrIdList);
     List<Long> violateMrIdList = new ArrayList<Long>();
     checkStartTimeAndEndTime(limitType, limitHour, violateMrIdList, ippData, sdf);
-    
+
     List<Object[]> oppData =
         oppDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, mrIdList);
     checkStartTimeAndEndTime(limitType, limitHour, violateMrIdList, oppData, sdf);
     insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
   }
-  
+
   private void checkStartTimeAndEndTime(int limitType, int limitHour, List<Long> violateMrIdList,
       List<Object[]> ippData, SimpleDateFormat sdf) {
     for (Object[] obj : ippData) {
@@ -663,9 +741,10 @@ public class ViolatePaymentTermsService {
       }
     }
   }
-  
+
   /**
    * 檢查是否包含以下任一ICD診斷碼
+   * 
    * @param isEnable
    * @param nhiNo
    * @param funcTypeList
@@ -673,13 +752,13 @@ public class ViolatePaymentTermsService {
    * @param mrIdList
    * @param batch
    */
-  private void checkICD(boolean isEnable, String nhiNo, List<String> icdList, List<MR> mrList, List<INTELLIGENT> batch) {
+  private void checkICD(boolean isEnable, String nhiNo, List<String> icdList, List<MR> mrList,
+      List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
     }
     String icdString = appendStringListToString(icdList);
-    String wording =
-        String.format(wordings.get("VIOLATE_INCLUDE_ICD"), nhiNo, icdString);
+    String wording = String.format(wordings.get("VIOLATE_INCLUDE_ICD"), nhiNo, icdString);
     List<MR> violateMr = new ArrayList<MR>();
     for (MR mr : mrList) {
       int count = 0;
@@ -693,11 +772,44 @@ public class ViolatePaymentTermsService {
         violateMr.add(mr);
       }
     }
-    insertIntelligent(violateMr, batch, nhiNo, wording);
+    insertIntelligent(violateMr, null, batch, nhiNo, wording);
   }
-  
+
   /**
-   * 檢查支付準則限定每n日不可超過x次
+   * 檢查是否包含任一DRG代碼
+   * 
+   * @param isEnable
+   * @param nhiNo
+   * @param funcTypeList
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkDRG(boolean isEnable, String nhiNo, List<String> drgList, List<MR> mrList,
+      List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String drgString = appendStringListToString(drgList);
+    String wording = String.format(wordings.get("VIOLATE_INCLUDE_DRG"), nhiNo, drgString);
+    List<MR> violateMr = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      int count = 0;
+      for (String drg : drgList) {
+        if (mr.getDrgCode().equals(drg)) {
+          count++;
+          break;
+        }
+      }
+      if (count == 0) {
+        violateMr.add(mr);
+      }
+    }
+    insertIntelligent(violateMr, null, batch, nhiNo, wording);
+  }
+
+  /**
+   * 檢查支付準則限定每n日不可超過x次 byUser: true : 同患者限定每<= ? 日，總申報次數<= ? 次
    */
   private void checkUseTimesEveryDay(boolean isEnable, String nhiNo, int days, int max,
       List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
@@ -705,18 +817,20 @@ public class ViolatePaymentTermsService {
       return;
     }
 
-    String wording = null; 
+    String wording = null;
+   
     if (days == 1) {
       wording = String.format(wordings.get("VIOLATE_DAILY_MAX"), nhiNo, "日", String.valueOf(max));
     } else {
-      wording = String.format(wordings.get("VIOLATE_DAILY_MAX"), nhiNo, days + "日內", String.valueOf(max));
+      wording =
+          String.format(wordings.get("VIOLATE_DAILY_MAX"), nhiNo, days + "日內", String.valueOf(max));
     }
     checkUseTimesEveryDayByDataFormat(true, nhiNo, days, max, mrList, mrIdList, batch, wording);
     checkUseTimesEveryDayByDataFormat(false, nhiNo, days, max, mrList, mrIdList, batch, wording);
   }
-  
-  private void checkUseTimesEveryDayByDataFormat(boolean isOp, String nhiNo, int days, 
-      int max, List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch, String wording) {
+
+  private void checkUseTimesEveryDayByDataFormat(boolean isOp, String nhiNo, int days, int max,
+      List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch, String wording) {
     // 1. 先檢查總數有沒有超過 max
     List<Object[]> ids = (isOp) ? oppDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max)
         : ippDao.getMrIdByOrderCodeCount(nhiNo, mrIdList, max);
@@ -727,12 +841,13 @@ public class ViolatePaymentTermsService {
     for (Object[] obj : ids) {
       violateMrIdList.add(((BigInteger) obj[0]).longValue());
     }
- 
+
     // 2. 再檢查天數，將有超過的一個一個調出來看 end_time - start_time , 用量 / 天數，取得每天使用量
     List<Object[]> data =
         (isOp) ? oppDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, violateMrIdList)
             : ippDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, violateMrIdList);
-    //System.out.println("checkUseTimesEveryDayByDataFormat violateMr size=" + violateMrIdList.size() + ", order count=" + data.size());
+    // System.out.println("checkUseTimesEveryDayByDataFormat violateMr size=" +
+    // violateMrIdList.size() + ", order count=" + data.size());
     // 存在違反規則的 MR ID
     HashMap<Long, String> mrIdMap = new HashMap<Long, String>();
     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
@@ -748,14 +863,15 @@ public class ViolatePaymentTermsService {
       }
       String startTime = (String) obj[1];
       String endTime = (String) obj[2];
-      if (mrIdMap.containsKey(new Long(mrId))) {
+      if (mrIdMap.containsKey(Long.valueOf(mrId))) {
         continue;
       }
       if (days == 1) {
         // 每日不可超過 max 次數
-        if (startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
+        if (startTime == null || endTime == null
+            || startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
           // 同一天
-          if (((Double) obj[3]).intValue() > max){
+          if (((Double) obj[3]).intValue() > max) {
             mrIdMap.put(mrId, "");
           }
         } else {
@@ -767,7 +883,8 @@ public class ViolatePaymentTermsService {
           }
         }
       } else {
-        if (startTime == null || endTime == null || startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
+        if (startTime == null || endTime == null
+            || startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
           // 同一天
           daysSum++;
           total += ((Double) obj[3]).intValue();
@@ -780,16 +897,9 @@ public class ViolatePaymentTermsService {
         }
       }
     }
-    if (mrIdMap.size() == 0) {
-      return;
-    }
-    violateMrIdList = new ArrayList<Long>();
-    for (Long mrId : mrIdMap.keySet()) {
-      violateMrIdList.add(mrId);
-    }
-    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
+    insertIntelligent(mrIdMap, mrList, batch, nhiNo, wording);
   }
-  
+
   private void checkUseTimesAfterDay(boolean isEnable, String nhiNo, int days, int max,
       List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
     if (!isEnable) {
@@ -800,36 +910,40 @@ public class ViolatePaymentTermsService {
     if (ids == null || ids.size() == 0) {
       return;
     }
-    String wording = String.format(wordings.get("VIOLATE_OVER_DAYS"), nhiNo, String.valueOf(days), String.valueOf(max));
+    String wording = String.format(wordings.get("VIOLATE_OVER_DAYS"), nhiNo, String.valueOf(days),
+        String.valueOf(max));
     List<Long> violateMrIdList = new ArrayList<Long>();
     for (Object[] obj : ids) {
       violateMrIdList.add(((BigInteger) obj[0]).longValue());
     }
- 
+
     // 2. 再檢查天數，將有超過的一個一個調出來看 end_time - 住院時間
-    List<Object[]> data = ippDao.getMrDateAndMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, violateMrIdList);
-    System.out.println("checkUseTimesEveryDayByDataFormat violateMr size=" + violateMrIdList.size() + ", order count=" + data.size());
+    List<Object[]> data =
+        ippDao.getMrDateAndMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, violateMrIdList);
     // 存在違反規則的 MR ID
     HashMap<Long, String> mrIdMap = new HashMap<Long, String>();
     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
     int total = 0;
     long lastMrId = 0;
     Date mrDate = null;
-    try {
+
       for (Object[] obj : data) {
         long mrId = ((BigInteger) obj[0]).longValue();
-        if (mrIdMap.containsKey(new Long(mrId))) {
+        if (mrIdMap.containsKey(Long.valueOf(mrId))) {
           continue;
         }
+      if (obj[3] == null) {
+        continue;
+      }
         if (lastMrId != mrId) {
           total = 0;
           mrDate = (Date) obj[1];
           lastMrId = mrId;
         }
-        //String startTime = (String) obj[2];
+        // String startTime = (String) obj[2];
         String endTime = (String) obj[3];
-        Date endDate = sdf.parse(endTime);
-        
+      Date endDate = DateTool.convertChineseToYears(endTime, sdf);
+
         if ((daysBetween(mrDate, endDate) + 1) > days) {
           total += ((Double) obj[4]).intValue();
         }
@@ -837,21 +951,238 @@ public class ViolatePaymentTermsService {
           mrIdMap.put(mrId, "");
         }
       }
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
-    if (mrIdMap.size() == 0) {
+
+    insertIntelligent(mrIdMap, mrList, batch, nhiNo, wording);
+  }
+
+  /**
+   * 限定同患者累積申報此支付標準代碼一年度最多一次
+   */
+  private void checkUserUseTimesEveryYear(boolean isEnable, String nhiNo, List<MR> mrList,
+      List<INTELLIGENT> batch) {
+    if (!isEnable) {
       return;
     }
-    violateMrIdList = new ArrayList<Long>();
-    for (Long mrId : mrIdMap.keySet()) {
-      violateMrIdList.add(mrId);
+
+    List<String> violateRocId = new ArrayList<String>();
+    List<String> rocIds = getRocIdList(mrList);
+    Map<String, String> rocIdYear = new HashMap<String, String>();
+    long start = System.currentTimeMillis();
+    List<Object[]> data = mrDao.getRocIdAndUseCountAndApplYm("%," + nhiNo + ",%", rocIds);
+    long usedTime = System.currentTimeMillis() - start;
+    // System.out.println("checkUserUseTimesEveryYear rocId size=" + rocIds.size() + " data size=" +
+    // data.size() + ", use" + usedTime);
+    start = System.currentTimeMillis();
+    for (Object[] obj : data) {
+      if (violateRocId.contains((String) obj[0])) {
+        continue;
+      }
+      String year = rocIdYear.get((String) obj[0]);
+      if (year == null) {
+        rocIdYear.put((String) obj[0], ((String) obj[2]).substring(0, 3));
+      } else {
+        if (year.equals(((String) obj[2]).substring(0, 3))) {
+          // 同年
+          violateRocId.add((String) obj[0]);
+        } else {
+          rocIdYear.put((String) obj[0], ((String) obj[2]).substring(0, 3));
+        }
+      }
     }
+    String wording = String.format(wordings.get("VIOLATE_INCLUDE_ORDER_CODE_EVERY_YEAR"), nhiNo);
+    // System.out.println(wording + " " + violateRocId.size());
+    if (violateRocId.size() == 0) {
+      return;
+    }
+    List<MR> violateMr = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      for (String rocid : violateRocId) {
+        if (mr.getRocId().equals(rocid)) {
+          violateMr.add(mr);
+        }
+      }
+    }
+    usedTime = System.currentTimeMillis() - start;
+    // System.out.println("before insertIntelligent " + usedTime);
+    insertIntelligent(mrList, null, batch, nhiNo, wording);
+  }
+  
+  /**
+   * 同患者限定每<= ? 日，總申報次數<= ? 次
+   */
+  private void checkUserUseTimesInDays(boolean isEnable, String nhiNo, int days, int max,
+      List<MR> mrList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+
+    List<String> violateRocId = new ArrayList<String>();
+    List<String> rocIds = getRocIdList(mrList);
+    String rocId = "";
+    Date minDate = getMinimumDate(mrList);
+    List<Date> dates = null;
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    // 存在違反規則的 ROC ID
+    HashMap<String, String> rocIdMap = new HashMap<String, String>();
+    List<Object[]> data = mrDao.getRocIdAndUseCountAndApplYm("%," + nhiNo + ",%", rocIds);
+    for (Object[] obj : data) {
+      if (violateRocId.contains((String) obj[0])) {
+        continue;
+      }
+      if ((daysBetween((Date) obj[1], minDate) + 1 ) > days) {
+        // 小於所撈取病歷最舊-days的病歷，不處理
+        continue;
+      }
+      if (!rocId.equals((String) obj[0])) {
+        rocId = (String) obj[0];
+        dates = new ArrayList<Date>();
+        dates.add((Date) obj[1]);
+      } else {
+        dates.add((Date) obj[1]);
+        if ((daysBetween(dates.get(0), (Date) obj[1]) + 1) <= days) {
+          if (dates.size() > max) {
+            rocIdMap.put(rocId, "");
+            // 2022/7/8 只將最後一筆加入違反支付準則，改為全部加入違反支付準則
+            // violateMrIdList.add(((BigInteger) obj[3]).longValue());
+            continue;
+          }
+        } else {
+          // 和第一筆比超過max日
+          do {
+            dates.remove(0);
+          } while ((daysBetween(dates.get(0), (Date) obj[1]) + 1) > days);
+        }
+      }
+    }
+    if (rocIdMap.size() == 0) {
+      return;
+    }
+    for (MR mr : mrList) {
+      if (rocIdMap.containsKey(mr.getRocId())) {
+        violateMrIdList.add(mr.getId());
+      }
+    }
+    String wording = String.format(wordings.get("VIOLATE_USER_N_DAYS_MAX"), nhiNo,
+        String.valueOf(days), String.valueOf(max));
     insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
   }
   
   /**
+   * 限定同患者執行過 ? 支付標準代碼， <= ? 日，申報過此支付代碼
+   */
+  private void checkUserUseOtherOrderCodeInDays(boolean isEnable, String nhiNo, List<String> nhiNo2, 
+      int days, List<MR> mrList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+
+    // 有使用 nhiNo 的身分證號
+    HashMap<String, List<MR>> rocIdDate = new HashMap<String, List<MR>>();
+    for (MR mr : mrList) {
+      List<MR> list = rocIdDate.get(mr.getRocId());
+      if (list == null) {
+        list = new ArrayList<MR>();
+        rocIdDate.put(mr.getRocId(), list);
+      }
+      list.add(mr);
+    }
+    List<String> rocIds = new ArrayList<String>(rocIdDate.keySet());
+    // 有使用 nhiNo 及曾使用 nhiNo2 的身分證號與時間
+    List<Object[]> data = mrDao.getRocIdAndUseCountAndApplYm("%," + nhiNo2.get(0) + ",%", rocIds);
+    for (Object[] obj : data) {
+      String rocId = (String) obj[0];
+      Date nhiNo2Time = (Date) obj[1];
+      List<MR> list = rocIdDate.get(rocId);
+      if (list == null) {
+        continue;
+      }
+      for (int i = list.size() - 1; i >= 0; i--) {
+        if ((daysBetween(nhiNo2Time, list.get(i).getMrEndDate()) + 1) <= days) {
+          // qualify
+          list.remove(i);
+        }
+      }
+      if (list.isEmpty()) {
+        rocIdDate.remove(rocId);
+      }
+    }
+    if (rocIdDate.size() == 0) {
+      return;
+    }
+    List<MR> violateMr = new ArrayList<MR>();
+    for (String rocId : rocIdDate.keySet()) {
+     violateMr.addAll(rocIdDate.get(rocId));
+    }
+    String wording = String.format(wordings.get("VIOLATE_USER_WITH_ORDER_CODE_N_DAYS"), nhiNo,
+        nhiNo2.get(0), String.valueOf(days));
+    insertIntelligent(violateMr, null, batch, nhiNo, wording);
+  }
+
+  /**
+   * 檢查給藥天數
+   * 
+   * @param isOp
+   * @param nhiNo
+   * @param days
+   * @param max
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   * @param wording
+   */
+  private void checkDrugDay(boolean isEnable, String nhiNo, int days, List<MR> mrList,
+      List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording = String.format(wordings.get("VIOLATE_DRUG_DAYS"), nhiNo, String.valueOf(days));
+    checkDrugDayByDataFormat(true, nhiNo, days, mrList, mrIdList, batch, wording);
+    checkDrugDayByDataFormat(false, nhiNo, days, mrList, mrIdList, batch, wording);
+  }
+
+  private void checkDrugDayByDataFormat(boolean isOp, String nhiNo, int days, List<MR> mrList,
+      List<Long> mrIdList, List<INTELLIGENT> batch, String wording) {
+    List<Object[]> data =
+        (isOp) ? oppDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, mrIdList)
+            : ippDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, mrIdList);
+     System.out.println("checkUseTimesEveryDayByDataFormat "+ ", order count=" + data.size());
+    // 存在違反規則的 MR ID
+    HashMap<Long, String> mrIdMap = new HashMap<Long, String>();
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
+    int daysSum = 0;
+    long lastMrId = 0;
+    for (Object[] obj : data) {
+      long mrId = ((BigInteger) obj[0]).longValue();
+      if (lastMrId != mrId) {
+        daysSum = 0;
+        lastMrId = mrId;
+      }
+      String startTime = (String) obj[1];
+      String endTime = (String) obj[2];
+      if (mrIdMap.containsKey(Long.valueOf(mrId))) {
+        continue;
+      }
+      if (startTime == null || endTime == null
+          || startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
+        // 同一天
+        daysSum++;
+      } else {
+        daysSum += diffDays(startTime, endTime, sdf);
+        if (mrId == 1336070)   {
+          System.out.println("diffdays=" + diffDays(startTime, endTime, sdf) + " limit days=" + days);
+        }
+      }
+      if (daysSum > days) {
+        mrIdMap.put(mrId, "");
+      }
+    }
+    System.out.println("violate mr size=" + mrIdMap.size());
+    insertIntelligent(mrIdMap, mrList, batch, nhiNo, wording);
+  }
+
+  /**
    * 每月申報數量，不可超過該科門診就診人次之百分之 ?
+   * 
    * @param isEnable
    * @param nhiNo
    * @param funcTypeList
@@ -866,19 +1197,30 @@ public class ViolatePaymentTermsService {
     }
     String wording =
         String.format(wordings.get("VIOLATE_FUNC_TYPE_PERCENT"), nhiNo, String.valueOf(percentMax));
-    
+
+    // 違反支付準則的病歷
+    List<MR> violateMr = new ArrayList<MR>();
+    // 科別
     Set<String> funcTypes = findDistinctFuncType(mrList);
+    // 申請年月
+    List<String> applYms =  findDistinctApplYm(mrList);
+    for (String applYm : applYms) {
+      // 違反支付準則的科別
     List<String> violateFuncTypes = new ArrayList<String>();
     for (String funcType : funcTypes) {
-      List<Object[]> data = mrDao.getMrCountByFuncTypeAndOrderCode(mrIdList, funcType, nhiNo);
-      double percent = ((BigInteger) data.get(0)[0]).doubleValue() * 100 / ((BigInteger) data.get(0)[1]).doubleValue();
+        List<Object[]> data =
+            mrDao.getMrCountByFuncTypeAndOrderCode(applYm, funcType, "%," + nhiNo + ",%");
+      Object[] obj = data.get(0);
+        double percent =
+            (((BigInteger) obj[0]).doubleValue() * 100) / ((BigInteger) obj[1]).doubleValue();
       if (percent > (double) percentMax) {
         violateFuncTypes.add(funcType);
       }
     }
-    
-    List<MR> violateMr = new ArrayList<MR>();
     for (MR mr : mrList) {
+        if (!mr.getApplYm().equals(applYm)) {
+          continue;
+        }
       for (String funcType : violateFuncTypes) {
         if (mr.getFuncType().equals(funcType)) {
           violateMr.add(mr);
@@ -886,28 +1228,178 @@ public class ViolatePaymentTermsService {
         }
       }
     }
-    insertIntelligent(violateMr, batch, nhiNo, wording);
+    }
+   
+    insertIntelligent(violateMr, null, batch, nhiNo, wording);
   }
-  
-  private void checkPlan() {
-    // TODO unknown case
+
+  /**
+   * 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
+   * 
+   * @param isEnable
+   * @param nhiNo
+   * @param days
+   * @param mrList
+   * @param batch
+   */
+  private void checkIntervalDays(boolean isEnable, String nhiNo, int days, List<MR> mrList,
+      List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording =
+        String.format(wordings.get("VIOLATE_INTERVAL_DAYS"), nhiNo, String.valueOf(days));
+    // 存在違反規則的 rocId
+    HashMap<String, String> rocIdMap = new HashMap<String, String>();
+    List<Object[]> data = mrDao.getMrEndDateByOrderCode("%," + nhiNo + ",%");
+    String rocId = "";
+    Date lastDate = null;
+    for (Object[] obj : data) {
+      if (rocIdMap.containsKey((String) obj[1])) {
+        continue;
+      }
+      if (!rocId.equals((String) obj[1])) {
+        rocId = (String) obj[1];
+      } else {
+        if ((daysBetween(lastDate, (Date) obj[2]) + 1) < days) {
+          rocIdMap.put(rocId, "");
+        }
+      }
+      lastDate = (Date) obj[2];
+    }
+    List<MR> violateMR = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      if (rocIdMap.get(mr.getRocId()) != null) {
+        violateMR.add(mr);
+      }
+    }
+    insertIntelligent(violateMR, null, batch, nhiNo, wording);
+  }
+
+  /**
+   * 檢查每次使用間隔時間
+   * 
+   * @param isEnable
+   * @param nhiNo
+   * @param totalTimes 使用總次數
+   * @param firstN 第一次使用後隔多久(分鐘)
+   * @param overTimesN 每隔多久(分鐘)可使用一次
+   * @param mrList
+   * @param mrIdList
+   * @param batch
+   */
+  private void checkDrugNoUseDiffMinutes(boolean isEnable, String nhiNo, int totalTimes, int firstN,
+      int overTimesN, List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording = String.format(wordings.get("VIOLATE_USE_MINUTES"), nhiNo,
+        String.valueOf(totalTimes), String.valueOf(firstN), String.valueOf(overTimesN));
+    // 存在違反規則的 MR ID
+    HashMap<Long, String> mrIdMap = new HashMap<Long, String>();
+    List<Object[]> data = oppDao.getOrderCodeTimeDiffByMrid("%," + nhiNo + ",%", mrIdList);
+    long lastMrId = 0;
+    for (Object[] obj : data) {
+      long mrId = ((BigInteger) obj[0]).longValue();
+      if (mrIdMap.containsKey(Long.valueOf(mrId))) {
+        continue;
+      }
+
+    }
+
+    insertIntelligent(mrIdMap, mrList, batch, nhiNo, wording);
+  }
+
+  /**
+   * 限定同患者前一次應用與當次應用待申報此支付標準代碼，在1年內加總次數不可超過 max.
+   * 
+   * @param isEnable
+   * @param nhiNo
+   * @param days
+   * @param mrList
+   * @param batch
+   */
+  private void checkTimesIn1Year(boolean isEnable, String nhiNo, int max, List<MR> mrList,
+    List<INTELLIGENT> batch) {
+    if (!isEnable) {
+      return;
+    }
+    String wording = String.format(wordings.get("VIOLATE_TIMES_YEAR"), nhiNo, String.valueOf(max));
+    // 存在違反規則的 MR ID
+    HashMap<String, String> rocIdMap = new HashMap<String, String>();
+    List<Object[]> data = mrDao.getMrEndDateByOrderCode("%," + nhiNo + ",%");
+    String rocId = "";
+    List<Date> dates = null;
+    for (Object[] obj : data) {
+      if (rocIdMap.containsKey((String) obj[1])) {
+        continue;
+      }
+      if (!rocId.equals((String) obj[1])) {
+        rocId = (String) obj[1];
+        dates = new ArrayList<Date>();
+        dates.add((Date) obj[2]);
+      } else {
+        dates.add((Date) obj[2]);
+        if ((daysBetween(dates.get(0), (Date) obj[2]) + 1) <= 365) {
+          if (dates.size() > max) {
+            rocIdMap.put(rocId, "");
+            continue;
+          }
+        } else {
+          // 和第一筆比超過1年
+          do {
+            dates.remove(0);
+          } while ((daysBetween(dates.get(0), (Date) obj[2]) + 1) > 365);
+        }
+      }
+    }
+    
+    List<MR> violateMrList = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      if (rocIdMap.containsKey(mr.getRocId())) {
+        violateMrList.add(mr);
+      }
+    }
+    insertIntelligent(violateMrList, null, batch, nhiNo, wording);
+  }
+
+  private void insertIntelligent(HashMap<Long, String> mrIdMap, List<MR> mrList,
+      List<INTELLIGENT> batch, String nhiNo, String wording) {
+    if (mrIdMap == null || mrIdMap.size() == 0) {
+      return;
+    }
+    ArrayList<Long> violateMrIdList = new ArrayList<Long>();
+    for (Long mrId : mrIdMap.keySet()) {
+      violateMrIdList.add(mrId);
+    }
+    insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
   }
 
   private void insertIntelligent(List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch,
       String nhiNo, String wording) {
-    if (mrIdList.size() == 0) {
+    List<MR> violateMrList = null;
+    boolean needAddMrIdList = false;
+    if (mrIdList == null) {
+      needAddMrIdList = true;
+      mrIdList = new ArrayList<Long>();
+      violateMrList = mrList;
+    } else if (mrIdList != null && mrIdList.size() == 0) {
       return;
+    } else {
+      violateMrList = getMrByMrId(mrList, mrIdList);
     }
-    List<MR> violateMrList = getMrByMrId(mrList, mrIdList);
-    insertIntelligent(violateMrList, batch, nhiNo, wording);
-  }
 
-  private void insertIntelligent(List<MR> mrList, List<INTELLIGENT> batch, String nhiNo,
-      String wording) {
-    for (MR violateMr : mrList) {
-      is.insertIntelligent(violateMr, INTELLIGENT_REASON.VIOLATE.value(), nhiNo, wording, true,
-          batch);
+    long start = System.currentTimeMillis();
+    for (MR violateMr : violateMrList) {
+      is.insertIntelligentNoUpdateMrStatus(violateMr, INTELLIGENT_REASON.VIOLATE.value(), nhiNo,
+          wording, true, batch);
+      if (needAddMrIdList) {
+        mrIdList.add(violateMr.getId());
+      }
     }
+    mrDao.updateMultiMrStauts(MR_STATUS.WAIT_CONFIRM.value(), mrIdList);
+    long usedTime = System.currentTimeMillis() - start;
+    // System.out.println("insertIntelligent " + mrList.size() + " use " + usedTime);
   }
 
   /**
@@ -931,7 +1423,7 @@ public class ViolatePaymentTermsService {
       }
     }
   }
-  
+
   public void checkFeeByMonth(PaymentTermsPl pt, List<INTELLIGENT> batch) {
     Calendar calMin = ps.getMinMaxCalendar(new Date(pt.getStart_date()), true);
     if (calMin.getTimeInMillis() > pt.getStart_date()) {
@@ -944,7 +1436,8 @@ public class ViolatePaymentTermsService {
       }
     }
     Calendar calMax = ps.getMinMaxCalendar(new Date(pt.getEnd_date()), false);
-    //System.out.println("calMin=" + DateTool.getChineseYmDate(calMin) + ", calMax=" + DateTool.getChineseYmDate(calMax));
+    // System.out.println("calMin=" + DateTool.getChineseYmDate(calMin) + ", calMax=" +
+    // DateTool.getChineseYmDate(calMax));
     Calendar cal = calMin;
     do {
       Date start = cal.getTime();
@@ -955,9 +1448,11 @@ public class ViolatePaymentTermsService {
         cal = calMax;
       }
       Date end = cal.getTime();
+      long startSQL = System.currentTimeMillis();
       List<MR> mrList = mrDao.getMRByCodeLikeAndMrEndDate("%," + pt.getNhi_no() + ",%", start, end);
-//      System.out.println("checkFee:" + pt.getNhi_no() + ", from " + start + " to " + end
-//          + ", mrList=" + mrList.size());
+      long usedTime = System.currentTimeMillis() - startSQL;
+       System.out.println("checkFee:" + pt.getNhi_no() + ", from " + start + " to " + end
+       + ", mrList=" + mrList.size() + ", usedTime:" + usedTime + "ms");
       checkFee(pt, mrList, batch);
       is.saveIntelligentBatch(batch);
       // 回到下個月月初
@@ -965,7 +1460,7 @@ public class ViolatePaymentTermsService {
     } while (cal.getTimeInMillis() < calMax.getTimeInMillis());
   }
 
-  private void checkFee(PaymentTermsPl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+  public void checkFee(PaymentTermsPl pt, List<MR> mrList, List<INTELLIGENT> batch) {
     checkDataFormat(pt, mrList, batch);
     if (pt instanceof PtOutpatientFeePl) {
       checkOutpatientFee((PtOutpatientFeePl) pt, mrList, batch);
@@ -981,6 +1476,28 @@ public class ViolatePaymentTermsService {
       checkTreatmentFee((PtTreatmentFeePl) pt, mrList, batch);
     } else if (pt instanceof PtNutritionalFeePl) {
       checkNutritionalFee((PtNutritionalFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtAdjustmentFeePl) {
+      checkAdjustmentFee((PtAdjustmentFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtMedicineFeePl) {
+      checkMedicineFee((PtMedicineFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtRadiationFeePl) {
+      checkRadiationFee((PtRadiationFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtInjectionFeePl) {
+      checkInjectionFee((PtInjectionFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtQualityServicePl) {
+      checkQualityServiceFee((PtQualityServicePl) pt, mrList, batch);
+    } else if (pt instanceof PtRehabilitationFeePl) {
+      checkRehabilitationFee((PtRehabilitationFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtPsychiatricFeePl) {
+      checkPsychiatricFee((PtPsychiatricFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtBoneMarrowTransFeePl) {
+      checkBoneMarrowTransFee((PtBoneMarrowTransFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtAnesthesiaFeePl) {
+      checkAnesthesiaFee((PtAnesthesiaFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtSpecificMedicalFeePl) {
+      checkSpecificMedicalFee((PtSpecificMedicalFeePl) pt, mrList, batch);
+    } else if (pt instanceof PtOthersFeePl) {
+      checkOthersFee((PtOthersFeePl) pt, mrList, batch);
     }
   }
 
@@ -1021,7 +1538,7 @@ public class ViolatePaymentTermsService {
     }
     return sb.toString();
   }
-  
+
   /**
    * 檢查門診診察費
    * 
@@ -1035,14 +1552,17 @@ public class ViolatePaymentTermsService {
     checkOutIsland(pt, mrList, mrIdList, batch);
     checkHoliday(pt, mrList, mrIdList, batch);
     checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
-        mrList, mrIdList, batch);
-    checkAge(pt.getLim_age_enable() == 1, true, pt.getNhi_no(), pt.getLim_age_type(), pt.getLim_age(), mrList, mrIdList, batch);
-    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList, mrIdList, batch);
-    checkCountOfUniquePrsn(pt.getLim_max_enable() == 1, pt.getNhi_no(), pt.getLim_max(), mrList, mrIdList, batch);
+        mrList, mrIdList, batch, false);
+    checkAge(pt.getLim_age_enable() == 1, true, pt.getNhi_no(), pt.getLim_age_type(),
+        pt.getLim_age(), mrList, mrIdList, batch);
+    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList,
+        mrIdList, batch);
+    checkCountOfUniquePrsn(pt.getLim_max_enable() == 1, pt.getNhi_no(), pt.getLim_max(), mrList,
+        mrIdList, batch);
   }
 
   /**
-   * 檢查門診診察費
+   * 檢查住院診察費
    * 
    * @param pt 住院診察費object
    * @param mrList 有使用該醫令的病歷list
@@ -1050,19 +1570,22 @@ public class ViolatePaymentTermsService {
   public void checkInpatientFee(PtInpatientFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
     List<Long> mrIdList = getMrId(mrList, null);
     checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
-        mrList, mrIdList, batch);
+        mrList, mrIdList, batch, false);
     checkIncludeOrderCode(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_co_nhi_no(),
         mrList, mrIdList, batch);
     // 單一住院就醫紀錄應用數量,限定小於等於n次
-    checkIPUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(), mrList, mrIdList, batch);
+    checkIPUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
+        mrList, mrIdList, batch);
     // 單一急診就醫紀錄應用數量,限定<=次數
-    checkOrderCodeUseTimesWithEM(pt.getMax_emergency_enable() == 1, pt.getNhi_no(), pt.getMax_emergency(), mrList, mrIdList, batch);
+    checkOrderCodeUseTimesWithEM(pt.getMax_emergency_enable() == 1, pt.getNhi_no(),
+        pt.getMax_emergency(), mrList, mrIdList, batch);
     // 每組病歷號碼，每院限申報次數
-    checkUseTimesInAllMr(pt.getMax_patient_no_enable() == 1, pt.getNhi_no(), pt.getMax_patient_no(), mrList, batch);
+    checkUseTimesInAllMr(pt.getMax_patient_no_enable() == 1, pt.getNhi_no(), pt.getMax_patient_no(),
+        mrList, batch);
     // 違反支付準則限定不可與門診診察費並存
     checkIPWithOP(pt.getNo_coexist_enable() == 1, pt.getNhi_no(), mrList, mrIdList, batch);
   }
-  
+
   /**
    * 檢查病房費
    * 
@@ -1072,23 +1595,28 @@ public class ViolatePaymentTermsService {
   public void checkWardFee(PtWardFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
     List<Long> mrIdList = getMrId(mrList, null);
     checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
-        mrList, mrIdList, batch);
-    checkIpHours(pt.getMin_stay_enable() == 1, pt.getNhi_no(), 2, pt.getMin_stay(), mrList, mrIdList, batch);
-    checkIpHours(pt.getMax_stay_enable() == 1, pt.getNhi_no(), 3, pt.getMax_stay(), mrList, mrIdList, batch);
+        mrList, mrIdList, batch, false);
+    checkIpHours(pt.getMin_stay_enable() == 1, pt.getNhi_no(), 2, pt.getMin_stay(), mrList,
+        mrIdList, batch);
+    checkIpHours(pt.getMax_stay_enable() == 1, pt.getNhi_no(), 3, pt.getMax_stay(), mrList,
+        mrIdList, batch);
   }
-  
+
   /**
    * 檢查精神慢性病房費
+   * 
    * @param pt
    * @param mrList
    * @param batch
    */
-  public void checkPsychiatricWardFee(PtPsychiatricWardFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
-    
+  public void checkPsychiatricWardFee(PtPsychiatricWardFeePl pt, List<MR> mrList,
+      List<INTELLIGENT> batch) {
+
   }
-  
+
   /**
    * 檢查手術費
+   * 
    * @param pt
    * @param mrList
    * @param batch
@@ -1096,68 +1624,338 @@ public class ViolatePaymentTermsService {
   public void checkSurgeryFee(PtSurgeryFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
     List<Long> mrIdList = getMrId(mrList, null);
     checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
-        mrList, mrIdList, batch);
-    checkAge(pt.getLim_age_enable() == 1, true, pt.getNhi_no(), 3, pt.getLim_age(), mrList, mrIdList, batch);
-    checkAge(pt.getLim_age_enable() == 1, false, pt.getNhi_no(), 3, pt.getLim_age(), mrList, mrIdList, batch);
-    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList, mrIdList, batch);
+        mrList, mrIdList, batch, false);
+    checkAge(pt.getLim_age_enable() == 1, true, pt.getNhi_no(), 3, pt.getLim_age(), mrList,
+        mrIdList, batch);
+    checkAge(pt.getLim_age_enable() == 1, false, pt.getNhi_no(), 3, pt.getLim_age(), mrList,
+        mrIdList, batch);
+    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList,
+        mrIdList, batch);
   }
-  
+
   /**
    * 檢查治療處置費
+   * 
    * @param pt
    * @param mrList
    * @param batch
    */
   public void checkTreatmentFee(PtTreatmentFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
     List<Long> mrIdList = getMrId(mrList, null);
-    //不可與此支付標準代碼並存單一就醫紀錄一併申報
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報
     checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
-        mrList, mrIdList, batch);
+        mrList, mrIdList, batch, false);
+    // 需與以下任一支付標準代碼並存，方可進行申報
     checkIncludeOrderCode(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_co_nhi_no(),
         mrList, mrIdList, batch);
-    checkAge(pt.getMax_age_enable() == 1, true, pt.getNhi_no(), 2, pt.getMax_age(), mrList,
+    checkAge(pt.getMax_age_enable() == 1, true, pt.getNhi_no(), 3, pt.getMax_age(), mrList,
         mrIdList, batch);
-    checkAge(pt.getMax_age_enable() == 1, false, pt.getNhi_no(), 2, pt.getMax_age(), mrList,
+    checkAge(pt.getMax_age_enable() == 1, false, pt.getNhi_no(), 3, pt.getMax_age(), mrList,
         mrIdList, batch);
+    // 限定科別
     checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList,
         mrIdList, batch);
+    // 檢查單一就醫紀錄應用數量,限定<=次數
     checkAllUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
         mrList, mrIdList, batch);
-    //  單一就醫紀錄上，每日限定應用<= 次
-    checkUseTimesEveryDay(pt.getMax_daily_enable() == 1, pt.getNhi_no(), 1, pt.getMax_daily(), mrList,
-        mrIdList, batch);
+    // 單一就醫紀錄上，每日限定應用<= 次
+    checkUseTimesEveryDay(pt.getMax_daily_enable() == 1, pt.getNhi_no(), 1, pt.getMax_daily(),
+        mrList, mrIdList, batch);
     // 單一就醫紀錄上，每 ? 日內，限定應用<= ? 次
     checkUseTimesEveryDay(pt.getEvery_nday_enable() == 1, pt.getNhi_no(), pt.getEvery_nday_days(),
         pt.getEvery_nday_times(), mrList, mrIdList, batch);
     // 同患者限定每<= ? 日，總申報次數<= ? 次
-    checkUseTimesEveryDay(pt.getPatient_nday_enable() == 1 , pt.getNhi_no(), pt.getPatient_nday_days(),
-        pt.getPatient_nday_times(), mrList, mrIdList, batch);
+    checkUserUseTimesInDays(pt.getPatient_nday_enable() == 1, pt.getNhi_no(),
+        pt.getPatient_nday_days(), pt.getPatient_nday_times(), mrList, batch);
     // 每組病歷號碼，每院限申報次數
-    checkUseTimesInAllMr(pt.getMax_patient_enable()  == 1, pt.getNhi_no(), pt.getMax_patient(), mrList, batch);
+    checkUseTimesInAllMr(pt.getMax_patient_enable() == 1, pt.getNhi_no(), pt.getMax_patient(),
+        mrList, batch);
     // 檢查是否包含以下任一ICD診斷碼
     checkICD(pt.getInclude_icd_no_enable() == 1, pt.getNhi_no(), pt.getLst_icd_no(), mrList, batch);
     // 每月申報數量，不可超過該科門診就診人次之百分之 ?
-    checkFuncTypePercent(pt.getMax_month_enable() == 1, pt.getNhi_no(), pt.getMax_month_percentage(), mrList, mrIdList, batch);
+    checkFuncTypePercent(pt.getMax_month_enable() == 1, pt.getNhi_no(),
+        pt.getMax_month_percentage(), mrList, mrIdList, batch);
   }
-  
+
+  /**
+   * 檢查管灌飲食費及營養照護費
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
   public void checkNutritionalFee(PtNutritionalFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
     List<Long> mrIdList = getMrId(mrList, null);
-    //不可與此支付標準代碼並存單一就醫紀錄一併申報
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報
     checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
-        mrList, mrIdList, batch);
+        mrList, mrIdList, batch, false);
     // 單一住院就醫紀錄應用數量,限定小於等於n次
-    checkIPUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(), mrList, mrIdList, batch);
-    //  單一就醫紀錄上，每日限定應用<= 次
-    checkUseTimesEveryDay(pt.getMax_daily_enable() == 1, pt.getNhi_no(), 1, pt.getMax_daily(), mrList,
-        mrIdList, batch);
+    checkIPUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
+        mrList, mrIdList, batch);
+    // 單一就醫紀錄上，每日限定應用<= 次
+    checkUseTimesEveryDay(pt.getMax_daily_enable() == 1, pt.getNhi_no(), 1, pt.getMax_daily(),
+        mrList, mrIdList, batch);
     // 單一就醫紀錄上，每 ? 日內，限定應用<= ? 次
     checkUseTimesEveryDay(pt.getEvery_nday_enable() == 1, pt.getNhi_no(), pt.getEvery_nday_days(),
         pt.getEvery_nday_times(), mrList, mrIdList, batch);
     // 單一就醫紀錄上，超過 ? 日後，超出天數部份，限定應用<= ? 次
-    checkUseTimesAfterDay(pt.getOver_nday_enable()== 1, pt.getNhi_no(), pt.getOver_nday_days(), pt.getOver_nday_times(),
+    checkUseTimesAfterDay(pt.getOver_nday_enable() == 1, pt.getNhi_no(), pt.getOver_nday_days(),
+        pt.getOver_nday_times(), mrList, mrIdList, batch);
+  }
+
+  /**
+   * 檢查調劑費
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkAdjustmentFee(PtAdjustmentFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch, false);
+    // 需與以下任一支付標準代碼並存，方可進行申報
+    checkIncludeOrderCode(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_co_nhi_no(),
         mrList, mrIdList, batch);
   }
+
+  /**
+   * 檢查藥費
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkMedicineFee(PtMedicineFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    // 每件給藥日數不得超過 ? 日
+    checkDrugDay(pt.getMax_nday_enable() == 1, pt.getNhi_no(), pt.getMax_nday(), mrList, mrIdList,
+        batch);
+    
+  }
+
+  /**
+   * 檢查放射線診療費
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkRadiationFee(PtRadiationFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch, false);
+    // 需與以下任一支付標準代碼並存，方可進行申報
+    checkIncludeOrderCode(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_co_nhi_no(),
+        mrList, mrIdList, batch);
+    // 檢查單一就醫紀錄應用數量,限定<=次數
+    checkAllUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
+        mrList, mrIdList, batch);
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報，需提示原由
+    checkExcludeOrderCode(pt.getNotify_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_ntf_nhi_no(),
+        mrList, mrIdList, batch, true);
+  }
+
+  /**
+   * 檢查注射
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkInjectionFee(PtInjectionFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch, false);
+    // 檢查單一就醫紀錄應用數量,限定<=次數
+    checkAllUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
+        mrList, mrIdList, batch);
+    // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
+    checkIntervalDays(pt.getInterval_nday_enable() == 1, pt.getNhi_no(), pt.getInterval_nday(),
+        mrList, batch);
+  }
+
+  /**
+   * 檢查品質支付服務
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkQualityServiceFee(PtQualityServicePl pt, List<MR> mrList,
+      List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+    // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
+    checkIntervalDays(pt.getInterval_nday_enable() == 1, pt.getNhi_no(), pt.getInterval_nday(),
+        mrList, batch);
+    // 限定同患者執行過 ? 支付標準代碼，>= ? 次，方可申報
+    if (pt.getCoexist_nhi_no_enable() == 1) {
+      List<ptNhiNoTimes> coList = pt.getLst_co_nhi_no();
+      int minimum = 0;
+      List<String> orderCodes = new ArrayList<String>();
+      for (ptNhiNoTimes ptNhiNo : coList) {
+        orderCodes.add(ptNhiNo.getNhi_no());
+        if (ptNhiNo.getTimes() > minimum) {
+          minimum = ptNhiNo.getTimes();
+        }
+      }
+      checkUserIncludeOrderCodeTimes(true, pt.getNhi_no(), orderCodes, minimum, mrList, mrIdList,
+          batch);
+    }
+    // 同患者限定每<= ? 日，總申報次數<= ? 次
+    checkUserUseTimesInDays(pt.getEvery_nday_enable() == 1, pt.getNhi_no(), pt.getEvery_nday_days(), 
+        pt.getEvery_nday_times(), mrList, batch);
+  }
   
+  /**
+   * 復健治療費
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkRehabilitationFee(PtRehabilitationFeePl pt, List<MR> mrList,
+      List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch, false);
+    // 限定科別
+    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList,
+        mrIdList, batch);
+    // 同患者限定每<= ? 日，總申報次數<= ? 次
+    checkUserUseTimesInDays(pt.getPatient_nday_enable() == 1, pt.getNhi_no(),
+        pt.getPatient_nday_days(), pt.getPatient_nday_times(), mrList, batch);
+    // 檢查是否包含以下任一ICD診斷碼
+    checkICD(pt.getInclude_icd_no_enable() == 1, pt.getNhi_no(), pt.getLst_icd_no(), mrList, batch);
+    // 限定同患者執行過 ? 支付標準代碼， <= ? 日，申報過此支付代碼
+    checkUserUseOtherOrderCodeInDays(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(),
+        pt.getLst_co_nhi_no(), pt.getMin_coexist(), mrList, batch);
+  }
+  
+  /**
+   * 檢查精神醫療治療費
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkPsychiatricFee(PtPsychiatricFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch, false);
+    // 限定科別
+    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList,
+        mrIdList, batch);
+    // 檢查單一就醫紀錄應用數量,限定<=次數
+    checkAllUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
+        mrList, mrIdList, batch);
+    // 同患者限定每<= ? 日，總申報次數<= ? 次
+    checkUserUseTimesInDays(pt.getPatient_nday_enable() == 1, pt.getNhi_no(),
+        pt.getPatient_nday_days(), pt.getPatient_nday_times(), mrList, batch);
+  }
+  
+  /**
+   * 輸血及骨髓移植費
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkBoneMarrowTransFee(PtBoneMarrowTransFeePl pt, List<MR> mrList,
+      List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+
+    // 需與以下任一支付標準代碼並存，方可進行申報
+    checkIncludeOrderCode(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_co_nhi_no(),
+        mrList, mrIdList, batch);
+    // 限定科別
+    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList,
+        mrIdList, batch);
+  }
+  
+  /**
+   * 麻醉費
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkAnesthesiaFee(PtAnesthesiaFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+
+    // 需與以下任一支付標準代碼並存，方可進行申報
+    checkIncludeOrderCode(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_co_nhi_no(),
+        mrList, mrIdList, batch);
+    // 限定科別
+    checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList,
+        mrIdList, batch);
+    // 檢查是否包含任一DRG代碼
+    checkDRG(pt.getInclude_drg_no_enable() == 1, pt.getNhi_no(), pt.getLst_drg_no(), mrList,
+        mrIdList, batch);
+    // 檢查使用間隔分鐘
+    checkDrugNoUseDiffMinutes(pt.getOver_times_enable() == 1, pt.getNhi_no(), pt.getOver_times_n(),
+        pt.getOver_times_first_n(), pt.getOver_times_next_n(), mrList, mrIdList, batch);
+  }
+
+  /**
+   * 檢查特定診療檢查費
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkSpecificMedicalFee(PtSpecificMedicalFeePl pt, List<MR> mrList,
+      List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch, false);
+    // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
+    checkIntervalDays(pt.getInterval_nday_enable() == 1, pt.getNhi_no(), pt.getInterval_nday(),
+        mrList, batch);
+    //  限定同患者前一次應用與當次應用待申報此支付標準代碼，在1年內加總次數不可超過 max.
+    checkTimesIn1Year(pt.getMax_times_enable() == 1, pt.getNhi_no(), pt.getMax_times(), mrList,
+        batch);
+  }
+  
+  /**
+   * 檢查不分類
+   * 
+   * @param pt
+   * @param mrList
+   * @param batch
+   */
+  public void checkOthersFee(PtOthersFeePl pt, List<MR> mrList, List<INTELLIGENT> batch) {
+    List<Long> mrIdList = getMrId(mrList, null);
+
+    // 不可與此支付標準代碼並存單一就醫紀錄一併申報
+    checkExcludeOrderCode(pt.getExclude_nhi_no_enable() == 1, pt.getNhi_no(), pt.getLst_nhi_no(),
+        mrList, mrIdList, batch, false);
+    // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
+    checkIntervalDays(pt.getInterval_nday_enable() == 1, pt.getNhi_no(), pt.getInterval_nday(),
+        mrList, batch);
+    //  限定同患者前一次應用與當次應用待申報此支付標準代碼，在1年內加總次數不可超過 max.
+    checkTimesIn1Year(pt.getMax_times_enable() == 1, pt.getNhi_no(), pt.getMax_times(), mrList,
+        batch);
+    // 檢查單一就醫紀錄應用數量,限定<=次數
+    checkAllUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
+        mrList, mrIdList, batch);
+    // 同患者限定每<= ? 日，總申報次數<= ? 次
+    System.out.println("checkOthersFee " + pt.getPatient_nday_enable() +","+  pt.getNhi_no() +","+ 
+    pt.getPatient_nday_days() +","+ pt.getPatient_nday_times());
+    checkUserUseTimesInDays(pt.getPatient_nday_enable() == 1, pt.getNhi_no(),
+        pt.getPatient_nday_days(), pt.getPatient_nday_times(), mrList, batch);
+  }
+
   public String appendStringListToString(List<String> list) {
     StringBuffer sb = new StringBuffer();
     for (int i = 0; i < list.size(); i++) {
@@ -1172,14 +1970,14 @@ public class ViolatePaymentTermsService {
 
   public static int hoursBetween(Date start, Date end) {
     long diff = end.getTime() - start.getTime();
-    return (int)((diff / 1000) / 3600);
+    return (int) ((diff / 1000) / 3600);
   }
-  
+
   public static int daysBetween(Date start, Date end) {
     long diff = end.getTime() - start.getTime();
-    return (int)(((diff / 1000) / 3600) / 24);
+    return (int) (((diff / 1000) / 3600) / 24);
   }
-  
+
   public static int diffDays(String startTime, String endTime, SimpleDateFormat sdf) {
     Date sDate = DateTool.convertChineseToYears(startTime, sdf);
     Date eDate = DateTool.convertChineseToYears(endTime, sdf);
@@ -1195,6 +1993,40 @@ public class ViolatePaymentTermsService {
       }
       map.put(mr.getFuncType(), "");
     }
-    return map.keySet() ;
+    return map.keySet();
+  }
+
+  private List<String> getRocIdList(List<MR> mrList) {
+    HashMap<String, String> rocIdMap = new HashMap<String, String>();
+    for (MR mr : mrList) {
+      if (rocIdMap.containsKey(mr.getRocId())) {
+        continue;
+      }
+      rocIdMap.put(mr.getRocId(), "");
+    }
+    return new ArrayList<String>(rocIdMap.keySet());
+  }
+  
+  private List<String> findDistinctApplYm(List<MR> mrList) {
+    HashMap<String, String> map = new HashMap<String, String>();
+    for (MR mr : mrList) {
+      if (map.containsKey(mr.getApplYm())) {
+        continue;
+      }
+      map.put(mr.getApplYm(), "");
+    }
+    return new ArrayList<String>(map.keySet());
+  }
+
+  private Date getMinimumDate(List<MR> mrList) {
+    Date result = null;
+    for (MR mr : mrList) {
+      if (result == null) {
+        result = mr.getMrEndDate();
+      } else if (mr.getMrEndDate().before(result)) {
+        result = mr.getMrEndDate();
+      }
+    }
+    return result;
   }
 }

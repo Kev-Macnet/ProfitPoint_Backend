@@ -80,8 +80,6 @@ spring:
       default-schema: NWUSER
       connection:
         pool_size: 40
-      show_sql: false
-      format_sql: false
       bytecode: 
         provider: javassist
         use_reflection_optimizer: true

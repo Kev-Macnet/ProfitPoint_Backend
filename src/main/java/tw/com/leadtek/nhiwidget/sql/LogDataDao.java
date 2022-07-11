@@ -252,7 +252,7 @@ public class LogDataDao {
   public long addLogSearch(String user) {
     long newId = 0;
     String sql, s1;
-    sql = "Insert into \r\n" + "LOG_SEARCH1(USERNAME, UPDATE_TM)\r\n"
+    sql = "Insert into \r\n" + "log_search1(USERNAME, UPDATE_TM)\r\n"
         + "Values('%s', CURRENT_TIMESTAMP)";
     for (int a = 0; a < 50; a++) {
       newId = newTableId_l("LOG_SEARCH1", "ID");
@@ -274,7 +274,7 @@ public class LogDataDao {
     int ret = -1;
     String sql;
     if (keyword != null && keyword.length() > 0) {
-      sql = "Insert into \r\n" + "LOG_SEARCH2(M_ID, FIELD, KEYWORD)\r\n" + "Values(%d, '%s', '%s')";
+      sql = "Insert into " + "log_search2(M_ID, FIELD, KEYWORD) " + "Values(%d, '%s', '%s')";
       sql = String.format(sql, mid, field, keyword);
       try {
         ret = jdbcTemplate.update(sql);

@@ -337,4 +337,13 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
     @Query(value = "SELECT MR_ID, START_TIME, END_TIME, TOTAL_Q FROM op_p "
         + "WHERE DRUG_NO = ?1 AND MR_ID IN ?2 ORDER BY MR_ID, START_TIME", nativeQuery = true)
     public List<Object[]> getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(String orderCode, List<Long> mrIdList);
+    
+    /**
+     * 取得相差分鐘資料
+     * @param mrid
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, (END_TIME  - START_TIME ) AS DIFF FROM op_p "
+        + "WHERE DRUG_NO = ?1 AND MR_ID in ?2 ORDER BY MR_ID", nativeQuery = true)
+    public List<Object[]> getOrderCodeTimeDiffByMrid(String drugNo, List<Long> mrid);    
 }

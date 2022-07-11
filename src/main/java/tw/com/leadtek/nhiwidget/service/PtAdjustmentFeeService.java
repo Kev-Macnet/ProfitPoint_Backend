@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.dto.PtAdjustmentFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtNutritionalFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.sql.PtAdjustmentFeeDao;
 import tw.com.leadtek.tools.Utility;
@@ -98,5 +99,41 @@ public class PtAdjustmentFeeService {
         return ret;
     }
 
+    public PtAdjustmentFeePl findPtAdjustmentFeePl(long ptId) {
+      PtAdjustmentFeePl result = new PtAdjustmentFeePl();
+      if (ptId > 0) {
+          java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
+          if (!master.isEmpty()) {
+              java.util.Map<String, Object> detail = ptAdjustmentFeeDao.findOne(ptId);
+              
+              result.setFee_no((String) master.get("fee_no"));
+              result.setFee_name((String) master.get("fee_name"));
+              result.setNhi_no((String) master.get("nhi_no"));
+              result.setNhi_name((String) master.get("nhi_name"));
+              result.setStart_date((Long) master.get("start_date"));
+              result.setEnd_date((Long) master.get("end_date"));
+              result.setOutpatient_type((Short) master.get("outpatient_type"));
+              result.setHospitalized_type((Short) master.get("hospitalized_type"));
+              result.setActive((Short) master.get("active"));
+              result.setCategory(Category);
+              
+              //不可與此支付標準代碼並存單一就醫紀錄一併申報(開關)
+              result.setExclude_nhi_no_enable(checkDBColumnType(detail.get("exclude_nhi_no_enable")));
+              result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
+              // 需與以下任一支付標準代碼並存(開關)
+              result.setCoexist_nhi_no_enable((Short) detail.get("coexist_nhi_no_enable"));
+              result.setLst_co_nhi_no(paymentTermsDao.filterCoexistNhiNo(ptId));
+          }
+      } 
+      return result;
+    }   
+    
+    private int checkDBColumnType(Object obj) {
+      if (obj instanceof Integer) {
+        return (Integer) obj;
+      } else {
+        return (Short) obj;
+      }
+    }
     
 }
