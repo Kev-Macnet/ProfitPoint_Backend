@@ -198,7 +198,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       + "(SELECT SUM(NO_APPL) AS NO_APPL_OP_ALL FROM MR, OP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND OP_D.MR_ID = MR.ID) r,"
       + "(SELECT SUM(NO_APPL) AS NO_APPL_OP FROM MR, OP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE <> '22') s,"
       + "(SELECT SUM(NO_APPL) AS NO_APPL_EM FROM MR, OP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE = '22') t,"
-      + "(SELECT SUM(NO_APPL) AS NO_APPL_IP, SUM(MED_DOT) AS MED_DOT FROM MR, IP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND IP_D.MR_ID = MR.ID) u",
+      + "(SELECT SUM(NON_APPL_DOT) AS NO_APPL_IP, SUM(MED_DOT) AS MED_DOT FROM MR, IP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND IP_D.MR_ID = MR.ID) u",
       nativeQuery = true)
   public List<Object[]> findPeriodPoint(Date sdate1, Date edate1);
   
