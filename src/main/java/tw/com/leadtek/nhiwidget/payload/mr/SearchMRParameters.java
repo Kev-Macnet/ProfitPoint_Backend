@@ -770,16 +770,16 @@ public class SearchMRParameters extends HomepageParameters {
   public void setICD(Boolean notICD, String icdAll, String icdCMMajor, String icdCMSec, String icdPCS) {
     this.notICD = notICD;
     if (icdAll != null && icdAll.trim().length() > 0) {
-      this.icdAll = "%," + icdAll.trim();
+      this.icdAll = icdAll.trim();
     }
     if (icdCMMajor != null && icdCMMajor.trim().length() > 0) {
       this.icdCMMajor = icdCMMajor.trim();
     }
     if (icdCMSec != null && icdCMSec.trim().length() > 0) {
-      this.icdCMSec = "%," + icdCMSec.trim();  
+      this.icdCMSec = icdCMSec.trim();  
     }
     if (icdPCS != null && icdPCS.trim().length() > 0) {
-      this.icdPCS = "%," + icdPCS.trim();
+      this.icdPCS = icdPCS.trim();
     }
   }
   

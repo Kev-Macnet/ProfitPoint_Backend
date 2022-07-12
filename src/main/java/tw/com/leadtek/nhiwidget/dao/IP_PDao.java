@@ -329,4 +329,15 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
     @Query(value = "SELECT MR_ID, MR.MR_DATE, START_TIME, END_TIME, TOTAL_Q FROM ip_p, mr "
         + "WHERE ORDER_CODE = ?1 AND MR_ID IN ?2 AND ip_p.MR_ID = mr.ID ORDER BY MR_ID, START_TIME", nativeQuery = true)
     public List<Object[]> getMrDateAndMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(String orderCode, List<Long> mrIdList);
+    
+    /**
+     * 取得orderCode1或orderCode2醫令的個數
+     * @param orderCode1
+     * @param orderCode2
+     * @param mrIdList
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, ORDER_CODE, TOTAL_Q FROM ip_p "
+        + "WHERE (ORDER_CODE = ?1 OR ORDER_CODE = ?2 ) AND MR_ID IN ?3 ORDER BY MR_ID", nativeQuery = true)
+    public List<Object[]> getMrIdAndOrderCodeAndTotalQByMrIdList(String orderCode1, String orderCode2, List<Long> mrIdList);
 }

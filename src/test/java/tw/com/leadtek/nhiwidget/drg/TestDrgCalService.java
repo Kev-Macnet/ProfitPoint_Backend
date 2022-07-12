@@ -696,12 +696,6 @@ public class TestDrgCalService {
       System.out.println(key + ":" + map.get(key));
       key ="14051C";
 
-      List<Map<String, Object>> lst =
-          paymentTermsDao.searchPaymentTerms("", "", "", null, null, 0, 1000000, "id", "asc");
-      for (Map<String, Object> map2 : lst) {
-        // ID, ACTIVE, FEE_NO, FEE_NAME, NHI_NO, NHI_NAME, START_DATE, END_DATE, CATEGORY
-        System.out.println(map2.get("id") + ", active=" + map2.get("active") + ", nhiNo="
-            + map2.get("nhi_no") + ", category=" + map2.get("category"));
-      }
+      is.checkAllIntelligentCondition();      
   }
 }

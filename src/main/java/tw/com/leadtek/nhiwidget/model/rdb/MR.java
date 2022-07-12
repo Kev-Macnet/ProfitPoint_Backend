@@ -849,6 +849,10 @@ public class MR {
     this.codeAll = codeAll;
   }
 
+  /**
+   * 院內碼
+   * @return
+   */
   public String getInhCode() {
     return inhCode;
   }

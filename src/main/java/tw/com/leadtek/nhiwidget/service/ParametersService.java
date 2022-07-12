@@ -1964,7 +1964,7 @@ public class ParametersService {
 
   public String upsertCodeConflictForHighRisk(String code, String ownExpCode, String dataFormat) {
     List<CODE_CONFLICT> list =
-        codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(code, ownExpCode, new Integer(2));
+        codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(code, ownExpCode, Integer.valueOf(2));
     if (list != null && list.size() > 0) {
       for (CODE_CONFLICT codeConflict : list) {
         if ("00".equals(codeConflict.getDataFormat())) {
@@ -2504,7 +2504,7 @@ public class ParametersService {
   public void switchSameATC(boolean isEnable) {
     deleteIntelligent(INTELLIGENT_REASON.SAME_ATC.value(), null, null);
     if (isEnable) {
-      List<PAY_CODE> list = payCodeDao.findBySameAtc(1);
+      List<PAY_CODE> list = payCodeDao.findBySameAtcOrderByAtc(1);
       if (list != null && list.size() > 0) {
         recalculateSameATC(list.get(0), true);
       }

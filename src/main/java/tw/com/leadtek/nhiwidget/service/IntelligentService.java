@@ -41,13 +41,16 @@ import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
+import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.dto.PaymentTermsPl;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_CONFLICT;
+import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_THRESHOLD;
 import tw.com.leadtek.nhiwidget.model.rdb.ICDCM_DRUG_ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentRecord;
 import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentResponse;
 import tw.com.leadtek.nhiwidget.payload.intelligent.PilotProject;
@@ -104,6 +107,9 @@ public class IntelligentService {
   private ICDCM_DRUG_ATCDao idaDao;
 
   @Autowired
+  private PAY_CODEDao payCodeDao;
+
+  @Autowired
   private PlanConditionService planConditionService;
 
   @Autowired
@@ -117,10 +123,10 @@ public class IntelligentService {
 
   @Autowired
   private PaymentTermsDao paymentTermsDao;
-  
+
   @Autowired
   private PaymentTermsService paymentTermsService;
-  
+
   @Autowired
   private ViolatePaymentTermsService violatePaymentTermsService;
 
@@ -974,8 +980,8 @@ public class IntelligentService {
    */
   public void calculateInfectious(String applYm) {
     String wording = parametersService.getOneValueByName("INTELLIGENT", "INFECTIOUS");
-    List<CODE_THRESHOLD> ctList = ctDao.findByCodeTypeAndStatus(1, 1);
-    for (CODE_THRESHOLD ct : ctList) {
+    List<CODE_TABLE> ctList = codeTableService.getInfectious();
+    for (CODE_TABLE ct : ctList) {
       calculateInfectious(applYm, ct.getCode(), wording, true);
     }
   }
@@ -990,6 +996,101 @@ public class IntelligentService {
     }
   }
 
+  /**
+   * 計算指定年月的法定傳染病病歷.
+   * 
+   * @param applYm
+   */
+  public void calculateInfectious(List<MR> mrList, List<INTELLIGENT> batch) {
+    String wording = parametersService.getOneValueByName("INTELLIGENT", "INFECTIOUS");
+    List<Long> mrIdList = new ArrayList<Long>();
+    List<MR> violateMrList = new ArrayList<MR>();
+    List<CODE_TABLE> ctList = codeTableService.getInfectious();
+    for (CODE_TABLE ct : ctList) {
+      if (ct.getRemark() != null) {
+        // inactive
+        continue;
+      }
+      for (MR mr : mrList) {
+        if (mr.getIcdAll() == null) {
+          continue;
+        }
+        if (mr.getIcdAll().indexOf("," + ct.getCode() + ",") < 0) {
+          continue;
+        }
+        mrIdList.add(mr.getId());
+        violateMrList.add(mr);
+      }
+      if (mrIdList.size() == 0) {
+        continue;
+      }
+      String reason = (wording != null) ? String.format(wording, ct.getCode()) : null;
+      for (MR mr : violateMrList) {
+        insertIntelligentNoUpdateMrStatus(mr, INTELLIGENT_REASON.INFECTIOUS.value(), ct.getCode(), reason, true, batch);
+      }
+      mrDao.updateMultiMrStauts(MR_STATUS.WAIT_CONFIRM.value(), mrIdList);
+      mrIdList.clear();
+      violateMrList.clear();
+    }
+    saveIntelligentBatch(batch);
+  }
+  
+  public void calculateSameATC(List<MR> mrList, List<INTELLIGENT> batch) {
+    List<PAY_CODE> list = payCodeDao.findBySameAtcOrderByAtc(1);
+    if (list == null && list.size() == 0) {
+      return;
+    }
+    String wording = parametersService.getOneValueByName("INTELLIGENT", "SAME_ATC_WORDING");
+    int atcLen =
+        "5".equals(parametersService.getOneValueByName("INTELLIGENT_CONFIG", "SAME_ATC_LENGTH")) ? 5
+            : 7;
+   
+    List<String> payCodes = null;
+    String atc = "";
+    for (PAY_CODE pc : list) {
+      if (pc.getAtc() == null || pc.getAtc().length() < 5) {
+        continue;
+      }
+      String newAtc = null;
+      if (atcLen == 5) {
+        newAtc = pc.getAtc().substring(0, atcLen);
+      } else {
+        newAtc = pc.getAtc();
+      }
+      if (!atc.equals(newAtc)) {
+        if (atc.length() > 0) {
+          calculateSameATC(mrList, batch, atc, payCodes, wording);
+        }
+        atc = newAtc;
+        payCodes = new ArrayList<String>();
+      }
+      payCodes.add(pc.getCode());
+    }
+    calculateSameATC(mrList, batch, atc, payCodes, wording);
+    saveIntelligentBatch(batch);
+  }
+
+  public void calculateSameATC(List<MR> mrList, List<INTELLIGENT> batch, String atc,
+      List<String> payCodes, String wording) {
+    String reason = (wording != null) ? String.format(wording, atc) : null;
+    List<Long> mrIdList = new ArrayList<Long>();
+    for (MR mr : mrList) {
+      if (mr.getCodeAll() == null) {
+        continue;
+      }
+      int match = 0;
+      for (String payCode : payCodes) {
+        if (mr.getCodeAll().indexOf("," + payCode + ",") > -1) {
+          match++;
+        }
+      }
+      if (match > 1) {
+        insertIntelligentNoUpdateMrStatus(mr, INTELLIGENT_REASON.INFECTIOUS.value(), atc, reason, true, batch);
+        mrIdList.add(mr.getId());
+      }
+    }
+    mrDao.updateMultiMrStauts(MR_STATUS.WAIT_CONFIRM.value(), mrIdList);
+  }
   /**
    * 計算指定年月應用比例偏高的病歷
    * 
@@ -1417,6 +1518,24 @@ public class IntelligentService {
   }
 
   /**
+   * 計算健保項目對應自費項目並存及高風險診斷碼醫令組合
+   */
+  public void calculateInhExistAndHighRisk(List<MR> mrList, List<INTELLIGENT> batch, boolean isHighRisk) {
+    List<CODE_CONFLICT> list = codeConflictDao.findByCodeType(isHighRisk ? Integer.valueOf(2) : Integer.valueOf(1));
+    String wording = parametersService.getOneValueByName("INTELLIGENT", isHighRisk ? "HIGH_RISK_WORDING" : "CODE_CONFLICT");
+
+    if (list != null && list.size() > 0) {
+      for (CODE_CONFLICT cc : list) {
+        if (cc.getStatus().intValue() == 0) {
+          continue;
+        }
+        processCodeConflict(mrList, XMLConstant.DATA_FORMAT_OP, cc, wording, batch);
+        processCodeConflict(mrList, XMLConstant.DATA_FORMAT_IP, cc, wording, batch);
+      }
+    }
+  }
+
+  /**
    * 取得 cal 前六個月的民國年月字串
    * 
    * @param cal
@@ -1482,16 +1601,9 @@ public class IntelligentService {
       String wording, boolean isEnable) {
     if (cc.getCodeType().intValue() == 1) {
       // CODE_TYPE: 1: 醫令/健保碼，2: ICD 診斷碼
-      List<MR> list = getMRBy2PayCode(dataFormat, chineseYm, cc.getCode(),
-          cc.getQuantityNh().intValue(), cc.getOwnExpCode(), cc.getQuantityOwn().intValue());
-      String reason =
-          (wording != null) ? String.format(wording, cc.getCode(), cc.getOwnExpCode()) : null;
-      if (list != null) {
-        for (MR mr : list) {
-          insertIntelligent(mr, INTELLIGENT_REASON.INH_OWN_EXIST.value(), cc.getCode(), reason,
-              cc.getStatus().intValue() == 1, null);
-        }
-      }
+      List<MR> list = getMRBy2PayCode(dataFormat, chineseYm, cc.getCode(), 0, cc.getOwnExpCode(), 0);
+      System.out.println("processCodeConflict " + chineseYm + "," + cc.getCode() + ", count=" + list.size());
+      processCodeConflict(list, dataFormat, cc, wording, null);
     } else {
       List<MR> list = getMRByICDAndPayCode(dataFormat, chineseYm, cc.getCode(), cc.getOwnExpCode());
       String reason =
@@ -1503,6 +1615,120 @@ public class IntelligentService {
         }
       }
     }
+  }
+
+  /**
+   * 找出違反健保項目對應自費項目並存設定的病歷
+   * @param mrList
+   * @param dataFormat
+   * @param cc
+   * @param wording
+   * @param batch
+   */
+  private void processCodeConflict(List<MR> mrList, String dataFormat, CODE_CONFLICT cc,
+      String wording, List<INTELLIGENT> batch) {
+    // CODE_TYPE: 1: 醫令/健保碼，2: ICD 診斷碼
+    List<Long> mrIdList = new ArrayList<Long>();
+    // getMRBy2PayCode(dataFormat, chineseYm, cc.getCode(),
+    // cc.getQuantityNh().intValue(), cc.getOwnExpCode(), cc.getQuantityOwn().intValue());
+    for (MR mr : mrList) {
+      if (mr.getCodeAll() == null) {
+        continue;
+      }
+      if (!dataFormat.equals(mr.getDataFormat())) {
+        continue;
+      }
+      if (cc.getCodeType().intValue() == 1) {
+      if (mr.getCodeAll().indexOf("," + cc.getCode() + ",") < 0) {
+        continue;
+      }
+      if (mr.getInhCode() == null || mr.getInhCode().indexOf(cc.getOwnExpCode()) < 0) {
+        continue;
+      }
+      if (mr.getMrEndDate().before(cc.getStartDate())) {
+        continue;
+      }
+      if (mr.getMrEndDate().after(cc.getEndDate())) {
+        continue;
+      }
+      } else {
+        if (mr.getIcdAll().indexOf("," + cc.getCode() + ",") < 0) {
+          continue;
+        }
+        if (mr.getCodeAll() == null || mr.getCodeAll().indexOf(cc.getOwnExpCode()) < 0) {
+          continue;
+        }
+      }
+    
+      mrIdList.add(mr.getId());
+    }
+    if (mrIdList.size() == 0) {
+      return;
+    }
+    if (cc.getCodeType().intValue() == 2) {
+      String reason =
+          (wording != null) ? String.format(wording, cc.getCode(), cc.getOwnExpCode()) : null;
+
+      for (MR mr : mrList) {
+        for (Long mrId : mrIdList) {
+          if (mr.getId().longValue() == mrId.longValue()) {
+            insertIntelligentNoUpdateMrStatus(mr, INTELLIGENT_REASON.HIGH_RISK.value(), cc.getCode(),
+                reason, true, batch);
+            break;
+          }
+        }
+      }
+      mrDao.updateMultiMrStauts(MR_STATUS.WAIT_CONFIRM.value(), mrIdList);
+      return;
+    }
+    
+    List<Object[]> data = null;
+    if (XMLConstant.DATA_FORMAT_OP.equals(dataFormat)) {
+      data = oppDao.getMrIdAndDrugNoAndTotalQByMrIdList(cc.getCode(), cc.getOwnExpCode(), mrIdList);
+    } else {
+      data =
+          ippDao.getMrIdAndOrderCodeAndTotalQByMrIdList(cc.getCode(), cc.getOwnExpCode(), mrIdList);
+    }
+    System.out.println("processCodeConflict ," + cc.getCode() + ", count=" + mrList.size() + ", data=" + data.size());
+    Map<Long, String> violateMrMap = new HashMap<Long, String>();
+    long mrId = 0;
+    int orderCodeCount = 0;
+    int ownExpCodeCount = 0;
+    for (Object[] obj : data) {
+      long newMrId = ((BigInteger) obj[0]).longValue();
+      if (violateMrMap.containsKey((new Long(newMrId)))) {
+        continue;
+      }
+      if (mrId != newMrId) {
+        orderCodeCount = 0;
+        ownExpCodeCount = 0;
+        mrId = newMrId;
+      }
+      if (cc.getCode().equals((String) obj[1])) {
+        orderCodeCount = ((Double) obj[2]).intValue();
+      } else if (cc.getOwnExpCode().equals((String) obj[1])) {
+        ownExpCodeCount = ((Double) obj[2]).intValue();
+      }
+      System.out.println("mrId=" + mrId + ", orderCount=" + orderCodeCount + ", ownExpCodeCount=" + ownExpCodeCount);
+      if (orderCodeCount >= cc.getQuantityNh() && ownExpCodeCount >= cc.getQuantityOwn()) {
+        violateMrMap.put(mrId, "");
+      }
+    }
+    String reason =
+        (wording != null) ? String.format(wording, cc.getCode(), cc.getOwnExpCode()) : null;
+    if (violateMrMap.size() == 0) {
+      return;
+    }
+
+    for (MR mr : mrList) {
+      if (violateMrMap.get(mr.getId()) == null) {
+        continue;
+      }
+      insertIntelligentNoUpdateMrStatus(mr, INTELLIGENT_REASON.INH_OWN_EXIST.value(), cc.getCode(),
+          reason, true, batch);
+    }
+    mrDao.updateMultiMrStauts(MR_STATUS.WAIT_CONFIRM.value(),
+        new ArrayList<Long>(violateMrMap.keySet()));
   }
 
   public void calculateSameATC(String chineseYm, List<String> payCodelist, String atcCode,
@@ -2389,32 +2615,75 @@ public class IntelligentService {
    */
   public void checkAllIntelligentCondition() {
     List<MR> mrList = mrDao.getTodayUpdatedMR();
+    List<String> applYm = getDistinctApplYm(mrList);
     List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
     logger.info("start checkAllIntelligentCondition");
-    String rareIcd = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "RARE_ICD");
-    boolean runRareICD = (rareIcd != null && "1".equals(rareIcd));
-    if (runRareICD) {
-      // calculateRareICD(chineseYm)
+
+    String config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "RARE_ICD");
+    if (config != null && "1".equals(config)) {
+      for (String ym : applYm) {
+        calculateRareICD(ym);
+      }
+    }
+
+    config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "HIGH_RATIO");
+    if (config != null && "1".equals(config)) {
+      for (String ym : applYm) {
+        calculateHighRatio(ym);
+      }
+    }
+
+    config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "OVER_AMOUNT");
+    if (config != null && "1".equals(config)) {
+      for (String ym : applYm) {
+        calculateOverAmount(ym);
+      }
+    }
+
+    config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "INH_OWN_EXIST");
+    if (config != null && "1".equals(config)) {
+      calculateInhExistAndHighRisk(mrList, batch, false);
     }
     
-    checkAllViolation(mrList, batch);
+    config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "INFECTIOUS");
+    if (config != null && "1".equals(config)) {
+      calculateInfectious(mrList, batch);
+    }
+    
+    config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "SAME_ATC");
+    if (config != null && "1".equals(config)) {
+      calculateSameATC(mrList, batch);
+    }
+    
+    config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "HIGH_RISK");
+    if (config != null && "1".equals(config)) {
+      calculateInhExistAndHighRisk(mrList, batch, true);
+    }
+
+    //違反支付準則
+    //checkAllViolation(mrList, batch);
+    saveIntelligentBatch(batch);
+    logger.info("finish checkAllIntelligentCondition");
   }
 
   public void checkAllViolation(List<MR> mrList, List<INTELLIGENT> batch) {
     List<Map<String, Object>> lst =
         paymentTermsDao.searchPaymentTerms("", "", "", null, null, 0, 1000000, "id", "asc");
     for (Map<String, Object> map2 : lst) {
-      if ((Integer) map2.get("active") == 0) {
+      if ((Short) map2.get("active") == 0) {
         continue;
       }
-      PaymentTermsPl pt = paymentTermsService.findRealPaymentTerms(
-          ((BigInteger) map2.get("id")).longValue(), (String) map2.get("category"));
+      PaymentTermsPl pt = paymentTermsService
+          .findRealPaymentTerms(((Long) map2.get("id")).longValue(), (String) map2.get("category"));
       if (pt == null) {
         continue;
       }
       try {
-        violatePaymentTermsService.checkFee(pt, mrList, batch);
-        //System.out.println("finish checkFee");
+        List<MR> mrListUseOrderCode = getUseOrderCodeMR(mrList, pt.getNhi_no());
+        if (mrListUseOrderCode.size() == 0) {
+          continue;
+        }
+        violatePaymentTermsService.checkFee(pt, mrListUseOrderCode, batch);
         saveIntelligentBatch(batch);
       } catch (Exception e) {
         e.printStackTrace();
@@ -2422,6 +2691,18 @@ public class IntelligentService {
     }
   }
 
+  private List<MR> getUseOrderCodeMR(List<MR> mrList, String orderCode) {
+    List<MR> result = new ArrayList<MR>();
+    for (MR mr : mrList) {
+      if (mr.getCodeAll() == null) {
+        continue;
+      }
+      if (mr.getCodeAll().indexOf("," + orderCode + ",") > -1) {
+        result.add(mr);
+      }
+    }
+    return result;
+  }
 
   public void saveIntelligentBatch(List<INTELLIGENT> batch) {
     if (batch == null) {
@@ -2433,4 +2714,19 @@ public class IntelligentService {
       batch.clear();
     }
   }
+
+  private List<String> getDistinctApplYm(List<MR> mrList) {
+    Map<String, String> map = new HashMap<String, String>();
+    for (MR mr : mrList) {
+      if (mr.getApplYm() == null) {
+        continue;
+      }
+      if (map.containsKey(mr.getApplYm())) {
+        continue;
+      }
+      map.put(mr.getApplYm(), "");
+    }
+    return new ArrayList<String>(map.keySet());
+  }
+
 }

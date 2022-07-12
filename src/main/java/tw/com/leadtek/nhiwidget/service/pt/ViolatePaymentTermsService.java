@@ -310,6 +310,9 @@ public class ViolatePaymentTermsService {
     for (MR mr : mrList) {
       for (String excludeNhiNo : excludeNhiNoList) {
         String code = "," + excludeNhiNo + ",";
+        if (mr.getCodeAll() == null) {
+          continue;
+        }
         if (mr.getCodeAll().indexOf(code) > -1) {
           violateMr.add(mr);
           break;
@@ -442,7 +445,7 @@ public class ViolatePaymentTermsService {
       if (obj[4] != null && ((String) obj[4]).length() > 0) {
         rocBirth = (String) obj[4];
       }
-      String funcDate = (obj[2] == null) ? (String) obj[1] : (String) obj[2];
+      String funcDate = (obj[2] == null || ((String)obj[2]).length() == 0) ? (String) obj[1] : (String) obj[2];
       checkAge(((BigInteger) obj[0]).longValue(), ageType, age, rocBirth, funcDate,
           violateMrIdList);
     }
@@ -451,6 +454,7 @@ public class ViolatePaymentTermsService {
 
   private void checkAge(long mrId, int ageType, int age, String rocBirth, String funcDate,
       List<Long> violateMrIdList) {
+    System.out.println("mrId =" + mrId + ", rocBirth=" + rocBirth + ", funcDate=" + funcDate);
     int birthYear = Integer.parseInt(rocBirth.substring(0, 3));
     int birthMonthDate = Integer.parseInt(rocBirth.substring(3, 7));
 
@@ -1377,6 +1381,7 @@ public class ViolatePaymentTermsService {
 
   private void insertIntelligent(List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch,
       String nhiNo, String wording) {
+    String reason = wording.length() < 100 ? wording : wording.substring(0, 99);
     List<MR> violateMrList = null;
     boolean needAddMrIdList = false;
     if (mrIdList == null) {
@@ -1392,7 +1397,7 @@ public class ViolatePaymentTermsService {
     long start = System.currentTimeMillis();
     for (MR violateMr : violateMrList) {
       is.insertIntelligentNoUpdateMrStatus(violateMr, INTELLIGENT_REASON.VIOLATE.value(), nhiNo,
-          wording, true, batch);
+          reason, true, batch);
       if (needAddMrIdList) {
         mrIdList.add(violateMr.getId());
       }
@@ -1451,8 +1456,6 @@ public class ViolatePaymentTermsService {
       long startSQL = System.currentTimeMillis();
       List<MR> mrList = mrDao.getMRByCodeLikeAndMrEndDate("%," + pt.getNhi_no() + ",%", start, end);
       long usedTime = System.currentTimeMillis() - startSQL;
-       System.out.println("checkFee:" + pt.getNhi_no() + ", from " + start + " to " + end
-       + ", mrList=" + mrList.size() + ", usedTime:" + usedTime + "ms");
       checkFee(pt, mrList, batch);
       is.saveIntelligentBatch(batch);
       // 回到下個月月初
@@ -1950,8 +1953,8 @@ public class ViolatePaymentTermsService {
     checkAllUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
         mrList, mrIdList, batch);
     // 同患者限定每<= ? 日，總申報次數<= ? 次
-    System.out.println("checkOthersFee " + pt.getPatient_nday_enable() +","+  pt.getNhi_no() +","+ 
-    pt.getPatient_nday_days() +","+ pt.getPatient_nday_times());
+//    System.out.println("checkOthersFee " + pt.getPatient_nday_enable() +","+  pt.getNhi_no() +","+ 
+//    pt.getPatient_nday_days() +","+ pt.getPatient_nday_times());
     checkUserUseTimesInDays(pt.getPatient_nday_enable() == 1, pt.getNhi_no(),
         pt.getPatient_nday_days(), pt.getPatient_nday_times(), mrList, batch);
   }
