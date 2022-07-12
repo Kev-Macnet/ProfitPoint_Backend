@@ -552,6 +552,7 @@ public class ReportController extends BaseController {
     return null;
   }
   
+  @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
   @ApiOperation(value = "取得費用業務-點數-匯出", notes = "取得費用業務-點數-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/periodPointExport")

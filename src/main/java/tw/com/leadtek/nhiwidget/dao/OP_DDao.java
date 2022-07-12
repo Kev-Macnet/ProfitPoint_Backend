@@ -390,10 +390,10 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "SELECT COUNT, ROUND(COUNT / (SELECT sum(COUNT) FROM "
-  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND ct.CAT = 'FUNC_TYPE' "
   		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%'))  AND ct.CAT ='FUNC_TYPE' "
   		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp) * 100,2) AS PERCENT, FUNC_TYPE, DESC_CHI FROM  "
-  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND ct.CAT = 'FUNC_TYPE' "
   		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' "
   		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp", nativeQuery = true)
   public List<Map<String,Object>> getOPPieCountData(String date);
@@ -404,7 +404,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "SELECT sum(COUNT) as TOTAL FROM "
-  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND ct.CAT = 'FUNC_TYPE' "
   		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE'  "
   		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp", nativeQuery = true)
   public int getOPPieCountTotal(String date);
