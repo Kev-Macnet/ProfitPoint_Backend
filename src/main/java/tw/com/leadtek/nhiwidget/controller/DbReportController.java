@@ -309,7 +309,7 @@ public class DbReportController extends BaseController {
 
 		return ResponseEntity.ok(dbService.getAchievementAndExcess(year, quarter, isLastM, isLastY));
 	}
-
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得達成率與超額數-匯出", notes = "取得達成率與超額數-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievementRateAndExcessExport")
@@ -376,7 +376,7 @@ public class DbReportController extends BaseController {
 				sections, drgCodes, dataFormats, funcTypes, medNames, icdcms, medLogCodes, applMin, applMax, icdAll,
 				payCode, inhCode, isShowDRGList, isLastM, isLastY));
 	}
-
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得DRG案件數分佈佔率與定額、實際點數-匯出", notes = "取得DRG案件數分佈佔率與定額、實際點數-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgQueryConditionExport")
@@ -474,7 +474,7 @@ public class DbReportController extends BaseController {
 		
 		return ResponseEntity.ok(dbService.getOwnExpenseQueryCondition(betweenSDate, betweenEDate, dataFormats, funcTypes, medNames, icdAll, payCode, inhCode, isLastY, isShowOwnExpense));
 	}
-	
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得自費項目清單-匯出", notes = "取得自費項目清單-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/ownExpenseQueryConditionExport")
@@ -545,7 +545,7 @@ public class DbReportController extends BaseController {
 		
 		return ResponseEntity.ok(dbService.getAchievePointQueryCondition(nhiStatus, payCodeType, year, month, dataFormats, funcTypes, medNames, icdcms, medLogCodes, applMin, applMax, icdAll, payCode, inhCode, isLastM, isLastY));
 	}
-	
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得申報分配佔率與點數、金額-匯出", notes = "取得申報分配佔率與點數、金額-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievePointQueryConditionExport")

@@ -18,12 +18,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
+
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 
 public class ExcelUtil {
@@ -324,6 +327,51 @@ public class ExcelUtil {
     }
     return result;
   }
+  
+  public static HashMap<Integer, String> readTitleRow(Row row) {
+	    HashMap<Integer, String> result = new HashMap<Integer, String>();
+	    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+	      if (row.getCell(i) == null) {
+	        continue;
+	      }
+	      String cellValue = row.getCell(i).getStringCellValue();
+	      if (cellValue != null && cellValue.length() > 1) {
+	        if (cellValue.indexOf(',') > -1) {
+	          cellValue = cellValue.split(",")[0];
+	        }
+	        result.put(new Integer(i), cellValue);
+	      }
+	    }
+	    return result;
+  }
+  
+  public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
+	      Row row) {
+	    HashMap<String, String> result = new HashMap<String, String>();
+	    // for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+	    for (int i = 0; i < 100; i++) {
+	      String cellValue = null;
+	      if (row.getCell(i) == null) {
+	        continue;
+	      }
+	      if (row.getCell(i).getCellType() == CellType.NUMERIC) {
+	        cellValue = String.valueOf(row.getCell(i).getNumericCellValue());
+	        // System.out.println("cell numeric before:" + cellValue);
+	        if (cellValue.endsWith(".0")) {
+	          cellValue = cellValue.substring(0, cellValue.length() - 2);
+	        }
+	        // System.out.println("cell numeric after:" + cellValue);
+	      } else {
+	        cellValue = row.getCell(i).getStringCellValue().trim();
+	      }
+	      if (cellValue != null && cellValue.length() > 0) {
+	        if (columnMap.get(new Integer(i)) != null) {
+	          result.put(columnMap.get(new Integer(i)), cellValue);
+	        }
+	      }
+	    }
+	    return result;
+	  }
 
   public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
       XSSFRow row) {

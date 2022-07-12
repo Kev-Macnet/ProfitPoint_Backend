@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.controller;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -10,7 +11,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,17 +30,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -44,9 +44,7 @@ import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
-import tw.com.leadtek.nhiwidget.model.rdb.IP;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
-import tw.com.leadtek.nhiwidget.model.rdb.OP;
 import tw.com.leadtek.nhiwidget.model.xml.OutPatient;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.DeductedNoteListResponse;
@@ -1037,5 +1035,26 @@ public class NHIWidgetXMLController extends BaseController {
       return returnAPIResult("無法取得登入狀態");
     }
     return returnAPIResult(xmlService.updateDrgList(idL, icd));
+  }
+  
+  @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
+  @ApiOperation(value = "上傳excel核刪檔案", notes = "上傳excel核刪檔案")
+  @PostMapping(value = "/nhixml/uploadExcel",consumes = {"multipart/form-data"})
+  public ResponseEntity<Map<String,Object>> importDeductedNoteExcel(@ApiParam(name = "id", value = "病歷id", example = "31986") @RequestParam String id,
+		  @ApiParam(name = "inputFile") @RequestParam("file") MultipartFile file
+		  ) throws FileNotFoundException, IOException {
+	  Map<String,Object> result = new HashMap<String,Object>();
+	  List<DEDUCTED_NOTE> dataList =  new ArrayList<DEDUCTED_NOTE>();
+	  UserDetailsImpl user = getUserDetails();
+	  
+	  Workbook workbook = null;
+	  workbook = WorkbookFactory.create(file.getInputStream());
+	  Sheet sheet = workbook.getSheet("測試資料");
+	  dataList = xmlService.readDeductedNoteHSSFSheet(sheet, id, user.getUsername());
+
+	  result.put("result", "success");
+	  result.put("msg", "");
+	  result.put("data", dataList);
+	  return ResponseEntity.ok(result);
   }
 }

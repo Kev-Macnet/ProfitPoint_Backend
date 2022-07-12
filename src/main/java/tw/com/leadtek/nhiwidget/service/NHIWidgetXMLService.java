@@ -37,6 +37,7 @@ import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8847,5 +8848,99 @@ public class NHIWidgetXMLService {
     result[1] = calEnd.getTime();
 
     return result;
+  }
+  ///匯入核刪excel檔案
+  public List<DEDUCTED_NOTE> readDeductedNoteHSSFSheet(Sheet sheet, String mrid, String editorName) {
+	  
+	  // 取得最後一筆row位置作為資料size()
+	  int lastRowNum = sheet.getLastRowNum();
+	  // 由標題列取得各欄位名稱的位置
+	  HashMap<Integer, String> columnMap = new HashMap<Integer, String>();
+	  HashMap<String, String> values = new HashMap<String, String>();
+	  List<HashMap<String, String>> valueList = new ArrayList<HashMap<String, String>>();
+	  DEDUCTED_NOTE note = new DEDUCTED_NOTE();
+	  List<DEDUCTED_NOTE> listNote = new ArrayList<DEDUCTED_NOTE>();
+	  /// 先取欄位名稱
+	  for (int v = 0; v < lastRowNum + 1; v++) {
+		  try {
+				columnMap = ExcelUtil.readTitleRow(sheet.getRow(v));
+				if (columnMap.get(16).equals("備註"))
+					columnMap.replace(16, "核刪備註");
+				if (columnMap.get(26).equals("備註"))
+					columnMap.replace(26, "申復備註");
+				if (columnMap.get(34).equals("備註"))
+					columnMap.replace(34, "爭議備註");
+				System.out.println("columnMap -> " + columnMap.toString());
+				break;
+			} catch (Exception e) {
+				continue;
+			}
+
+		}
+		/// 再取值
+		for (int v = 0; v < lastRowNum + 1; v++) {
+			try {
+				values = ExcelUtil.readCellValue(columnMap, sheet.getRow(v));
+				System.out.println("values -> " + values.toString());
+				System.out.println("lastRowNum -> " + lastRowNum);
+				/// 如果是表頭就略過
+				if (values.get("病歷號").equals("病歷號")) {
+					values = new HashMap<String, String>();
+					continue;
+				}
+				valueList.add(values);
+				values = new HashMap<String, String>();
+			} catch (Exception e) {
+				continue;
+			}
+
+		}
+		System.out.println("valueList -> " + valueList.toString());
+
+		if (valueList.size() > 0) {
+			for (HashMap<String, String> map : valueList) {
+				note.setMrId(Long.valueOf(map.get("病歷號")));
+				note.setActionType(1);
+				note.setItem(map.get("項目"));
+				note.setCat(map.get("類別"));
+				note.setL1(map.get("大分類"));
+				note.setL2(map.get("中分類"));
+				note.setL3(map.get("小分類"));
+				note.setSubCat(map.get("次分類"));
+				note.setCode(map.get("核刪代碼"));
+				note.setDeductedOrder(map.get("核刪醫令"));
+				note.setDeductedQuantity(map.get("核刪數量") == null ? null : Integer.valueOf(map.get("核刪數量")));
+				note.setDeductedAmount(map.get("核刪總點數") == null ? null : Integer.valueOf(map.get("核刪總點數")));
+				note.setReason(map.get("核減理由"));
+				note.setNote(map.get("核刪備註"));
+				note.setRollbackM(map.get("放大回推金額(月)") == null ? null : Integer.valueOf(map.get("放大回推金額(月)")));
+				note.setRollbackQ(map.get("放大回推金額(季)") == null ? null : Integer.valueOf(map.get("放大回推金額(季)")));
+				note.setAfrQuantity(map.get("申復數量") == null ? null : Integer.valueOf(map.get("申復數量")));
+				note.setAfrAmount(map.get("申復金額") == null ? null : Integer.valueOf(map.get("申復金額")));
+				note.setAfrPayQuantity(map.get("申復補付數量") == null ? null : Integer.valueOf(map.get("申復補付數量")));
+				note.setAfrAmount(map.get("申復補付金額") == null ? null : Integer.valueOf(map.get("申復補付金額")));
+				note.setAfrNoPayCode(map.get("申復不補付理由代碼"));
+				note.setAfrNoPayDesc(map.get("申復不補付理由說明"));
+				note.setAfrNote(map.get("申復備註"));
+				note.setDisputeQuantity(map.get("核刪醫令爭議數量") == null ? null : Integer.valueOf(map.get("核刪醫令爭議數量")));
+				note.setDisputeAmount(map.get("爭議金額") == null ? null : Integer.valueOf(map.get("爭議金額")));
+				note.setDisputePayQuantity(map.get("爭議補付數量") == null ? null : Integer.valueOf(map.get("爭議補付數量")));
+				note.setDisputePayAmount(map.get("爭議補付金額") == null ? null : Integer.valueOf(map.get("爭議補付金額")));
+				note.setDisputeNoPayCode(map.get("爭議不補付理由代碼"));
+				note.setDisputeNoPayDesc(map.get("爭議不補付理由說明"));
+				note.setDisputeNote(map.get("爭議備註"));
+				note.setEditor(editorName);
+				
+				if (mrid.equals(map.get("病歷號"))) {
+					listNote.add(note);
+				}
+				/// 寫入資料庫
+//				newDeductedNote(map.get("病歷號"), note);
+				note = new DEDUCTED_NOTE();
+			}
+			return listNote;
+		} else {
+			return listNote;
+		}
   }
 }
