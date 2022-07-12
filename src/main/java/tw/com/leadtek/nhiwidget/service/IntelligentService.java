@@ -129,6 +129,9 @@ public class IntelligentService {
 
   @Autowired
   private ViolatePaymentTermsService violatePaymentTermsService;
+  
+  @Autowired
+  private ReportService reportService;
 
   public IntelligentResponse getIntelligent(UserDetailsImpl user, String menu, java.sql.Date sDate,
       java.sql.Date eDate, Integer minPoints, Integer maxPoints, String funcType, String funcTypec,
@@ -445,7 +448,6 @@ public class IntelligentService {
         if (startDate != null && endDate != null) {
           predicate.add(cb.between(root.get("mrEndDate"), startDate, endDate));
         }
-        // String parameterName = isICD ? "icdAll" : "codeAll";
         predicate.add(cb.like(root.get(fieldName), "%," + code + ",%"));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
@@ -1048,7 +1050,7 @@ public class IntelligentService {
     List<String> payCodes = null;
     String atc = "";
     for (PAY_CODE pc : list) {
-      if (pc.getAtc() == null || pc.getAtc().length() < 5) {
+      if (pc.getAtc() == null || pc.getAtc().length() < 5 || pc.getCode() == null) {
         continue;
       }
       String newAtc = null;
@@ -1058,7 +1060,7 @@ public class IntelligentService {
         newAtc = pc.getAtc();
       }
       if (!atc.equals(newAtc)) {
-        if (atc.length() > 0) {
+        if (atc.length() > 0 && payCodes != null && payCodes.size() > 0) {
           calculateSameATC(mrList, batch, atc, payCodes, wording);
         }
         atc = newAtc;
@@ -1181,8 +1183,6 @@ public class IntelligentService {
   private void processHighRatioSingle(String chineseYm, String dataFormat, CODE_THRESHOLD ct,
       int max, String wording, int conditionCode, List<INTELLIGENT> intelligentList) {
     String fieldName = ct.getCode() == null ? "inhCode" : "codeAll";
-    System.out.println(
-        "ct.code=" + ct.getCode() + ", inhCode=" + ct.getInhCode() + "," + ct.getCodeType());
     String code = ct.getCode() == null ? ct.getInhCode() : ct.getCode();
     List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, max, true,
         ct.getStartDate(), ct.getEndDate());
@@ -2163,6 +2163,9 @@ public class IntelligentService {
     thread.start();
   }
 
+  /**
+   * 計算費用差異
+   */
   public void recalculateAICost() {
     parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.INFECTIOUS.value());
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
@@ -2277,6 +2280,9 @@ public class IntelligentService {
     thread.start();
   }
 
+  /**
+   * 計算AI功能住院天數差異
+   */
   public void recalculateAIIpDays() {
     parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
@@ -2315,7 +2321,7 @@ public class IntelligentService {
   }
 
   /**
-   * 計算AI功能費用差異
+   * 計算AI功能住院天數差異
    * 
    * @param applYm 申報年月
    */
@@ -2618,7 +2624,39 @@ public class IntelligentService {
     List<String> applYm = getDistinctApplYm(mrList);
     List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
     logger.info("start checkAllIntelligentCondition");
+    
+    Date firstDate = new Date();
+    for (MR mr : mrList) {
+      if (mr.getMrDate().before(firstDate)) {
+        firstDate = mr.getMrDate();
+      }
+    }
+    Calendar calStart = Calendar.getInstance();
+    calStart.setTime(firstDate);
+    // 週報表資料
+    reportService.calculatePointWeekly(calStart);
+    // 月報表資料
+    for (String ym : applYm) {
+      reportService.calculatePointMR(ym);
+      reportService.calculateDRGMonthly(ym);
+    }
 
+    //智能提示助理 - 固定條件判斷
+    checkIntelligentFixCondition(mrList, applYm, batch);
+    //違反支付準則
+    checkAllViolation(mrList, batch);
+    saveIntelligentBatch(batch);
+    
+    // 臨床路徑差異
+    for (String ym : applYm) {
+      calculateAICost(ym);
+      calculateAIIpDays(ym);
+      calculateAIOrderDrug(ym);
+    }
+    logger.info("finish checkAllIntelligentCondition");
+  }
+  
+  private void checkIntelligentFixCondition(List<MR> mrList, List<String> applYm, List<INTELLIGENT> batch) {
     String config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "RARE_ICD");
     if (config != null && "1".equals(config)) {
       for (String ym : applYm) {
@@ -2659,11 +2697,6 @@ public class IntelligentService {
     if (config != null && "1".equals(config)) {
       calculateInhExistAndHighRisk(mrList, batch, true);
     }
-
-    //違反支付準則
-    //checkAllViolation(mrList, batch);
-    saveIntelligentBatch(batch);
-    logger.info("finish checkAllIntelligentCondition");
   }
 
   public void checkAllViolation(List<MR> mrList, List<INTELLIGENT> batch) {

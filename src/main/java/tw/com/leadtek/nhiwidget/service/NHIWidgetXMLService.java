@@ -63,7 +63,6 @@ import tw.com.leadtek.nhiwidget.constant.ORDER_TYPE;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
-import tw.com.leadtek.nhiwidget.dao.CODE_THRESHOLDDao;
 import tw.com.leadtek.nhiwidget.dao.DEDUCTED_NOTEDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_CALDao;
 import tw.com.leadtek.nhiwidget.dao.FILE_DIFFDao;
@@ -271,9 +270,6 @@ public class NHIWidgetXMLService {
   @Autowired
   private PAY_CODEDao payCodeDao;
   
-  @Autowired
-  private CODE_THRESHOLDDao codeThresholdDao;
-
   @Value("${project.serverUrl}")
   private String serverUrl;
 
@@ -6368,6 +6364,7 @@ public class NHIWidgetXMLService {
     result.setDrugSerialNo(values.get("DRUG_SERIAL_NO"));
     result.setReceiveNo(values.get("RECEIVE_NO"));
     result.setRocId(values.get("ROC_ID"));
+    result.setDirty(true);
     return result;
   }
 
@@ -7500,11 +7497,13 @@ public class NHIWidgetXMLService {
     String applYm = minMax.get(1).getEndTime().substring(0, 5);
     //System.out.println("start:" + orderDate[0] + ", end:" + orderDate[1] + ", applYm=" + applYm);
     OP_T opt = getOpt(applYm);
-    // 避免重複insert
+    // 避免重複insert，現存在DB中的 MR
     List<MR> mrList = mrDao.getByDataFormatAndMrDateBetween(XMLConstant.DATA_FORMAT_OP,
         orderDate[0], orderDate[1]);
+    // 避免重複insert，現存在DB中的 OP_D
     List<OP_D> opdList = opdDao.findByIDFromMR(sqlDate[0], sqlDate[1]);
     HashMap<String, Integer> rocIdDateCount = rocIdDateCount(opdList);
+    // 避免重複insert，現存在DB中的 OP_P
     List<OP_P> oppList = oppDao.getByMrIdFromMR(orderDate[0], orderDate[1]);
     // 要存到 DB 的 batch
     List<OP_P> oppBatch = new ArrayList<OP_P>();
@@ -7519,9 +7518,16 @@ public class NHIWidgetXMLService {
       }
       values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
       OP_P oppNew = findOppByOppValues(oppsNew, values);
+      if ("M221233913".equals(values.get("ROC_ID"))) {
+        if (oppNew == null) {
+          System.out.println("oppNew is null, cardNo=" + values.get("CARD_NO") + ", icd=" + values.get("ICD_CM_1"));
+        } else {
+          System.out.println("oppNew " + oppNew.getInhCode() + ", cardNo=" + values.get("CARD_NO") + ", icd=" + values.get("ICD_CM_1"));
+        }
+      }
       if (oppNew == null) {
         // 相同病歷相同醫令已處理過
-        continue; 
+        continue;
       }
       MR mr = null;
       OP_D opd = findOpdByTheseOpp(opdList, rocIdDateCount, values);
@@ -7552,6 +7558,7 @@ public class NHIWidgetXMLService {
           mr.setIcdcm1(null);  
         }
       }
+      // 調整OPD及MR的起訖時間
       if (!oppNew.getStartTime().equals(oppNew.getEndTime())) {
         if (!oppNew.getStartTime().substring(0, 7).equals(opd.getFuncDate()) ||
             !oppNew.getEndTime().substring(0, 7).equals(opd.getFuncEndDate())){
@@ -7580,10 +7587,11 @@ public class NHIWidgetXMLService {
           boolean isDiff = updateOpp(opp, oppNew);
           if (!isDiff) {
             // 資料未異動
-            //System.out.println("資料未異動 " + opp.getId() + "," + opp.getDrugNo() + "," + opp.getInhCode() + "," +  oppNew.getRocId());
-            opp.setUpdateAt(null);
+            // System.out.println("資料未異動 " + opp.getId() + "," + opp.getDrugNo() + "," + opp.getInhCode() + "," +  oppNew.getRocId());
+            opp.setDirty(false);
             continue;
           } else {
+            opp.setDirty(true);
          // 資料有異動
             // System.out.println("資料有異動 " + opp.getId() + "," + opp.getDrugNo() + "," + opp.getInhCode() + "," +  oppNew.getRocId());
           }
@@ -7612,16 +7620,22 @@ public class NHIWidgetXMLService {
         opp.setOpdId(opd.getId());
         opp.setMrId(mr.getId());
         maskOPP(opp, opd.getCaseType());
-        opp.setUpdateAt(new java.util.Date());
+        if (opp.isDirty()) {
+          opp.setUpdateAt(new java.util.Date());
+        }
         if (opp.getId() == null) {
           // 還未存到DB
           oppList.add(opp);
         }
-        // System.out.println("add oppBatch id=" + opp.getId() + "," + opp.getInhCode() +"," + opp.getRocId() +",updateAt=" + opp.getUpdateAt());
-        oppBatch.add(opp);
-        if (oppBatch.size() > XMLConstant.BATCH) {
-          oppDao.saveAll(oppBatch);
-          oppBatch.clear();
+        if (!opp.isDirty()) {
+          System.out.println("add oppBatch id=" + opp.getId() + "," + opp.getInhCode() + ","
+              + opp.getRocId() + ",updateAt=" + opp.getUpdateAt());
+        } else {
+          oppBatch.add(opp);
+          if (oppBatch.size() > XMLConstant.BATCH) {
+            oppDao.saveAll(oppBatch);
+            oppBatch.clear();
+          }
         }
       }
       // } else {
@@ -7658,6 +7672,7 @@ public class NHIWidgetXMLService {
       // }
       // }
     }
+   
     if (oppBatch.size() > 0) {
       oppDao.saveAll(oppBatch);
     }
@@ -7749,8 +7764,14 @@ public class NHIWidgetXMLService {
     for (OP_D op_D : opdList) {
       if (op_D.getRocId().equals(values.get("ROC_ID"))) {
        // 先比對卡號，不一致再比其他欄位
-        if (op_D.getCardNo() != null && op_D.getCardNo().equals(values.get("CARD_NO"))) {
-          return op_D;
+        if (op_D.getCardNo() != null) {
+          if (op_D.getCardNo().equals(values.get("CARD_NO"))) {
+            return op_D;
+          }
+          if (values.get("CARD_NO") == null) {
+            // 自費病歷
+            continue;
+          }
         }
         if (op_D.getFuncEndDate().equals(values.get("FUNC_DATE"))) {
           // 先比對領藥號，比不到若當天只有一筆病歷，就回傳該筆病歷
@@ -7844,14 +7865,14 @@ public class NHIWidgetXMLService {
       int metrDot = 0;
       // 是否為自費案件
       boolean isZ = true;
-      // 該筆病歷的醫令是否有新增或異動過，用 opp.updateAt 欄位是否為空值判斷
+      // 該筆病歷的所有醫令是否有新增或異動過
       boolean isDirty = false;
       for(int i = oppList.size() - 1; i >=0 ; i--) {
         OP_P opp = oppList.get(i);
         if (opp.getMrId() != mr.getId()) {
           continue;
         }
-        if (opp.getUpdateAt() != null) {
+        if (opp.isDirty()) {
           isDirty = true;
         }
         total += opp.getTotalDot();
@@ -8507,6 +8528,9 @@ public class NHIWidgetXMLService {
       }
       HashMap<String, String> values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
       String key = values.get("ROC_ID") + values.get("CARD_NO");
+      if ("M221233913".equals(values.get("ROC_ID"))) {
+        System.out.println("aggregate " + key + "," + values.get("INH_CODE"));
+      }
       List<OP_P> oppList = result.get(key);
       if (oppList == null) {
         oppList = new ArrayList<OP_P>();

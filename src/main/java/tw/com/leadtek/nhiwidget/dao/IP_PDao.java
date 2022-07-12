@@ -12,7 +12,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
-import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 

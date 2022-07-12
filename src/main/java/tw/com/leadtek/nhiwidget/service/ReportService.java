@@ -564,7 +564,7 @@ public class ReportService {
 		PointQuantityList result = new PointQuantityList();
 		// 門急診各科申報總數
 		List<Object[]> list = new ArrayList<Object[]>();
-		if(!funcType.isEmpty() && funcType.equals("00")) {
+		if(funcType == null || (!funcType.isEmpty() && funcType.equals("00"))) {
 			funcType = "";
 		}
 		if(funcType.isEmpty()) {
@@ -629,7 +629,7 @@ public class ReportService {
 	public PointQuantityList getOwnExpenseGroupByOrderType(java.sql.Date s, java.sql.Date e, String funcType) {
 		PointQuantityList result = new PointQuantityList();
 		List<Object[]> list = new ArrayList<Object[]>();
-		if(!funcType.isEmpty() && funcType.equals("00")) {
+		if(funcType == null || (!funcType.isEmpty() && funcType.equals("00"))) {
 			funcType = "";
 		}
 		// 門急診各科申報總數
@@ -758,6 +758,10 @@ public class ReportService {
 		return pointWeeklyDao.save(pw);
 	}
 
+	/**
+	 * 跑週報表資料，POINT_WEEKLY (每週點數合計), DRG_WEEKLY (每週點數合計)
+	 * @param startCal 起始日期
+	 */
 	public void calculatePointWeekly(Calendar startCal) {
 		Calendar cal = Calendar.getInstance();
 		cal.set(Calendar.YEAR, startCal.get(Calendar.YEAR));
@@ -1022,7 +1026,6 @@ public class ReportService {
 			List<Map<String, Object>> list = mrDao.getAllApplYm();
 			for (Map<String, Object> map : list) {
 				String applYm = (String) map.get("APPL_YM");
-				System.out.println("calculateDRGMonthly " + ym);
 				calculateDRGMonthly(applYm);
 			}
 			return;

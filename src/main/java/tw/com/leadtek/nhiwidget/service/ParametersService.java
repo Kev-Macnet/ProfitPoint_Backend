@@ -1508,10 +1508,10 @@ public class ParametersService {
   public String newHighRatioOrder(HighRatioOrder request, boolean isOrder) {
     int codeType = isOrder ? RareICDPayload.CODE_TYPE_ORDER : RareICDPayload.CODE_TYPE_DRUG;
     if (request.getInhCode() != null) {
-      request.setInhCode(request.getInhCode().toUpperCase());
+      request.setInhCode(request.getInhCode().trim().toUpperCase());
     }
     if (request.getCode() != null) {
-      request.setCode(request.getCode().toUpperCase());
+      request.setCode(request.getCode().trim().toUpperCase());
     }
     CODE_THRESHOLD ct = request.toDB(codeType);
     if (ct.getEndDate().before(ct.getStartDate())) {
@@ -1545,10 +1545,10 @@ public class ParametersService {
    */
   public String updateHighRatioOrder(HighRatioOrder request, boolean isOrder) {
     if (request.getInhCode() != null) {
-      request.setInhCode(request.getInhCode().toUpperCase());
+      request.setInhCode(request.getInhCode().trim().toUpperCase());
     }
     if (request.getCode() != null) {
-      request.setCode(request.getCode().toUpperCase());
+      request.setCode(request.getCode().trim().toUpperCase());
     }
     Optional<CODE_THRESHOLD> optional = codeThresholdDao.findById(request.getId());
     if (!optional.isPresent()) {
@@ -2231,6 +2231,7 @@ public class ParametersService {
    * 重新計算符合特別用量藥材、衛品及應用比例偏高醫令
    */
   public void recalculateHighRatioAndOverAmount(CODE_THRESHOLD ct, boolean isOrder) {
+    logger.info("recalculateHighRatio start " + ct.getCode());
     int conditionCode = isOrder ? INTELLIGENT_REASON.HIGH_RATIO.value() : INTELLIGENT_REASON.OVER_AMOUNT.value();
     waitIfIntelligentRunning(conditionCode);
     is.setIntelligentRunning(conditionCode, true);
