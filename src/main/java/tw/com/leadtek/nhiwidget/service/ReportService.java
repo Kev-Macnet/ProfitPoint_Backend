@@ -1566,7 +1566,8 @@ public class ReportService {
 			appl.setAll(getLongValue(obj[4]));
 			appl.setOpem(getLongValue(obj[5]));
 			appl.setEm(getLongValue(obj[6]));
-			appl.setIp(getLongValue(obj[7]));
+			Long appl_ip = getLongValue(obj[8]) + getLongValue(obj[9]);
+			appl.setIp(appl_ip);
 			result.setAppl(appl);
 		}
 
