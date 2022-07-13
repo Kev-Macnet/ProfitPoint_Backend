@@ -835,7 +835,7 @@ public class HealthCareCostService {
 				workbook.close();
 		  } catch (Exception e) {
 				// TODO: handle exception
-			  logger.info("健保藥費概況產生報表錯誤: {}",e);
+			  logger.info("健保藥費概況匯出報表錯誤: {}",e);
 //			  e.printStackTrace();
 //			  System.out.println(e);
 		  }
