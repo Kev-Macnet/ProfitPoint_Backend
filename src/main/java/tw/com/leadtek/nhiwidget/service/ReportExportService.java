@@ -5351,7 +5351,7 @@ public class ReportExportService {
 					for (int v = 0; v < npqAllList.size(); v++) {
 						Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
 						double d = Math.round(
-								point.doubleValue() / ppModel.getApplPointAll().doubleValue() * 100.0 * 100.0) / 100.0;
+								point.doubleValue() / ppModel.getApplNoPartPointAll().doubleValue() * 100.0 * 100.0) / 100.0;
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
@@ -5412,7 +5412,7 @@ public class ReportExportService {
 					for (int v = 0; v < npqIpList.size(); v++) {
 						Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
 						double d = Math.round(
-								point.doubleValue() / ppModel.getApplPointIp().doubleValue() * 100.0 * 100.0) / 100.0;
+								point.doubleValue() / ppModel.getApplNoPartPointIp().doubleValue() * 100.0 * 100.0) / 100.0;
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
@@ -5473,7 +5473,7 @@ public class ReportExportService {
 					for (int v = 0; v < npqOpList.size(); v++) {
 						Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
 						double d = Math.round(
-								point.doubleValue() / ppModel.getApplPointOp().doubleValue() * 100.0 * 100.0) / 100.0;
+								point.doubleValue() / ppModel.getApplNoPartPointOpAll().doubleValue() * 100.0 * 100.0) / 100.0;
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
@@ -5558,7 +5558,7 @@ public class ReportExportService {
 					for (int v = 0; v < npqAllList.size(); v++) {
 						Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
 						double d = Math.round(
-								point.doubleValue() / ppModel.getApplPointAll().doubleValue() * 100.0 * 100.0) / 100.0;
+								point.doubleValue() / ppModel.getPartPointAll().doubleValue() * 100.0 * 100.0) / 100.0;
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
@@ -5619,7 +5619,7 @@ public class ReportExportService {
 					for (int v = 0; v < npqIpList.size(); v++) {
 						Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
 						double d = Math.round(
-								point.doubleValue() / ppModel.getApplPointIp().doubleValue() * 100.0 * 100.0) / 100.0;
+								point.doubleValue() / ppModel.getPartPointIp().doubleValue() * 100.0 * 100.0) / 100.0;
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
@@ -5680,7 +5680,7 @@ public class ReportExportService {
 					for (int v = 0; v < npqOpList.size(); v++) {
 						Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
 						double d = Math.round(
-								point.doubleValue() / ppModel.getApplPointOp().doubleValue() * 100.0 * 100.0) / 100.0;
+								point.doubleValue() / ppModel.getPartPointOpAll().doubleValue() * 100.0 * 100.0) / 100.0;
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
@@ -5765,7 +5765,7 @@ public class ReportExportService {
 					for (int v = 0; v < npqAllList.size(); v++) {
 						Long point = npqAllList.get(v).getPoint() == null ? 0 : npqAllList.get(v).getPoint();
 						double d = Math.round(
-								point.doubleValue() / ppModel.getApplPointAll().doubleValue() * 100.0 * 100.0) / 100.0;
+								point.doubleValue() / ppModel.getOwnExpAll().doubleValue() * 100.0 * 100.0) / 100.0;
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
@@ -5826,7 +5826,7 @@ public class ReportExportService {
 					for (int v = 0; v < npqIpList.size(); v++) {
 						Long point = npqIpList.get(v).getPoint() == null ? 0 : npqIpList.get(v).getPoint();
 						double d = Math.round(
-								point.doubleValue() / ppModel.getApplPointIp().doubleValue() * 100.0 * 100.0) / 100.0;
+								point.doubleValue() / ppModel.getOwnExpIp().doubleValue() * 100.0 * 100.0) / 100.0;
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
@@ -5857,6 +5857,15 @@ public class ReportExportService {
 					}
 					cellIndex = 0;
 				}
+				else if(npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
 				break;
 			case 1:
 				if (npqOpList.size() > 0) {
@@ -5866,6 +5875,15 @@ public class ReportExportService {
 						cell.setCellValue(
 								npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint().doubleValue());
 						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				else if(npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(0);
+						cell.setCellStyle(cellStyle);
 					}
 					cellIndex = 0;
 				}
@@ -5881,17 +5899,35 @@ public class ReportExportService {
 					}
 					cellIndex = 0;
 				}
+				else if(npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(0);
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
 				break;
 			case 3:
 				if (npqOpList.size() > 0) {
 					for (int v = 0; v < npqOpList.size(); v++) {
 						Long point = npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint();
 						double d = Math.round(
-								point.doubleValue() / ppModel.getApplPointOp().doubleValue() * 100.0 * 100.0) / 100.0;
+								point.doubleValue() / ppModel.getOwnExpOpAll().doubleValue() * 100.0 * 100.0) / 100.0;
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
 						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				else if(npqAllList.size() > 0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(0);
+						cell.setCellStyle(cellStyle);
 					}
 					cellIndex = 0;
 				}
@@ -6350,6 +6386,15 @@ public class ReportExportService {
 					}
 					cellIndex = 0;
 				}
+				else if (npqAllList.size()>0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(npqAllList.get(v).getName());
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
 				break;
 			case 1:
 				if (npqOpList.size() > 0) {
@@ -6359,6 +6404,15 @@ public class ReportExportService {
 						cell.setCellValue(
 								npqOpList.get(v).getPoint() == null ? 0 : npqOpList.get(v).getPoint().doubleValue());
 						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				else if (npqAllList.size()>0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(0);
+						cell.setCellStyle(cellStyle);
 					}
 					cellIndex = 0;
 				}
@@ -6374,6 +6428,15 @@ public class ReportExportService {
 					}
 					cellIndex = 0;
 				}
+				else if (npqAllList.size()>0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(0);
+						cell.setCellStyle(cellStyle);
+					}
+					cellIndex = 0;
+				}
 				break;
 			case 3:
 				if (npqOpList.size() > 0) {
@@ -6385,6 +6448,15 @@ public class ReportExportService {
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(d + "%");
 						cell.setCellStyle(cellFormatStyle);
+					}
+					cellIndex = 0;
+				}
+				else if (npqAllList.size()>0) {
+					for (int v = 0; v < npqAllList.size(); v++) {
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(0);
+						cell.setCellStyle(cellStyle);
 					}
 					cellIndex = 0;
 				}
@@ -6854,6 +6926,15 @@ public class ReportExportService {
 						}
 						cellIndex = 0;
 					}
+					else if (npqAllList.size()>0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(npqAllList.get(v).getName());
+							cell.setCellStyle(cellStyle);
+						}
+						cellIndex = 0;
+					}
 					break;
 				case 1:
 					if (npqOpList.size() > 0) {
@@ -6863,6 +6944,15 @@ public class ReportExportService {
 							cell.setCellValue(npqOpList.get(v).getPoint() == null ? 0
 									: npqOpList.get(v).getPoint().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					else if (npqAllList.size()>0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(0);
+							cell.setCellStyle(cellStyle);
 						}
 						cellIndex = 0;
 					}
@@ -6878,6 +6968,15 @@ public class ReportExportService {
 						}
 						cellIndex = 0;
 					}
+					else if (npqAllList.size()>0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(0);
+							cell.setCellStyle(cellStyle);
+						}
+						cellIndex = 0;
+					}
 					break;
 				case 3:
 					if (npqOpList.size() > 0) {
@@ -6889,6 +6988,15 @@ public class ReportExportService {
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(d + "%");
 							cell.setCellStyle(cellFormatStyle);
+						}
+						cellIndex = 0;
+					}
+					else if (npqAllList.size()>0) {
+						for (int v = 0; v < npqAllList.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(0);
+							cell.setCellStyle(cellStyle);
 						}
 						cellIndex = 0;
 					}
