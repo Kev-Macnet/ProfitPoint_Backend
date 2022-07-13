@@ -948,7 +948,7 @@ public class ViolatePaymentTermsService {
         String endTime = (String) obj[3];
       Date endDate = DateTool.convertChineseToYears(endTime, sdf);
 
-        if ((daysBetween(mrDate, endDate) + 1) > days) {
+        if (daysBetween(mrDate, endDate) > days) {
           total += ((Double) obj[4]).intValue();
         }
         if (total > max) {
@@ -1033,7 +1033,7 @@ public class ViolatePaymentTermsService {
       if (violateRocId.contains((String) obj[0])) {
         continue;
       }
-      if ((daysBetween((Date) obj[1], minDate) + 1 ) > days) {
+      if (daysBetween((Date) obj[1], minDate) > days) {
         // 小於所撈取病歷最舊-days的病歷，不處理
         continue;
       }
@@ -1101,7 +1101,7 @@ public class ViolatePaymentTermsService {
         continue;
       }
       for (int i = list.size() - 1; i >= 0; i--) {
-        if ((daysBetween(nhiNo2Time, list.get(i).getMrEndDate()) + 1) <= days) {
+        if (daysBetween(nhiNo2Time, list.get(i).getMrEndDate()) <= days) {
           // qualify
           list.remove(i);
         }
@@ -1265,7 +1265,7 @@ public class ViolatePaymentTermsService {
       if (!rocId.equals((String) obj[1])) {
         rocId = (String) obj[1];
       } else {
-        if ((daysBetween(lastDate, (Date) obj[2]) + 1) < days) {
+        if (daysBetween(lastDate, (Date) obj[2]) < days) {
           rocIdMap.put(rocId, "");
         }
       }
@@ -1344,7 +1344,7 @@ public class ViolatePaymentTermsService {
         dates.add((Date) obj[2]);
       } else {
         dates.add((Date) obj[2]);
-        if ((daysBetween(dates.get(0), (Date) obj[2]) + 1) <= 365) {
+        if (daysBetween(dates.get(0), (Date) obj[2]) <= 365) {
           if (dates.size() > max) {
             rocIdMap.put(rocId, "");
             continue;
@@ -1976,11 +1976,24 @@ public class ViolatePaymentTermsService {
     return (int) ((diff / 1000) / 3600);
   }
 
+  /**
+   * 使用天數
+   * @param start 
+   * @param end
+   * @return
+   */
   public static int daysBetween(Date start, Date end) {
     long diff = end.getTime() - start.getTime();
-    return (int) (((diff / 1000) / 3600) / 24);
+    return ((int) (((diff / 1000) / 3600) / 24)) + 1;
   }
 
+  /**
+   * 醫令使用天數
+   * @param startTime 民國年月日時分 yyyMMddHHmm
+   * @param endTime 民國年月日時分 yyyMMddHHmm
+   * @param sdf SimpleDateFormat("yyyyMMddHHmm")
+   * @return
+   */
   public static int diffDays(String startTime, String endTime, SimpleDateFormat sdf) {
     Date sDate = DateTool.convertChineseToYears(startTime, sdf);
     Date eDate = DateTool.convertChineseToYears(endTime, sdf);

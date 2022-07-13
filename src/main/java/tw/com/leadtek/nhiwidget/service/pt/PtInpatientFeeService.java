@@ -1,4 +1,4 @@
-package tw.com.leadtek.nhiwidget.service;
+package tw.com.leadtek.nhiwidget.service.pt;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,7 +9,7 @@ import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
 import tw.com.leadtek.tools.Utility;
 
 @Service
-public class PtInpatientFeeService {
+public class PtInpatientFeeService extends BasicPaymentTerms {
 
     @Autowired
     private PaymentTermsDao paymentTermsDao;
@@ -127,16 +127,16 @@ public class PtInpatientFeeService {
               result.setActive((Short) master.get("active"));
               result.setCategory(Category);
               
-              result.setMax_inpatient_enable((Short) detail.get("max_inpatient_enable"));
-              result.setMax_inpatient((Short) detail.get("max_inpatient"));
-              result.setMax_emergency_enable((Short) detail.get("max_emergency_enable"));
-              result.setMax_emergency((Short) detail.get("max_emergency"));
-              result.setMax_patient_no_enable((Short) detail.get("max_patient_no_enable"));
-              result.setMax_patient_no((Short) detail.get("max_patient_no"));
-              result.setExclude_nhi_no_enable((Short) detail.get("exclude_nhi_no_enable"));
-              result.setNot_allow_plan_enable((Short) detail.get("not_allow_plan_enable"));
-              result.setCoexist_nhi_no_enable((Short) detail.get("coexist_nhi_no_enable"));
-              result.setNo_coexist_enable((Short) detail.get("no_coexist_enable"));
+              result.setMax_inpatient_enable(checkDBColumnType(detail.get("max_inpatient_enable")));
+              result.setMax_inpatient(checkDBColumnType(detail.get("max_inpatient")));
+              result.setMax_emergency_enable(checkDBColumnType(detail.get("max_emergency_enable")));
+              result.setMax_emergency(checkDBColumnType(detail.get("max_emergency")));
+              result.setMax_patient_no_enable(checkDBColumnType(detail.get("max_patient_no_enable")));
+              result.setMax_patient_no(checkDBColumnType(detail.get("max_patient_no")));
+              result.setExclude_nhi_no_enable(checkDBColumnType(detail.get("exclude_nhi_no_enable")));
+              result.setNot_allow_plan_enable(checkDBColumnType(detail.get("not_allow_plan_enable")));
+              result.setCoexist_nhi_no_enable(checkDBColumnType(detail.get("coexist_nhi_no_enable")));
+              result.setNo_coexist_enable(checkDBColumnType(detail.get("no_coexist_enable")));
               result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
               result.setLst_co_nhi_no(paymentTermsDao.filterCoexistNhiNo(ptId));
               result.setLst_allow_plan(paymentTermsDao.filterNotAllowPlan(ptId));

@@ -686,9 +686,9 @@ public class TestDrgCalService {
     String endTime = "10811160000";
     int day = ViolatePaymentTermsService.diffDays(startTime, endTime, sdf);
     System.out.println(startTime + " to " + endTime + " need " + day + " days.");
-
   }
   
+  //@Ignore
   @Test
   public void testPayCodeType() {
       HashMap<String, String> map = nhiService.getPayCodeType();
@@ -696,6 +696,16 @@ public class TestDrgCalService {
       System.out.println(key + ":" + map.get(key));
       key ="14051C";
 
-      is.checkAllIntelligentCondition();      
+      //is.checkAllIntelligentCondition();
+      String startTime = "11106240000";
+      String endTime = "11106260000";
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
+      int diffDays = ViolatePaymentTermsService.diffDays(startTime, endTime, sdf);
+      int totalQ = 9;
+      double avg = (double) totalQ / (double) diffDays;
+      if (avg > 4) {
+        System.out.println("avg=" + avg + " > 4");
+      }
+      System.out.println(startTime + " to " + endTime + " need " + diffDays + " days.");
   }
 }

@@ -94,7 +94,7 @@ public class PaymentTermsDao extends BaseSqlDao {
           sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
         }
         // System.out.println("sql-95="+sql);
-        logger.info(sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         lst = Utility.listLowerCase(lst);
         for (Map<String, Object> item : lst) {

@@ -1,22 +1,23 @@
-package tw.com.leadtek.nhiwidget.service;
+package tw.com.leadtek.nhiwidget.service.pt;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import tw.com.leadtek.nhiwidget.dto.PtPlasterBandageFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtInpatientCarePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.tools.Utility;
 
 // swagger: http://127.0.0.1:8081/swagger-ui/index.html
 @Service
-public class PtPlasterBandageFeeService {
+public class PtInpatientCareService {
     
     @Autowired
     private PaymentTermsDao paymentTermsDao;
     
-    public final static String Category = "石膏繃帶費"; 
     
-    public java.util.Map<String, Object> findPlasterBandageFee(long ptId) {
+    public static final String Category = "住院安寧療護"; 
+    
+    public java.util.Map<String, Object> findInpatientCare(long ptId) {
         java.util.Map<String, Object> retMap;
         if (ptId > 0) {
             java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, this.Category);
@@ -27,7 +28,7 @@ public class PtPlasterBandageFeeService {
         return retMap;
     }
 
-    public long addPlasterBandageFee(PtPlasterBandageFeePl params) {
+    public long addInpatientCare(PtInpatientCarePl params) {
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
         params.setCategory(this.Category);
@@ -37,7 +38,7 @@ public class PtPlasterBandageFeeService {
         return ptId;
     }
     
-    public int updatePlasterBandageFee(long ptId, PtPlasterBandageFeePl params) {
+    public int updateInpatientCare(long ptId, PtInpatientCarePl params) {
         int ret = 0;
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
@@ -49,7 +50,7 @@ public class PtPlasterBandageFeeService {
         return ret;
     }
 
-    public int deletePlasterBandageFee(long ptId) {
+    public int deleteInpatientCare(long ptId) {
         int ret = 0;
         if (ptId > 0) {
             ret += paymentTermsDao.deletePaymentTerms(ptId, this.Category);

@@ -34,7 +34,7 @@ public class BackupLogDao {
         if (userName.length()>0) {
             sql = sql.replace("-- and (USERNAME=", " and (USERNAME=");
         }
-        logger.info(sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> retList = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(retList);
     }
@@ -55,7 +55,7 @@ public class BackupLogDao {
         sql = "Delete from BACKUP_LOG\r\n"
                 + "Where (ID=%d)";
         sql = String.format(sql, id);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -66,7 +66,7 @@ public class BackupLogDao {
                 + "BACKUP_LOG(USERNAME, FILENAME, MODE, DESCRIPTION, UPDATE_TM)\r\n"
                 + "Values('%s', '%s', %d, '%s', CURRENT_TIMESTAMP)";
         sql = String.format(sql, username, filename, mode, description);
-        logger.info(sql);
+        logger.debug(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -82,7 +82,7 @@ public class BackupLogDao {
                 + "    DESCRIPTION='%s'\r\n"
                 + "WHERE (ID=%d)";
         sql = String.format(sql, filename, description, id);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

@@ -24,7 +24,7 @@ public class DbBackupDao {
         sql = "Select *\n"
                 + "From %s";
         sql = String.format(sql, tableName);
-        logger.info(sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return Utility.listLowerCase(lst);
     }
@@ -50,7 +50,7 @@ public class DbBackupDao {
                 + "From %s\n"
                 + "Order By %s";
         sql = String.format(sql, tableName, idName);
-//        logger.info(sql);
+//        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         return listFormatDate(lst);
     }
@@ -62,7 +62,7 @@ public class DbBackupDao {
                 + "From %s\n"
                 + "Where (%s>'%s')\n";
         sql = String.format(sql, fieldName, fieldName, tableName, updateField, strStartDate);
-//        logger.info(sql);
+//        logger.debug(sql);
         java.util.Map<String, Long> retMap = new java.util.HashMap<String, Long>();
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
@@ -121,8 +121,8 @@ public class DbBackupDao {
         try {
             ret =  jdbcTemplate.update(sql);
         } catch(DataAccessException ex) {
-            logger.info("execSql Error -----");
-            logger.info(sql);
+            logger.debug("execSql Error -----");
+            logger.debug(sql);
             ex.printStackTrace();
         }
         return ret;

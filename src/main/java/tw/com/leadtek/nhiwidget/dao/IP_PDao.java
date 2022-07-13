@@ -336,7 +336,7 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
      * @param mrIdList
      * @return
      */
-    @Query(value = "SELECT MR_ID, ORDER_CODE, TOTAL_Q FROM ip_p "
-        + "WHERE (ORDER_CODE = ?1 OR ORDER_CODE = ?2 ) AND MR_ID IN ?3 ORDER BY MR_ID", nativeQuery = true)
+    @Query(value = "SELECT MR_ID, ORDER_CODE, INH_CODE, TOTAL_Q FROM ip_p "
+        + "WHERE (ORDER_CODE = ?1 OR INH_CODE = ?2 ) AND MR_ID IN ?3 ORDER BY MR_ID", nativeQuery = true)
     public List<Object[]> getMrIdAndOrderCodeAndTotalQByMrIdList(String orderCode1, String orderCode2, List<Long> mrIdList);
 }

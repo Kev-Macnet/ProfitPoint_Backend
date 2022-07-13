@@ -1,34 +1,36 @@
-package tw.com.leadtek.nhiwidget.service;
+package tw.com.leadtek.nhiwidget.service.pt;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tw.com.leadtek.nhiwidget.dto.PtPsychiatricWardFeePl;
+
+import tw.com.leadtek.nhiwidget.dto.PtSpecificMedicalFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
-import tw.com.leadtek.nhiwidget.sql.PtPsychiatricWardFeeDao;
+import tw.com.leadtek.nhiwidget.sql.PtSpecificMedicalFeeDao;
 import tw.com.leadtek.tools.Utility;
 
-// swagger: http://127.0.0.1:8081/swagger-ui/index.html
 @Service
-public class PtPsychiatricWardFeeService {
-    
+public class PtSpecificMedicalFeeService extends BasicPaymentTerms {
+
     @Autowired
     private PaymentTermsDao paymentTermsDao;
     @Autowired
-    private PtPsychiatricWardFeeDao ptPsychiatricWardFeeDao;
+    private PtSpecificMedicalFeeDao ptSpecificMedicalFeeDao;
     
-    public final static String Category = "精神慢性病房費"; 
+    public final static String Category = "特定診療檢查費"; 
     
-    public java.util.Map<String, Object> findPsychiatricWardFee(long ptId) {
+    public java.util.Map<String, Object> findSpecificMedicalFee(long ptId) {
         java.util.Map<String, Object> retMap;
         if (ptId > 0) {
             java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, this.Category);
             if (!master.isEmpty()) {
-                java.util.Map<String, Object> detail = ptPsychiatricWardFeeDao.findOne(ptId);
+                java.util.Map<String, Object> detail = ptSpecificMedicalFeeDao.findOne(ptId);
                 for (java.util.Map.Entry<String, Object> entry : detail.entrySet()) {
                     if (!entry.getKey().equals("pt_id")) {
                         master.put(entry.getKey(), entry.getValue());
                     }
                 }
+                master.put("lst_nhi_no", paymentTermsDao.filterExcludeNhiNo(ptId));
             }
             retMap = master;
         } else {
@@ -37,7 +39,7 @@ public class PtPsychiatricWardFeeService {
         return retMap;
     }
 
-    public long addPsychiatricWardFee(PtPsychiatricWardFeePl params) {
+    public long addSpecificMedicalFee(PtSpecificMedicalFeePl params) {
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
         params.setCategory(this.Category);
@@ -45,12 +47,17 @@ public class PtPsychiatricWardFeeService {
                                                     start_date, end_data, params.getCategory(), 
                                                     params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
         if (ptId>0) {
-            ptPsychiatricWardFeeDao.add(ptId, params.getNeed_pass_review_enable()|0);
+            if (params.getLst_nhi_no() != null) {
+                paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
+            }
+//            ptSpecificMedicalFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getInterval_nday()|0, params.getMax_times()|0);
+            ptSpecificMedicalFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                    params.getMax_times_enable()|0, params.getMax_times()|0);
         }
         return ptId;
     }
     
-    public int updatePsychiatricWardFee(long ptId, PtPsychiatricWardFeePl params) {
+    public int updateSpecificMedicalFee(long ptId, PtSpecificMedicalFeePl params) {
         int ret = 0;
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
@@ -59,29 +66,35 @@ public class PtPsychiatricWardFeeService {
                                                   start_date, end_data, this.Category, 
                                                   params.getHospital_type(), params.getOutpatient_type(), params.getHospitalized_type());
             if (ret>0) {
-                ptPsychiatricWardFeeDao.update(ptId, params.getNeed_pass_review_enable()|0);
+                if (params.getLst_nhi_no() != null) {
+                    paymentTermsDao.deleteExcludeNhiNo(ptId);
+                    paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
+                }
+                ptSpecificMedicalFeeDao.update(ptId, params.getExclude_nhi_no_enable()|0, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
+                        params.getMax_times_enable()|0, params.getMax_times()|0);
             }
         }
         return ret;
     }
 
-    public int deletePsychiatricWardFee(long ptId) {
+    public int deleteSpecificMedicalFee(long ptId) {
         int ret = 0;
         if (ptId > 0) {
             ret += paymentTermsDao.deletePaymentTerms(ptId, this.Category);
             if (ret>0) {
-                ret += ptPsychiatricWardFeeDao.delete(ptId);
+                ret += paymentTermsDao.deleteExcludeNhiNo(ptId);
+                ret += ptSpecificMedicalFeeDao.delete(ptId);
             }
         }
         return ret;
     }
 
-    public PtPsychiatricWardFeePl findPtPsychiatricWardFeePl(long ptId) {
-      PtPsychiatricWardFeePl result = new PtPsychiatricWardFeePl();
+    public PtSpecificMedicalFeePl findPtSpecificMedicalFeePl(long ptId) {
+      PtSpecificMedicalFeePl result = new PtSpecificMedicalFeePl();
       if (ptId > 0) {
           java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
           if (!master.isEmpty()) {
-              java.util.Map<String, Object> detail = ptPsychiatricWardFeeDao.findOne(ptId);
+              java.util.Map<String, Object> detail = ptSpecificMedicalFeeDao.findOne(ptId);
               
               result.setFee_no((String) master.get("fee_no"));
               result.setFee_name((String) master.get("fee_name"));
@@ -94,10 +107,17 @@ public class PtPsychiatricWardFeeService {
               result.setActive((Short) master.get("active"));
               result.setCategory(Category);
               
-              result.setNeed_pass_review_enable((Short) detail.get("need_pass_review_enable"));
+              //不可與此支付標準代碼並存單一就醫紀錄一併申報(開關)
+              result.setExclude_nhi_no_enable(checkDBColumnType(detail.get("exclude_nhi_no_enable")));
+              result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
+              // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
+              result.setInterval_nday_enable(checkDBColumnType(detail.get("interval_nday_enable")));
+              result.setInterval_nday(checkDBColumnType(detail.get("interval_nday")));
+              // 每組病歷號碼，每院限一年內，限定申報 ? 次
+              result.setMax_times_enable(checkDBColumnType(detail.get("max_times_enable")));
+              result.setMax_times(checkDBColumnType(detail.get("max_times")));
           }
       } 
       return result;
-    }  
-    
+    }   
 }

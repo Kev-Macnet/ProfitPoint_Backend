@@ -2282,6 +2282,7 @@ public class ParametersService {
    * @param cc
    */
   public void recalculateCodeConflict(CODE_CONFLICT cc, int conditionCode) {
+    System.out.println("recalculateCodeConflict " + cc.getCode());
     waitIfIntelligentRunning(conditionCode);
     is.setIntelligentRunning(conditionCode, true);
     String wordingName = conditionCode == INTELLIGENT_REASON.INH_OWN_EXIST.value() ? "CODE_CONFLICT" : "HIGH_RISK_WORDING";

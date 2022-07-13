@@ -30,13 +30,13 @@ import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtSpecificMedicalFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtSpecificMedicalFeePl;
-import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
-import tw.com.leadtek.nhiwidget.service.PtAnesthesiaFeeService;
-import tw.com.leadtek.nhiwidget.service.PtBoneMarrowTransFeeService;
-import tw.com.leadtek.nhiwidget.service.PtOthersFeeService;
-import tw.com.leadtek.nhiwidget.service.PtPlasterBandageFeeService;
-import tw.com.leadtek.nhiwidget.service.PtPsychiatricFeeService;
-import tw.com.leadtek.nhiwidget.service.PtSpecificMedicalFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.pt.PtAnesthesiaFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtBoneMarrowTransFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtOthersFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtPlasterBandageFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtPsychiatricFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtSpecificMedicalFeeService;
 
 
 @Api(value = "健保標準給付額 支付條件設定 API", tags = {"10-4 健保標準給付額 支付條件設定"})

@@ -1,30 +1,30 @@
-package tw.com.leadtek.nhiwidget.service;
+package tw.com.leadtek.nhiwidget.service.pt;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import tw.com.leadtek.nhiwidget.dto.PtSpecificMedicalFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtNutritionalFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtTreatmentFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
-import tw.com.leadtek.nhiwidget.sql.PtSpecificMedicalFeeDao;
+import tw.com.leadtek.nhiwidget.sql.PtNutritionalFeeDao;
 import tw.com.leadtek.tools.Utility;
 
 @Service
-public class PtSpecificMedicalFeeService {
-
+public class PtNutritionalFeeService extends BasicPaymentTerms {
+    
     @Autowired
     private PaymentTermsDao paymentTermsDao;
     @Autowired
-    private PtSpecificMedicalFeeDao ptSpecificMedicalFeeDao;
+    private PtNutritionalFeeDao ptNutritionalFeeDao;
     
-    public final static String Category = "特定診療檢查費"; 
+    public final static String Category = "管灌飲食費及營養照護費"; 
     
-    public java.util.Map<String, Object> findSpecificMedicalFee(long ptId) {
+    public java.util.Map<String, Object> findNutritionalFee(long ptId) {
         java.util.Map<String, Object> retMap;
         if (ptId > 0) {
             java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, this.Category);
             if (!master.isEmpty()) {
-                java.util.Map<String, Object> detail = ptSpecificMedicalFeeDao.findOne(ptId);
+                java.util.Map<String, Object> detail = ptNutritionalFeeDao.findOne(ptId);
                 for (java.util.Map.Entry<String, Object> entry : detail.entrySet()) {
                     if (!entry.getKey().equals("pt_id")) {
                         master.put(entry.getKey(), entry.getValue());
@@ -39,7 +39,7 @@ public class PtSpecificMedicalFeeService {
         return retMap;
     }
 
-    public long addSpecificMedicalFee(PtSpecificMedicalFeePl params) {
+    public long addNutritionalFee(PtNutritionalFeePl params) {
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
         params.setCategory(this.Category);
@@ -50,14 +50,20 @@ public class PtSpecificMedicalFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-//            ptSpecificMedicalFeeDao.add(ptId, params.getExclude_nhi_no()|0, params.getInterval_nday()|0, params.getMax_times()|0);
-            ptSpecificMedicalFeeDao.add(ptId, params.getExclude_nhi_no_enable()|0, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
-                    params.getMax_times_enable()|0, params.getMax_times()|0);
+//            ptNutritionalFeeDao.add(ptId, params.getMax_inpatient()|0, params.getMax_daily()|0, 
+//                    params.getEvery_nday()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
+//                    params.getOver_nday()|0, params.getOver_nday_days()|0, params.getOver_nday_times()|0, 
+//                    params.getExclude_nhi_no()|0);
+            ptNutritionalFeeDao.add(ptId, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                    params.getMax_daily_enable()|0, params.getMax_daily()|0, 
+                    params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
+                    params.getOver_nday_enable()|0, params.getOver_nday_days()|0, params.getOver_nday_times()|0, 
+                    params.getExclude_nhi_no_enable()|0);
         }
         return ptId;
     }
     
-    public int updateSpecificMedicalFee(long ptId, PtSpecificMedicalFeePl params) {
+    public int updateNutritionalFee(long ptId, PtNutritionalFeePl params) {
         int ret = 0;
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
@@ -70,31 +76,34 @@ public class PtSpecificMedicalFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                ptSpecificMedicalFeeDao.update(ptId, params.getExclude_nhi_no_enable()|0, params.getInterval_nday_enable()|0, params.getInterval_nday()|0, 
-                        params.getMax_times_enable()|0, params.getMax_times()|0);
+                ptNutritionalFeeDao.update(ptId, params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0, 
+                        params.getMax_daily_enable()|0, params.getMax_daily()|0, 
+                        params.getEvery_nday_enable()|0, params.getEvery_nday_days()|0, params.getEvery_nday_times()|0, 
+                        params.getOver_nday_enable()|0, params.getOver_nday_days()|0, params.getOver_nday_times()|0, 
+                        params.getExclude_nhi_no_enable()|0);
             }
         }
         return ret;
     }
 
-    public int deleteSpecificMedicalFee(long ptId) {
+    public int deleteNutritionalFee(long ptId) {
         int ret = 0;
         if (ptId > 0) {
             ret += paymentTermsDao.deletePaymentTerms(ptId, this.Category);
             if (ret>0) {
                 ret += paymentTermsDao.deleteExcludeNhiNo(ptId);
-                ret += ptSpecificMedicalFeeDao.delete(ptId);
+                ret += ptNutritionalFeeDao.delete(ptId);
             }
         }
         return ret;
     }
 
-    public PtSpecificMedicalFeePl findPtSpecificMedicalFeePl(long ptId) {
-      PtSpecificMedicalFeePl result = new PtSpecificMedicalFeePl();
+    public PtNutritionalFeePl findPtNutritionalFeePl(long ptId) {
+      PtNutritionalFeePl result = new PtNutritionalFeePl();
       if (ptId > 0) {
           java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
           if (!master.isEmpty()) {
-              java.util.Map<String, Object> detail = ptSpecificMedicalFeeDao.findOne(ptId);
+              java.util.Map<String, Object> detail = ptNutritionalFeeDao.findOne(ptId);
               
               result.setFee_no((String) master.get("fee_no"));
               result.setFee_name((String) master.get("fee_name"));
@@ -110,22 +119,23 @@ public class PtSpecificMedicalFeeService {
               //不可與此支付標準代碼並存單一就醫紀錄一併申報(開關)
               result.setExclude_nhi_no_enable(checkDBColumnType(detail.get("exclude_nhi_no_enable")));
               result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
-              // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
-              result.setInterval_nday_enable(checkDBColumnType(detail.get("interval_nday_enable")));
-              result.setInterval_nday(checkDBColumnType(detail.get("interval_nday")));
-              // 每組病歷號碼，每院限一年內，限定申報 ? 次
-              result.setMax_times_enable(checkDBColumnType(detail.get("max_times_enable")));
-              result.setMax_times(checkDBColumnType(detail.get("max_times")));
+              // 單一住院就醫紀錄應用數量,限定<=次數
+              result.setMax_inpatient_enable(checkDBColumnType(detail.get("max_inpatient_enable")));
+              result.setMax_inpatient(checkDBColumnType(detail.get("max_inpatient")));
+              //  單一就醫紀錄上，每日限定應用<= 次             
+              result.setMax_daily(checkDBColumnType(detail.get("max_daily")));
+              result.setMax_daily_enable(checkDBColumnType(detail.get("max_daily_enable")));
+              // 單一就醫紀錄上，每 ? 日內，限定應用<= ? 次
+              result.setEvery_nday_enable(checkDBColumnType(detail.get("every_nday_enable")));
+              result.setEvery_nday_days(checkDBColumnType(detail.get("every_nday_days")));
+              result.setEvery_nday_times(checkDBColumnType(detail.get("every_nday_times")));
+              // 單一就醫紀錄上，超過 ? 日後，超出天數部份，限定應用<= ? 次
+              result.setOver_nday_enable(checkDBColumnType(detail.get("over_nday_enable")));
+              result.setOver_nday_days(checkDBColumnType(detail.get("over_nday_days")));
+              result.setOver_nday_times(checkDBColumnType(detail.get("over_nday_times")));
           }
       } 
       return result;
     }   
-    
-    private int checkDBColumnType(Object obj) {
-      if (obj instanceof Integer) {
-        return (Integer) obj;
-      } else {
-        return (Short) obj;
-      }
-    }
+
 }

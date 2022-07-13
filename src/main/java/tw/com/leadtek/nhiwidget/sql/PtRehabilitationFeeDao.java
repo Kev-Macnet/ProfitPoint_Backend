@@ -25,7 +25,7 @@ public class PtRehabilitationFeeDao {
                 + "From PT_REHABILITATION_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -39,7 +39,7 @@ public class PtRehabilitationFeeDao {
         sql = "Delete from PT_REHABILITATION_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -53,7 +53,7 @@ public class PtRehabilitationFeeDao {
                 + "PT_REHABILITATION_FEE(PT_ID, EXCLUDE_NHI_NO_ENABLE, PATIENT_NDAY_ENABLE, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, INCLUDE_ICD_NO_ENABLE, COEXIST_NHI_NO_ENABLE, MIN_COEXIST, LIM_DIVISION_ENABLE)\r\n"
                 + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d)";
         sql = String.format(sql, ptId, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, include_icd_no_enable, coexist_nhi_no_enable, min_coexist, lim_division_enable);
-        logger.info(sql);
+        logger.debug(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -79,7 +79,7 @@ public class PtRehabilitationFeeDao {
                 + "WHERE (PT_ID=%d)";
         sql = String.format(sql, exclude_nhi_no_enable, patient_nday_enable, patient_nday_days, patient_nday_times, include_icd_no_enable, 
                 coexist_nhi_no_enable, min_coexist, lim_division_enable, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

@@ -26,12 +26,12 @@ import tw.com.leadtek.nhiwidget.dto.PtRadiationFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtRehabilitationFeePl;
-import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
-import tw.com.leadtek.nhiwidget.service.PtInjectionFeeService;
-import tw.com.leadtek.nhiwidget.service.PtInpatientCareService;
-import tw.com.leadtek.nhiwidget.service.PtQualityServiceService;
-import tw.com.leadtek.nhiwidget.service.PtRadiationFeeService;
-import tw.com.leadtek.nhiwidget.service.PtRehabilitationFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.pt.PtInjectionFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtInpatientCareService;
+import tw.com.leadtek.nhiwidget.service.pt.PtQualityServiceService;
+import tw.com.leadtek.nhiwidget.service.pt.PtRadiationFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtRehabilitationFeeService;
 
 
 @Api(value = "健保標準給付額 支付條件設定 API", tags = {"10-3 健保標準給付額 支付條件設定"})

@@ -349,11 +349,12 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
     
     /**
      * 取得drugNo1或drugNo2醫令的個數
-     * @param orderCode
+     * @param drugNo
+     * @param inhCode
      * @param mrIdList
      * @return
      */
-    @Query(value = "SELECT MR_ID, DRUG_NO, TOTAL_Q FROM op_p "
-        + "WHERE (DRUG_NO = ?1 OR DRUG_NO = ?2 ) AND MR_ID IN ?3 ORDER BY MR_ID", nativeQuery = true)
-    public List<Object[]> getMrIdAndDrugNoAndTotalQByMrIdList(String drugNo1, String drugNo2, List<Long> mrIdList);
+    @Query(value = "SELECT MR_ID, DRUG_NO, INH_CODE, TOTAL_Q FROM op_p "
+        + "WHERE (DRUG_NO = ?1 OR INH_CODE = ?2 ) AND MR_ID IN ?3 ORDER BY MR_ID", nativeQuery = true)
+    public List<Object[]> getMrIdAndDrugNoAndTotalQByMrIdList(String drugNo, String inhCode, List<Long> mrIdList);
 }

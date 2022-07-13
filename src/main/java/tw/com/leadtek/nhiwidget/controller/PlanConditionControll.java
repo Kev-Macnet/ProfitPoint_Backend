@@ -29,8 +29,8 @@ import tw.com.leadtek.nhiwidget.dto.PlanConditionDto;
 import tw.com.leadtek.nhiwidget.dto.PlanConditionPl;
 import tw.com.leadtek.nhiwidget.dto.PlanSearchListDto;
 import tw.com.leadtek.nhiwidget.dto.PlanSearchPl;
-import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.service.PlanConditionService;
+import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
 
 @Api(value = "參數設定-計畫可收案病例條件 API", tags = {"13 參數設定-計畫可收案病例條件"})
 @RestController

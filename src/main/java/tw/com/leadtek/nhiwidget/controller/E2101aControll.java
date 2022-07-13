@@ -43,12 +43,12 @@ import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtSurgeryFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
-import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
-import tw.com.leadtek.nhiwidget.service.PtInpatientFeeService;
-import tw.com.leadtek.nhiwidget.service.PtOutpatientFeeService;
-import tw.com.leadtek.nhiwidget.service.PtPsychiatricWardFeeService;
-import tw.com.leadtek.nhiwidget.service.PtSurgeryFeeService;
-import tw.com.leadtek.nhiwidget.service.PtWardFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.pt.PtInpatientFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtOutpatientFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtPsychiatricWardFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtSurgeryFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtWardFeeService;
 import tw.com.leadtek.tools.Utility;
 
 

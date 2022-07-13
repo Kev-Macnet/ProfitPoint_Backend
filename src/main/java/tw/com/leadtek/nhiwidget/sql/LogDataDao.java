@@ -34,7 +34,7 @@ public class LogDataDao {
             + "From IP_D a left Join IP_T b on (b.ID= a.IPT_ID)\r\n" + "Where (a.ROC_ID='%s')\r\n"
             + "  and (a.IN_DATE='%s')\r\n" + "Order by OUT_DATE DESC";
     sql = String.format(sql, idCard, in_date);
-    logger.info(sql);
+    logger.debug(sql);
     java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
     return lst;
   }
@@ -47,7 +47,7 @@ public class LogDataDao {
             + "From IP_D a left Join IP_T b on (b.ID= a.IPT_ID)\r\n" + "Where (a.MR_ID=%s) "
             + "Order by OUT_DATE DESC";
     sql = String.format(sql, mrId);
-    logger.info(sql);
+    logger.debug(sql);
     java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
     return lst;
   }
@@ -65,7 +65,7 @@ public class LogDataDao {
 
     java.util.Map<String, Object> retMap = null;
     if (whereCnt > 0) {
-      logger.info(sql);
+      logger.debug(sql);
       java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
       if (lst.size() > 0) {
         retMap = lst.get(0);
@@ -86,7 +86,7 @@ public class LogDataDao {
         + "Values(%d, '%s', '%s', '%s', %d, '%s', '%s', '%s', %d, %d)";
     sql = String.format(sql, mr_id, icd_cm, icd_op, drg, med_dot, cc, error, drg_section, drg_fix,
         drg_dots);
-    logger.info(sql);
+    logger.debug(sql);
     int ret = jdbcTemplate.update(sql);
     return ret;
   }
@@ -99,7 +99,7 @@ public class LogDataDao {
     String sql;
     sql = "Delete from DRG_CAL\r\n" + "Where (MR_ID=%d)";
     sql = String.format(sql, mr_id);
-    logger.info(sql);
+    logger.debug(sql);
     int ret = jdbcTemplate.update(sql);
     return ret;
   }
@@ -112,7 +112,7 @@ public class LogDataDao {
       sql = "Select RW \r\n" + "From DRG_CODE \r\n" + "Where (CODE='%s')\r\n"
           + "  and ('%s' >= START_DATE)\r\n" + "  and ('%s' <= END_DATE)";
       sql = String.format(sql, drg_code, transDateStr(in_date), transDateStr(out_date));
-      logger.info(sql);
+      logger.debug(sql);
       java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
       if (lst.size() > 0) {
         java.util.Map<String, Object> map = lst.get(0);
@@ -309,7 +309,7 @@ public class LogDataDao {
    */
   public List<Map<String, Object>> find_IPD_Dot() {
     String sql = "SELECT APPL_DOT, NON_APPL_DOT, PART_DOT, MR_ID FROM IP_D ORDER BY MR_ID";
-    // logger.info(sql);
+    // logger.debug(sql);
     java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
     return lst;
   }

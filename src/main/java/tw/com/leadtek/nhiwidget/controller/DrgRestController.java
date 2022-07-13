@@ -25,7 +25,7 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
-import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
 
 
 @Api(value = "DRG-API", tags = {"11 DRG API"})

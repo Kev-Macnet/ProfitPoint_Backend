@@ -26,7 +26,7 @@ public class PtInjectionFeeDao {
                 + "From PT_INJECTION_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -41,7 +41,7 @@ public class PtInjectionFeeDao {
         sql = "Delete from PT_INJECTION_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -53,7 +53,7 @@ public class PtInjectionFeeDao {
                 + "PT_INJECTION_FEE(PT_ID, INTERVAL_NDAY_ENABLE, INTERVAL_NDAY, EXCLUDE_NHI_NO_ENABLE, MAX_INPATIENT_ENABLE, MAX_INPATIENT)\r\n"
                 + "Values(%d, %d, %d, %d, %d, %d)";
         sql = String.format(sql, ptId, interval_nday_enable, interval_nday, exclude_nhi_no_enable, max_inpatient_enable, max_inpatient);
-        logger.info(sql);
+        logger.debug(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -72,7 +72,7 @@ public class PtInjectionFeeDao {
                 + "    MAX_INPATIENT=%d \r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, interval_nday_enable, interval_nday, exclude_nhi_no_enable, max_inpatient_enable, max_inpatient, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

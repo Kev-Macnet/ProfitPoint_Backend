@@ -55,6 +55,7 @@ import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentRecord;
 import tw.com.leadtek.nhiwidget.payload.intelligent.IntelligentResponse;
 import tw.com.leadtek.nhiwidget.payload.intelligent.PilotProject;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
+import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.tools.DateTool;
@@ -1074,6 +1075,9 @@ public class IntelligentService {
 
   public void calculateSameATC(List<MR> mrList, List<INTELLIGENT> batch, String atc,
       List<String> payCodes, String wording) {
+    if (payCodes == null || payCodes.size() == 0) {
+      return;
+    }
     String reason = (wording != null) ? String.format(wording, atc) : null;
     List<Long> mrIdList = new ArrayList<Long>();
     for (MR mr : mrList) {
@@ -1602,7 +1606,6 @@ public class IntelligentService {
     if (cc.getCodeType().intValue() == 1) {
       // CODE_TYPE: 1: 醫令/健保碼，2: ICD 診斷碼
       List<MR> list = getMRBy2PayCode(dataFormat, chineseYm, cc.getCode(), 0, cc.getOwnExpCode(), 0);
-      System.out.println("processCodeConflict " + chineseYm + "," + cc.getCode() + ", count=" + list.size());
       processCodeConflict(list, dataFormat, cc, wording, null);
     } else {
       List<MR> list = getMRByICDAndPayCode(dataFormat, chineseYm, cc.getCode(), cc.getOwnExpCode());
@@ -1639,18 +1642,18 @@ public class IntelligentService {
         continue;
       }
       if (cc.getCodeType().intValue() == 1) {
-      if (mr.getCodeAll().indexOf("," + cc.getCode() + ",") < 0) {
-        continue;
-      }
-      if (mr.getInhCode() == null || mr.getInhCode().indexOf(cc.getOwnExpCode()) < 0) {
-        continue;
-      }
-      if (mr.getMrEndDate().before(cc.getStartDate())) {
-        continue;
-      }
-      if (mr.getMrEndDate().after(cc.getEndDate())) {
-        continue;
-      }
+        if (mr.getCodeAll().indexOf("," + cc.getCode() + ",") < 0) {
+          continue;
+        }
+        if (mr.getInhCode() == null || mr.getInhCode().indexOf(cc.getOwnExpCode()) < 0) {
+          continue;
+        }
+        if (mr.getMrEndDate().before(cc.getStartDate())) {
+          continue;
+        }
+        if (mr.getMrEndDate().after(cc.getEndDate())) {
+          continue;
+        }
       } else {
         if (mr.getIcdAll().indexOf("," + cc.getCode() + ",") < 0) {
           continue;
@@ -1659,7 +1662,6 @@ public class IntelligentService {
           continue;
         }
       }
-    
       mrIdList.add(mr.getId());
     }
     if (mrIdList.size() == 0) {
@@ -1689,7 +1691,6 @@ public class IntelligentService {
       data =
           ippDao.getMrIdAndOrderCodeAndTotalQByMrIdList(cc.getCode(), cc.getOwnExpCode(), mrIdList);
     }
-    System.out.println("processCodeConflict ," + cc.getCode() + ", count=" + mrList.size() + ", data=" + data.size());
     Map<Long, String> violateMrMap = new HashMap<Long, String>();
     long mrId = 0;
     int orderCodeCount = 0;
@@ -1705,11 +1706,10 @@ public class IntelligentService {
         mrId = newMrId;
       }
       if (cc.getCode().equals((String) obj[1])) {
-        orderCodeCount = ((Double) obj[2]).intValue();
-      } else if (cc.getOwnExpCode().equals((String) obj[1])) {
-        ownExpCodeCount = ((Double) obj[2]).intValue();
+        orderCodeCount = ((Double) obj[3]).intValue();
+      } else if (cc.getOwnExpCode().equals((String) obj[2])) {
+        ownExpCodeCount = ((Double) obj[3]).intValue();
       }
-      System.out.println("mrId=" + mrId + ", orderCount=" + orderCodeCount + ", ownExpCodeCount=" + ownExpCodeCount);
       if (orderCodeCount >= cc.getQuantityNh() && ownExpCodeCount >= cc.getQuantityOwn()) {
         violateMrMap.put(mrId, "");
       }
@@ -2640,20 +2640,25 @@ public class IntelligentService {
       reportService.calculatePointMR(ym);
       reportService.calculateDRGMonthly(ym);
     }
+    logger.info("start checkAllIntelligentCondition report finished");
 
     //智能提示助理 - 固定條件判斷
     checkIntelligentFixCondition(mrList, applYm, batch);
     //違反支付準則
     checkAllViolation(mrList, batch);
     saveIntelligentBatch(batch);
+    logger.info("start checkAllIntelligentCondition checkAllViolation finished");
     
+    logger.info("start check AI");
     // 臨床路徑差異
     for (String ym : applYm) {
       calculateAICost(ym);
       calculateAIIpDays(ym);
       calculateAIOrderDrug(ym);
     }
-    logger.info("finish checkAllIntelligentCondition");
+    logger.info("start check AI finished.");
+    logger.info("start checkAllIntelligentCondition finished");
+    setIntelligentRunning(INTELLIGENT_REASON.XML.value(), false);
   }
   
   private void checkIntelligentFixCondition(List<MR> mrList, List<String> applYm, List<INTELLIGENT> batch) {
@@ -2663,6 +2668,7 @@ public class IntelligentService {
         calculateRareICD(ym);
       }
     }
+    logger.info("check RARE_ICD finished");
 
     config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "HIGH_RATIO");
     if (config != null && "1".equals(config)) {
@@ -2670,6 +2676,7 @@ public class IntelligentService {
         calculateHighRatio(ym);
       }
     }
+    logger.info("check HIGH_RATIO finished");
 
     config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "OVER_AMOUNT");
     if (config != null && "1".equals(config)) {
@@ -2677,26 +2684,30 @@ public class IntelligentService {
         calculateOverAmount(ym);
       }
     }
+    logger.info("check OVER_AMOUNT finished");
 
     config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "INH_OWN_EXIST");
     if (config != null && "1".equals(config)) {
       calculateInhExistAndHighRisk(mrList, batch, false);
     }
+    logger.info("check INH_OWN_EXIST finished");
     
     config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "INFECTIOUS");
     if (config != null && "1".equals(config)) {
       calculateInfectious(mrList, batch);
     }
+    logger.info("check INFECTIOUS finished");
     
     config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "SAME_ATC");
     if (config != null && "1".equals(config)) {
       calculateSameATC(mrList, batch);
     }
+    logger.info("check SAME_ATC finished");
     
     config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "HIGH_RISK");
     if (config != null && "1".equals(config)) {
       calculateInhExistAndHighRisk(mrList, batch, true);
-    }
+    } logger.info("check HIGH_RISK finished");
   }
 
   public void checkAllViolation(List<MR> mrList, List<INTELLIGENT> batch) {

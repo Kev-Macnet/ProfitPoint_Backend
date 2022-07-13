@@ -25,7 +25,7 @@ public class PtTubeFeedingFeeDao {
                 + "From PT_TUBE_FEEDING_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -39,7 +39,7 @@ public class PtTubeFeedingFeeDao {
         sql = "Delete from PT_TUBE_FEEDING_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -50,7 +50,7 @@ public class PtTubeFeedingFeeDao {
                 + "PT_TUBE_FEEDING_FEE(PT_ID, EXCLUDE_NHI_NO_ENABLE)\r\n"
                 + "Values(%d, %d)";
         sql = String.format(sql, ptId, exclude_nhi_no);
-        logger.info(sql);
+        logger.debug(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -65,7 +65,7 @@ public class PtTubeFeedingFeeDao {
                 + "Set EXCLUDE_NHI_NO_ENABLE=%d\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, exclude_nhi_no, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

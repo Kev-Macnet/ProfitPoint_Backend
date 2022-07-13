@@ -1,37 +1,36 @@
-package tw.com.leadtek.nhiwidget.service;
+package tw.com.leadtek.nhiwidget.service.pt;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.dto.PtInpatientFeePl;
-import tw.com.leadtek.nhiwidget.dto.PtRadiationFeePl;
+import tw.com.leadtek.nhiwidget.dto.PtWardFeePl;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
-import tw.com.leadtek.nhiwidget.sql.PtRadiationFeeDao;
+import tw.com.leadtek.nhiwidget.sql.PtWardFeeDao;
 import tw.com.leadtek.tools.Utility;
 
+// swagger: http://127.0.0.1:8081/swagger-ui/index.html
 @Service
-public class PtRadiationFeeService {
+public class PtWardFeeService extends BasicPaymentTerms {
 
     @Autowired
     private PaymentTermsDao paymentTermsDao;
     @Autowired
-    private PtRadiationFeeDao ptRadiationFeeDao;
+    private PtWardFeeDao ptWardFeeDao;
     
-    public static final String Category = "放射線診療費"; 
+    public final static String Category = "病房費"; 
     
-    public java.util.Map<String, Object> findRadiationFee(long ptId) {
+    public java.util.Map<String, Object> findWardFee(long ptId) {
         java.util.Map<String, Object> retMap;
         if (ptId > 0) {
             java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, this.Category);
             if (!master.isEmpty()) {
-                java.util.Map<String, Object> detail = ptRadiationFeeDao.findOne(ptId);
+                java.util.Map<String, Object> detail = ptWardFeeDao.findOne(ptId);
                 for (java.util.Map.Entry<String, Object> entry : detail.entrySet()) {
                     if (!entry.getKey().equals("pt_id")) {
                         master.put(entry.getKey(), entry.getValue());
                     }
                 }
                 master.put("lst_nhi_no", paymentTermsDao.filterExcludeNhiNo(ptId));
-                master.put("lst_co_nhi_no", paymentTermsDao.filterCoexistNhiNo(ptId));
-                master.put("lst_ntf_nhi_no", paymentTermsDao.filterNotifyNhiNo(ptId));
             }
             retMap = master;
         } else {
@@ -40,7 +39,7 @@ public class PtRadiationFeeService {
         return retMap;
     }
 
-    public long addRadiationFee(PtRadiationFeePl params) {
+    public long addWardFee(PtWardFeePl params) {
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
         params.setCategory(this.Category);
@@ -51,22 +50,14 @@ public class PtRadiationFeeService {
             if (params.getLst_nhi_no() != null) {
                 paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
             }
-            if (params.getLst_co_nhi_no() != null) {
-                paymentTermsDao.addCoexistNhiNo(ptId, params.getLst_co_nhi_no());
-            }
-            if (params.getLst_ntf_nhi_no() != null) {
-                paymentTermsDao.addNotifyNhiNo(ptId, params.getLst_ntf_nhi_no());
-            }
-//            ptRadiationFeeDao.add(ptId, params.getNotify_nhi_no()|0, params.getExclude_nhi_no()|0, 
-//                                        params.getCoexist_nhi_no()|0, params.getMax_inpatient()|0);
-            ptRadiationFeeDao.add(ptId, params.getNotify_nhi_no_enable()|0, params.getExclude_nhi_no_enable()|0, 
-                    params.getCoexist_nhi_no_enable()|0, 
-                    params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0);
+//            ptWardFeeDao.add(ptId, params.getMin_stay()|0, params.getMax_stay()|0, params.getExclude_nhi_no()|0);
+            ptWardFeeDao.add(ptId, params.getMin_stay_enable()|0, params.getMin_stay()|0, 
+                    params.getMax_stay_enable()|0, params.getMax_stay()|0, params.getExclude_nhi_no_enable()|0);
         }
         return ptId;
     }
     
-    public int updateRadiationFee(long ptId, PtRadiationFeePl params) {
+    public int updateWardFee(long ptId, PtWardFeePl params) {
         int ret = 0;
         java.util.Date start_date = Utility.detectDate(String.valueOf(params.getStart_date()));
         java.util.Date end_data = Utility.detectDate(String.valueOf(params.getEnd_date()));
@@ -79,42 +70,31 @@ public class PtRadiationFeeService {
                     paymentTermsDao.deleteExcludeNhiNo(ptId);
                     paymentTermsDao.addExcludeNhiNo(ptId, params.getLst_nhi_no());
                 }
-                if (params.getLst_co_nhi_no() != null) {
-                    paymentTermsDao.deleteCoexistNhiNo(ptId);
-                    paymentTermsDao.addCoexistNhiNo(ptId, params.getLst_co_nhi_no());
-                }
-                if (params.getLst_ntf_nhi_no() != null) {
-                    paymentTermsDao.deleteNotifyNhiNo(ptId);
-                    paymentTermsDao.addNotifyNhiNo(ptId, params.getLst_ntf_nhi_no());
-                }
-                ret += ptRadiationFeeDao.update(ptId, params.getNotify_nhi_no_enable()|0, params.getExclude_nhi_no_enable()|0, 
-                        params.getCoexist_nhi_no_enable()|0, 
-                        params.getMax_inpatient_enable()|0, params.getMax_inpatient()|0);
+                ptWardFeeDao.update(ptId, params.getMin_stay_enable()|0, params.getMin_stay()|0, 
+                        params.getMax_stay_enable()|0, params.getMax_stay()|0, params.getExclude_nhi_no_enable()|0);
             }
         }
         return ret;
     }
 
-    public int deleteRadiationFee(long ptId) {
+    public int deleteWardFee(long ptId) {
         int ret = 0;
         if (ptId > 0) {
             ret += paymentTermsDao.deletePaymentTerms(ptId, this.Category);
             if (ret>0) {
                 ret += paymentTermsDao.deleteExcludeNhiNo(ptId);
-                ret += paymentTermsDao.deleteCoexistNhiNo(ptId);
-                ret += paymentTermsDao.deleteNotifyNhiNo(ptId);
-                ret += ptRadiationFeeDao.delete(ptId);
+                ret += ptWardFeeDao.delete(ptId);
             }
         }
         return ret;
     }
 
-    public PtRadiationFeePl findPtRadiationFeePl(long ptId) {
-      PtRadiationFeePl result = new PtRadiationFeePl();
+    public PtWardFeePl findPtWardFeePl(long ptId) {
+      PtWardFeePl result = new PtWardFeePl();
       if (ptId > 0) {
           java.util.Map<String, Object> master = paymentTermsDao.findPaymentTerms(ptId, Category);
           if (!master.isEmpty()) {
-              java.util.Map<String, Object> detail = ptRadiationFeeDao.findOne(ptId);
+              java.util.Map<String, Object> detail = ptWardFeeDao.findOne(ptId);
               
               result.setFee_no((String) master.get("fee_no"));
               result.setFee_name((String) master.get("fee_name"));
@@ -127,28 +107,14 @@ public class PtRadiationFeeService {
               result.setActive((Short) master.get("active"));
               result.setCategory(Category);
               
-              //不可與此支付標準代碼並存單一就醫紀錄一併申報(開關)
+              result.setMin_stay_enable(checkDBColumnType(detail.get("min_stay_enable")));
+              result.setMin_stay(checkDBColumnType(detail.get("min_stay")));
+              result.setMax_stay_enable(checkDBColumnType(detail.get("max_stay_enable")));
+              result.setMax_stay(checkDBColumnType(detail.get("max_stay")));
               result.setExclude_nhi_no_enable(checkDBColumnType(detail.get("exclude_nhi_no_enable")));
               result.setLst_nhi_no(paymentTermsDao.filterExcludeNhiNo(ptId));
-              //並存單一就醫紀錄待申報時，需提示有無特別原由
-              result.setNotify_nhi_no_enable(checkDBColumnType(detail.get("notify_nhi_no_enable")));
-              result.setLst_ntf_nhi_no(paymentTermsDao.filterNotifyNhiNo(ptId));
-              // 需與以下任一支付標準代碼並存(開關)
-              result.setCoexist_nhi_no_enable((Short) detail.get("coexist_nhi_no_enable"));
-              result.setLst_co_nhi_no(paymentTermsDao.filterCoexistNhiNo(ptId));
-              // 每組病歷號碼，每院限申報次數
-              result.setMax_inpatient_enable(checkDBColumnType(detail.get("max_inpatient_enable")));
-              result.setMax_inpatient(checkDBColumnType(detail.get("max_inpatient")));
           }
       } 
       return result;
-    }   
-    
-    private int checkDBColumnType(Object obj) {
-      if (obj instanceof Integer) {
-        return (Integer) obj;
-      } else {
-        return (Short) obj;
-      }
-    }
+  }
 }

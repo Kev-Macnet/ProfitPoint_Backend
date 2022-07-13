@@ -5686,7 +5686,7 @@ public class NHIWidgetXMLService {
   private void retrieveMRApplyCount(CriteriaBuilder cb, CriteriaQuery<Tuple> query, Root<MR> root,
       List<Predicate> predicate, HomepageParameters hp, MRCount mrCount) {
     // SELECT COUNT(ID), SUM(APPL_DOT) FROM MR WHERE ...
-    query.select(cb.tuple(cb.count(root.get("id")), cb.sumAsLong(root.get("totalDot"))));
+    query.select(cb.tuple(cb.count(root.get("id")), cb.sumAsLong(root.get("reportDot"))));
     Predicate[] pre = new Predicate[predicate.size()];
     query.where(predicate.toArray(pre));
 
@@ -7335,6 +7335,9 @@ public class NHIWidgetXMLService {
         // 正在執行
         waitCheckAllFinished = true;
       }
+    } else {
+      // server 空閒，等待 extendTime後再跑，避免user又再上傳其他申報檔案
+      is.setIntelligentRunningTime(INTELLIGENT_REASON.XML.value(), System.currentTimeMillis() + extendTime);
     }
     
     final boolean waitUntilFinished = waitCheckAllFinished;
@@ -7347,7 +7350,6 @@ public class NHIWidgetXMLService {
           try {
             Thread.sleep(5000);
             logger.info("wait to run checkAll");
-            System.out.println("wait to run checkAll");
           } catch (InterruptedException e) {
             e.printStackTrace();
           }
@@ -7519,13 +7521,13 @@ public class NHIWidgetXMLService {
       }
       values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
       OP_P oppNew = findOppByOppValues(oppsNew, values);
-      if ("M221233913".equals(values.get("ROC_ID"))) {
-        if (oppNew == null) {
-          System.out.println("oppNew is null, cardNo=" + values.get("CARD_NO") + ", icd=" + values.get("ICD_CM_1"));
-        } else {
-          System.out.println("oppNew " + oppNew.getInhCode() + ", cardNo=" + values.get("CARD_NO") + ", icd=" + values.get("ICD_CM_1"));
-        }
-      }
+//      if ("M221233913".equals(values.get("ROC_ID"))) {
+//        if (oppNew == null) {
+//          System.out.println("oppNew is null, cardNo=" + values.get("CARD_NO") + ", icd=" + values.get("ICD_CM_1"));
+//        } else {
+//          System.out.println("oppNew " + oppNew.getInhCode() + ", cardNo=" + values.get("CARD_NO") + ", icd=" + values.get("ICD_CM_1"));
+//        }
+//      }
       if (oppNew == null) {
         // 相同病歷相同醫令已處理過
         continue;
@@ -7629,8 +7631,8 @@ public class NHIWidgetXMLService {
           oppList.add(opp);
         }
         if (!opp.isDirty()) {
-          System.out.println("add oppBatch id=" + opp.getId() + "," + opp.getInhCode() + ","
-              + opp.getRocId() + ",updateAt=" + opp.getUpdateAt());
+//          System.out.println("add oppBatch id=" + opp.getId() + "," + opp.getInhCode() + ","
+//              + opp.getRocId() + ",updateAt=" + opp.getUpdateAt());
         } else {
           oppBatch.add(opp);
           if (oppBatch.size() > XMLConstant.BATCH) {
@@ -7844,6 +7846,10 @@ public class NHIWidgetXMLService {
     result.setMrDate(DateTool.convertChineseToYear(values.get("FUNC_DATE")));
     result.setUpdateAt(new java.util.Date());
     result.setOwnExpense(0);
+    result.setReportDot(0L);
+    result.setApplDot(0);
+    result.setTotalDot(0);
+    result.setDeductedDot(0);
     result = mrDao.save(result);
     return result;
   }
@@ -8529,9 +8535,6 @@ public class NHIWidgetXMLService {
       }
       HashMap<String, String> values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
       String key = values.get("ROC_ID") + values.get("CARD_NO");
-      if ("M221233913".equals(values.get("ROC_ID"))) {
-        System.out.println("aggregate " + key + "," + values.get("INH_CODE"));
-      }
       List<OP_P> oppList = result.get(key);
       if (oppList == null) {
         oppList = new ArrayList<OP_P>();
@@ -8661,6 +8664,9 @@ public class NHIWidgetXMLService {
     result.setInhMrId(ipp.getInhMr());
     result.setTotalDot(0);
     result.setOwnExpense(0);
+    result.setReportDot(0L);
+    result.setApplDot(0);
+    result.setDeductedDot(0);
     result.setUpdateAt(new java.util.Date());
     if (ISMASK) {
       result.setRocId(StringUtility.maskString(result.getRocId(), StringUtility.MASK_MOBILE));

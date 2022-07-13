@@ -31,8 +31,8 @@ import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.service.DbBackupJob;
 import tw.com.leadtek.nhiwidget.service.DbBackupService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
-import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.service.QuartzUtils;
+import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
 import tw.com.leadtek.nhiwidget.sql.WebConfigDao;
 import tw.com.leadtek.tools.Utility;
 

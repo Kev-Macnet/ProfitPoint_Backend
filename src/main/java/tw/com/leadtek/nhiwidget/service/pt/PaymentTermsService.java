@@ -1,4 +1,4 @@
-package tw.com.leadtek.nhiwidget.service;
+package tw.com.leadtek.nhiwidget.service.pt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +10,8 @@ import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
 import tw.com.leadtek.nhiwidget.dto.PaymentTermsPl;
 import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
-import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.IntelligentService;
+import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.nhiwidget.task.service.PtInpatientFeeServiceTask;
 import tw.com.leadtek.nhiwidget.task.service.PtOutpatientFeeServiceTask;
@@ -18,7 +19,7 @@ import tw.com.leadtek.tools.Utility;
 
 // swagger: http://127.0.0.1:8081/swagger-ui/index.html
 @Service
-public class PaymentTermsService {
+public class PaymentTermsService extends BasicPaymentTerms {
 //    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
     protected Logger logger = LogManager.getLogger();
@@ -298,14 +299,6 @@ public class PaymentTermsService {
         } else {
           thread.run();
         }
-    }
-    
-    private int checkDBColumnType(Object obj) {
-      if (obj instanceof Integer) {
-        return (Integer) obj;  
-      } else {
-        return (Short) obj;
-      }
     }
     
     public PaymentTermsPl findRealPaymentTerms(long id, String category) {
