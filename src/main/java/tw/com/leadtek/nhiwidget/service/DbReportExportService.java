@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -13,6 +16,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.collections4.map.HashedMap;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
@@ -25,6 +29,7 @@ import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.hibernate.tool.hbm2ddl.IndexMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +37,7 @@ import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.payload.report.AchievePointQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.AchievePointQueryConditionDetail;
+import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionDetail;
@@ -1973,7 +1979,7 @@ public class DbReportExportService {
 		cell.setCellStyle(cellTitleStyle);
 		cell = row.createCell(1);
 		cell.setCellStyle(cellTitleStyle);
-		sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
+		sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
 
 		/// 欄位C
 		cellIndex = 2;
@@ -2147,7 +2153,7 @@ public class DbReportExportService {
 				cellIndex++;
 				cell = row.createCell(cellIndex);
 				cell.setCellStyle(cellTitleStyle);
-				sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
+				sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
 				cellIndex++;
 				cell = row.createCell(cellIndex);
 				if (allList.size() > 0 && dataFormatAppend.contains("不分區")) {
@@ -2399,7 +2405,7 @@ public class DbReportExportService {
 						cellIndex++;
 						cell = row.createCell(cellIndex);
 						cell.setCellStyle(cellTitleStyle);
-						sheet.addMergedRegion(new CellRangeAddress(rowIndex + i, rowIndex + i, 0, 1));
+						sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex + i, rowIndex + i, 0, 1));
 						rowIndex++;
 						row = sheet.createRow(rowIndex + i);
 						pName = showMedList.get(i).getPrsnId();
@@ -2417,7 +2423,7 @@ public class DbReportExportService {
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellStyle(cellTitleStyle);
-					sheet.addMergedRegion(new CellRangeAddress(rowIndex + i, rowIndex + i, 0, 1));
+					sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex + i, rowIndex + i, 0, 1));
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					if (allList.size() > 0 && dataFormatAppend.contains("不分區")) {
@@ -3337,6 +3343,3323 @@ public class DbReportExportService {
 		return row.getRowNum();
 	}
 
+	
+	/*醫令項目與執行量-匯出
+	 *@param result 醫令項目與執行量統計結果
+	 *@param feeApply 費用申報狀態，健保 自費
+	 *@param dateType 時間區間型態
+	 *@param year 年 dateType=0，需填入
+	 *@param month 月 dateType=0，需填入
+	 *@param betweenSDate 起始時間 dateType=1，需填入
+	 *@param betweenEDate 結束時間 dateType=1，需填入
+	 *@param dataFormats 就醫類型
+	 *@param funcTypes 科別
+	 *@param medNames 醫護名
+	 *@param icdAll 不分區icd碼
+	 *@param payCode 支付標準代碼
+	 *@param inhCode 院內碼
+	 *@param isLastM 上個月同條件相比
+	 *@param isLastY 去年同時期同條件相比
+	 * */
+	@SuppressWarnings({ "unchecked"})
+	public void getMedicalOrderExport(Map<String, Object> result,String feeApply,String dateType,String year,String month,String betweenSdate,String betweenEdate,
+			String dataFormats,String funcTypes,String medNames,String icdAll,
+			String payCode,String inhCode,boolean isLastM,boolean isLastY,HttpServletResponse response) {
+
+		try {
+			String[] years = StringUtility.splitBySpace(year);
+			String[] months = StringUtility.splitBySpace(month);
+			List<String>yearMonth=new ArrayList<String>();
+			
+			for(int i=0;i<years.length;i++) {
+				StringBuffer str=new StringBuffer();
+				str.append(years[i]);
+				str.append("-");
+				if(Integer.valueOf(months[i])<10){
+					str.append("0"+months[i]);
+				}
+				else {
+					str.append(months[i]);
+				}
+				
+				yearMonth.add(str.toString());
+			}
+			
+			List<String>feeApplyList=Arrays.asList(StringUtility.splitBySpace(feeApply));
+		
+			// 建立新工作簿
+			HSSFWorkbook workbook = new HSSFWorkbook();
+		  
+			HSSFCellStyle cellStyle = workbook.createCellStyle();
+			cellStyle.setAlignment(HorizontalAlignment.CENTER);
+			cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+			cellStyle.setBorderBottom(BorderStyle.THIN);
+			cellStyle.setBorderLeft(BorderStyle.THIN);
+			cellStyle.setBorderRight(BorderStyle.THIN);
+			cellStyle.setBorderTop(BorderStyle.THIN);
+			
+			HSSFCellStyle cellStyle_left = workbook.createCellStyle();
+			cellStyle_left.setAlignment(HorizontalAlignment.LEFT);
+			cellStyle_left.setVerticalAlignment(VerticalAlignment.CENTER);
+			cellStyle_left.setBorderBottom(BorderStyle.THIN);
+			cellStyle_left.setBorderLeft(BorderStyle.THIN);
+			cellStyle_left.setBorderRight(BorderStyle.THIN);
+			cellStyle_left.setBorderTop(BorderStyle.THIN);
+			
+			/* 新建工作表
+			 *  醫令項目與執行量
+			 *  */
+			HSSFSheet medicalOrderSheet = workbook.createSheet("醫令項目與執行量");
+			
+			HSSFRow row0 = medicalOrderSheet.createRow(0);
+			HSSFRow row1 = medicalOrderSheet.createRow(1);
+			HSSFRow row2 = medicalOrderSheet.createRow(2);
+			HSSFRow row3 = medicalOrderSheet.createRow(3);
+			HSSFRow row4 = medicalOrderSheet.createRow(4);
+			
+			StringBuffer ym=new StringBuffer();
+			
+			//統計月份title
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(0,0,0,1));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(0,0,2,9));
+			addRowCell(row0, 0, "統計月份", cellStyle_left);
+			
+			if(dateType.equals("0")) {
+				
+				if (years.length > 1) {
+					isLastM = false;
+				}
+				
+				for(int i=0;i<years.length;i++) {
+					ym.append(years[i]);
+					ym.append("-");
+					ym.append(months[i]);
+					
+					if(i<years.length-1) {
+						ym.append(" ");
+					}
+				}
+				addRowCell(row0, 2, ym.toString(), cellStyle_left);
+				
+				for(int i=3;i<10;i++) {
+					addRowCell(row0, i,"", cellStyle_left);
+				}
+			}
+			else if(dateType.equals("1")) {
+				
+				isLastM = false;
+				
+				ym.append(betweenSdate);
+				ym.append("~");
+				ym.append(betweenEdate);
+				addRowCell(row0, 2, ym.toString(), cellStyle_left);
+				
+				for(int i=3;i<10;i++) {
+					addRowCell(row0, i,"", cellStyle_left);
+				}
+			}
+			
+			//費用申報狀態title
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(1,1,0,1));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(1,1,2,4));
+			addRowCell(row1, 0, "費用申報狀態", cellStyle_left);
+			addRowCell(row1, 1,"", cellStyle_left);
+			addRowCell(row1, 2, feeApply, cellStyle_left);
+			addRowCell(row1, 3,"", cellStyle_left);
+			addRowCell(row1, 4,"", cellStyle_left);
+			
+			//就醫類別title
+			String[] dataFormatArr = StringUtility.splitBySpace(dataFormats);
+			for(int i=0;i<dataFormatArr.length;i++) {
+				switch (dataFormatArr[i]) {
+				case "all":
+					dataFormatArr[i]="不分區";
+					break;
+				case "totalop":
+					dataFormatArr[i]="門急診";
+					break;
+				case "op":
+					dataFormatArr[i]="門診";
+					break;
+				case "em":
+					dataFormatArr[i]="急診";
+					break;
+				case "ip":
+					dataFormatArr[i]="住院";
+					break;
+				default:
+					break;
+				}
+			}
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(1,1,5,6));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(1,1,7,9));
+			addRowCell(row1, 5, "就醫類別", cellStyle_left);
+			addRowCell(row1, 6,"", cellStyle_left);
+			addRowCell(row1, 7, Arrays.toString(dataFormatArr).replaceAll("\\[", "").replaceAll("\\]", ""), cellStyle_left);
+			addRowCell(row1, 8,"", cellStyle_left);
+			addRowCell(row1, 9,"", cellStyle_left);
+			
+			//科名title
+			List<CODE_TABLE> codeTableList=(List<CODE_TABLE>) result.get("codeTableList");
+			String[] codes=StringUtility.splitBySpace(funcTypes);
+			for(int i=0;i<codes.length;i++) {
+				String code1=codes[i];
+				
+				for(int j=0;j<codeTableList.size();j++) {
+					String code2=codeTableList.get(j).getCode();
+					String desc_chi=codeTableList.get(j).getDescChi();
+					
+					if(code1.equals(code2)) {
+						codes[i]=desc_chi;
+					}
+				}
+			}
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(2,2,0,1));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(2,2,2,4));
+			addRowCell(row2, 0, "科名", cellStyle_left);
+			addRowCell(row2, 1,"", cellStyle_left);
+			addRowCell(row2, 2, Arrays.toString(codes).replaceAll("\\[", "").replaceAll("\\]", ""), cellStyle_left);
+			addRowCell(row2, 3,"", cellStyle_left);
+			addRowCell(row2, 4,"", cellStyle_left);
+			
+			//醫護名title
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(2,2,5,6));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(2,2,7,9));
+			addRowCell(row2, 5, "醫護名", cellStyle_left);
+			addRowCell(row2, 6,"", cellStyle_left);
+			addRowCell(row2, 7, medNames, cellStyle_left);
+			addRowCell(row2, 8,"", cellStyle_left);
+			addRowCell(row2, 9,"", cellStyle_left);
+			
+			//不分區ICD碼title
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(3,3,0,1));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(3,3,2,4));
+			addRowCell(row3, 0, "不分區ICD碼", cellStyle_left);
+			addRowCell(row3, 1,"", cellStyle_left);
+			addRowCell(row3, 2, icdAll, cellStyle_left);
+			addRowCell(row3, 3,"", cellStyle_left);
+			addRowCell(row3, 4,"", cellStyle_left);
+			
+			//支付標準代碼title
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(4,4,0,1));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(4,4,2,4));
+			addRowCell(row4, 0, "支付標準代碼", cellStyle_left);
+			addRowCell(row4, 1,"", cellStyle_left);
+			addRowCell(row4, 2, payCode, cellStyle_left);
+			addRowCell(row4, 3,"", cellStyle_left);
+			addRowCell(row4, 4,"", cellStyle_left);
+			
+			//院內碼title
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(4,4,5,6));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(4,4,7,9));
+			addRowCell(row4, 5, "院內碼", cellStyle_left);
+			addRowCell(row4, 6,"", cellStyle_left);
+			addRowCell(row4, 7, inhCode, cellStyle_left);
+			addRowCell(row4, 8,"", cellStyle_left);
+			addRowCell(row4, 9,"", cellStyle_left);
+			
+			//依照起訖時間的案件數、申報點數、自費金額
+			List<Map<String, Object>> dataList=(List<Map<String, Object>>) result.get("dataList");
+			//前一年同時段同條件的案件數、申報點數、自費金額
+			List<Map<String, Object>> dataList_lastY= new ArrayList<Map<String, Object>>();
+			//前一個月同條件的案件數、申報點數、自費金額
+			List<Map<String, Object>> dataList_lastM= new ArrayList<Map<String, Object>>();
+			
+			//依照起訖時間的各科別的案件數、申報點數、自費金額
+			List<Map<String, Object>> classDataList=(List<Map<String, Object>>) result.get("classDataList");
+			//前一年同時段同條件的各科別的案件數、申報點數、自費金額
+			List<Map<String, Object>> classDataList_lastY=new ArrayList<Map<String, Object>>();
+			//前一個月同條件的各科別的案件數、申報點數、自費金額
+			List<Map<String, Object>> classDataList_lastM=new ArrayList<Map<String, Object>>();
+			
+			//依照起訖時間的醫護人員的案件數、申報點數、自費金額
+			List<Map<String, Object>> medDataList=(List<Map<String, Object>>) result.get("medDataList");
+			//前一年同時段同條件的醫護人員的案件數、申報點數、自費金額
+			List<Map<String, Object>> medDataList_lastY=new ArrayList<Map<String, Object>>();
+			//前一個月同條件的醫護人員的案件數、申報點數、自費金額
+			List<Map<String, Object>> medDataList_lastM=new ArrayList<Map<String, Object>>();
+			
+			List<Map<String, Object>> lastDate=(List<Map<String, Object>>) result.get("lastDate");
+			
+			if(dateType.equals("0")) {
+				
+				List<String>lastDateStr=new ArrayList<String>();
+
+				//找出去年同時段或上個月同條件資料
+				for(int i=0;i<lastDate.size();i++) {
+					StringBuffer YM=new StringBuffer(lastDate.get(i).get("YM").toString());
+					StringBuffer value=new StringBuffer(lastDate.get(i).get("Value").toString());
+					
+					lastDateStr.add(YM.toString());
+					
+					for(int j=0;j<dataList.size();j++) {
+						StringBuffer date=new StringBuffer(dataList.get(j).get("date").toString());
+						StringBuffer dataFormat=new StringBuffer(dataList.get(j).get("dataFormat").toString());
+						List<Map<String, Object>> data=(List<Map<String, Object>>) dataList.get(j).get("data");
+						
+						if(YM.toString().equals(date.toString().replaceAll("\\-", ""))) {
+							Map<String, Object> dataMap=new HashedMap<String, Object>();
+							
+							//去年同時段同條件
+							if(value.toString().equals("Y")) {
+								dataMap.put("date", date.toString());
+								dataMap.put("data", data);
+								dataMap.put("dataFormat", dataFormat.toString());
+								dataList_lastY.add(dataMap);
+							}
+							//上個月同條件
+							else {
+								dataMap.put("date", date.toString());
+								dataMap.put("data", data);
+								dataMap.put("dataFormat", dataFormat.toString());
+								dataList_lastM.add(dataMap);
+							}
+						}
+					}
+					
+					for(int j=0;j<classDataList.size();j++) {
+						StringBuffer date=new StringBuffer(classDataList.get(j).get("date").toString());
+						StringBuffer dataFormat=new StringBuffer(classDataList.get(j).get("dataFormat").toString());
+						List<Map<String, Object>> classData=(List<Map<String, Object>>) classDataList.get(j).get("classData");
+						
+						if(YM.toString().equals(date.toString().replaceAll("\\-", ""))) {
+							Map<String, Object> dataMap=new HashedMap<String, Object>();
+							
+							//去年同時段同條件
+							if(value.toString().equals("Y")) {
+								dataMap.put("date", date.toString());
+								dataMap.put("classData", classData);
+								dataMap.put("dataFormat", dataFormat.toString());
+								classDataList_lastY.add(dataMap);
+							}
+							//上個月同條件
+							else {
+								dataMap.put("date", date.toString());
+								dataMap.put("classData", classData);
+								dataMap.put("dataFormat", dataFormat.toString());
+								classDataList_lastM.add(dataMap);
+							}
+						}
+					}
+					
+					for(int j=0;j<medDataList.size();j++) {
+						StringBuffer date=new StringBuffer(medDataList.get(j).get("date").toString());
+						StringBuffer dataFormat=new StringBuffer(medDataList.get(j).get("dataFormat").toString());
+						StringBuffer medName=new StringBuffer(medDataList.get(j).get("medName").toString());
+						List<Map<String, Object>> data=(List<Map<String, Object>>) medDataList.get(j).get("data");
+						
+						if(YM.toString().equals(date.toString().replaceAll("\\-", ""))) {
+							Map<String, Object> dataMap=new HashedMap<String, Object>();
+							
+							//去年同時段同條件
+							if(value.toString().equals("Y")) {
+								dataMap.put("date", date.toString());
+								dataMap.put("data", data);
+								dataMap.put("medName", medName.toString());
+								dataMap.put("dataFormat", dataFormat.toString());
+								medDataList_lastY.add(dataMap);
+							}
+							//上個月同條件
+							else {
+								dataMap.put("date", date.toString());
+								dataMap.put("data", data);
+								dataMap.put("medName", medName.toString());
+								dataMap.put("dataFormat", dataFormat.toString());
+								medDataList_lastM.add(dataMap);
+							}
+						}
+					}
+				}
+				
+				medicalOrderTemplate_dateType0(medicalOrderSheet,dataList,dataList_lastY,dataList_lastM,
+						classDataList,classDataList_lastY,classDataList_lastM,
+						medDataList,medDataList_lastY,medDataList_lastM,
+						lastDateStr,yearMonth,feeApplyList,Arrays.asList(codes),isLastM,isLastY,cellStyle,cellStyle_left);
+			}
+			else if(dateType.equals("1")) {
+				
+				List<String>lastSDateStr=new ArrayList<String>();
+				List<String>lastEDateStr=new ArrayList<String>();
+
+				//找出去年同時段資料
+				if(lastDate.size() > 0) {
+					
+					for(int i=0;i<lastDate.size();i++) {
+						StringBuffer sDate=new StringBuffer(lastDate.get(i).get("sDate").toString());
+						StringBuffer eDate=new StringBuffer(lastDate.get(i).get("eDate").toString());
+						
+						lastSDateStr.add(sDate.toString());
+						lastEDateStr.add(eDate.toString());
+						
+						for(int j=0;j<dataList.size();j++) {
+							StringBuffer sDate2=new StringBuffer(dataList.get(j).get("startDate").toString());
+							StringBuffer eDate2=new StringBuffer(dataList.get(j).get("endDate").toString());
+							StringBuffer dataFormat=new StringBuffer(dataList.get(j).get("dataFormat").toString());
+							List<Map<String, Object>> data=(List<Map<String, Object>>) dataList.get(j).get("data");
+							
+							if(sDate.toString().equals(sDate2.toString()) && eDate.toString().equals(eDate2.toString())) {
+								Map<String, Object> dataMap=new HashedMap<String, Object>();
+								
+								//去年同時段同條件
+								dataMap.put("startDate", sDate2.toString());
+								dataMap.put("endDate", eDate2.toString());
+								dataMap.put("data", data);
+								dataMap.put("dataFormat", dataFormat.toString());
+								dataList_lastY.add(dataMap);
+							}
+						}
+						
+						for(int j=0;j<classDataList.size();j++) {
+							StringBuffer sDate2=new StringBuffer(classDataList.get(j).get("startDate").toString());
+							StringBuffer eDate2=new StringBuffer(classDataList.get(j).get("endDate").toString());
+							StringBuffer dataFormat=new StringBuffer(classDataList.get(j).get("dataFormat").toString());
+							List<Map<String, Object>> classData=(List<Map<String, Object>>) classDataList.get(j).get("classData");
+							
+							if(sDate.toString().equals(sDate2.toString()) && eDate.toString().equals(eDate2.toString())) {
+								Map<String, Object> dataMap=new HashedMap<String, Object>();
+								
+								//去年同時段同條件
+								dataMap.put("startDate", sDate2.toString());
+								dataMap.put("endDate", eDate2.toString());
+								dataMap.put("classData", classData);
+								dataMap.put("dataFormat", dataFormat.toString());
+								classDataList_lastY.add(dataMap);
+							}
+						}
+						
+						for(int j=0;j<medDataList.size();j++) {
+							StringBuffer sDate2=new StringBuffer(medDataList.get(j).get("startDate").toString());
+							StringBuffer eDate2=new StringBuffer(medDataList.get(j).get("endDate").toString());
+							StringBuffer dataFormat=new StringBuffer(medDataList.get(j).get("dataFormat").toString());
+							StringBuffer medName=new StringBuffer(medDataList.get(j).get("medName").toString());
+							List<Map<String, Object>> data=(List<Map<String, Object>>) medDataList.get(j).get("data");
+							
+							if(sDate.toString().equals(sDate2.toString()) && eDate.toString().equals(eDate2.toString())) {
+								Map<String, Object> dataMap=new HashedMap<String, Object>();
+								
+								//去年同時段同條件
+								dataMap.put("startDate", sDate2.toString());
+								dataMap.put("endDate", eDate2.toString());
+								dataMap.put("data", data);
+								dataMap.put("medName", medName.toString());
+								dataMap.put("dataFormat", dataFormat.toString());
+								medDataList_lastY.add(dataMap);
+							}
+						}
+					}
+				}
+				
+				medicalOrderTemplate_dateType1(medicalOrderSheet,dataList,dataList_lastY,
+						classDataList,classDataList_lastY,
+						medDataList,medDataList_lastY,
+						lastSDateStr,lastEDateStr,feeApplyList,Arrays.asList(codes),isLastY,cellStyle,cellStyle_left);
+			}
+		
+			//產生報表
+			ym = new StringBuffer("");
+			ym.append("醫令項目與執行量_");
+			if(dateType.equals("0")) {
+				for(int i=0;i<years.length;i++) {
+					ym.append(years[i]);
+					ym.append("年");
+					ym.append(months[i]);
+					ym.append("月");
+					
+					if(i<years.length-1) {
+						ym.append("_");
+					}
+				}
+			}
+			else if(dateType.equals("1")){
+				ym.append(betweenSdate);
+				ym.append("至");
+				ym.append(betweenEdate);
+			}
+			String fileName = URLEncoder.encode(ym.toString(), "UTF-8");
+			String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+					? FILE_PATH + "\\" + fileName
+					: FILE_PATH + "/" + fileName;
+			File file = new File(filepath);
+			response.reset();
+		    response.setHeader("Access-Control-Allow-Origin", "*");
+		    response.setHeader("Access-Control-Allow-Methods", "*");
+		    response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+		    response.setContentType("application/octet-stream;charset=utf8");
+		    
+			workbook.write(response.getOutputStream());
+			workbook.close();
+		} catch (Exception e) {
+			// TODO: handle exception
+//			e.printStackTrace();
+			System.err.println("醫令項目與執行量-匯出error: "+e);
+		}
+	}
+	
+  public void addRowCell(HSSFRow row,int num,String value,HSSFCellStyle cellStyle) {
+	  // 建立單元格,row已經確定了行號,列號作為引數傳遞給createCell(),第一列從0開始計算
+	  HSSFCell cell = row.createCell(num);
+	  // 設定單元格的值,即A1的值(第一行,第一列)
+	  cell.setCellValue(value);
+	  if(cellStyle!=null) {
+		  cell.setCellStyle(cellStyle);
+	  }
+  }
+
+@SuppressWarnings("unchecked")
+public void medicalOrderTemplate_dateType0(HSSFSheet medicalOrderSheet,
+		List<Map<String, Object>> dataList,List<Map<String, Object>> dataList_lastY,List<Map<String, Object>> dataList_lastM,
+		List<Map<String, Object>> classDataList, List<Map<String, Object>> classDataList_lastY,List<Map<String, Object>>  classDataList_lastM,
+		List<Map<String, Object>> medDataList,List<Map<String, Object>> medDataList_lastY,List<Map<String, Object>> medDataList_lastM,
+		List<String>lastDateStr,List<String>yearMonth,List<String> feeApplyList,List<String>funcTypeList,
+		boolean isLastM,boolean isLastY,HSSFCellStyle cellStyle,HSSFCellStyle cellStyle_left){  
+	  
+	int indexRow=6;
+	
+	List<Map<String, Object>> data_Y = null;
+	List<Map<String, Object>> data_M = null;
+	List<Map<String, Object>> classData_Y= null;
+	List<Map<String, Object>> classData_M = null;
+	
+	for(int i=0;i<dataList.size();i++) {
+		
+		StringBuffer date=new StringBuffer(dataList.get(i).get("date").toString());
+		StringBuffer dataFormat=new StringBuffer(dataList.get(i).get("dataFormat").toString());
+		
+		List<Map<String, Object>> data=(List<Map<String, Object>>) dataList.get(i).get("data");
+		List<Map<String, Object>> classData=(List<Map<String, Object>>) classDataList.get(i).get("classData");
+
+		if(!lastDateStr.contains(date.toString().replaceAll("\\-", "")) || yearMonth.contains(date.toString())) {
+			
+			if(dataList_lastY.size()>0 && isLastY){
+				data_Y = getLastYearData(false,date.toString(),dataFormat.toString(),dataList_lastY);
+			}
+		
+			if(dataList_lastM.size()>0 && isLastM) {
+				data_M = getLastMonthData(false,date.toString(),dataFormat.toString(),dataList_lastM);
+			}
+			
+			if(classDataList_lastY.size()>0 && isLastY){
+				classData_Y = getLastYearData(true,date.toString(),dataFormat.toString(),classDataList_lastY);
+			}
+		
+			if(classDataList_lastM.size()>0 && isLastM) {
+				classData_M = getLastMonthData(true,date.toString(),dataFormat.toString(),classDataList_lastM);
+			}
+			
+			switch (dataFormat.toString()) {
+			case "不分區":
+				indexRow=addRowCellByMedicalOrder_dateType0(medicalOrderSheet,"ALL",indexRow,date.toString(),dataFormat.toString(),data,data_Y,data_M,
+						classData,classData_Y,classData_M,
+						medDataList,medDataList_lastY,medDataList_lastM,
+						feeApplyList,funcTypeList,lastDateStr,yearMonth,isLastM,isLastY,cellStyle,cellStyle_left);
+				break;
+			case "門急診":
+				indexRow=addRowCellByMedicalOrder_dateType0(medicalOrderSheet,"OPALL",indexRow,date.toString(),dataFormat.toString(),data,data_Y,data_M,
+						classData,classData_Y,classData_M,
+						medDataList,medDataList_lastY,medDataList_lastM,
+						feeApplyList,funcTypeList,lastDateStr,yearMonth,isLastM,isLastY,cellStyle,cellStyle_left);
+				break;
+			case "門診":
+				indexRow=addRowCellByMedicalOrder_dateType0(medicalOrderSheet,"OP",indexRow,date.toString(),dataFormat.toString(),data,data_Y,data_M,
+						classData,classData_Y,classData_M,
+						medDataList,medDataList_lastY,medDataList_lastM,
+						feeApplyList,funcTypeList,lastDateStr,yearMonth,isLastM,isLastY,cellStyle,cellStyle_left);
+				break;
+			case "急診":
+				indexRow=addRowCellByMedicalOrder_dateType0(medicalOrderSheet,"EM",indexRow,date.toString(),dataFormat.toString(),data,data_Y,data_M,
+						classData,classData_Y,classData_M,
+						medDataList,medDataList_lastY,medDataList_lastM,
+						feeApplyList,funcTypeList,lastDateStr,yearMonth,isLastM,isLastY,cellStyle,cellStyle_left);
+				break;
+			case "住院":
+				indexRow=addRowCellByMedicalOrder_dateType0(medicalOrderSheet,"IP",indexRow,date.toString(),dataFormat.toString(),data,data_Y,data_M,
+						classData,classData_Y,classData_M,
+						medDataList,medDataList_lastY,medDataList_lastM,
+						feeApplyList,funcTypeList,lastDateStr,yearMonth,isLastM,isLastY,cellStyle,cellStyle_left);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+ }
+
+	@SuppressWarnings("unchecked")
+	public int addRowCellByMedicalOrder_dateType0(HSSFSheet medicalOrderSheet,String dataFormatCode,int indexRow,String date,String dataFormat,
+			List<Map<String, Object>> data,List<Map<String, Object>> data_Y,List<Map<String, Object>> data_M,
+			List<Map<String, Object>> classData,List<Map<String, Object>> classData_Y,List<Map<String, Object>> classData_M,
+			List<Map<String, Object>> medDataList,List<Map<String, Object>> medDataList_Y,List<Map<String, Object>> medDataList_M,
+			List<String> feeApplyList,List<String>funcTypeList,List<String>lastDateStr,List<String>yearMonth,
+			boolean isLastM,boolean isLastY,HSSFCellStyle cellStyle,HSSFCellStyle cellStyle_left) {
+		
+		StringBuffer titleName=new StringBuffer();
+		
+		//起訖日期title
+	    HSSFRow titleRow = medicalOrderSheet.createRow(indexRow);
+	    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,1));
+	    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,2,3));
+	    addRowCell(titleRow, 0, "就醫日期-起", cellStyle_left);
+	    addRowCell(titleRow, 1, "", cellStyle_left);
+	    addRowCell(titleRow, 2, "就醫日期-訖", cellStyle_left);
+	    addRowCell(titleRow, 3, "", cellStyle_left);
+	   
+		int indexCol=4;
+
+		//案件數title
+		titleName=new StringBuffer("");
+		titleName.append(dataFormat);
+		titleName.append("總案件數");
+		medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+		addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+		addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+		addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+		indexCol=indexCol+3;
+		
+		//上個月同條件案件數title
+		if(isLastM) {
+			titleName=new StringBuffer("");
+			titleName.append("上個月同條件");
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+			addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+			addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+		}
+		//去年同期時段案件數title
+		if(isLastY) {
+			titleName=new StringBuffer("");
+			titleName.append("去年同期時段");
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+			addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+			addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+		}
+		
+		//申報點數title
+		if(feeApplyList.contains("健保")) {
+			titleName=new StringBuffer("");
+			titleName.append(dataFormat);
+			titleName.append("申報總點數");
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+			addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+			addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+			
+			//上個月同條件申報點數title
+			if(isLastM) {
+				titleName=new StringBuffer("");
+				titleName.append("上個月同條件");
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+				addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+				addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+			//去年同期時段申報點數title
+			if(isLastY) {
+				titleName=new StringBuffer("");
+				titleName.append("去年同期時段");
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+				addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+				addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+		}
+		
+		//自費金額title
+		if(feeApplyList.contains("自費")) {
+			titleName=new StringBuffer("");
+			titleName.append(dataFormat);
+			titleName.append("自費總金額");
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+			addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+			addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+			
+			//上個月同條件自費金額title
+			if(isLastM) {
+				titleName=new StringBuffer("");
+				titleName.append("上個月同條件");
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+				addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+				addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+			//去年同期時段自費金額title
+			if(isLastY) {
+				titleName=new StringBuffer("");
+				titleName.append("去年同期時段");
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+				addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+				addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+		}
+		
+		indexRow++;
+	    
+		indexCol=4;
+		
+		//起訖日期
+	    HSSFRow dataRow = medicalOrderSheet.createRow(indexRow);
+	    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,1));
+	    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,2,3));
+	    addRowCell(dataRow, 0, date, cellStyle_left);
+	    addRowCell(dataRow, 1, "", cellStyle_left);
+	    addRowCell(dataRow, 2, date, cellStyle_left);
+	    addRowCell(dataRow, 3, "", cellStyle_left);
+
+		//起訖日期之間的案件數
+		medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+		if(data!=null) {
+			addRowCell(dataRow, indexCol, data.get(0).get(dataFormatCode+"_QUANTITY").toString(), cellStyle_left);
+		}
+		else {
+			addRowCell(dataRow, indexCol,"0", cellStyle_left);
+		}
+		addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+		addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+		indexCol=indexCol+3;
+		
+		//上個月同條件的案件數
+		if(isLastM) {
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			if(data_M!=null) {
+				addRowCell(dataRow, indexCol, data_M.get(0).get(dataFormatCode+"_QUANTITY").toString(), cellStyle_left);
+			}
+			else {
+				addRowCell(dataRow, indexCol,"0", cellStyle_left);
+			}
+			addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+			addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+		}
+		//去年同期時段案件數
+		if(isLastY) {
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			if(data_Y!=null) {
+				addRowCell(dataRow, indexCol, data_Y.get(0).get(dataFormatCode+"_QUANTITY").toString(), cellStyle_left);
+			}
+			else {
+				addRowCell(dataRow, indexCol,"0", cellStyle_left);
+			}
+			addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+			addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+		}
+		
+		//起訖日期之間的申報點數
+		if(feeApplyList.contains("健保")) {
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			if(data!=null) {
+				addRowCell(dataRow, indexCol, data.get(0).get(dataFormatCode+"_DOT").toString(), cellStyle_left);
+			}
+			else {
+				addRowCell(dataRow, indexCol,"0", cellStyle_left);
+			}
+			addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+			addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+			
+			//上個月同條件的申報點數
+			if(isLastM) {
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				if(data_M!=null) {
+					addRowCell(dataRow, indexCol, data_M.get(0).get(dataFormatCode+"_DOT").toString(), cellStyle_left);
+				}
+				else {
+					addRowCell(dataRow, indexCol,"0", cellStyle_left);
+				}
+				addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+				addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+			//去年同期時段申報點數
+			if(isLastY) {
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				if(data_Y!=null) {
+					addRowCell(dataRow, indexCol, data_Y.get(0).get(dataFormatCode+"_DOT").toString(), cellStyle_left);
+				}
+				else {
+					addRowCell(dataRow, indexCol,"0", cellStyle_left);
+				}
+				addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+				addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+		}
+		
+		//起訖日期之間的自費金額
+		if(feeApplyList.contains("自費")) {
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			if(data!=null) {
+				addRowCell(dataRow, indexCol, data.get(0).get(dataFormatCode+"_EXPENSE").toString(), cellStyle_left);
+			}
+			else {
+				addRowCell(dataRow, indexCol,"0", cellStyle_left);
+			}
+			addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+			addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+			
+			//上個月同條件的自費金額
+			if(isLastM) {
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				if(data_M!=null) {
+					addRowCell(dataRow, indexCol, data_M.get(0).get(dataFormatCode+"_EXPENSE").toString(), cellStyle_left);
+				}
+				else {
+					addRowCell(dataRow, indexCol,"0", cellStyle_left);
+				}
+				addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+				addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+			//去年同期時段自費金額
+			if(isLastY) {
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				if(data_Y!=null) {
+					addRowCell(dataRow, indexCol, data_Y.get(0).get(dataFormatCode+"_EXPENSE").toString(), cellStyle_left);
+				}
+				else {
+					addRowCell(dataRow, indexCol,"0", cellStyle_left);
+				}
+				addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+				addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+		}
+		
+	    indexRow++;
+		
+		/*各科別案件數、申報點數、自費金額
+		 * 當科別條件為空，顯示全部科別資料，不為空，顯示指定科別資料*/
+		if(funcTypeList.size() < 1) {
+			
+			for(int i=0;i<classData.size();i++) {
+				
+				StringBuffer desc_chi=new StringBuffer("");
+				StringBuffer quantity=new StringBuffer("");
+				StringBuffer dot=new StringBuffer("");
+				StringBuffer expense=new StringBuffer("");
+				
+				StringBuffer desc_chi_Y=new StringBuffer("");
+				StringBuffer quantity_Y=new StringBuffer("");
+				StringBuffer dot_Y=new StringBuffer("");
+				StringBuffer expense_Y=new StringBuffer("");
+				
+				StringBuffer desc_chi_M=new StringBuffer("");
+				StringBuffer quantity_M=new StringBuffer("");
+				StringBuffer dot_M=new StringBuffer("");
+				StringBuffer expense_M=new StringBuffer("");
+				
+				desc_chi=new StringBuffer(classData.get(i).get("DESC_CHI").toString());
+				quantity=new StringBuffer(classData.get(i).get("QUANTITY").toString());
+				dot=new StringBuffer(classData.get(i).get("DOT").toString());
+				expense=new StringBuffer(classData.get(i).get("EXPENSE").toString());
+				
+				if(classData_Y!=null) {
+					desc_chi_Y=new StringBuffer(classData_Y.get(i).get("DESC_CHI").toString());
+					quantity_Y=new StringBuffer(classData_Y.get(i).get("QUANTITY").toString());
+					dot_Y=new StringBuffer(classData_Y.get(i).get("DOT").toString());
+					expense_Y=new StringBuffer(classData_Y.get(i).get("EXPENSE").toString());
+				}
+				
+				if(classData_M!=null) {
+					desc_chi_M=new StringBuffer(classData_M.get(i).get("DESC_CHI").toString());
+					quantity_M=new StringBuffer(classData_M.get(i).get("QUANTITY").toString());
+					dot_M=new StringBuffer(classData_M.get(i).get("DOT").toString());
+					expense_M=new StringBuffer(classData_M.get(i).get("EXPENSE").toString());
+				}
+				
+				//科名title
+			    HSSFRow titleRow_class = medicalOrderSheet.createRow(indexRow);
+			    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+			    addRowCell(titleRow_class, 0, "科名", cellStyle);
+			    addRowCell(titleRow_class, 1, "", cellStyle_left);
+			    addRowCell(titleRow_class, 2, "", cellStyle_left);
+			    addRowCell(titleRow_class, 3, "", cellStyle_left);
+			   
+				indexCol=4;
+
+				//科名案件數title
+				titleName=new StringBuffer("");
+				titleName.append(dataFormat);
+				titleName.append("總案件數");
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+				addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+				addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+				
+				//科名上個月同條件案件數title
+				if(isLastM) {
+					titleName=new StringBuffer("");
+					titleName.append("上個月同條件");
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+					addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+				}
+				//科名去年同期時段案件數title
+				if(isLastY) {
+					titleName=new StringBuffer("");
+					titleName.append("去年同期時段");
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+					addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+				}
+				
+				//科名申報點數title
+				if(feeApplyList.contains("健保")) {
+					titleName=new StringBuffer("");
+					titleName.append(dataFormat);
+					titleName.append("申報總點數");
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+					addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名上個月同條件申報點數title
+					if(isLastM) {
+						titleName=new StringBuffer("");
+						titleName.append("上個月同條件");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					//科名去年同期時段申報點數title
+					if(isLastY) {
+						titleName=new StringBuffer("");
+						titleName.append("去年同期時段");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+				}
+				
+				//科名自費金額title
+				if(feeApplyList.contains("自費")) {
+					titleName=new StringBuffer("");
+					titleName.append(dataFormat);
+					titleName.append("自費總金額");
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+					addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名上個月同條件自費金額title
+					if(isLastM) {
+						titleName=new StringBuffer("");
+						titleName.append("上個月同條件");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					//科名去年同期時段自費金額title
+					if(isLastY) {
+						titleName=new StringBuffer("");
+						titleName.append("去年同期時段");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+				}
+				
+				indexRow++;
+			    
+				indexCol=4;
+	
+				//科名
+			    HSSFRow dataRow_class = medicalOrderSheet.createRow(indexRow);
+			    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+			    addRowCell(dataRow_class, 0, desc_chi.toString(), cellStyle_left);
+			    addRowCell(dataRow_class, 1, "", cellStyle_left);
+			    addRowCell(dataRow_class, 2, "", cellStyle_left);
+			    addRowCell(dataRow_class, 3, "", cellStyle_left);
+		
+				//科名的案件數
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				if(classData.get(i)!=null) {
+					addRowCell(dataRow_class, indexCol, quantity.toString(), cellStyle_left);
+				}
+				else {
+					addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+				}
+				addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+				addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+				
+				//科名上個月同條件的案件數
+				if(isLastM) {
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					if(classData_M!=null) {
+						addRowCell(dataRow_class, indexCol,quantity_M.toString(), cellStyle_left);
+					}
+					else {
+						addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+					}
+					addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+				}
+				//科名去年同期時段案件數
+				if(isLastY) {
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					if(classData_Y!=null) {
+						addRowCell(dataRow_class, indexCol, quantity_Y.toString(), cellStyle_left);
+					}
+					else {
+						addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+					}
+					addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+				}
+				
+				//科名的申報點數
+				if(feeApplyList.contains("健保")) {
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					if(classData.get(i)!=null) {
+						addRowCell(dataRow_class, indexCol, dot.toString(), cellStyle_left);
+					}
+					else {
+						addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+					}
+					addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名上個月同條件的申報點數
+					if(isLastM) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData_M!=null) {
+							addRowCell(dataRow_class, indexCol, dot_M.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					//科名去年同期時段申報點數
+					if(isLastY) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData_Y!=null) {
+							addRowCell(dataRow_class, indexCol, dot_Y.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+				}
+					
+				//科名的自費金額
+				if(feeApplyList.contains("自費")) {
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					if(classData.get(i)!=null) {
+						addRowCell(dataRow_class, indexCol, expense.toString(), cellStyle_left);
+					}
+					else {
+						addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+					}
+					addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名上個月同條件的自費金額
+					if(isLastM) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData_M!=null) {
+							addRowCell(dataRow_class, indexCol, expense_M.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					//科名去年同期時段自費金額
+					if(isLastY) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData_Y!=null) {
+							addRowCell(dataRow_class, indexCol, expense_Y.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+				}
+				
+			    indexRow++;
+			    
+			    indexCol=4;
+			    
+				//科別之下醫護人員的案件數、申報點數、自費金額
+				if(medDataList.size() > 0) {
+				
+					Map<String, Object> medData_lastY=new HashedMap<String, Object>();
+					Map<String, Object> medData_lastM=new HashedMap<String, Object>();
+					Map<String, Object> medData=new HashedMap<String, Object>();
+					
+					for(int j=0;j<medDataList.size();j++) {
+						
+						StringBuffer medDate=new StringBuffer(medDataList.get(j).get("date").toString());
+						StringBuffer medName=new StringBuffer(medDataList.get(j).get("medName").toString());
+						StringBuffer medDataF=new StringBuffer(medDataList.get(j).get("dataFormat").toString());
+							
+						if((!lastDateStr.contains(medDate.toString().replaceAll("\\-", "")) || yearMonth.contains(medDate.toString()))
+								&& date.equals(medDate.toString()) && dataFormat.equals(medDataF.toString())){
+							
+//							    StringBuffer medDesc_chi=new StringBuffer("0");
+								StringBuffer medQuantity=new StringBuffer("0");
+								StringBuffer medDot=new StringBuffer("0");
+								StringBuffer medExpense=new StringBuffer("0");
+							    
+								StringBuffer medQuantity_Y=new StringBuffer("0");
+								StringBuffer medDot_Y=new StringBuffer("0");
+								StringBuffer medExpense_Y=new StringBuffer("0");
+								
+								StringBuffer medQuantity_M=new StringBuffer("0");
+								StringBuffer medDot_M=new StringBuffer("0");
+								StringBuffer medExpense_M=new StringBuffer("0");
+								
+									
+								List<Map<String, Object>> md=(List<Map<String, Object>>) medDataList.get(j).get("data");
+								
+								for(int k=0;k<md.size();k++) {
+									if(md.get(k).get("DESC_CHI").equals(desc_chi.toString())) {
+										medData=(Map<String, Object>)md.get(k);
+										break;
+									}
+								}
+
+								if(medDataList_Y.size() > 0 && isLastY){
+									medData_lastY=getLastYearMedData(medDate.toString(), medDataF.toString(),medName.toString(),desc_chi.toString(), medDataList_Y);
+								}
+								
+								if(medDataList_M.size() > 0 && isLastM){
+									medData_lastM=getLastMonthMedData(medDate.toString(), medDataF.toString(),medName.toString(),desc_chi.toString(), medDataList_M);
+								}
+							
+								if(medData!=null && !medData.isEmpty()) {			
+									medQuantity=new StringBuffer(medData.get("QUANTITY").toString());
+									medDot=new StringBuffer(medData.get("DOT").toString());
+									medExpense=new StringBuffer(medData.get("EXPENSE").toString());
+								}
+								
+								if(medData_lastY!=null && !medData_lastY.isEmpty()) {
+									medQuantity_Y=new StringBuffer(medData_lastY.get("QUANTITY").toString());
+									medDot_Y=new StringBuffer(medData_lastY.get("DOT").toString());
+									medExpense_Y=new StringBuffer(medData_lastY.get("EXPENSE").toString());
+								}
+							
+								if(medData_lastM!=null && !medData_lastM.isEmpty()) {
+									medQuantity_M=new StringBuffer(medData_lastM.get("QUANTITY").toString());
+									medDot_M=new StringBuffer(medData_lastM.get("DOT").toString());
+									medExpense_M=new StringBuffer(medData_lastM.get("EXPENSE").toString());
+								}
+										
+								//醫護名title
+							    HSSFRow titleRow_med = medicalOrderSheet.createRow(indexRow);
+							    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+							    addRowCell(titleRow_med, 0, "醫護名", cellStyle);
+							    addRowCell(titleRow_med, 1, "", cellStyle_left);
+							    addRowCell(titleRow_med, 2, "", cellStyle_left);
+							    addRowCell(titleRow_med, 3, "", cellStyle_left);
+							   
+								indexCol=4;
+
+								//醫護案件數title
+								titleName=new StringBuffer("");
+								titleName.append(dataFormat);
+								titleName.append("總案件數");
+								medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+								addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+								addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+								addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+								indexCol=indexCol+3;
+								
+								//醫護上個月同條件案件數title
+								if(isLastM) {
+									titleName=new StringBuffer("");
+									titleName.append("上個月同條件");
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+									addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+								}
+								//醫護去年同期時段案件數title
+								if(isLastY) {
+									titleName=new StringBuffer("");
+									titleName.append("去年同期時段");
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+									addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+								}
+								
+								//醫護申報點數title
+								if(feeApplyList.contains("健保")) {
+									titleName=new StringBuffer("");
+									titleName.append(dataFormat);
+									titleName.append("申報總點數");
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+									addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護上個月同條件申報點數title
+									if(isLastM) {
+										titleName=new StringBuffer("");
+										titleName.append("上個月同條件");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									//醫護去年同期時段申報點數title
+									if(isLastY) {
+										titleName=new StringBuffer("");
+										titleName.append("去年同期時段");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+								}
+								
+								//醫護自費金額title
+								if(feeApplyList.contains("自費")) {
+									titleName=new StringBuffer("");
+									titleName.append(dataFormat);
+									titleName.append("自費總金額");
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+									addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護上個月同條件自費金額title
+									if(isLastM) {
+										titleName=new StringBuffer("");
+										titleName.append("上個月同條件");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									//醫護去年同期時段自費金額title
+									if(isLastY) {
+										titleName=new StringBuffer("");
+										titleName.append("去年同期時段");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+								}
+								
+								indexRow++;
+							    
+								indexCol=4;
+								
+								//醫護名
+							    HSSFRow dataRow_med = medicalOrderSheet.createRow(indexRow);
+							    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+							    addRowCell(dataRow_med, 0, medName.toString(), cellStyle_left);
+							    addRowCell(dataRow_med, 1, "", cellStyle_left);
+							    addRowCell(dataRow_med, 2, "", cellStyle_left);
+							    addRowCell(dataRow_med, 3, "", cellStyle_left);
+						
+								//醫護的案件數
+								medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+								if(!medQuantity.toString().equals("")) {
+									addRowCell(dataRow_med, indexCol, medQuantity.toString(), cellStyle_left);
+								}
+								else {
+									addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+								}
+								addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+								addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+								indexCol=indexCol+3;
+								
+								//醫護上個月同條件的案件數
+								if(isLastM) {
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									if(!medQuantity_M.toString().equals("")) {
+										addRowCell(dataRow_med, indexCol,medQuantity_M.toString(), cellStyle_left);
+									}
+									else {
+										addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+									}
+									addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+								}
+								//醫護去年同期時段案件數
+								if(isLastY) {
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									if(!medQuantity_Y.toString().equals("")) {
+										addRowCell(dataRow_med, indexCol, medQuantity_Y.toString(), cellStyle_left);
+									}
+									else {
+										addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+									}
+									addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+								}
+								
+								//醫護的申報點數
+								if(feeApplyList.contains("健保")) {
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									if(!medDot.toString().equals("")) {
+										addRowCell(dataRow_med, indexCol, medDot.toString(), cellStyle_left);
+									}
+									else {
+										addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+									}
+									addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護上個月同條件的申報點數
+									if(isLastM) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medDot_M.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medDot_M.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									//醫護去年同期時段申報點數
+									if(isLastY) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medDot_Y.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medDot_Y.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+								}
+									
+								//醫護的自費金額
+								if(feeApplyList.contains("自費")) {
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									if(!medExpense.toString().equals("")) {
+										addRowCell(dataRow_med, indexCol, medExpense.toString(), cellStyle_left);
+									}
+									else {
+										addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+									}
+									addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護上個月同條件的自費金額
+									if(isLastM) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medExpense_M.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medExpense_M.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									//醫護去年同期時段自費金額
+									if(isLastY) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medExpense_Y.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medExpense_Y.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+								}
+								
+							    indexRow++;
+							    
+								indexCol=4;
+						}
+					}
+				}
+			}
+		}
+		else {
+			
+			for(int i=0;i<classData.size();i++) {
+				
+				if(funcTypeList.contains(classData.get(i).get("DESC_CHI").toString())){
+				
+					StringBuffer desc_chi=new StringBuffer("");
+					StringBuffer quantity=new StringBuffer("");
+					StringBuffer dot=new StringBuffer("");
+					StringBuffer expense=new StringBuffer("");
+					
+					StringBuffer desc_chi_Y=new StringBuffer("");
+					StringBuffer quantity_Y=new StringBuffer("");
+					StringBuffer dot_Y=new StringBuffer("");
+					StringBuffer expense_Y=new StringBuffer("");
+					
+					StringBuffer desc_chi_M=new StringBuffer("");
+					StringBuffer quantity_M=new StringBuffer("");
+					StringBuffer dot_M=new StringBuffer("");
+					StringBuffer expense_M=new StringBuffer("");
+					
+					desc_chi=new StringBuffer(classData.get(i).get("DESC_CHI").toString());
+					quantity=new StringBuffer(classData.get(i).get("QUANTITY").toString());
+					dot=new StringBuffer(classData.get(i).get("DOT").toString());
+					expense=new StringBuffer(classData.get(i).get("EXPENSE").toString());
+					
+					if(classData_Y!=null) {
+						desc_chi_Y=new StringBuffer(classData_Y.get(i).get("DESC_CHI").toString());
+						quantity_Y=new StringBuffer(classData_Y.get(i).get("QUANTITY").toString());
+						dot_Y=new StringBuffer(classData_Y.get(i).get("DOT").toString());
+						expense_Y=new StringBuffer(classData_Y.get(i).get("EXPENSE").toString());
+					}
+					
+					if(classData_M!=null) {
+						desc_chi_M=new StringBuffer(classData_M.get(i).get("DESC_CHI").toString());
+						quantity_M=new StringBuffer(classData_M.get(i).get("QUANTITY").toString());
+						dot_M=new StringBuffer(classData_M.get(i).get("DOT").toString());
+						expense_M=new StringBuffer(classData_M.get(i).get("EXPENSE").toString());
+					}
+					
+					//科名title
+				    HSSFRow titleRow_class = medicalOrderSheet.createRow(indexRow);
+				    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+				    addRowCell(titleRow_class, 0, "科名", cellStyle);
+				    addRowCell(titleRow_class, 1, "", cellStyle_left);
+				    addRowCell(titleRow_class, 2, "", cellStyle_left);
+				    addRowCell(titleRow_class, 3, "", cellStyle_left);
+				   
+					indexCol=4;
+
+					//科名案件數title
+					titleName=new StringBuffer("");
+					titleName.append(dataFormat);
+					titleName.append("總案件數");
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+					addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名上個月同條件案件數title
+					if(isLastM) {
+						titleName=new StringBuffer("");
+						titleName.append("上個月同條件");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					//科名去年同期時段案件數title
+					if(isLastY) {
+						titleName=new StringBuffer("");
+						titleName.append("去年同期時段");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					
+					//科名申報點數title
+					if(feeApplyList.contains("健保")) {
+						titleName=new StringBuffer("");
+						titleName.append(dataFormat);
+						titleName.append("申報總點數");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+						
+						//科名上個月同條件申報點數title
+						if(isLastM) {
+							titleName=new StringBuffer("");
+							titleName.append("上個月同條件");
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+							addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+						//科名去年同期時段申報點數title
+						if(isLastY) {
+							titleName=new StringBuffer("");
+							titleName.append("去年同期時段");
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+							addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+					}
+					
+					//科名自費金額title
+					if(feeApplyList.contains("自費")) {
+						titleName=new StringBuffer("");
+						titleName.append(dataFormat);
+						titleName.append("自費總金額");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+						
+						//科名上個月同條件自費金額title
+						if(isLastM) {
+							titleName=new StringBuffer("");
+							titleName.append("上個月同條件");
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+							addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+						//科名去年同期時段自費金額title
+						if(isLastY) {
+							titleName=new StringBuffer("");
+							titleName.append("去年同期時段");
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+							addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+					}
+					
+					indexRow++;
+				    
+					indexCol=4;
+		
+					//科名
+				    HSSFRow dataRow_class = medicalOrderSheet.createRow(indexRow);
+				    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+				    addRowCell(dataRow_class, 0, desc_chi.toString(), cellStyle_left);
+				    addRowCell(dataRow_class, 1, "", cellStyle_left);
+				    addRowCell(dataRow_class, 2, "", cellStyle_left);
+				    addRowCell(dataRow_class, 3, "", cellStyle_left);
+			
+					//科名的案件數
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					if(classData.get(i)!=null) {
+						addRowCell(dataRow_class, indexCol, quantity.toString(), cellStyle_left);
+					}
+					else {
+						addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+					}
+					addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名上個月同條件的案件數
+					if(isLastM) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData_M!=null) {
+							addRowCell(dataRow_class, indexCol,quantity_M.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					//科名去年同期時段案件數
+					if(isLastY) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData_Y!=null) {
+							addRowCell(dataRow_class, indexCol, quantity_Y.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					
+					//科名的申報點數
+					if(feeApplyList.contains("健保")) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData.get(i)!=null) {
+							addRowCell(dataRow_class, indexCol, dot.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+						
+						//科名上個月同條件的申報點數
+						if(isLastM) {
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							if(classData_M!=null) {
+								addRowCell(dataRow_class, indexCol, dot_M.toString(), cellStyle_left);
+							}
+							else {
+								addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+							}
+							addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+						//科名去年同期時段申報點數
+						if(isLastY) {
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							if(classData_Y!=null) {
+								addRowCell(dataRow_class, indexCol, dot_Y.toString(), cellStyle_left);
+							}
+							else {
+								addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+							}
+							addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+					}
+						
+					//科名的自費金額
+					if(feeApplyList.contains("自費")) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData.get(i)!=null) {
+							addRowCell(dataRow_class, indexCol, expense.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+						
+						//科名上個月同條件的自費金額
+						if(isLastM) {
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							if(classData_M!=null) {
+								addRowCell(dataRow_class, indexCol, expense_M.toString(), cellStyle_left);
+							}
+							else {
+								addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+							}
+							addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+						//科名去年同期時段自費金額
+						if(isLastY) {
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							if(classData_Y!=null) {
+								addRowCell(dataRow_class, indexCol, expense_Y.toString(), cellStyle_left);
+							}
+							else {
+								addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+							}
+							addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+					}
+					
+				    indexRow++;
+				    
+					indexCol=4;
+					
+					//科別之下醫護人員的案件數、申報點數、自費金額
+					if(medDataList.size() > 0) {
+					
+						Map<String, Object> medData_lastY=new HashedMap<String, Object>();
+						Map<String, Object> medData_lastM=new HashedMap<String, Object>();
+						Map<String, Object> medData=new HashedMap<String, Object>();
+						
+						for(int j=0;j<medDataList.size();j++) {
+							
+							StringBuffer medDate=new StringBuffer(medDataList.get(j).get("date").toString());
+							StringBuffer medName=new StringBuffer(medDataList.get(j).get("medName").toString());
+							StringBuffer medDataF=new StringBuffer(medDataList.get(j).get("dataFormat").toString());
+								
+							if((!lastDateStr.contains(medDate.toString().replaceAll("\\-", "")) || yearMonth.contains(medDate.toString()))
+									&& date.equals(medDate.toString()) && dataFormat.equals(medDataF.toString())){
+								
+//								    StringBuffer medDesc_chi=new StringBuffer("0");
+									StringBuffer medQuantity=new StringBuffer("0");
+									StringBuffer medDot=new StringBuffer("0");
+									StringBuffer medExpense=new StringBuffer("0");
+								    
+									StringBuffer medQuantity_Y=new StringBuffer("0");
+									StringBuffer medDot_Y=new StringBuffer("0");
+									StringBuffer medExpense_Y=new StringBuffer("0");
+									
+									StringBuffer medQuantity_M=new StringBuffer("0");
+									StringBuffer medDot_M=new StringBuffer("0");
+									StringBuffer medExpense_M=new StringBuffer("0");
+									
+										
+									List<Map<String, Object>> md=(List<Map<String, Object>>) medDataList.get(j).get("data");
+									
+									for(int k=0;k<md.size();k++) {
+										if(md.get(k).get("DESC_CHI").equals(desc_chi.toString())) {
+											medData=(Map<String, Object>)md.get(k);
+											break;
+										}
+									}
+
+									if(medDataList_Y.size() > 0 && isLastY){
+										medData_lastY=getLastYearMedData(medDate.toString(), medDataF.toString(),medName.toString(),desc_chi.toString(), medDataList_Y);
+									}
+									
+									if(medDataList_M.size() > 0 && isLastM){
+										medData_lastM=getLastMonthMedData(medDate.toString(), medDataF.toString(),medName.toString(),desc_chi.toString(), medDataList_M);
+									}
+								
+									if(medData!=null && !medData.isEmpty()) {			
+										medQuantity=new StringBuffer(medData.get("QUANTITY").toString());
+										medDot=new StringBuffer(medData.get("DOT").toString());
+										medExpense=new StringBuffer(medData.get("EXPENSE").toString());
+									}
+									
+									if(medData_lastY!=null && !medData_lastY.isEmpty()) {
+										medQuantity_Y=new StringBuffer(medData_lastY.get("QUANTITY").toString());
+										medDot_Y=new StringBuffer(medData_lastY.get("DOT").toString());
+										medExpense_Y=new StringBuffer(medData_lastY.get("EXPENSE").toString());
+									}
+								
+									if(medData_lastM!=null && !medData_lastM.isEmpty()) {
+										medQuantity_M=new StringBuffer(medData_lastM.get("QUANTITY").toString());
+										medDot_M=new StringBuffer(medData_lastM.get("DOT").toString());
+										medExpense_M=new StringBuffer(medData_lastM.get("EXPENSE").toString());
+									}
+											
+									//醫護名title
+								    HSSFRow titleRow_med = medicalOrderSheet.createRow(indexRow);
+								    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+								    addRowCell(titleRow_med, 0, "醫護名", cellStyle);
+								    addRowCell(titleRow_med, 1, "", cellStyle_left);
+								    addRowCell(titleRow_med, 2, "", cellStyle_left);
+								    addRowCell(titleRow_med, 3, "", cellStyle_left);
+								   
+									indexCol=4;
+
+									//醫護案件數title
+									titleName=new StringBuffer("");
+									titleName.append(dataFormat);
+									titleName.append("總案件數");
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+									addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護上個月同條件案件數title
+									if(isLastM) {
+										titleName=new StringBuffer("");
+										titleName.append("上個月同條件");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									//醫護去年同期時段案件數title
+									if(isLastY) {
+										titleName=new StringBuffer("");
+										titleName.append("去年同期時段");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									
+									//醫護申報點數title
+									if(feeApplyList.contains("健保")) {
+										titleName=new StringBuffer("");
+										titleName.append(dataFormat);
+										titleName.append("申報總點數");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+										
+										//醫護上個月同條件申報點數title
+										if(isLastM) {
+											titleName=new StringBuffer("");
+											titleName.append("上個月同條件");
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+											addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+										//醫護去年同期時段申報點數title
+										if(isLastY) {
+											titleName=new StringBuffer("");
+											titleName.append("去年同期時段");
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+											addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+									}
+									
+									//醫護自費金額title
+									if(feeApplyList.contains("自費")) {
+										titleName=new StringBuffer("");
+										titleName.append(dataFormat);
+										titleName.append("自費總金額");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+										
+										//醫護上個月同條件自費金額title
+										if(isLastM) {
+											titleName=new StringBuffer("");
+											titleName.append("上個月同條件");
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+											addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+										//醫護去年同期時段自費金額title
+										if(isLastY) {
+											titleName=new StringBuffer("");
+											titleName.append("去年同期時段");
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+											addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+									}
+									
+									indexRow++;
+								    
+									indexCol=4;
+									
+									//醫護名
+								    HSSFRow dataRow_med = medicalOrderSheet.createRow(indexRow);
+								    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+								    addRowCell(dataRow_med, 0, medName.toString(), cellStyle_left);
+								    addRowCell(dataRow_med, 1, "", cellStyle_left);
+								    addRowCell(dataRow_med, 2, "", cellStyle_left);
+								    addRowCell(dataRow_med, 3, "", cellStyle_left);
+							
+									//醫護的案件數
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									if(!medQuantity.toString().equals("")) {
+										addRowCell(dataRow_med, indexCol, medQuantity.toString(), cellStyle_left);
+									}
+									else {
+										addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+									}
+									addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護上個月同條件的案件數
+									if(isLastM) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medQuantity_M.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol,medQuantity_M.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									//醫護去年同期時段案件數
+									if(isLastY) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medQuantity_Y.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medQuantity_Y.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									
+									//醫護的申報點數
+									if(feeApplyList.contains("健保")) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medDot.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medDot.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+										
+										//醫護上個月同條件的申報點數
+										if(isLastM) {
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											if(!medDot_M.toString().equals("")) {
+												addRowCell(dataRow_med, indexCol, medDot_M.toString(), cellStyle_left);
+											}
+											else {
+												addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+											}
+											addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+										//醫護去年同期時段申報點數
+										if(isLastY) {
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											if(!medDot_Y.toString().equals("")) {
+												addRowCell(dataRow_med, indexCol, medDot_Y.toString(), cellStyle_left);
+											}
+											else {
+												addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+											}
+											addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+									}
+										
+									//醫護的自費金額
+									if(feeApplyList.contains("自費")) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medExpense.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medExpense.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+										
+										//醫護上個月同條件的自費金額
+										if(isLastM) {
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											if(!medExpense_M.toString().equals("")) {
+												addRowCell(dataRow_med, indexCol, medExpense_M.toString(), cellStyle_left);
+											}
+											else {
+												addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+											}
+											addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+										//醫護去年同期時段自費金額
+										if(isLastY) {
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											if(!medExpense_Y.toString().equals("")) {
+												addRowCell(dataRow_med, indexCol, medExpense_Y.toString(), cellStyle_left);
+											}
+											else {
+												addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+											}
+											addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+									}
+									
+								    indexRow++;
+								    
+									indexCol=4;
+							}
+						}
+					}
+				}
+			}
+		}
+	    
+		indexRow++;
+		
+	    return indexRow;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void medicalOrderTemplate_dateType1(HSSFSheet medicalOrderSheet,List<Map<String,Object>> dataList,List<Map<String,Object>> dataList_lastY,
+			List<Map<String,Object>> classDataList,List<Map<String,Object>> classDataList_lastY,
+			List<Map<String,Object>> medDataList,List<Map<String,Object>> medDataList_lastY,
+			List<String> lastSDateStr,List<String> lastEDateStr,List<String> feeApplyList,List<String>funcTypeList,boolean isLastY,HSSFCellStyle cellStyle,HSSFCellStyle cellStyle_left){  
+		
+		int indexRow=6;
+		
+		List<Map<String, Object>> data_Y = null;
+		List<Map<String, Object>> classData_Y= null;
+		
+		for(int i=0;i<dataList.size();i++) {
+			
+			StringBuffer sDate=new StringBuffer(dataList.get(i).get("startDate").toString());
+			StringBuffer eDate=new StringBuffer(dataList.get(i).get("endDate").toString());
+			StringBuffer dataFormat=new StringBuffer(dataList.get(i).get("dataFormat").toString());
+			
+			List<Map<String, Object>> data=(List<Map<String, Object>>) dataList.get(i).get("data");
+			List<Map<String, Object>> classData=(List<Map<String, Object>>) classDataList.get(i).get("classData");
+
+			if(!lastSDateStr.contains(sDate.toString()) && !lastEDateStr.contains(eDate.toString())) {
+				
+				if(dataList_lastY.size()>0 && isLastY){
+					data_Y = getLastYearData(false,sDate.toString(),eDate.toString(),dataFormat.toString(),dataList_lastY);
+				}
+				
+				if(classDataList_lastY.size()>0 && isLastY){
+					classData_Y = getLastYearData(true,sDate.toString(),eDate.toString(),dataFormat.toString(),classDataList_lastY);
+				}
+				
+				switch (dataFormat.toString()) {
+				case "不分區":
+					indexRow=addRowCellByMedicalOrder_dateType1(medicalOrderSheet,"ALL",indexRow,sDate.toString(),eDate.toString(),dataFormat.toString(),data,data_Y,
+							classData,classData_Y,
+							medDataList,medDataList_lastY,
+							lastSDateStr,lastEDateStr,feeApplyList,funcTypeList,isLastY,cellStyle,cellStyle_left);
+					break;
+				case "門急診":
+					indexRow=addRowCellByMedicalOrder_dateType1(medicalOrderSheet,"OPALL",indexRow,sDate.toString(),eDate.toString(),dataFormat.toString(),data,data_Y,
+							classData,classData_Y,
+							medDataList,medDataList_lastY,
+							lastSDateStr,lastEDateStr,feeApplyList,funcTypeList,isLastY,cellStyle,cellStyle_left);
+					break;
+				case "門診":
+					indexRow=addRowCellByMedicalOrder_dateType1(medicalOrderSheet,"OP",indexRow,sDate.toString(),eDate.toString(),dataFormat.toString(),data,data_Y,
+							classData,classData_Y,
+							medDataList,medDataList_lastY,
+							lastSDateStr,lastEDateStr,feeApplyList,funcTypeList,isLastY,cellStyle,cellStyle_left);
+					break;
+				case "急診":
+					indexRow=addRowCellByMedicalOrder_dateType1(medicalOrderSheet,"EM",indexRow,sDate.toString(),eDate.toString(),dataFormat.toString(),data,data_Y,
+							classData,classData_Y,
+							medDataList,medDataList_lastY,
+							lastSDateStr,lastEDateStr,feeApplyList,funcTypeList,isLastY,cellStyle,cellStyle_left);
+					break;
+				case "住院":
+					indexRow=addRowCellByMedicalOrder_dateType1(medicalOrderSheet,"IP",indexRow,sDate.toString(),eDate.toString(),dataFormat.toString(),data,data_Y,
+							classData,classData_Y,
+							medDataList,medDataList_lastY,
+							lastSDateStr,lastEDateStr,feeApplyList,funcTypeList,isLastY,cellStyle,cellStyle_left);
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public int addRowCellByMedicalOrder_dateType1(HSSFSheet medicalOrderSheet,String dataFormatCode,int indexRow,String sDate,String eDate,String dataFormat,
+			List<Map<String, Object>> data,List<Map<String,Object>> data_Y,
+			List<Map<String,Object>> classData,List<Map<String,Object>> classData_Y,
+			List<Map<String,Object>> medDataList,List<Map<String,Object>> medDataList_Y,
+			List<String> lastSDateStr,List<String> lastEDateStr,List<String> feeApplyList,List<String>funcTypeList,boolean isLastY,HSSFCellStyle cellStyle,HSSFCellStyle cellStyle_left) {
+		
+		StringBuffer titleName=new StringBuffer();
+		
+		//起訖日期title
+	    HSSFRow titleRow = medicalOrderSheet.createRow(indexRow);
+	    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,1));
+	    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,2,3));
+	    addRowCell(titleRow, 0, "就醫日期-起", cellStyle_left);
+	    addRowCell(titleRow, 1, "", cellStyle_left);
+	    addRowCell(titleRow, 2, "就醫日期-訖", cellStyle_left);
+	    addRowCell(titleRow, 3, "", cellStyle_left);
+	   
+		int indexCol=4;
+
+		//案件數title
+		titleName=new StringBuffer("");
+		titleName.append(dataFormat);
+		titleName.append("總案件數");
+		medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+		addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+		addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+		addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+		indexCol=indexCol+3;
+		
+		//去年同期時段案件數title
+		if(isLastY) {
+			titleName=new StringBuffer("");
+			titleName.append("去年同期時段");
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+			addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+			addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+		}
+		
+		//申報點數title
+		if(feeApplyList.contains("健保")) {
+			titleName=new StringBuffer("");
+			titleName.append(dataFormat);
+			titleName.append("申報總點數");
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+			addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+			addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+			
+			//去年同期時段申報點數title
+			if(isLastY) {
+				titleName=new StringBuffer("");
+				titleName.append("去年同期時段");
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+				addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+				addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+		}
+		
+		//自費金額title
+		if(feeApplyList.contains("自費")) {
+			titleName=new StringBuffer("");
+			titleName.append(dataFormat);
+			titleName.append("自費總金額");
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+			addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+			addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+			
+			//去年同期時段自費金額title
+			if(isLastY) {
+				titleName=new StringBuffer("");
+				titleName.append("去年同期時段");
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				addRowCell(titleRow, indexCol, titleName.toString(), cellStyle_left);
+				addRowCell(titleRow, indexCol+1, "", cellStyle_left);
+				addRowCell(titleRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+		}
+		
+		indexRow++;
+	    
+		indexCol=4;
+		
+		//起訖日期
+	    HSSFRow dataRow = medicalOrderSheet.createRow(indexRow);
+	    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,1));
+	    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,2,3));
+	    addRowCell(dataRow, 0, sDate, cellStyle_left);
+	    addRowCell(dataRow, 1, "", cellStyle_left);
+	    addRowCell(dataRow, 2, eDate, cellStyle_left);
+	    addRowCell(dataRow, 3, "", cellStyle_left);
+
+		//起訖日期之間的案件數
+		medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+		if(data!=null) {
+			addRowCell(dataRow, indexCol, data.get(0).get(dataFormatCode+"_QUANTITY").toString(), cellStyle_left);
+		}
+		else {
+			addRowCell(dataRow, indexCol,"0", cellStyle_left);
+		}
+		addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+		addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+		indexCol=indexCol+3;
+		
+		//去年同期時段案件數
+		if(isLastY) {
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			if(data_Y!=null) {
+				addRowCell(dataRow, indexCol, data_Y.get(0).get(dataFormatCode+"_QUANTITY").toString(), cellStyle_left);
+			}
+			else {
+				addRowCell(dataRow, indexCol,"0", cellStyle_left);
+			}
+			addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+			addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+		}
+		
+		//起訖日期之間的申報點數
+		if(feeApplyList.contains("健保")) {
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			if(data!=null) {
+				addRowCell(dataRow, indexCol, data.get(0).get(dataFormatCode+"_DOT").toString(), cellStyle_left);
+			}
+			else {
+				addRowCell(dataRow, indexCol,"0", cellStyle_left);
+			}
+			addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+			addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+			
+			//去年同期時段申報點數
+			if(isLastY) {
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				if(data_Y!=null) {
+					addRowCell(dataRow, indexCol, data_Y.get(0).get(dataFormatCode+"_DOT").toString(), cellStyle_left);
+				}
+				else {
+					addRowCell(dataRow, indexCol,"0", cellStyle_left);
+				}
+				addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+				addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+		}
+		
+		//起訖日期之間的自費金額
+		if(feeApplyList.contains("自費")) {
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+			if(data!=null) {
+				addRowCell(dataRow, indexCol, data.get(0).get(dataFormatCode+"_EXPENSE").toString(), cellStyle_left);
+			}
+			else {
+				addRowCell(dataRow, indexCol,"0", cellStyle_left);
+			}
+			addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+			addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+			indexCol=indexCol+3;
+			
+			//去年同期時段自費金額
+			if(isLastY) {
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				if(data_Y!=null) {
+					addRowCell(dataRow, indexCol, data_Y.get(0).get(dataFormatCode+"_EXPENSE").toString(), cellStyle_left);
+				}
+				else {
+					addRowCell(dataRow, indexCol,"0", cellStyle_left);
+				}
+				addRowCell(dataRow, indexCol+1, "", cellStyle_left);
+				addRowCell(dataRow, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+			}
+		}
+		
+		indexRow++;
+		
+		/*各科別案件數、申報點數、自費金額
+		 * 當科別條件為空，顯示全部科別資料，不為空，顯示指定科別資料*/
+		if(funcTypeList.size() < 1) {
+			
+			for(int i=0;i<classData.size();i++) {
+				
+				StringBuffer desc_chi=new StringBuffer("");
+				StringBuffer quantity=new StringBuffer("");
+				StringBuffer dot=new StringBuffer("");
+				StringBuffer expense=new StringBuffer("");
+				
+				StringBuffer desc_chi_Y=new StringBuffer("");
+				StringBuffer quantity_Y=new StringBuffer("");
+				StringBuffer dot_Y=new StringBuffer("");
+				StringBuffer expense_Y=new StringBuffer("");
+				
+				StringBuffer desc_chi_M=new StringBuffer("");
+				StringBuffer quantity_M=new StringBuffer("");
+				StringBuffer dot_M=new StringBuffer("");
+				StringBuffer expense_M=new StringBuffer("");
+				
+				desc_chi=new StringBuffer(classData.get(i).get("DESC_CHI").toString());
+				quantity=new StringBuffer(classData.get(i).get("QUANTITY").toString());
+				dot=new StringBuffer(classData.get(i).get("DOT").toString());
+				expense=new StringBuffer(classData.get(i).get("EXPENSE").toString());
+				
+				if(classData_Y!=null) {
+					desc_chi_Y=new StringBuffer(classData_Y.get(i).get("DESC_CHI").toString());
+					quantity_Y=new StringBuffer(classData_Y.get(i).get("QUANTITY").toString());
+					dot_Y=new StringBuffer(classData_Y.get(i).get("DOT").toString());
+					expense_Y=new StringBuffer(classData_Y.get(i).get("EXPENSE").toString());
+				}
+				
+				//科名title
+			    HSSFRow titleRow_class = medicalOrderSheet.createRow(indexRow);
+			    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+			    addRowCell(titleRow_class, 0, "科名", cellStyle);
+			    addRowCell(titleRow_class, 1, "", cellStyle_left);
+			    addRowCell(titleRow_class, 2, "", cellStyle_left);
+			    addRowCell(titleRow_class, 3, "", cellStyle_left);
+			   
+				indexCol=4;
+
+				//科名案件數title
+				titleName=new StringBuffer("");
+				titleName.append(dataFormat);
+				titleName.append("總案件數");
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+				addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+				addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+				
+				//科名去年同期時段案件數title
+				if(isLastY) {
+					titleName=new StringBuffer("");
+					titleName.append("去年同期時段");
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+					addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+				}
+				
+				//科名申報點數title
+				if(feeApplyList.contains("健保")) {
+					titleName=new StringBuffer("");
+					titleName.append(dataFormat);
+					titleName.append("申報總點數");
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+					addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名去年同期時段申報點數title
+					if(isLastY) {
+						titleName=new StringBuffer("");
+						titleName.append("去年同期時段");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+				}
+				
+				//科名自費金額title
+				if(feeApplyList.contains("自費")) {
+					titleName=new StringBuffer("");
+					titleName.append(dataFormat);
+					titleName.append("自費總金額");
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+					addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名去年同期時段自費金額title
+					if(isLastY) {
+						titleName=new StringBuffer("");
+						titleName.append("去年同期時段");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+				}
+				
+				indexRow++;
+			    
+				indexCol=4;
+	
+				//科名
+			    HSSFRow dataRow_class = medicalOrderSheet.createRow(indexRow);
+			    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+			    addRowCell(dataRow_class, 0, desc_chi.toString(), cellStyle_left);
+			    addRowCell(dataRow_class, 1, "", cellStyle_left);
+			    addRowCell(dataRow_class, 2, "", cellStyle_left);
+			    addRowCell(dataRow_class, 3, "", cellStyle_left);
+		
+				//科名的案件數
+				medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+				if(classData.get(i)!=null) {
+					addRowCell(dataRow_class, indexCol, quantity.toString(), cellStyle_left);
+				}
+				else {
+					addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+				}
+				addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+				addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+				indexCol=indexCol+3;
+				
+				//科名去年同期時段案件數
+				if(isLastY) {
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					if(classData_Y!=null) {
+						addRowCell(dataRow_class, indexCol, quantity_Y.toString(), cellStyle_left);
+					}
+					else {
+						addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+					}
+					addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+				}
+				
+				//科名的申報點數
+				if(feeApplyList.contains("健保")) {
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					if(classData.get(i)!=null) {
+						addRowCell(dataRow_class, indexCol, dot.toString(), cellStyle_left);
+					}
+					else {
+						addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+					}
+					addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名去年同期時段申報點數
+					if(isLastY) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData_Y!=null) {
+							addRowCell(dataRow_class, indexCol, dot_Y.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+				}
+					
+				//科名的自費金額
+				if(feeApplyList.contains("自費")) {
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					if(classData.get(i)!=null) {
+						addRowCell(dataRow_class, indexCol, expense.toString(), cellStyle_left);
+					}
+					else {
+						addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+					}
+					addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名去年同期時段自費金額
+					if(isLastY) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData_Y!=null) {
+							addRowCell(dataRow_class, indexCol, expense_Y.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+				}
+				
+			    indexRow++;
+			    
+			    indexCol=4;
+			    
+				//科別之下醫護人員的案件數、申報點數、自費金額
+				if(medDataList.size() > 0) {
+				
+					Map<String, Object> medData_lastY=new HashedMap<String, Object>();
+					Map<String, Object> medData=new HashedMap<String, Object>();
+					
+					for(int j=0;j<medDataList.size();j++) {
+						
+						StringBuffer medSDate=new StringBuffer(medDataList.get(j).get("startDate").toString());
+						StringBuffer medEDate=new StringBuffer(medDataList.get(j).get("endDate").toString());
+						StringBuffer medName=new StringBuffer(medDataList.get(j).get("medName").toString());
+						StringBuffer medDataF=new StringBuffer(medDataList.get(j).get("dataFormat").toString());
+							
+						if( !lastSDateStr.contains(sDate.toString()) && !lastEDateStr.contains(eDate.toString()) && 
+								sDate.equals(medSDate.toString()) && eDate.equals(medEDate.toString()) && dataFormat.equals(medDataF.toString())){
+							
+//							    StringBuffer medDesc_chi=new StringBuffer("0");
+								StringBuffer medQuantity=new StringBuffer("0");
+								StringBuffer medDot=new StringBuffer("0");
+								StringBuffer medExpense=new StringBuffer("0");
+							    
+								StringBuffer medQuantity_Y=new StringBuffer("0");
+								StringBuffer medDot_Y=new StringBuffer("0");
+								StringBuffer medExpense_Y=new StringBuffer("0");
+									
+								List<Map<String, Object>> md=(List<Map<String, Object>>) medDataList.get(j).get("data");
+								
+								for(int k=0;k<md.size();k++) {
+									if(md.get(k).get("DESC_CHI").equals(desc_chi.toString())) {
+										medData=(Map<String, Object>)md.get(k);
+										break;
+									}
+								}
+
+								if(medDataList_Y.size() > 0 && isLastY){
+									medData_lastY=getLastYearMedData(medSDate.toString(),medEDate.toString(),
+											medDataF.toString(),medName.toString(),desc_chi.toString(),medDataList_Y);
+								}
+							
+								if(medData!=null && !medData.isEmpty()) {			
+									medQuantity=new StringBuffer(medData.get("QUANTITY").toString());
+									medDot=new StringBuffer(medData.get("DOT").toString());
+									medExpense=new StringBuffer(medData.get("EXPENSE").toString());
+								}
+								
+								if(medData_lastY!=null && !medData_lastY.isEmpty()) {
+									medQuantity_Y=new StringBuffer(medData_lastY.get("QUANTITY").toString());
+									medDot_Y=new StringBuffer(medData_lastY.get("DOT").toString());
+									medExpense_Y=new StringBuffer(medData_lastY.get("EXPENSE").toString());
+								}
+										
+								//醫護名title
+							    HSSFRow titleRow_med = medicalOrderSheet.createRow(indexRow);
+							    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+							    addRowCell(titleRow_med, 0, "醫護名", cellStyle);
+							    addRowCell(titleRow_med, 1, "", cellStyle_left);
+							    addRowCell(titleRow_med, 2, "", cellStyle_left);
+							    addRowCell(titleRow_med, 3, "", cellStyle_left);
+							   
+								indexCol=4;
+
+								//醫護案件數title
+								titleName=new StringBuffer("");
+								titleName.append(dataFormat);
+								titleName.append("總案件數");
+								medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+								addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+								addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+								addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+								indexCol=indexCol+3;
+								
+								//醫護去年同期時段案件數title
+								if(isLastY) {
+									titleName=new StringBuffer("");
+									titleName.append("去年同期時段");
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+									addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+								}
+								
+								//醫護申報點數title
+								if(feeApplyList.contains("健保")) {
+									titleName=new StringBuffer("");
+									titleName.append(dataFormat);
+									titleName.append("申報總點數");
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+									addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護去年同期時段申報點數title
+									if(isLastY) {
+										titleName=new StringBuffer("");
+										titleName.append("去年同期時段");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+								}
+								
+								//醫護自費金額title
+								if(feeApplyList.contains("自費")) {
+									titleName=new StringBuffer("");
+									titleName.append(dataFormat);
+									titleName.append("自費總金額");
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+									addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護去年同期時段自費金額title
+									if(isLastY) {
+										titleName=new StringBuffer("");
+										titleName.append("去年同期時段");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+								}
+								
+								indexRow++;
+							    
+								indexCol=4;
+								
+								//醫護名
+							    HSSFRow dataRow_med = medicalOrderSheet.createRow(indexRow);
+							    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+							    addRowCell(dataRow_med, 0, medName.toString(), cellStyle_left);
+							    addRowCell(dataRow_med, 1, "", cellStyle_left);
+							    addRowCell(dataRow_med, 2, "", cellStyle_left);
+							    addRowCell(dataRow_med, 3, "", cellStyle_left);
+						
+								//醫護的案件數
+								medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+								if(!medQuantity.toString().equals("")) {
+									addRowCell(dataRow_med, indexCol, medQuantity.toString(), cellStyle_left);
+								}
+								else {
+									addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+								}
+								addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+								addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+								indexCol=indexCol+3;
+								
+								//醫護去年同期時段案件數
+								if(isLastY) {
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									if(!medQuantity_Y.toString().equals("")) {
+										addRowCell(dataRow_med, indexCol, medQuantity_Y.toString(), cellStyle_left);
+									}
+									else {
+										addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+									}
+									addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+								}
+								
+								//醫護的申報點數
+								if(feeApplyList.contains("健保")) {
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									if(!medDot.toString().equals("")) {
+										addRowCell(dataRow_med, indexCol, medDot.toString(), cellStyle_left);
+									}
+									else {
+										addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+									}
+									addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護去年同期時段申報點數
+									if(isLastY) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medDot_Y.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medDot_Y.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+								}
+									
+								//醫護的自費金額
+								if(feeApplyList.contains("自費")) {
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									if(!medExpense.toString().equals("")) {
+										addRowCell(dataRow_med, indexCol, medExpense.toString(), cellStyle_left);
+									}
+									else {
+										addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+									}
+									addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護去年同期時段自費金額
+									if(isLastY) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medExpense_Y.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medExpense_Y.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+								}
+								
+							    indexRow++;
+							    
+								indexCol=4;
+						}
+					}
+				}
+			}
+			
+		}
+		else {
+			
+			for(int i=0;i<classData.size();i++) {
+				
+				if(funcTypeList.contains(classData.get(i).get("DESC_CHI").toString())){
+				
+					StringBuffer desc_chi=new StringBuffer("");
+					StringBuffer quantity=new StringBuffer("");
+					StringBuffer dot=new StringBuffer("");
+					StringBuffer expense=new StringBuffer("");
+					
+					StringBuffer desc_chi_Y=new StringBuffer("");
+					StringBuffer quantity_Y=new StringBuffer("");
+					StringBuffer dot_Y=new StringBuffer("");
+					StringBuffer expense_Y=new StringBuffer("");
+					
+					StringBuffer desc_chi_M=new StringBuffer("");
+					StringBuffer quantity_M=new StringBuffer("");
+					StringBuffer dot_M=new StringBuffer("");
+					StringBuffer expense_M=new StringBuffer("");
+					
+					desc_chi=new StringBuffer(classData.get(i).get("DESC_CHI").toString());
+					quantity=new StringBuffer(classData.get(i).get("QUANTITY").toString());
+					dot=new StringBuffer(classData.get(i).get("DOT").toString());
+					expense=new StringBuffer(classData.get(i).get("EXPENSE").toString());
+					
+					if(classData_Y!=null) {
+						desc_chi_Y=new StringBuffer(classData_Y.get(i).get("DESC_CHI").toString());
+						quantity_Y=new StringBuffer(classData_Y.get(i).get("QUANTITY").toString());
+						dot_Y=new StringBuffer(classData_Y.get(i).get("DOT").toString());
+						expense_Y=new StringBuffer(classData_Y.get(i).get("EXPENSE").toString());
+					}
+					
+					//科名title
+				    HSSFRow titleRow_class = medicalOrderSheet.createRow(indexRow);
+				    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+				    addRowCell(titleRow_class, 0, "科名", cellStyle);
+				    addRowCell(titleRow_class, 1, "", cellStyle_left);
+				    addRowCell(titleRow_class, 2, "", cellStyle_left);
+				    addRowCell(titleRow_class, 3, "", cellStyle_left);
+				   
+					indexCol=4;
+
+					//科名案件數title
+					titleName=new StringBuffer("");
+					titleName.append(dataFormat);
+					titleName.append("總案件數");
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+					addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名去年同期時段案件數title
+					if(isLastY) {
+						titleName=new StringBuffer("");
+						titleName.append("去年同期時段");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					
+					//科名申報點數title
+					if(feeApplyList.contains("健保")) {
+						titleName=new StringBuffer("");
+						titleName.append(dataFormat);
+						titleName.append("申報總點數");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+						
+						//科名去年同期時段申報點數title
+						if(isLastY) {
+							titleName=new StringBuffer("");
+							titleName.append("去年同期時段");
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+							addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+					}
+					
+					//科名自費金額title
+					if(feeApplyList.contains("自費")) {
+						titleName=new StringBuffer("");
+						titleName.append(dataFormat);
+						titleName.append("自費總金額");
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+						addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+
+						//科名去年同期時段自費金額title
+						if(isLastY) {
+							titleName=new StringBuffer("");
+							titleName.append("去年同期時段");
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
+							addRowCell(titleRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(titleRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+					}
+					
+					indexRow++;
+				    
+					indexCol=4;
+		
+					//科名
+				    HSSFRow dataRow_class = medicalOrderSheet.createRow(indexRow);
+				    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+				    addRowCell(dataRow_class, 0, desc_chi.toString(), cellStyle_left);
+				    addRowCell(dataRow_class, 1, "", cellStyle_left);
+				    addRowCell(dataRow_class, 2, "", cellStyle_left);
+				    addRowCell(dataRow_class, 3, "", cellStyle_left);
+			
+					//科名的案件數
+					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+					if(classData.get(i)!=null) {
+						addRowCell(dataRow_class, indexCol, quantity.toString(), cellStyle_left);
+					}
+					else {
+						addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+					}
+					addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+					addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+					indexCol=indexCol+3;
+					
+					//科名去年同期時段案件數
+					if(isLastY) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData_Y!=null) {
+							addRowCell(dataRow_class, indexCol, quantity_Y.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+					}
+					
+					//科名的申報點數
+					if(feeApplyList.contains("健保")) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData.get(i)!=null) {
+							addRowCell(dataRow_class, indexCol, dot.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+						
+						//科名去年同期時段申報點數
+						if(isLastY) {
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							if(classData_Y!=null) {
+								addRowCell(dataRow_class, indexCol, dot_Y.toString(), cellStyle_left);
+							}
+							else {
+								addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+							}
+							addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+					}
+						
+					//科名的自費金額
+					if(feeApplyList.contains("自費")) {
+						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+						if(classData.get(i)!=null) {
+							addRowCell(dataRow_class, indexCol, expense.toString(), cellStyle_left);
+						}
+						else {
+							addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+						}
+						addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+						addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+						indexCol=indexCol+3;
+						
+						//科名去年同期時段自費金額
+						if(isLastY) {
+							medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+							if(classData_Y!=null) {
+								addRowCell(dataRow_class, indexCol, expense_Y.toString(), cellStyle_left);
+							}
+							else {
+								addRowCell(dataRow_class, indexCol,"0", cellStyle_left);
+							}
+							addRowCell(dataRow_class, indexCol+1, "", cellStyle_left);
+							addRowCell(dataRow_class, indexCol+2, "", cellStyle_left);
+							indexCol=indexCol+3;
+						}
+					}
+					
+				    indexRow++;
+				    
+					indexCol=4;
+					
+					//科別之下醫護人員的案件數、申報點數、自費金額
+					if(medDataList.size() > 0) {
+					
+						Map<String, Object> medData_lastY=new HashedMap<String, Object>();
+						Map<String, Object> medData=new HashedMap<String, Object>();
+						
+						for(int j=0;j<medDataList.size();j++) {
+							
+							StringBuffer medSDate=new StringBuffer(medDataList.get(j).get("startDate").toString());
+							StringBuffer medEDate=new StringBuffer(medDataList.get(j).get("endDate").toString());
+							StringBuffer medName=new StringBuffer(medDataList.get(j).get("medName").toString());
+							StringBuffer medDataF=new StringBuffer(medDataList.get(j).get("dataFormat").toString());
+								
+							if( !lastSDateStr.contains(sDate.toString()) && !lastEDateStr.contains(eDate.toString()) && 
+									sDate.equals(medSDate.toString()) && eDate.equals(medEDate.toString()) && dataFormat.equals(medDataF.toString())){
+								
+//								    StringBuffer medDesc_chi=new StringBuffer("0");
+									StringBuffer medQuantity=new StringBuffer("0");
+									StringBuffer medDot=new StringBuffer("0");
+									StringBuffer medExpense=new StringBuffer("0");
+								    
+									StringBuffer medQuantity_Y=new StringBuffer("0");
+									StringBuffer medDot_Y=new StringBuffer("0");
+									StringBuffer medExpense_Y=new StringBuffer("0");
+										
+									List<Map<String, Object>> md=(List<Map<String, Object>>) medDataList.get(j).get("data");
+									
+									for(int k=0;k<md.size();k++) {
+										if(md.get(k).get("DESC_CHI").equals(desc_chi.toString())) {
+											medData=(Map<String, Object>)md.get(k);
+											break;
+										}
+									}
+
+									if(medDataList_Y.size() > 0 && isLastY){
+										medData_lastY=getLastYearMedData(medSDate.toString(),medEDate.toString(),
+												medDataF.toString(),medName.toString(),desc_chi.toString(),medDataList_Y);
+									}
+								
+									if(medData!=null && !medData.isEmpty()) {			
+										medQuantity=new StringBuffer(medData.get("QUANTITY").toString());
+										medDot=new StringBuffer(medData.get("DOT").toString());
+										medExpense=new StringBuffer(medData.get("EXPENSE").toString());
+									}
+									
+									if(medData_lastY!=null && !medData_lastY.isEmpty()) {
+										medQuantity_Y=new StringBuffer(medData_lastY.get("QUANTITY").toString());
+										medDot_Y=new StringBuffer(medData_lastY.get("DOT").toString());
+										medExpense_Y=new StringBuffer(medData_lastY.get("EXPENSE").toString());
+									}
+											
+									//醫護名title
+								    HSSFRow titleRow_med = medicalOrderSheet.createRow(indexRow);
+								    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+								    addRowCell(titleRow_med, 0, "醫護名", cellStyle);
+								    addRowCell(titleRow_med, 1, "", cellStyle_left);
+								    addRowCell(titleRow_med, 2, "", cellStyle_left);
+								    addRowCell(titleRow_med, 3, "", cellStyle_left);
+								   
+									indexCol=4;
+
+									//醫護案件數title
+									titleName=new StringBuffer("");
+									titleName.append(dataFormat);
+									titleName.append("總案件數");
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+									addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護去年同期時段案件數title
+									if(isLastY) {
+										titleName=new StringBuffer("");
+										titleName.append("去年同期時段");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									
+									//醫護申報點數title
+									if(feeApplyList.contains("健保")) {
+										titleName=new StringBuffer("");
+										titleName.append(dataFormat);
+										titleName.append("申報總點數");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+										
+										//醫護去年同期時段申報點數title
+										if(isLastY) {
+											titleName=new StringBuffer("");
+											titleName.append("去年同期時段");
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+											addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+									}
+									
+									//醫護自費金額title
+									if(feeApplyList.contains("自費")) {
+										titleName=new StringBuffer("");
+										titleName.append(dataFormat);
+										titleName.append("自費總金額");
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+										addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+										
+										//醫護去年同期時段自費金額title
+										if(isLastY) {
+											titleName=new StringBuffer("");
+											titleName.append("去年同期時段");
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
+											addRowCell(titleRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(titleRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+									}
+									
+									indexRow++;
+								    
+									indexCol=4;
+									
+									//醫護名
+								    HSSFRow dataRow_med = medicalOrderSheet.createRow(indexRow);
+								    medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,0,3));
+								    addRowCell(dataRow_med, 0, medName.toString(), cellStyle_left);
+								    addRowCell(dataRow_med, 1, "", cellStyle_left);
+								    addRowCell(dataRow_med, 2, "", cellStyle_left);
+								    addRowCell(dataRow_med, 3, "", cellStyle_left);
+							
+									//醫護的案件數
+									medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+									if(!medQuantity.toString().equals("")) {
+										addRowCell(dataRow_med, indexCol, medQuantity.toString(), cellStyle_left);
+									}
+									else {
+										addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+									}
+									addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+									addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+									indexCol=indexCol+3;
+									
+									//醫護去年同期時段案件數
+									if(isLastY) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medQuantity_Y.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medQuantity_Y.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+									}
+									
+									//醫護的申報點數
+									if(feeApplyList.contains("健保")) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medDot.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medDot.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+										
+										//醫護去年同期時段申報點數
+										if(isLastY) {
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											if(!medDot_Y.toString().equals("")) {
+												addRowCell(dataRow_med, indexCol, medDot_Y.toString(), cellStyle_left);
+											}
+											else {
+												addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+											}
+											addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+									}
+										
+									//醫護的自費金額
+									if(feeApplyList.contains("自費")) {
+										medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+										if(!medExpense.toString().equals("")) {
+											addRowCell(dataRow_med, indexCol, medExpense.toString(), cellStyle_left);
+										}
+										else {
+											addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+										}
+										addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+										addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+										indexCol=indexCol+3;
+										
+										//醫護去年同期時段自費金額
+										if(isLastY) {
+											medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow,indexRow,indexCol,indexCol+2));
+											if(!medExpense_Y.toString().equals("")) {
+												addRowCell(dataRow_med, indexCol, medExpense_Y.toString(), cellStyle_left);
+											}
+											else {
+												addRowCell(dataRow_med, indexCol,"0", cellStyle_left);
+											}
+											addRowCell(dataRow_med, indexCol+1, "", cellStyle_left);
+											addRowCell(dataRow_med, indexCol+2, "", cellStyle_left);
+											indexCol=indexCol+3;
+										}
+									}
+									
+								    indexRow++;
+								    
+									indexCol=4;
+							}
+						}
+					}
+				}
+			}
+		}
+		
+	    indexRow++;
+		
+		return indexRow;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Map<String, Object>> getLastYearData(boolean isClassData,String date,String format,List<Map<String, Object>> dataList){
+		
+		List<Map<String, Object>> lastData=null;
+		
+		for(int i=0;i<dataList.size();i++) {
+			if(findLastYear(date,false).equals(dataList.get(i).get("date").toString()) &&
+					format.equals(dataList.get(i).get("dataFormat").toString())) {
+				
+				if(isClassData) {
+					lastData=(List<Map<String, Object>>) dataList.get(i).get("classData");
+				}
+				else {
+					lastData=(List<Map<String, Object>>) dataList.get(i).get("data");
+				}
+				
+				break;
+			}
+		}
+
+		return lastData;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Map<String, Object>> getLastYearData(boolean isClassData,String sDate,String eDate,String format,List<Map<String, Object>> dataList){
+		
+		List<Map<String, Object>> lastData=null;
+		
+		for(int i=0;i<dataList.size();i++) {
+			if(findLastYear(sDate,true).equals(dataList.get(i).get("startDate").toString()) &&
+					findLastYear(eDate,true).equals(dataList.get(i).get("endDate").toString()) &&
+					format.equals(dataList.get(i).get("dataFormat").toString())) {
+				
+				if(isClassData) {
+					lastData=(List<Map<String, Object>>) dataList.get(i).get("classData");
+				}
+				else {
+					lastData=(List<Map<String, Object>>) dataList.get(i).get("data");
+				}
+				
+				break;
+			}
+		}
+
+		return lastData;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Map<String, Object>> getLastMonthData(boolean isClassData,String date,String format,List<Map<String, Object>> dataList){
+		
+		List<Map<String, Object>> lastData=null;
+		
+		for(int i=0;i<dataList.size();i++) {
+			if(findLastMonth(date).equals(dataList.get(i).get("date").toString()) &&
+					format.equals(dataList.get(i).get("dataFormat").toString())) {
+				
+				if(isClassData) {
+					lastData=(List<Map<String, Object>>) dataList.get(i).get("classData");
+				}
+				else {
+					lastData=(List<Map<String, Object>>) dataList.get(i).get("data");
+				}
+				
+				break;
+			}
+		}
+
+		return lastData;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> getLastYearMedData(String medDate,String medDataF,String medName,String medDesc_chi,List<Map<String, Object>> medDataList){
+		
+		Map<String, Object> lastData=null;
+		
+		for(int i=0;i<medDataList.size();i++) {
+			if(findLastYear(medDate,false).equals(medDataList.get(i).get("date").toString()) &&
+					medDataF.equals(medDataList.get(i).get("dataFormat").toString()) &&
+					medName.equals(medDataList.get(i).get("medName").toString())) {
+				
+				List<Map<String, Object>> data=(List<Map<String, Object>>) medDataList.get(i).get("data");
+				
+				for(int j=0;j<data.size();j++) {
+					if(data.get(j).get("DESC_CHI").equals(medDesc_chi)) {
+						lastData=(Map<String, Object>)data.get(j);
+						break;
+					}
+				}
+			}
+		}
+
+		return lastData;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> getLastYearMedData(String sDate,String eDate,String medDataF,String medName,String medDesc_chi,List<Map<String, Object>> medDataList){
+		
+		Map<String, Object> lastData=null;
+		
+		for(int i=0;i<medDataList.size();i++) {
+			if(findLastYear(sDate,true).equals(medDataList.get(i).get("startDate").toString()) &&
+					findLastYear(eDate,true).equals(medDataList.get(i).get("endDate").toString()) &&
+					medDataF.equals(medDataList.get(i).get("dataFormat").toString()) &&
+					medName.equals(medDataList.get(i).get("medName").toString())) {
+				
+				List<Map<String, Object>> data=(List<Map<String, Object>>) medDataList.get(i).get("data");
+				
+				for(int j=0;j<data.size();j++) {
+					if(data.get(j).get("DESC_CHI").equals(medDesc_chi)) {
+						lastData=(Map<String, Object>)data.get(j);
+						break;
+					}
+				}
+			}
+		}
+
+		return lastData;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> getLastMonthMedData(String medDate,String medDataF,String medName,String medDesc_chi,List<Map<String, Object>> medDataList){
+		
+		Map<String, Object> lastData=null;
+		
+		for(int i=0;i<medDataList.size();i++) {
+			if(findLastMonth(medDate).equals(medDataList.get(i).get("date").toString()) &&
+					medDataF.equals(medDataList.get(i).get("dataFormat").toString()) &&
+					medName.equals(medDataList.get(i).get("medName").toString())) {
+				
+				List<Map<String, Object>> data=(List<Map<String, Object>>) medDataList.get(i).get("data");
+				
+				for(int j=0;j<data.size();j++) {
+					if(data.get(j).get("DESC_CHI").equals(medDesc_chi)) {
+						lastData=(Map<String, Object>)data.get(j);
+						break;
+					}
+				}
+			}
+		}
+
+		return lastData;
+	}
+	
+	public String findLastYear(String str,boolean isHaveDay) {
+		
+		StringBuffer dateType=new StringBuffer();
+		if(isHaveDay) {
+			dateType.append("yyyy-MM-dd");
+		}
+		else {
+			dateType.append("yyyy-MM");
+		}
+		
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat(dateType.toString());
+		try {
+			cal.setTime(sdf.parse(str));
+			cal.add(Calendar.YEAR, -1);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		String formatted = sdf.format(cal.getTime());
+		
+		return formatted;
+	}
+	
+	public String findLastMonth(String str) {
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+		try {
+			cal.setTime(sdf.parse(str));
+			cal.add(Calendar.MONTH, -1);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		String formatted = sdf.format(cal.getTime());
+		
+		return formatted;
+	}
+	
 	public Comparator<OwnExpenseQueryConditionDetail> mapComparatorPI = new Comparator<OwnExpenseQueryConditionDetail>() {
 		public int compare(OwnExpenseQueryConditionDetail m1, OwnExpenseQueryConditionDetail m2) {
 			return m1.getPrsnId().compareTo(m2.getPrsnId());

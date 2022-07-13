@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -1042,7 +1043,7 @@ public class NHIWidgetXMLController extends BaseController {
   @PostMapping(value = "/nhixml/uploadExcel",consumes = {"multipart/form-data"})
   public ResponseEntity<Map<String,Object>> importDeductedNoteExcel(@ApiParam(name = "id", value = "病歷id", example = "31986") @RequestParam String id,
 		  @ApiParam(name = "inputFile") @RequestParam("file") MultipartFile file
-		  ) throws FileNotFoundException, IOException {
+		  ) throws FileNotFoundException, IOException, ParseException {
 	  Map<String,Object> result = new HashMap<String,Object>();
 	  List<DEDUCTED_NOTE> dataList =  new ArrayList<DEDUCTED_NOTE>();
 	  UserDetailsImpl user = getUserDetails();

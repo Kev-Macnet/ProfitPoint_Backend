@@ -37,6 +37,7 @@ import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -8856,7 +8857,7 @@ public class NHIWidgetXMLService {
     return result;
   }
   ///匯入核刪excel檔案
-  public List<DEDUCTED_NOTE> readDeductedNoteHSSFSheet(Sheet sheet, String mrid, String editorName) {
+  public List<DEDUCTED_NOTE> readDeductedNoteHSSFSheet(Sheet sheet, String mrid, String editorName) throws ParseException {
 	  
 	  // 取得最後一筆row位置作為資料size()
 	  int lastRowNum = sheet.getLastRowNum();
@@ -8936,12 +8937,30 @@ public class NHIWidgetXMLService {
 				note.setDisputeNoPayDesc(map.get("爭議不補付理由說明"));
 				note.setDisputeNote(map.get("爭議備註"));
 				note.setEditor(editorName);
-				
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+				if(map.get("核刪日期") != null && !map.get("核刪日期").isEmpty()) {
+					
+					java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("核刪日期")));
+					String outputDate = sdf.format(d);
+					note.setDeductedDate(sdf.parse(outputDate));
+					
+				}
+				if(map.get("放大回推日期") != null && !map.get("放大回推日期").isEmpty()) {
+					java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("放大回推日期")));
+					String outputDate = sdf.format(d);
+					note.setRollbackDate(sdf.parse(outputDate));
+				}
+				if(map.get("爭議日期") != null && !map.get("爭議日期").isEmpty()) {
+					java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("爭議日期")));
+					String outputDate = sdf.format(d);
+					note.setDisputeDate(sdf.parse(outputDate));
+				}
+			
 				if (mrid.equals(map.get("病歷號"))) {
 					listNote.add(note);
 				}
 				/// 寫入資料庫
-//				newDeductedNote(map.get("病歷號"), note);
+				newDeductedNote(map.get("病歷號"), note);
 				note = new DEDUCTED_NOTE();
 			}
 			return listNote;

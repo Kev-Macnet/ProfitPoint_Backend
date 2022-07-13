@@ -222,6 +222,65 @@ public class DbReportController extends BaseController {
 			return ResponseEntity.ok(result);
 	}
 	
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
+	@ApiOperation(value = "醫令項目與執行量-匯出", notes = "醫令項目與執行量-匯出")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/medicalOrderExport")
+	public ResponseEntity<BaseResponse> getMedicalOrderExport(
+			@ApiParam(name = "feeApply", value = "費用申報狀態(可複選)，多選用空格隔開，自費 健保", example = "自費 健保") @RequestParam(required = false) String feeApply,
+			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2020 2021 2022") @RequestParam(required = true) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = true) String month,
+			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = false) String betweenSDate,
+			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = false) String betweenEDate,
+			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = false) String dataFormats,
+			@ApiParam(name = "funcTypes", value = "科別，若為多筆資料，用空格隔開，05 06", example = "") @RequestParam(required = false) String funcTypes,
+			@ApiParam(name = "medNames", value = "醫護姓名，若為多筆資料，用空格隔開，R A ", example = "") @RequestParam(required = false) String medNames,
+			@ApiParam(name = "icdAll", value = "不分區ICD碼，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String icdAll,
+			@ApiParam(name = "payCode", value = "支付標準代碼", example = "") @RequestParam(required = false) String payCode,
+			@ApiParam(name = "inhCode", value = "院內碼", example = "") @RequestParam(required = false) String inhCode,
+			@ApiParam(name = "isLastM", value = "上個月同條件相比", example = "false") @RequestParam(required = false) boolean isLastM,
+			@ApiParam(name = "isLastY", value = "去年同期時段同條件相比", example = "false") @RequestParam(required = false) boolean isLastY,
+			HttpServletResponse response){
+			
+			BaseResponse baseResponse=new BaseResponse();
+		
+			if(feeApply.equals("") || feeApply==null) {
+				baseResponse.setResult(BaseResponse.ERROR);
+				baseResponse.setMessage("費用申報狀態不可為空");
+				return ResponseEntity.badRequest().body(baseResponse);
+			}
+			
+			if (dateType.equals("0")) {
+				if (year.isEmpty() || month.isEmpty()) {
+					baseResponse.setResult(BaseResponse.ERROR);
+					baseResponse.setMessage("dateType為0時，西元年或月為必填");
+					return ResponseEntity.badRequest().body(baseResponse);
+				}
+			} 
+			else {
+				if (betweenSDate.isEmpty() || betweenEDate.isEmpty()) {
+					baseResponse.setResult(BaseResponse.ERROR);
+					baseResponse.setMessage("dateType為1時，日期區間起迄日為必填");
+					return ResponseEntity.badRequest().body(baseResponse);
+				}
+			}
+			
+			try {
+				Map<String, Object> result=dbService.getMedicalOrder(feeApply,dateType,year,month,betweenSDate,betweenEDate,dataFormats,funcTypes,
+						medNames,icdAll,payCode,inhCode,isLastM,isLastY);
+				
+				dbExportService.getMedicalOrderExport(result,feeApply,dateType,year,month,betweenSDate,betweenEDate,dataFormats,funcTypes,
+						medNames,icdAll,payCode,inhCode,isLastM,isLastY,response);
+			} catch (Exception e) {
+				// TODO: handle exception
+				logger.info("醫令項目與執行量匯出報表錯誤: {}",e);
+//				e.printStackTrace();
+			}
+			
+			return null;
+	}
+	
 	@ApiOperation(value = "案件狀態與各別數量(可複選)", notes = "案件狀態與各別數量(可複選)")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/caseStatusAndQuantity")
@@ -269,9 +328,9 @@ public class DbReportController extends BaseController {
 	     HttpServletResponse response){
 		  
 			List<CaseStatusAndQuantity> results=new ArrayList<CaseStatusAndQuantity>();
+			CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
 			
 			if(status.length()==0) {
-				CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
 				caseStatusAndQuantity.setResult(BaseResponse.ERROR);
 				caseStatusAndQuantity.setMessage("無勾選案件狀態");
 			    return ResponseEntity.badRequest().body(caseStatusAndQuantity);
@@ -282,13 +341,15 @@ public class DbReportController extends BaseController {
 					caseStatusAndQuantityService.getDataExport(physical,results,startMonth,endMonth,response);
 			}
 			else {
-				CaseStatusAndQuantity caseStatusAndQuantity=new CaseStatusAndQuantity();
 				caseStatusAndQuantity.setResult(BaseResponse.ERROR);
 				caseStatusAndQuantity.setMessage("資料格式不正確");
 			    return ResponseEntity.badRequest().body(caseStatusAndQuantity);
 			}
 		  
-			return null;
+		
+			caseStatusAndQuantity.setResult(BaseResponse.SUCCESS);
+			caseStatusAndQuantity.setMessage("");
+		    return ResponseEntity.ok().body(caseStatusAndQuantity);
 	  }
 
 	@ApiOperation(value = "取得hello", notes = "取得hello")
