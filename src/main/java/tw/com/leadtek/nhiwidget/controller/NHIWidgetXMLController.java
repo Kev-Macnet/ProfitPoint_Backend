@@ -1050,7 +1050,9 @@ public class NHIWidgetXMLController extends BaseController {
 	  
 	  Workbook workbook = null;
 	  workbook = WorkbookFactory.create(file.getInputStream());
-	  Sheet sheet = workbook.getSheet("測試資料");
+//	  Sheet sheet = workbook.getSheet("測試資料");
+	  ///取第一個sheet資料
+	  Sheet sheet = workbook.getSheetAt(0);
 	  dataList = xmlService.readDeductedNoteHSSFSheet(sheet, id, user.getUsername());
 
 	  result.put("result", "success");
