@@ -1656,29 +1656,36 @@ public class HealthCareCostService {
 											
 										}
 										else {
-											for(int j=0;j<classDoctorWeekly.size();j++) {
-												ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
-												if(code.toString().equals(cw.getCode())) {
-													List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
-													List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
-													caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
-													classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName.toString(),caseDotFeeDtos));
-													classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code.toString(),classDoctorDtos_weekly));
+											
+											if(!doctorName.toString().equals("")) {
+												for(int j=0;j<classDoctorWeekly.size();j++) {
+													ClassDoctorWeeklyDto cw=classDoctorWeekly.get(j);
+													if(code.toString().equals(cw.getCode())) {
+														List<ClassDoctorDto_weekly> classDoctorDtos_weekly=cw.getClassDoctors();
+														List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
+														caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+														classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName.toString(),caseDotFeeDtos));
+														classDoctorWeekly.set(j,new ClassDoctorWeeklyDto(code.toString(),classDoctorDtos_weekly));
+													}
 												}
+												
+												doctors.add(doctorName.toString());
 											}
-											doctors.add(doctorName.toString());
 										}
-									}
+								}
 								else {
-									List<ClassDoctorDto_weekly> classDoctorDtos_weekly=new ArrayList<ClassDoctorDto_weekly>();
-									List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
 									
-									caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
-									classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName.toString(),caseDotFeeDtos));
-									classDoctorWeekly.add(new ClassDoctorWeeklyDto(code.toString(),classDoctorDtos_weekly));
-									
-									codes.add(code.toString());
-									doctors.add(doctorName.toString());
+									if(!doctorName.toString().equals("")) {
+										List<ClassDoctorDto_weekly> classDoctorDtos_weekly=new ArrayList<ClassDoctorDto_weekly>();
+										List<CaseDotFeeDto>caseDotFeeDtos=new ArrayList<CaseDotFeeDto>();
+										
+										caseDotFeeDtos.add(new CaseDotFeeDto(week.toString(),caseCount,dot,drugFee));
+										classDoctorDtos_weekly.add(new ClassDoctorDto_weekly(doctorName.toString(),caseDotFeeDtos));
+										classDoctorWeekly.add(new ClassDoctorWeeklyDto(code.toString(),classDoctorDtos_weekly));
+										
+										codes.add(code.toString());
+										doctors.add(doctorName.toString());
+									}
 								}
 							}
 						}
