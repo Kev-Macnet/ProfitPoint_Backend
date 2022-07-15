@@ -80,4 +80,13 @@ public interface DEDUCTED_NOTEDao extends JpaRepository<DEDUCTED_NOTE, Long>, Jp
 			+ "", nativeQuery = true)
 	public List<Map<String,Object>> getDisputeOrderAmountByDate(String sdate, String edate);
 
+	/**
+	 * 核刪代碼、數量、點數
+	 * @param date
+	 * @return
+	 */
+	@Query(value = "SELECT DATA_FORMAT,CODE,SUM(DEDUCTED_AMOUNT),SUM(DEDUCTED_QUANTITY) FROM DEDUCTED_NOTE,MR WHERE MR.ID = DEDUCTED_NOTE.MR_ID AND DEDUCTED_DATE LIKE CONCAT(?1,'%') GROUP BY CODE,DATA_FORMAT", nativeQuery = true)
+	public List<Map<String,Object>> getCodeAmountByDate(String date);
+	
+	
 }

@@ -27,6 +27,7 @@ import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.CaseStatusAndQuantity;
 import tw.com.leadtek.nhiwidget.payload.report.DatabaseCalculateExportFactor;
+import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionResponse;
 import tw.com.leadtek.nhiwidget.service.CaseStatusAndQuantityService;
 import tw.com.leadtek.nhiwidget.service.DbReportExportService;
 import tw.com.leadtek.nhiwidget.service.DbReportService;
@@ -636,6 +637,26 @@ public class DbReportController extends BaseController {
 
 		
 		return null;
+	}
+	
+	@ApiOperation(value = "取得核刪資料", notes = "取得核刪資料")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/deductedNoteQueryCondition")
+	public ResponseEntity<DeductedNoteQueryConditionResponse> getDeductedNoteQueryCondition(
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，必填", example = "2022") @RequestParam(required = true) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，必填", example = "1") @RequestParam(required = true) String month,
+			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = false) String dataFormats,
+			@ApiParam(name = "funcTypes", value = "科別，若為多筆資料，用空格隔開，05 06", example = "") @RequestParam(required = false) String funcTypes,
+			@ApiParam(name = "medNames", value = "醫護姓名，若為多筆資料，用空格隔開，R A ", example = "") @RequestParam(required = false) String medNames,
+			@ApiParam(name = "icdAll", value = "不分區ICD碼，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String icdAll,
+			@ApiParam(name = "payCode", value = "支付標準代碼", example = "") @RequestParam(required = false) String payCode,
+			@ApiParam(name = "inhCode", value = "院內碼", example = "") @RequestParam(required = false) String inhCode,
+			@ApiParam(name = "isLastM", value = "上個月同條件相比", example = "false") @RequestParam(required = false) boolean isLastM,
+			@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) boolean isLastY)
+			throws ParseException {
+
+		
+		return ResponseEntity.ok(dbService.getDeductedNoteQueryCondition(year, month, dataFormats, funcTypes, medNames, icdAll, payCode, inhCode, isLastM, isLastY));
 	}
 
 }
