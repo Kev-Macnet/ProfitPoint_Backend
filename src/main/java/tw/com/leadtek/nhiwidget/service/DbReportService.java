@@ -9062,6 +9062,11 @@ public class DbReportService {
 							deductedInfo.setDeductedQuantityIp(Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_IP").toString()));
 							deductedInfo.setRollbackMIp(Long.valueOf(info.get(j).get("ROLLBACK_M_IP").toString()));
 						}
+						if(info.get(j).get("DEDUCTED_AMOUNT_OP") != null && info.get(j).get("DEDUCTED_AMOUNT_IP") != null) {
+							deductedInfo.setDeductedAmountAll(Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_OP").toString()) + Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_IP").toString()));
+							deductedInfo.setDeductedQuantityAll(Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_OP").toString()) + Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_IP").toString()));
+							deductedInfo.setRollbackMAll(Long.valueOf(info.get(j).get("ROLLBACK_M_IP").toString()) + Long.valueOf(info.get(j).get("ROLLBACK_M_OP").toString()));
+						}
 						deductedInfo.setExtractCase(Long.valueOf(info.get(j).get("EXTRACTCASE").toString()));
 						infoList.add(deductedInfo);
 						deductedInfo = new DeductedNoteQueryConditionInfo();
