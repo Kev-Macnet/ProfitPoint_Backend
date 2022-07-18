@@ -20,7 +20,6 @@ import org.hibernate.transform.Transformers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import net.bytebuddy.matcher.ModifierMatcher.Mode;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.POINT_MONTHLYDao;
@@ -29,9 +28,13 @@ import tw.com.leadtek.nhiwidget.model.rdb.POINT_MONTHLY;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.report.AchievePointQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.AchievePointQueryConditionDetail;
-import tw.com.leadtek.nhiwidget.payload.report.AchievePointQueryConditionDetail;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.DatabaseCalculateExportFactor;
+import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryCondition;
+import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionCode;
+import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionInfo;
+import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionList;
+import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionResponse;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionDetail;
 //import tw.com.leadtek.nhiwidget.payload.report.DrgQueryConditionPayload;
@@ -310,20 +313,19 @@ public class DbReportService {
 				icdAllList.add(str);
 			}
 		}
-		
-		List<String>funcTypeCHIs=new ArrayList<String>();
-		
-		if(funcTypeList.size()>0) {
-			for(String func:funcTypeList) {
-				for(int v=0;v<codeTableList.size();v++) {
-					if(func.equals(codeTableList.get(v).getCode())) {
+
+		List<String> funcTypeCHIs = new ArrayList<String>();
+
+		if (funcTypeList.size() > 0) {
+			for (String func : funcTypeList) {
+				for (int v = 0; v < codeTableList.size(); v++) {
+					if (func.equals(codeTableList.get(v).getCode())) {
 						funcTypeCHIs.add(codeTableList.get(v).getDescChi());
 					}
 				}
 			}
-		}
-		else {
-			for(int v=0;v<codeTableList.size();v++) {
+		} else {
+			for (int v = 0; v < codeTableList.size(); v++) {
 				funcTypeCHIs.add(codeTableList.get(v).getDescChi());
 			}
 		}
@@ -367,7 +369,7 @@ public class DbReportService {
 								+ append.substring(append.length() - 2, append.length());
 						map.put("displayName", "上個月同條件相比");
 					}
-					
+
 					lastDateList.add(map);
 					map = new HashMap<String, Object>();
 				}
@@ -436,7 +438,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -469,7 +472,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -501,7 +505,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -556,7 +561,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -589,7 +595,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -622,7 +629,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -678,7 +686,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -711,7 +720,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -744,7 +754,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -800,7 +811,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -833,7 +845,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -866,7 +879,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -922,7 +936,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -955,7 +970,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -988,7 +1004,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -1066,7 +1083,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -1139,7 +1157,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -1211,7 +1230,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -1283,7 +1303,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -1355,7 +1376,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -1442,7 +1464,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -1472,18 +1495,17 @@ public class DbReportService {
 								dataMap3 = null;
 								dataMap3 = sqlQuery.getResultList();
 
-								if(dataMap3.size()>0) {
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "不分區");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}
-								else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -1491,10 +1513,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "不分區");
@@ -1528,7 +1550,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -1557,19 +1580,18 @@ public class DbReportService {
 								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
 								dataMap3 = new ArrayList<Map<String, Object>>();
 								dataMap3 = sqlQuery.getResultList();
-								
-								if(dataMap3.size()>0) {
+
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "門急診");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}
-								else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -1577,10 +1599,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "門急診");
@@ -1614,7 +1636,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -1643,19 +1666,18 @@ public class DbReportService {
 								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
 								dataMap3 = new ArrayList<Map<String, Object>>();
 								dataMap3 = sqlQuery.getResultList();
-								
-								if(dataMap3.size()>0) {
+
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "門診");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}
-								else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -1663,10 +1685,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "門診");
@@ -1700,7 +1722,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -1730,18 +1753,17 @@ public class DbReportService {
 								dataMap3 = new ArrayList<Map<String, Object>>();
 								dataMap3 = sqlQuery.getResultList();
 
-								if(dataMap3.size()>0) {
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "急診");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}
-								else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -1749,10 +1771,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "急診");
@@ -1786,7 +1808,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -1816,18 +1839,17 @@ public class DbReportService {
 								dataMap3 = new ArrayList<Map<String, Object>>();
 								dataMap3 = sqlQuery.getResultList();
 
-								if(dataMap3.size()>0) {
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "住院");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}
-								else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -1835,10 +1857,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("date", yearMonthBetweenStr.get(i));
 									dataFormatObject3.put("dataFormat", "住院");
@@ -1925,7 +1947,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -1958,7 +1981,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -1990,7 +2014,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2046,7 +2071,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2079,7 +2105,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2112,7 +2139,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2169,7 +2197,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2202,7 +2231,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2235,7 +2265,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2292,7 +2323,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2325,7 +2357,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2358,7 +2391,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2415,7 +2449,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2448,7 +2483,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2481,7 +2517,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2560,7 +2597,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2634,7 +2672,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2707,7 +2746,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2780,7 +2820,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2853,7 +2894,8 @@ public class DbReportService {
 							if (feeApplyList.get(0).equals("自費")) {
 								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 							} else {
-								where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+								where.append(
+										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 							}
 						}
 
@@ -2941,7 +2983,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -2971,18 +3014,18 @@ public class DbReportService {
 								dataMap3 = new ArrayList<Map<String, Object>>();
 								dataMap3 = sqlQuery.getResultList();
 
-								if(dataMap3.size()>0) {
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
 									dataFormatObject3.put("dataFormat", "不分區");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -2990,10 +3033,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
@@ -3001,7 +3044,7 @@ public class DbReportService {
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", emptyMaps);
 								}
-								
+
 								sqlMapListWithMedName.add(dataFormatObject3);
 
 								selectColumn = new StringBuffer("");
@@ -3028,7 +3071,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -3058,18 +3102,18 @@ public class DbReportService {
 								dataMap3 = new ArrayList<Map<String, Object>>();
 								dataMap3 = sqlQuery.getResultList();
 
-								if(dataMap3.size()>0) {
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
 									dataFormatObject3.put("dataFormat", "門急診");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -3077,10 +3121,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
@@ -3115,7 +3159,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -3145,18 +3190,18 @@ public class DbReportService {
 								dataMap3 = new ArrayList<Map<String, Object>>();
 								dataMap3 = sqlQuery.getResultList();
 
-								if(dataMap3.size()>0) {
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
 									dataFormatObject3.put("dataFormat", "門診");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -3164,10 +3209,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
@@ -3202,7 +3247,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -3232,18 +3278,18 @@ public class DbReportService {
 								dataMap3 = new ArrayList<Map<String, Object>>();
 								dataMap3 = sqlQuery.getResultList();
 
-								if(dataMap3.size()>0) {
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
 									dataFormatObject3.put("dataFormat", "急診");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -3251,10 +3297,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
@@ -3289,7 +3335,8 @@ public class DbReportService {
 									if (feeApplyList.get(0).equals("自費")) {
 										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
 									} else {
-										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE +" OR APPL_STATUS IS NULL) ");
+										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
+												+ " OR APPL_STATUS IS NULL) ");
 									}
 								}
 
@@ -3319,18 +3366,18 @@ public class DbReportService {
 								dataMap3 = new ArrayList<Map<String, Object>>();
 								dataMap3 = sqlQuery.getResultList();
 
-								if(dataMap3.size()>0) {
+								if (dataMap3.size() > 0) {
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
 									dataFormatObject3.put("dataFormat", "住院");
 									dataFormatObject3.put("medName", medNameList.get(v));
 									dataFormatObject3.put("data", dataMap3);
-								}else {
-									List<Map<String, Object>>emptyMaps=new ArrayList<Map<String,Object>>();
-									
-									for(String func:funcTypeCHIs) {
-										Map<String, Object>emptyMap=new HashMap<String, Object>();
+								} else {
+									List<Map<String, Object>> emptyMaps = new ArrayList<Map<String, Object>>();
+
+									for (String func : funcTypeCHIs) {
+										Map<String, Object> emptyMap = new HashMap<String, Object>();
 										emptyMap.put("FUNC_TYPE", "");
 										emptyMap.put("DATA_FORMAT", "");
 										emptyMap.put("QUANTITY", "0");
@@ -3338,10 +3385,10 @@ public class DbReportService {
 										emptyMap.put("DOT", "0");
 										emptyMap.put("DESC_CHI", func);
 										emptyMap.put("PRSN_ID", medNameList.get(v));
-										
+
 										emptyMaps.add(emptyMap);
 									}
-									
+
 									dataFormatObject3 = new HashMap<String, Object>();
 									dataFormatObject3.put("startDate", sd);
 									dataFormatObject3.put("endDate", ed);
@@ -3375,39 +3422,38 @@ public class DbReportService {
 		result.put("result", "success");
 		result.put("message", null);
 		result.put("codeTableList", codeTableList);
-		
+
 		if (dateType.equals("0")) {
-			
-			if(lastDateList.size() > 1) {
-				
-				for(int x=0;x<lastDateList.size()-1;x++) {
-					Integer ym1=Integer.valueOf(lastDateList.get(x).get("YM").toString());
-					String display1=lastDateList.get(x).get("displayName").toString();
-					String value1=lastDateList.get(x).get("Value").toString();
-					
-					Integer ym2=Integer.valueOf(lastDateList.get(x+1).get("YM").toString());
-					String display2=lastDateList.get(x+1).get("displayName").toString();
-					String value2=lastDateList.get(x+1).get("Value").toString();
-					
-					if(ym1>ym2) {
-						Map<String, Object>map1=new HashMap<String, Object>();
+
+			if (lastDateList.size() > 1) {
+
+				for (int x = 0; x < lastDateList.size() - 1; x++) {
+					Integer ym1 = Integer.valueOf(lastDateList.get(x).get("YM").toString());
+					String display1 = lastDateList.get(x).get("displayName").toString();
+					String value1 = lastDateList.get(x).get("Value").toString();
+
+					Integer ym2 = Integer.valueOf(lastDateList.get(x + 1).get("YM").toString());
+					String display2 = lastDateList.get(x + 1).get("displayName").toString();
+					String value2 = lastDateList.get(x + 1).get("Value").toString();
+
+					if (ym1 > ym2) {
+						Map<String, Object> map1 = new HashMap<String, Object>();
 						map1.put("YM", ym2.toString());
 						map1.put("displayName", display2);
 						map1.put("Value", value2);
 						lastDateList.set(x, map1);
-						
-						Map<String, Object>map2=new HashMap<String, Object>();
+
+						Map<String, Object> map2 = new HashMap<String, Object>();
 						map2.put("YM", ym1.toString());
 						map2.put("displayName", display1);
 						map2.put("Value", value1);
-						lastDateList.set(x+1, map2);
+						lastDateList.set(x + 1, map2);
 					}
 				}
 			}
-			
+
 			result.put("lastDate", duplicateRemove(lastDateList));
-		}
-		else if(dateType.equals("1")) {
+		} else if (dateType.equals("1")) {
 			result.put("lastDate", lastDateList);
 		}
 
@@ -7783,6 +7829,332 @@ public class DbReportService {
 
 	}
 
+	/**
+	 * 取得核刪資料
+	 * 
+	 * @param year
+	 * @param month
+	 * @param dataFormats
+	 * @param funcTypes
+	 * @param medNames
+	 * @param icdAll
+	 * @param payCode
+	 * @param inhCode
+	 * @param isLastM
+	 * @param isLastY
+	 * @return
+	 */
+	public DeductedNoteQueryConditionResponse getDeductedNoteQueryCondition(String year, String month, String dataFormats,
+			String funcTypes, String medNames, String icdAll, String payCode, String inhCode, boolean isLastM,
+			boolean isLastY) {
+
+		Map<String, Object> result = new HashMap<String, Object>();
+		Map<String, Object> ret = new HashMap<String, Object>();
+		List<Map<String, Object>> resList = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> sqlMapList2 = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> sqlMapList3 = new ArrayList<Map<String, Object>>();
+
+		/// 就醫類別
+		List<String> dataformatList = new ArrayList<String>();
+		/// 科別
+		List<String> funcTypeList = new ArrayList<String>();
+		String funcTypeSql = "";
+		/// 醫護姓名
+		List<String> medNameList = new ArrayList<String>();
+		String medNameSql = "";
+		/// 不分區ICD碼
+		List<String> icdAllList = new ArrayList<String>();
+		/// 如果dataformat有值
+		if (dataFormats != null && dataFormats.length() > 0) {
+			String[] dataformatArr = StringUtility.splitBySpace(dataFormats);
+			for (String str : dataformatArr) {
+				dataformatList.add(str);
+			}
+		}
+		/// 如果functype有值
+		if (funcTypes != null && funcTypes.length() > 0) {
+			String[] funcTypeArr = StringUtility.splitBySpace(funcTypes);
+			for (String str : funcTypeArr) {
+				funcTypeList.add(str);
+				funcTypeSql += "'" + str + "',";
+			}
+			funcTypeSql = funcTypeSql.substring(0, funcTypeSql.length() - 1);
+		}
+		/// 如果medNames有值
+		if (medNames != null && medNames.length() > 0) {
+			String[] medNameArr = StringUtility.splitBySpace(medNames);
+			for (String str : medNameArr) {
+				medNameList.add(str);
+				medNameSql += "'" + str + "',";
+			}
+			medNameSql = medNameSql.substring(0, medNameSql.length() - 1);
+		}
+		/// 如果icdAll有值
+		if (icdAll != null && icdAll.length() > 0) {
+			String[] icdAllArr = StringUtility.splitBySpace(icdAll);
+			for (String str : icdAllArr) {
+				icdAllList.add(str);
+			}
+		}
+
+		String[] years = StringUtility.splitBySpace(year);
+		String[] months = StringUtility.splitBySpace(month);
+		List<Object> yList = Arrays.asList(years);
+		List<Object> mList = Arrays.asList(months);
+		Map<String, Object> map = new HashMap<String, Object>();
+		List<Map<String, Object>> mapList = new ArrayList<Map<String, Object>>();
+		/// 如果年月為多個，則不能用上個月同條件相比
+		if (years.length > 1) {
+			isLastM = false;
+		}
+		if (isLastM) {
+			for (String str : months) {
+				int m = Integer.valueOf(str.replace("0", ""));
+				int y = Integer.valueOf(years[0]);
+				/// 如果是一月的話
+				if (m == 1) {
+					y -= 1;
+					/// 跨年份
+					yList.add(y);
+					mList.add(12);
+					map.put("YM", String.valueOf(y * 100 + 12));
+					map.put("Value", "M");
+					String append = String.valueOf((y + 1) * 100 + m);
+					append = append.substring(0, append.length() - 2) + "/"
+							+ append.substring(append.length() - 2, append.length());
+					map.put("displayName", "上個月同條件相比");
+				} else {
+					yList.add(years[0]);
+					mList.add(m - 1);
+					map.put("YM", String.valueOf((y * 100) + (m - 1)));
+					map.put("Value", "M");
+					String append = String.valueOf((y) * 100 + m);
+					append = append.substring(0, append.length() - 2) + "/"
+							+ append.substring(append.length() - 2, append.length());
+					map.put("displayName", "上個月同條件相比");
+				}
+			}
+			mapList.add(map);
+			map = new HashMap<String, Object>();
+		}
+
+		if (isLastY) {
+			int i = 0;
+			for (String str : years) {
+				int y = Integer.valueOf(str);
+				int m = Integer.valueOf(months[i].replace("0", ""));
+				y -= 1;
+				yList.add(y);
+				mList.add(m);
+				map.put("YM", String.valueOf((y * 100) + m));
+				map.put("Value", "Y");
+				String append = String.valueOf((y + 1) * 100 + m);
+				append = append.substring(0, append.length() - 2) + "/"
+						+ append.substring(append.length() - 2, append.length());
+				map.put("displayName", "去年同期時段相比");
+				mapList.add(map);
+				map = new HashMap<String, Object>();
+				i++;
+
+			}
+		}
+		List<String> sList = new ArrayList<String>();
+		for (int i = 0; i < yList.size(); i++) {
+			sList.add(yList.get(i).toString() + mList.get(i).toString());
+		}
+
+		List<String> yearMonthBetweenStr = findYearMonthStr(yList, mList);
+		/// 這裡做排序，name才會對應正確值
+		Collections.sort(yearMonthBetweenStr);
+
+		/// 查詢欄位
+		StringBuffer selectColumn = new StringBuffer("");
+		/// 條件
+		StringBuffer where = new StringBuffer("");
+		/// groupBy
+		StringBuffer groupBy = new StringBuffer("");
+		/// orderBy
+		StringBuffer orderBy = new StringBuffer("");
+		/// 查詢欄位
+		StringBuffer selectColumnOp = new StringBuffer("");
+		/// 條件
+		StringBuffer whereOp = new StringBuffer("");
+		/// groupBy
+		StringBuffer groupByOp = new StringBuffer("");
+		/// 查詢欄位
+		StringBuffer selectColumnIp = new StringBuffer("");
+		/// 條件
+		StringBuffer whereIp = new StringBuffer("");
+		/// groupBy
+		StringBuffer groupByIp = new StringBuffer("");
+
+		for (int i = 0; i < yearMonthBetweenStr.size(); i++) {
+			selectColumn.append(" SELECT * FROM ");
+			selectColumn.append(
+					" (SELECT COALESCE(SUM(CAST(VAL AS INT)),0) AS EXTRACTCASE  FROM PARAMETERS WHERE NOTE = '核刪抽件數' AND END_DATE  LIKE  CONCAT('"
+							+ yearMonthBetweenStr.get(i) + "','%'))a, ");
+			selectColumnOp.append(
+					" (SELECT COALESCE(SUM(DEDUCTED_AMOUNT),0) AS DEDUCTED_AMOUNT_OP, COALESCE(SUM(DEDUCTED_QUANTITY),0) AS DEDUCTED_QUANTITY_OP, COALESCE(SUM(ROLLBACK_M),0) AS ROLLBACK_M_OP FROM DEDUCTED_NOTE, MR WHERE MR.ID =  DEDUCTED_NOTE.MR_ID AND DATA_FORMAT = '10'  AND DEDUCTED_DATE LIKE  CONCAT('"
+							+ yearMonthBetweenStr.get(i) + "','%') ");
+			selectColumnIp.append(
+					" (SELECT COALESCE(SUM(DEDUCTED_AMOUNT),0) AS DEDUCTED_AMOUNT_IP, COALESCE(SUM(DEDUCTED_QUANTITY),0) AS DEDUCTED_QUANTITY_IP, COALESCE(SUM(ROLLBACK_M),0) AS ROLLBACK_M_IP FROM DEDUCTED_NOTE, MR WHERE MR.ID =  DEDUCTED_NOTE.MR_ID AND DATA_FORMAT = '20'  AND DEDUCTED_DATE LIKE  CONCAT('"
+							+ yearMonthBetweenStr.get(i) + "','%') ");
+			if (funcTypeList.size() > 0)
+				where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+			if (medNameList.size() > 0)
+				where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+			if (icdAllList.size() > 0) {
+				for (String icd : icdAllList) {
+					where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + icd + "'),'%') ");
+				}
+			}
+			if (payCode != null && payCode.length() > 0)
+				where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+			if (inhCode != null && inhCode.length() > 0)
+				where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+			selectColumnOp.append(where);
+			selectColumnOp.append(" )op, ");
+			selectColumnIp.append(where);
+			selectColumnIp.append(" )ip, ");
+
+			for (String str : dataformatList) {
+				switch (str) {
+				case "all":
+					selectColumn.append(selectColumnOp);
+					selectColumn.append(selectColumnIp);
+					break;
+				case "totalop":
+					if (!dataformatList.contains("all")) {
+
+						selectColumn.append(selectColumnOp);
+					}
+					break;
+				case "ip":
+					if (!dataformatList.contains("all")) {
+
+						selectColumn.append(selectColumnIp);
+					}
+					break;
+				}
+			}
+			//// 最後添加輸入日期
+			selectColumn.append(" (SELECT DISTINCT '" + yearMonthBetweenStr.get(i) + "' AS DATE FROM MR) x ");
+
+			/// 傳統sql語法組成資料
+			Query sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+			sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> dataMap = sqlQuery.getResultList();
+			sqlMapList.addAll(dataMap);
+			selectColumn = new StringBuffer("");
+			selectColumnIp = new StringBuffer("");
+			selectColumnOp = new StringBuffer("");
+			entityManager.close();
+
+			/// 第二段sql
+			selectColumn.append(" SELECT * FROM ");
+			
+			selectColumnOp.append(
+					" (SELECT DATA_FORMAT AS DATA_FORMAT, FUNC_TYPE AS FUNYPE, DESC_CHI AS DESC_CHI, PRSN_ID AS PRSN_ID, INH_CLINIC_ID AS INH_CLINIC_ID, DEDUCTED_NOTE.CODE AS CODE, DEDUCTED_ORDER AS DEDUCTED_ORDER, COALESCE(DEDUCTED_QUANTITY,0) AS DEDUCTED_QUANTITY, COALESCE(DEDUCTED_AMOUNT,0) AS DEDUCTED_AMOUNT, COALESCE(ROLLBACK_M,0) AS ROLLBACK_M, AFR_NO_PAY_CODE AS AFR_NO_PAY_CODE, COALESCE(AFR_PAY_QUANTITY,0) AS AFR_PAY_QUANTITY, COALESCE(AFR_PAY_AMOUNT,0) AS AFR_PAY_AMOUNT  FROM DEDUCTED_NOTE, MR, CODE_TABLE WHERE MR.ID = DEDUCTED_NOTE.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT = 'FUNC_TYPE' AND MR.DATA_FORMAT = '10' AND DEDUCTED_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr.get(i) + "','%') ");
+			selectColumnIp.append(
+					" (SELECT DATA_FORMAT AS DATA_FORMAT, FUNC_TYPE AS FUNC_TYPE, DESC_CHI AS DESC_CHI, PRSN_ID AS PRSN_ID, INH_CLINIC_ID AS INH_CLINIC_ID, DEDUCTED_NOTE.CODE AS CODE, DEDUCTED_ORDER AS DEDUCTED_ORDER, COALESCE(DEDUCTED_QUANTITY,0) AS DEDUCTED_QUANTITY, COALESCE(DEDUCTED_AMOUNT,0) AS DEDUCTED_AMOUNT, COALESCE(ROLLBACK_M,0) AS ROLLBACK_M, AFR_NO_PAY_CODE AS AFR_NO_PAY_CODE, COALESCE(AFR_PAY_QUANTITY,0) AS AFR_PAY_QUANTITY, COALESCE(AFR_PAY_AMOUNT,0) AS AFR_PAY_AMOUNT  FROM DEDUCTED_NOTE, MR, CODE_TABLE WHERE MR.ID = DEDUCTED_NOTE.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT = 'FUNC_TYPE' AND MR.DATA_FORMAT = '20' AND DEDUCTED_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr.get(i) + "','%') ");
+			selectColumnOp.append(where);
+			selectColumnOp.append(" )op, ");
+			selectColumnIp.append(where);
+			selectColumnIp.append(" )ip, ");
+
+			if((dataformatList.contains("all")) || (dataformatList.contains("totalop") && dataformatList.contains("ip"))) {
+				selectColumn.append(
+						" (SELECT DATA_FORMAT AS DATA_FORMAT, FUNC_TYPE AS FUNC_TYPE, DESC_CHI AS DESC_CHI, PRSN_ID AS PRSN_ID, INH_CLINIC_ID AS INH_CLINIC_ID, DEDUCTED_NOTE.CODE AS CODE, DEDUCTED_ORDER AS DEDUCTED_ORDER, COALESCE(DEDUCTED_QUANTITY,0) AS DEDUCTED_QUANTITY, COALESCE(DEDUCTED_AMOUNT,0) AS DEDUCTED_AMOUNT, COALESCE(ROLLBACK_M,0) AS ROLLBACK_M, AFR_NO_PAY_CODE AS AFR_NO_PAY_CODE, COALESCE(AFR_PAY_QUANTITY,0) AS AFR_PAY_QUANTITY, COALESCE(AFR_PAY_AMOUNT,0) AS AFR_PAY_AMOUNT  FROM DEDUCTED_NOTE, MR, CODE_TABLE WHERE MR.ID = DEDUCTED_NOTE.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT = 'FUNC_TYPE' AND DEDUCTED_DATE LIKE CONCAT('"
+								+ yearMonthBetweenStr.get(i) + "','%') ");
+				selectColumn.append(where);
+				selectColumn.append(" )a, ");
+			}
+			else if((!dataformatList.contains("all")) && (!dataformatList.contains("ip") && !dataformatList.contains("em") && !dataformatList.contains("op"))) {
+				selectColumn.append(selectColumnOp);
+			}
+			else if((!dataformatList.contains("all")) && (!dataformatList.contains("totalop") && !dataformatList.contains("em") && !dataformatList.contains("op"))) {
+				selectColumn.append(selectColumnIp);
+			}
+			
+			//// 最後添加輸入日期
+			selectColumn.append(" (SELECT DISTINCT '" + yearMonthBetweenStr.get(i) + "' AS DATE FROM MR) x ");
+			/// 傳統sql語法組成資料
+			sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+			sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> dataMap2 = sqlQuery.getResultList();
+			sqlMapList2.addAll(dataMap2);
+			selectColumn = new StringBuffer("");
+			selectColumnIp = new StringBuffer("");
+			selectColumnOp = new StringBuffer("");
+			entityManager.close();
+
+			/// 第三組sql
+			selectColumn.append(
+					" SELECT DATA_FORMAT,CODE,SUM(DEDUCTED_AMOUNT) AS DEDUCTED_AMOUNT ,SUM(DEDUCTED_QUANTITY) AS DEDUCTED_QUANTITY FROM DEDUCTED_NOTE,MR WHERE MR.ID = DEDUCTED_NOTE.MR_ID AND DEDUCTED_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr.get(i) + "','%')");
+			selectColumn.append(where);
+			groupBy.append(" GROUP BY CODE,DATA_FORMAT ");
+			selectColumn.append(groupBy);
+
+			/// 傳統sql語法組成資料
+			sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+			sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> dataMap3 = sqlQuery.getResultList();
+			sqlMapList3.addAll(dataMap3);
+			selectColumn = new StringBuffer("");
+			selectColumnIp = new StringBuffer("");
+			selectColumnOp = new StringBuffer("");
+			where = new StringBuffer("");
+			groupBy = new StringBuffer("");
+			entityManager.close();
+
+			ret.put("info", sqlMapList);
+			ret.put("list", sqlMapList2);
+			ret.put("codes", sqlMapList3);
+			ret.put("DATE", yearMonthBetweenStr.get(i));
+			resList.add(ret);
+			ret = new HashMap<String, Object>();
+			sqlMapList = new ArrayList<Map<String,Object>>();
+			sqlMapList2 = new ArrayList<Map<String,Object>>();
+			sqlMapList3 = new ArrayList<Map<String,Object>>();
+		}
+
+		if (mapList.size() > 0) {
+			for (int j = 0; j < mapList.size(); j++) {
+				String ym = mapList.get(j).get("YM").toString();
+				String displayName = mapList.get(j).get("displayName").toString();
+				for (int i = 0; i < resList.size(); i++) {
+					String date = resList.get(i).get("DATE").toString().replace("-", "");
+					if (ym.equals(date)) {
+						resList.get(i).put("disPlayName", displayName);
+						continue;
+					}
+					if (resList.get(i).get("disPlayName") == null) {
+						resList.get(i).put("disPlayName", "");
+					}
+				}
+			}
+		} else {
+			for (int i = 0; i < resList.size(); i++) {
+				if (resList.get(i).get("disPlayName") == null) {
+					resList.get(i).put("disPlayName", "");
+				}
+			}
+		}
+		DeductedNoteQueryConditionResponse response = deductedMaptoObj(resList);
+
+		
+
+		return response;
+	}
+
 	private List<Integer> findYearMonth(List<Object> years, List<Object> quarters) {
 
 		List<Integer> resList = new ArrayList<Integer>();
@@ -7797,13 +8169,6 @@ public class DbReportService {
 		return resList;
 	}
 
-	/**
-	 * 輸出 2020-01，sql使用Date like '2020-01%'
-	 *
-	 * @param years
-	 * @param month
-	 * @return
-	 */
 	private List<String> findYearMonthStr(List<Object> years, List<Object> month) {
 
 		List<String> resList = new ArrayList<String>();
@@ -8599,25 +8964,22 @@ public class DbReportService {
 	}
 
 	public Comparator<OwnExpenseQueryConditionDetail> mapComparatorFT = new Comparator<OwnExpenseQueryConditionDetail>() {
-		public int compare(OwnExpenseQueryConditionDetail m1, OwnExpenseQueryConditionDetail m2) {
-			return m1.getFuncType().compareTo(m2.getFuncType());
+		public int compare(OwnExpenseQueryConditionDetail m1,OwnExpenseQueryConditionDetail m2){return m1.getFuncType().compareTo(m2.getFuncType());}};
+
+	public List<Map<String, Object>> duplicateRemove(List<Map<String, Object>> list) {
+
+		for (int i = 0; i < list.size(); i++) {
+			Map<String, Object> m1 = list.get(i);
+
+			for (int j = i + 1; j < list.size(); j++) {
+				Map<String, Object> m2 = list.get(j);
+				if (m1.equals(m2)) {
+					list.remove(j);
+					continue;
+				}
+			}
 		}
-	};
-	
-	public List<Map<String, Object>> duplicateRemove(List<Map<String, Object>> list){
-		
-	      for (int i = 0; i < list.size(); i++ ) {
-	          Map<String, Object> m1 = list.get(i);
-	          
-	          for (int j = i+1; j < list.size(); j++ ) {
-		          Map<String, Object> m2 = list.get(j);
-		          if(m1.equals(m2)){
-		          list.remove(j);
-		          continue;
-		          }
-	          }
-	      }
-		
+
 		return list;
 	}
 
@@ -8665,4 +9027,97 @@ public class DbReportService {
 
 		return result;
 	}
+
+	public DeductedNoteQueryConditionResponse deductedMaptoObj(List<Map<String,Object>> sqlList) {
+		DeductedNoteQueryConditionResponse result = new DeductedNoteQueryConditionResponse();
+		DeductedNoteQueryCondition deductedModel = new DeductedNoteQueryCondition();
+		List<DeductedNoteQueryCondition> deductedModeList = new ArrayList<DeductedNoteQueryCondition>();
+		DeductedNoteQueryConditionInfo deductedInfo = new DeductedNoteQueryConditionInfo();
+		List<DeductedNoteQueryConditionInfo> infoList = new ArrayList<DeductedNoteQueryConditionInfo>();
+		DeductedNoteQueryConditionList deductedList = new DeductedNoteQueryConditionList();
+		List<DeductedNoteQueryConditionList> listList = new ArrayList<DeductedNoteQueryConditionList>();
+		DeductedNoteQueryConditionCode deductedCode = new DeductedNoteQueryConditionCode();
+		List<DeductedNoteQueryConditionCode> codeList = new ArrayList<DeductedNoteQueryConditionCode>();
+		if(sqlList.size() > 0) {
+			for(int i=0; i < sqlList.size(); i++) {
+				deductedModel.setDate(sqlList.get(i).get("DATE").toString());
+				deductedModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());
+				@SuppressWarnings("unchecked")
+				List<Map<String,Object>> info = (List<Map<String, Object>>) sqlList.get(i).get("info");
+				@SuppressWarnings("unchecked")
+				List<Map<String,Object>> list = (List<Map<String, Object>>) sqlList.get(i).get("list");
+				@SuppressWarnings("unchecked")
+				List<Map<String,Object>> codes = (List<Map<String, Object>>) sqlList.get(i).get("codes");
+				
+				if(info.size() > 0) {
+					for(int j=0; j < info.size(); j++) {
+						deductedInfo.setDate(info.get(j).get("DATE").toString());
+						if(info.get(j).get("DEDUCTED_AMOUNT_OP") != null) {
+							deductedInfo.setDeductedAmountOp(Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_OP").toString()));
+							deductedInfo.setDeductedQuantityOp(Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_OP").toString()));
+							deductedInfo.setRollbackMOp(Long.valueOf(info.get(j).get("ROLLBACK_M_OP").toString()));
+						}
+						if(info.get(j).get("DEDUCTED_AMOUNT_IP") != null) {
+							deductedInfo.setDeductedAmountIp(Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_IP").toString()));
+							deductedInfo.setDeductedQuantityIp(Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_IP").toString()));
+							deductedInfo.setRollbackMIp(Long.valueOf(info.get(j).get("ROLLBACK_M_IP").toString()));
+						}
+						deductedInfo.setExtractCase(Long.valueOf(info.get(j).get("EXTRACTCASE").toString()));
+						infoList.add(deductedInfo);
+						deductedInfo = new DeductedNoteQueryConditionInfo();
+					}
+					deductedModel.setDeductedNoteInfo(infoList);
+				}
+				
+				if(list.size() > 0) {
+					for(int k=0; k < list.size(); k++) {
+						if(list.get(k).get("DATA_FORMAT") != null) {
+							
+							deductedList.setDataFormat(list.get(k).get("DATA_FORMAT").toString());
+							deductedList.setFuncType(list.get(k).get("FUNC_TYPE").toString());
+							deductedList.setFuncTypeName(list.get(k).get("DESC_CHI").toString());
+							deductedList.setAfrNoPayCode(list.get(k).get("AFR_NO_PAY_CODE") == null ? "" : list.get(k).get("AFR_NO_PAY_CODE").toString());
+							deductedList.setCode(list.get(k).get("CODE").toString());
+							deductedList.setDeductedOrder(list.get(k).get("DEDUCTED_ORDER").toString());
+							deductedList.setPrsnId(list.get(k).get("PRSN_ID").toString());
+							deductedList.setInhClinicId(list.get(k).get("INH_CLINIC_ID") == null ? "" : list.get(k).get("INH_CLINIC_ID").toString());
+							deductedList.setDeductedQuantity(Long.valueOf(list.get(k).get("DEDUCTED_QUANTITY").toString()));
+							deductedList.setDeductedAmount(Long.valueOf(list.get(k).get("DEDUCTED_AMOUNT").toString()));
+							deductedList.setRollbackM(Long.valueOf(list.get(k).get("ROLLBACK_M").toString()));
+							deductedList.setAfrPayAmount(Long.valueOf(list.get(k).get("ROLLBACK_M").toString()));
+							deductedList.setAfrPayQuantity(Long.valueOf(list.get(k).get("AFR_PAY_AMOUNT").toString()));
+							listList.add(deductedList);
+							deductedList = new DeductedNoteQueryConditionList();
+						}
+					}
+					deductedModel.setDeductedList(listList);
+				}
+				
+				if(codes.size() > 0) {
+					for(int l=0; l < codes.size(); l++) {
+						if(codes.get(l).get("DATA_FORMAT") != null) {
+							
+							deductedCode.setCode(codes.get(l).get("CODE").toString());
+							deductedCode.setDataFormat(codes.get(l).get("DATA_FORMAT").toString());
+							deductedCode.setDeductedQuantity(Long.valueOf(codes.get(l).get("DEDUCTED_QUANTITY").toString()));
+							deductedCode.setDeductedAmount(Long.valueOf(codes.get(l).get("DEDUCTED_AMOUNT").toString()));
+							codeList.add(deductedCode);
+							deductedCode = new DeductedNoteQueryConditionCode();
+						}
+					}
+					deductedModel.setDeductedCode(codeList);
+				}
+				deductedModeList.add(deductedModel);
+				deductedModel = new DeductedNoteQueryCondition();
+				infoList = new ArrayList<DeductedNoteQueryConditionInfo>();
+				listList = new ArrayList<DeductedNoteQueryConditionList>();
+				codeList = new ArrayList<DeductedNoteQueryConditionCode>();
+			}
+			
+		}
+		result.setData(deductedModeList);
+		
+		return result;
+	}
+
 }

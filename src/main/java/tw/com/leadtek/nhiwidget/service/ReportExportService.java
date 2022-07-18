@@ -3,7 +3,9 @@ package tw.com.leadtek.nhiwidget.service;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -4704,25 +4706,25 @@ public class ReportExportService {
 			for (int i = 1; i < 3; i++) {
 				addRowCell(rowA5, i, "", cellStyle);
 			}
-			addRowCell(rowA5, 3, String.valueOf(all), cellStyle);
-			addRowCell(rowA5, 4, String.valueOf(opem), cellStyle);
-			addRowCell(rowA5, 5, String.valueOf(opMorning), cellStyle);
-			addRowCell(rowA5, 6, String.valueOf(opAfternoon), cellStyle);
-			addRowCell(rowA5, 7, String.valueOf(opNight), cellStyle);
-			addRowCell(rowA5, 8, String.valueOf(em), cellStyle);
-			addRowCell(rowA5, 9, String.valueOf(ip), cellStyle);
+			addRowCell(rowA5, 3, addThousandths(all), cellStyle);
+			addRowCell(rowA5, 4, addThousandths(opem), cellStyle);
+			addRowCell(rowA5, 5, addThousandths(opMorning), cellStyle);
+			addRowCell(rowA5, 6, addThousandths(opAfternoon), cellStyle);
+			addRowCell(rowA5, 7, addThousandths(opNight), cellStyle);
+			addRowCell(rowA5, 8, addThousandths(em), cellStyle);
+			addRowCell(rowA5, 9, addThousandths(ip), cellStyle);
 
 			addRowCell(rowA6, 0, "申報總點數", cellStyle);
 			for (int i = 1; i < 3; i++) {
 				addRowCell(rowA6, i, "", cellStyle);
 			}
-			addRowCell(rowA6, 3, String.valueOf(all_appl), cellStyle);
-			addRowCell(rowA6, 4, String.valueOf(opem_appl), cellStyle);
-			addRowCell(rowA6, 5, String.valueOf(opMorning_appl), cellStyle);
-			addRowCell(rowA6, 6, String.valueOf(opAfternoon_appl), cellStyle);
-			addRowCell(rowA6, 7, String.valueOf(opNight_appl), cellStyle);
-			addRowCell(rowA6, 8, String.valueOf(em_appl), cellStyle);
-			addRowCell(rowA6, 9, String.valueOf(ip_appl), cellStyle);
+			addRowCell(rowA6, 3, addThousandths(all_appl), cellStyle);
+			addRowCell(rowA6, 4, addThousandths(opem_appl), cellStyle);
+			addRowCell(rowA6, 5, addThousandths(opMorning_appl), cellStyle);
+			addRowCell(rowA6, 6, addThousandths(opAfternoon_appl), cellStyle);
+			addRowCell(rowA6, 7, addThousandths(opNight_appl), cellStyle);
+			addRowCell(rowA6, 8, addThousandths(em_appl), cellStyle);
+			addRowCell(rowA6, 9, addThousandths(ip_appl), cellStyle);
 
 			addRowCell(rowA8, 0, "趨勢統計截止人次", cellStyle);
 			for (int i = 1; i < 11; i++) {
@@ -4740,53 +4742,53 @@ public class ReportExportService {
 			for (int i = 1; i < 3; i++) {
 				addRowCell(rowA10, i, "", cellStyle);
 			}
-			addRowCell(rowA10, 3, total_all.toString(), cellStyle);
-			addRowCell(rowA10, 4, total_opem.toString(), cellStyle);
-			addRowCell(rowA10, 5, total_opMorning.toString(), cellStyle);
-			addRowCell(rowA10, 6, total_opAfternoon.toString(), cellStyle);
-			addRowCell(rowA10, 7, total_opNight.toString(), cellStyle);
-			addRowCell(rowA10, 8, total_em.toString(), cellStyle);
-			addRowCell(rowA10, 9, total_ip.toString(), cellStyle);
-			addRowCell(rowA10, 10, total_leave.toString(), cellStyle);
+			addRowCell(rowA10, 3, addThousandths(total_all), cellStyle);
+			addRowCell(rowA10, 4, addThousandths(total_opem), cellStyle);
+			addRowCell(rowA10, 5, addThousandths(total_opMorning), cellStyle);
+			addRowCell(rowA10, 6, addThousandths(total_opAfternoon), cellStyle);
+			addRowCell(rowA10, 7, addThousandths(total_opNight), cellStyle);
+			addRowCell(rowA10, 8, addThousandths(total_em), cellStyle);
+			addRowCell(rowA10, 9, addThousandths(total_ip), cellStyle);
+			addRowCell(rowA10, 10,addThousandths(total_leave), cellStyle);
 
 			addRowCell(rowA11, 0, "手術人次", cellStyle);
 			for (int i = 1; i < 3; i++) {
 				addRowCell(rowA11, i, "", cellStyle);
 			}
-			addRowCell(rowA11, 3, surgery_all.toString(), cellStyle);
-			addRowCell(rowA11, 4, surgery_opem.toString(), cellStyle);
-			addRowCell(rowA11, 5, surgery_opMorning.toString(), cellStyle);
-			addRowCell(rowA11, 6, surgery_opAfternoon.toString(), cellStyle);
-			addRowCell(rowA11, 7, surgery_opNight.toString(), cellStyle);
-			addRowCell(rowA11, 8, surgery_em.toString(), cellStyle);
-			addRowCell(rowA11, 9, surgery_ip.toString(), cellStyle);
-			addRowCell(rowA11, 10, surgery_leave.toString(), cellStyle);
+			addRowCell(rowA11, 3, addThousandths(surgery_all), cellStyle);
+			addRowCell(rowA11, 4, addThousandths(surgery_opem), cellStyle);
+			addRowCell(rowA11, 5, addThousandths(surgery_opMorning), cellStyle);
+			addRowCell(rowA11, 6, addThousandths(surgery_opAfternoon), cellStyle);
+			addRowCell(rowA11, 7, addThousandths(surgery_opNight), cellStyle);
+			addRowCell(rowA11, 8, addThousandths(surgery_em), cellStyle);
+			addRowCell(rowA11, 9, addThousandths(surgery_ip), cellStyle);
+			addRowCell(rowA11, 10,addThousandths(surgery_leave), cellStyle);
 
 			addRowCell(rowA12, 0, "上月同區間總人次相比差額", cellStyle);
 			for (int i = 1; i < 3; i++) {
 				addRowCell(rowA12, i, "", cellStyle);
 			}
-			addRowCell(rowA12, 3, diff_all.toString(), cellStyle);
-			addRowCell(rowA12, 4, diff_opem.toString(), cellStyle);
-			addRowCell(rowA12, 5, diff_opMorning.toString(), cellStyle);
-			addRowCell(rowA12, 6, diff_opAfternoon.toString(), cellStyle);
-			addRowCell(rowA12, 7, diff_opNight.toString(), cellStyle);
-			addRowCell(rowA12, 8, diff_em.toString(), cellStyle);
-			addRowCell(rowA12, 9, diff_ip.toString(), cellStyle);
-			addRowCell(rowA12, 10, diff_leave.toString(), cellStyle);
+			addRowCell(rowA12, 3, addThousandths(diff_all), cellStyle);
+			addRowCell(rowA12, 4, addThousandths(diff_opem), cellStyle);
+			addRowCell(rowA12, 5, addThousandths(diff_opMorning), cellStyle);
+			addRowCell(rowA12, 6, addThousandths(diff_opAfternoon), cellStyle);
+			addRowCell(rowA12, 7, addThousandths(diff_opNight), cellStyle);
+			addRowCell(rowA12, 8, addThousandths(diff_em), cellStyle);
+			addRowCell(rowA12, 9, addThousandths(diff_ip), cellStyle);
+			addRowCell(rowA12, 10,addThousandths(diff_leave), cellStyle);
 
 			addRowCell(rowA13, 0, "上月同區間總差額率", cellStyle);
 			for (int i = 1; i < 3; i++) {
 				addRowCell(rowA13, i, "", cellStyle);
 			}
-			addRowCell(rowA13, 3, percentAll.toString(), cellStyle);
-			addRowCell(rowA13, 4, percentOpem.toString(), cellStyle);
-			addRowCell(rowA13, 5, percentOpMorning.toString(), cellStyle);
-			addRowCell(rowA13, 6, percentOpAfternoon.toString(), cellStyle);
-			addRowCell(rowA13, 7, percentOpNight.toString(), cellStyle);
-			addRowCell(rowA13, 8, percentEm.toString(), cellStyle);
-			addRowCell(rowA13, 9, percentIp.toString(), cellStyle);
-			addRowCell(rowA13, 10, percentLeave.toString(), cellStyle);
+			addRowCell(rowA13, 3, convertToInteger(percentAll), cellStyle);
+			addRowCell(rowA13, 4, convertToInteger(percentOpem), cellStyle);
+			addRowCell(rowA13, 5, convertToInteger(percentOpMorning), cellStyle);
+			addRowCell(rowA13, 6, convertToInteger(percentOpAfternoon), cellStyle);
+			addRowCell(rowA13, 7, convertToInteger(percentOpNight), cellStyle);
+			addRowCell(rowA13, 8, convertToInteger(percentEm), cellStyle);
+			addRowCell(rowA13, 9, convertToInteger(percentIp), cellStyle);
+			addRowCell(rowA13, 10, convertToInteger(percentLeave), cellStyle);
 
 			/* 新建工作表 人次趨勢圖(全院) */
 			HSSFSheet allClassSheet = workbook.createSheet("人次趨勢圖(全院)");
@@ -4824,7 +4826,7 @@ public class ReportExportService {
 					for (int i = 0; i < names.size(); i++) {
 						HSSFRow row_head3 = allClassSheet.createRow(i + 3);
 						addRowCell(row_head3, 0, names.get(i), cellStyle_left);
-						addRowCell(row_head3, 1, values.get(i).toString(), cellStyle_left);
+						addRowCell(row_head3, 1, addThousandths(values.get(i)), cellStyle_left);
 					}
 				}
 
@@ -4838,7 +4840,7 @@ public class ReportExportService {
 					for (int i = 0; i < names.size(); i++) {
 						HSSFRow row_head3 = allClassSheet.getRow(i + 3);
 						addRowCell(row_head3, 2, names.get(i), cellStyle_left);
-						addRowCell(row_head3, 3, values.get(i).toString(), cellStyle_left);
+						addRowCell(row_head3, 3, addThousandths(values.get(i)), cellStyle_left);
 					}
 				}
 			}
@@ -4851,7 +4853,7 @@ public class ReportExportService {
 					for (int i = 0; i < names.size(); i++) {
 						HSSFRow row_head3 = allClassSheet.getRow(i + 3);
 						addRowCell(row_head3, 4, names.get(i), cellStyle_left);
-						addRowCell(row_head3, 5, values.get(i).toString(), cellStyle_left);
+						addRowCell(row_head3, 5, addThousandths(values.get(i)), cellStyle_left);
 					}
 				}
 			}
@@ -4896,7 +4898,7 @@ public class ReportExportService {
 				for (int i = 0; i < names.size(); i++) {
 					HSSFRow row_head3 = singleClassSheet.createRow(title + i + 3);
 					addRowCell(row_head3, 0, names.get(i), cellStyle_left);
-					addRowCell(row_head3, 1, values.get(i).toString(), cellStyle_left);
+					addRowCell(row_head3, 1, addThousandths(values.get(i)), cellStyle_left);
 				}
 
 				index++;
@@ -4914,7 +4916,7 @@ public class ReportExportService {
 				for (int i = 0; i < names.size(); i++) {
 					HSSFRow row_head3 = singleClassSheet.getRow(title + i + 3);
 					addRowCell(row_head3, 2, names.get(i), cellStyle_left);
-					addRowCell(row_head3, 3, values.get(i).toString(), cellStyle_left);
+					addRowCell(row_head3, 3, addThousandths(values.get(i)), cellStyle_left);
 				}
 
 				index++;
@@ -4932,14 +4934,19 @@ public class ReportExportService {
 				for (int i = 0; i < names.size(); i++) {
 					HSSFRow row_head3 = singleClassSheet.getRow(title + i + 3);
 					addRowCell(row_head3, 4, names.get(i), cellStyle_left);
-					addRowCell(row_head3, 5, values.get(i).toString(), cellStyle_left);
+					addRowCell(row_head3, 5, addThousandths(values.get(i)), cellStyle_left);
 				}
 
 				index++;
 			}
+			
+			StringBuffer dateBetween=new StringBuffer();
+			dateBetween.append(sdate.replaceAll("\\/", "-"));
+			dateBetween.append("至");
+			dateBetween.append(edate.replaceAll("\\/", "-"));
 
 			// 產生報表
-			String fileNameStr = "門急診_住院_出院人次變化" + "_" + year + "_" + week;
+			String fileNameStr = "門急診_住院_出院人次變化" + "_" + dateBetween.toString();
 			String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
 			String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
 					? FILE_PATH + "\\" + fileName
@@ -7245,4 +7252,18 @@ public class ReportExportService {
 
 	}
 
+	public String convertToInteger(Float num) {
+		int scale = 0;//設定位數
+		int roundingMode = 4;//表示四捨五入,可以選擇其他舍值方式,例如去尾,等等.
+		BigDecimal bd = new BigDecimal((double)num);
+		bd = bd.setScale(scale,roundingMode);
+		num = bd.floatValue();
+		
+		return num.toString().replaceAll("\\.0", "");
+	}
+	
+	public String addThousandths(Long num) {
+		DecimalFormat df=new DecimalFormat("#,###");
+		return df.format(num);
+	}
 }

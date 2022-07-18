@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.ASSIGNED_POINTDao;
+import tw.com.leadtek.nhiwidget.dao.DEDUCTED_NOTEDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_MONTHLYDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_WEEKLYDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
@@ -48,6 +49,7 @@ import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
+import tw.com.leadtek.nhiwidget.payload.report.DeductedPayload;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePoint;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePointQuantity;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
@@ -116,6 +118,9 @@ public class ReportService {
 
 	@Autowired
 	private ParametersService parametersService;
+	
+	@Autowired
+	private DEDUCTED_NOTEDao deductedNoteDao;
 
 	public final static String FILE_PATH = "download";
 
@@ -1471,6 +1476,52 @@ public class ReportService {
 		}
 		return new int[] { min, max };
 	}
+	
+	/**
+	 * 
+	 * @param years
+	 * @param quarters
+	 * @return formate 2020-01-01 , 2020-03-31
+	 */
+	private Map<String,Object> findOldestAndNewestYearMonthDay(String[] years, String[] quarters) {
+		int min = Integer.MAX_VALUE;
+		int max = 0;
+		List<String> minList = new ArrayList<String>();
+		List<String> maxList = new ArrayList<String>();
+		Map<String,Object> map = new HashMap<String,Object>();
+		for (int i = 0; i < years.length; i++) {
+			int[] yearMonth = getYearMonthByQuarter(years[i], quarters[i]);
+			// System.out.println(yearMonth[0] + "," + yearMonth[1] + "," + yearMonth[2]);
+			if (max < yearMonth[2]) {
+				max = yearMonth[2];
+			}
+			min = yearMonth[0];
+			String minStr = String.valueOf(min);
+			String maxStr = String.valueOf(max);
+			String maxSub = maxStr.substring(maxStr.length() - 2, maxStr.length());
+			String fianlMin = minStr.substring(0,4) + "-" + minStr.substring(minStr.length() - 2,minStr.length()) + "-01";
+			String fianlMax = maxStr.substring(0,4) + "-" + maxStr.substring(maxStr.length() - 2,maxStr.length());
+			switch(maxSub) {
+			case "03":
+				fianlMax += "-31";
+				break;
+			case "06":
+				fianlMax += "-30";
+				break;
+			case "09":
+				fianlMax += "-30";
+				break;
+			case "12":
+				fianlMax += "-31";
+				break;
+			}
+			minList.add(fianlMin);
+			maxList.add(fianlMax);
+		}
+		map.put("min", minList);
+		map.put("max", maxList);
+		return map;
+	}
 
 	/**
 	 * 計算健保總額累積達成率
@@ -2085,6 +2136,140 @@ public class ReportService {
 			result.setMessage("查無該期間資料");
 			return result;
 		}
+		
+	}
+	
+	/**
+	 * 核刪資料
+	 * @param year
+	 * @param quarter
+	 * @return
+	 */
+	public List<DeductedPayload> getDeductedNote(String year, String quarter) {
+		Map<String,Object> result = new HashMap<String,Object>();
+		String[] years = StringUtility.splitBySpace(year);
+		String[] quarters = StringUtility.splitBySpace(quarter);
+		Map<String, Object> mapData = findOldestAndNewestYearMonthDay(years, quarters);
+		@SuppressWarnings("unchecked")
+		List<String> minList = (List<String>) mapData.get("min");
+		@SuppressWarnings("unchecked")
+		List<String> maxList = (List<String>) mapData.get("max");
+		DeductedPayload model = new DeductedPayload();
+		List<DeductedPayload> modelList = new ArrayList<DeductedPayload>();
+		for(int i=0; i < minList.size(); i++) {
+			Map<String,Object> data = deductedNoteDao.getAmountDataByDate(minList.get(i), maxList.get(i));
+			List<Map<String,Object>> deductList = deductedNoteDao.getDeductedOrderAmountByDate(minList.get(i),  maxList.get(i));
+			List<Map<String,Object>> rollbackList = deductedNoteDao.getRollbackOrderAmountByDate(minList.get(i),  maxList.get(i));
+			List<Map<String,Object>> disputeList = deductedNoteDao.getDisputeOrderAmountByDate(minList.get(i),  maxList.get(i));
+			calculateDeducted(model, data, 
+					deductList,
+					rollbackList,
+					disputeList,
+					minList.get(i)
+					);
+			modelList.add(model);
+			model =  new DeductedPayload();
+		}
+
+		
+		result.put("result", "success");
+		result.put("msg", "");
+		result.put("data", modelList);
+		
+		
+		
+		return modelList;
+	}
+	
+	public void calculateDeducted(DeductedPayload model, Map<String,Object> mapData, List<Map<String,Object>> deductList,List<Map<String,Object>> rollbackList,List<Map<String,Object>> disputeList, String minDate) {
+		String month = minDate.substring(5,7);
+		String year = minDate.substring(0,4);
+		String displayName = "";
+		switch(month) {
+		case "01":
+			displayName = year + "/Q1" ;
+			break;
+		case "04":
+			displayName = year + "/Q2" ;
+			break;
+		case "07":
+			displayName = year + "/Q3" ;
+			break;
+		case "10":
+			displayName = year + "/Q4" ;
+			break;
+		}
+		model.setDisplayName(displayName);
+		model.setNoprojectAmountAll(Long.valueOf(mapData.get("NOPROJCET_AMOUNT_OP").toString()) + Long.valueOf(mapData.get("NOPROJCET_AMOUNT_IP").toString()));
+		model.setProjectAmountAll(Long.valueOf(mapData.get("PROJCET_AMOUNT_OP").toString()) + Long.valueOf(mapData.get("PROJCET_AMOUNT_IP").toString()));
+		model.setMedAmountAll((Long.valueOf(mapData.get("MED_AMOUNT_OP").toString()) + Long.valueOf(mapData.get("MED_AMOUNT_IP").toString())));
+		model.setNoprojectQuantityAll((Long.valueOf(mapData.get("NOPROJCET_QUANTITY_OP").toString()) + Long.valueOf(mapData.get("NOPROJCET_QUANTITY_IP").toString())));
+		model.setProjectQuantityAll((Long.valueOf(mapData.get("PROJCET_QUANTITY_OP").toString()) + Long.valueOf(mapData.get("PROJCET_QUANTITY_IP").toString())));
+		model.setMedQuantityAll((Long.valueOf(mapData.get("MED_QUANTITY_OP").toString()) + Long.valueOf(mapData.get("MED_QUANTITY_IP").toString())));
+		
+		model.setNoprojectAmountOp(Long.valueOf(mapData.get("NOPROJCET_AMOUNT_OP").toString()));
+		model.setProjectAmountOp(Long.valueOf(mapData.get("PROJCET_AMOUNT_OP").toString()));
+		model.setMedAmountOp(Long.valueOf(mapData.get("MED_AMOUNT_OP").toString()));
+		model.setNoprojectQuantityOp(Long.valueOf(mapData.get("NOPROJCET_QUANTITY_OP").toString()));
+		model.setProjectQuantityOp(Long.valueOf(mapData.get("PROJCET_QUANTITY_OP").toString()));
+		model.setMedQuantityOp(Long.valueOf(mapData.get("MED_QUANTITY_OP").toString()));
+		
+		model.setNoprojectAmountIp(Long.valueOf(mapData.get("NOPROJCET_AMOUNT_IP").toString()));
+		model.setProjectAmountIp(Long.valueOf(mapData.get("PROJCET_AMOUNT_IP").toString()));
+		model.setMedAmountIp(Long.valueOf(mapData.get("MED_AMOUNT_IP").toString()));
+		model.setNoprojectQuantityIp(Long.valueOf(mapData.get("NOPROJCET_QUANTITY_IP").toString()));
+		model.setProjectQuantityIp(Long.valueOf(mapData.get("PROJCET_QUANTITY_IP").toString()));
+		model.setMedQuantityIp(Long.valueOf(mapData.get("MED_QUANTITY_IP").toString()));
+		
+		model.setQuatity(Long.valueOf(mapData.get("QUANTITY").toString()));
+		model.setExtractCase(Long.valueOf(mapData.get("EXTRACTCASE").toString()));
+		
+		Map<String,Object> map = new HashMap<String,Object>();
+		List<Map<String,Object>> mapList = new ArrayList<Map<String,Object>>();
+		if(deductList.size() > 0) {
+			for(Map<String,Object> m : deductList) {
+				map.put("dataFormat", m.get("DATA_FORMAT").toString());
+				map.put("name", m.get("NAME").toString());
+				map.put("amount", Long.valueOf(m.get("AMOUNT").toString()));
+				map.put("reason", m.get("REASON").toString());
+				mapList.add(map);
+				map = new HashMap<String,Object>();
+			}
+			model.setDeductedList(mapList);
+		}
+		if(rollbackList.size() > 0) {
+			mapList = new ArrayList<Map<String,Object>>();
+			map = new HashMap<String,Object>();
+			for(Map<String,Object> m : rollbackList) {
+				map.put("dataFormat", m.get("DATA_FORMAT").toString());
+				map.put("name", m.get("NAME").toString());
+				map.put("amount", Long.valueOf(m.get("AMOUNT") == null ? "0" : m.get("AMOUNT").toString()));
+				map.put("afrQuantity", Long.valueOf(m.get("AFR_QUANTITY") == null ? "0" : m.get("AFR_QUANTITY").toString()));
+				map.put("afrAmount", Long.valueOf(m.get("AFR_AMOUNT") == null ? "0" : m.get("AFR_AMOUNT").toString()));
+				map.put("afrPayQuantity", Long.valueOf(m.get("AFR_PAY_QUANTITY") == null ? "0" : m.get("AFR_PAY_QUANTITY").toString()));
+				map.put("afrPayAmount", Long.valueOf(m.get("AFR_PAY_AMOUNT") == null ? "0" : m.get("AFR_PAY_AMOUNT").toString()));
+				mapList.add(map);
+				map = new HashMap<String,Object>();
+			}
+			model.setRollbackList(mapList);
+		}
+		if(disputeList.size() > 0) {
+			mapList = new ArrayList<Map<String,Object>>();
+			map = new HashMap<String,Object>();
+			for(Map<String,Object> m : disputeList) {
+				map.put("dataFormat", m.get("DATA_FORMAT").toString());
+				map.put("name", m.get("NAME").toString());
+				map.put("disputeQuantity", Long.valueOf(m.get("DISPUTE_QUANTITY") == null ? "0" : m.get("DISPUTE_QUANTITY").toString()));
+				map.put("disputeAmount", Long.valueOf(m.get("DISPUTE_AMOUNT") == null ? "0" : m.get("DISPUTE_AMOUNT").toString()));
+				map.put("disputePayQuantity", Long.valueOf(m.get("DISPUTE_PAY_QUANTITY") == null ? "0" : m.get("DISPUTE_PAY_QUANTITY").toString()));
+				map.put("disputePayAmount", Long.valueOf(m.get("DISPUTE_PAY_AMOUNT") == null ? "0" : m.get("DISPUTE_PAY_AMOUNT").toString()));
+				map.put("disputeNoPayCode",  m.get("DISPUTE_NO_PAY_CODE").toString());
+				mapList.add(map);
+				map = new HashMap<String,Object>();
+			}
+			model.setDisputeList(mapList);
+		}
+		
 		
 	}
 	

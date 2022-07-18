@@ -180,7 +180,7 @@ public class DEDUCTED_NOTE implements Serializable {
 
 	@ApiModelProperty(value = "核刪日期", required = false)
 	@Column(name = "DEDUCTED_DATE", nullable = false)
-	 @JsonFormat(pattern = "yyyy/MM.dd", timezone = "GMT+8")
+	 @JsonFormat(pattern = "yyyy/MM/dd", timezone = "GMT+8")
 	private Date deductedDate;
 
 	@ApiModelProperty(value = "放大回推日期", required = false)
