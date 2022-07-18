@@ -3425,7 +3425,10 @@ public class NHIWidgetXMLService {
         ipD.setIcdOpCode20(mrDetail.getIcdOP().get(19).getCode());
       }
     }
-    ipD.setApplCauseMark(mrDetail.getApplCauseMark());
+    if (mrDetail.getApplCauseMark() != null && mrDetail.getApplCauseMark().length() == 1) {
+      ipD.setApplCauseMark(mrDetail.getApplCauseMark());
+    }
+   
     if (mrDetail.getFuncType() != null && mrDetail.getFuncType().length() > 0) {
       if (mrDetail.getFuncType().indexOf('-') > -1) {
         ipD.setFuncType(mrDetail.getFuncType().substring(0, mrDetail.getFuncType().indexOf('-')));
@@ -3752,7 +3755,9 @@ public class NHIWidgetXMLService {
     ipD.setAgencyId(mrDetail.getAgencyId());
     ipD.setAminDot(mrDetail.getAminDot());
     ipD.setAneDot(mrDetail.getAneDot());
-    ipD.setApplCauseMark(mrDetail.getApplCauseMark());
+    if (mrDetail.getApplCauseMark() != null && mrDetail.getApplCauseMark().length() == 1) {
+      ipD.setApplCauseMark(mrDetail.getApplCauseMark());
+    }
     ipD.setApplDot(mrDetail.getApplDot());
     ipD.setApplStartDate(DateTool.removeSlashForChineseYear(mrDetail.getApplSDate()));
     ipD.setApplEndDate(DateTool.removeSlashForChineseYear(mrDetail.getApplEDate()));
@@ -5386,7 +5391,6 @@ public class NHIWidgetXMLService {
 
   public String newDeductedNote(String mrId, DEDUCTED_NOTE note) {
     changeEmptyToNull(note);
-    System.out.println("newDeductedNote id=" + note.getId());
     MR mr = null;
     try {
       mr = mrDao.findById(Long.parseLong(mrId)).orElse(null);
@@ -5396,9 +5400,11 @@ public class NHIWidgetXMLService {
     } catch (NumberFormatException e) {
       return "病歷id" + mrId + "有誤";
     }
+    note.setId(null);
     note.setMrId(Long.parseLong(mrId));
     note.setStatus(1);
     note.setUpdateAt(new java.util.Date());
+    note.setDeductedDate(new java.util.Date());
     deductedNoteDao.save(note);
     parameters.upsertCodeConflictForHighRisk(mr.getIcdcm1(), note.getDeductedOrder(),
         mr.getDataFormat());
@@ -6105,7 +6111,6 @@ public class NHIWidgetXMLService {
    */
   private String getApplYmByInhNo(HashMap<String, String> values) {
     String inhNo = values.get("INH_NO");
-    System.out.println("inhNo=" + inhNo);
     if (inhNo == null || inhNo.length() == 0) {
       return null;
     }
@@ -6256,7 +6261,13 @@ public class NHIWidgetXMLService {
     if (values.get("CHR_DAYS") != null && values.get("CHR_DAYS").length() > 0) {
       result.setChrDays(Integer.parseInt(values.get("CHR_DAYS")));
     }
-    result.setNbBirthday(values.get("NB_BIRTHDAY"));
+    if (values.get("NB_BIRTHDAY") != null && values.get("NB_BIRTHDAY").length() > 0) {
+      if (values.get("NB_BIRTHDAY").length() == 7) {
+        result.setNbBirthday(values.get("NB_BIRTHDAY"));  
+      } else if (values.get("NB_BIRTHDAY").indexOf("/") > 0) {
+        result.setNbBirthday(DateTool.convertExcelDateTimeToChinese(values.get("NB_BIRTHDAY"), false));
+      }
+    }
     result.setOutSvcPlanCode(values.get("OUT_SVC_PLAN_CODE"));
     result.setName(values.get("NAME"));
     result.setAgencyId(values.get("AGENCY_ID"));
@@ -6383,7 +6394,9 @@ public class NHIWidgetXMLService {
     }
     result.setRocId(values.get("ROC_ID"));
     result.setPartNo(values.get("PART_NO"));
-    result.setApplCauseMark(values.get("APPL_CAUSE_MARK"));
+    if (values.get("APPL_CAUSE_MARK") != null && values.get("APPL_CAUSE_MARK").length() == 1) {
+      result.setApplCauseMark(values.get("APPL_CAUSE_MARK"));
+    }
     result.setIdBirthYmd(removeSlash(values.get("ID_BIRTH_YMD")));
     result.setPayType(values.get("PAY_TYPE"));
     if (values.get("FUNC_TYPE") != null) {
@@ -6563,7 +6576,13 @@ public class NHIWidgetXMLService {
     if (values.get("SB_PART181_DOT") != null && values.get("SB_PART181_DOT").length() > 0) {
       result.setSbPart181Dot(Integer.parseInt(values.get("SB_PART181_DOT")));
     }
-    result.setNbBirthday(values.get("NB_BIRTHDAY"));
+    if (values.get("NB_BIRTHDAY") != null && values.get("NB_BIRTHDAY").length() > 0) {
+      if (values.get("NB_BIRTHDAY").length() == 7) {
+        result.setNbBirthday(values.get("NB_BIRTHDAY"));  
+      } else if (values.get("NB_BIRTHDAY").indexOf("/") > 0) {
+        result.setNbBirthday(DateTool.convertExcelDateTimeToChinese(values.get("NB_BIRTHDAY"), false));
+      }
+    }
     result.setChildMark(values.get("CHILD_MARK"));
     result.setTwDrgsSuitMark(values.get("TW_DRGS_SUIT_MARK"));
     result.setName(values.get("NAME"));
@@ -7004,6 +7023,9 @@ public class NHIWidgetXMLService {
         continue;
       }
       values = ExcelUtil.readCellValue(columnMap, row);
+      if (values.get("ICD_CM_1") == null || values.get("ICD_CM_1").length() == 0) {
+        continue;
+      }
       // 存放有差異的欄位
       List<FILE_DIFF> diffList = null;
       IP_D ipd = getIpd(values);
@@ -7350,7 +7372,6 @@ public class NHIWidgetXMLService {
         do {
           try {
             Thread.sleep(5000);
-            logger.info("wait to run checkAll");
           } catch (InterruptedException e) {
             e.printStackTrace();
           }
@@ -7367,6 +7388,7 @@ public class NHIWidgetXMLService {
               break;
             }
           }
+          logger.info("wait to run checkAll:" + (startRunningTime - System.currentTimeMillis()));
         } while(true);
         is.checkAllIntelligentCondition();
       }
@@ -7684,7 +7706,7 @@ public class NHIWidgetXMLService {
   }
   
   public static String addICDCMDot(String s) {
-    if (s == null || s.indexOf('.') > 0) {
+    if (s == null || s.indexOf('.') > 0 || s.length() == 0) {
       return s;
     }
     StringBuffer sb = new StringBuffer();

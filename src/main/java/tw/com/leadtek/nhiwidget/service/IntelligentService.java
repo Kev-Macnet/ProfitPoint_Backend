@@ -3,6 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.service;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
@@ -48,6 +49,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_THRESHOLD;
 import tw.com.leadtek.nhiwidget.model.rdb.ICDCM_DRUG_ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.INTELLIGENT;
+import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
@@ -115,6 +117,9 @@ public class IntelligentService {
 
   @Autowired
   private ViolatePaymentTermsService vpts;
+
+  @Autowired
+  private DrgCalService drgCalService;
 
   // 存放目前是否有智能提示助理正在處理，及開始跑的時間，避免同時跑造成server loading過高
   private static HashMap<Integer, Long> runningIntelligent = new HashMap<Integer, Long>();
@@ -1284,7 +1289,8 @@ public class IntelligentService {
       }
     }
     int avg6m = (int) (count6M / 6);
-
+//    System.out.println(m6[0] + "," + m6[1] + "," + m6[2] + "," + m6[3]+ "," + m6[4]+ "," + m6[5]+ "," + ct.getCode() +", count6M=" + count6M +", avg6m="
+//        + avg6m + ", count1M=" + count1M);
     if (count1M > (avg6m + max)) {
       List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false,
           ct.getStartDate(), ct.getEndDate());
@@ -1655,7 +1661,7 @@ public class IntelligentService {
           continue;
         }
       } else {
-        if (mr.getIcdAll().indexOf("," + cc.getCode() + ",") < 0) {
+        if (mr.getIcdAll() == null || mr.getIcdAll().indexOf("," + cc.getCode() + ",") < 0) {
           continue;
         }
         if (mr.getCodeAll() == null || mr.getCodeAll().indexOf(cc.getOwnExpCode()) < 0) {
@@ -2476,6 +2482,9 @@ public class IntelligentService {
     for (MR mr : mrList) {
       List<ICDCM_DRUG_ATC> list = icdMap.get(mr.getIcdcm1());
       for (ICDCM_DRUG_ATC ida : list) {
+        if (mr.getCodeAll() == null) {
+          continue;
+        }
         if (mr.getCodeAll().indexOf("," + ida.getDrug() + ",") > -1) {
           // 符合用藥比例偏低
           // 病歷編號%s主診斷%s，醫師%s使用藥品%s與常態(%s)選擇有差異
@@ -2625,6 +2634,7 @@ public class IntelligentService {
     List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
     logger.info("start checkAllIntelligentCondition");
     
+    runDrgCalculate(mrList);
     Date firstDate = new Date();
     for (MR mr : mrList) {
       if (mr.getMrDate().before(firstDate)) {
@@ -2633,8 +2643,6 @@ public class IntelligentService {
     }
     Calendar calStart = Calendar.getInstance();
     calStart.setTime(firstDate);
-    // 週報表資料
-    reportService.calculatePointWeekly(calStart);
     // 月報表資料
     for (String ym : applYm) {
       reportService.calculatePointMR(ym);
@@ -2657,8 +2665,38 @@ public class IntelligentService {
       calculateAIOrderDrug(ym);
     }
     logger.info("start check AI finished.");
+    // 週報表資料
+    reportService.calculatePointWeekly(calStart);
     logger.info("start checkAllIntelligentCondition finished");
     setIntelligentRunning(INTELLIGENT_REASON.XML.value(), false);
+  }
+  
+  /**
+   * 執行DRG試算程式
+   * @param mrList
+   */
+  private void runDrgCalculate(List<MR> mrList) {
+    if (!System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+      return;
+    }
+    Thread thread = new Thread(new Runnable() {
+
+      @Override
+      public void run() {
+        long start = System.currentTimeMillis();
+        List<Long> mrIdList = drgCalService.getMrIdByDataFormat(mrList, XMLConstant.DATA_FORMAT_IP);
+        if (mrIdList.size() == 0) {
+          return;
+        }
+        logger.info("runDrgCalculate start " + mrIdList.size());
+        HashMap<Long, IP_D> ipdMap = new HashMap<Long, IP_D>();
+        File file = drgCalService.generateDrgCalFile(mrList, mrIdList, ipdMap);
+        drgCalService.callDrgCalProgram(file, mrList, mrIdList, ipdMap);
+        long usedTime = System.currentTimeMillis() - start;
+        logger.info("runDrgCalculate finished using " + usedTime);
+      }
+    });
+    thread.start();
   }
   
   private void checkIntelligentFixCondition(List<MR> mrList, List<String> applYm, List<INTELLIGENT> batch) {

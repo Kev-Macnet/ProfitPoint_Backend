@@ -131,12 +131,13 @@ public class UserService {
     user.setInhId(user.getUsername());
     if (user.getPassword() == null && user.getEmail() != null) {
       logger.info("sendEmail:" + user.getEmail());
-//      String newPassword = generateCommonLangPassword();
-//      emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
-//          "系統隨機產生密碼:" + newPassword);
+      //String newPassword = generateCommonLangPassword();
       String newPassword = "test";
+      emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
+          "系統產生密碼:" + newPassword);
+      
       user.setPassword(encoder.encode(newPassword));
-      user.setStatus(USER.STATUS_CHANGE_PASSWORD);
+      user.setStatus(USER.STATUS_ACTIVE);
     } else {
       user.setPassword(encoder.encode(user.getPassword()));
       user.setStatus(USER.STATUS_ACTIVE);

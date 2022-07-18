@@ -2511,7 +2511,7 @@ public class ParametersService {
         recalculateSameATC(list.get(0), true);
       }
     }
-  }  
+  }
   
   /**
    * 開啟或關閉罕見ICD應用

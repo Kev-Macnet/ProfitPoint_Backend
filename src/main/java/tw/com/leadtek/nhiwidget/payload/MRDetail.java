@@ -1426,6 +1426,8 @@ public class MRDetail extends MR {
       System.arraycopy(pcs, 1, all, startIndex, pcs.length - 1);
     }
     all[size - 1] = mr.getIcdcm1();
+    //test(all, mr.getRocId());
+    //all = checkNull(all);
     if (all.length > 1) {
       Arrays.sort(all);
       for (String string : all) {
@@ -1452,10 +1454,20 @@ public class MRDetail extends MR {
     return true;
   }
   
-  public static void test(String[] a) {
+  public static String[] checkNull(String[] array) {
+    ArrayList<String> list = new ArrayList<String>();
+    for (String string : array) {
+      if (string != null && string.length() > 0) {
+        list.add(string);
+      }
+    }
+    return (String[]) list.toArray();
+  }
+  
+  public static void test(String[] a, String note) {
     for(int i=0;i<a.length; i++) {
       if (a[i] != null && a[i].length() > 0) {
-        System.out.println("i=" +  i + "," + a[i]);
+        System.out.println(note + ": i=" +  i + "," + a[i]);
       }
     }
   }
@@ -1524,7 +1536,7 @@ public class MRDetail extends MR {
   }
   
   public static void appendString(StringBuffer sb, String s) {
-    if (s != null) {
+    if (s != null && s.length() > 0) {
       sb.append(s);
       sb.append(",");
     }

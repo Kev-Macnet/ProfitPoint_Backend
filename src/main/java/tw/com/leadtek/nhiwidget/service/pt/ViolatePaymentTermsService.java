@@ -1504,7 +1504,7 @@ public class ViolatePaymentTermsService {
     }
   }
 
-  private List<Long> getMrId(List<MR> mrList, String nhiNo) {
+  public List<Long> getMrId(List<MR> mrList, String nhiNo) {
     List<Long> result = new ArrayList<Long>();
     for (MR mr : mrList) {
       if (nhiNo != null) {
@@ -1517,7 +1517,7 @@ public class ViolatePaymentTermsService {
     return result;
   }
 
-  private List<MR> getMrByMrId(List<MR> mrList, List<Long> mrIdList) {
+  public List<MR> getMrByMrId(List<MR> mrList, List<Long> mrIdList) {
     List<MR> result = new ArrayList<MR>();
     for (Long mrId : mrIdList) {
       for (MR mr : mrList) {

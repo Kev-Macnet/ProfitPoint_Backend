@@ -896,6 +896,8 @@ public class SystemController extends BaseController {
         System.out.println("import Infectious");
         initial.importInfectious(saveFile);
       } else if (saveFile.getName().endsWith(".xls")) {
+        // 麗臺規格excel
+        long startImport = System.currentTimeMillis();
         HSSFWorkbook workbook = null;
         if (saveFile.getName().toUpperCase().indexOf("OPD") > -1) {
           workbook = new HSSFWorkbook(new FileInputStream(saveFile));
@@ -921,6 +923,9 @@ public class SystemController extends BaseController {
         if (workbook != null) {
           workbook.close();
         }
+     
+        long usedTime = System.currentTimeMillis() - startImport;
+        xmlService.checkAll(usedTime);
       } else if (saveFile.getName().endsWith(".xlsx")) {
         XSSFWorkbook workbook = null;
 

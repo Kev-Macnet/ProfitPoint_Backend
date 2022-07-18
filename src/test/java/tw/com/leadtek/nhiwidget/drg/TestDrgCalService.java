@@ -3,14 +3,13 @@
  */
 package tw.com.leadtek.nhiwidget.drg;
 
-import java.text.ParseException;
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import tw.com.leadtek.nhiwidget.NHIWidget;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.IP_TDao;
@@ -691,21 +691,16 @@ public class TestDrgCalService {
   //@Ignore
   @Test
   public void testPayCodeType() {
-      HashMap<String, String> map = nhiService.getPayCodeType();
-      String key ="00102B";
-      System.out.println(key + ":" + map.get(key));
-      key ="14051C";
+    long start = System.currentTimeMillis();
+    List<MR> newMR = mrDao.getTodayUpdatedMR();
+    List<Long> mrIdList = drgCalService.getMrIdByDataFormat(newMR, XMLConstant.DATA_FORMAT_IP);
+    System.out.println("mr list size=" + newMR.size());
+    HashMap<Long, IP_D> ipdMap = new HashMap<Long, IP_D>();
+    File file = drgCalService.generateDrgCalFile(newMR, mrIdList, ipdMap);
+    long usedTime = System.currentTimeMillis() - start;
+    System.out.println("finished " + file.getAbsolutePath() + " using " + usedTime);
+    
+    drgCalService.callDrgCalProgram(file, newMR, mrIdList, ipdMap);
 
-      //is.checkAllIntelligentCondition();
-      String startTime = "11106240000";
-      String endTime = "11106260000";
-      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
-      int diffDays = ViolatePaymentTermsService.diffDays(startTime, endTime, sdf);
-      int totalQ = 9;
-      double avg = (double) totalQ / (double) diffDays;
-      if (avg > 4) {
-        System.out.println("avg=" + avg + " > 4");
-      }
-      System.out.println(startTime + " to " + endTime + " need " + diffDays + " days.");
   }
 }

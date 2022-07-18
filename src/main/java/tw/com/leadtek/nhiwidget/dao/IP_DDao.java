@@ -366,4 +366,17 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   @Query(value = "SELECT MR_ID, APPL_END_DATE, APPL_START_DATE, ID_BIRTH_YMD, NB_BIRTHDAY FROM IP_D WHERE MR_ID IN ?1 ", nativeQuery = true)
   public List<Object[]> getMrIdBirthdayByMrId(List<Long> mrId);
+  
+  /**
+   * 取得產生DRG試算程式所需的欄位
+   * @param mrId
+   * @return
+   */
+  @Query(value = "SELECT mr.APPL_YM, mr.ROC_ID, mr.ID, ip_d.IN_DATE,  ip_d.ID_BIRTH_YMD," + 
+      "ip_d.ICD_CM_1, ip_d.ICD_CM_2, ip_d.ICD_CM_3, ip_d.ICD_CM_4, ip_d.ICD_CM_5," + 
+      "ip_d.ICD_OP_CODE1, ip_d.ICD_OP_CODE2, ip_d.ICD_OP_CODE3, ip_d.ICD_OP_CODE4," + 
+      "ip_d.ICD_OP_CODE5, ip_d.TRAN_CODE , ip_d.OUT_DATE, ip_d.MED_DOT, ip_d.NB_BIRTHDAY," + 
+      "(ip_d.E_BED_DAY + ip_d.S_BED_DAY) AS BED_DAY, ip_d.APPL_DOT, ip_d.NON_APPL_DOT, ip_d.PART_DOT " + 
+      " FROM ip_d, mr WHERE mr.id IN ?1 and ip_d.MR_ID = mr.ID ", nativeQuery = true)
+  public List<Map<String, Object>> getDrgCalField(List<Long> mrId);
 }

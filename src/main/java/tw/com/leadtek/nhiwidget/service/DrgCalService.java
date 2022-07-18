@@ -3,7 +3,16 @@
  */
 package tw.com.leadtek.nhiwidget.service;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.math.BigInteger;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -12,6 +21,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -21,16 +31,20 @@ import javax.persistence.criteria.Root;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import tw.com.leadtek.nhiwidget.dao.DRG_CALDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_CODEDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.model.DrgCalculate;
+import tw.com.leadtek.nhiwidget.model.rdb.DRG_CAL;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
-import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
+import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.payload.DrgCodeListResponse;
 import tw.com.leadtek.nhiwidget.payload.DrgCodePayload;
 import tw.com.leadtek.tools.DateTool;
@@ -43,6 +57,8 @@ import tw.com.leadtek.tools.DateTool;
 @Service
 public class DrgCalService {
 
+  public final static String DRG_DATA_FILE_PATH = "drg_data";
+  
   public final static int ADD_CHILD_NONE = 0;
 
   public final static int ADD_CHILD_6M = 1;
@@ -69,10 +85,19 @@ public class DrgCalService {
   private DRG_CODEDao drgDao;
 
   @Autowired
+  private DRG_CALDao drgCalDao;
+
+  @Autowired
   private IP_PDao ippDao;
 
   @Autowired
   private IP_DDao ipdDao;
+  
+  @Autowired
+  private LogDataService logDataService;
+  
+  @Value("${project.hospId}")
+  private String HOSPITAL_ID;
 
   /**
    * 取得醫院加成率
@@ -338,6 +363,19 @@ public class DrgCalService {
     return result;
   }
 
+  public boolean checkCase20(DrgCalculate drg, String ym) {
+    if (drg.isCase20()) {
+      HashMap<String, List<Long>> case20 = countCase20(ym);
+      List<Long> ids = case20.get(drg.getCode());
+      if (ids == null) {
+        return true;
+      } else {
+        return ids.size() < 20;
+      }
+    }
+    return false;
+  }
+
   private void addPredicate(Root<DRG_CODE> root, List<Predicate> predicate, CriteriaBuilder cb,
       String paramName, String params, boolean isAnd, boolean isInteger) {
     if (params == null || params.length() == 0) {
@@ -560,4 +598,269 @@ public class DrgCalService {
     return false;
   }
   
+  public File generateDrgCalFile(List<MR> mrList, List<Long> mrIdList, HashMap<Long, IP_D> ipdMap) {
+    if (mrList == null || mrList.size() == 0) {
+      return null;
+    }
+    DecimalFormat df = new DecimalFormat("0000000");
+    File file = new File(DRG_DATA_FILE_PATH + "/" + System.currentTimeMillis() + ".txt");
+  
+    List<Map<String, Object>> data = ipdDao.getDrgCalField(mrIdList);
+    try {
+      BufferedWriter bw =
+          new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
+      for (Map<String, Object> map : data) {
+        if (map.get("IN_DATE") == null) {
+          continue;
+        }
+        List<String> icd = getIcdListFromMap(map);
+        writeMrRecordForDrgCal(bw, map, icd, df);
+        changeIcdOrder(bw, map, df, icd, 2);
+        changeIcdOrder(bw, map, df, icd, 3);
+        changeIcdOrder(bw, map, df, icd, 4);
+        changeIcdOrder(bw, map, df, icd, 5);
+        MR mr = getMrById(mrList, ((BigInteger) map.get("ID")).longValue());
+        // 將是否有小孩加成放在 changeIcd 欄位
+        mr.setChangeICD(getAddChild((String) map.get("NB_BIRTHDAY"),
+            (String) map.get("ID_BIRTH_YMD"), (String) map.get("IN_DATE")));
+        if (!ipdMap.containsKey(mr.getId())) {
+          IP_D ipd = new IP_D();
+          ipd.setPartDot(map.get("PART_DOT") != null ? (Integer) map.get("PART_DOT") : 0);
+          ipd.setApplDot(map.get("APPL_DOT") != null ? (Integer) map.get("APPL_DOT") : 0);
+          ipd.setNonApplDot(map.get("NON_APPL_DOT") != null ? (Integer) map.get("NON_APPL_DOT") : 0);
+          ipd.setMedDot(map.get("MED_DOT") != null ? (Integer) map.get("MED_DOT") : 0);
+          ipd.setEbedDay(map.get("BED_DAY") != null ? (Integer) map.get("BED_DAY") : 0);
+          ipd.setTranCode((String) map.get("TRAN_CODE"));
+          ipdMap.put(mr.getId(), ipd);
+        }
+      }
+      bw.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return file;
+  }
+  
+  private void writeMrRecordForDrgCal(BufferedWriter bw, Map<String, Object> map, List<String> icd, DecimalFormat df) throws IOException {
+    if (map.get("IN_DATE") == null) {
+      return;
+    }
+    bw.write(HOSPITAL_ID);
+    bw.write(",");
+    bw.write(String.valueOf(Integer.parseInt((String) map.get("APPL_YM")) + 191100));
+    bw.write(",");
+    bw.write((String) map.get("ROC_ID"));
+    bw.write(",");
+    bw.write(((BigInteger) map.get("ID")).toString());
+    bw.write(",");
+    if ('1' == ((String) map.get("ROC_ID")).charAt(1)) {
+      bw.write("M");  
+    } else {
+      bw.write("F");
+    }
+    bw.write(",");
+    bw.write(String.valueOf(Integer.parseInt((String) map.get("IN_DATE")) + 19110000));
+    bw.write(",");
+    bw.write(String.valueOf(Integer.parseInt((String) map.get("ID_BIRTH_YMD")) + 19110000));
+    bw.write(",");
+    writeString(bw, icd, 1);
+    bw.write(",");
+    writeString(bw, icd, 2);
+    bw.write(",");
+    writeString(bw, icd, 3);
+    bw.write(",");
+    writeString(bw, icd, 4);
+    bw.write(",");
+    writeString(bw, icd, 5);
+    bw.write(",");
+    writeString(bw, map.get("ICD_OP_CODE1"));
+    bw.write(",");
+    writeString(bw, map.get("ICD_OP_CODE2"));
+    bw.write(",");
+    writeString(bw, map.get("ICD_OP_CODE3"));
+    bw.write(",");
+    writeString(bw, map.get("ICD_OP_CODE4"));
+    bw.write(",");
+    writeString(bw, map.get("ICD_OP_CODE5"));
+    bw.write(",");
+    writeString(bw, map.get("TRAN_CODE"));
+    bw.write(",");
+    bw.write(String.valueOf(Integer.parseInt((String) map.get("OUT_DATE")) + 19110000));
+    bw.write(",+");
+    bw.write((df.format((Integer) map.get("MED_DOT"))));
+    bw.write(",1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,");
+    bw.newLine();
+  }
+  private List<String> getIcdListFromMap(Map<String, Object> map){
+    List<String> result = new ArrayList<String>();
+    addIcdToList(result, map, "ICD_CM_1");
+    addIcdToList(result, map, "ICD_CM_2");
+    addIcdToList(result, map, "ICD_CM_3");
+    addIcdToList(result, map, "ICD_CM_4");
+    addIcdToList(result, map, "ICD_CM_5");
+    return result;
+  }
+  
+  private void addIcdToList(List<String> list, Map<String, Object> map, String key) {
+    if (map.get(key) != null) {
+      list.add(((String) map.get(key)).replaceAll("\\.", ""));
+    }
+  }
+  
+  private void changeIcdOrder(BufferedWriter bw, Map<String, Object> map, DecimalFormat df, List<String> list, int count) throws IOException {
+    if (list.size() >= count) {
+      String first = list.get(0);
+      String firstNew = list.get(count - 1);
+      list.set(0, firstNew);
+      list.set(count - 1, first);
+      writeMrRecordForDrgCal(bw, map, list, df);
+    }
+  }
+  
+  private void writeString(BufferedWriter bw, Object obj) throws IOException {
+    if (obj == null) {
+      return;
+    }
+    bw.write(((String) obj).replaceAll("\\.", ""));
+  }
+  
+  private void writeString(BufferedWriter bw, List<String> list, int count) throws IOException {
+    if (list.size() < count) {
+      return;
+    }
+    bw.write(list.get(count - 1));
+  }
+  
+  public List<Long> getMrIdByDataFormat(List<MR> mrList, String dataFormat) {
+    List<Long> result = new ArrayList<Long>();
+    for (MR mr : mrList) {
+      if (dataFormat != null) {
+        if (!mr.getDataFormat().equals(dataFormat)) {
+          continue;
+        }
+      }
+      result.add(mr.getId());
+    }
+    return result;
+  }
+  
+  public void callDrgCalProgram(File file, List<MR> mrList, List<Long> mrIdList, HashMap<Long, IP_D> ipdMap) {
+    String targetName = file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 4) + "B.txt";
+    targetName = targetName.substring(targetName.lastIndexOf('\\') + 1);
+    String pyCommand = DRG_DATA_FILE_PATH + "/DRG.BAT " + file.getName() + " " + targetName + " y";
+    execBatch(pyCommand);
+   
+    HashMap<String, DrgCalculate> drgCodes = new HashMap<String, DrgCalculate>();
+    HashMap<String, Integer> drgApplDot = new HashMap<String, Integer>();
+    try {
+      drgCalDao.deleteByMrId(mrIdList);
+      FileInputStream fis = new FileInputStream(DRG_DATA_FILE_PATH + "/" + targetName);
+      BufferedReader isReader =
+          new java.io.BufferedReader(new InputStreamReader(fis, "big5"));
+      // 跳過檔頭
+      isReader.readLine();
+      String str;
+      while ((str = isReader.readLine()) != null) {
+        String[] ss = str.split(",");
+        DRG_CAL dc = new DRG_CAL();
+        
+        if (ss.length > 55 && ss[55].trim().length() > 0) {
+         dc.setError(logDataService.getErrorMessage(ss[55].trim()));
+        }
+        
+        dc.setMrId(Long.parseLong(ss[3]));
+        dc.setIcdCM1(NHIWidgetXMLService.addICDCMDot(ss[7]));
+        dc.setIcdOPCode1(NHIWidgetXMLService.addICDCMDot(ss[12]));
+        dc.setMedDot(Integer.parseInt(ss[19].substring(1)));
+        dc.setCc(ss[22]);
+        dc.setDrg(ss[21]);
+        dc.setMdc(ss[23]);
+        
+        MR mr = getMrById(mrList, dc.getMrId().longValue());
+        // 西元年
+        int adYM = Integer.parseInt(ss[1]);
+        int newApplDot = 0;
+        DrgCalculate drgCodeDetail = drgCodes.get(dc.getDrg());
+        if (drgCodeDetail == null) {
+          drgCodeDetail = getDRGSection(dc.getDrg(), String.valueOf(adYM - 191100),
+              dc.getMedDot(), mr.getChangeICD());
+        }
+        if (drgCodeDetail == null || (!drgCodeDetail.isStarted() && dc.getError() != null
+            && dc.getError().length() == 0)) {
+          // DRG代碼尚未導入
+          dc.setError("C");
+        } else {
+          drgCodes.put(dc.getDrg(), drgCodeDetail);
+          DecimalFormat df = new DecimalFormat("#.###");
+          dc.setRw(Double.parseDouble(df.format(drgCodeDetail.getRw())));
+          dc.setAvgInDay(drgCodeDetail.getAvgInDay());
+          dc.setUlimit(drgCodeDetail.getUlimit());
+          dc.setLlimit(drgCodeDetail.getLlimit());
+          dc.setDrgFix(drgCodeDetail.getFixed());
+          dc.setDrgSection(drgCodeDetail.getSection());
+          
+          IP_D ipd = ipdMap.get(mr.getId());
+          if (drgApplDot.get(dc.getDrg()) != null) {
+            newApplDot = drgApplDot.get(dc.getDrg()).intValue();
+          } else {
+            boolean isInCase20 = checkCase20(drgCodeDetail, ss[1]);
+            newApplDot = getApplDot(drgCodeDetail, ipd.getMedDot(), ipd.getPartDot(), 
+                ipd.getNonApplDot(), mr.getId(), ipd.getEbedDay(), ipd.getTranCode(), isInCase20);
+            drgApplDot.put(dc.getDrg(), newApplDot);
+          }
+          dc.setDrgDot(newApplDot);
+//          System.out.println(dc.getMrId() + ",icd=" + dc.getIcdCM1() + ", opCode=" + dc.getIcdOPCode1() +
+//              ",cc=" + dc.getCc() + ", drg=" + dc.getDrg() + ",drgSection=" + dc.getDrgSection() +
+//              ",mdc=" + dc.getMdc());
+          dc.setUpdateAt(new Date());
+          drgCalDao.save(dc);
+          
+          if (dc.getIcdCM1().equals(mr.getIcdcm1())) {
+            mr.setDrgCode(dc.getDrg());
+            mr.setDrgFixed(dc.getDrgFix());
+            mr.setDrgSection(dc.getDrgSection());
+          }
+        }
+      }
+      isReader.close();
+      fis.close();
+    } catch (java.io.IOException e) {
+      e.printStackTrace();
+    } finally {
+      File fileB = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 4) + "B.txt");
+      if (fileB.exists()) {
+        fileB.delete();
+      }
+      if (file.exists()) {
+        file.delete();
+      }
+    
+    }
+  }
+  
+  public String execBatch(String pyCommand) {
+    String[] arrCommand = pyCommand.split(" ");
+    String[] arguments = new String[arrCommand.length];
+    for (int a = 0; a < arrCommand.length; a++) {
+      arguments[a] = arrCommand[a];
+    }
+    StringBuffer sBuffer = new StringBuffer();
+    try {
+      Process process = Runtime.getRuntime().exec(arguments);
+      int exitCode = process.waitFor();
+      logger.info("execBatch status=" + exitCode);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return sBuffer.toString();
+  }
+  
+  private MR getMrById(List<MR> mrList, long id) {
+    for (MR mr : mrList) {
+      if (mr.getId().longValue() == id) {
+        return mr;
+      }
+    }
+    return null;
+  }
 }

@@ -765,5 +765,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<Object[]> getRocIdAndUseCountAndApplYm(String orderCode, List<String> rocIdList);
 
   @Query(value = "SELECT * FROM mr WHERE UPDATE_AT  >= CURRENT_DATE", nativeQuery = true)
+  //@Query(value = "SELECT * FROM mr WHERE UPDATE_AT  >= '2022-07-02'", nativeQuery = true)
   public List<MR> getTodayUpdatedMR();
+  
 }

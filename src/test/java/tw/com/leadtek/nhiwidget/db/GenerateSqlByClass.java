@@ -608,8 +608,8 @@ public class GenerateSqlByClass {
     //testSub();
     //gen.testNormalDistribution();
     //testPercent();
-   // testDateTool();
-    testSystemInformation();
+    testDateTool();
+    //testSystemInformation();
     // gen.generateSQL();
 
     // 改用 generateClassByDB
@@ -712,6 +712,11 @@ public class GenerateSqlByClass {
     System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
     s = "2021/10/8 AM 09:32:00";
     System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
+    s= "1975/6/22";
+    System.out.println(s + " -> " + DateTool.removeSlashForChineseYear(s));
+    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, false));
+    s= "1110426";
+    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, false));
   }
   
   public static void testSystemInformation() {
