@@ -29,7 +29,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   //門急診/住院案件數
   @Query(value="SELECT OP.OP_DOT + IP.IP_DOT FROM "
   		+ "(SELECT COUNT(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
-  		+ "(SELECT (COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP", nativeQuery=true)
+  		+ "(SELECT COUNT(ID) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP", nativeQuery=true)
   public String findTCount(List<Integer>ids,List<Integer>ids2);
   
   //門急診/住院總藥費
@@ -92,7 +92,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "FROM "
   		+ "(SELECT FUNC_TYPE AS OP_FT, COUNT(T_DOT) AS OP_CASE FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
   		+ "FULL JOIN "
-  		+ "(SELECT FUNC_TYPE AS IP_FT ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_CASE FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "(SELECT FUNC_TYPE AS IP_FT ,COUNT(ID) AS IP_CASE FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
   		+ "ON OP.OP_FT=IP.IP_FT", nativeQuery=true)
   public List<Object[]> findClassAllCount(List<Integer>ids,List<Integer>ids2);
   
@@ -122,7 +122,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "(SELECT FUNC_TYPE AS OP_FT,PRSN_ID AS OP_PI,COUNT(T_DOT) AS OP_CASE,SUM(T_DOT) AS OP_DOT,"
   		+ " SUM(DRUG_DOT) AS OP_DRUG FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE ,PRSN_ID ) OP"
   		+ " FULL JOIN "
-  		+ "(SELECT FUNC_TYPE AS IP_FT,PRSN_ID AS IP_PI,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_CASE ,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT,"
+  		+ "(SELECT FUNC_TYPE AS IP_FT,PRSN_ID AS IP_PI,COUNT(ID) AS IP_CASE ,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT,"
   		+ " SUM(DRUG_DOT) AS IP_DRUG FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE ,PRSN_ID ) IP"
   		+ " ON OP.OP_FT=IP.IP_FT AND OP.OP_PI=IP.IP_PI",nativeQuery=true)
   public List<Object[]>findAllClassDoctor(List<Integer>ids,List<Integer>ids2);
@@ -137,7 +137,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "FROM "
   		+ "(SELECT FUNC_TYPE AS OP_FT, PRSN_ID AS OP_PI,COUNT(T_DOT) AS C,SUM(T_DOT) AS DOT, SUM(DRUG_DOT) AS DRUG FROM OP_D WHERE FUNC_END_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID) OP "
   		+ "FULL JOIN "
-  		+ "(SELECT FUNC_TYPE AS IP_FT, PRSN_ID AS IP_PI,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS C,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS DOT,SUM(DRUG_DOT) AS DRUG FROM IP_D WHERE OUT_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID) IP "
+  		+ "(SELECT FUNC_TYPE AS IP_FT, PRSN_ID AS IP_PI,COUNT(ID) AS C,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS DOT,SUM(DRUG_DOT) AS DRUG FROM IP_D WHERE OUT_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID) IP "
   		+ "ON OP.OP_FT = IP.IP_FT AND OP.OP_PI = IP.IP_PI",nativeQuery=true)
 	  public List<Object[]>findAllClassDoctorWeekly(String sdate,String edate);
   
