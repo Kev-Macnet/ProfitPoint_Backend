@@ -2,6 +2,7 @@ package tw.com.leadtek.nhiwidget.service;
 
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -72,6 +73,8 @@ public class HealthCareCostService {
 	   */
 	  public static final String FUNC_TYPE_ALL_NAME = "不分科";
 	  
+	  public static final String FUNC_TYPE_ALL_CODE="00";
+	  
 	  @Autowired
 	  private CODE_TABLEDao code_TABLEDao;
 	
@@ -117,8 +120,6 @@ public class HealthCareCostService {
 	  public final static String FILE_PATH = "download";
 	  private List<CODE_TABLE> codeTableList;
 	  
-	  private DecimalFormat df = new DecimalFormat("######0.0000");
-	  
 	//取得健保藥費概況數據
 	  public List<HealthCareCost> getData(String year,String season,List<HealthCareCost> results) {
 		  
@@ -129,6 +130,15 @@ public class HealthCareCostService {
 			  }
 			
 			codeTableList=code_TABLEDao.findByCatOrderByCode("FUNC_TYPE");
+			
+			//去除不分科，不分科(全院)資料另外統計
+			for(int i=0,len=codeTableList.size();i<len;i++) {
+				if(codeTableList.get(i).getDescChi().equals(FUNC_TYPE_ALL_NAME)) {
+					codeTableList.remove(i);
+					len--;
+					i--;
+				}
+			}
 			
 			//找出週期結束時間
 			List<Integer>seasonSort=new ArrayList<Integer>();
@@ -279,30 +289,30 @@ public class HealthCareCostService {
 					HSSFSheet drugFeeSheet = workbook.createSheet("單季度-各科別藥費占比(門急診-住院)");
 					
 					//門急診/住院
-					String allDot=results.get(0).getAllDot(); //全院 病歷總點數
-					String allDrugFee=results.get(0).getAllDrugFee(); //全院 總藥費
-					String allRate=results.get(0).getAllRate();//全院 藥費占率
-					String allCount=results.get(0).getAllCount();//全院 案件數
+					String allDot=addThousandths(Long.valueOf(results.get(0).getAllDot())); //不分科 病歷總點數
+					String allDrugFee=addThousandths(Long.valueOf(results.get(0).getAllDrugFee())); //不分科 總藥費
+					String allRate=convertToInteger(Float.parseFloat(results.get(0).getAllRate())*100);//不分科 藥費占率
+					String allCount=addThousandths(Long.valueOf(results.get(0).getAllCount()));//不分科 案件數
 					List<ClassDrugDotDto> classAllDrugFee=results.get(0).getClassAll(); //各科總點數(藥費)
 					List<ClassDrugDotDto> classAll_TDot=results.get(0).getClassAll_TDot();//各科別病歷總點數
 					List<ClassDrugFeeDto>classAllDrugFeeRate=results.get(0).getClassAllFeeRate();//各科別藥費佔率
 					List<ClassCaseCountDto>classAllCaseCount=results.get(0).getClassAllCaseCount();//各科別案件數
 					
 					//門急診
-					String OPDot=results.get(0).getOP_Dot(); //全院 病歷總點數
-					String OPDrugFee=results.get(0).getOP_DrugFee(); //全院 總藥費
-					String OPRate=results.get(0).getOP_Rate();//全院 藥費占率
-					String OPCount=results.get(0).getOPCount();//全院 案件數
+					String OPDot=addThousandths(Long.valueOf(results.get(0).getOP_Dot())); //不分科 病歷總點數
+					String OPDrugFee=addThousandths(Long.valueOf(results.get(0).getOP_DrugFee())); //不分科 總藥費
+					String OPRate=convertToInteger(Float.parseFloat(results.get(0).getOP_Rate())*100);//不分科 藥費占率
+					String OPCount=addThousandths(Long.valueOf(results.get(0).getOPCount()));//不分科 案件數
 					List<ClassDrugDotDto> classOPDrugFee=results.get(0).getClassOP(); //各科總點數(藥費)
 					List<ClassDrugDotDto> classOP_TDot=results.get(0).getClassOP_TDot();//各科別病歷總點數
 					List<ClassDrugFeeDto>classOPDrugFeeRate=results.get(0).getClassOPFeeRate();//各科別藥費佔率
 					List<ClassCaseCountDto>classOPCaseCount=results.get(0).getClassOPCaseCount();//各科別案件數
 					
 					//住院
-					String IPDot=results.get(0).getIP_Dot(); //全院 病歷總點數
-					String IPDrugFee=results.get(0).getIP_DrugFee(); //全院 總藥費
-					String IPRate=results.get(0).getIP_Rate();//全院 藥費占率
-					String IPCount=results.get(0).getIPCount();//全院 案件數
+					String IPDot=addThousandths(Long.valueOf(results.get(0).getIP_Dot())); //不分科 病歷總點數
+					String IPDrugFee=addThousandths(Long.valueOf(results.get(0).getIP_DrugFee())); //不分科 總藥費
+					String IPRate=convertToInteger(Float.parseFloat(results.get(0).getIP_Rate())*100);//不分科 藥費占率
+					String IPCount=addThousandths(Long.valueOf(results.get(0).getIPCount()));//不分科 案件數
 					List<ClassDrugDotDto>classIPDrugFee=results.get(0).getClassIP(); //各科總點數(藥費)
 					List<ClassDrugDotDto> classIP_TDot=results.get(0).getClassIP_TDot();//各科別病歷總點數
 					List<ClassDrugFeeDto>classIPDrugFeeRate=results.get(0).getClassIPFeeRate();//各科別藥費佔率
@@ -358,7 +368,7 @@ public class HealthCareCostService {
 					drugFeeDiffSheet.addMergedRegion(new CellRangeAddress(2,2,0,1));
 					
 					List<ClassDrugFeeDto> classAllFeeDiff=results.get(0).getClassAllFeeDiff();
-					String AllFeeDiff=results.get(0).getAllFeeDiff();
+					String AllFeeDiff=addThousandths(Long.valueOf(results.get(0).getAllFeeDiff()));
 					
 					// 建立行,行號作為引數傳遞給createRow()方法,第一行從0開始計算
 					HSSFRow rowDFD0 = drugFeeDiffSheet.createRow(0);
@@ -368,13 +378,13 @@ public class HealthCareCostService {
 					addRowCell(rowDFD0,0,"去年同期健保藥費相比差額",cellStyle_noBorder);
 					addRowCell(rowDFD1,0,"",cellStyle_left);
 					addRowCell(rowDFD1,1,"",cellStyle_left);
-					addRowCell(rowDFD1,2,"全院",cellStyle_left);
+					addRowCell(rowDFD1,2,"不分科",cellStyle_left);
 					addRowCell(rowDFD2, 0, "藥費總差額",cellStyle_left);
 					addRowCell(rowDFD2, 2, AllFeeDiff,cellStyle_left);
 					
 					for(int i=0;i<classAllFeeDiff.size();i++) {
 						addRowCell(rowDFD1 ,i+3,classAllFeeDiff.get(i).getDesc_chi(),cellStyle_left);
-						addRowCell(rowDFD2,i+3, classAllFeeDiff.get(i).getFee(),cellStyle_left);
+						addRowCell(rowDFD2,i+3, addThousandths(Long.valueOf(classAllFeeDiff.get(i).getFee())),cellStyle_left);
 					}
 					
 					/*新建工作表 
@@ -385,7 +395,7 @@ public class HealthCareCostService {
 					HSSFRow rowDFS0 = drugFeeSortsheet.createRow(0);
 					addRowCell(rowDFS0,0, "",cellStyle_left);
 					addRowCell(rowDFS0,1, "案件數",cellStyle_left);
-					addRowCell(rowDFS0,2, "實際總點數",cellStyle_left);
+					addRowCell(rowDFS0,2, "實際申報點數",cellStyle_left);
 					addRowCell(rowDFS0,3, "總藥費",cellStyle_left);
 					
 					List<ClassDoctorDto> classDoctorAll=results.get(0).getClassDoctorAll();
@@ -415,9 +425,9 @@ public class HealthCareCostService {
 							
 							//印出科別各醫師數據
 							addRowCell(row_element, 0, doctorName, cellStyle_left);
-							addRowCell(row_element, 1,  caseCount.toString(), cellStyle_left);
-							addRowCell(row_element, 2, dot.toString(), cellStyle_left);
-							addRowCell(row_element, 3, drugFee.toString(), cellStyle_left);
+							addRowCell(row_element, 1,  addThousandths(Long.valueOf(caseCount.toString())), cellStyle_left);
+							addRowCell(row_element, 2, addThousandths(Long.valueOf(dot.toString())), cellStyle_left);
+							addRowCell(row_element, 3, addThousandths(Long.valueOf(drugFee.toString())), cellStyle_left);
 							
 							index++;
 						}
@@ -455,30 +465,30 @@ public class HealthCareCostService {
 						}
 						
 						//門急診/住院
-						String multi_allDot=results.get(i).getAllDot(); //全院 病歷總點數
-						String multi_allDrugFee=results.get(i).getAllDrugFee(); //全院 總藥費
-						String multi_allRate=results.get(i).getAllRate();//全院 藥費占率
-						String multi_allCount=results.get(i).getAllCount();//全院 案件數
+						String multi_allDot=addThousandths(Long.valueOf(results.get(i).getAllDot())); //全院 病歷總點數
+						String multi_allDrugFee=addThousandths(Long.valueOf(results.get(i).getAllDrugFee())); //全院 總藥費
+						String multi_allRate=convertToInteger(Float.parseFloat(results.get(i).getAllRate())*100);//全院 藥費占率
+						String multi_allCount=addThousandths(Long.valueOf(results.get(i).getAllCount()));//全院 案件數
 						List<ClassDrugDotDto> multi_classAllDrugFee=results.get(i).getClassAll(); //各科總點數(藥費)
 						List<ClassDrugDotDto> multi_classAll_TDot=results.get(i).getClassAll_TDot();//各科別病歷總點數
 						List<ClassDrugFeeDto>multi_classAllDrugFeeRate=results.get(i).getClassAllFeeRate();//各科別藥費佔率
 						List<ClassCaseCountDto>multi_classAllCaseCount=results.get(i).getClassAllCaseCount();//各科別案件數
 						
 						//門急診
-						String multi_OPDot=results.get(i).getOP_Dot(); //全院 病歷總點數
-						String multi_OPDrugFee=results.get(i).getOP_DrugFee(); //全院 總藥費
-						String multi_OPRate=results.get(i).getOP_Rate();//全院 藥費占率
-						String multi_OPCount=results.get(i).getOPCount();//全院 案件數
+						String multi_OPDot=addThousandths(Long.valueOf(results.get(i).getOP_Dot())); //全院 病歷總點數
+						String multi_OPDrugFee=addThousandths(Long.valueOf(results.get(i).getOP_DrugFee())); //全院 總藥費
+						String multi_OPRate=convertToInteger(Float.parseFloat(results.get(i).getOP_Rate())*100);//全院 藥費占率
+						String multi_OPCount=addThousandths(Long.valueOf(results.get(i).getOPCount()));//全院 案件數
 						List<ClassDrugDotDto> multi_classOPDrugFee=results.get(i).getClassOP(); //各科總點數(藥費)
 						List<ClassDrugDotDto> multi_classOP_TDot=results.get(i).getClassOP_TDot();//各科別病歷總點數
 						List<ClassDrugFeeDto>multi_classOPDrugFeeRate=results.get(i).getClassOPFeeRate();//各科別藥費佔率
 						List<ClassCaseCountDto>multi_classOPCaseCount=results.get(i).getClassOPCaseCount();//各科別案件數
 						
 						//住院
-						String multi_IPDot=results.get(i).getIP_Dot(); //全院 病歷總點數
-						String multi_IPDrugFee=results.get(i).getIP_DrugFee(); //全院 總藥費
-						String multi_IPRate=results.get(i).getIP_Rate();//全院 藥費占率
-						String multi_IPCount=results.get(i).getIPCount();//全院 案件數
+						String multi_IPDot=addThousandths(Long.valueOf(results.get(i).getIP_Dot())); //全院 病歷總點數
+						String multi_IPDrugFee=addThousandths(Long.valueOf(results.get(i).getIP_DrugFee())); //全院 總藥費
+						String multi_IPRate=convertToInteger(Float.parseFloat(results.get(i).getIP_Rate())*100);//全院 藥費占率
+						String multi_IPCount=addThousandths(Long.valueOf(results.get(i).getIPCount()));//全院 案件數
 						List<ClassDrugDotDto> multi_classIPDrugFee=results.get(i).getClassIP(); //各科總點數(藥費)
 						List<ClassDrugDotDto> multi_classIP_TDot=results.get(i).getClassIP_TDot();//各科別病歷總點數
 						List<ClassDrugFeeDto>multi_classIPDrugFeeRate=results.get(i).getClassIPFeeRate();//各科別藥費佔率
@@ -486,7 +496,7 @@ public class HealthCareCostService {
 						
 						//與去年同期健保藥費相比差額
 						List<ClassDrugFeeDto> multi_classAllFeeDiff=results.get(i).getClassAllFeeDiff();
-						String multi_AllFeeDiff=results.get(i).getAllFeeDiff();
+						String multi_AllFeeDiff=addThousandths(Long.valueOf(results.get(i).getAllFeeDiff()));
 						
 						
 						//各科別藥費佔比(門急診/住院) table
@@ -513,7 +523,7 @@ public class HealthCareCostService {
 						for(int j=0;j<3;j++) {
 							addRowCell(row2, j,"" , cellStyle_left);
 						}
-						addRowCell(row2, 3,"全院" , cellStyle_left);
+						addRowCell(row2, 3,"不分科" , cellStyle_left);
 						
 						addRowCell(row3, 0,"案件數" , cellStyle_left);
 						for(int j=1;j<3;j++) {
@@ -523,7 +533,7 @@ public class HealthCareCostService {
 						
 						for(int j=0;j<multi_classAllCaseCount.size();j++) {
 							addRowCell(row2, j+4, multi_classAllCaseCount.get(j).getDesc_chi(), cellStyle_left);
-							addRowCell(row3, j+4, multi_classAllCaseCount.get(j).getCaseCount(), cellStyle_left);
+							addRowCell(row3, j+4, addThousandths(Long.valueOf(multi_classAllCaseCount.get(j).getCaseCount())), cellStyle_left);
 						}
 						
 						addRowCell(row4, 0,"病歷總點數(不含自費)" , cellStyle_left);
@@ -533,7 +543,7 @@ public class HealthCareCostService {
 						addRowCell(row4, 3, multi_allDot, cellStyle_left);
 						
 						for(int j=0;j<multi_classAll_TDot.size();j++) {
-							addRowCell(row4, j+4, multi_classAll_TDot.get(j).getDot(), cellStyle_left);
+							addRowCell(row4, j+4, addThousandths(Long.valueOf(multi_classAll_TDot.get(j).getDot())), cellStyle_left);
 						}
 						
 						addRowCell(row5, 0,"總藥費(不含自費)" , cellStyle_left);
@@ -543,17 +553,17 @@ public class HealthCareCostService {
 						addRowCell(row5, 3, multi_allDrugFee, cellStyle_left);
 						
 						for(int j=0;j<multi_classAllDrugFee.size();j++) {
-							addRowCell(row5, j+4, multi_classAllDrugFee.get(j).getDot(), cellStyle_left);
+							addRowCell(row5, j+4, addThousandths(Long.valueOf(multi_classAllDrugFee.get(j).getDot())), cellStyle_left);
 						}
 						
-						addRowCell(row6, 0,"藥費佔率" , cellStyle_left);
+						addRowCell(row6, 0,"藥費佔率(%)" , cellStyle_left);
 						for(int j=1;j<3;j++) {
 							addRowCell(row6, j,"" , cellStyle_left);
 						}
 						addRowCell(row6, 3, multi_allRate, cellStyle_left);
 						
 						for(int j=0;j<multi_classAllDrugFeeRate.size();j++) {
-							addRowCell(row6, j+4, multi_classAllDrugFeeRate.get(j).getFee(), cellStyle_left);
+							addRowCell(row6, j+4, convertToInteger(Float.parseFloat(multi_classAllDrugFeeRate.get(j).getFee())*100), cellStyle_left);
 						}
 						
 						//各科別藥費佔比(門急診) table
@@ -580,7 +590,7 @@ public class HealthCareCostService {
 						for(int j=0;j<3;j++) {
 							addRowCell(rowB, j,"" , cellStyle_left);
 						}
-						addRowCell(rowB, 3,"全院" , cellStyle_left);
+						addRowCell(rowB, 3,"不分科" , cellStyle_left);
 						
 						addRowCell(rowC, 0,"案件數" , cellStyle_left);
 						for(int j=1;j<3;j++) {
@@ -590,7 +600,7 @@ public class HealthCareCostService {
 						
 						for(int j=0;j<multi_classOPCaseCount.size();j++) {
 							addRowCell(rowB, j+4, multi_classOPCaseCount.get(j).getDesc_chi(), cellStyle_left);
-							addRowCell(rowC, j+4, multi_classOPCaseCount.get(j).getCaseCount(), cellStyle_left);
+							addRowCell(rowC, j+4, addThousandths(Long.valueOf(multi_classOPCaseCount.get(j).getCaseCount())), cellStyle_left);
 						}
 						
 						addRowCell(rowD, 0,"病歷總點數(不含自費)" , cellStyle_left);
@@ -600,7 +610,7 @@ public class HealthCareCostService {
 						addRowCell(rowD, 3, multi_OPDot, cellStyle_left);
 						
 						for(int j=0;j<multi_classOP_TDot.size();j++) {
-							addRowCell(rowD, j+4, multi_classOP_TDot.get(j).getDot(), cellStyle_left);
+							addRowCell(rowD, j+4, addThousandths(Long.valueOf(multi_classOP_TDot.get(j).getDot())), cellStyle_left);
 						}
 						
 						addRowCell(rowE, 0,"總藥費(不含自費)" , cellStyle_left);
@@ -610,17 +620,17 @@ public class HealthCareCostService {
 						addRowCell(rowE, 3, multi_OPDrugFee, cellStyle_left);
 						
 						for(int j=0;j<multi_classOPDrugFee.size();j++) {
-							addRowCell(rowE, j+4, multi_classOPDrugFee.get(j).getDot(), cellStyle_left);
+							addRowCell(rowE, j+4, addThousandths(Long.valueOf(multi_classOPDrugFee.get(j).getDot())), cellStyle_left);
 						}
 						
-						addRowCell(rowF, 0,"藥費佔率" , cellStyle_left);
+						addRowCell(rowF, 0,"藥費佔率(%)" , cellStyle_left);
 						for(int j=1;j<3;j++) {
 							addRowCell(rowF, j,"" , cellStyle_left);
 						}
 						addRowCell(rowF, 3, multi_OPRate, cellStyle_left);
 						
 						for(int j=0;j<multi_classOPDrugFeeRate.size();j++) {
-							addRowCell(rowF, j+4, multi_classOPDrugFeeRate.get(j).getFee(), cellStyle_left);
+							addRowCell(rowF, j+4, convertToInteger(Float.parseFloat(multi_classOPDrugFeeRate.get(j).getFee())*100), cellStyle_left);
 						}
 						
 						//各科別藥費佔比(住院) table
@@ -647,7 +657,7 @@ public class HealthCareCostService {
 						for(int j=0;j<3;j++) {
 							addRowCell(rowBB, j,"" , cellStyle_left);
 						}
-						addRowCell(rowBB, 3,"全院" , cellStyle_left);
+						addRowCell(rowBB, 3,"不分科" , cellStyle_left);
 						
 						addRowCell(rowCC, 0,"案件數" , cellStyle_left);
 						for(int j=1;j<3;j++) {
@@ -657,7 +667,7 @@ public class HealthCareCostService {
 						
 						for(int j=0;j<multi_classIPCaseCount.size();j++) {
 							addRowCell(rowBB, j+4, multi_classIPCaseCount.get(j).getDesc_chi(), cellStyle_left);
-							addRowCell(rowCC, j+4, multi_classIPCaseCount.get(j).getCaseCount(), cellStyle_left);
+							addRowCell(rowCC, j+4, addThousandths(Long.valueOf(multi_classIPCaseCount.get(j).getCaseCount())), cellStyle_left);
 						}
 						
 						addRowCell(rowDD, 0,"病歷總點數(不含自費)" , cellStyle_left);
@@ -667,7 +677,7 @@ public class HealthCareCostService {
 						addRowCell(rowDD, 3, multi_IPDot, cellStyle_left);
 						
 						for(int j=0;j<multi_classIP_TDot.size();j++) {
-							addRowCell(rowDD, j+4, multi_classIP_TDot.get(j).getDot(), cellStyle_left);
+							addRowCell(rowDD, j+4, addThousandths(Long.valueOf(multi_classIP_TDot.get(j).getDot())), cellStyle_left);
 						}
 						
 						addRowCell(rowEE, 0,"總藥費(不含自費)" , cellStyle_left);
@@ -677,17 +687,17 @@ public class HealthCareCostService {
 						addRowCell(rowEE, 3, multi_IPDrugFee, cellStyle_left);
 						
 						for(int j=0;j<multi_classIPDrugFee.size();j++) {
-							addRowCell(rowEE, j+4, multi_classIPDrugFee.get(j).getDot(), cellStyle_left);
+							addRowCell(rowEE, j+4, addThousandths(Long.valueOf(multi_classIPDrugFee.get(j).getDot())), cellStyle_left);
 						}
 						
-						addRowCell(rowFF, 0,"藥費佔率" , cellStyle_left);
+						addRowCell(rowFF, 0,"藥費佔率(%)" , cellStyle_left);
 						for(int j=1;j<3;j++) {
 							addRowCell(rowFF, j,"" , cellStyle_left);
 						}
 						addRowCell(rowFF, 3, multi_IPRate, cellStyle_left);
 						
 						for(int j=0;j<multi_classIPDrugFeeRate.size();j++) {
-							addRowCell(rowFF, j+4, multi_classIPDrugFeeRate.get(j).getFee(), cellStyle_left);
+							addRowCell(rowFF, j+4, convertToInteger(Float.parseFloat(multi_classIPDrugFeeRate.get(j).getFee())*100), cellStyle_left);
 						}
 						
 						
@@ -709,7 +719,7 @@ public class HealthCareCostService {
 						for(int j=0;j<3;j++) {
 							addRowCell(rowb,j,"",cellStyle_left);
 						}
-						addRowCell(rowb,3,"全院",cellStyle_left);
+						addRowCell(rowb,3,"不分科",cellStyle_left);
 						
 						addRowCell(rowc,0, "藥費總差額",cellStyle_left);
 						addRowCell(rowc,1,"",cellStyle_left);
@@ -718,7 +728,7 @@ public class HealthCareCostService {
 						
 						for(int x=0;x<multi_classAllFeeDiff.size();x++) {
 							addRowCell(rowb ,x+4,multi_classAllFeeDiff.get(x).getDesc_chi(),cellStyle_left);
-							addRowCell(rowc,x+4, multi_classAllFeeDiff.get(x).getFee(),cellStyle_left);
+							addRowCell(rowc,x+4, addThousandths(Long.valueOf(multi_classAllFeeDiff.get(x).getFee())),cellStyle_left);
 						}
 					}
 					
@@ -795,13 +805,13 @@ public class HealthCareCostService {
 										String week=weekly.get(y);
 										for(int k=0;k<weeklyInfo.size();k++) {
 											String week2=weeklyInfo.get(k).getWeek();
-											Integer caseCount=weeklyInfo.get(k).getCaseCount();
-											Integer drugFee=weeklyInfo.get(k).getDrugFee();
+											String caseCount=addThousandths(Long.valueOf(weeklyInfo.get(k).getCaseCount()));
+											String drugFee=addThousandths(Long.valueOf(weeklyInfo.get(k).getDrugFee()));
 											
 											if(week.equals(week2)) {
 												HSSFRow row = classDrugFeeSheet_weekly.getRow(title+3+y);
-												addRowCell(row, drugFeeIndex, drugFee.toString() , cellStyle_left);
-												addRowCell(row, caseCountweekIndex,  caseCount.toString() , cellStyle_left);
+												addRowCell(row, drugFeeIndex, drugFee , cellStyle_left);
+												addRowCell(row, caseCountweekIndex,  caseCount , cellStyle_left);
 											}
 										}
 										
@@ -836,7 +846,7 @@ public class HealthCareCostService {
 		  } catch (Exception e) {
 				// TODO: handle exception
 			  logger.info("健保藥費概況匯出報表錯誤: {}",e);
-//			  e.printStackTrace();
+			  e.printStackTrace();
 //			  System.out.println(e);
 		  }
 	  }
@@ -882,7 +892,7 @@ public class HealthCareCostService {
 		  	title.append(season+str);
 		  
 			addRowCell(row0,0,title.toString(),null);
-			addRowCell(row1, 3, "全院", cellStyle_left);
+			addRowCell(row1, 3, "不分科", cellStyle_left);
 			for(int i=0;i<3;i++) {
 				addRowCell(row1, i, "", cellStyle_left);
 			}
@@ -893,7 +903,7 @@ public class HealthCareCostService {
 			}
 			addRowCell(row2,3,caseCount,cellStyle_left);
 			for(int i=0;i<classCaseCount.size();i++) {
-				addRowCell(row2,i+4,classCaseCount.get(i).getCaseCount(),cellStyle_left);
+					addRowCell(row2,i+4,addThousandths(Long.valueOf(classCaseCount.get(i).getCaseCount())),cellStyle_left);
 			}
 			
 			addRowCell(row3,0,"病歷總點數(不含自費)",cellStyle_left);
@@ -902,7 +912,7 @@ public class HealthCareCostService {
 			}
 			addRowCell(row3,3,dot,cellStyle_left);
 			for(int i=0;i<classTDot.size();i++) {
-				addRowCell(row3,i+4,classTDot.get(i).getDot(),cellStyle_left);
+				addRowCell(row3,i+4,addThousandths(Long.valueOf(classTDot.get(i).getDot())),cellStyle_left);
 			}
 			
 			addRowCell(row4,0,"總藥費(不含自費)",cellStyle_left);
@@ -912,15 +922,15 @@ public class HealthCareCostService {
 			addRowCell(row4, 3, drugFee, cellStyle_left);
 			for(int i=0;i<classDrugFee.size();i++) {
 				addRowCell(row1,i+4,classDrugFee.get(i).getDesc_chi(),cellStyle_left);
-				addRowCell(row4,i+4,classDrugFee.get(i).getDot(),cellStyle_left);
+				addRowCell(row4,i+4,addThousandths(Long.valueOf(classDrugFee.get(i).getDot())),cellStyle_left);
 			}
 			
-			addRowCell(row5,0,"藥費佔率",cellStyle_left);
+			addRowCell(row5,0,"藥費佔率(%)",cellStyle_left);
 			for(int i=1;i<3;i++) {
 				addRowCell(row5, i, "", cellStyle_left);
 			}
 			for(int i=0;i<classDrugFeeRate.size();i++) {
-				addRowCell(row5,i+4,classDrugFeeRate.get(i).getFee(),cellStyle_left);
+				addRowCell(row5,i+4,convertToInteger(Float.parseFloat(classDrugFeeRate.get(i).getFee())*100),cellStyle_left);
 			}
 			addRowCell(row5,3,drugFeeRate,cellStyle_left);
 	  }
@@ -998,7 +1008,7 @@ public class HealthCareCostService {
 				
 				//門急診/住院 1.病例總點數 2.總藥費 3.藥費佔率 4.案件數
 				String allD=opdDao.findTDot(optDao.findByFeeYmListOrderById(seasonList),iptDao.findByFeeYmListOrderById(seasonList));
-				if(allD!=null){
+				if(allD!=null && Long.valueOf(allD)!=0){
 					OP_AllDot.setLength(0);
 					OP_AllDot.append(allD);
 				}
@@ -1015,12 +1025,12 @@ public class HealthCareCostService {
 					OP_AllDrugFee.setLength(0);
 					OP_AllDrugFee.append("0");
 				}
-				OP_AllRate.append(df.format(checkDoubleNull(OP_AllDrugFee.toString())/checkDoubleNull(OP_AllDot.toString())));
+				OP_AllRate.append(checkDoubleNull(OP_AllDrugFee.toString())/checkDoubleNull(OP_AllDot.toString()));
 				AllCount.append(opdDao.findTCount(optDao.findByFeeYmListOrderById(seasonList),iptDao.findByFeeYmListOrderById(seasonList)));
 				
 				//門急診 1.病例總點數 2.總藥費 3.藥費佔率 4.案件數
 				String opD=opdDao.findOPDot(optDao.findByFeeYmListOrderById(seasonList));
-				if(opD!=null) {
+				if(opD!=null && Long.valueOf(opD)!=0) {
 					OP_Dot.setLength(0);
 					OP_Dot.append(opD);
 				}
@@ -1037,12 +1047,12 @@ public class HealthCareCostService {
 					OP_DrugFee.setLength(0);
 					OP_DrugFee.append("0");
 				}
-				OP_Rate.append(df.format(checkDoubleNull(OP_DrugFee.toString())/checkDoubleNull(OP_Dot.toString())));
+				OP_Rate.append(checkDoubleNull(OP_DrugFee.toString())/checkDoubleNull(OP_Dot.toString()));
 				OPCount.append(opdDao.findOPCount(optDao.findByFeeYmListOrderById(seasonList)));
 				
 				//住院 1.病例總點數 2.總藥費 3.藥費佔率 4.案件數
 				String ipD=ipdDao.findIPDot(iptDao.findByFeeYmListOrderById(seasonList));
-				if(ipD!=null) {
+				if(ipD!=null && Long.valueOf(ipD)!=0) {
 					IP_Dot.setLength(0);
 					IP_Dot.append(ipD);
 				}
@@ -1059,7 +1069,7 @@ public class HealthCareCostService {
 					IP_DrugFee.setLength(0);
 					IP_DrugFee.append("0");
 				}
-				IP_Rate.append(df.format(checkDoubleNull(IP_DrugFee.toString())/checkDoubleNull(IP_Dot.toString())));
+				IP_Rate.append(checkDoubleNull(IP_DrugFee.toString())/checkDoubleNull(IP_Dot.toString()));
 				IPCount.append(ipdDao.findIPCount(iptDao.findByFeeYmListOrderById(seasonList)));
 				
 				//各科別門急診總病歷點數
@@ -1273,10 +1283,10 @@ public class HealthCareCostService {
 						if(code.equals(classAll_TDot.get(b).getCode())) {
 							double num2=checkDoubleNull(classAll_TDot.get(b).getDot());
 							if((int)num1==0 || (int)num2==0) {
-								classAllDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,df.format(0)));
+								classAllDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,"0"));
 							}
 							else {
-								classAllDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,df.format(num1/num2)));
+								classAllDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,String.valueOf(num1/num2)));
 							}
 						}
 					}
@@ -1302,10 +1312,10 @@ public class HealthCareCostService {
 						if(code.equals(classOP_TDot.get(b).getCode())) {
 							double num2=checkDoubleNull(classOP_TDot.get(b).getDot());
 							if((int)num1==0 || (int)num2==0) {
-								classOPDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,df.format(0)));
+								classOPDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,"0"));
 							}
 							else {
-								classOPDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,df.format(num1/num2)));
+								classOPDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,String.valueOf(num1/num2)));
 							}
 						}
 					}
@@ -1331,10 +1341,10 @@ public class HealthCareCostService {
 						if(code.equals(classIP_TDot.get(b).getCode())) {
 							double num2=checkDoubleNull(classIP_TDot.get(b).getDot());
 							if((int)num1==0 || (int)num2==0) {
-								classIPDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,df.format(0)));
+								classIPDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,"0"));
 							}
 							else {
-								classIPDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,df.format(num1/num2)));
+								classIPDrugFeeRate.set(a, new ClassDrugFeeDto(desc_chi,code,String.valueOf(num1/num2)));
 							}
 						}
 					}
@@ -1541,7 +1551,7 @@ public class HealthCareCostService {
 			  num = Double.parseDouble(str);
 		  }
 		  else {
-			  return 0;
+			  return 0.0;
 		  }
 		  
 		  return num;
@@ -1783,4 +1793,36 @@ public class HealthCareCostService {
 			
 		return instance;
 	  }
+	  
+		//四捨五入取到整數
+		public String convertToInteger(Float num) {
+			int scale = 0;//設定位數
+			int roundingMode = 4;//表示四捨五入,可以選擇其他舍值方式,例如去尾,等等.
+			Boolean isNumber=true;
+			
+			StringBuffer str=new StringBuffer(String.valueOf(num).replaceAll("\\.", ""));
+			
+			for(int i=0;i<str.toString().length();i++) {
+				if(!Character.isDigit(str.toString().charAt(i))){
+					isNumber=false;
+				}
+			}
+			
+			if(isNumber) {
+				BigDecimal bd = new BigDecimal((double)num);
+				bd = bd.setScale(scale,roundingMode);
+				num = bd.floatValue();
+			}
+			else {
+				num=0f;
+			}
+			
+			return num.toString().replaceAll("\\.0", "");
+		}
+		
+		//千分位
+		public String addThousandths(Long num) {
+			DecimalFormat df=new DecimalFormat("#,###");
+			return df.format(num);
+		}
 }

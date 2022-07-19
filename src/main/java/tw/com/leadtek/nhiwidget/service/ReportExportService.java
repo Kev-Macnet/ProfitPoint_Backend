@@ -7252,6 +7252,7 @@ public class ReportExportService {
 
 	}
 
+	//四捨五入取到整數
 	public String convertToInteger(Float num) {
 		int scale = 0;//設定位數
 		int roundingMode = 4;//表示四捨五入,可以選擇其他舍值方式,例如去尾,等等.
@@ -7262,6 +7263,7 @@ public class ReportExportService {
 		return num.toString().replaceAll("\\.0", "");
 	}
 	
+	//千分位
 	public String addThousandths(Long num) {
 		DecimalFormat df=new DecimalFormat("#,###");
 		return df.format(num);
