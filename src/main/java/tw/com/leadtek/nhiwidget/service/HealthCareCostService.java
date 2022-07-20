@@ -1428,14 +1428,14 @@ public class HealthCareCostService {
 						if(classDoctor_All.get(b)[0]!=null) {
 							code2=classDoctor_All.get(b)[0].toString();
 						}
-						else {
+						if(classDoctor_All.get(b)[1]!=null) {
 							code2=classDoctor_All.get(b)[1].toString();
 						}
 						
 						if(classDoctor_All.get(b)[2]!=null) {
 							doctorName=classDoctor_All.get(b)[2].toString();
 						}
-						else {
+						if(classDoctor_All.get(b)[3]!=null) {
 							doctorName=classDoctor_All.get(b)[3].toString();
 						}
 						
@@ -1451,6 +1451,8 @@ public class HealthCareCostService {
 							fee=Integer.valueOf(classDoctor_All.get(b)[6].toString());
 						}
 						
+						System.out.println(code2+" "+doctorName);
+						
 						if(code.equals(code2)){
 							doctors.put(doctorName,new CaseDotFeeDto("",caseCount,dot,fee));
 							classDoctorAll.set(a,new ClassDoctorDto(desc_chi,code,doctors));
@@ -1461,7 +1463,7 @@ public class HealthCareCostService {
 			} catch (Exception e) {
 				// TODO: handle exception
 				logger.info("health care cost exception {}",e);
-//				e.printStackTrace();
+				e.printStackTrace();
 			}
 			
 			return setHealthCareCost(seasonStr

@@ -4777,7 +4777,7 @@ public class ReportExportService {
 			addRowCell(rowA12, 9, addThousandths(diff_ip), cellStyle);
 			addRowCell(rowA12, 10,addThousandths(diff_leave), cellStyle);
 
-			addRowCell(rowA13, 0, "上月同區間總差額率", cellStyle);
+			addRowCell(rowA13, 0, "上月同區間總差額率(%)", cellStyle);
 			for (int i = 1; i < 3; i++) {
 				addRowCell(rowA13, i, "", cellStyle);
 			}
