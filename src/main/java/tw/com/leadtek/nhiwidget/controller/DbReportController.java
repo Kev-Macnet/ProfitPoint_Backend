@@ -658,5 +658,27 @@ public class DbReportController extends BaseController {
 		
 		return ResponseEntity.ok(dbService.getDeductedNoteQueryCondition(year, month, dataFormats, funcTypes, medNames, icdAll, payCode, inhCode, isLastM, isLastY));
 	}
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
+	@ApiOperation(value = "取得核刪資料-匯出", notes = "取得核刪資料-匯出")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/deductedNoteQueryConditionExport")
+	public ResponseEntity<BaseResponse> getDeductedNoteQueryConditionExport(
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，必填", example = "2022") @RequestParam(required = true) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，必填", example = "1") @RequestParam(required = true) String month,
+			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = false) String dataFormats,
+			@ApiParam(name = "funcTypes", value = "科別，若為多筆資料，用空格隔開，05 06", example = "") @RequestParam(required = false) String funcTypes,
+			@ApiParam(name = "medNames", value = "醫護姓名，若為多筆資料，用空格隔開，R A ", example = "") @RequestParam(required = false) String medNames,
+			@ApiParam(name = "icdAll", value = "不分區ICD碼，若為多筆資料，用空格隔開，Z01.411 Z01.412 ", example = "") @RequestParam(required = false) String icdAll,
+			@ApiParam(name = "payCode", value = "支付標準代碼", example = "") @RequestParam(required = false) String payCode,
+			@ApiParam(name = "inhCode", value = "院內碼", example = "") @RequestParam(required = false) String inhCode,
+			@ApiParam(name = "isLastM", value = "上個月同條件相比", example = "false") @RequestParam(required = false) boolean isLastM,
+			@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) boolean isLastY,
+			HttpServletResponse response
+			)
+			throws ParseException, IOException {
+
+		dbExportService.getDeductedNoteQueryConditionExport(year, month, dataFormats, funcTypes, medNames, icdAll, payCode, inhCode, isLastM, isLastY, response);
+		return null;
+	}
 
 }

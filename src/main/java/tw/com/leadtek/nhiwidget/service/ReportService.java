@@ -199,8 +199,12 @@ public class ReportService {
 		} else {
 			return;
 		}
+		String year = adYM.substring(0,4);
+		String month = adYM.substring(adYM.length() - 2, adYM.length());
+		String append = year + "-" + month;
 
-		List<Object[]> list = opdDao.findMonthlyPoint(chineseYM);
+//		List<Object[]> list = opdDao.findMonthlyPoint(chineseYM);
+		List<Object[]> list = opdDao.findMonthlyPointByEndDate(append);
 		if (list != null && list.size() > 0) {
 			Object[] obj = list.get(0);
 			pm.setPartOp(getLongValue(obj[0]));

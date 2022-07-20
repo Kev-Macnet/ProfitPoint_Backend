@@ -36,7 +36,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   //住院案件數
   @Query(value="SELECT IP.IP_DOT FROM "
-  		+ "(SELECT (COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP", nativeQuery=true)
+  		+ "(SELECT COUNT(ID) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP", nativeQuery=true)
   public String findIPCount(List<Integer>ids);
   
   //住院總藥費
@@ -49,7 +49,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   public List<Object[]> findClassIP_TDot(List<Integer>ids);
   
   //各科別住院案件數
-  @Query(value="SELECT FUNC_TYPE ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) FROM IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
+  @Query(value="SELECT FUNC_TYPE ,COUNT(ID) FROM IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
   public List<Object[]> findClassIPCount(List<Integer>ids);
   
   //各科別住院總藥品點數(總藥費)
@@ -58,12 +58,12 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   public List<Object[]> findClassIPDrugDot(List<Integer>ids);
   
   //各科別各醫師住院案件數、病歷實際總點數、總藥品點數(總藥費)
-  @Query(value="SELECT FUNC_TYPE,PRSN_ID ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)),(SUM(MED_DOT)+SUM(NON_APPL_DOT))"
+  @Query(value="SELECT FUNC_TYPE,PRSN_ID ,COUNT(ID),(SUM(MED_DOT)+SUM(NON_APPL_DOT))"
   		+ ",SUM(DRUG_DOT) FROM IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE ,PRSN_ID ",nativeQuery=true)
   public List<Object[]>findIPClassDoctor(List<Integer>ids);
   
   //各科別各醫師每週住院案件數、病歷實際總點數、總藥品點數(總藥費)
-  @Query(value="SELECT FUNC_TYPE,PRSN_ID ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)),(SUM(MED_DOT)+SUM(NON_APPL_DOT)),SUM(DRUG_DOT)"
+  @Query(value="SELECT FUNC_TYPE,PRSN_ID ,COUNT(ID),(SUM(MED_DOT)+SUM(NON_APPL_DOT)),SUM(DRUG_DOT)"
   		+ "FROM IP_D WHERE OUT_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID ORDER BY PRSN_ID",nativeQuery=true)
   public List<Object[]>findIPClassDoctorWeekly(String sdate,String edate);
   

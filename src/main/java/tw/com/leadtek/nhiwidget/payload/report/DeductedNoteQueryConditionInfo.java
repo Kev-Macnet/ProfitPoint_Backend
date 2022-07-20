@@ -10,6 +10,12 @@ public class DeductedNoteQueryConditionInfo implements Serializable {
 
 	@ApiModelProperty(value = "總抽件數", required = false)
 	Long extractCase;
+	@ApiModelProperty(value = "門急診/住院核刪件數", required = false)
+	Long deductedQuantityAll;
+	@ApiModelProperty(value = "門急診/住院核刪點數", required = false)
+	Long deductedAmountAll;
+	@ApiModelProperty(value = "門急診/住院放大回推金額(月)", required = false)
+	Long rollbackMAll;
 	@ApiModelProperty(value = "門急診核刪件數", required = false)
 	Long deductedQuantityOp;
 	@ApiModelProperty(value = "門急診核刪點數", required = false)
@@ -31,6 +37,30 @@ public class DeductedNoteQueryConditionInfo implements Serializable {
 
 	public void setExtractCase(Long extractCase) {
 		this.extractCase = extractCase;
+	}
+
+	public Long getDeductedQuantityAll() {
+		return deductedQuantityAll;
+	}
+
+	public void setDeductedQuantityAll(Long deductedQuantityAll) {
+		this.deductedQuantityAll = deductedQuantityAll;
+	}
+
+	public Long getDeductedAmountAll() {
+		return deductedAmountAll;
+	}
+
+	public void setDeductedAmountAll(Long deductedAmountAll) {
+		this.deductedAmountAll = deductedAmountAll;
+	}
+
+	public Long getRollbackMAll() {
+		return rollbackMAll;
+	}
+
+	public void setRollbackMAll(Long rollbackMAll) {
+		this.rollbackMAll = rollbackMAll;
 	}
 
 	public Long getDeductedQuantityOp() {
