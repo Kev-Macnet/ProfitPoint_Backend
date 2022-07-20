@@ -401,7 +401,7 @@ public class HealthCareCostService {
 					List<ClassDoctorDto> classDoctorAll=results.get(0).getClassDoctorAll();
 					int index=1;
 					
-					for(int i=1;i<classDoctorAll.size();i++) {
+					for(int i=0;i<classDoctorAll.size();i++) {
 						String desc_chi=classDoctorAll.get(i).getDesc_chi();
 						Map<String,CaseDotFeeDto> doctors=classDoctorAll.get(i).getDoctors();
 						
@@ -1450,8 +1450,6 @@ public class HealthCareCostService {
 						if(classDoctor_All.get(b)[6]!=null) {
 							fee=Integer.valueOf(classDoctor_All.get(b)[6].toString());
 						}
-						
-						System.out.println(code2+" "+doctorName);
 						
 						if(code.equals(code2)){
 							doctors.put(doctorName,new CaseDotFeeDto("",caseCount,dot,fee));
