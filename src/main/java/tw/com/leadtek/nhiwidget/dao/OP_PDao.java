@@ -357,4 +357,7 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
     @Query(value = "SELECT MR_ID, DRUG_NO, INH_CODE, TOTAL_Q FROM op_p "
         + "WHERE (DRUG_NO = ?1 OR INH_CODE = ?2 ) AND MR_ID IN ?3 ORDER BY MR_ID", nativeQuery = true)
     public List<Object[]> getMrIdAndDrugNoAndTotalQByMrIdList(String drugNo, String inhCode, List<Long> mrIdList);
+    
+    @Query(value = "SELECT * FROM op_p WHERE MR_ID IN ?1 ORDER BY MR_ID", nativeQuery = true)
+    public List<OP_P> getOppListByMrIdList(List<Long> mrIdList);
 }

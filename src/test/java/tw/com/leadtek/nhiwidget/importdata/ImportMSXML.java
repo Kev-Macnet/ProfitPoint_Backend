@@ -61,23 +61,4 @@ public class ImportMSXML {
           "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\敏盛醫院\\麗臺-門急診\\10801_0\\A-補報(A+a)\\10801-0-A.xml"));
   }
 
-  @Ignore
-  @Test
-  public void updateMR_DRGCode() {
-    List<Object[]> list = ipdDao.findDRGCodeNotNull();
-
-    int count = 0;
-    for (Object[] obj : list) {
-      count++;
-      String drg = (String) obj[0];
-      Long mrId = ((BigInteger) obj[1]).longValue();
-      mrDao.updateDRG(drg, mrId);
-    }
-    System.out.println("update " + count + " records.");
-  }
-  
-  @Test
-  public void updateMRICDAll() {
-    
-  }
 }

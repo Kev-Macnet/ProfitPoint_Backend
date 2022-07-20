@@ -1,3 +1,4 @@
+# Replace 59.120.139.62:8081 to localhost:8081 
 server:
   port: ${port:8081}
   tomcat:
@@ -21,8 +22,8 @@ spring:
       max-file-size: 256MB
       max-request-size: 256MB
       enabled: true
-#  jackson:
-#    default-property-inclusion: NON_NULL
+  jackson:
+    default-property-inclusion: NON_NULL
   redis:
     host: 10.10.5.23
     port: 6379
@@ -37,12 +38,6 @@ spring:
     url: jdbc:mariadb://${dbip:10.10.5.23}:${dbport:3306}/nwuser
     username: leadtek
     password: leadtek
-#  datasource:
-#    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#    url: jdbc:sqlserver://${dbip:140.127.232.81}:${dbport:1433}; databaseName=ProjectData
-#    username: sa
-#    password: "!si7966"
-#    connection-test-query: SELECT '1' FROM DUMMY
   jpa:
 #    orm:
     mapping-resources: orm.xml
@@ -57,7 +52,7 @@ spring:
           new_generator_mappings: false
           connection:
           pool_size: 100
-        format_sql: false
+        format_sql: true
         order_inserts: true
         order_updates: true
         jdbc:
@@ -72,25 +67,31 @@ spring:
       default-schema: NHIWIDGET
       connection:
         pool_size: 100
-      show_sql: false
-      format_sql: false
       bytecode: 
         provider: javassist
         use_reflection_optimizer: true
-jwt:
-  secret: leadtek_NHIWidget
-# jwt expire time: 8 hours
-  expiration: 28800000
-# away from keyboard 時間，超過30分則刪除 jwt
-#  afk: 1800000
-  afk: 28800000
-mail:
-  host: 59.120.139.196
-  port: 25
-  fromEmail: monitor@leadtek.com.tw
-  password: z5z8tah5
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+project:
+  jwt:
+    secret: leadtek_NHIWidget
+  # jwt expire time: 8 hours
+    expiration: 28800000
+  # away from keyboard 時間，超過30分則刪除 jwt
+    afk: 1800000
+  mail:
+    host: 59.120.139.196
+    port: 25
+    fromEmail: monitor@leadtek.com.tw
+    password: z5z8tah5
+  serverUrl: "http://localhost:8081/#/login?redir=warehouse/"
+  apiUrl: "http://localhost:8081/"
+  hospId: 1532011154
+  isMask: false
 swagger:
-  enable: true
+  enable: false
   application-name: 健保申保最佳化系統 API
   application-version: 2.0
   application-description: 健保申保最佳化系統 API

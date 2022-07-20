@@ -70,7 +70,7 @@ public class InitialEnvironment {
   
   // 最後要有 \\
   //public final static String FILE_PATH = "D:\\Documents\\Projects\\Leadtek\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\";
-  public final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\";
+  public final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Install\\";
   
   @Autowired
   private PARAMETERSDao pDao;

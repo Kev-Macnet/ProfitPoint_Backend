@@ -471,4 +471,12 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
 
   @Query(value = "SELECT PHAR_ID, COUNT(PHAR_ID) FROM OP_D WHERE MR_ID IN ?1 GROUP BY PHAR_ID", nativeQuery = true)
   public List<Object[]> getPharIdCountByMrId(List<Long> mrId);
+  
+  /**
+   * 由mrid取得op_d 列表
+   * @param mrid
+   * @return
+   */
+  @Query(value = "select * from op_d where mr_id in ?1", nativeQuery = true)
+  public List<OP_D> getOpdListByMrId(List<Long> mrid);
 }

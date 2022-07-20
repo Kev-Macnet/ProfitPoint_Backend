@@ -328,6 +328,44 @@ public class ExcelUtil {
     return result;
   }
   
+  public static HashMap<Integer, String> readTitleRowHSSFRow(HSSFRow row,
+      List<PARAMETERS> parameterList) {
+    HashMap<Integer, String> result = new HashMap<Integer, String>();
+    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+      if (row.getCell(i) == null) {
+        continue;
+      }
+      String cellValue = row.getCell(i).getStringCellValue();
+      if (cellValue != null && cellValue.length() > 1) {
+        if (cellValue.indexOf(',') > -1) {
+          cellValue = cellValue.split(",")[0];
+        }
+        if (cellValue.indexOf(' ') > -1) {
+          cellValue = removeSpace(cellValue);
+        }
+        if (parameterList != null && parameterList.size() > 0) {
+          boolean isFound = false;
+          for (int j = 0; j < parameterList.size(); j++) {
+            if (parameterList.get(j).getValue() == null) {
+              continue;
+            }
+            if (cellValue.equals(parameterList.get(j).getValue().trim())) {
+              result.put(new Integer(i), parameterList.get(j).getName());
+              isFound = true;
+              break;
+            }
+          }
+          if (!isFound) {
+            result.put(new Integer(i), cellValue);
+          }
+        } else {
+          result.put(new Integer(i), cellValue);
+        }
+      }
+    }
+    return result;
+  }
+  
   public static HashMap<Integer, String> readTitleRow(Row row) {
 	    HashMap<Integer, String> result = new HashMap<Integer, String>();
 	    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
@@ -425,6 +463,11 @@ public class ExcelUtil {
           cellValue = cellValue.substring(0, cellValue.length() - 2);
         }
         // System.out.println("cell numeric after:" + cellValue);
+      } else if (row.getCell(i).getCellType() == CellType.FORMULA) {
+        cellValue = row.getCell(i).getCellFormula();
+        if (cellValue.startsWith("-")) {
+          cellValue = cellValue.substring(1).trim();
+        }
       } else {
         cellValue = row.getCell(i).getStringCellValue().trim();
       }
@@ -483,7 +526,7 @@ public class ExcelUtil {
       if (row.getCell(i) == null) {
         continue;
       }
-      String cellValue = row.getCell(i).getStringCellValue();
+      String cellValue = getCellStringValue(row.getCell(i));
       if (cellValue != null && cellValue.length() > 1) {
         if (cellValue.indexOf(',') > -1) {
           cellValue = cellValue.split(",")[0];
@@ -492,14 +535,19 @@ public class ExcelUtil {
           cellValue = removeSpace(cellValue);
         }
         if (parameterList != null && parameterList.size() > 0) {
+          boolean isFound = false;
           for(int j=0; j<parameterList.size(); j++) {
             if (parameterList.get(j).getValue() == null) {
               continue;
             }
             if (cellValue.equals(parameterList.get(j).getValue().trim())) {
               result.put(new Integer(i), parameterList.get(j).getName());
+              isFound = true;
               break;
             }
+          }
+          if (!isFound) {
+            result.put(new Integer(i), cellValue);
           }
         } else {
           result.put(new Integer(i), cellValue);

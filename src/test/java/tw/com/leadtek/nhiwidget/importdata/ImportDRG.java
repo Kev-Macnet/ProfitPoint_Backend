@@ -104,13 +104,20 @@ public class ImportDRG {
 //    importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Tw-DRG_公式與排除110年7月至12月.xlsx",
 //        "110年7至12月 3.4版 TW-DRGs權重表", "20210701", "20211231");
     // ==========================
-  started = new ArrayList<String>();
-  importDRGStarted(
-      InitialEnvironment.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
-      sheetNames);
-  importDRGExcel("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Install\\111年1-6月3.4版1,068項Tw-DRGs適用權重表.xlsx",
-      "附表7.3", "20220101", "20220630");
-    // 
+//  started = new ArrayList<String>();
+//  importDRGStarted(
+//      InitialEnvironment.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+//      sheetNames);
+//  importDRGExcel( InitialEnvironment.FILE_PATH + "111年1-6月3.4版1,068項Tw-DRGs適用權重表.xlsx",
+//      "附表7.3", "20220101", "20220630");
+    //
+    started = new ArrayList<String>();
+    importDRGStarted(
+        InitialEnvironment.FILE_PATH + "Tw-DRG_公式與排除(更新至2021年07月至12月).xlsx",
+        sheetNames);
+    importDRGExcel( InitialEnvironment.FILE_PATH + "111年7-12月3.4版1,068項Tw-DRGs適用權重表.xlsx",
+        "附表7.3(20220317)", "20220701", "20221231");
+
   }
 
   /**

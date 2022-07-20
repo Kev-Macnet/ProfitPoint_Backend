@@ -35,14 +35,20 @@ import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.controller.SystemController;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
+import tw.com.leadtek.nhiwidget.dao.DEPARTMENTDao;
 import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
 import tw.com.leadtek.nhiwidget.dao.PARAMETERSDao;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
+import tw.com.leadtek.nhiwidget.dao.USERDao;
+import tw.com.leadtek.nhiwidget.dao.USER_DEPARTMENTDao;
 import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
+import tw.com.leadtek.nhiwidget.model.rdb.USER;
+import tw.com.leadtek.nhiwidget.model.rdb.USER_DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
 import tw.com.leadtek.tools.ExcelUtil;
@@ -86,9 +92,14 @@ public class InitialDataService {
   @Autowired
   private ICD10Dao icd10Dao;
   
-//  @Autowired
-//  private CODE_THRESHOLDDao codeThresholdDao;
+  @Autowired
+  private DEPARTMENTDao departmentDao;
 
+  @Autowired
+  private USERDao userDao;
+  
+  @Autowired
+  private USER_DEPARTMENTDao userDepartmentDao;
 
   /**
    * 匯入PARAMETERS.xlsx 設定檔
@@ -209,12 +220,15 @@ public class InitialDataService {
     String category = "ORDER";
     ZSetOperations<String, Object> op = redisTemplate.opsForZSet();
     HashMap<String, String> keys = getRedisId(collectionName + "-data", category);
-    System.out.println("keys size=" + keys.size());
 //    for (String string : keys.keySet()) {
 //      System.out.println(string +":" + keys.get(string));
 //    }
     try {
-      List<PARAMETERS> payCodeType = parametersService.getByCat("PAY_CODE_TYPE");
+      // 讀到 "基本診療 - 門診診察費" 要轉成 "門診診察費"
+      List<PARAMETERS> payCodeType = parametersService.getByCat("PAY_CODE_TYPE_" + fileFormat);
+      if (payCodeType == null || payCodeType.size() == 0) {
+          parametersService.getByCat("PAY_CODE_TYPE");
+      }
       
       ObjectMapper objectMapper = new ObjectMapper();
       objectMapper.setSerializationInclusion(Include.NON_NULL);
@@ -222,11 +236,15 @@ public class InitialDataService {
       HashOperations<String, String, String> hashOp = redisTemplate.opsForHash();
 
       int total = 0;
+      int add = 0;
+      int update = 0;
       XSSFSheet sheet = workbook.getSheetAt(0);
       HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRow),
           parametersService.getByCat("PAY_CODE_" + fileFormat));
       HashMap<String, String> values = null;
-      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+      SimpleDateFormat sdf = (SystemController.INIT_FILE_PAY_CODE_POHAI.equals(fileFormat))
+          ? new SimpleDateFormat("yyyy/M/d")
+          : new SimpleDateFormat("yyyyMMdd");
       DecimalFormat df = new DecimalFormat("#");
       List<PAY_CODE> payCodeBatch = new ArrayList<PAY_CODE>();
       for (int j = titleRow + 1; j < sheet.getPhysicalNumberOfRows(); j++) {
@@ -241,26 +259,45 @@ public class InitialDataService {
         if (SystemController.INIT_FILE_PAY_CODE.equals(fileFormat) && code.length() == 0) {
           break;
         }
+        total++;
         OrderCode oc = getOrderCodyByMap(values, sdf, df, maxId, payCodeType);
         PAY_CODE pc = PAY_CODE.convertFromOrderCode(oc);
+        if (pc.getHospLevel() != null && pc.getHospLevel().length() > 11) {
+          logger.error("PAY_CODE " + pc.getCode() + ",inhCode=" + pc.getInhCode() + "," + pc.getHospLevel());
+        }
         if (values.get("OE_POINT") != null) {
           pc.setOwnExpense(Double.parseDouble(values.get("OE_POINT")));
         }
         if (values.get("INH_CODE") != null) {
           pc.setInhCode(values.get("INH_CODE"));
         }
+        if (values.get("INH_NAME") != null) {
+          pc.setInhName(values.get("INH_NAME"));
+          if (pc.getInhName().length() > 180) {
+            pc.setInhName(pc.getInhName().substring(0, 179));
+          }
+        }
         if (values.get("ATC") != null) {
           pc.setAtc(values.get("ATC"));
         }
-        payCodeBatch.add(saveOrderCodeToRedis(oc, pc, keys, maxId));
-        if (payCodeBatch.size() > XMLConstant.BATCH) {
-          payCodeDao.saveAll(payCodeBatch);
-          payCodeBatch.clear();
+        if (pc.getNameEn() != null && pc.getNameEn().length() > 100) {
+          pc.setNameEn(pc.getNameEn().substring(0, 99));
         }
-        if (oc.getId().longValue() == maxId) {
-          maxId++;
+        PAY_CODE pcDB = checkPayCode(pc);
+        if (pcDB != null) {
+          update++;
+          payCodeBatch.add(pcDB);
+        } else {
+          add++;
+          payCodeBatch.add(saveOrderCodeToRedis(oc, pc, keys, maxId));
+          if (payCodeBatch.size() > XMLConstant.BATCH) {
+            payCodeDao.saveAll(payCodeBatch);
+            payCodeBatch.clear();
+          }
+          if (oc.getId().longValue() == maxId) {
+            maxId++;
+          }
         }
-        total++;
       }
       workbook.close();
       
@@ -268,6 +305,7 @@ public class InitialDataService {
         payCodeDao.saveAll(payCodeBatch);
         payCodeBatch.clear();
       }
+      System.out.println("total:" + total + ", add:" + add + ", update=" + update);
     } catch (ParseException e) {
       logger.error("importPayCode failed", e);
       e.printStackTrace();
@@ -278,6 +316,57 @@ public class InitialDataService {
       logger.error("importPayCode failed", e);
       e.printStackTrace();
     }
+  }
+  
+  /**
+   * 同一健保碼 code 有可能對應該二組以上不同的院內碼 inhCode
+   * @param pc
+   * @return
+   */
+  private PAY_CODE checkPayCode(PAY_CODE pc) {
+    List<PAY_CODE> list = null;
+    if (pc.getCode() == null || pc.getCode().length() == 0) {
+      list = payCodeDao.findByInhCodeOrderByStartDateDesc(pc.getInhCode());
+    } else {
+      list = payCodeDao.findByCodeOrderByStartDateDesc(pc.getCode());                
+    }
+    if (list == null || list.size() == 0) {
+      return null;
+    }
+    for (PAY_CODE pay_CODE : list) {
+      if (pay_CODE.getStartDate() == null || pay_CODE.getEndDate() == null
+          || pc.getEndDate() == null || pc.getStartDate() == null
+          || (pay_CODE.getStartDate().getTime() <= pc.getStartDate().getTime()
+              && pay_CODE.getEndDate().getTime() >= pc.getStartDate().getTime()
+              && pay_CODE.getStartDate().getTime() <= pc.getEndDate().getTime()
+              && pay_CODE.getEndDate().getTime() >= pc.getEndDate().getTime())) {
+        if (pc.getInhCode() != null && pc.getInhCode().length() > 0) {
+          list = payCodeDao.findByCodeOrderByStartDateDesc(pc.getCode());
+          if (pay_CODE.getInhCode() != null && !pay_CODE.getInhCode().equals(pc.getInhCode())) {
+            continue;
+          }
+        } 
+        pay_CODE.setInhCode(pc.getInhCode());
+        if (pc.getInhName() != null) {
+          if (pc.getInhName().length() > 180) {
+            pc.setInhName(pc.getInhName().substring(0, 179));
+          }
+          pay_CODE.setInhName(pc.getInhName());
+        }
+        pay_CODE.setOwnExpense(pc.getOwnExpense());
+        pay_CODE.setPoint(pc.getPoint());
+        pay_CODE.setName(pc.getName());
+        if (pay_CODE.getCodeType() == null || NO_TYPE.equals(pay_CODE.getCodeType())) {
+          pay_CODE.setCodeType(pc.getCodeType());
+        }
+        if (pc.getAtc() != null && pc.getAtc().length() > 0) {
+          pay_CODE.setAtc(pc.getAtc());
+        }
+        pay_CODE.setUpdateAt(new Date());
+        return pay_CODE;
+      }
+    }
+    return null;
   }
   
   private int getMaxId() {
@@ -332,52 +421,52 @@ public class InitialDataService {
   }
 
   private PAY_CODE savePayCode(PAY_CODE code) {
-    if (code.getStartDate() == null) {
-      System.out.println("getStartDate null,code=" + code.getCode() + "," + code.getInhCode() +"," + code.getName());
-    }
-    List<PAY_CODE> codes = payCodeDao.findByCode(code.getCode());
-    if (codes == null || codes.size() == 0) {
-      return code;
-    } else {
-      for (PAY_CODE old : codes) {
-        if (code.getAtc() != null) {
-          old.setAtc(code.getAtc());
-        }
-        if (code.getCodeType() != null) {
-          old.setCodeType(code.getCodeType());
-        }
-        if (code.getEndDate() != null) {
-          old.setEndDate(code.getEndDate());
-        }
-        if (code.getStartDate() != null) {
-          old.setStartDate(code.getStartDate());
-        }
-        if (code.getName() != null) {
-          old.setName(code.getName());
-          old.setInhName(code.getName());
-        }
-        if (code.getHospLevel() != null) {
-          old.setHospLevel(code.getHospLevel());
-        }
-        if (code.getPoint() != null) {
-          old.setPoint(code.getPoint());
-        }
-        old.setUpdateAt(new Date());
-        if (code.getRedisId() != null) {
-          old.setRedisId(code.getRedisId());
-        }
-        if (code.getNameEn() != null) {
-          old.setNameEn(code.getNameEn());
-        }
-        if (code.getOwnExpense() != null) {
-          old.setOwnExpense(code.getOwnExpense());
-        }
-        if (code.getInhCode() != null) {
-          old.setInhCode(code.getCode());
-        }
-        return old;
-      }
-    }
+//    if (code.getStartDate() == null) {
+//      System.out.println("getStartDate null,code=" + code.getCode() + "," + code.getInhCode() +"," + code.getName());
+//    }
+//    List<PAY_CODE> codes = payCodeDao.findByCode(code.getCode());
+//    if (codes == null || codes.size() == 0) {
+//      return code;
+//    } else {
+//      for (PAY_CODE old : codes) {
+//        if (code.getAtc() != null) {
+//          old.setAtc(code.getAtc());
+//        }
+//        if (code.getCodeType() != null) {
+//          old.setCodeType(code.getCodeType());
+//        }
+//        if (code.getEndDate() != null) {
+//          old.setEndDate(code.getEndDate());
+//        }
+//        if (code.getStartDate() != null) {
+//          old.setStartDate(code.getStartDate());
+//        }
+//        if (code.getName() != null) {
+//          old.setName(code.getName());
+//          old.setInhName(code.getName());
+//        }
+//        if (code.getHospLevel() != null) {
+//          old.setHospLevel(code.getHospLevel());
+//        }
+//        if (code.getPoint() != null) {
+//          old.setPoint(code.getPoint());
+//        }
+//        old.setUpdateAt(new Date());
+//        if (code.getRedisId() != null) {
+//          old.setRedisId(code.getRedisId());
+//        }
+//        if (code.getNameEn() != null) {
+//          old.setNameEn(code.getNameEn());
+//        }
+//        if (code.getOwnExpense() != null) {
+//          old.setOwnExpense(code.getOwnExpense());
+//        }
+//        if (code.getInhCode() != null) {
+//          old.setInhCode(code.getCode());
+//        }
+//        return old;
+//      }
+//    }
     return code;
   }
 
@@ -528,12 +617,18 @@ public class InitialDataService {
   private String getHospLevel(String[] s) {
     StringBuffer sb = new StringBuffer();
     for (int i = 0; i < s.length; i++) {
+      boolean isFound = false;
       for (int j = 0; j < HOSP_LEVEL.length; j++) {
         if (s[i].equals(HOSP_LEVEL[j])) {
           sb.append(j);
           sb.append(",");
+          isFound = true;
           break;
         }
+      }
+      if (!isFound && s[i].length() == 1) {
+        sb.append(s[i]);
+        sb.append(",");
       }
     }
     if (sb.length() > 0 && sb.charAt(sb.length() - 1) == ',') {
@@ -736,13 +831,29 @@ public class InitialDataService {
     if (date == null || date.length() < 8) {
       return null;
     }
+    if (date.indexOf(' ') > 0) {
+      date = date.split(" ")[0];
+    }
     if (date.length() == 8) {
       return sdf.parse(date);
     } else if (date.indexOf('/') > 0) {
-      // 民國年 111/01/01
       String[] ss = date.split("/");
-      int year = Integer.parseInt(ss[0]) + 1911;
-      return sdf.parse(String.valueOf(year) + ss[1] + ss[2]);
+      if (ss[0].length() == 3) {
+        // 民國年 111/01/01
+        int year = Integer.parseInt(ss[0]) + 1911;
+        return sdf.parse(String.valueOf(year) + ss[1] + ss[2]);
+      } else {
+        SimpleDateFormat sdf2 = null;
+        if (ss[1].length() == 1 || ss[2].length() == 1) {
+          sdf2 = new SimpleDateFormat("yyyy/M/d");
+          return sdf2.parse(date);
+        } else if (ss[1].length() == 2 && ss[2].length() == 2) {
+          sdf2 = new SimpleDateFormat("yyyy/MM/dd");
+          return sdf2.parse(date);
+        } else {
+          return sdf.parse(date);
+        }
+      }
     }
     return null;
   }
@@ -1222,5 +1333,195 @@ public class InitialDataService {
     icd.setInfectious(1);
     icd.setInfCat(ct.getParentCode());
     icd10Dao.save(icd);
+  }
+  
+  /**
+   * 匯入醫院提供的部門檔案 DEPARTMENT.xls
+   * @param file
+   * @param sheetName
+   * @param titleRow
+   */
+  public void importDepartmentFile(File file, int titleRow) {
+    try {
+      XSSFWorkbook workbook = new XSSFWorkbook(file);
+
+      XSSFSheet sheet = workbook.getSheetAt(0);
+      HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRow),
+          parametersService.getByCat("DEPARTMENT"));
+      HashMap<String, String> values = null;
+      for (int i = titleRow + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+        XSSFRow row = sheet.getRow(i);
+        if (row == null || row.getCell(0) == null) {
+          // System.out.println("sheet:" + i + ", row=" + j + " is null");
+          continue;
+        }
+        values = ExcelUtil.readCellValue(columnMap, row);
+        String code = values.get("CODE");
+        if (code == null || code.length() == 0) {
+          break;
+        }
+        DEPARTMENT department = new DEPARTMENT();
+        department.setCode(code.trim());
+        department.setName(values.get("NAME").trim());
+        List<DEPARTMENT> list = departmentDao.findByName(department.getName());
+        if (list == null || list .size() == 0) {
+          departmentDao.save(department);
+        } else {
+          for (DEPARTMENT d : list) {
+            if (!department.getCode().equals(d.getCode())) {
+              d.setCode(department.getCode());
+              departmentDao.save(d);
+            }
+          }
+        }
+      }
+      workbook.close();
+    } catch (InvalidFormatException e) {
+      logger.error("importDepartmentFile failed", e);
+      e.printStackTrace();
+    } catch (IOException e) {
+      logger.error("importDepartmentFile failed", e);
+      e.printStackTrace();
+    }
+  }
+  
+  /**
+   * 匯入醫院提供的部門檔案 DEPARTMENT.xls
+   * @param file
+   * @param sheetName
+   * @param titleRow
+   */
+  public void importUserFile(File file, int titleRow) {
+    try {
+      List<DEPARTMENT> departments = departmentDao.findAll();
+      List<USER> users = userDao.findAll();
+      XSSFWorkbook workbook = new XSSFWorkbook(file);
+
+      XSSFSheet sheet = workbook.getSheetAt(0);
+      HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRow),
+          parametersService.getByCat("USER"));
+      HashMap<String, String> values = null;
+      for (int i = titleRow + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+        XSSFRow row = sheet.getRow(i);
+        if (row == null || row.getCell(0) == null) {
+          // System.out.println("sheet:" + i + ", row=" + j + " is null");
+          continue;
+        }
+        values = ExcelUtil.readCellValue(columnMap, row);
+        String username = values.get("USERNAME");
+        if (username == null || username.length() == 0) {
+          break;
+        }
+        DEPARTMENT department =  findDepartment(departments, values);
+        USER dbUser = findUser(users, values);
+        if (dbUser == null) {
+          dbUser = new USER();
+        }
+        if (values.get("INH_ID") != null && dbUser.getInhId() == null) {
+          dbUser.setInhId(values.get("INH_ID"));
+        }
+        if (dbUser.getInhId() != null) {
+          dbUser.setUsername(dbUser.getInhId());
+        }
+        if (values.get("DISPLAY_NAME") != null) {
+          dbUser.setDisplayName(values.get("DISPLAY_NAME"));
+        }
+        if (values.get("ROC_ID") != null) {
+          dbUser.setRocId(values.get("ROC_ID"));
+        }
+        if (values.get("ROLE") != null) {
+          dbUser.setRole(values.get("ROLE"));
+        }
+        if (dbUser.getRole() == null) {
+          // 醫護人員
+          dbUser.setRole("E");
+        }
+        if (values.get("EMAIL") != null) {
+          dbUser.setEmail(values.get("EMAIL"));
+        }
+        dbUser = userDao.save(dbUser);
+        if (department != null) {
+          List<USER_DEPARTMENT> udList = userDepartmentDao.findByUserIdOrderByDepartmentId(dbUser.getId());
+          if (udList == null || udList.size() == 0) {
+            USER_DEPARTMENT ud = new USER_DEPARTMENT();
+            ud.setDepartmentId(department.getId());
+            ud.setUserId(department.getId());
+            userDepartmentDao.save(ud);
+          } else {
+            boolean isFound = false;
+            for (USER_DEPARTMENT ud : udList) {
+              if (ud.getDepartmentId().longValue() == department.getId().longValue()) {
+                isFound = true;
+                break;
+              }
+            }
+            if (!isFound) {
+              USER_DEPARTMENT ud = new USER_DEPARTMENT();
+              ud.setDepartmentId(department.getId());
+              ud.setUserId(department.getId());
+              userDepartmentDao.save(ud);
+            }
+          }
+        }
+      }
+      workbook.close();
+    } catch (InvalidFormatException e) {
+      logger.error("importDepartmentFile failed", e);
+      e.printStackTrace();
+    } catch (IOException e) {
+      logger.error("importDepartmentFile failed", e);
+      e.printStackTrace();
+    }
+  }
+  
+  private DEPARTMENT findDepartment(List<DEPARTMENT> departments, HashMap<String, String> values) {
+    if (values.get("DEPARTMENT") == null || values.get("DEPARTMENT").length() == 0) {
+      return null;
+    }
+    DEPARTMENT result = null;
+    for (DEPARTMENT department : departments) {
+      if (values.get("CODE") != null && values.get("CODE").length() > 0) {
+        if (values.get("CODE").equals(department.getCode())) {
+          result = department;
+          break;
+        }
+      }
+      if (values.get("DEPARTMENT").equals(department.getName())) {
+        result = department;
+        break;
+      }
+    }
+    if (result == null) {
+      if (values.get("CODE") == null) {
+        // 要有部門代碼及部門名稱才新增
+        return null;
+      }
+      DEPARTMENT department = new DEPARTMENT();
+      department.setCode(values.get("CODE"));
+      department.setName(values.get("DEPARTMENT"));
+      result = departmentDao.save(department);
+      departments.add(result);
+    }
+    return result;
+  }
+  
+  private USER findUser(List<USER> users, HashMap<String, String> values) {
+    if (values.get("DISPLAY_NAME") == null || values.get("DISPLAY_NAME").length() == 0) {
+      return null;
+    }
+    USER result = null;
+    for (USER user : users) {
+      if (values.get("INH_ID") != null && values.get("INH_ID").length() > 0) {
+        if (values.get("INH_ID").equals(user.getInhId())) {
+          result = user;
+          break;
+        }
+      }
+      if (values.get("DISPLAY_NAME").equals(user.getDisplayName())) {
+        result = user;
+        break;
+      }
+    }
+    return result;
   }
 }

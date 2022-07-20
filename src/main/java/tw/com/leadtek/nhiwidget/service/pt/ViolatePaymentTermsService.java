@@ -338,8 +338,8 @@ public class ViolatePaymentTermsService {
       return;
     }
     String includeOrderCode = stringListToString(includeNhiNoList);
-    System.out.println("checkIncludeOrderCode " + nhiNo + " check order code=" + includeOrderCode
-        + ", mr size=" + mrList.size());
+//    System.out.println("checkIncludeOrderCode " + nhiNo + " check order code=" + includeOrderCode
+//        + ", mr size=" + mrList.size());
     String wording =
         String.format(wordings.get("VIOLATE_INCLUDE_ORDER_CODE"), nhiNo, includeOrderCode);
     List<MR> violateMr = new ArrayList<MR>();

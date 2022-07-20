@@ -77,9 +77,16 @@ public class SystemController extends BaseController {
   public final static String INIT_FILE_PAY_CODE = "醫療服務給付項目";
   
   /**
-   * 高雄霖園醫院藥品衛材xxxxxxx.xlsx
+   * 高雄霖園醫院 藥品衛材xxxxxxx.xlsx
    */
-  public final static String INIT_FILE_PAY_CODE_LINYUAN = "藥品衛材";
+  public final static String INIT_FILE_PAY_CODE_LINYUAN = "代碼品項_高雄霖園";
+  
+  /**
+   * 羅東博愛醫院 基本檔_藥品衛材.xlsx
+   */
+  public final static String INIT_FILE_PAY_CODE_POHAI = "代碼品項_羅東博愛";
+  
+  public final static String INIT_FILE_PAY_CODE_NAVY = "代碼品項_高雄海總";
   
   private final static String INIT_FILE_CODE_TABLE = "CODE_TABLE";
   
@@ -90,6 +97,10 @@ public class SystemController extends BaseController {
   private final static String INIT_FILE_ATC = "ATC";
   
   private final static String INIT_FILE_INFECTIOUS = "法定傳染病";
+  
+  private final static String INIT_FILE_USER = "USER";
+  
+  private final static String INIT_FILE_DEPARTMENT = "DEPARTMENT";
   
   @Autowired
   private DrgCalService drgCalService;
@@ -881,20 +892,24 @@ public class SystemController extends BaseController {
         initial.importPayCode(saveFile, INIT_FILE_PAY_CODE, 0);
       } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE_LINYUAN) == 0) {
         initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_LINYUAN, 0);
+      } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE_POHAI) == 0) {
+        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_POHAI, 0);
+      } else if (saveFile.getName().startsWith(INIT_FILE_PAY_CODE_NAVY)) {
+        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_NAVY, 0);
       } else if (saveFile.getName().indexOf(INIT_FILE_CODE_TABLE) > -1) {
         initial.importCODE_TABLEToRDB(saveFile, "CODE_TABLE");
       } else if (saveFile.getName().indexOf(INIT_FILE_ICDCM) > 0) {
-        System.out.println("importICD10ToRedis ICD10-CM");
         initial.importICD10ToRedis(saveFile, "ICD10-CM");
       } else if (saveFile.getName().indexOf(INIT_FILE_ICDPCS) > 0) {
-        System.out.println("importICD10ToRedis ICD10-PCS");
         initial.importICD10ToRedis(saveFile, "ICD10-PCS");
       } else if (saveFile.getName().indexOf(INIT_FILE_ATC) > -1) {
-        System.out.println("import ATC");
         initial.importATC(saveFile);
       } else if (saveFile.getName().indexOf(INIT_FILE_INFECTIOUS) > -1) {
-        System.out.println("import Infectious");
         initial.importInfectious(saveFile);
+      } else if (saveFile.getName().startsWith(INIT_FILE_USER)) {
+        initial.importUserFile(saveFile, 0);
+      } else if (saveFile.getName().startsWith(INIT_FILE_DEPARTMENT)) {
+        initial.importDepartmentFile(saveFile, 0);
       } else if (saveFile.getName().endsWith(".xls")) {
         // 麗臺規格excel
         long startImport = System.currentTimeMillis();
@@ -915,6 +930,7 @@ public class SystemController extends BaseController {
             xmlService.readOppHSSFSheet(workbook.getSheetAt(0));
           }
         } else if (saveFile.getName().toUpperCase().indexOf("IPP") > -1) {
+          System.out.println("load " + saveFile.getName());
           workbook = new HSSFWorkbook(new FileInputStream(saveFile));
           if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
             xmlService.readIppHSSFSheet(workbook.getSheetAt(0));

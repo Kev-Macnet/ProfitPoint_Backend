@@ -688,7 +688,7 @@ public class TestDrgCalService {
     System.out.println(startTime + " to " + endTime + " need " + day + " days.");
   }
   
-  //@Ignore
+  @Ignore
   @Test
   public void testPayCodeType() {
     long start = System.currentTimeMillis();
@@ -702,5 +702,21 @@ public class TestDrgCalService {
     
     drgCalService.callDrgCalProgram(file, newMR, mrIdList, ipdMap);
 
+  }
+  
+  @Test
+  public void testDrgCalByFile() {
+    List<MR> mrList = mrDao.getTodayUpdatedMR();
+    List<Long> mrIdList = drgCalService.getMrIdByDataFormat(mrList, XMLConstant.DATA_FORMAT_IP);
+    if (mrIdList.size() == 0) {
+      return;
+    }
+    logger.info("runDrgCalculate start " + mrIdList.size());
+    HashMap<Long, IP_D> ipdMap = new HashMap<Long, IP_D>();
+    long start = System.currentTimeMillis();
+    File file = new File("D:\\Users\\2268\\2020\\健保點數申報\\src\\NHIWidget\\drg_data\\1658202923865.txt");
+    drgCalService.callDrgCalProgram(file, mrList, mrIdList, ipdMap);
+    long usedTime = System.currentTimeMillis() - start;
+    logger.info("runDrgCalculate finished using " + usedTime);
   }
 }

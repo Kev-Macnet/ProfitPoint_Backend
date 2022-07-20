@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -43,12 +44,17 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
 import tw.com.leadtek.nhiwidget.TestParameterService;
+import tw.com.leadtek.nhiwidget.constant.XMLConstant;
+import tw.com.leadtek.nhiwidget.controller.SystemController;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.local.InitialEnvironment;
+import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
+import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.RedisService;
+import tw.com.leadtek.tools.ExcelUtil;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = NHIWidget.class)
@@ -65,10 +71,15 @@ public class ImportPayCode {
 
   @Autowired
   private PAY_CODEDao payCodeDao;
+  
+  @Autowired
+  private ParametersService parametersService;
 
   private SimpleDateFormat sdf = new SimpleDateFormat("yyyy/M/d");
 
   private final static String[] HOSP_LEVEL = new String[] {"基層院所", "醫學中心", "區域醫院", "地區醫院"};
+  
+  private final static String NO_TYPE = "不分類";
 
   /**
    * 存放在 HashSet 的 id
@@ -844,5 +855,239 @@ public class ImportPayCode {
       e.printStackTrace();
     }
     
+  }
+  
+  @Test
+  public void testPayCode() {
+    importPayCode(new File("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\高雄海總\\高雄海總_代碼品項.xlsx"), "高雄海總_代碼品項", 0);
+  }
+  
+  /**
+   * 匯入醫療服務給付項目(支付代碼)相關資料
+   * @param file
+   * @param sheetName
+   * @param titleRow
+   */
+  public void importPayCode(File file, String fileFormat, int titleRow) {
+    try {
+      // 讀到 "基本診療 - 門診診察費" 要轉成 "門診診察費"
+      List<PARAMETERS> payCodeType = parametersService.getByCat("PAY_CODE_TYPE_" + fileFormat);
+      if (payCodeType == null || payCodeType.size() == 0) {
+          parametersService.getByCat("PAY_CODE_TYPE");
+      }
+      
+      XSSFWorkbook workbook = new XSSFWorkbook(file);
+
+      int total = 0;
+      int found = 0;
+      int add = 0;
+      HashMap<String, String> payCodeFound = new HashMap<String, String>();
+      HashMap<String, String> inhCodeFound = new HashMap<String, String>();
+      XSSFSheet sheet = workbook.getSheetAt(0);
+      HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRow),
+          parametersService.getByCat("PAY_CODE_" + fileFormat));
+      HashMap<String, String> values = null;
+      SimpleDateFormat sdf = (SystemController.INIT_FILE_PAY_CODE_POHAI.equals(fileFormat))
+          ? new SimpleDateFormat("yyyy/M/d")
+          : new SimpleDateFormat("yyyyMMdd");
+      DecimalFormat df = new DecimalFormat("#");
+      List<PAY_CODE> payCodeBatch = new ArrayList<PAY_CODE>();
+      for (int j = titleRow + 1; j < sheet.getPhysicalNumberOfRows(); j++) {
+      //   for (int j = 1; j < 3; j++) {
+        XSSFRow row = sheet.getRow(j);
+        if (row == null || row.getCell(0) == null) {
+          // System.out.println("sheet:" + i + ", row=" + j + " is null");
+          continue;
+        }
+        
+        values = ExcelUtil.readCellValue(columnMap, row, df);
+        String code = values.get("CODE");
+        if (SystemController.INIT_FILE_PAY_CODE.equals(fileFormat) && code.length() == 0) {
+          break;
+        }
+        OrderCode oc = getOrderCodyByMap(values, sdf, df, maxId, payCodeType);
+        PAY_CODE pc = PAY_CODE.convertFromOrderCode(oc);
+        if (pc.getHospLevel() != null && pc.getHospLevel().length() > 11) {
+          logger.error("PAY_CODE " + pc.getCode() + ",inhCode=" + pc.getInhCode() + "," + pc.getHospLevel());
+        }
+        if (values.get("OE_POINT") != null) {
+          pc.setOwnExpense(Double.parseDouble(values.get("OE_POINT")));
+        }
+        if (values.get("INH_CODE") != null) {
+          pc.setInhCode(values.get("INH_CODE"));
+        }
+        if (values.get("INH_NAME") != null) {
+          pc.setInhName(values.get("INH_NAME"));
+          if (pc.getInhName().length() > 180) {
+            pc.setInhName(pc.getInhName().substring(0, 179));
+          }
+        }
+        if (values.get("ATC") != null) {
+          pc.setAtc(values.get("ATC"));
+        }
+        if (pc.getNameEn() != null && pc.getNameEn().length() > 100) {
+          pc.setNameEn(pc.getNameEn().substring(0, 99));
+        }
+        PAY_CODE pcDB = checkPayCode(pc);
+        if (pcDB != null) {
+          //payCodeBatch.add(pcDB);
+          found ++;
+          if (pcDB.getCode() == null || pcDB.getCode().length() == 0) {
+            if (inhCodeFound.get(pcDB.getInhCode()) == null) {
+              inhCodeFound.put(pcDB.getInhCode(), "");
+            } else {
+              System.out.println("inhCode :" + pcDB.getInhCode() + " duplicate");
+            }
+          } else {
+            if (payCodeFound.get(pcDB.getCode()) == null) {
+              payCodeFound.put(pcDB.getCode(),  "");
+            } else {
+              System.out.println("payCode :" +  pcDB.getCode() + " duplicate");
+            }
+          }
+        } else {
+          add++;
+//          payCodeBatch.add(saveOrderCodeToRedis(oc, pc, keys, maxId));
+//          if (payCodeBatch.size() > XMLConstant.BATCH) {
+//            payCodeDao.saveAll(payCodeBatch);
+//            payCodeBatch.clear();
+//          }
+//          if (oc.getId().longValue() == maxId) {
+//            maxId++;
+//          }
+         
+        }
+      }
+      System.out.println("total:" + total + " update:" + found + ", new:" + add);
+      workbook.close();
+    } catch (ParseException e) {
+      logger.error("importPayCode failed", e);
+      e.printStackTrace();
+    } catch (InvalidFormatException e) {
+      logger.error("importPayCode failed", e);
+      e.printStackTrace();
+    } catch (IOException e) {
+      logger.error("importPayCode failed", e);
+      e.printStackTrace();
+    }
+  }
+  
+  private OrderCode getOrderCodyByMap(HashMap<String, String> values, SimpleDateFormat sdf, 
+      DecimalFormat df, long maxId, List<PARAMETERS> parameters)
+      throws ParseException {
+
+    OrderCode oc = new OrderCode(maxId, values.get("CODE"), values.get("DESC"), values.get("DESC_EN"));
+    if (values.get("POINT") != null) {
+      String point = values.get("POINT");
+      if (point.indexOf('.') > 0) {
+        point = point.substring(0, point.indexOf('.'));
+      }
+      oc.setP(Integer.parseInt(point));  
+    }
+    //System.out.println("code=" + values.get("CODE") + ", startDate=" + values.get("START_DATE"));
+    oc.setsDate(getDateFromExcelValue(values.get("START_DATE"), sdf));
+    if (values.get("DELETE_DATE") != null) {
+      // 刪除日期
+      oc.seteDate(getDateFromExcelValue(values.get("DELETE_DATE"), sdf));
+    } else {
+      oc.seteDate(getDateFromExcelValue(values.get("END_DATE"), sdf));
+    }
+    
+    if (values.get("PAY_CODE_TYPE") != null) {
+      oc.setDetail(values.get("PAY_CODE_TYPE") );
+      oc.setDetail(getPayCodeType(oc.getDetail(), parameters));
+    }
+    
+    oc.setDetailCat(values.get("DETAIL_CAT"));
+  
+    if (values.get("HOSP_LEVEL") != null) {
+      String[] level = values.get("HOSP_LEVEL").split(",");
+      oc.setLevel(getHospLevel(level));
+    }
+    oc.setOutIsland(values.get("OUT_ISLAND"));
+    return oc;
+  }
+  
+  private Date getDateFromExcelValue(String date, SimpleDateFormat sdf) throws ParseException {
+    if (date == null || date.length() < 8) {
+      return null;
+    }
+    if (date.indexOf(' ') > 0) {
+      date = date.split(" ")[0];
+    }
+    if (date.length() == 8) {
+      return sdf.parse(date);
+    } else if (date.indexOf('/') > 0) {
+      String[] ss = date.split("/");
+      if (ss[0].length() == 3) {
+        // 民國年 111/01/01
+        int year = Integer.parseInt(ss[0]) + 1911;
+        return sdf.parse(String.valueOf(year) + ss[1] + ss[2]);
+      } else {
+        SimpleDateFormat sdf2 = null;
+        if (ss[1].length() == 1 || ss[2].length() == 1) {
+          sdf2 = new SimpleDateFormat("yyyy/M/d");
+          return sdf2.parse(date);
+        } else if (ss[1].length() == 2 && ss[2].length() == 2) {
+          sdf2 = new SimpleDateFormat("yyyy/MM/dd");
+          return sdf2.parse(date);
+        } else {
+          return sdf.parse(date);
+        }
+      }
+    }
+    return null;
+  }
+  
+  private PAY_CODE checkPayCode(PAY_CODE pc) {
+    List<PAY_CODE> list = null;
+    if (pc.getCode() == null || pc.getCode().length() == 0) {
+      list = payCodeDao.findByInhCodeOrderByStartDateDesc(pc.getInhCode());
+    } else {
+      list = payCodeDao.findByCodeOrderByStartDateDesc(pc.getCode());     
+    }
+    if (list == null || list.size() == 0) {
+      return null;
+    }
+    for (PAY_CODE pay_CODE : list) {
+      if (pay_CODE.getStartDate() == null || pay_CODE.getEndDate() == null
+          || pc.getEndDate() == null || pc.getStartDate() == null
+          || (pay_CODE.getStartDate().getTime() <= pc.getStartDate().getTime()
+              && pay_CODE.getEndDate().getTime() >= pc.getStartDate().getTime()
+              && pay_CODE.getStartDate().getTime() <= pc.getEndDate().getTime()
+              && pay_CODE.getEndDate().getTime() >= pc.getEndDate().getTime())) {
+        pay_CODE.setInhCode(pc.getInhCode());
+        if (pc.getInhName() != null) {
+          if (pc.getInhName().length() > 180) {
+            pc.setInhName(pc.getInhName().substring(0, 179));
+          }
+          pay_CODE.setInhName(pc.getInhName());
+        }
+        pay_CODE.setOwnExpense(pc.getOwnExpense());
+        pay_CODE.setPoint(pc.getPoint());
+        pay_CODE.setName(pc.getName());
+        if (pay_CODE.getCodeType() == null) {
+          pay_CODE.setCodeType(pc.getCodeType());
+        }
+        if (pc.getAtc() != null && pc.getAtc().length() > 0) {
+          pay_CODE.setAtc(pc.getAtc());
+        }
+        pay_CODE.setUpdateAt(new Date());
+        return pay_CODE;
+      }
+    }
+    return null;
+  }
+  
+  private String getPayCodeType(String type, List<PARAMETERS> parameters) {
+    if (type == null || type.trim().length() == 0) {
+      return NO_TYPE;
+    }
+    for (PARAMETERS p : parameters) {
+      if (p.getName().equals(type)) {
+        return p.getValue();
+      }
+    }
+    return NO_TYPE;
   }
 }

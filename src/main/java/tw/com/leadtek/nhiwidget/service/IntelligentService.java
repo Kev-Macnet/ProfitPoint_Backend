@@ -2136,13 +2136,15 @@ public class IntelligentService {
     }
   }
 
-  public synchronized void extendIntelligentRunning(int intelligentCode, long second) {
+  public synchronized void extendIntelligentRunning(int intelligentCode, long ms) {
     Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
     if (runningTime == null || runningTime < 0) {
       runningTime = System.currentTimeMillis();
     }
     if (runningTime < Long.MAX_VALUE) {
-      runningIntelligent.put(new Integer(intelligentCode), new Long(runningTime + second * 1000));
+      if ((runningTime.longValue() - System.currentTimeMillis()) < ms) {
+        runningIntelligent.put(new Integer(intelligentCode), new Long(System.currentTimeMillis() + ms));  
+      }
     }
   }
 
@@ -2381,7 +2383,7 @@ public class IntelligentService {
         Double d = (Double) map.get("UP");
         up = d.intValue();
       }
-      int count = (Integer) map.get("COUNT");
+      int count = (map.get("COUNT") instanceof Integer) ?  (Integer) map.get("COUNT") : ((Double)map.get("COUNT")).intValue();
       int diff = count - up;
       String prsn = mr.getPrsnName() == null ? mr.getPrsnId() : mr.getPrsnName();
       String reason =
@@ -2524,6 +2526,9 @@ public class IntelligentService {
       Map<String, Object> map = list.get(0);
       java.sql.Date mrDate = (java.sql.Date) map.get("MAX_MR_DATE");
       java.sql.Date icdDate = (java.sql.Date) map.get("MAX_DATE");
+      if (mrDate == null) {
+        return null;
+      }
       if (icdDate == null || (mrDate.getTime() > icdDate.getTime())) {
         return mrDate;
       }

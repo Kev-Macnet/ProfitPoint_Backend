@@ -96,8 +96,8 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   
   @Transactional
   @Modifying
-  @Query(value = "UPDATE MR SET DRG_CODE=?1 WHERE ID=?2", nativeQuery = true)
-  public void updateDRG(String drg, Long mrId);
+  @Query(value = "UPDATE MR SET DRG_CODE=?1, DRG_FIXED=?2, DRG_SECTION=?3 WHERE ID=?4", nativeQuery = true)
+  public void updateDRG(String drg, int drgFix, String drgSection, Long mrId);
   
   /**
    * 取得DRG各科, 非DRG在指定日期區間的件數及點數
@@ -765,7 +765,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<Object[]> getRocIdAndUseCountAndApplYm(String orderCode, List<String> rocIdList);
 
   @Query(value = "SELECT * FROM mr WHERE UPDATE_AT  >= CURRENT_DATE", nativeQuery = true)
-  //@Query(value = "SELECT * FROM mr WHERE UPDATE_AT  >= '2022-07-02'", nativeQuery = true)
   public List<MR> getTodayUpdatedMR();
+
+  @Query(value = "SELECT * FROM mr WHERE INH_CLINIC_ID IN ?1", nativeQuery = true)
+  public List<MR> getMrByInhClinicId(List<String> inhClinicId);
   
 }

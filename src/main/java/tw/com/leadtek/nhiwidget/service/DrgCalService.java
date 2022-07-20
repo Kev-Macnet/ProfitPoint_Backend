@@ -40,6 +40,7 @@ import tw.com.leadtek.nhiwidget.dao.DRG_CALDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_CODEDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
+import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.model.DrgCalculate;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CAL;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
@@ -95,6 +96,9 @@ public class DrgCalService {
   
   @Autowired
   private LogDataService logDataService;
+  
+  @Autowired
+  private MRDao mrDao;
   
   @Value("${project.hospId}")
   private String HOSPITAL_ID;
@@ -233,7 +237,7 @@ public class DrgCalService {
         result.setSection("C");
       }
     } else {
-      result.setSection("");
+      result.setSection(null);
     }
     return result;
   }
@@ -604,7 +608,7 @@ public class DrgCalService {
     }
     DecimalFormat df = new DecimalFormat("0000000");
     File file = new File(DRG_DATA_FILE_PATH + "/" + System.currentTimeMillis() + ".txt");
-  
+    //System.out.println("drg file:" + file.getAbsolutePath());
     List<Map<String, Object>> data = ipdDao.getDrgCalField(mrIdList);
     try {
       BufferedWriter bw =
@@ -629,7 +633,11 @@ public class DrgCalService {
           ipd.setApplDot(map.get("APPL_DOT") != null ? (Integer) map.get("APPL_DOT") : 0);
           ipd.setNonApplDot(map.get("NON_APPL_DOT") != null ? (Integer) map.get("NON_APPL_DOT") : 0);
           ipd.setMedDot(map.get("MED_DOT") != null ? (Integer) map.get("MED_DOT") : 0);
-          ipd.setEbedDay(map.get("BED_DAY") != null ? (Integer) map.get("BED_DAY") : 0);
+          if (map.get("BED_DAY") != null) {
+            ipd.setEbedDay((map.get("BED_DAY") instanceof Integer) ? (Integer) map.get("BED_DAY") : ((Double) map.get("BED_DAY")).intValue());
+          } else {
+            ipd.setEbedDay(0);
+          }
           ipd.setTranCode((String) map.get("TRAN_CODE"));
           ipdMap.put(mr.getId(), ipd);
         }
@@ -754,7 +762,7 @@ public class DrgCalService {
     HashMap<String, Integer> drgApplDot = new HashMap<String, Integer>();
     try {
       drgCalDao.deleteByMrId(mrIdList);
-      FileInputStream fis = new FileInputStream(DRG_DATA_FILE_PATH + "/" + targetName);
+      FileInputStream fis = new FileInputStream(DRG_DATA_FILE_PATH + "\\" + targetName);
       BufferedReader isReader =
           new java.io.BufferedReader(new InputStreamReader(fis, "big5"));
       // 跳過檔頭
@@ -812,15 +820,15 @@ public class DrgCalService {
 //          System.out.println(dc.getMrId() + ",icd=" + dc.getIcdCM1() + ", opCode=" + dc.getIcdOPCode1() +
 //              ",cc=" + dc.getCc() + ", drg=" + dc.getDrg() + ",drgSection=" + dc.getDrgSection() +
 //              ",mdc=" + dc.getMdc());
-          dc.setUpdateAt(new Date());
-          drgCalDao.save(dc);
-          
           if (dc.getIcdCM1().equals(mr.getIcdcm1())) {
             mr.setDrgCode(dc.getDrg());
             mr.setDrgFixed(dc.getDrgFix());
             mr.setDrgSection(dc.getDrgSection());
+            mrDao.updateDRG(dc.getDrg(), dc.getDrgFix(), dc.getDrgSection(), mr.getId());
           }
         }
+        dc.setUpdateAt(new Date());
+        drgCalDao.save(dc);
       }
       isReader.close();
       fis.close();
@@ -834,7 +842,6 @@ public class DrgCalService {
       if (file.exists()) {
         file.delete();
       }
-    
     }
   }
   

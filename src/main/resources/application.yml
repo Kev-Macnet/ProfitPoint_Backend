@@ -1,6 +1,6 @@
 spring:
   profiles:
-   active: leadtek-office-hana
+    active: leadtek-office-hana
 #    active: localhost
 #    active: leadtek-aws-maria
 #    active: ms
@@ -9,3 +9,4 @@ spring:
 #    active: linyuan
 #    active: 806
 #    active: package
+#    active: leadtek-office-demo  

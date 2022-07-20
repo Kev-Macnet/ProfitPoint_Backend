@@ -132,6 +132,7 @@ import tw.com.leadtek.nhiwidget.payload.my.WarningOrder;
 import tw.com.leadtek.nhiwidget.payload.my.WarningOrderResponse;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
+import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.ExcelUtil;
 import tw.com.leadtek.tools.SendHTTP;
@@ -271,6 +272,9 @@ public class NHIWidgetXMLService {
 
   @Autowired
   private PAY_CODEDao payCodeDao;
+  
+  @Autowired
+  private ViolatePaymentTermsService vpts;
   
   @Value("${project.serverUrl}")
   private String serverUrl;
@@ -1098,6 +1102,20 @@ public class NHIWidgetXMLService {
       result.add(map);
     }
     start = System.currentTimeMillis() - start;
+    return result;
+  }
+  
+  private HashMap<Long, List<OP_P>> getOPPByMrIdList(List<Long> mrIdList) {
+    HashMap<Long, List<OP_P>> result = new HashMap<Long, List<OP_P>>();
+    List<OP_P> list = oppDao.getOppListByMrIdList(mrIdList);
+    for (OP_P op_P : list) {
+      List<OP_P> oppList = result.get(op_P.getMrId());
+      if (oppList == null) {
+        oppList = new ArrayList<OP_P>();
+        result.put(op_P.getMrId(), oppList);
+      }
+      oppList.add(op_P);
+    }
     return result;
   }
 
@@ -3456,40 +3474,40 @@ public class NHIWidgetXMLService {
     // 醫令總數
     int orderQty = 0;
     // 診察費點數
-    int diagDot = ipd.getDiagDot().intValue();
+    int diagDot = (ipd.getDiagDot() == null) ? 0 : ipd.getDiagDot().intValue();
     // System.out.println("initial diagDot=" + diagDot);
     // 病房費點數
-    int roomDot = ipd.getRoomDot().intValue();
+    int roomDot = (ipd.getRoomDot() == null) ? 0 : ipd.getRoomDot().intValue();
     // 管灌膳食費點數
-    int mealDot = ipd.getMealDot().intValue();
+    int mealDot = (ipd.getMealDot() == null) ? 0 : ipd.getMealDot().intValue();
     // 檢查費點數
-    int aminDot = ipd.getAminDot().intValue();
+    int aminDot = (ipd.getAminDot() == null) ? 0 : ipd.getAminDot().intValue();
     // 放射線診療費點數
-    int radoDot = ipd.getRadoDot().intValue();
+    int radoDot = (ipd.getRadoDot() == null) ? 0 : ipd.getRadoDot().intValue();
     // 治療處置費點數
-    int thrpDot = ipd.getThrpDot().intValue();
+    int thrpDot = (ipd.getThrpDot() == null) ? 0 : ipd.getThrpDot().intValue();
     // 手術費點數
-    int sgryDot = ipd.getSgryDot().intValue();
+    int sgryDot = (ipd.getSgryDot() == null) ? 0 : ipd.getSgryDot().intValue();
     // 復健治療費點數
-    int phscDot = ipd.getPhscDot().intValue();
+    int phscDot = (ipd.getPhscDot() == null) ? 0 : ipd.getPhscDot().intValue();
     // 血液血漿費點數
-    int blodDot = ipd.getBlodDot().intValue();
+    int blodDot = (ipd.getBlodDot() == null) ? 0 : ipd.getBlodDot().intValue();
     // 血液透析費點數
-    int hdDot = ipd.getHdDot().intValue();
+    int hdDot = (ipd.getHdDot() == null) ? 0 : ipd.getHdDot().intValue();
     // 麻醉費點數
-    int aneDot = ipd.getAneDot().intValue();
+    int aneDot = (ipd.getAneDot() == null) ? 0 : ipd.getAneDot().intValue();
     // 特殊材料費點數
-    int metrDot = ipd.getMetrDot().intValue();
+    int metrDot = (ipd.getMetrDot() == null) ? 0 : ipd.getMetrDot().intValue();
     // 藥費點數
-    int drugDot = ipd.getDrugDot().intValue();
+    int drugDot = (ipd.getDrugDot() == null) ? 0 : ipd.getDrugDot().intValue();
     // 藥事服務費點數
-    int dsvcDot = ipd.getDsvcDot().intValue();
+    int dsvcDot = (ipd.getDsvcDot() == null) ? 0 : ipd.getDsvcDot().intValue();
     // 精神科治療費點數
-    int nrtpDot = ipd.getNrtpDot().intValue();
+    int nrtpDot = (ipd.getNrtpDot() == null) ? 0 : ipd.getNrtpDot().intValue();
     // 注射技術費點數
-    int injtDot = ipd.getInjtDot().intValue();
+    int injtDot = (ipd.getInjtDot() == null) ? 0 : ipd.getInjtDot().intValue();
     // 嬰兒費點數
-    int babyDot = ipd.getBabyDot().intValue();
+    int babyDot = (ipd.getBabyDot() == null) ? 0 : ipd.getBabyDot().intValue();
     int applDot = 0;
 
     List<IP_P> notFoundList = new ArrayList<IP_P>();
@@ -6290,24 +6308,16 @@ public class NHIWidgetXMLService {
    * @param values
    * @return
    */
-  private OP_P getOpp(HashMap<String, String> values) {
+  private OP_P getOpp(HashMap<String, String> values, String format) {
     OP_P result = new OP_P();
     result.setInhCode(values.get("INH_CODE"));
     if (values.get("PAY_STATUS") != null && values.get("PAY_STATUS").length() > 0) {
       result.setPayBy(values.get("PAY_STATUS"));      
     }
-    if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
-      if (values.get("APPL_STATUS").indexOf('.') > 0) {
-        updateOppOwnExpense(result, values.get("APPL_STATUS"), values.get("CARD_NO"));
-        if (values.get("TOTAL_OW") != null && Double.parseDouble(values.get("TOTAL_OW")) == 0) {
-          // 減免
-          result.setUnitP(0f);
-        } else {
-          result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
-        }
-      } else {
-        int applStatus = Integer.parseInt(values.get("APPL_STATUS"));
-        if (applStatus > 0) {
+    if ("THESE".equals(format)) {
+      // 杏翔
+      if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
+        if (values.get("APPL_STATUS").indexOf('.') > 0) {
           updateOppOwnExpense(result, values.get("APPL_STATUS"), values.get("CARD_NO"));
           if (values.get("TOTAL_OW") != null && Double.parseDouble(values.get("TOTAL_OW")) == 0) {
             // 減免
@@ -6316,11 +6326,26 @@ public class NHIWidgetXMLService {
             result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
           }
         } else {
-          // = 0 走健保
-          result.setApplStatus(APPL_STATUS_THIS_MONTH);
-          result.setPayBy("N");
+          int applStatus = Integer.parseInt(values.get("APPL_STATUS"));
+          if (applStatus > 0) {
+            updateOppOwnExpense(result, values.get("APPL_STATUS"), values.get("CARD_NO"));
+            if (values.get("TOTAL_OW") != null && Double.parseDouble(values.get("TOTAL_OW")) == 0) {
+              // 減免
+              result.setUnitP(0f);
+            } else {
+              result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
+            }
+          } else {
+            // = 0 走健保
+            result.setApplStatus(APPL_STATUS_THIS_MONTH);
+            result.setPayBy("N");
+          }
         }
       }
+    } else  if ("LEADTEK".equals(format)) {
+      // 麗臺格式
+      result.setApplStatus("1".equals((String)values.get("APPL_STATUS")) ? APPL_STATUS_THIS_MONTH : 5);
+      result.setPayBy((String)values.get("PAY_STATUS"));
     }
   
     if (values.get("DRUG_DAY") != null && values.get("DRUG_DAY").length() > 0) {
@@ -6628,34 +6653,41 @@ public class NHIWidgetXMLService {
    * @param values
    * @return
    */
-  private IP_P getIpp(HashMap<String, String> values) {
+  private IP_P getIpp(HashMap<String, String> values, String format) {
     IP_P result = new IP_P();
     result.setInhCode(values.get("INH_CODE"));
     if (values.get("PAY_STATUS") != null && values.get("PAY_STATUS").length() > 0) {
       result.setPayBy(values.get("PAY_STATUS"));      
     }
-    if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
-      if (values.get("APPL_STATUS").indexOf('.') > 0) {
-        // 自費
-        result.setApplStatus(APPL_STATUS_OE);
-        result.setPayBy("Y");
-        result.setTotalQ(Double.parseDouble(values.get("APPL_STATUS")));
-      } else {
-        int applStatus = Integer.parseInt(values.get("APPL_STATUS"));
-        if (applStatus > 0) {
+    if ("THESE".equals(format)) {
+      // 杏翔
+      if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
+        if (values.get("APPL_STATUS").indexOf('.') > 0) {
           // 自費
           result.setApplStatus(APPL_STATUS_OE);
           result.setPayBy("Y");
           result.setTotalQ(Double.parseDouble(values.get("APPL_STATUS")));
         } else {
-          // = 0 走健保
-          result.setApplStatus(APPL_STATUS_THIS_MONTH);
-          result.setPayBy("N");
+          int applStatus = Integer.parseInt(values.get("APPL_STATUS"));
+          if (applStatus > 0) {
+            // 自費
+            result.setApplStatus(APPL_STATUS_OE);
+            result.setPayBy("Y");
+            result.setTotalQ(Double.parseDouble(values.get("APPL_STATUS")));
+          } else {
+            // = 0 走健保
+            result.setApplStatus(APPL_STATUS_THIS_MONTH);
+            result.setPayBy("N");
+          }
         }
+      } else {
+        result.setApplStatus(APPL_STATUS_THIS_MONTH);
+        result.setPayBy("N");
       }
-    } else {
-      result.setApplStatus(APPL_STATUS_THIS_MONTH);
-      result.setPayBy("N");
+    } else  if ("LEADTEK".equals(format)) {
+      // 麗臺格式
+      result.setApplStatus("1".equals((String)values.get("APPL_STATUS")) ? APPL_STATUS_THIS_MONTH : 5);
+      result.setPayBy((String)values.get("PAY_STATUS"));
     }
     if (values.get("ORDER_SEQ_NO") != null && values.get("ORDER_SEQ_NO").length() > 0) {
       result.setOrderSeqNo(Integer.parseInt(values.get("ORDER_SEQ_NO")));
@@ -6684,7 +6716,7 @@ public class NHIWidgetXMLService {
     if (values.get("END_TIME") != null && values.get("END_TIME").length() > 0) {
       result.setEndTime(DateTool.convertExcelDateTimeToChinese(values.get("END_TIME"), true));
     }
-    if (result.getApplStatus() == APPL_STATUS_OE) {
+    if ("THESE".equals(format) && result.getApplStatus() == APPL_STATUS_OE) {
       // 杏翔格式，自費
       result.setTotalQ(Double.parseDouble(values.get("APPL_STATUS")));
       result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
@@ -6709,7 +6741,13 @@ public class NHIWidgetXMLService {
     result.setImgSource(values.get("IMG_SOURCE"));
     result.setFuncType(values.get("FUNC_TYPE"));
     result.setOwnExpMtrNo(values.get("OWN_EXP_MTR_NO"));
-    result.setNonListMark(values.get("NON_LIST_MARK"));
+    if (values.get("NON_LIST_MARK") != null &&  values.get("NON_LIST_MARK").length() > 0) {
+      if (values.get("NON_LIST_MARK").length() == 1) {
+        result.setNonListMark(values.get("NON_LIST_MARK"));
+      } else {
+        result.setNonListMark("1");
+      }
+    }
     result.setNonListName(values.get("NON_LIST_NAME"));
     result.setCommHospId(values.get("COMM_HOSP_ID"));
     result.setDrugSerialNo(values.get("DRUG_SERIAL_NO"));
@@ -6858,10 +6896,16 @@ public class NHIWidgetXMLService {
   }
 
   private OP_D findOpdById(List<OP_D> opdList, long id) {
-    for (OP_D op_D : opdList) {
+    int index = -1;
+    for (int i=opdList.size() - 1; i >=0 ; i--) {
+      OP_D op_D = opdList.get(i);
       if (op_D.getId().longValue() == id) {
-        return op_D;
+        index = i;
+        break;
       }
+    }
+    if (index > -1) {
+      return opdList.remove(index);
     }
     return null;
   }
@@ -6878,37 +6922,43 @@ public class NHIWidgetXMLService {
   public boolean readOppHSSFSheet(HSSFSheet sheet) {
     // 由標題列取得各欄位名稱的位置
     HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
-    // 第一筆資料
-    HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(1));
-
-    String applYm = getApplYmByInhNo(values);
-    if (applYm == null) {
-      return false;
-    }
-    OP_T opt = getOpt(applYm);
+    long start = System.currentTimeMillis();
+    HashMap<String, List<OP_P>> opps = aggregateLeadtekOPP(sheet, 1, columnMap);
+    long usedTime = System.currentTimeMillis() - start;
+    System.out.println("aggregateLeadtekOPP use " + usedTime + " ms.");
+    //OP_T opt = getOpt(applYm);
 
     // 避免重複insert
-    List<MR> mrList = mrDao.findByApplYmAndDataFormatOrderById(applYm, XMLConstant.DATA_FORMAT_OP);
-    List<OP_D> opdList = opdDao.findByApplYM(applYm);
-    List<HashMap<String, Object>> oppList = getOPPByOPTID(opt.getId());
+    start = System.currentTimeMillis();
+    List<MR> mrList = mrDao.getMrByInhClinicId(new ArrayList<String>(opps.keySet()));
+    usedTime = System.currentTimeMillis() - start;
+    System.out.println("load mr:" + mrList.size() + " used " + usedTime + " ms.");
+    List<Long> mrIdList = vpts.getMrId(mrList, null);
+    start = System.currentTimeMillis();
+    List<OP_D> opdList = opdDao.getOpdListByMrId(mrIdList);
+    usedTime = System.currentTimeMillis() - start;
+    System.out.println("load opd:" + opdList.size() + " used " + usedTime + " ms.");
+    HashMap<Long, List<OP_P>> oppListDB = getOPPByMrIdList(mrIdList);
     // 要存到 DB 的 batch
     List<OP_P> oppBatch = new ArrayList<OP_P>();
 
     HashMap<String, String> payCodeType = getPayCodeType();
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
-    for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
-      HSSFRow row = sheet.getRow(i);
-      if (row == null) {
-        // System.out.println("sheet:" + i + ", row=" + j + " is null");
+    for (String inhNo : opps.keySet()) {
+      List<OP_P> oppList = opps.get(inhNo);
+      int index = -1;
+      for (int i = mrList.size() - 1; i >= 0; i--) {
+        MR mr = mrList.get(i);
+        if (mr.getInhClinicId() != null && mr.getInhClinicId().equals(inhNo)) {
+          index = i;
+          break;
+        }
+      }
+      if (index == -1) {
+        System.out.println("mr not found, inhNo=" + inhNo);
         continue;
       }
-      values = ExcelUtil.readCellValue(columnMap, row);
-
-      MR mr = findMRByInhClinicId(mrList, values.get("INH_NO"));
-      if (mr == null) {
-        System.out.println("mr not , inhNo=" + values.get("INH_NO"));
-        continue;
-      }
+      MR mr = mrList.remove(index);
       OP_D opd = findOpdById(opdList, mr.getdId());
       if (opd == null) {
         System.out.println("opd is null, did=" + mr.getdId());
@@ -6923,31 +6973,8 @@ public class NHIWidgetXMLService {
         moDao.deleteByMrId(mr.getId());
       }
 
-      // 存放所有醫令
-      StringBuffer sb = new StringBuffer((mr.getCodeAll() == null) ? "," : mr.getCodeAll());
-      StringBuffer sbInhCode = new StringBuffer((mr.getInhCode() == null) ? "," : mr.getInhCode());
-      OP_P opp = getOpp(values);
-      if (diffList == null) {
-        if (opp.getDrugNo() != null) {
-          sb.append(opp.getDrugNo());
-          sb.append(",");
-          opp.setPayCodeType(payCodeType.get(opp.getDrugNo()));
-        }
-        if (opp.getInhCode() != null && opp.getInhCode().length() > 0) {
-          sbInhCode.append(opp.getInhCode());
-          sbInhCode.append(",");
-        }
-        opp.setOpdId(opd.getId());
-        // updateOPPID(oppList, opp);
-        opp.setMrId(mr.getId());
-        maskOPP(opp, opd.getCaseType());
-        opp.setUpdateAt(new java.util.Date());
-        oppBatch.add(opp);
-        if (oppBatch.size() > XMLConstant.BATCH) {
-          oppDao.saveAll(oppBatch);
-          oppBatch.clear();
-        }
-      }
+      saveMrAndOpd(mr, opd, oppList, payCodeType, oppBatch);
+    
       // } else {
       // // 需比對有無差異
       // List<OP_P> opps = oppDao.findByOpdIdOrderByOrderSeqNo(opd.getId());
@@ -6981,21 +7008,6 @@ public class NHIWidgetXMLService {
       // }
       // }
       // }
-      if (sb.length() > 1) {
-        mr.setCodeAll(sb.toString());
-      } else {
-        if (mr.getCodeAll() != null) {
-          mr.setCodeAll(null);
-        }
-      }
-      if (sbInhCode.length() > 1) {
-        mr.setInhCode(sbInhCode.toString());
-      } else if (mr.getInhCode() != null) {
-        mr.setInhCode(null);
-      }
-      // saveDiffList(diffList, mr);
-      mr.setUpdateAt(new java.util.Date());
-      mrDao.save(mr);
     }
     if (oppBatch.size() > 0) {
       oppDao.saveAll(oppBatch);
@@ -7091,7 +7103,8 @@ public class NHIWidgetXMLService {
   
   public boolean readIppHSSFSheet(HSSFSheet sheet) {
     // 由標題列取得各欄位名稱的位置
-    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
+    int titleRowIndex = 0;
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRowHSSFRow(sheet.getRow(titleRowIndex), parameters.getByCat("IP_P"));
     // 第一筆資料
     HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(1));
 
@@ -7138,7 +7151,7 @@ public class NHIWidgetXMLService {
       }
 
       StringBuffer sb = new StringBuffer((mr.getCodeAll() == null) ? "," : mr.getCodeAll());
-      IP_P ipp = getIpp(values);
+      IP_P ipp = getIpp(values, "LEADTEK");
       // 自費金額
       int ownExpense = 0;
       if ("E".equals(ipp.getOrderType()) || PAY_BY_Y.equals(ipp.getPayBy()) || PAY_BY_Z.equals(ipp.getPayBy())) {
@@ -7343,9 +7356,7 @@ public class NHIWidgetXMLService {
   
   public void checkAll(long importUsedTime) {
     boolean waitCheckAllFinished = false;
-    long extendTime = (importUsedTime < (CHECK_ALL_AFTER_UPLOAD_WAIT_SECOND * 1000))
-        ? CHECK_ALL_AFTER_UPLOAD_WAIT_SECOND * 1000
-        : importUsedTime;
+    long extendTime = CHECK_ALL_AFTER_UPLOAD_WAIT_SECOND * 1000;
     long startRunningTime = is.getIntelligentRunningTime(INTELLIGENT_REASON.XML.value());
     if (startRunningTime > 0) {
       // 已經在跑所有條件檢查，就不處理
@@ -7978,6 +7989,106 @@ public class NHIWidgetXMLService {
     }
   }
   
+  private void saveMrAndOpd(MR mr, OP_D opd, List<OP_P> oppList, HashMap<String, String> payCodeType, List<OP_P> oppBatch) {
+    StringBuffer sb = new StringBuffer((mr.getCodeAll() == null) ? "," : mr.getCodeAll());
+    StringBuffer sbInhCode = new StringBuffer((mr.getInhCode() == null) ? "," : mr.getInhCode());
+    // 自費金額
+    int ownExpense = 0;
+    // 病歷點數
+    int total = 0;
+    // 用藥明細點數小計, drug_no length=10
+    int drugDot = 0;
+    // 診療明細點數小計, order type = 2
+    int treatDot = 0;
+    // 診察費點數, order type = 0
+    int diagDot = 0;
+    // 藥事服務費點數(調劑費), order type = 9
+    int dsvcDot = 0;
+    // 特殊材料明細點數小計, order type = 3
+    int metrDot = 0;
+    // 是否為自費案件
+    boolean isZ = true;
+    // 該筆病歷的所有醫令是否有新增或異動過
+    boolean isDirty = false;
+    for (int i = oppList.size() - 1; i >= 0; i--) {
+      OP_P opp = oppList.get(i);
+      opp.setMrId(mr.getId());
+      total += opp.getTotalDot();
+      if (!PAY_BY_Z.equals(opp.getPayBy())) {
+        isZ = false;
+      }
+      if (PAY_BY_Y.equals(opp.getPayBy()) || PAY_BY_Z.equals(opp.getPayBy())) {
+        ownExpense += opp.getTotalDot();
+      } else if (opp.getDrugNo() != null && opp.getDrugNo().length() == 10) {
+        drugDot += opp.getTotalDot();
+      } else if (opp.getDrugNo() != null && opp.getDrugNo().length() == 12) {
+        metrDot += opp.getTotalDot();
+      } else if ("2".equals(opp.getOrderType())) {
+        treatDot += opp.getTotalDot();
+      } else if ("0".equals(opp.getOrderType())) {
+        diagDot += opp.getTotalDot();
+      } else if ("9".equals(opp.getOrderType())) {
+        dsvcDot += opp.getTotalDot();
+      }
+      if (opp.getDrugNo() != null) {
+        sb.append(opp.getDrugNo());
+        sb.append(",");
+        opp.setPayCodeType(payCodeType.get(opp.getDrugNo()));
+      }
+      if (opp.getInhCode() != null && opp.getInhCode().length() > 0) {
+        sbInhCode.append(opp.getInhCode());
+        sbInhCode.append(",");
+      }
+      opp.setOpdId(opd.getId());
+      // updateOPPID(oppList, opp);
+      opp.setMrId(mr.getId());
+      maskOPP(opp, opd.getCaseType());
+      opp.setUpdateAt(new java.util.Date());
+      oppBatch.add(opp);
+      if (oppBatch.size() > XMLConstant.BATCH) {
+        oppDao.saveAll(oppBatch);
+        oppBatch.clear();
+      }
+      oppList.remove(i);
+    }
+
+    if (mr.getOwnExpense().intValue() != ownExpense) {
+      mr.setOwnExpense(ownExpense);
+    }
+    if (opd.getDrugDot() == null) {
+      opd.setDrugDot(drugDot);
+    }
+    if (opd.getTreatDot() == null) {
+      opd.setTreatDot(treatDot);
+    }
+    if (opd.getMetrDot() == null) {
+      opd.setMetrDot(metrDot);
+    }
+    if (opd.getDiagDot() == null) {
+      opd.setDiagDot(diagDot);
+    }
+    if (opd.getDsvcDot() == null) {
+      opd.setDsvcDot(dsvcDot);
+    }
+    if (opd.getTotalDot() != null) {
+      mr.setTotalDot(opd.getTotalDot() + mr.getOwnExpense());
+    } else {
+      mr.setTotalDot(total);
+    }
+
+    // if (mr.getClinic() != null) {
+    // 該筆OP_D有讀過病歷檔，所以要更新科別，改以醫令科別為主
+    // if (opd.getRocId().equals("S101840488")) {
+    // System.out.println("new func type=" + opd.getFuncType() + ", id=" + opd.getId());
+    // }
+    opdDao.updateFuncTypeById(opd.getFuncType(), opd.getDrugDot(), opd.getTreatDot(),
+        opd.getMetrDot(), opd.getDiagDot(), opd.getDsvcDot(), opd.getId());
+    // }
+    mr.setApplStatus(isZ ? 5 : 1);
+    mr.setUpdateAt(new java.util.Date());
+    mrDao.save(mr);
+  }
+  
   private void saveMrAndIpd(List<MR> mrList, List<IP_D> ipdList, List<IP_P> ippList) {
     for (MR mr : mrList) {
       if (mr.getIcdcm1() != null) {
@@ -8038,39 +8149,39 @@ public class NHIWidgetXMLService {
           ippList.remove(i);
         }
       }
-      if (ipd.getDiagDot().intValue() != diagDot) {
+      if (ipd.getDiagDot() == null || ipd.getDiagDot().intValue() != diagDot) {
         ipd.setDiagDot(diagDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getDrugDot().intValue() != drugDot) {
+      if (ipd.getDrugDot() == null || ipd.getDrugDot().intValue() != drugDot) {
         ipd.setDrugDot(drugDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getDsvcDot().intValue() != dsvcDot) {
+      if (ipd.getDsvcDot() == null || ipd.getDsvcDot().intValue() != dsvcDot) {
         ipd.setDsvcDot(dsvcDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getInjtDot().intValue() != injtDot) {
+      if (ipd.getInjtDot() == null || ipd.getInjtDot().intValue() != injtDot) {
         ipd.setInjtDot(injtDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getRoomDot().intValue() != roomDot) {
+      if (ipd.getRoomDot() == null || ipd.getRoomDot().intValue() != roomDot) {
         ipd.setRoomDot(roomDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getAneDot().intValue() != aneDot) {
+      if (ipd.getAneDot() == null || ipd.getAneDot().intValue() != aneDot) {
         ipd.setAneDot(aneDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getThrpDot().intValue() != thrpDot) {
+      if (ipd.getThrpDot() == null || ipd.getThrpDot().intValue() != thrpDot) {
         ipd.setThrpDot(thrpDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getAminDot().intValue() != aminDot) {
+      if (ipd.getAminDot() == null || ipd.getAminDot().intValue() != aminDot) {
         ipd.setAminDot(thrpDot);
         mr.setIcdcm1(null);
       }
-      if (mr.getOwnExpense().intValue() != ownExpense) {
+      if (mr.getOwnExpense() == null || mr.getOwnExpense().intValue() != ownExpense) {
         mr.setOwnExpense(ownExpense);
         ipd.setOwnExpense(ownExpense);
         mr.setIcdcm1(null);
@@ -8129,6 +8240,9 @@ public class NHIWidgetXMLService {
   
   private IP_D findIpdByIpdValues(List<IP_D> list, HashMap<String, String> values) {
     for (IP_D ipd : list) {
+      if (ipd.getPrsnName() == null) {
+        continue;
+      }
       if ((ipd.getApplEndDate().equals(values.get("APPL_END_DATE")) || 
           ipd.getApplStartDate().equals(values.get("APPL_START_DATE")))
           && ipd.getRocId().equals(values.get("ROC_ID"))
@@ -8501,7 +8615,7 @@ public class NHIWidgetXMLService {
         }
       }
       if (!isFound) {
-        IP_P ipp = getIpp(values);
+        IP_P ipp = getIpp(values, "THESE");
         ipp.setStartTime(values.get("FUNC_DATE"));
         ipp.setEndTime(values.get("FUNC_DATE"));
         long dateInt = Long.parseLong(values.get("FUNC_DATE"));
@@ -8598,7 +8712,7 @@ public class NHIWidgetXMLService {
         }
       }
       if (!isFound) {
-        OP_P opp = getOpp(values);
+        OP_P opp = getOpp(values, "THESE");
         long newTime = Long.parseLong(opp.getStartTime());
         if (newTime < min) {
           min = newTime;
@@ -8878,116 +8992,173 @@ public class NHIWidgetXMLService {
 
     return result;
   }
-  ///匯入核刪excel檔案
-  public List<DEDUCTED_NOTE> readDeductedNoteHSSFSheet(Sheet sheet, String mrid, String editorName) throws ParseException {
-	  
-	  // 取得最後一筆row位置作為資料size()
-	  int lastRowNum = sheet.getLastRowNum();
-	  // 由標題列取得各欄位名稱的位置
-	  HashMap<Integer, String> columnMap = new HashMap<Integer, String>();
-	  HashMap<String, String> values = new HashMap<String, String>();
-	  List<HashMap<String, String>> valueList = new ArrayList<HashMap<String, String>>();
-	  DEDUCTED_NOTE note = new DEDUCTED_NOTE();
-	  List<DEDUCTED_NOTE> listNote = new ArrayList<DEDUCTED_NOTE>();
-	  /// 先取欄位名稱
-	  for (int v = 0; v < lastRowNum + 1; v++) {
-		  try {
-				columnMap = ExcelUtil.readTitleRow(sheet.getRow(v));
-				if (columnMap.get(16).equals("備註"))
-					columnMap.replace(16, "核刪備註");
-				if (columnMap.get(26).equals("備註"))
-					columnMap.replace(26, "申復備註");
-				if (columnMap.get(34).equals("備註"))
-					columnMap.replace(34, "爭議備註");
-				System.out.println("columnMap -> " + columnMap.toString());
-				break;
-			} catch (Exception e) {
-				continue;
-			}
 
-		}
-		/// 再取值
-		for (int v = 0; v < lastRowNum + 1; v++) {
-			try {
-				values = ExcelUtil.readCellValue(columnMap, sheet.getRow(v));
-				System.out.println("values -> " + values.toString());
-				System.out.println("lastRowNum -> " + lastRowNum);
-				/// 如果是表頭就略過
-				if (values.get("病歷號").equals("病歷號")) {
-					values = new HashMap<String, String>();
-					continue;
-				}
-				valueList.add(values);
-				values = new HashMap<String, String>();
-			} catch (Exception e) {
-				continue;
-			}
+  /// 匯入核刪excel檔案
+  public List<DEDUCTED_NOTE> readDeductedNoteHSSFSheet(Sheet sheet, String mrid, String editorName)
+      throws ParseException {
 
-		}
-		System.out.println("valueList -> " + valueList.toString());
+    // 取得最後一筆row位置作為資料size()
+    int lastRowNum = sheet.getLastRowNum();
+    // 由標題列取得各欄位名稱的位置
+    HashMap<Integer, String> columnMap = new HashMap<Integer, String>();
+    HashMap<String, String> values = new HashMap<String, String>();
+    List<HashMap<String, String>> valueList = new ArrayList<HashMap<String, String>>();
+    DEDUCTED_NOTE note = new DEDUCTED_NOTE();
+    List<DEDUCTED_NOTE> listNote = new ArrayList<DEDUCTED_NOTE>();
+    /// 先取欄位名稱
+    for (int v = 0; v < lastRowNum + 1; v++) {
+      try {
+        columnMap = ExcelUtil.readTitleRow(sheet.getRow(v));
+        if (columnMap.get(16).equals("備註"))
+          columnMap.replace(16, "核刪備註");
+        if (columnMap.get(26).equals("備註"))
+          columnMap.replace(26, "申復備註");
+        if (columnMap.get(34).equals("備註"))
+          columnMap.replace(34, "爭議備註");
+        System.out.println("columnMap -> " + columnMap.toString());
+        break;
+      } catch (Exception e) {
+        continue;
+      }
 
-		if (valueList.size() > 0) {
-			for (HashMap<String, String> map : valueList) {
-				note.setMrId(Long.valueOf(map.get("病歷號")));
-				note.setActionType(1);
-				note.setItem(map.get("項目"));
-				note.setCat(map.get("類別"));
-				note.setL1(map.get("大分類"));
-				note.setL2(map.get("中分類"));
-				note.setL3(map.get("小分類"));
-				note.setSubCat(map.get("次分類"));
-				note.setCode(map.get("核刪代碼"));
-				note.setDeductedOrder(map.get("核刪醫令"));
-				note.setDeductedQuantity(map.get("核刪數量") == null ? null : Integer.valueOf(map.get("核刪數量")));
-				note.setDeductedAmount(map.get("核刪總點數") == null ? null : Integer.valueOf(map.get("核刪總點數")));
-				note.setReason(map.get("核減理由"));
-				note.setNote(map.get("核刪備註"));
-				note.setRollbackM(map.get("放大回推金額(月)") == null ? null : Integer.valueOf(map.get("放大回推金額(月)")));
-				note.setRollbackQ(map.get("放大回推金額(季)") == null ? null : Integer.valueOf(map.get("放大回推金額(季)")));
-				note.setAfrQuantity(map.get("申復數量") == null ? null : Integer.valueOf(map.get("申復數量")));
-				note.setAfrAmount(map.get("申復金額") == null ? null : Integer.valueOf(map.get("申復金額")));
-				note.setAfrPayQuantity(map.get("申復補付數量") == null ? null : Integer.valueOf(map.get("申復補付數量")));
-				note.setAfrAmount(map.get("申復補付金額") == null ? null : Integer.valueOf(map.get("申復補付金額")));
-				note.setAfrNoPayCode(map.get("申復不補付理由代碼"));
-				note.setAfrNoPayDesc(map.get("申復不補付理由說明"));
-				note.setAfrNote(map.get("申復備註"));
-				note.setDisputeQuantity(map.get("核刪醫令爭議數量") == null ? null : Integer.valueOf(map.get("核刪醫令爭議數量")));
-				note.setDisputeAmount(map.get("爭議金額") == null ? null : Integer.valueOf(map.get("爭議金額")));
-				note.setDisputePayQuantity(map.get("爭議補付數量") == null ? null : Integer.valueOf(map.get("爭議補付數量")));
-				note.setDisputePayAmount(map.get("爭議補付金額") == null ? null : Integer.valueOf(map.get("爭議補付金額")));
-				note.setDisputeNoPayCode(map.get("爭議不補付理由代碼"));
-				note.setDisputeNoPayDesc(map.get("爭議不補付理由說明"));
-				note.setDisputeNote(map.get("爭議備註"));
-				note.setEditor(editorName);
-				SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-				if(map.get("核刪日期") != null && !map.get("核刪日期").isEmpty()) {
-					
-					java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("核刪日期")));
-					String outputDate = sdf.format(d);
-					note.setDeductedDate(sdf.parse(outputDate));
-					
-				}
-				if(map.get("放大回推日期") != null && !map.get("放大回推日期").isEmpty()) {
-					java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("放大回推日期")));
-					String outputDate = sdf.format(d);
-					note.setRollbackDate(sdf.parse(outputDate));
-				}
-				if(map.get("爭議日期") != null && !map.get("爭議日期").isEmpty()) {
-					java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("爭議日期")));
-					String outputDate = sdf.format(d);
-					note.setDisputeDate(sdf.parse(outputDate));
-				}
-			
-				if (mrid.equals(map.get("病歷號"))) {
-					listNote.add(note);
-				}
-				/// 寫入資料庫
-				newDeductedNote(map.get("病歷號"), note);
-				note = new DEDUCTED_NOTE();
-			}
-			return listNote;
-		} else {
-			return listNote;
-		}
+    }
+    /// 再取值
+    for (int v = 0; v < lastRowNum + 1; v++) {
+      try {
+        values = ExcelUtil.readCellValue(columnMap, sheet.getRow(v));
+        System.out.println("values -> " + values.toString());
+        System.out.println("lastRowNum -> " + lastRowNum);
+        /// 如果是表頭就略過
+        if (values.get("病歷號").equals("病歷號")) {
+          values = new HashMap<String, String>();
+          continue;
+        }
+        valueList.add(values);
+        values = new HashMap<String, String>();
+      } catch (Exception e) {
+        continue;
+      }
+
+    }
+    System.out.println("valueList -> " + valueList.toString());
+
+    if (valueList.size() > 0) {
+      for (HashMap<String, String> map : valueList) {
+        note.setMrId(Long.valueOf(map.get("病歷號")));
+        note.setActionType(1);
+        note.setItem(map.get("項目"));
+        note.setCat(map.get("類別"));
+        note.setL1(map.get("大分類"));
+        note.setL2(map.get("中分類"));
+        note.setL3(map.get("小分類"));
+        note.setSubCat(map.get("次分類"));
+        note.setCode(map.get("核刪代碼"));
+        note.setDeductedOrder(map.get("核刪醫令"));
+        note.setDeductedQuantity(map.get("核刪數量") == null ? null : Integer.valueOf(map.get("核刪數量")));
+        note.setDeductedAmount(map.get("核刪總點數") == null ? null : Integer.valueOf(map.get("核刪總點數")));
+        note.setReason(map.get("核減理由"));
+        note.setNote(map.get("核刪備註"));
+        note.setRollbackM(
+            map.get("放大回推金額(月)") == null ? null : Integer.valueOf(map.get("放大回推金額(月)")));
+        note.setRollbackQ(
+            map.get("放大回推金額(季)") == null ? null : Integer.valueOf(map.get("放大回推金額(季)")));
+        note.setAfrQuantity(map.get("申復數量") == null ? null : Integer.valueOf(map.get("申復數量")));
+        note.setAfrAmount(map.get("申復金額") == null ? null : Integer.valueOf(map.get("申復金額")));
+        note.setAfrPayQuantity(
+            map.get("申復補付數量") == null ? null : Integer.valueOf(map.get("申復補付數量")));
+        note.setAfrAmount(map.get("申復補付金額") == null ? null : Integer.valueOf(map.get("申復補付金額")));
+        note.setAfrNoPayCode(map.get("申復不補付理由代碼"));
+        note.setAfrNoPayDesc(map.get("申復不補付理由說明"));
+        note.setAfrNote(map.get("申復備註"));
+        note.setDisputeQuantity(
+            map.get("核刪醫令爭議數量") == null ? null : Integer.valueOf(map.get("核刪醫令爭議數量")));
+        note.setDisputeAmount(map.get("爭議金額") == null ? null : Integer.valueOf(map.get("爭議金額")));
+        note.setDisputePayQuantity(
+            map.get("爭議補付數量") == null ? null : Integer.valueOf(map.get("爭議補付數量")));
+        note.setDisputePayAmount(
+            map.get("爭議補付金額") == null ? null : Integer.valueOf(map.get("爭議補付金額")));
+        note.setDisputeNoPayCode(map.get("爭議不補付理由代碼"));
+        note.setDisputeNoPayDesc(map.get("爭議不補付理由說明"));
+        note.setDisputeNote(map.get("爭議備註"));
+        note.setEditor(editorName);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+        if (map.get("核刪日期") != null && !map.get("核刪日期").isEmpty()) {
+
+          java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("核刪日期")));
+          String outputDate = sdf.format(d);
+          note.setDeductedDate(sdf.parse(outputDate));
+
+        }
+        if (map.get("放大回推日期") != null && !map.get("放大回推日期").isEmpty()) {
+          java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("放大回推日期")));
+          String outputDate = sdf.format(d);
+          note.setRollbackDate(sdf.parse(outputDate));
+        }
+        if (map.get("爭議日期") != null && !map.get("爭議日期").isEmpty()) {
+          java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("爭議日期")));
+          String outputDate = sdf.format(d);
+          note.setDisputeDate(sdf.parse(outputDate));
+        }
+
+        if (mrid.equals(map.get("病歷號"))) {
+          listNote.add(note);
+        }
+        /// 寫入資料庫
+        newDeductedNote(map.get("病歷號"), note);
+        note = new DEDUCTED_NOTE();
+      }
+      return listNote;
+    } else {
+      return listNote;
+    }
+  }
+
+  /**
+   * 將Leadtek門診醫令清單中同一INH_NO的醫令放在一起
+   * @param sheet
+   * @param startRow
+   * @param columnMap
+   * @return
+   */
+  private HashMap<String, List<OP_P>> aggregateLeadtekOPP(HSSFSheet sheet, int startRow,
+      HashMap<Integer, String> columnMap) {
+    HashMap<String, List<OP_P>> result = new HashMap<String, List<OP_P>>();
+    HashMap<String, String> payCodeTypes = getPayCodeType();
+    for (int i = startRow; i < sheet.getPhysicalNumberOfRows(); i++) {
+      HSSFRow row = sheet.getRow(i);
+      if (row == null || row.getCell(0) == null) {
+        continue;
+      }
+      HashMap<String, String> values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
+      OP_P opp = getOpp(values, "LEADTEK");
+      List<OP_P> oppList = result.get(values.get("INH_NO"));
+      if (oppList == null) {
+        oppList = new ArrayList<OP_P>();
+        result.put(values.get("INH_NO"), oppList);
+      }
+
+      if (opp.getDrugNo() != null) {
+        if (opp.getDrugNo().length() == 10) {
+          // 藥費
+          opp.setPayCodeType("7");
+          // 醫令類別：用藥明細
+          opp.setOrderType("1");
+        } else if (opp.getDrugNo().length() == 12) {
+          // 衛材品項費
+          opp.setPayCodeType("23");
+          // 醫令類別：特殊材料
+          opp.setOrderType("3");
+        } else {
+          opp.setPayCodeType(payCodeTypes.get(opp.getDrugNo()));
+          if ("6".equals(opp.getPayCodeType())) {
+            // 6:調劑費 <-> order type 9:藥事服務費
+            opp.setOrderType("9");
+          }
+        }
+      }
+      opp.setUpdateAt(new java.util.Date());
+      oppList.add(opp);
+    }
+    return result;
   }
 }
