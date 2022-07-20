@@ -591,4 +591,17 @@ public class ReportController extends BaseController {
 		return ResponseEntity.ok(res);
 
 	}
+	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
+	@ApiOperation(value = "取得核刪資訊-匯出", notes = "取得核刪資訊-匯出")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+	@GetMapping("/deductedNoteExport")
+	public ResponseEntity<BaseResponse> getDeductedNoteExport(
+			@ApiParam(value = "西元年，若為多筆資料，用空格隔開", example = "2022 2022 2022") @RequestParam(required = true) String year,
+			@ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true) String quarter,
+			HttpServletResponse response
+			) throws IOException {
+		reportExportService.getDeductedNoteExport(year, quarter, response);
+		return null;
+
+	}
 }

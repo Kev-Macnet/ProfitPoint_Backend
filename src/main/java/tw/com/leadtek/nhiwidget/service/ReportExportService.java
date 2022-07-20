@@ -18,7 +18,6 @@ import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.poi.hssf.model.RowBlocksReader;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
@@ -42,6 +41,7 @@ import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
+import tw.com.leadtek.nhiwidget.payload.report.DeductedPayload;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePoint;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePointQuantity;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
@@ -51,7 +51,6 @@ import tw.com.leadtek.nhiwidget.payload.report.PeriodPointPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointMRPayload;
 import tw.com.leadtek.nhiwidget.payload.report.PointPeriod;
-import tw.com.leadtek.nhiwidget.payload.report.PointQuantityList;
 import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriod;
 import tw.com.leadtek.nhiwidget.payload.report.VisitsPeriodDetail;
@@ -7251,6 +7250,3008 @@ public class ReportExportService {
 		workbook.close();
 
 	}
+	
+
+	/**
+	 * 核刪資訊-匯出
+	 * @param year
+	 * @param quarter
+	 * @param response
+	 */
+	public void getDeductedNoteExport(String year , String quarter, HttpServletResponse response)throws IOException {
+		
+		List<DeductedPayload> modelList = reportService.getDeductedNote(year, quarter);
+		
+		// 建立新工作簿
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		// 樣式
+		HSSFCellStyle cellStyle = workbook.createCellStyle();
+		cellStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellStyle.setBorderRight(BorderStyle.MEDIUM);
+
+		HSSFCellStyle cellTitleStyle = workbook.createCellStyle();
+		cellTitleStyle.setAlignment(HorizontalAlignment.CENTER);
+		cellTitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellTitleStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellTitleStyle.setBorderRight(BorderStyle.MEDIUM);
+
+		HSSFCellStyle cellFormatStyle = workbook.createCellStyle();
+		cellFormatStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellFormatStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+		cellFormatStyle.setBorderBottom(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderTop(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderLeft(BorderStyle.MEDIUM);
+		cellFormatStyle.setBorderRight(BorderStyle.MEDIUM);
+		cellFormatStyle.setDataFormat(HSSFDataFormat.getBuiltinFormat("#,##0"));
+
+		int cellIndex = 0;
+		int rowIndex = 0;
+		
+		if(modelList != null && modelList.size() > 0) {
+			///單季度
+			if(modelList.size() == 1) {
+				/// 新建工作表
+				HSSFSheet sheet = workbook.createSheet("單季度核減");
+				String[] tableRowHeaders = { "","非專案(隨機)","專案(隨機)","藥費(隨機)" };
+				String[] tableRowHeaders2 = { "季度","非專案核減點數","專案核減點數","藥費核減點數","總抽件數","總和扣件數" };
+
+				/// 欄位A1
+				HSSFRow row = sheet.createRow(0);
+				HSSFCell cell = row.createCell(0);
+				cell.setCellValue("核刪季度");
+				cell.setCellStyle(cellStyle);
+
+				/// 欄位B1
+				cell = row.createCell(1);
+				cell.setCellValue(modelList.get(0).getDisplayName());
+				cell.setCellStyle(cellStyle);
+				
+				/// 欄位A3
+				row = sheet.createRow(2);
+				cell = row.createCell(0);
+				cell.setCellValue("門急診/住院總核刪點數");
+				cell.setCellStyle(cellStyle);
+				
+				/// 欄位A4
+				row = sheet.createRow(3);
+				for(int x=0; x<tableRowHeaders.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableRowHeaders[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				
+				/// 欄位A5
+				row = sheet.createRow(4);
+				cell = row.createCell(0);
+				cell.setCellValue("門急診");
+				cell.setCellStyle(cellStyle);
+				cell = row.createCell(1);
+				cell.setCellValue(modelList.get(0).getNoprojectAmountOp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);	
+				cell = row.createCell(2);
+				cell.setCellValue(modelList.get(0).getProjectAmountOp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);	
+				cell = row.createCell(3);
+				cell.setCellValue(modelList.get(0).getMedAmountOp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);	
+				
+				/// 欄位A5
+				row = sheet.createRow(5);
+				cell = row.createCell(0);
+				cell.setCellValue("住院");
+				cell.setCellStyle(cellStyle);
+				cell = row.createCell(1);
+				cell.setCellValue(modelList.get(0).getNoprojectAmountIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);	
+				cell = row.createCell(2);
+				cell.setCellValue(modelList.get(0).getProjectAmountIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);	
+				cell = row.createCell(3);
+				cell.setCellValue(modelList.get(0).getMedAmountIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);	
+				
+				/// 欄位A8
+				row = sheet.createRow(7);
+				cell = row.createCell(0);
+				cell.setCellValue("季度差異計算");
+				cell.setCellStyle(cellStyle);
+				/// 欄位A9
+				row = sheet.createRow(8);
+				for(int x=0; x<tableRowHeaders2.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableRowHeaders2[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				/// 欄位A10
+				row = sheet.createRow(9);
+				cell = row.createCell(0);
+				cell.setCellValue(modelList.get(0).getDisplayName());
+				cell.setCellStyle(cellStyle);
+				cell = row.createCell(1);
+				cell.setCellValue(modelList.get(0).getNoprojectAmountAll());
+				cell.setCellStyle(cellFormatStyle);
+				cell = row.createCell(2);
+				cell.setCellValue(modelList.get(0).getProjectAmountAll());
+				cell.setCellStyle(cellFormatStyle);
+				cell = row.createCell(3);
+				cell.setCellValue(modelList.get(0).getMedAmountAll());
+				cell.setCellStyle(cellFormatStyle);
+				cell = row.createCell(4);
+				cell.setCellValue(modelList.get(0).getExtractCase());
+				cell.setCellStyle(cellFormatStyle);
+				cell = row.createCell(5);
+				cell.setCellValue(modelList.get(0).getQuatity());
+				cell.setCellStyle(cellFormatStyle);
+				
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders2.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				tableRowHeaders = new String[] {"健保門急診核減抽審總件數","健保門急診核減總核扣點數","健保住院核減抽審總件數","健保住院核減總核扣點數"};
+				tableRowHeaders2 = new String[] {"類別","核扣件數","核扣點數","核刪醫令","核扣點數","理由","類別","核扣件數","核扣點數","核刪醫令","核扣點數","理由"};
+				sheet = workbook.createSheet("季度核減資訊");
+				cellIndex = 0;
+				rowIndex = 0;
+				/// 欄位A1
+				row = sheet.createRow(0);
+				cell = row.createCell(0);
+				cell.setCellValue("季度核減資訊");
+				cell.setCellStyle(cellTitleStyle);
+				/// 欄位A2
+				row = sheet.createRow(1);
+				for(int x=0; x < tableRowHeaders2.length; x++) {
+					cell = row.createCell(x);
+					switch(x) {
+					case 0:
+						cell.setCellValue(tableRowHeaders[0]);
+						break;
+					case 3:
+						cell.setCellValue(tableRowHeaders[1]);
+						break;
+					case 6:
+						cell.setCellValue(tableRowHeaders[2]);
+						break;
+					case 9:
+						cell.setCellValue(tableRowHeaders[3]);
+						break;
+					default:
+						break;
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// 欄位merge
+				int x1 = 0;
+				int x2 = 2;
+				for(int x=0; x < tableRowHeaders.length; x++) {
+					sheet.addMergedRegion(new CellRangeAddress(1, 1, x1, x2));
+					x1 += 3;
+					x2 += 3;
+				}
+				/// 欄位A3
+				row = sheet.createRow(2);
+				for(int x=0; x < tableRowHeaders2.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableRowHeaders2[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				cellIndex = 0;
+				/// 欄位A4 健保門急診核減抽審總件數
+				row = sheet.createRow(3);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("非專案(隨機)");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getNoprojectQuantityOp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getNoprojectAmountOp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				
+				List<Map<String,Object>> deductedNoteInfos = modelList.get(0).getDeductedList();
+				///門急診資料
+				List<Map<String,Object>> opInfos = new ArrayList<Map<String,Object>>();
+				///住院資料
+				List<Map<String,Object>> ipInfos = new ArrayList<Map<String,Object>>();
+				
+				if(deductedNoteInfos.size() > 0) {
+					for(Map<String, Object> map : deductedNoteInfos) {
+						String dateformat = map.get("dataFormat").toString();
+						if(dateformat.equals("10")) {
+							opInfos.add(map);
+						}
+						else {
+							ipInfos.add(map);
+						}
+					}
+				}
+				///健保門急診核減總核扣點數
+				if(opInfos.size()>0) {
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(opInfos.get(0).get("name").toString());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(opInfos.get(0).get("amount").toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(opInfos.get(0).get("reason").toString());
+					cell.setCellStyle(cellFormatStyle);
+					///remove已顯示資料列
+					opInfos.remove(0);
+					cellIndex++;
+				}
+				else {
+					cellIndex +=3;
+				}
+				///健保住院核減抽審總件數
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("非專案(隨機)");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getNoprojectQuantityIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getNoprojectAmountIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				///健保住院核減總核扣點數
+				if(ipInfos.size() > 0) {
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(ipInfos.get(0).get("name").toString());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(ipInfos.get(0).get("amount").toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(ipInfos.get(0).get("reason").toString());
+					cell.setCellStyle(cellFormatStyle);
+					///remove已顯示資料列
+					ipInfos.remove(0);
+				}
+				cellIndex = 0;
+				/// 欄位A5 健保門急診核減抽審總件數
+				row = sheet.createRow(4);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("專案(隨機)");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getProjectQuantityOp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getProjectAmountOp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				///健保門急診核減總核扣點數
+				if(opInfos.size() > 0) {
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(opInfos.get(0).get("name").toString());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(opInfos.get(0).get("amount").toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(opInfos.get(0).get("reason").toString());
+					cell.setCellStyle(cellFormatStyle);
+					///remove已顯示資料列
+					opInfos.remove(0);
+					cellIndex++;
+				}
+				else {
+					cellIndex +=3;
+				}
+				///健保住院核減抽審總件數
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("專案(隨機)");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getProjectQuantityIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getProjectAmountIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				///健保住院核減總核扣點數
+				if(ipInfos.size() > 0) {
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(ipInfos.get(0).get("name").toString());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(ipInfos.get(0).get("amount").toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(ipInfos.get(0).get("reason").toString());
+					cell.setCellStyle(cellFormatStyle);
+					///remove已顯示資料列
+					ipInfos.remove(0);
+				}
+				cellIndex = 0;
+				/// 欄位A6 健保門急診核減抽審總件數
+				row = sheet.createRow(5);
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("藥費(隨機)");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getMedQuantityOp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getMedAmountOp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				///健保門急診核減總核扣點數
+				if(opInfos.size() > 0) {
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(opInfos.get(0).get("name").toString());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(opInfos.get(0).get("amount").toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(opInfos.get(0).get("reason").toString());
+					cell.setCellStyle(cellFormatStyle);
+					///remove已顯示資料列
+					opInfos.remove(0);
+					cellIndex++;
+				}
+				else {
+					cellIndex +=3;
+				}
+				///健保住院核減抽審總件數
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("藥費(隨機)");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getMedQuantityIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				cellIndex++;
+				cell = row.createCell(cellIndex);
+				cell.setCellValue(modelList.get(0).getMedAmountIp().doubleValue());
+				cell.setCellStyle(cellFormatStyle);
+				///健保住院核減總核扣點數
+				if(ipInfos.size() > 0) {
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(ipInfos.get(0).get("name").toString());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(ipInfos.get(0).get("amount").toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(ipInfos.get(0).get("reason").toString());
+					cell.setCellStyle(cellFormatStyle);
+					///remove已顯示資料列
+					ipInfos.remove(0);
+				}
+				rowIndex = 5;
+				///最後判斷資料是否存在，有存在就用迴圈顯示
+				if(opInfos.size() > 0 || ipInfos.size() > 0) {
+					int loopCount = opInfos.size()+ipInfos.size();
+					for(int i=0; i<loopCount;i++) {
+						rowIndex++;
+						row = sheet.createRow(rowIndex);
+						if(opInfos.size() > 0) {
+							cellIndex = 3;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfos.get(0).get("name").toString());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfos.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfos.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							///remove已顯示資料列
+							opInfos.remove(0);
+						}
+						if( ipInfos.size() > 0 ) {
+							cellIndex = 9;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfos.get(0).get("name").toString());
+							cell.setCellStyle(cellStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfos.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfos.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							///remove已顯示資料列
+							ipInfos.remove(0);
+						}
+					}
+				}
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders2.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				tableRowHeaders = new String[] {"核刪醫令","放大回推金額","申復數量","申復金額","申復補付數量","申復補復金額"};
+				sheet = workbook.createSheet("放大回推核減資訊(門急)");
+				cellIndex = 0;
+				rowIndex = 0;
+				List<Map<String,Object>> rollbacks = modelList.get(0).getRollbackList();
+				///門急診資料
+				List<Map<String,Object>> opRollbacks = new ArrayList<Map<String,Object>>();
+				///住院資料
+				List<Map<String,Object>> ipRollbacks = new ArrayList<Map<String,Object>>();
+				if(rollbacks != null && rollbacks.size() > 0) {
+					for(int x=0; x<rollbacks.size();x++) {
+						String dataformat = rollbacks.get(x).get("dataFormat").toString();
+						if(dataformat.equals("10")) {
+							opRollbacks.add(rollbacks.get(x));
+						}
+						else {
+							ipRollbacks.add(rollbacks.get(x));
+						}
+						
+					}
+				}
+				/// 欄位A1
+				row = sheet.createRow(0);
+				for(int x=0; x<tableRowHeaders.length;x++) {
+					cell = row.createCell(x);
+					if(x==0) {
+						cell.setCellValue("健保門急診放大回推");
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge欄位
+				sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, tableRowHeaders.length - 1));
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				for(int x=0; x<tableRowHeaders.length;x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableRowHeaders[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				
+				/// 欄位A3
+				row = sheet.createRow(2);
+				rowIndex = 3;
+				cellIndex = 0;
+				if(opRollbacks.size() > 0) {
+					for(int x=0; x<opRollbacks.size();x++) {
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(opRollbacks.get(x).get("name").toString());
+					    cell.setCellStyle(cellStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(opRollbacks.get(x).get("amount").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(opRollbacks.get(x).get("afrQuantity").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(opRollbacks.get(x).get("afrAmount").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(opRollbacks.get(x).get("afrPayQuantity").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(opRollbacks.get(x).get("afrPayAmount").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					  
+					    cellIndex = 0;
+					    row = sheet.createRow(rowIndex+x);
+					}
+				}
+				else {
+					cell = row.createCell(cellIndex);
+				    cell.setCellValue("無");
+				    cell.setCellStyle(cellStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				}
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				tableRowHeaders = new String[] {"核刪醫令","放大回推金額","申復數量","申復金額","申復補付數量","申復補復金額"};
+				sheet = workbook.createSheet("放大回推核減資訊(住院)");
+				cellIndex = 0;
+				rowIndex = 0;
+				/// 欄位A1
+				row = sheet.createRow(0);
+				for(int x=0; x<tableRowHeaders.length;x++) {
+					cell = row.createCell(x);
+					if(x==0) {
+						cell.setCellValue("健保住院放大回推");
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge欄位
+				sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, tableRowHeaders.length - 1));
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				for(int x=0; x<tableRowHeaders.length;x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableRowHeaders[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				
+				/// 欄位A3
+				row = sheet.createRow(2);
+				rowIndex = 3;
+				cellIndex = 0;
+				if(ipRollbacks.size() > 0) {
+					for(int x=0; x<ipRollbacks.size();x++) {
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(ipRollbacks.get(x).get("name").toString());
+					    cell.setCellStyle(cellStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(ipRollbacks.get(x).get("amount").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(ipRollbacks.get(x).get("afrQuantity").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(ipRollbacks.get(x).get("afrAmount").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(ipRollbacks.get(x).get("afrPayQuantity").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(ipRollbacks.get(x).get("afrPayAmount").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					  
+					    cellIndex = 0;
+					    row = sheet.createRow(rowIndex+x);
+					}
+				}
+				else {
+					cell = row.createCell(cellIndex);
+				    cell.setCellValue("無");
+				    cell.setCellStyle(cellStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				}
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				tableRowHeaders = new String[] {"核刪醫令","爭議數量","爭議金額","爭議不補付代碼"};
+				sheet = workbook.createSheet("爭議核減資訊(門急)");
+				cellIndex = 0;
+				rowIndex = 0;
+				List<Map<String,Object>> disputes = modelList.get(0).getDisputeList();
+				///門急診資料
+				List<Map<String,Object>> opDisputes = new ArrayList<Map<String,Object>>();
+				///住院資料
+				List<Map<String,Object>> ipDisputes = new ArrayList<Map<String,Object>>();
+				if(disputes != null && disputes.size() > 0) {
+					for(int x=0; x<disputes.size();x++) {
+						String dataformat = disputes.get(x).get("dataFormat").toString();
+						if(dataformat.equals("10")) {
+							opDisputes.add(disputes.get(x));
+						}
+						else {
+							ipDisputes.add(disputes.get(x));
+						}
+					}
+				}
+				/// 欄位A1
+				row = sheet.createRow(0);
+				for(int x=0; x<tableRowHeaders.length;x++) {
+					cell = row.createCell(x);
+					if(x==0) {
+						cell.setCellValue("健保門急診爭議");
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge欄位
+				sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, tableRowHeaders.length - 1));
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				for(int x=0; x<tableRowHeaders.length;x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableRowHeaders[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				
+				/// 欄位A3
+				row = sheet.createRow(2);
+				rowIndex = 3;
+				cellIndex = 0;
+				if(opDisputes.size() > 0) {
+					for(int x=0; x<opDisputes.size();x++) {
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(opDisputes.get(x).get("name").toString());
+					    cell.setCellStyle(cellStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(opDisputes.get(x).get("disputeQuantity").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(opDisputes.get(x).get("disputeAmount").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(opDisputes.get(x).get("disputeNoPayCode").toString());
+					    cell.setCellStyle(cellFormatStyle);
+					   
+					    cellIndex = 0;
+					    row = sheet.createRow(rowIndex+x);
+					}
+				}
+				else {
+					cell = row.createCell(cellIndex);
+				    cell.setCellValue("無");
+				    cell.setCellStyle(cellStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				   
+				}
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				tableRowHeaders = new String[] {"核刪醫令","爭議數量","爭議金額","爭議不補付代碼"};
+				sheet = workbook.createSheet("爭議核減資訊(住院)");
+				cellIndex = 0;
+				rowIndex = 0;
+	
+				/// 欄位A1
+				row = sheet.createRow(0);
+				for(int x=0; x<tableRowHeaders.length;x++) {
+					cell = row.createCell(x);
+					if(x==0) {
+						cell.setCellValue("健保住院爭議");
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge欄位
+				sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, tableRowHeaders.length - 1));
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				for(int x=0; x<tableRowHeaders.length;x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableRowHeaders[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				
+				/// 欄位A3
+				row = sheet.createRow(2);
+				rowIndex = 3;
+				cellIndex = 0;
+				if(ipDisputes.size() > 0) {
+					for(int x=0; x<ipDisputes.size();x++) {
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(ipDisputes.get(x).get("name").toString());
+					    cell.setCellStyle(cellStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(ipDisputes.get(x).get("disputeQuantity").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(Long.valueOf(ipDisputes.get(x).get("disputeAmount").toString()).doubleValue());
+					    cell.setCellStyle(cellFormatStyle);
+					    cellIndex++;
+					    cell = row.createCell(cellIndex);
+					    cell.setCellValue(ipDisputes.get(x).get("disputeNoPayCode").toString());
+					    cell.setCellStyle(cellFormatStyle);
+					   
+					    cellIndex = 0;
+					    row = sheet.createRow(rowIndex+x);
+					}
+				}
+				else {
+					cell = row.createCell(cellIndex);
+				    cell.setCellValue("無");
+				    cell.setCellStyle(cellStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				    cellIndex++;
+				    cell = row.createCell(cellIndex);
+				    cell.setCellValue(0);
+				    cell.setCellStyle(cellFormatStyle);
+				   
+				}
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders.length; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+			}
+			///多季度
+			else {
+				/// 新建工作表
+				HSSFSheet sheet = workbook.createSheet("多季度核減");
+				String[] tableRowHeaders = { "季度","非專案核減點數","專案核減點數","藥費核減點數","總抽件數","總和扣件數" };
+				String[] tableRowHeaders2 = {"門急診/住院總核刪點數（非專案-隨機)","門急診/住院總核刪點數（專案-隨機)","門急診/住院總核刪點數（藥費總額)"};
+				String[] tableRowHeaders3 = {"季度","門急診","住院","季度","門急診","住院","季度","門急診","住院"};
+				cellIndex = 0;
+				rowIndex = 0;
+				/// 欄位A1
+				HSSFRow row = sheet.createRow(0);
+				HSSFCell cell = row.createCell(0);
+				cell.setCellValue("核刪季度");
+				cell.setCellStyle(cellStyle);
+
+				/// 欄位B1
+				for(int x=0; x < modelList.size(); x++) {
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+				}
+				
+				/// 欄位A3
+				cellIndex = 0;
+				row = sheet.createRow(2);
+				cell = row.createCell(0);
+				cell.setCellValue("季度差異計算");
+				cell.setCellStyle(cellStyle);
+				
+				/// 欄位A4
+				row = sheet.createRow(3);
+				for(int x=0; x < tableRowHeaders.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableRowHeaders[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				/// 欄位A5
+				rowIndex = 5;
+				cellIndex = 0;
+				row = sheet.createRow(4);
+				for(int x=0; x < modelList.size(); x++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());	
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getNoprojectAmountAll().toString()).doubleValue());	
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getProjectAmountAll().toString()).doubleValue());	
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getMedAmountAll().toString()).doubleValue());	
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getExtractCase().toString()).doubleValue());	
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getQuatity().toString()).doubleValue());	
+					cell.setCellStyle(cellFormatStyle);
+					
+					cellIndex = 0;
+					row = sheet.createRow(rowIndex + x);
+				}
+				
+				/// 欄位A
+				rowIndex = row.getRowNum() + 1;
+				cellIndex = 0;
+				row = sheet.createRow(rowIndex);
+				for(int x=0; x < tableRowHeaders3.length; x++) {
+					cell = row.createCell(x);
+					switch(x) {
+					case 0:
+						cell.setCellValue(tableRowHeaders2[0]);
+						break;
+					case 3:
+						cell.setCellValue(tableRowHeaders2[1]);
+						break;
+					case 6:
+						cell.setCellValue(tableRowHeaders2[2]);
+						break;
+					default:
+						break;
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge欄位
+				int x1 = 0;
+				int x2 = 2;
+				for(int x=0; x < tableRowHeaders2.length; x++) {
+					
+					sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, x1, x2));
+					x1 += 3;
+					x2 += 3;
+				}
+				rowIndex = row.getRowNum() + 1;
+				
+				/// 欄位A
+				row = sheet.createRow(rowIndex);
+				for(int x=0; x < tableRowHeaders3.length; x++) {
+					cell = row.createCell(x);
+					cell.setCellValue(tableRowHeaders3[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				
+				rowIndex++;
+				/// 欄位A
+				row = sheet.createRow(rowIndex);
+				cellIndex = 0;
+				for(int x=0; x < modelList.size(); x++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getNoprojectAmountOp().toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getNoprojectAmountIp().toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getProjectAmountOp().toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getProjectAmountIp().toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getMedAmountOp().toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(Long.valueOf(modelList.get(x).getMedAmountIp().toString()).doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					
+					cellIndex = 0;
+					row = sheet.createRow(rowIndex + x); 
+				}
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders3.length + 2; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				sheet = workbook.createSheet("多季度核減資訊(門急)");
+				tableRowHeaders = new String[] {"健保門急診核減抽審總件數", "健保門急診核減總核扣點數"};
+				tableRowHeaders2 = new String[] {"類別","核扣件數","核扣點數","核刪醫令","核扣點數","理由"};
+				cellIndex = 0;
+				rowIndex = 0;
+				///資料統計
+				List<List<Map<String,Object>>> infosList = new ArrayList<List<Map<String,Object>>>();
+				List<Map<String,Object>> deductedNoteInfosQ1 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> deductedNoteInfosQ2 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> deductedNoteInfosQ3 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> deductedNoteInfosQ4 = new ArrayList<Map<String,Object>>();
+				///門急診資料
+				List<Map<String,Object>> opInfosQ1 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> opInfosQ2 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> opInfosQ3 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> opInfosQ4 = new ArrayList<Map<String,Object>>();
+				///住院資料
+				List<Map<String,Object>> ipInfosQ1 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> ipInfosQ2 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> ipInfosQ3 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> ipInfosQ4 = new ArrayList<Map<String,Object>>();
+				
+				///將所有季度資料裝載array
+				for(int i=0; i<modelList.size(); i++) {
+					infosList.add(modelList.get(i).getDeductedList());
+				}
+				for(int i=0; i<infosList.size(); i++) {
+					switch(i) {
+					case 0:
+						if(infosList.get(0) != null)
+						deductedNoteInfosQ1.addAll(infosList.get(0));
+						break;
+					case 1:
+						if(infosList.get(1) != null)
+						deductedNoteInfosQ2.addAll(infosList.get(1));
+						break;
+					case 2:
+						if(infosList.get(2) != null)
+						deductedNoteInfosQ3.addAll(infosList.get(2));
+						break;
+					case 3:
+						if(infosList.get(3) != null)
+						deductedNoteInfosQ4.addAll(infosList.get(3));
+						break;
+					}
+				}
+				
+				for(int i=0; i<deductedNoteInfosQ1.size(); i++) {
+					String dateformat = deductedNoteInfosQ1.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opInfosQ1.add(deductedNoteInfosQ1.get(i));
+					}
+					else {
+						ipInfosQ1.add(deductedNoteInfosQ1.get(i));
+					}
+				}
+				for(int i=0; i<deductedNoteInfosQ2.size(); i++) {
+					String dateformat = deductedNoteInfosQ2.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opInfosQ2.add(deductedNoteInfosQ2.get(i));
+					}
+					else {
+						ipInfosQ2.add(deductedNoteInfosQ2.get(i));
+					}
+				}
+				for(int i=0; i<deductedNoteInfosQ3.size(); i++) {
+					String dateformat = deductedNoteInfosQ3.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opInfosQ3.add(deductedNoteInfosQ3.get(i));
+					}
+					else {
+						ipInfosQ3.add(deductedNoteInfosQ3.get(i));
+					}
+				}
+				for(int i=0; i<deductedNoteInfosQ4.size(); i++) {
+					String dateformat = deductedNoteInfosQ4.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opInfosQ2.add(deductedNoteInfosQ4.get(i));
+					}
+					else {
+						ipInfosQ2.add(deductedNoteInfosQ4.get(i));
+					}
+				}
+				
+				/// 欄位A1
+				row = sheet.createRow(0);
+				cell = row.createCell(0);
+				cell.setCellValue("多季度核減資訊");
+				cell.setCellStyle(cellStyle);
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				cell = row.createCell(0);
+				cell.setCellStyle(cellStyle);
+				cellIndex = 1;
+				for(int x=0; x<tableRowHeaders2.length; x++) {
+					cell = row.createCell(cellIndex + x);
+					if(x==0) {
+						cell.setCellValue(tableRowHeaders[0]);
+					}
+					else if(x==3) {
+						cell.setCellValue(tableRowHeaders[1]);
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge欄位
+				x1 = 1;
+				x2 = 3;
+				for(int x=0; x<tableRowHeaders.length; x++) {
+					sheet.addMergedRegion(new CellRangeAddress(1, 1, x1, x2));
+					x1 += 3;
+					x2 += 3;
+				}
+				
+				/// 欄位A3
+				row = sheet.createRow(2);
+				cell = row.createCell(0);	
+				cell.setCellValue("季度");
+				cell.setCellStyle(cellStyle);
+				cellIndex = 1;
+				for(int x=0; x<tableRowHeaders2.length; x++) {
+					cell = row.createCell(cellIndex + x);
+					cell.setCellValue(tableRowHeaders2[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				
+				/// 欄位A4
+				cellIndex = 0;
+				rowIndex = 3;
+				for(int x=0; x<modelList.size(); x++) {
+					row = sheet.createRow(rowIndex);
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue("非專案(隨機)");
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getNoprojectQuantityOp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getNoprojectAmountOp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					switch(x) {
+					case 0:
+						if(opInfosQ1.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ1.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ1.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ1.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ1.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 1:
+						if(opInfosQ2.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ2.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ2.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ2.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ2.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 2:
+						if(opInfosQ3.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ3.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ3.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ3.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ3.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 3:
+						if(opInfosQ4.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ4.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ4.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ4.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ4.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					}
+					
+					rowIndex++;
+					cellIndex = 0;
+					row = sheet.createRow(rowIndex);
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue("專案(隨機)");
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getProjectQuantityOp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getProjectAmountOp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					switch(x) {
+					case 0:
+						if(opInfosQ1.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ1.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ1.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ1.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ1.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 1:
+						if(opInfosQ2.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ2.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ2.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ2.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ2.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 2:
+						if(opInfosQ3.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ3.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ3.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ3.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ3.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 3:
+						if(opInfosQ4.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ4.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ4.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ4.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ4.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					}
+					rowIndex++;
+					cellIndex = 0;
+					row = sheet.createRow(rowIndex);
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue("藥費(隨機)");
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getMedQuantityOp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getMedAmountOp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					switch(x) {
+					case 0:
+						if(opInfosQ1.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ1.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ1.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ1.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ1.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 1:
+						if(opInfosQ2.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ2.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ2.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ2.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ2.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 2:
+						if(opInfosQ3.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ3.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ3.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ3.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ3.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 3:
+						if(opInfosQ4.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ4.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(opInfosQ4.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(opInfosQ4.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							opInfosQ4.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					}
+					
+					switch(x) {
+					case 0:
+						if(opInfosQ1.size() > 0) {
+							for(int i=0; i<opInfosQ1.size(); i++) {
+								rowIndex++;
+								cellIndex = 0;
+								row = sheet.createRow(rowIndex);
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex = 4;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(opInfosQ1.get(i).get("name").toString());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(Long.valueOf(opInfosQ1.get(i).get("amount").toString()).doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(opInfosQ1.get(i).get("reason").toString());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						break;
+					case 1:
+						if(opInfosQ2.size() > 0) {
+							for(int i=0; i<opInfosQ2.size(); i++) {
+								rowIndex++;
+								cellIndex = 0;
+								row = sheet.createRow(rowIndex);
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex = 4;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(opInfosQ2.get(i).get("name").toString());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(Long.valueOf(opInfosQ2.get(i).get("amount").toString()).doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(opInfosQ2.get(i).get("reason").toString());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						break;
+					case 2:
+						if(opInfosQ3.size() > 0) {
+							for(int i=0; i<opInfosQ3.size(); i++) {
+								rowIndex++;
+								cellIndex = 0;
+								row = sheet.createRow(rowIndex);
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex = 4;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(opInfosQ3.get(i).get("name").toString());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(Long.valueOf(opInfosQ3.get(i).get("amount").toString()).doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(opInfosQ3.get(i).get("reason").toString());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						
+						break;
+					case 3:
+						if(opInfosQ4.size() > 0) {
+							for(int i=0; i<opInfosQ4.size(); i++) {
+								rowIndex++;
+								cellIndex = 0;
+								row = sheet.createRow(rowIndex);
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex = 4;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(opInfosQ4.get(i).get("name").toString());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(Long.valueOf(opInfosQ4.get(i).get("amount").toString()).doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(opInfosQ4.get(i).get("reason").toString());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						break;
+					}
+					
+					rowIndex += 2;
+					cellIndex = 0;
+					
+				}
+				
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders2.length + 2; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				sheet = workbook.createSheet("多季度核減資訊(住院)");
+				tableRowHeaders = new String[] {"健保住院核減抽審總件數", "健保住院核減總核扣點數"};
+				tableRowHeaders2 = new String[] {"類別","核扣件數","核扣點數","核刪醫令","核扣點數","理由"};
+				cellIndex = 0;
+				rowIndex = 0;
+				
+				/// 欄位A1
+				row = sheet.createRow(0);
+				cell = row.createCell(0);
+				cell.setCellValue("多季度核減資訊");
+				cell.setCellStyle(cellStyle);
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				cell = row.createCell(0);
+				cell.setCellStyle(cellStyle);
+				cellIndex = 1;
+				for(int x=0; x<tableRowHeaders2.length; x++) {
+					cell = row.createCell(cellIndex + x);
+					if(x==0) {
+						cell.setCellValue(tableRowHeaders[0]);
+					}
+					else if(x==3) {
+						cell.setCellValue(tableRowHeaders[1]);
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge欄位
+				x1 = 1;
+				x2 = 3;
+				for(int x=0; x<tableRowHeaders.length; x++) {
+					sheet.addMergedRegion(new CellRangeAddress(1, 1, x1, x2));
+					x1 += 3;
+					x2 += 3;
+				}
+				
+				/// 欄位A3
+				row = sheet.createRow(2);
+				cell = row.createCell(0);	
+				cell.setCellValue("季度");
+				cell.setCellStyle(cellStyle);
+				cellIndex = 1;
+				for(int x=0; x<tableRowHeaders2.length; x++) {
+					cell = row.createCell(cellIndex + x);
+					cell.setCellValue(tableRowHeaders2[x]);
+					cell.setCellStyle(cellStyle);
+				}
+				
+				/// 欄位A4
+				cellIndex = 0;
+				rowIndex = 3;
+				for(int x=0; x<modelList.size(); x++) {
+					row = sheet.createRow(rowIndex);
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue("非專案(隨機)");
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getNoprojectQuantityIp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getNoprojectAmountIp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					switch(x) {
+					case 0:
+						if(ipInfosQ1.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ1.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ1.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ1.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ1.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 1:
+						if(ipInfosQ2.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ2.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ2.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ2.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ2.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 2:
+						if(ipInfosQ3.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ3.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ3.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ3.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ3.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 3:
+						if(ipInfosQ4.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ4.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ4.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ4.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ4.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					}
+					
+					rowIndex++;
+					cellIndex = 0;
+					row = sheet.createRow(rowIndex);
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue("專案(隨機)");
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getProjectQuantityIp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getProjectAmountIp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					switch(x) {
+					case 0:
+						if(ipInfosQ1.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ1.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ1.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ1.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ1.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 1:
+						if(ipInfosQ2.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ2.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ2.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ2.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ2.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 2:
+						if(ipInfosQ3.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ3.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ3.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ3.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ3.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 3:
+						if(ipInfosQ4.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ4.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ4.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ4.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ4.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					}
+					rowIndex++;
+					cellIndex = 0;
+					row = sheet.createRow(rowIndex);
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getDisplayName());
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue("藥費(隨機)");
+					cell.setCellStyle(cellStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getMedQuantityIp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(modelList.get(x).getMedAmountIp().doubleValue());
+					cell.setCellStyle(cellFormatStyle);
+					cellIndex++;
+					switch(x) {
+					case 0:
+						if(ipInfosQ1.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ1.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ1.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ1.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ1.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 1:
+						if(ipInfosQ2.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ2.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ2.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ2.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ2.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 2:
+						if(ipInfosQ3.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ3.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ3.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ3.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ3.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					case 3:
+						if(ipInfosQ4.size() > 0) {
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ4.get(0).get("name").toString());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(Long.valueOf(ipInfosQ4.get(0).get("amount").toString()).doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(ipInfosQ4.get(0).get("reason").toString());
+							cell.setCellStyle(cellFormatStyle);
+							
+							ipInfosQ4.remove(0);
+						}
+						else {
+							for(int i=0; i<3; i++) {
+								cell = row.createCell(cellIndex+i);
+								cell.setCellValue("");
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						break;
+					}
+					
+					switch(x) {
+					case 0:
+						if(ipInfosQ1.size() > 0) {
+							for(int i=0; i<ipInfosQ1.size(); i++) {
+								rowIndex++;
+								cellIndex = 0;
+								row = sheet.createRow(rowIndex);
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex = 4;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(ipInfosQ1.get(i).get("name").toString());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(Long.valueOf(ipInfosQ1.get(i).get("amount").toString()).doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(ipInfosQ1.get(i).get("reason").toString());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						break;
+					case 1:
+						if(ipInfosQ2.size() > 0) {
+							for(int i=0; i<ipInfosQ2.size(); i++) {
+								rowIndex++;
+								cellIndex = 0;
+								row = sheet.createRow(rowIndex);
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex = 4;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(ipInfosQ2.get(i).get("name").toString());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(Long.valueOf(ipInfosQ2.get(i).get("amount").toString()).doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(ipInfosQ2.get(i).get("reason").toString());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						break;
+					case 2:
+						if(ipInfosQ3.size() > 0) {
+							for(int i=0; i<ipInfosQ3.size(); i++) {
+								rowIndex++;
+								cellIndex = 0;
+								row = sheet.createRow(rowIndex);
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex = 4;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(ipInfosQ3.get(i).get("name").toString());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(Long.valueOf(ipInfosQ3.get(i).get("amount").toString()).doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(ipInfosQ3.get(i).get("reason").toString());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						
+						break;
+					case 3:
+						if(ipInfosQ4.size() > 0) {
+							for(int i=0; i<ipInfosQ4.size(); i++) {
+								rowIndex++;
+								cellIndex = 0;
+								row = sheet.createRow(rowIndex);
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex = 4;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(ipInfosQ4.get(i).get("name").toString());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(Long.valueOf(ipInfosQ4.get(i).get("amount").toString()).doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(ipInfosQ4.get(i).get("reason").toString());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						break;
+					}
+					
+					rowIndex += 2;
+					cellIndex = 0;
+					
+				}
+				
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders2.length + 2; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				sheet = workbook.createSheet("多季度放大回推核減資訊(門急)");
+				tableRowHeaders = new String[] {"健保門急診放大回推"};
+				tableRowHeaders2 = new String[] {"季度","核刪醫令","放大回推金額","申復數量","申復金額","申復補付數量","申復補復金額"};
+				cellIndex = 0;
+				rowIndex = 0;
+				///資料統計
+				List<List<Map<String,Object>>> rollbackList = new ArrayList<List<Map<String,Object>>>();
+				List<Map<String,Object>> rollbacksQ1 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> rollbacksQ2 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> rollbacksQ3 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> rollbacksQ4 = new ArrayList<Map<String,Object>>();
+				///門急診資料
+				List<Map<String,Object>> opRollbackQ1 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> opRollbackQ2 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> opRollbackQ3 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> opRollbackQ4 = new ArrayList<Map<String,Object>>();
+				///住院資料
+				List<Map<String,Object>> ipRollbackQ1 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> ipRollbackQ2 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> ipRollbackQ3 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> ipRollbackQ4 = new ArrayList<Map<String,Object>>();
+				
+				///將所有季度資料裝載array
+				for(int i=0; i<modelList.size(); i++) {
+					rollbackList.add(modelList.get(i).getRollbackList());
+				}
+				for(int i=0; i<rollbackList.size(); i++) {
+					switch(i) {
+					case 0:
+						if(rollbackList.get(0) != null)
+							rollbacksQ1.addAll(rollbackList.get(0));
+						break;
+					case 1:
+						if(rollbackList.get(1) != null)
+							rollbacksQ2.addAll(rollbackList.get(1));
+						break;
+					case 2:
+						if(rollbackList.get(2) != null)
+							rollbacksQ3.addAll(rollbackList.get(2));
+						break;
+					case 3:
+						if(rollbackList.get(3) != null)
+							rollbacksQ4.addAll(rollbackList.get(3));
+						break;
+					}
+				}
+				
+				for(int i=0; i<rollbacksQ1.size(); i++) {
+					String dateformat = rollbacksQ1.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opRollbackQ1.add(rollbacksQ1.get(i));
+					}
+					else {
+						ipRollbackQ1.add(rollbacksQ1.get(i));
+					}
+				}
+				for(int i=0; i<rollbacksQ2.size(); i++) {
+					String dateformat = rollbacksQ2.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opRollbackQ1.add(rollbacksQ2.get(i));
+					}
+					else {
+						ipRollbackQ2.add(rollbacksQ2.get(i));
+					}
+				}
+				for(int i=0; i<rollbacksQ3.size(); i++) {
+					String dateformat = rollbacksQ3.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opRollbackQ3.add(rollbacksQ3.get(i));
+					}
+					else {
+						ipRollbackQ3.add(rollbacksQ3.get(i));
+					}
+				}
+				for(int i=0; i<rollbacksQ4.size(); i++) {
+					String dateformat = rollbacksQ4.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opRollbackQ4.add(rollbacksQ4.get(i));
+					}
+					else {
+						ipRollbackQ4.add(rollbacksQ4.get(i));
+					}
+				}
+				
+				/// 欄位A1
+				row = sheet.createRow(0);
+				for(int i=0; i<tableRowHeaders2.length; i++) {
+					cell = row.createCell(i);
+					if(i==0) {
+						cell.setCellValue("健保門急診放大回推");
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge
+				sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				for(int i=0; i<tableRowHeaders2.length; i++) {
+					cell = row.createCell(i);
+					cell.setCellValue(tableRowHeaders2[i]);
+					cell.setCellStyle(cellTitleStyle);
+				}
+				
+				/// 欄位A3
+				rowIndex = 2;
+				cellIndex = 0;
+				if(opRollbackQ1.size() > 0) {
+					for(int i=0; i<opRollbackQ1.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opRollbackQ1.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ1.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ1.get(i).get("afrQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ1.get(i).get("afrAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ1.get(i).get("afrPayQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ1.get(i).get("afrPayAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(opRollbackQ2.size() > 0) {
+					for(int i=0; i<opRollbackQ2.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opRollbackQ2.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ2.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ2.get(i).get("afrQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ2.get(i).get("afrAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ2.get(i).get("afrPayQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ2.get(i).get("afrPayAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(opRollbackQ3.size() > 0) {
+					for(int i=0; i<opRollbackQ3.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opRollbackQ3.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ3.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ3.get(i).get("afrQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ3.get(i).get("afrAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ3.get(i).get("afrPayQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ3.get(i).get("afrPayAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(opRollbackQ4.size() > 0) {
+					for(int i=0; i<opRollbackQ4.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opRollbackQ4.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ4.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ4.get(i).get("afrQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ4.get(i).get("afrAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ4.get(i).get("afrPayQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opRollbackQ4.get(i).get("afrPayAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders2.length + 2; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				sheet = workbook.createSheet("多季度放大回推核減資訊(住院)");
+				tableRowHeaders = new String[] {"健保住院放大回推"};
+				tableRowHeaders2 = new String[] {"季度","核刪醫令","放大回推金額","申復數量","申復金額","申復補付數量","申復補復金額"};
+				cellIndex = 0;
+				rowIndex = 0;
+				
+				/// 欄位A1
+				row = sheet.createRow(0);
+				for(int i=0; i<tableRowHeaders2.length; i++) {
+					cell = row.createCell(i);
+					if(i==0) {
+						cell.setCellValue("健保住院放大回推");
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge
+				sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				for(int i=0; i<tableRowHeaders2.length; i++) {
+					cell = row.createCell(i);
+					cell.setCellValue(tableRowHeaders2[i]);
+					cell.setCellStyle(cellTitleStyle);
+				}
+				
+				/// 欄位A3
+				rowIndex = 2;
+				cellIndex = 0;
+				if(ipRollbackQ1.size() > 0) {
+					for(int i=0; i<ipRollbackQ1.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipRollbackQ1.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ1.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ1.get(i).get("afrQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ1.get(i).get("afrAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ1.get(i).get("afrPayQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ1.get(i).get("afrPayAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(ipRollbackQ2.size() > 0) {
+					for(int i=0; i<ipRollbackQ2.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipRollbackQ2.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ2.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ2.get(i).get("afrQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ2.get(i).get("afrAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ2.get(i).get("afrPayQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ2.get(i).get("afrPayAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(ipRollbackQ3.size() > 0) {
+					for(int i=0; i<ipRollbackQ3.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipRollbackQ3.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ3.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ3.get(i).get("afrQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ3.get(i).get("afrAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ3.get(i).get("afrPayQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ3.get(i).get("afrPayAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(ipRollbackQ4.size() > 0) {
+					for(int i=0; i<ipRollbackQ4.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipRollbackQ4.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ4.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ4.get(i).get("afrQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ4.get(i).get("afrAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ4.get(i).get("afrPayQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipRollbackQ4.get(i).get("afrPayAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders2.length + 2; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				sheet = workbook.createSheet("多季度爭議核減資訊(門急)");
+				tableRowHeaders = new String[] {"健保門急診爭議"};
+				tableRowHeaders2 = new String[] {"季度","核刪醫令","爭議數量","爭議金額","爭議不補付代碼"};
+				cellIndex = 0;
+				rowIndex = 0;
+				///資料統計
+				List<List<Map<String,Object>>> disputeList = new ArrayList<List<Map<String,Object>>>();
+				List<Map<String,Object>> disputesQ1 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> disputesQ2 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> disputesQ3 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> disputesQ4 = new ArrayList<Map<String,Object>>();
+				///門急診資料
+				List<Map<String,Object>> opdisputeQ1 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> opdisputeQ2 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> opdisputeQ3 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> opdisputeQ4 = new ArrayList<Map<String,Object>>();
+				///住院資料
+				List<Map<String,Object>> ipdisputeQ1 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> ipdisputeQ2 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> ipdisputeQ3 = new ArrayList<Map<String,Object>>();
+				List<Map<String,Object>> ipdisputeQ4 = new ArrayList<Map<String,Object>>();
+				
+				///將所有季度資料裝載array
+				for(int i=0; i<modelList.size(); i++) {
+					disputeList.add(modelList.get(i).getDisputeList());
+				}
+				for(int i=0; i<disputeList.size(); i++) {
+					switch(i) {
+					case 0:
+						if(disputeList.get(0) != null)
+							disputesQ1.addAll(disputeList.get(0));
+						break;
+					case 1:
+						if(disputeList.get(1) != null)
+							disputesQ2.addAll(disputeList.get(1));
+						break;
+					case 2:
+						if(disputeList.get(2) != null)
+							disputesQ3.addAll(disputeList.get(2));
+						break;
+					case 3:
+						if(disputeList.get(3) != null)
+							disputesQ4.addAll(disputeList.get(3));
+						break;
+					}
+				}
+				
+				for(int i=0; i<disputesQ1.size(); i++) {
+					String dateformat = disputesQ1.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opdisputeQ1.add(disputesQ1.get(i));
+					}
+					else {
+						ipdisputeQ1.add(disputesQ1.get(i));
+					}
+				}
+				for(int i=0; i<disputesQ2.size(); i++) {
+					String dateformat = disputesQ2.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opdisputeQ1.add(disputesQ2.get(i));
+					}
+					else {
+						ipdisputeQ2.add(disputesQ2.get(i));
+					}
+				}
+				for(int i=0; i<disputesQ3.size(); i++) {
+					String dateformat = disputesQ3.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opdisputeQ3.add(disputesQ3.get(i));
+					}
+					else {
+						ipdisputeQ3.add(disputesQ3.get(i));
+					}
+				}
+				for(int i=0; i<disputesQ4.size(); i++) {
+					String dateformat = disputesQ4.get(i).get("dataFormat").toString();
+					if(dateformat.equals("10")) {
+						opdisputeQ4.add(disputesQ4.get(i));
+					}
+					else {
+						ipdisputeQ4.add(disputesQ4.get(i));
+					}
+				}
+				
+				/// 欄位A1
+				row = sheet.createRow(0);
+				for(int i=0; i<tableRowHeaders2.length; i++) {
+					cell = row.createCell(i);
+					if(i==0) {
+						cell.setCellValue("健保門急診爭議");
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge
+				sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, tableRowHeaders2.length - 1));
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				for(int i=0; i<tableRowHeaders2.length; i++) {
+					cell = row.createCell(i);
+					cell.setCellValue(tableRowHeaders2[i]);
+					cell.setCellStyle(cellTitleStyle);
+				}
+				
+				/// 欄位A3
+				rowIndex = 2;
+				cellIndex = 0;
+				if(opdisputeQ1.size() > 0) {
+					for(int i=0; i<opdisputeQ1.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opdisputeQ1.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ1.get(i).get("disputeQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ1.get(i).get("disputeAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opdisputeQ1.get(i).get("disputeNoPayCode").toString());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(opdisputeQ2.size() > 0) {
+					for(int i=0; i<opdisputeQ2.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opdisputeQ2.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ2.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ2.get(i).get("disputeQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ2.get(i).get("disputeAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opdisputeQ2.get(i).get("disputeNoPayCode").toString());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(opdisputeQ3.size() > 0) {
+					for(int i=0; i<opdisputeQ3.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opdisputeQ3.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ3.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ3.get(i).get("disputeQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ3.get(i).get("disputeAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opdisputeQ3.get(i).get("disputeNoPayCode").toString());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(opdisputeQ4.size() > 0) {
+					for(int i=0; i<opdisputeQ4.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opdisputeQ4.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ4.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ4.get(i).get("disputeQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(opdisputeQ4.get(i).get("disputeAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(opdisputeQ4.get(i).get("disputeNoPayCode").toString());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders2.length + 2; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+				/// 新建工作表
+				sheet = workbook.createSheet("多季度爭議核減資訊(住院)");
+				tableRowHeaders = new String[] {"健保住院爭議"};
+				tableRowHeaders2 = new String[] {"季度","核刪醫令","爭議數量","爭議金額","爭議不補付代碼"};
+				cellIndex = 0;
+				rowIndex = 0;
+				
+				/// 欄位A1
+				row = sheet.createRow(0);
+				for(int i=0; i<tableRowHeaders2.length; i++) {
+					cell = row.createCell(i);
+					if(i==0) {
+						cell.setCellValue("健保住院爭議");
+					}
+					cell.setCellStyle(cellTitleStyle);
+				}
+				/// merge
+				sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, tableRowHeaders2.length - 1));
+				
+				/// 欄位A2
+				row = sheet.createRow(1);
+				for(int i=0; i<tableRowHeaders2.length; i++) {
+					cell = row.createCell(i);
+					cell.setCellValue(tableRowHeaders2[i]);
+					cell.setCellStyle(cellTitleStyle);
+				}
+				
+				/// 欄位A3
+				rowIndex = 2;
+				cellIndex = 0;
+				if(ipdisputeQ1.size() > 0) {
+					for(int i=0; i<ipdisputeQ1.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipdisputeQ1.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ1.get(i).get("disputeQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ1.get(i).get("disputeAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipdisputeQ1.get(i).get("disputeNoPayCode").toString());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(ipdisputeQ2.size() > 0) {
+					for(int i=0; i<ipdisputeQ2.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipdisputeQ2.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ2.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ2.get(i).get("disputeQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ2.get(i).get("disputeAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipdisputeQ2.get(i).get("disputeNoPayCode").toString());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(ipdisputeQ3.size() > 0) {
+					for(int i=0; i<ipdisputeQ3.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipdisputeQ3.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ3.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ3.get(i).get("disputeQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ3.get(i).get("disputeAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipdisputeQ3.get(i).get("disputeNoPayCode").toString());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				if(ipdisputeQ4.size() > 0) {
+					for(int i=0; i<ipdisputeQ4.size(); i++) {
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(modelList.get(0).getDisplayName());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipdisputeQ4.get(i).get("name").toString());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ4.get(i).get("amount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ4.get(i).get("disputeQuantity").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(Long.valueOf(ipdisputeQ4.get(i).get("disputeAmount").toString()).doubleValue());
+						cell.setCellStyle(cellFormatStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(ipdisputeQ4.get(i).get("disputeNoPayCode").toString());
+						cell.setCellStyle(cellFormatStyle);
+						
+						cellIndex = 0;
+						rowIndex++;
+					}
+				}
+				
+				/// 最後設定autosize
+				for (int i = 0; i < tableRowHeaders2.length + 2; i++) {
+					sheet.autoSizeColumn(i);
+					sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
+				}
+				
+			}
+		}
+		else {
+			HSSFSheet sheet = workbook.createSheet("工作表");
+		}
+		
+		String fileNameStr = "核刪資訊";
+		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+				? FILE_PATH + "\\" + fileName
+				: FILE_PATH + "/" + fileName;
+		File file = new File(filepath);
+		response.reset();
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
+		response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".csv");
+		response.setContentType("application/octet-stream;charset=utf8");
+//		response.setContentType("application/vnd.ms-excel;charset=utf8");
+
+		/// 最後由outputstream輸出
+		OutputStream out = response.getOutputStream();
+
+		workbook.write(out);
+		out.flush();
+		out.close();
+		workbook.close();
+	}
+	
 
 	//四捨五入取到整數
 	public String convertToInteger(Float num) {
