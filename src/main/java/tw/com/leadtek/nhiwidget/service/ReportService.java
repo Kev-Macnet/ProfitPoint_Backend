@@ -416,7 +416,7 @@ public class ReportService {
 			// 原始總點數
 			result.setPointEm(result.getApplPointEm() + result.getOwnExpEm());
 			// 住院: 醫療費用+不計入醫療費用點數合計+自費
-			result.setPointIp(getLongValue(obj[21]) + result.getNoApplIp() + result.getOwnExpIp());
+			result.setPointIp(getLongValue(obj[21]) + getLongValue(obj[22]) + result.getOwnExpIp());
 			result.setPointOp(result.getApplPointOp() + result.getOwnExpOp());
 			result.setPointOpAll(result.getPointOp() + result.getPointEm());
 			result.setPointAll(result.getPointOpAll() + result.getPointIp());
@@ -1614,18 +1614,19 @@ public class ReportService {
 			Object[] obj = list.get(0);
 
 			PointPeriod actual = new PointPeriod();
-			actual.setAll(getLongValue(obj[0]));
 			actual.setOpem(getLongValue(obj[1]));
 			actual.setEm(getLongValue(obj[2]));
 			actual.setIp(getLongValue(obj[3]));
+			///病歷總點數(含自費)門急診 + 病歷總點數(含自費)住院
+			actual.setAll(actual.getOpem() + actual.getIp());
 			result.setActual(actual);
 
 			PointPeriod appl = new PointPeriod();
-			appl.setAll(getLongValue(obj[4]));
 			appl.setOpem(getLongValue(obj[5]));
 			appl.setEm(getLongValue(obj[6]));
 			Long appl_ip = getLongValue(obj[8]) + getLongValue(obj[9]);
 			appl.setIp(appl_ip);
+			appl.setAll(appl.getOpem() + appl.getIp());
 			result.setAppl(appl);
 		}
 
