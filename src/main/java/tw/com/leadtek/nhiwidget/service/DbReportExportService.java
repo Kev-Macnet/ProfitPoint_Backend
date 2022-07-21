@@ -1553,7 +1553,7 @@ public class DbReportExportService {
 		int rowIndex = 0;
 		String[] tableRowHeaders = { "就醫日期-起", "就醫日期-訖" };
 
-		HSSFSheet sheet = workbook.createSheet("DRG案件數分佈佔率與定額、實際點數");
+		HSSFSheet sheet = workbook.createSheet("自費項目清單");
 		/// 欄位A1
 		HSSFRow row = sheet.createRow(0);
 		HSSFCell cell = row.createCell(0);

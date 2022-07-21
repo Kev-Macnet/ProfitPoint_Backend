@@ -9038,6 +9038,7 @@ public class DbReportService {
 		List<DeductedNoteQueryConditionList> listList = new ArrayList<DeductedNoteQueryConditionList>();
 		DeductedNoteQueryConditionCode deductedCode = new DeductedNoteQueryConditionCode();
 		List<DeductedNoteQueryConditionCode> codeList = new ArrayList<DeductedNoteQueryConditionCode>();
+		List<DeductedNoteQueryConditionCode> finalCodeList = new ArrayList<DeductedNoteQueryConditionCode>();
 		if(sqlList.size() > 0) {
 			for(int i=0; i < sqlList.size(); i++) {
 				deductedModel.setDate(sqlList.get(i).get("DATE").toString());
@@ -9118,11 +9119,143 @@ public class DbReportService {
 				listList = new ArrayList<DeductedNoteQueryConditionList>();
 				codeList = new ArrayList<DeductedNoteQueryConditionCode>();
 			}
-			
+			///資料統計，先區分門急診／住院
+			List<DeductedNoteQueryConditionCode> opCodes = new ArrayList<DeductedNoteQueryConditionCode>();
+			List<DeductedNoteQueryConditionCode> ipCodes = new ArrayList<DeductedNoteQueryConditionCode>();
+			for(int i=0; i<deductedModeList.size(); i++) {
+				List<DeductedNoteQueryConditionCode> codes = deductedModeList.get(i).getDeductedCode();
+				if(codes != null && codes.size() > 0) {
+					for(int v=0; v<codes.size(); v++) {
+						if(codes.get(v).getDataFormat().equals("10")) {
+							opCodes.add(codes.get(v));
+						}
+						else {
+							ipCodes.add(codes.get(v));
+						}
+					}
+				}
+			}
+			/// 資料整理
+			List<DeductedNoteQueryConditionCode> finalIpCodes = new ArrayList<DeductedNoteQueryConditionCode>();
+			List<DeductedNoteQueryConditionCode> finalOpCodes = new ArrayList<DeductedNoteQueryConditionCode>();
+			List<DeductedNoteQueryConditionCode> finalCodes = new ArrayList<DeductedNoteQueryConditionCode>();
+			if(opCodes.size() > 0) {
+				Collections.sort(opCodes, mapComparatorDeductedCD);
+				DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
+				int index = -1;
+				String key = "";
+				Long quantity = 0L;
+				Long amount = 0L;
+				for(int i=0; i<opCodes.size(); i++) {
+					String ic = opCodes.get(i).getCode();
+					if(ic.equals(key)) {break;}
+					for(int j=0; j<opCodes.size(); j++) {
+						String jc = opCodes.get(j).getCode();
+						if(ic.equals(jc)) {
+							key = jc;
+							amount += opCodes.get(j).getDeductedAmount();
+							quantity += opCodes.get(j).getDeductedQuantity();
+							index = 1;
+							///最後一筆直接+
+							if(i == opCodes.size() - 1) {
+								codeModel.setCode(ic);
+								codeModel.setDataFormat("10");
+								codeModel.setDeductedAmount(amount);
+								codeModel.setDeductedQuantity(quantity);
+								finalOpCodes.add(codeModel);
+								codeModel = new DeductedNoteQueryConditionCode();
+								amount = 0L;
+								quantity = 0L;
+								index = -1;
+							}
+						}
+						else {
+							if(index > 0) {
+								codeModel.setCode(ic);
+								codeModel.setDataFormat("10");
+								codeModel.setDeductedAmount(amount);
+								codeModel.setDeductedQuantity(quantity);
+								finalOpCodes.add(codeModel);
+								codeModel = new DeductedNoteQueryConditionCode();
+								amount = 0L;
+								quantity = 0L;
+								index = -1;
+								break;
+							}
+							else {
+								index = -1;
+								continue;
+							}
+						}
+					}
+				}
+			}
+			if(ipCodes.size() > 0) {
+				Collections.sort(ipCodes, mapComparatorDeductedCD);
+				DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
+				int index = -1;
+				String key = "";
+				Long quantity = 0L;
+				Long amount = 0L;
+				for(int i=0; i<ipCodes.size(); i++) {
+					String ic = ipCodes.get(i).getCode();
+					if(ic.equals(key)) {break;}
+					for(int j=0; j<ipCodes.size(); j++) {
+						String jc = ipCodes.get(j).getCode();
+						if(ic.equals(jc)) {
+							key = jc;
+							amount += ipCodes.get(j).getDeductedAmount();
+							quantity += ipCodes.get(j).getDeductedQuantity();
+							index = 1;
+							///最後一筆直接+
+							if(i == ipCodes.size() - 1) {
+								codeModel.setCode(ic);
+								codeModel.setDataFormat("20");
+								codeModel.setDeductedAmount(amount);
+								codeModel.setDeductedQuantity(quantity);
+								finalIpCodes.add(codeModel);
+								codeModel = new DeductedNoteQueryConditionCode();
+								amount = 0L;
+								quantity = 0L;
+								index = -1;
+							}
+						}
+						else {
+							if(index > 0) {
+								codeModel.setCode(ic);
+								codeModel.setDataFormat("20");
+								codeModel.setDeductedAmount(amount);
+								codeModel.setDeductedQuantity(quantity);
+								finalIpCodes.add(codeModel);
+								codeModel = new DeductedNoteQueryConditionCode();
+								amount = 0L;
+								quantity = 0L;
+								index = -1;
+								break;
+							}
+							else {
+								index = -1;
+								continue;
+							}
+						}
+					}
+				}
+			}
+			finalCodes.addAll(finalOpCodes);
+			finalCodes.addAll(finalIpCodes);
+			for(DeductedNoteQueryCondition dic : deductedModeList) {
+				dic.setFinalDeductedCode(finalCodes);
+			}
 		}
 		result.setData(deductedModeList);
 		
 		return result;
 	}
+	
+	public Comparator<DeductedNoteQueryConditionCode> mapComparatorDeductedCD = new Comparator<DeductedNoteQueryConditionCode>() {
+		public int compare(DeductedNoteQueryConditionCode m1, DeductedNoteQueryConditionCode m2) {
+			return m1.getCode().compareTo(m2.getCode());
+		}
+	};
 
 }

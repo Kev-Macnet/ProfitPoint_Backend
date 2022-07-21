@@ -14,6 +14,8 @@ public class DeductedNoteQueryCondition implements Serializable {
 	List<DeductedNoteQueryConditionList> deductedList;
 	@ApiModelProperty(value = "核刪代碼數量", required = false)
 	List<DeductedNoteQueryConditionCode> deductedCode;
+	@ApiModelProperty(value = "核刪代碼數量總計算", required = false)
+	List<DeductedNoteQueryConditionCode> finalDeductedCode;
 	@ApiModelProperty(value = "顯示名稱", required = false)
 	String displayName;
 	@ApiModelProperty(value = "統計月份", required = false)
@@ -41,6 +43,14 @@ public class DeductedNoteQueryCondition implements Serializable {
 
 	public void setDeductedCode(List<DeductedNoteQueryConditionCode> deductedCode) {
 		this.deductedCode = deductedCode;
+	}
+
+	public List<DeductedNoteQueryConditionCode> getFinalDeductedCode() {
+		return finalDeductedCode;
+	}
+
+	public void setFinalDeductedCode(List<DeductedNoteQueryConditionCode> finalDeductedCode) {
+		this.finalDeductedCode = finalDeductedCode;
 	}
 
 	public String getDisplayName() {
