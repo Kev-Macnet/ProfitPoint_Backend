@@ -1607,8 +1607,7 @@ public class ReportService {
 		VisitsVarietyPayload result = new VisitsVarietyPayload();
 
 		result.setFuncTypes(findAllFuncTypesName(true));
-		List<Object[]> list = mrDao.getPointPeriod(sdate, edate, sdate, edate, sdate, edate, sdate, edate, sdate, edate,
-				sdate, edate, sdate, edate, sdate, edate);
+		List<Object[]> list = mrDao.getPointPeriod(sdate, edate);
 
 		if (list != null && list.size() > 0) {
 			Object[] obj = list.get(0);
@@ -1624,8 +1623,7 @@ public class ReportService {
 			PointPeriod appl = new PointPeriod();
 			appl.setOpem(getLongValue(obj[5]));
 			appl.setEm(getLongValue(obj[6]));
-			Long appl_ip = getLongValue(obj[8]) + getLongValue(obj[9]);
-			appl.setIp(appl_ip);
+			appl.setIp(getLongValue(obj[7]));
 			appl.setAll(appl.getOpem() + appl.getIp());
 			result.setAppl(appl);
 		}
