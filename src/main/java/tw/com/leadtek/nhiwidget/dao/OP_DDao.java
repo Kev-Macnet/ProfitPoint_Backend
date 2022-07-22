@@ -3,7 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.dao;
 
-import java.sql.Date;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -38,7 +38,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "(SELECT SUM(DRUG_DOT) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP",nativeQuery=true)
   public String findTDrugFee(List<Integer>ids,List<Integer>ids2);
   
-  //門急診/住院各案件狀態與數量
+  //門急診/住院各案件狀態與數量(時間範圍用OP_D、IP_D的FUNC_END_DATE、OUT_DATE)
   @Query(value="SELECT OP.STATUS , OP.STATUS_COUNT + IP.STATUS_COUNT FROM "
   		+ "(SELECT NEW_MR.STATUS AS STATUS , IFNULL(NEW_MR.STATUS_COUNT + OP.OP_COUNT,0) AS STATUS_COUNT FROM (SELECT DISTINCT MR.STATUS AS STATUS,0 AS STATUS_COUNT FROM MR) AS NEW_MR LEFT JOIN "
   		+ "(SELECT MR.STATUS AS STATUS,IFNULL(COUNT(MR.STATUS),0) AS OP_COUNT FROM OP_D INNER JOIN MR ON OP_D.MR_ID =MR.ID WHERE OP_D.FUNC_END_DATE BETWEEN ?1 AND ?2 GROUP BY MR.STATUS) OP "
@@ -50,10 +50,21 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "ON OP.STATUS = IP.STATUS ORDER BY OP.STATUS",nativeQuery=true)
   public List<Object[]>findTStatusCount(String smonth,String emonth);
   
+  //門急診/住院各案件狀態與數量(時間範圍用MR的MR_END_DATE)
+  @Query(value="SELECT NEW_MR.STATUS AS STATUS , IFNULL(NEW_MR.STATUS_COUNT + MR.MR_STATUS_COUNT,0) AS STATUS_COUNT FROM (SELECT DISTINCT STATUS,0 AS STATUS_COUNT FROM MR) AS NEW_MR LEFT JOIN "
+  		+ "(SELECT STATUS,IFNULL(COUNT(STATUS),0) AS MR_STATUS_COUNT FROM MR WHERE MR_END_DATE BETWEEN ?1 AND ?2 GROUP BY STATUS) MR "
+  		+ "ON NEW_MR.STATUS = MR.STATUS",nativeQuery=true)
+  public List<Object[]>findAllStatusCount(Date sDate,Date eDate);
+  
   //門急診就醫紀錄編號
   @Query(value="SELECT MR.STATUS AS STATUS, MR.INH_CLINIC_ID AS CLINIC_ID "
   		+ "FROM OP_D INNER JOIN MR ON OP_D.MR_ID =MR.ID WHERE OP_D.FUNC_END_DATE BETWEEN ?1 AND ?2", nativeQuery=true)
   public List<Object[]> findOPPhysical(String smonth,String emonth);
+  
+  //門急診/住院就醫紀錄編號(時間範圍用MR的MR_END_DATE)
+  @Query(value="SELECT STATUS,INH_CLINIC_ID "
+  		+ "FROM MR WHERE MR_END_DATE BETWEEN ?1 AND ?2", nativeQuery=true)
+  public List<Object[]> findAllPhysical(Date sDate,Date eDate);
   
   //門急診病例總點數
   @Query(value="SELECT OP.OP_DOT FROM "

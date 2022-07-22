@@ -2641,13 +2641,6 @@ public class DbReportService {
 
 						sqlMapListWithCodeTable.add(obj);
 
-//						if (i > 0) {
-//							/// 存放去年資料
-//							sqlMapList2_2.addAll(dataMap);
-//						} else {
-//							/// 存放指定期間資料
-//							sqlMapList2.addAll(dataMap);
-//						}
 						selectColumn = new StringBuffer("");
 						entityManager.close();
 
@@ -2715,13 +2708,6 @@ public class DbReportService {
 
 						sqlMapListWithCodeTable.add(obj);
 
-//						if (i > 0) {
-//							/// 存放去年資料
-//							sqlMapList2_2.addAll(dataMap);
-//						} else {
-//							/// 存放指定期間資料
-//							sqlMapList2.addAll(dataMap);
-//						}
 						selectColumn = new StringBuffer("");
 						entityManager.close();
 
@@ -2789,13 +2775,6 @@ public class DbReportService {
 
 						sqlMapListWithCodeTable.add(obj);
 
-//						if (i > 0) {
-//							/// 存放去年資料
-//							sqlMapList2_2.addAll(dataMap);
-//						} else {
-//							/// 存放指定期間資料
-//							sqlMapList2.addAll(dataMap);
-//						}
 						selectColumn = new StringBuffer("");
 						entityManager.close();
 
@@ -2863,13 +2842,6 @@ public class DbReportService {
 
 						sqlMapListWithCodeTable.add(obj);
 
-//						if (i > 0) {
-//							/// 存放去年資料
-//							sqlMapList2_2.addAll(dataMap);
-//						} else {
-//							/// 存放指定期間資料
-//							sqlMapList2.addAll(dataMap);
-//						}
 						selectColumn = new StringBuffer("");
 						entityManager.close();
 
@@ -2937,13 +2909,6 @@ public class DbReportService {
 
 						sqlMapListWithCodeTable.add(obj);
 
-//						if (i > 0) {
-//							/// 存放去年資料
-//							sqlMapList2_2.addAll(dataMap);
-//						} else {
-//							/// 存放指定期間資料
-//							sqlMapList2.addAll(dataMap);
-//						}
 						selectColumn = new StringBuffer("");
 						entityManager.close();
 

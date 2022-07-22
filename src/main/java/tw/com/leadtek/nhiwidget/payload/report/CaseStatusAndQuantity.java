@@ -16,8 +16,11 @@ public class CaseStatusAndQuantity extends BaseResponse implements Serializable{
 	 */
 	private static final long serialVersionUID = -7966386608678521384L;
 	
-	@ApiModelProperty(value="統計月份", required = true)
-	private String calculateMonth;
+	@ApiModelProperty(value="開始時間", required = true)
+	private String startDate;
+	
+	@ApiModelProperty(value="結束時間", required = true)
+	private String endDate;
 
 	@ApiModelProperty(value="案件狀態與各別數量", required = true)
 	private Map<String, Integer> statusMap;
@@ -25,12 +28,20 @@ public class CaseStatusAndQuantity extends BaseResponse implements Serializable{
 	@ApiModelProperty(value="就醫編號清單", required = true)
 	private Map<String, List<String>> physicalMap;
 
-	public String getCalculateMonth() {
-		return calculateMonth;
+	public String getStartDate() {
+		return startDate;
 	}
 
-	public void setCalculateMonth(String calculateMonth) {
-		this.calculateMonth = calculateMonth;
+	public void setStartDate(String startDate) {
+		this.startDate = startDate;
+	}
+
+	public String getEndDate() {
+		return endDate;
+	}
+
+	public void setEndDate(String endDate) {
+		this.endDate = endDate;
 	}
 
 	public Map<String, Integer> getStatusMap() {
