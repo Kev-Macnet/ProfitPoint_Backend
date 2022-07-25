@@ -1797,7 +1797,7 @@ public class HealthCareCostService {
 		//四捨五入取到整數
 		public String convertToInteger(Float num) {
 			int scale = 0;//設定位數
-			int roundingMode = 4;//表示四捨五入,可以選擇其他舍值方式,例如去尾,等等.
+//			int roundingMode = 4;//表示四捨五入,可以選擇其他舍值方式,例如去尾,等等.
 			Boolean isNumber=true;
 			
 			StringBuffer str=new StringBuffer(String.valueOf(num).replaceAll("\\.", ""));
@@ -1810,7 +1810,7 @@ public class HealthCareCostService {
 			
 			if(isNumber) {
 				BigDecimal bd = new BigDecimal((double)num);
-				bd = bd.setScale(scale,roundingMode);
+				bd = bd.setScale(scale,BigDecimal.ROUND_HALF_UP);
 				num = bd.floatValue();
 			}
 			else {
