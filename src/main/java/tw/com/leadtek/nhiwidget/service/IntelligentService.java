@@ -2142,7 +2142,9 @@ public class IntelligentService {
       runningTime = System.currentTimeMillis();
     }
     if (runningTime < Long.MAX_VALUE) {
-      if ((runningTime.longValue() - System.currentTimeMillis()) < ms) {
+      if ((runningTime.longValue() - System.currentTimeMillis()) <= 0) {
+        runningIntelligent.put(new Integer(intelligentCode), -1L);  
+      } else if ((runningTime.longValue() - System.currentTimeMillis()) < ms) {
         runningIntelligent.put(new Integer(intelligentCode), new Long(System.currentTimeMillis() + ms));  
       }
     }
@@ -2666,7 +2668,9 @@ public class IntelligentService {
     // 臨床路徑差異
     for (String ym : applYm) {
       calculateAICost(ym);
+      logger.info("check AI Cost finished");
       calculateAIIpDays(ym);
+      logger.info("check AI IpDays finished");
       calculateAIOrderDrug(ym);
     }
     logger.info("start check AI finished.");

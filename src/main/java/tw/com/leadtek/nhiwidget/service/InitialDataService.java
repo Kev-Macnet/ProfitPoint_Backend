@@ -283,6 +283,17 @@ public class InitialDataService {
         if (pc.getNameEn() != null && pc.getNameEn().length() > 100) {
           pc.setNameEn(pc.getNameEn().substring(0, 99));
         }
+        if (pc.getCodeType() == null || NO_TYPE.equals(pc.getCodeType())) {
+          String codeDrug = pc.getCode() != null ? pc.getCode() : pc.getInhCode();
+            if (codeDrug.length() == 10) {
+              pc.setCodeType("藥費");
+            } else if (codeDrug.length() == 12) {
+              pc.setCodeType("衛材品項");
+            }
+        }
+        if (pc.getCodeType() == null) {
+          pc.setCodeType(NO_TYPE);
+        }
         PAY_CODE pcDB = checkPayCode(pc);
         if (pcDB != null) {
           update++;
@@ -305,7 +316,7 @@ public class InitialDataService {
         payCodeDao.saveAll(payCodeBatch);
         payCodeBatch.clear();
       }
-      System.out.println("total:" + total + ", add:" + add + ", update=" + update);
+      logger.info("total:" + total + ", add:" + add + ", update=" + update +"," + file.getAbsolutePath());
     } catch (ParseException e) {
       logger.error("importPayCode failed", e);
       e.printStackTrace();
@@ -341,11 +352,10 @@ public class InitialDataService {
               && pay_CODE.getStartDate().getTime() <= pc.getEndDate().getTime()
               && pay_CODE.getEndDate().getTime() >= pc.getEndDate().getTime())) {
         if (pc.getInhCode() != null && pc.getInhCode().length() > 0) {
-          list = payCodeDao.findByCodeOrderByStartDateDesc(pc.getCode());
           if (pay_CODE.getInhCode() != null && !pay_CODE.getInhCode().equals(pc.getInhCode())) {
             continue;
           }
-        } 
+        }
         pay_CODE.setInhCode(pc.getInhCode());
         if (pc.getInhName() != null) {
           if (pc.getInhName().length() > 180) {
@@ -489,7 +499,8 @@ public class InitialDataService {
           continue;
         }
         if (value.indexOf("detailCat") > 0 || value.indexOf("sDate") > 0
-            || value.indexOf("level") > 0 || value.indexOf("law") > 0) {
+            || value.indexOf("level") > 0 || value.indexOf("law") > 0 || 
+            value.indexOf("\"p\"") > 0) {
           OrderCode oc = mapper.readValue(value, OrderCode.class);
           if (cat.equals(oc.getCategory())) {
             result.put(oc.getCode(), oc.getId().toString());
@@ -585,7 +596,6 @@ public class InitialDataService {
       oc.setDetail(values.get("PAY_CODE_TYPE") );
       oc.setDetail(getPayCodeType(oc.getDetail(), parameters));
     }
-    
     oc.setDetailCat(values.get("DETAIL_CAT"));
   
     if (values.get("HOSP_LEVEL") != null) {

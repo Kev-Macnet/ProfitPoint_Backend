@@ -116,8 +116,12 @@ public class DrgCalService {
       result += Float.parseFloat(parameters.getParameter("OL"));
     }
     // 基本診療加成率
-    String hospLevel = parameters.getParameter("HOSP_LEVEL");
-    result += (Float) parameters.getParameterValueBetween("ADD_HOSP_LEVEL_" + hospLevel, date);
+    try {
+      String hospLevel = parameters.getParameter("HOSP_LEVEL");
+      result += (Float) parameters.getParameterValueBetween("ADD_HOSP_LEVEL_" + hospLevel, date);
+    } catch (Exception e) {
+      logger.error("getHospAdd" ,e);
+    }
 
     // CMI 加成率
     float cmi = (Float) parameters.getParameterValueBetween("CMI", date);
@@ -693,7 +697,9 @@ public class DrgCalService {
     bw.write(",");
     writeString(bw, map.get("TRAN_CODE"));
     bw.write(",");
+    if (map.get("OUT_DATE") != null) {
     bw.write(String.valueOf(Integer.parseInt((String) map.get("OUT_DATE")) + 19110000));
+    }
     bw.write(",+");
     bw.write((df.format((Integer) map.get("MED_DOT"))));
     bw.write(",1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,");

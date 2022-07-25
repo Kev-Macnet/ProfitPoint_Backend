@@ -131,8 +131,10 @@ public class UserService {
     user.setInhId(user.getUsername());
     if (user.getPassword() == null && user.getEmail() != null) {
       logger.info("sendEmail:" + user.getEmail());
-      //String newPassword = generateCommonLangPassword();
-      String newPassword = "test";
+      String newPassword = generateCommonLangPassword();
+      if (emailService.fromEmail == null || emailService.fromEmail.indexOf("@") < 0) {
+        newPassword = "test";
+      }
       emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
           "系統產生密碼:" + newPassword);
       
@@ -156,11 +158,15 @@ public class UserService {
     }
     USER existUser = optional.get();
     existUser.setDisplayName(ur.getDisplayName());
-    existUser.setEmail(ur.getEmail());
+    if (ur.getEmail() != null && ur.getEmail().indexOf("@") > 0) {
+      existUser.setEmail(ur.getEmail());
+    }
     existUser.setRole(ur.getRole());
     existUser.setStatus(ur.getStatus());
     existUser.setUpdateAt(new Date());
-    existUser.setRocId(ur.getRocId());
+    if (ur.getRocId() != null && ur.getRocId().length() > 0) {
+      existUser.setRocId(ur.getRocId());
+    }
     String[] departments = null;
     if (ur.getDepartments() != null && ur.getDepartments().length() > 0) {
       departments = ur.getDepartments().split(",");
