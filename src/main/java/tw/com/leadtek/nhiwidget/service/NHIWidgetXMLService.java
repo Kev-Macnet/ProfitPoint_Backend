@@ -4575,8 +4575,12 @@ public class NHIWidgetXMLService {
 
     String[] receiverName = receiver.split(",");
     List<String> receiverList = getAllUserEmail(ids);
+
     String sender = user.getDisplayName() == null ? user.getUsername() : user.getDisplayName();
     for (int i = 0; i < receiverList.size(); i++) {
+      if (receiverList.get(i) == null || receiverList.get(i).indexOf("@") < 0) {
+        continue;
+      }
       sendNotic("病歷狀態確認通知", receiverList.get(i),
           generateNoticeEmailContent(mrList, receiverName[i + 1], sender, noticeTimes));
     }
@@ -7392,6 +7396,9 @@ public class NHIWidgetXMLService {
               // 已完成
               is.extendIntelligentRunning(INTELLIGENT_REASON.XML.value(), extendTime);
               needWaitUntilFinished = false;
+            } else if (startRunningTime < System.currentTimeMillis()) {
+                // 等待時間已過，開始執行
+                break;
             }
           } else {
             if (startRunningTime < System.currentTimeMillis()) {
