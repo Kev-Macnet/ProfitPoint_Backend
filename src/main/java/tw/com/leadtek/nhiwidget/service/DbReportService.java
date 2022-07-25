@@ -5917,7 +5917,6 @@ public class DbReportService {
 
 		/// 費用類別
 		List<String> payCodeTypeList = new ArrayList<String>();
-		String payCodeTypeSql = "";
 		/// 就醫類別
 		List<String> dataformatList = new ArrayList<String>();
 		String dateformatSql = "";
@@ -5941,10 +5940,9 @@ public class DbReportService {
 		if (payCodeTypes != null && payCodeTypes.length() > 0) {
 			String[] pcTypeArr = StringUtility.splitBySpace(payCodeTypes);
 			for (String str : pcTypeArr) {
-				payCodeTypeList.add(str);
-				payCodeTypeSql += "'" + str + "',";
+				CODE_TABLE ct =	code_TABLEDao.findByDescChiAndCat(str, "PAY_CODE_TYPE");
+				payCodeTypeList.add(ct.getCode());
 			}
-			payCodeTypeSql = payCodeTypeSql.substring(0, payCodeTypeSql.length() - 1);
 		}
 		/// 如果dataformat有值
 		if (dataFormats != null && dataFormats.length() > 0) {
