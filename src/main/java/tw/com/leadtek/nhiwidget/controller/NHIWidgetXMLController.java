@@ -1060,4 +1060,62 @@ public class NHIWidgetXMLController extends BaseController {
 	  result.put("data", dataList);
 	  return ResponseEntity.ok(result);
   }
+  @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
+  @ApiOperation(value = "匯出csv檔", notes = "匯出csv檔")
+  @ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
+  @GetMapping("/nhixml/exportCSV")
+  public ResponseEntity<BaseResponse> exportCSV(@ApiParam(name = "exportType", value = "匯出類型，fileExportTypeOne、fileExportTypeTwo", example = "fileExportTypeOne") @RequestParam(required = false) String exportType,
+			@ApiParam(name = "dataFormat", value = "就醫類型，op=門急診、ip=住院，若為多筆資料，用空格隔開", example = "op") @RequestParam(required = false) String dataFormat,
+			@ApiParam(name = "dateType", value = "日期區間類型	，applyDate、cureFinishRange、lpRange", example = "applyDate") @RequestParam(required = false) String dateType,
+			@ApiParam(name = "year", value = "日期年，dateType=applyDate，必填", example = "2020") @RequestParam(required = false) String year,
+			@ApiParam(name = "month", value = "日期月，dateType=applyDate，必填", example = "1") @RequestParam(required = false) String month,
+			@ApiParam(name = "fnSdate", value = "治療結束起日，dateType=cureFinishRange，必填", example = "2020-01-01") @RequestParam(required = false) String fnSdate,
+			@ApiParam(name = "fnEdate", value = "治療結束迄日，dateType=cureFinishRange，必填", example = "2020-01-31") @RequestParam(required = false) String fnEdate,
+			@ApiParam(name = "outSdate", value = "出院起日，dateType=lpRange，必填", example = "2020-01-01") @RequestParam(required = false) String outSdate,
+			@ApiParam(name = "outEdate", value = "出院迄日，dateType=lpRange，必填", example = "2020-01-31") @RequestParam(required = false) String outEdate,
+			@ApiParam(name = "inhCode", value = "就醫紀錄編號，若為多筆資料，用空格隔開，exportType=fileExportTypeTwo，必填", example = "") @RequestParam(required = false) String inhCode,
+			
+			HttpServletResponse response
+		  ) throws FileNotFoundException, IOException, ParseException {
+	  BaseResponse result = new BaseResponse();
+	  if(exportType.equals("fileExportTypeOne")) {
+		  if(dataFormat == null || dataFormat.isEmpty()) {
+			  result.setMessage("就醫類型不得為空");
+			  result.setResult(BaseResponse.ERROR);
+			  return ResponseEntity.badRequest().body(result);
+		  }
+		  switch(dateType) {
+		  case "applyDate":
+			  if(year == null || month == null) {
+				  result.setMessage("年月不得為空");
+				  result.setResult(BaseResponse.ERROR);
+				  return ResponseEntity.badRequest().body(result);
+			  }
+			  break;
+		  case "cureFinishRange":
+			  if(fnSdate == null || fnEdate == null) {
+				  result.setMessage("治療結束日不得為空");
+				  result.setResult(BaseResponse.ERROR);
+				  return ResponseEntity.badRequest().body(result);
+			  }
+			  break;
+		  case "lpRange":
+			  if(outSdate == null || outEdate == null) {
+				  result.setMessage("出院日不得為空");
+				  result.setResult(BaseResponse.ERROR);
+				  return ResponseEntity.badRequest().body(result);
+			  }
+			  break;
+		  }
+	  }
+	  else {
+		  if(inhCode == null || inhCode.isEmpty()) {
+			  result.setMessage("就醫紀錄編號不得為空");
+			  result.setResult(BaseResponse.ERROR);
+			  return ResponseEntity.badRequest().body(result);
+		  }
+	  }
+	  xmlService.exportCSV(exportType, dataFormat, dateType, year, month, fnSdate, fnEdate, outSdate, outEdate, inhCode, response);
+	  return ResponseEntity.ok(result);
+  }
 }

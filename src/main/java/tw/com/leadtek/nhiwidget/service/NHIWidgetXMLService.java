@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.sql.Date;
 import java.text.ParseException;
@@ -17,10 +18,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
@@ -31,6 +36,8 @@ import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFRow;
@@ -43,6 +50,7 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.ExampleMatcher.GenericPropertyMatchers;
@@ -51,12 +59,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
 import io.jsonwebtoken.Claims;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
@@ -133,6 +144,7 @@ import tw.com.leadtek.nhiwidget.payload.my.WarningOrderResponse;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
+import tw.com.leadtek.nhiwidget.sql.ExportCSVDao;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.ExcelUtil;
 import tw.com.leadtek.tools.SendHTTP;
@@ -276,11 +288,16 @@ public class NHIWidgetXMLService {
   @Autowired
   private ViolatePaymentTermsService vpts;
   
+  @Autowired
+  private ExportCSVDao exportCSVDao;
+  
   @Value("${project.serverUrl}")
   private String serverUrl;
 
   @Value("${project.hospId}")
   private String hospId;
+  
+  public final static String FILE_PATH = "download";
 
   public void saveOPBatch(OP op) {
     OP_T opt = saveOPT(op.getTdata());
@@ -9167,5 +9184,499 @@ public class NHIWidgetXMLService {
       oppList.add(opp);
     }
     return result;
+  }
+  
+  public void exportCSV(String exportType,String dataFormat,String dateType,String year,String month,String fnSdate,String fnEdate, String outSdate,String outEdate,String inhCode,HttpServletResponse response) throws IOException {
+	  ///申報日
+	  String applYM = "";
+	  ///治療結束日起
+	  String fsdate = "";
+	  ///治療結束日迄
+	  String fedate = "";
+	  ///出院日起
+	  String osdate = "";
+	  ///出院日迄
+	  String oedate = "";
+	  ///就醫類型
+	  String[] dateFormats = {};
+	  ///就醫紀錄編號
+	  String[] inhCodes = {};
+	  if(exportType.equals("fileExportTypeOne")) {
+		  dateFormats = StringUtility.splitBySpace(dataFormat);
+		  switch(dateType) {
+			  case "applyDate":
+				  if(year != null && !year.isEmpty()) {
+					  int yy = Integer.parseInt(year);
+					  int mm = Integer.parseInt(month);
+					  int ym = yy * 100 + mm;
+					  String d = DateTool.convertToChineseYear(String.valueOf(ym*100));
+					  applYM = d.substring(0,d.length()-2);
+				   }
+			  break;
+			  case "cureFinishRange":
+				  if(fnSdate != null && !fnSdate.isEmpty()) {
+					  String rs = fnSdate.replaceAll("-", "");
+					  String re = fnEdate.replaceAll("-", "");
+					  fsdate = DateTool.convertToChineseYear(rs);
+					  fedate = DateTool.convertToChineseYear(re);
+				  }
+			  break;
+			  case "lpRange":
+				  if(outSdate != null && !outSdate.isEmpty()) {
+					  String rs = outSdate.replaceAll("-", "");
+					  String re = outEdate.replaceAll("-", "");
+					  osdate = DateTool.convertToChineseYear(rs);
+					  oedate = DateTool.convertToChineseYear(re);
+				  }
+			  break;
+		  }
+	  }
+	  else {
+		  inhCodes = StringUtility.splitBySpace(inhCode);
+	  }
+	  
+	  
+	  List<LinkedHashMap<String, Object>> ipdList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> ippList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> ipsoList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> opdList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> oppList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> opsoList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> deductedNoteList = new ArrayList<LinkedHashMap<String,Object>>();
+	  int ipdCount = 0;
+	  int ippCount = 0;
+	  int ipsoCount = 0;
+	  int opdCount = 0;
+	  int oppCount = 0;
+	  int opsoCount = 0;
+	  int deductedCount = 0;
+	  
+	  if(exportType.equals("fileExportTypeOne")) {
+		  if(dateFormats.length > 1) {
+			  
+			  ipdCount = exportCSVDao.ipdCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+			  ippCount = exportCSVDao.ippCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+			  ipsoCount = exportCSVDao.ipsoCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+			  opdCount = exportCSVDao.opdCount(applYM, fsdate, fedate, inhCodes);
+			  oppCount = exportCSVDao.oppCount(applYM, fsdate, fedate, inhCodes);
+			  opsoCount = exportCSVDao.opsoCount(applYM, fsdate, fedate, inhCodes);
+			  deductedCount = exportCSVDao.deductedNoteCount(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes);
+			  
+			  if(ipdCount > 2000) { 
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = ipdCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  ipdList = dataList;
+			  }
+			  else {
+				  ipdList = exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, null, null);
+			  }
+			  if(ippCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = ippCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  ippList = dataList;
+			  }
+			  else {
+				  ippList = exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+			  }
+			  if(ipsoCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = ipsoCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  ipsoList = dataList;
+			  }
+			  else {
+				  ipsoList = exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+			  }
+			  if(opdCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = opdCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  opdList = dataList;
+			  }
+			  else {
+				  opdList = exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes,null,null);
+			  }
+			  if(oppCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = oppCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  oppList = dataList;
+			  }
+			  else {
+				  oppList = exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes,null,null);
+			  }
+			  if(opsoCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = opsoCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  opsoList = dataList;
+			  }
+			  else {
+				  opsoList = exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes,null,null);
+			  }
+			  if(deductedCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = deductedCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  deductedNoteList = dataList;
+			  }
+			  else {
+				  deductedNoteList = exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes,null,null);
+			  }
+		  }
+		  else {
+			 
+			  String dataformat = dateFormats[0];
+			  if(dataformat.equals("op")) {
+				  opdCount = exportCSVDao.opdCount(applYM, fsdate, fedate, inhCodes);
+				  oppCount = exportCSVDao.oppCount(applYM, fsdate, fedate, inhCodes);
+				  opsoCount = exportCSVDao.opsoCount(applYM, fsdate, fedate, inhCodes);
+				  deductedCount = exportCSVDao.deductedNoteCount(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes);
+				  
+				  if(opdCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = opdCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  opdList = dataList;
+				  }
+				  else {
+					  opdList = exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes,null,null);
+				  }
+				  if(oppCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = oppCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  oppList = dataList;
+				  }
+				  else {
+					  oppList = exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes,null,null);
+				  }
+				  if(opsoCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = opsoCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  opsoList = dataList;
+				  }
+				  else {
+					  opsoList = exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes,null,null);
+				  }
+				  if(deductedCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = deductedCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  deductedNoteList = dataList;
+				  }
+				  else {
+					  deductedNoteList = exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes,null,null);
+				  }
+			  }
+			  else {
+				  ipdCount = exportCSVDao.ipdCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+				  ippCount = exportCSVDao.ippCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+				  ipsoCount = exportCSVDao.ipsoCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+				  deductedCount = exportCSVDao.deductedNoteCount(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes);
+				  
+				  if(ipdCount > 2000) { 
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = ipdCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  ipdList = dataList;
+				  }
+				  else {
+					  ipdList = exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, null, null);
+				  }
+				  if(ippCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = ippCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  ippList = dataList;
+				  }
+				  else {
+					  ippList = exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+				  }
+				  if(ipsoCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = ipsoCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  ipsoList = dataList;
+				  }
+				  else {
+					  ipsoList = exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+				  }
+				  
+				  if(deductedCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = deductedCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  deductedNoteList = dataList;
+				  }
+				  else {
+					  deductedNoteList = exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes,null,null);
+				  }
+			  }
+		  }
+	  }
+	  else {
+		  ipdCount = exportCSVDao.ipdCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+		  ippCount = exportCSVDao.ippCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+		  ipsoCount = exportCSVDao.ipsoCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+		  opdCount = exportCSVDao.opdCount(applYM, fsdate, fedate, inhCodes);
+		  oppCount = exportCSVDao.oppCount(applYM, fsdate, fedate, inhCodes);
+		  opsoCount = exportCSVDao.opsoCount(applYM, fsdate, fedate, inhCodes);
+		  deductedCount = exportCSVDao.deductedNoteCount(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes);
+		  
+		  if(ipdCount > 2000) { 
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = ipdCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  ipdList = dataList;
+		  }
+		  else {
+			  ipdList = exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, null, null);
+		  }
+		  if(ippCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = ippCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  ippList = dataList;
+		  }
+		  else {
+			  ippList = exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+		  }
+		  if(ipsoCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = ipsoCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  ipsoList = dataList;
+		  }
+		  else {
+			  ipsoList = exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+		  }
+		  if(opdCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = opdCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  opdList = dataList;
+		  }
+		  else {
+			  opdList = exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes,null,null);
+		  }
+		  if(oppCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = oppCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  oppList = dataList;
+		  }
+		  else {
+			  oppList = exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes,null,null);
+		  }
+		  if(opsoCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = opsoCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  opsoList = dataList;
+		  }
+		  else {
+			  opsoList = exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes,null,null);
+		  }
+		  if(deductedCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = deductedCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  deductedNoteList = dataList;
+		  }
+		  else {
+			  deductedNoteList = exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes,null,null);
+		  }
+	  }
+	  String timeStamp = new SimpleDateFormat("yyyyMMdd").format(Calendar.getInstance().getTime());
+	  String tempPath = getTemporaryPath();
+	  java.io.File fwork = new java.io.File(tempPath);
+      if (!fwork.exists()) { 
+          fwork.mkdirs();
+      }
+	  List<String> csvFilesPath = new ArrayList<String>();
+	  if(ipdList.size() > 0) {
+		  String filePath = tempPath + "/ipd_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(ipdList, filePath));
+	  }
+	  
+	  if(ippList.size() > 0) {
+		  String filePath = tempPath + "/ipp_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(ippList, filePath));
+	  }
+	  if(ipsoList.size() > 0) {
+		  String filePath = tempPath + "/ipd_sop_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(ipsoList, filePath));
+	  }
+	  if(opdList.size() > 0) {
+		  String filePath = tempPath + "/opd_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(opdList, filePath));
+	  }
+	  if(oppList.size() > 0) {
+		  String filePath = tempPath + "/opp_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(oppList, filePath));
+	  }
+	  if(opsoList.size() > 0) {
+		  String filePath = tempPath + "/opd_sop_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(opsoList, filePath));
+	  }
+	  if(deductedNoteList.size() > 0) {
+		  String filePath = tempPath + "/deducted_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(deductedNoteList, filePath));
+	  }
+	  
+	    String fileNameStr = "病例資料";
+		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+				? FILE_PATH + "\\" + fileName
+				: FILE_PATH + "/" + fileName;
+		File file = new File(filepath);
+		response.reset();
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
+		response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".zip");
+		response.setContentType("application/zip");
+		try(ZipOutputStream zipOutputStream = new ZipOutputStream(response.getOutputStream())) {
+            for(String fileNamePath : csvFilesPath) {
+                FileSystemResource fileSystemResource = new FileSystemResource(fileNamePath);
+                ZipEntry zipEntry = new ZipEntry(fileSystemResource.getFilename());
+                zipEntry.setSize(fileSystemResource.contentLength());
+                zipEntry.setTime(System.currentTimeMillis());
+
+                zipOutputStream.putNextEntry(zipEntry);
+
+                StreamUtils.copy(fileSystemResource.getInputStream(), zipOutputStream);
+                zipOutputStream.closeEntry();
+            }
+            zipOutputStream.finish();
+            for (String fname : csvFilesPath) {
+                Utility.deleteFile(fname);
+            }
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+		
+  }
+  
+  public String getTemporaryPath() {
+      java.io.File fcurrent = new java.io.File("");
+      String separator = (System.getProperty("os.name").toLowerCase().startsWith("windows")) ? "\\" : "/" ;
+      String currentPath = fcurrent.getAbsolutePath()+separator;
+      String backupPath = currentPath+"tempcsv";
+      return (backupPath);
   }
 }

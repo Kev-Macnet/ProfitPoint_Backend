@@ -3,6 +3,8 @@
  */
 package tw.com.leadtek.tools;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -16,8 +18,12 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DecimalStyle;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFRow;
@@ -566,5 +572,45 @@ public class ExcelUtil {
     }
     return sb.toString();
   }
+  
+
+  public static String toCSV(List<Map<String, Object>> list) {
+	    List<String> headers = list.stream().flatMap(map -> map.keySet().stream()).distinct().collect(Collectors.toList());
+	    final StringBuffer sb = new StringBuffer();
+	    for (int i = 0; i < headers.size(); i++) {
+	        sb.append(headers.get(i));
+	        sb.append(i == headers.size()-1 ? "\n" : ",");
+	    }
+	    for (Map<String, Object> map : list) {
+	        for (int i = 0; i < headers.size(); i++) {
+	            sb.append(map.get(headers.get(i)));
+	            sb.append(i == headers.size()-1 ? "\n" : ",");
+	        }
+	    }
+	    return sb.toString();
+	}
+  
+  public static String createCSV(List<LinkedHashMap<String, Object>> list, String filePath) throws IOException{
+	    List<String> headers = list.stream().flatMap(map -> map.keySet().stream()).distinct().collect(Collectors.toList());
+	    System.out.println(headers);
+	    try(FileWriter writer= new FileWriter(filePath, true);){
+	           for (String string : headers) {
+	                 writer.write(string);
+	                 writer.write(",");
+	           }
+	           writer.write("\r\n");
+
+	           for (LinkedHashMap<String, Object> lmap : list) {
+	                 for (Entry<String, Object> string2 : lmap.entrySet()) {
+	                        writer.write(string2.getValue() == null ? "" : string2.getValue().toString());
+	                        writer.write(",");
+	                 }
+	                 writer.write("\r\n");
+	           }
+	    }catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	    return filePath;
+	}
 
 }
