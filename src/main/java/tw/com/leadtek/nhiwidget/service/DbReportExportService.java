@@ -3,7 +3,6 @@ package tw.com.leadtek.nhiwidget.service;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -13,7 +12,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +30,6 @@ import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.hibernate.tool.hbm2ddl.IndexMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +37,6 @@ import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.payload.report.AchievePointQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.AchievePointQueryConditionDetail;
-import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionCode;
@@ -49,6 +45,8 @@ import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionList;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionResponse;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionDetail;
+import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionIhnCodeInfo;
+import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionResponse;
 import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.tools.StringUtility;
 
@@ -1512,16 +1510,13 @@ public class DbReportExportService {
 	 * @param isShowOwnExpense
 	 * @param response
 	 */
-	@SuppressWarnings("unchecked")
 	public void getOwnExpenseQueryConditionExport(String betweenSDate, String betweenEDate, String dataFormats,
 			String funcTypes, String medNames, String icdAll, String payCode, String inhCode, boolean isLastY,
 			boolean isShowOwnExpense, HttpServletResponse response) throws IOException {
 
-//		Map<String, Object> dataMap = dbrService.getOwnExpenseQueryCondition(betweenSDate, betweenEDate, dataFormats,
-//				funcTypes, medNames, icdAll, payCode, inhCode, isLastY, isShowOwnExpense);
-		Map<String, Object> dataMap = new LinkedHashMap<String, Object>();
-
-		List<OwnExpenseQueryCondition> modelList = (List<OwnExpenseQueryCondition>) dataMap.get("dataList");
+		OwnExpenseQueryConditionResponse res = dbrService.getOwnExpenseQueryCondition(betweenSDate, betweenEDate,
+				dataFormats, funcTypes, medNames, icdAll, payCode, inhCode, isLastY, isShowOwnExpense);
+		List<OwnExpenseQueryCondition> modelList = res.getData();
 
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
@@ -2113,333 +2108,53 @@ public class DbReportExportService {
 		count = 0;
 		cellIndex = 0;
 		rowIndex++;
-		int opAllIndex = rowIndex;
-		int opIndex = rowIndex;
-		int emIndex = rowIndex;
-		int ipIndex = rowIndex;
-		/// 欄位A
-		List<OwnExpenseQueryConditionDetail> allList = model.getAllList();
-		List<OwnExpenseQueryConditionDetail> opAllList = model.getOpAllList();
-		List<OwnExpenseQueryConditionDetail> opList = model.getOpList();
-		List<OwnExpenseQueryConditionDetail> emList = model.getEmList();
-		List<OwnExpenseQueryConditionDetail> ipList = model.getIpList();
-
-		boolean isLast = false;
-		List<OwnExpenseQueryConditionDetail> buildList = new ArrayList<OwnExpenseQueryConditionDetail>();
-		if (allList.size() > 0
-				&& (opAllList.size() == 0 && opList.size() == 0 && emList.size() == 0 && ipList.size() == 0)) {
-			buildList.addAll(allList);
-		} else if (opAllList.size() > 0
-				&& (allList.size() == 0 && opList.size() == 0 && emList.size() == 0 && ipList.size() == 0)) {
-			buildList.addAll(opAllList);
-		} else if (opList.size() > 0
-				&& (opAllList.size() == 0 && allList.size() == 0 && emList.size() == 0 && ipList.size() == 0)) {
-			buildList.addAll(opList);
-		} else if (emList.size() > 0
-				&& (opAllList.size() == 0 && opList.size() == 0 && allList.size() == 0 && ipList.size() == 0)) {
-			buildList.addAll(emList);
-		} else if (ipList.size() > 0
-				&& (opAllList.size() == 0 && opList.size() == 0 && emList.size() == 0 && allList.size() == 0)) {
-			buildList.addAll(ipList);
-		} else if (allList.size() > 0
-				|| (opAllList.size() > 0 || opList.size() > 0 || emList.size() > 0 || ipList.size() > 0)) {
-			buildList.addAll(ipList);
-		}
 		try {
-			for (int i = 0; i < buildList.size(); i++) {
-				if (buildList.get(i).getPrsnId() != null && buildList.get(i).getPrsnId().length() > 0) {
-					continue;
-				}
-				row = sheet.createRow(rowIndex);
-				cell = row.createCell(cellIndex);
-				if (buildList.get(i).getFuncType().length() < 3) {
+			List<OwnExpenseQueryConditionDetail> allList = model.getAllList();
+			List<OwnExpenseQueryConditionDetail> opAllList = model.getOpAllList();
+			List<OwnExpenseQueryConditionDetail> opList = model.getOpList();
+			List<OwnExpenseQueryConditionDetail> emList = model.getEmList();
+			List<OwnExpenseQueryConditionDetail> ipList = model.getIpList();
 
-					cell.setCellValue(buildList.get(i).getDescChi());
-				} else {
-					cell.setCellValue(buildList.get(i).getFuncType());
-				}
-				cell.setCellStyle(cellTitleStyle);
-				cellIndex++;
-				cell = row.createCell(cellIndex);
-				cell.setCellStyle(cellTitleStyle);
-				sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
-				cellIndex++;
-				cell = row.createCell(cellIndex);
-				if (allList.size() > 0 && dataFormatAppend.contains("不分區")) {
-					int v = 0;
-					for (OwnExpenseQueryConditionDetail m : allList) {
-						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
-							cell.setCellValue(modelList.get(0).getAllList().get(v).getQuantity().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getAllList().get(v).getQuantity().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							cell.setCellValue(modelList.get(0).getAllList().get(v).getExpense().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getAllList().get(v).getExpense().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							break;
-						}
-						v++;
-					}
-				} else if (allList.size() == 0 && dataFormatAppend.contains("不分區")) {
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					if (isLastY) {
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-					}
-
-				}
-				if (opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
-					int v = 0;
-					for (OwnExpenseQueryConditionDetail m : opAllList) {
-						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
-							cell.setCellValue(modelList.get(0).getOpAllList().get(v).getQuantity().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getOpAllList().get(v).getQuantity().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							cell.setCellValue(modelList.get(0).getOpAllList().get(v).getExpense().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getOpAllList().get(v).getExpense().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							break;
-						}
-						v++;
-					}
-				} else if (opAllList.size() == 0 && dataFormatAppend.contains("門急診")) {
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					if (isLastY) {
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-					}
-				}
-				if (opList.size() > 0 && dataFormatAppend.contains("門診")) {
-					for (OwnExpenseQueryConditionDetail m : opList) {
-						int v = 0;
-						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
-							cell.setCellValue(modelList.get(0).getOpList().get(v).getQuantity().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getOpList().get(v).getQuantity().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							cell.setCellValue(modelList.get(0).getOpList().get(v).getExpense().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getOpList().get(v).getExpense().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							break;
-						}
-						v++;
-					}
-				} else if (opList.size() == 0 && dataFormatAppend.contains("門診")) {
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					if (isLastY) {
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-					}
-				}
-				if (emList.size() > 0 && dataFormatAppend.contains("急診")) {
-					int v = 0;
-					for (OwnExpenseQueryConditionDetail m : emList) {
-						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
-							cell.setCellValue(modelList.get(0).getEmList().get(v).getQuantity().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getEmList().get(v).getQuantity().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							cell.setCellValue(modelList.get(0).getEmList().get(v).getExpense().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getEmList().get(v).getExpense().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							break;
-						}
-						v++;
-					}
-				} else if (emList.size() == 0 && dataFormatAppend.contains("急診")) {
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					if (isLastY) {
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-					}
-				}
-				if (ipList.size() > 0 && dataFormatAppend.contains("住院")) {
-					int v = 0;
-					for (OwnExpenseQueryConditionDetail m : ipList) {
-						if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
-							cell.setCellValue(modelList.get(0).getIpList().get(v).getQuantity().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getIpList().get(v).getQuantity().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							cell.setCellValue(modelList.get(0).getIpList().get(v).getExpense().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getIpList().get(v).getExpense().doubleValue());
-								cell.setCellStyle(cellFormatStyle);
-								cellIndex++;
-								cell = row.createCell(cellIndex);
-							}
-							break;
-						}
-						v++;
-					}
-				} else if (ipList.size() == 0 && dataFormatAppend.contains("住院")) {
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					cell.setCellStyle(cellFormatStyle);
-					cellIndex++;
-					cell = row.createCell(cellIndex);
-					if (isLastY) {
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-						cell.setCellStyle(cellFormatStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-					}
-				}
-				rowIndex++;
-				cellIndex = 0;
-
+			List<OwnExpenseQueryConditionDetail> buildList = new ArrayList<OwnExpenseQueryConditionDetail>();
+			/// 欄位A
+			if (allList.size() > 0
+					&& (opAllList.size() == 0 && opList.size() == 0 && emList.size() == 0 && ipList.size() == 0)) {
+				buildList.addAll(allList);
+			} else if (opAllList.size() > 0
+					&& (allList.size() == 0 && opList.size() == 0 && emList.size() == 0 && ipList.size() == 0)) {
+				buildList.addAll(opAllList);
+			} else if (opList.size() > 0
+					&& (opAllList.size() == 0 && allList.size() == 0 && emList.size() == 0 && ipList.size() == 0)) {
+				buildList.addAll(opList);
+			} else if (emList.size() > 0
+					&& (opAllList.size() == 0 && opList.size() == 0 && allList.size() == 0 && ipList.size() == 0)) {
+				buildList.addAll(emList);
+			} else if (ipList.size() > 0
+					&& (opAllList.size() == 0 && opList.size() == 0 && emList.size() == 0 && allList.size() == 0)) {
+				buildList.addAll(ipList);
 			}
 
-			/// 如果醫護人員，資料要獨立顯示
-			if ((medNames != null && medNames.length() > 0)) {
-				List<OwnExpenseQueryConditionDetail> showMedList = new ArrayList<OwnExpenseQueryConditionDetail>();
-				List<OwnExpenseQueryConditionDetail> showMedList2 = new ArrayList<OwnExpenseQueryConditionDetail>();
+			if (buildList.size() > 0) {
 				for (int i = 0; i < buildList.size(); i++) {
-					if (buildList.get(i).getPrsnId() != null && buildList.get(i).getPrsnId().length() > 0) {
-						showMedList.add(buildList.get(i));
-					}
-				}
-				/// sort
-				Collections.sort(showMedList, mapComparatorPI);
-				String pName = "";
-				rowIndex = row.getRowNum() + 1;
-				for (int i = 0; i < showMedList.size(); i++) {
-					row = sheet.createRow(rowIndex + i);
+					row = sheet.createRow(rowIndex);
 					cell = row.createCell(cellIndex);
-					if (!pName.equals(showMedList.get(i).getPrsnId())) {
+					if (buildList.get(i).getFuncType().length() < 3) {
 
-						cell.setCellValue(showMedList.get(i).getPrsnId());
-						cell.setCellStyle(cellTitleStyle);
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-						cell.setCellStyle(cellTitleStyle);
-						sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex + i, rowIndex + i, 0, 1));
-						rowIndex++;
-						row = sheet.createRow(rowIndex + i);
-						pName = showMedList.get(i).getPrsnId();
-						cellIndex = 0;
-						cell = row.createCell(cellIndex);
-					}
-
-					if (showMedList.get(i).getFuncType().length() < 3) {
-
-						cell.setCellValue(showMedList.get(i).getDescChi());
+						cell.setCellValue(buildList.get(i).getDescChi());
 					} else {
-						cell.setCellValue(showMedList.get(i).getFuncType());
+						cell.setCellValue(buildList.get(i).getFuncType());
 					}
 					cell.setCellStyle(cellTitleStyle);
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellStyle(cellTitleStyle);
-					sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex + i, rowIndex + i, 0, 1));
+					sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
 					cellIndex++;
 					cell = row.createCell(cellIndex);
 					if (allList.size() > 0 && dataFormatAppend.contains("不分區")) {
 						int v = 0;
 						for (OwnExpenseQueryConditionDetail m : allList) {
-							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
-									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+							if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 								cell.setCellValue(modelList.get(0).getAllList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
@@ -2484,8 +2199,7 @@ public class DbReportExportService {
 					if (opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
 						int v = 0;
 						for (OwnExpenseQueryConditionDetail m : opAllList) {
-							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
-									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+							if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 								cell.setCellValue(modelList.get(0).getOpAllList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
@@ -2531,8 +2245,7 @@ public class DbReportExportService {
 					if (opList.size() > 0 && dataFormatAppend.contains("門診")) {
 						for (OwnExpenseQueryConditionDetail m : opList) {
 							int v = 0;
-							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
-									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+							if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 								cell.setCellValue(modelList.get(0).getOpList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
@@ -2576,8 +2289,7 @@ public class DbReportExportService {
 					if (emList.size() > 0 && dataFormatAppend.contains("急診")) {
 						int v = 0;
 						for (OwnExpenseQueryConditionDetail m : emList) {
-							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
-									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+							if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 								cell.setCellValue(modelList.get(0).getEmList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
@@ -2621,8 +2333,7 @@ public class DbReportExportService {
 					if (ipList.size() > 0 && dataFormatAppend.contains("住院")) {
 						int v = 0;
 						for (OwnExpenseQueryConditionDetail m : ipList) {
-							if (showMedList.get(i).getFuncType().equals(m.getFuncType())
-									&& showMedList.get(i).getPrsnId().equals(m.getPrsnId())) {
+							if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
 								cell.setCellValue(modelList.get(0).getIpList().get(v).getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
@@ -2663,8 +2374,735 @@ public class DbReportExportService {
 							cell = row.createCell(cellIndex);
 						}
 					}
+					rowIndex++;
 					cellIndex = 0;
+
+					List<OwnExpenseQueryConditionIhnCodeInfo> infos = buildList.get(i).getIhnCodeInfo();
+					if (infos != null && infos.size() > 0) {
+						int v = 0;
+						for (OwnExpenseQueryConditionIhnCodeInfo info : infos) {
+							row = sheet.createRow(rowIndex);
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(info.getIhnCode());
+							cell.setCellStyle(cellTitleStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellStyle(cellTitleStyle);
+							sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(info.getQuantity().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							if (modelList.size() > 1) {
+								cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+										.getQuantity().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+							}
+							cell.setCellValue(info.getExpense().doubleValue());
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							if (modelList.size() > 1) {
+								cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+										.getExpense().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+							}
+							if (opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
+								cell.setCellValue(info.getQuantity().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+								cell.setCellValue(info.getExpense().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+							} else {
+								if(dataFormatAppend.contains("門急診")) {
+									
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (isLastY) {
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+								}
+							}
+
+							if (opList.size() > 0 && dataFormatAppend.contains("門診")) {
+								cell.setCellValue(info.getQuantity().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+								cell.setCellValue(info.getExpense().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+							} else {
+								if(dataFormatAppend.contains("門診")) {
+									
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (isLastY) {
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+								}
+							}
+
+							if (emList.size() > 0 && dataFormatAppend.contains("急診")) {
+								cell.setCellValue(info.getQuantity().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+								cell.setCellValue(info.getExpense().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+							} else {
+								if(dataFormatAppend.contains("急診")) {
+									
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (isLastY) {
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+								}
+							}
+							if (ipList.size() > 0 && dataFormatAppend.contains("住院")) {
+								cell.setCellValue(info.getQuantity().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+								cell.setCellValue(info.getExpense().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+							} else {
+								if(dataFormatAppend.contains("住院")) {
+									
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (isLastY) {
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+								}
+							}
+
+							rowIndex++;
+							cellIndex = 0;
+							v++;
+						}
+					}
 				}
+			}
+
+			/// 如果醫護人員，資料要獨立顯示
+			if ((medNames != null && medNames.length() > 0)) {
+				List<OwnExpenseQueryConditionDetail> allPList = model.getAllPrsnList();
+				List<OwnExpenseQueryConditionDetail> opAllPList = model.getOpAllPrsnList();
+				List<OwnExpenseQueryConditionDetail> opPList = model.getOpPrsnList();
+				List<OwnExpenseQueryConditionDetail> emPList = model.getEmPrsnList();
+				List<OwnExpenseQueryConditionDetail> ipPList = model.getIpPrsnList();
+				buildList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				if (allPList.size() > 0 && (opAllPList.size() == 0 && opPList.size() == 0 && emPList.size() == 0
+						&& ipPList.size() == 0)) {
+					buildList.addAll(allPList);
+				} else if (opAllPList.size() > 0 && (allPList.size() == 0 && opPList.size() == 0 && emPList.size() == 0
+						&& ipPList.size() == 0)) {
+					buildList.addAll(opAllPList);
+				} else if (opPList.size() > 0 && (opAllPList.size() == 0 && allPList.size() == 0 && emPList.size() == 0
+						&& ipPList.size() == 0)) {
+					buildList.addAll(opPList);
+				} else if (emPList.size() > 0 && (opAllPList.size() == 0 && opPList.size() == 0 && allPList.size() == 0
+						&& ipPList.size() == 0)) {
+					buildList.addAll(emPList);
+				} else if (ipPList.size() > 0 && (opAllPList.size() == 0 && opPList.size() == 0 && emPList.size() == 0
+						&& allPList.size() == 0)) {
+					buildList.addAll(ipPList);
+				}
+
+				if (buildList.size() > 0) {
+					rowIndex++;
+					cellIndex = 0;
+					for (int i = 0; i < buildList.size(); i++) {
+						/// 醫護人員名獨立一row
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						cell.setCellValue(buildList.get(i).getPrsnId());
+						cell.setCellStyle(cellTitleStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellStyle(cellTitleStyle);
+						sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
+						rowIndex++;
+						cellIndex = 0;
+						/// 此醫護人員下面資料
+						row = sheet.createRow(rowIndex);
+						cell = row.createCell(cellIndex);
+						if (buildList.get(i).getFuncType().length() < 3) {
+
+							cell.setCellValue(buildList.get(i).getDescChi());
+						} else {
+							cell.setCellValue(buildList.get(i).getFuncType());
+						}
+						cell.setCellStyle(cellTitleStyle);
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						cell.setCellStyle(cellTitleStyle);
+						sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
+						cellIndex++;
+						cell = row.createCell(cellIndex);
+						if (allList.size() > 0 && dataFormatAppend.contains("不分區")) {
+							int v = 0;
+							for (OwnExpenseQueryConditionDetail m : allList) {
+								if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
+									cell.setCellValue(modelList.get(0).getAllList().get(v).getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getAllList().get(v).getQuantity().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									cell.setCellValue(modelList.get(0).getAllList().get(v).getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getAllList().get(v).getExpense().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									break;
+								}
+								v++;
+							}
+						} else if (allList.size() == 0 && dataFormatAppend.contains("不分區")) {
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							if (isLastY) {
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+							}
+
+						}
+						if (opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
+							int v = 0;
+							for (OwnExpenseQueryConditionDetail m : opAllList) {
+								if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
+									cell.setCellValue(
+											modelList.get(0).getOpAllList().get(v).getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getOpAllList().get(v).getQuantity().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									cell.setCellValue(
+											modelList.get(0).getOpAllList().get(v).getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getOpAllList().get(v).getExpense().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									break;
+								}
+								v++;
+							}
+						} else if (opAllList.size() == 0 && dataFormatAppend.contains("門急診")) {
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							if (isLastY) {
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+							}
+						}
+						if (opList.size() > 0 && dataFormatAppend.contains("門診")) {
+							for (OwnExpenseQueryConditionDetail m : opList) {
+								int v = 0;
+								if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
+									cell.setCellValue(modelList.get(0).getOpList().get(v).getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getOpList().get(v).getQuantity().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									cell.setCellValue(modelList.get(0).getOpList().get(v).getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getOpList().get(v).getExpense().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									break;
+								}
+								v++;
+							}
+						} else if (opList.size() == 0 && dataFormatAppend.contains("門診")) {
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							if (isLastY) {
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+							}
+						}
+						if (emList.size() > 0 && dataFormatAppend.contains("急診")) {
+							int v = 0;
+							for (OwnExpenseQueryConditionDetail m : emList) {
+								if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
+									cell.setCellValue(modelList.get(0).getEmList().get(v).getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getEmList().get(v).getQuantity().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									cell.setCellValue(modelList.get(0).getEmList().get(v).getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getEmList().get(v).getExpense().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									break;
+								}
+								v++;
+							}
+						} else if (emList.size() == 0 && dataFormatAppend.contains("急診")) {
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							if (isLastY) {
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+							}
+						}
+						if (ipList.size() > 0 && dataFormatAppend.contains("住院")) {
+							int v = 0;
+							for (OwnExpenseQueryConditionDetail m : ipList) {
+								if (buildList.get(i).getFuncType().equals(m.getFuncType())) {
+									cell.setCellValue(modelList.get(0).getIpList().get(v).getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getIpList().get(v).getQuantity().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									cell.setCellValue(modelList.get(0).getIpList().get(v).getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(
+												modelList.get(1).getIpList().get(v).getExpense().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									break;
+								}
+								v++;
+							}
+						} else if (ipList.size() == 0 && dataFormatAppend.contains("住院")) {
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellStyle(cellFormatStyle);
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							if (isLastY) {
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+							}
+						}
+						rowIndex++;
+						cellIndex = 0;
+
+						List<OwnExpenseQueryConditionIhnCodeInfo> infos = buildList.get(i).getIhnCodeInfo();
+						if (infos != null && infos.size() > 0) {
+							int v = 0;
+							for (OwnExpenseQueryConditionIhnCodeInfo info : infos) {
+								row = sheet.createRow(rowIndex);
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(info.getIhnCode());
+								cell.setCellStyle(cellTitleStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellStyle(cellTitleStyle);
+								sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(info.getQuantity().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+								cell.setCellValue(info.getExpense().doubleValue());
+								cell.setCellStyle(cellFormatStyle);
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+								if (opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
+									cell.setCellValue(info.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+												.getQuantity().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									cell.setCellValue(info.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+												.getExpense().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+								} else {
+									if(dataFormatAppend.contains("門急診")) {
+										
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										if (isLastY) {
+											cell.setCellStyle(cellFormatStyle);
+											cellIndex++;
+											cell = row.createCell(cellIndex);
+											cell.setCellStyle(cellFormatStyle);
+											cellIndex++;
+											cell = row.createCell(cellIndex);
+										}
+									}
+								}
+
+								if (opList.size() > 0 && dataFormatAppend.contains("門診")) {
+									cell.setCellValue(info.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+												.getQuantity().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									cell.setCellValue(info.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+												.getExpense().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+								} else {
+									if(dataFormatAppend.contains("門診")) {
+										
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										if (isLastY) {
+											cell.setCellStyle(cellFormatStyle);
+											cellIndex++;
+											cell = row.createCell(cellIndex);
+											cell.setCellStyle(cellFormatStyle);
+											cellIndex++;
+											cell = row.createCell(cellIndex);
+										}
+									}
+								}
+
+								if (emList.size() > 0 && dataFormatAppend.contains("急診")) {
+									cell.setCellValue(info.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+												.getQuantity().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									cell.setCellValue(info.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+												.getExpense().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+								} else {
+									if(dataFormatAppend.contains("急診")) {
+										
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										if (isLastY) {
+											cell.setCellStyle(cellFormatStyle);
+											cellIndex++;
+											cell = row.createCell(cellIndex);
+											cell.setCellStyle(cellFormatStyle);
+											cellIndex++;
+											cell = row.createCell(cellIndex);
+										}
+									}
+								}
+								if (ipList.size() > 0 && dataFormatAppend.contains("住院")) {
+									cell.setCellValue(info.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+												.getQuantity().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+									cell.setCellValue(info.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+									if (modelList.size() > 1) {
+										cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+												.getExpense().doubleValue());
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+									}
+								} else {
+									if(dataFormatAppend.contains("住院")) {
+										
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										cell.setCellStyle(cellFormatStyle);
+										cellIndex++;
+										cell = row.createCell(cellIndex);
+										if (isLastY) {
+											cell.setCellStyle(cellFormatStyle);
+											cellIndex++;
+											cell = row.createCell(cellIndex);
+											cell.setCellStyle(cellFormatStyle);
+											cellIndex++;
+											cell = row.createCell(cellIndex);
+										}
+									}
+								}
+
+								rowIndex++;
+								cellIndex = 0;
+								v++;
+							}
+						}
+					}
+				}
+			}
+			/// 最後設定autosize
+			for (int i = 0; i < allList.size() * 2; i++) {
+				sheet.autoSizeColumn(i);
+				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -3841,14 +4279,15 @@ public class DbReportExportService {
 	 * @param inhCode
 	 * @param isLastM
 	 * @param isLastY
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public void getDeductedNoteQueryConditionExport(String year, String month, String dataFormats, String funcTypes,
-			String medNames, String icdAll, String payCode, String inhCode, boolean isLastM, boolean isLastY, HttpServletResponse response) throws IOException {
+			String medNames, String icdAll, String payCode, String inhCode, boolean isLastM, boolean isLastY,
+			HttpServletResponse response) throws IOException {
 		DeductedNoteQueryConditionResponse res = dbrService.getDeductedNoteQueryCondition(year, month, dataFormats,
 				funcTypes, medNames, icdAll, payCode, inhCode, isLastM, isLastY);
 		List<DeductedNoteQueryCondition> modelList = res.getData();
-		
+
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
 		// 樣式
@@ -3880,11 +4319,13 @@ public class DbReportExportService {
 
 		int cellIndex = 0;
 		int rowIndex = 0;
-		if(modelList.size() > 0) {
-			String[] tableRowHeaders = {"統計月份","抽審件數","核刪件數總點數","門急診核刪件數","門急診核刪總點數","住院診核刪件數","住院核刪總點數","放大回推金額(月)"};
-			String[] tableRowHeaders2 = {"就醫類別","科別","醫護名","就醫記錄編號","核刪代碼","核刪支付代碼","核刪數量","核刪點數","放大回推金額(月)","申復不補附理由代碼","申復補付數量","申復補付金額"};
-			String[] tableRowHeaders3 = {"門急診","核刪代碼","數量","相關核刪總點數"};
-			String[] tableRowHeaders4 = {"住院","核刪代碼","數量","相關核刪總點數"};
+		if (modelList.size() > 0) {
+			String[] tableRowHeaders = { "統計月份", "抽審件數", "核刪件數總點數", "門急診核刪件數", "門急診核刪總點數", "住院診核刪件數", "住院核刪總點數",
+					"放大回推金額(月)" };
+			String[] tableRowHeaders2 = { "就醫類別", "科別", "醫護名", "就醫記錄編號", "核刪代碼", "核刪支付代碼", "核刪數量", "核刪點數", "放大回推金額(月)",
+					"申復不補附理由代碼", "申復補付數量", "申復補付金額" };
+			String[] tableRowHeaders3 = { "門急診", "核刪代碼", "數量", "相關核刪總點數" };
+			String[] tableRowHeaders4 = { "住院", "核刪代碼", "數量", "相關核刪總點數" };
 			/// 欄位A1
 			HSSFSheet sheet = workbook.createSheet("核刪件數資訊");
 			HSSFRow row = sheet.createRow(0);
@@ -3895,7 +4336,7 @@ public class DbReportExportService {
 			cell = row.createCell(1);
 			cellIndex = 2;
 			String searchDate = "";
-			
+
 			for (int x = 0; x < modelList.size(); x++) {
 				if (modelList.get(x).getDisplayName().isEmpty()) {
 					searchDate = modelList.get(x).getDate();
@@ -3905,9 +4346,9 @@ public class DbReportExportService {
 					cellIndex++;
 				}
 			}
-			
+
 			/// 欄位B3
-			cellIndex --;
+			cellIndex--;
 			cell = row.createCell(cellIndex);
 			if (isLastM && isLastY) {
 				cell.setCellValue("上個月同條件相比");
@@ -3964,24 +4405,24 @@ public class DbReportExportService {
 				cell.setCellStyle(cellTitleStyle);
 				rowIndex++;
 			}
-			if(isLastM || isLastY) {
-				cellIndex ++;
+			if (isLastM || isLastY) {
+				cellIndex++;
 				cell = row.createCell(cellIndex);
 				cell.setCellValue("相比條件");
 				cell.setCellStyle(cellStyle);
-				cellIndex ++;
+				cellIndex++;
 				cell = row.createCell(cellIndex);
-				
-				if(isLastM) {
+
+				if (isLastM) {
 					cell.setCellValue("上個月同條件相比");
 					cell.setCellStyle(cellStyle);
-					cellIndex ++;
+					cellIndex++;
 					cell = row.createCell(cellIndex);
 				}
-				if(isLastY) {
+				if (isLastY) {
 					cell.setCellValue("去年同期時段相比");
 					cell.setCellStyle(cellStyle);
-					cellIndex ++;
+					cellIndex++;
 					cell = row.createCell(cellIndex);
 				}
 			}
@@ -4071,78 +4512,78 @@ public class DbReportExportService {
 
 			cellIndex = 0;
 			rowIndex++;
-			
+
 			row = sheet.createRow(rowIndex);
 			cell = row.createCell(cellIndex);
 			cell.setCellValue("核刪件數資訊");
 			cell.setCellStyle(cellStyle);
-			
+
 			rowIndex++;
 			row = sheet.createRow(rowIndex);
 			cellIndex = 0;
-			for(int x=0; x < tableRowHeaders.length; x++) {
+			for (int x = 0; x < tableRowHeaders.length; x++) {
 				cell = row.createCell(cellIndex);
 				cell.setCellValue(tableRowHeaders[x]);
 				cell.setCellStyle(cellStyle);
 				cellIndex++;
-				
+
 			}
 			rowIndex++;
 			cellIndex = 0;
-			
+
 			/// 欄位A，必顯示欄位
-			for(int v=0; v<modelList.size();v++) {
+			for (int v = 0; v < modelList.size(); v++) {
 				row = sheet.createRow(rowIndex);
 				cell = row.createCell(cellIndex);
-				if(modelList.get(v).getDisplayName().isEmpty()) {
+				if (modelList.get(v).getDisplayName().isEmpty()) {
 					cell.setCellValue(modelList.get(v).getDate());
 					cell.setCellStyle(cellStyle);
 					List<DeductedNoteQueryConditionInfo> infos = modelList.get(v).getDeductedNoteInfo();
-					cellIndex ++;
+					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(infos.get(0).getExtractCase().doubleValue());
 					cell.setCellStyle(cellFormatStyle);
-					cellIndex ++;
+					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(infos.get(0).getDeductedAmountAll().doubleValue());
 					cell.setCellStyle(cellFormatStyle);
-					cellIndex ++;
+					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(infos.get(0).getDeductedQuantityOp().doubleValue());
 					cell.setCellStyle(cellFormatStyle);
-					cellIndex ++;
+					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(infos.get(0).getDeductedAmountOp().doubleValue());
 					cell.setCellStyle(cellFormatStyle);
-					cellIndex ++;
+					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(infos.get(0).getDeductedQuantityIp().doubleValue());
 					cell.setCellStyle(cellFormatStyle);
-					cellIndex ++;
+					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(infos.get(0).getDeductedAmountIp().doubleValue());
 					cell.setCellStyle(cellFormatStyle);
-					cellIndex ++;
+					cellIndex++;
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(infos.get(0).getRollbackMAll().doubleValue());
 					cell.setCellStyle(cellFormatStyle);
-					
+
 					rowIndex++;
 					cellIndex = 0;
 				}
 			}
 			rowIndex++;
 			cellIndex = 0;
-			///欄位A，isLastM or isLastY才顯示
-			if(isLastM || isLastY) {
-				if(isLastY) {
+			/// 欄位A，isLastM or isLastY才顯示
+			if (isLastM || isLastY) {
+				if (isLastY) {
 					row = sheet.createRow(rowIndex);
 					cell = row.createCell(cellIndex);
 					cell.setCellValue("去年同時段相比");
 					cell.setCellStyle(cellStyle);
-					rowIndex ++;
+					rowIndex++;
 					row = sheet.createRow(rowIndex);
-					for(int x=0; x < tableRowHeaders.length; x++) {
+					for (int x = 0; x < tableRowHeaders.length; x++) {
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(tableRowHeaders[x]);
 						cell.setCellStyle(cellStyle);
@@ -4150,57 +4591,57 @@ public class DbReportExportService {
 					}
 					rowIndex++;
 					cellIndex = 0;
-					for(int v=0; v<modelList.size();v++) {
+					for (int v = 0; v < modelList.size(); v++) {
 						row = sheet.createRow(rowIndex);
 						cell = row.createCell(cellIndex);
-						if(modelList.get(v).getDisplayName().contains("去年")) {
+						if (modelList.get(v).getDisplayName().contains("去年")) {
 							cell.setCellValue(modelList.get(v).getDate());
 							cell.setCellStyle(cellStyle);
 							List<DeductedNoteQueryConditionInfo> infos = modelList.get(v).getDeductedNoteInfo();
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getExtractCase().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedAmountAll().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedQuantityOp().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedAmountOp().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedQuantityIp().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedAmountIp().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getRollbackMAll().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							
+
 							rowIndex++;
 							cellIndex = 0;
 						}
 					}
 					cellIndex = 0;
-					rowIndex ++;
+					rowIndex++;
 				}
-				if(isLastM) {
+				if (isLastM) {
 					row = sheet.createRow(rowIndex);
 					cell = row.createCell(cellIndex);
 					cell.setCellValue("上個月同條件相比");
 					cell.setCellStyle(cellStyle);
-					rowIndex ++;
+					rowIndex++;
 					row = sheet.createRow(rowIndex);
-					for(int x=0; x < tableRowHeaders.length; x++) {
+					for (int x = 0; x < tableRowHeaders.length; x++) {
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(tableRowHeaders[x]);
 						cell.setCellStyle(cellStyle);
@@ -4208,89 +4649,88 @@ public class DbReportExportService {
 					}
 					rowIndex++;
 					cellIndex = 0;
-					for(int v=0; v<modelList.size();v++) {
+					for (int v = 0; v < modelList.size(); v++) {
 						row = sheet.createRow(rowIndex);
 						cell = row.createCell(cellIndex);
-						if(modelList.get(v).getDisplayName().contains("上個月")) {
+						if (modelList.get(v).getDisplayName().contains("上個月")) {
 							cell.setCellValue(modelList.get(v).getDate());
 							cell.setCellStyle(cellStyle);
 							List<DeductedNoteQueryConditionInfo> infos = modelList.get(v).getDeductedNoteInfo();
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getExtractCase().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedAmountAll().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedQuantityOp().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedAmountOp().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedQuantityIp().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getDeductedAmountIp().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							cellIndex ++;
+							cellIndex++;
 							cell = row.createCell(cellIndex);
 							cell.setCellValue(infos.get(0).getRollbackMAll().doubleValue());
 							cell.setCellStyle(cellFormatStyle);
-							
+
 							rowIndex++;
 							cellIndex = 0;
 						}
 					}
 					cellIndex = 0;
-					rowIndex ++;
+					rowIndex++;
 				}
 			}
 			cellIndex = 0;
-			rowIndex ++;
-			///欄位A
+			rowIndex++;
+			/// 欄位A
 			row = sheet.createRow(rowIndex);
 			cell = row.createCell(0);
 			cell.setCellValue("核刪項目清單");
 			cell.setCellStyle(cellStyle);
-			rowIndex ++;
+			rowIndex++;
 			cellIndex = 0;
-			///欄位A
+			/// 欄位A
 			row = sheet.createRow(rowIndex);
-			for(int x=0; x<tableRowHeaders2.length; x++) {
+			for (int x = 0; x < tableRowHeaders2.length; x++) {
 				cell = row.createCell(cellIndex);
 				cell.setCellValue(tableRowHeaders2[x]);
 				cell.setCellStyle(cellStyle);
 				cellIndex++;
 			}
-			rowIndex ++;
+			rowIndex++;
 			cellIndex = 0;
-			///資料處理
+			/// 資料處理
 			List<DeductedNoteQueryConditionList> oplists = new ArrayList<DeductedNoteQueryConditionList>();
 			List<DeductedNoteQueryConditionList> iplists = new ArrayList<DeductedNoteQueryConditionList>();
-			for(int i=0; i<modelList.size(); i++) {
+			for (int i = 0; i < modelList.size(); i++) {
 				List<DeductedNoteQueryConditionList> lists = modelList.get(i).getDeductedList();
-				if(lists != null && lists.size() > 0) {
-					for(int v=0; v<lists.size(); v++) {
-						if(lists.get(v).getDataFormat().equals("10")) {
+				if (lists != null && lists.size() > 0) {
+					for (int v = 0; v < lists.size(); v++) {
+						if (lists.get(v).getDataFormat().equals("10")) {
 							oplists.add(lists.get(v));
-						}
-						else {
+						} else {
 							iplists.add(lists.get(v));
 						}
 					}
 				}
 			}
-			///欄位A
-			if(oplists.size()>0) {
-				Collections.sort(oplists,mapComparatorDeductedFT);
-				for(int i=0; i<oplists.size(); i++) {
+			/// 欄位A
+			if (oplists.size() > 0) {
+				Collections.sort(oplists, mapComparatorDeductedFT);
+				for (int i = 0; i < oplists.size(); i++) {
 					row = sheet.createRow(rowIndex);
 					cell = row.createCell(cellIndex);
 					cell.setCellValue("門急診");
@@ -4339,14 +4779,14 @@ public class DbReportExportService {
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(oplists.get(i).getAfrPayAmount().doubleValue());
 					cell.setCellStyle(cellFormatStyle);
-					
+
 					cellIndex = 0;
 					rowIndex++;
 				}
 			}
-			if(iplists.size()>0) {
-				Collections.sort(iplists,mapComparatorDeductedFT);
-				for(int i=0; i<iplists.size(); i++) {
+			if (iplists.size() > 0) {
+				Collections.sort(iplists, mapComparatorDeductedFT);
+				for (int i = 0; i < iplists.size(); i++) {
 					row = sheet.createRow(rowIndex);
 					cell = row.createCell(cellIndex);
 					cell.setCellValue("住院");
@@ -4395,46 +4835,44 @@ public class DbReportExportService {
 					cell = row.createCell(cellIndex);
 					cell.setCellValue(iplists.get(i).getAfrPayAmount().doubleValue());
 					cell.setCellStyle(cellFormatStyle);
-					
+
 					cellIndex = 0;
 					rowIndex++;
 				}
 			}
-			
+
 			cellIndex = 0;
-			rowIndex ++;
-			///資料統計
+			rowIndex++;
+			/// 資料統計
 			List<DeductedNoteQueryConditionCode> opCodes = new ArrayList<DeductedNoteQueryConditionCode>();
 			List<DeductedNoteQueryConditionCode> ipCodes = new ArrayList<DeductedNoteQueryConditionCode>();
-			for(int i=0; i<modelList.size(); i++) {
+			for (int i = 0; i < modelList.size(); i++) {
 				List<DeductedNoteQueryConditionCode> codes = modelList.get(i).getDeductedCode();
-				if(codes != null && codes.size() > 0) {
-					for(int v=0; v<codes.size(); v++) {
-						if(codes.get(v).getDataFormat().equals("10")) {
+				if (codes != null && codes.size() > 0) {
+					for (int v = 0; v < codes.size(); v++) {
+						if (codes.get(v).getDataFormat().equals("10")) {
 							opCodes.add(codes.get(v));
-						}
-						else {
+						} else {
 							ipCodes.add(codes.get(v));
 						}
 					}
 				}
 			}
-			///欄位A
+			/// 欄位A
 			row = sheet.createRow(rowIndex);
 			cell = row.createCell(0);
 			cell.setCellValue("核刪代碼數量");
 			cell.setCellStyle(cellStyle);
-			rowIndex ++;
+			rowIndex++;
 			cellIndex = 0;
 			row = sheet.createRow(rowIndex);
 			int trh3RowIndex = row.getRowNum();
-			for(int x=0; x<tableRowHeaders3.length; x++) {
+			for (int x = 0; x < tableRowHeaders3.length; x++) {
 				cell = row.createCell(x);
 				cell.setCellValue(tableRowHeaders3[x]);
-				if(x==0) {
+				if (x == 0) {
 					cell.setCellStyle(cellTitleStyle);
-				}
-				else {
+				} else {
 					cell.setCellStyle(cellStyle);
 				}
 			}
@@ -4443,25 +4881,27 @@ public class DbReportExportService {
 			/// 資料整理
 			List<DeductedNoteQueryConditionCode> finalIpCodes = new ArrayList<DeductedNoteQueryConditionCode>();
 			List<DeductedNoteQueryConditionCode> finalOpCodes = new ArrayList<DeductedNoteQueryConditionCode>();
-			if(opCodes.size() > 0) {
+			if (opCodes.size() > 0) {
 				Collections.sort(opCodes, mapComparatorDeductedCD);
 				DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
 				int index = -1;
 				String key = "";
 				Long quantity = 0L;
 				Long amount = 0L;
-				for(int i=0; i<opCodes.size(); i++) {
+				for (int i = 0; i < opCodes.size(); i++) {
 					String ic = opCodes.get(i).getCode();
-					if(ic.equals(key)) {break;}
-					for(int j=0; j<opCodes.size(); j++) {
+					if (ic.equals(key)) {
+						break;
+					}
+					for (int j = 0; j < opCodes.size(); j++) {
 						String jc = opCodes.get(j).getCode();
-						if(ic.equals(jc)) {
+						if (ic.equals(jc)) {
 							key = jc;
 							amount += opCodes.get(j).getDeductedAmount();
 							quantity += opCodes.get(j).getDeductedQuantity();
 							index = 1;
-							///最後一筆直接+
-							if(i == opCodes.size() - 1) {
+							/// 最後一筆直接+
+							if (i == opCodes.size() - 1) {
 								codeModel.setCode(ic);
 								codeModel.setDataFormat("10");
 								codeModel.setDeductedAmount(amount);
@@ -4472,9 +4912,8 @@ public class DbReportExportService {
 								quantity = 0L;
 								index = -1;
 							}
-						}
-						else {
-							if(index > 0) {
+						} else {
+							if (index > 0) {
 								codeModel.setCode(ic);
 								codeModel.setDataFormat("10");
 								codeModel.setDeductedAmount(amount);
@@ -4485,17 +4924,16 @@ public class DbReportExportService {
 								quantity = 0L;
 								index = -1;
 								break;
-							}
-							else {
+							} else {
 								index = -1;
 								continue;
 							}
 						}
 					}
 				}
-				if(finalOpCodes.size() > 0) {
+				if (finalOpCodes.size() > 0) {
 					row = sheet.createRow(rowIndex);
-					for(int i=0; i<finalOpCodes.size(); i++) {
+					for (int i = 0; i < finalOpCodes.size(); i++) {
 						cell = row.createCell(cellIndex);
 						cell.setCellValue("");
 						cell.setCellStyle(cellTitleStyle);
@@ -4511,7 +4949,7 @@ public class DbReportExportService {
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(finalOpCodes.get(i).getDeductedAmount().doubleValue());
 						cell.setCellStyle(cellFormatStyle);
-						
+
 						rowIndex++;
 						cellIndex = 0;
 						row = sheet.createRow(rowIndex);
@@ -4522,37 +4960,38 @@ public class DbReportExportService {
 			}
 			row = sheet.createRow(rowIndex);
 			trh3RowIndex = row.getRowNum();
-			for(int x=0; x<tableRowHeaders4.length; x++) {
+			for (int x = 0; x < tableRowHeaders4.length; x++) {
 				cell = row.createCell(x);
 				cell.setCellValue(tableRowHeaders4[x]);
-				if(x==0) {
+				if (x == 0) {
 					cell.setCellStyle(cellTitleStyle);
-				}
-				else {
+				} else {
 					cell.setCellStyle(cellStyle);
 				}
 			}
 			rowIndex++;
 			cellIndex = 0;
-			if(ipCodes.size() > 0) {
+			if (ipCodes.size() > 0) {
 				Collections.sort(ipCodes, mapComparatorDeductedCD);
 				DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
 				int index = -1;
 				String key = "";
 				Long quantity = 0L;
 				Long amount = 0L;
-				for(int i=0; i<ipCodes.size(); i++) {
+				for (int i = 0; i < ipCodes.size(); i++) {
 					String ic = ipCodes.get(i).getCode();
-					if(ic.equals(key)) {break;}
-					for(int j=0; j<ipCodes.size(); j++) {
+					if (ic.equals(key)) {
+						break;
+					}
+					for (int j = 0; j < ipCodes.size(); j++) {
 						String jc = ipCodes.get(j).getCode();
-						if(ic.equals(jc)) {
+						if (ic.equals(jc)) {
 							key = jc;
 							amount += ipCodes.get(j).getDeductedAmount();
 							quantity += ipCodes.get(j).getDeductedQuantity();
 							index = 1;
-							///最後一筆直接+
-							if(i == ipCodes.size() - 1) {
+							/// 最後一筆直接+
+							if (i == ipCodes.size() - 1) {
 								codeModel.setCode(ic);
 								codeModel.setDataFormat("20");
 								codeModel.setDeductedAmount(amount);
@@ -4563,9 +5002,8 @@ public class DbReportExportService {
 								quantity = 0L;
 								index = -1;
 							}
-						}
-						else {
-							if(index > 0) {
+						} else {
+							if (index > 0) {
 								codeModel.setCode(ic);
 								codeModel.setDataFormat("20");
 								codeModel.setDeductedAmount(amount);
@@ -4576,17 +5014,16 @@ public class DbReportExportService {
 								quantity = 0L;
 								index = -1;
 								break;
-							}
-							else {
+							} else {
 								index = -1;
 								continue;
 							}
 						}
 					}
 				}
-				if(finalIpCodes.size() > 0) {
+				if (finalIpCodes.size() > 0) {
 					row = sheet.createRow(rowIndex);
-					for(int i=0; i<finalIpCodes.size(); i++) {
+					for (int i = 0; i < finalIpCodes.size(); i++) {
 						cell = row.createCell(cellIndex);
 						cell.setCellValue("");
 						cell.setCellStyle(cellTitleStyle);
@@ -4602,7 +5039,7 @@ public class DbReportExportService {
 						cell = row.createCell(cellIndex);
 						cell.setCellValue(finalIpCodes.get(i).getDeductedAmount().doubleValue());
 						cell.setCellStyle(cellFormatStyle);
-						
+
 						rowIndex++;
 						cellIndex = 0;
 						row = sheet.createRow(rowIndex);
@@ -4611,14 +5048,13 @@ public class DbReportExportService {
 				sheet.addMergedRegion(new CellRangeAddress(trh3RowIndex, rowIndex - 1, 0, 0));
 				rowIndex++;
 			}
-			
+
 			/// 最後設定autosize
 			for (int i = 0; i < tableRowHeaders.length + 2; i++) {
 				sheet.autoSizeColumn(i);
 				sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 12 / 10);
 			}
-		}
-		else {
+		} else {
 			HSSFSheet sheet = workbook.createSheet("工作表");
 		}
 		String fileNameStr = "核刪件數資訊";
@@ -4873,7 +5309,9 @@ public class DbReportExportService {
 		// 起訖日期之間的案件數
 		medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 		if (data != null) {
-			addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_QUANTITY").toString())), cellStyle_left);
+			addRowCell(dataRow, indexCol,
+					addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_QUANTITY").toString())),
+					cellStyle_left);
 		} else {
 			addRowCell(dataRow, indexCol, "0", cellStyle_left);
 		}
@@ -4885,7 +5323,8 @@ public class DbReportExportService {
 		if (isLastM) {
 			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			if (data_M != null) {
-				addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data_M.get(0).get(dataFormatCode + "_QUANTITY").toString())),
+				addRowCell(dataRow, indexCol,
+						addThousandths(Long.parseLong(data_M.get(0).get(dataFormatCode + "_QUANTITY").toString())),
 						cellStyle_left);
 			} else {
 				addRowCell(dataRow, indexCol, "0", cellStyle_left);
@@ -4898,7 +5337,8 @@ public class DbReportExportService {
 		if (isLastY) {
 			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			if (data_Y != null) {
-				addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_QUANTITY").toString())),
+				addRowCell(dataRow, indexCol,
+						addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_QUANTITY").toString())),
 						cellStyle_left);
 			} else {
 				addRowCell(dataRow, indexCol, "0", cellStyle_left);
@@ -4912,7 +5352,9 @@ public class DbReportExportService {
 		if (feeApplyList.contains("健保")) {
 			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			if (data != null) {
-				addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_DOT").toString())), cellStyle_left);
+				addRowCell(dataRow, indexCol,
+						addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_DOT").toString())),
+						cellStyle_left);
 			} else {
 				addRowCell(dataRow, indexCol, "0", cellStyle_left);
 			}
@@ -4925,7 +5367,8 @@ public class DbReportExportService {
 				medicalOrderSheet
 						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				if (data_M != null) {
-					addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data_M.get(0).get(dataFormatCode + "_DOT").toString())),
+					addRowCell(dataRow, indexCol,
+							addThousandths(Long.parseLong(data_M.get(0).get(dataFormatCode + "_DOT").toString())),
 							cellStyle_left);
 				} else {
 					addRowCell(dataRow, indexCol, "0", cellStyle_left);
@@ -4939,7 +5382,8 @@ public class DbReportExportService {
 				medicalOrderSheet
 						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				if (data_Y != null) {
-					addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_DOT").toString())),
+					addRowCell(dataRow, indexCol,
+							addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_DOT").toString())),
 							cellStyle_left);
 				} else {
 					addRowCell(dataRow, indexCol, "0", cellStyle_left);
@@ -4954,7 +5398,9 @@ public class DbReportExportService {
 		if (feeApplyList.contains("自費")) {
 			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			if (data != null) {
-				addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_EXPENSE").toString())), cellStyle_left);
+				addRowCell(dataRow, indexCol,
+						addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_EXPENSE").toString())),
+						cellStyle_left);
 			} else {
 				addRowCell(dataRow, indexCol, "0", cellStyle_left);
 			}
@@ -4967,7 +5413,8 @@ public class DbReportExportService {
 				medicalOrderSheet
 						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				if (data_M != null) {
-					addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data_M.get(0).get(dataFormatCode + "_EXPENSE").toString())),
+					addRowCell(dataRow, indexCol,
+							addThousandths(Long.parseLong(data_M.get(0).get(dataFormatCode + "_EXPENSE").toString())),
 							cellStyle_left);
 				} else {
 					addRowCell(dataRow, indexCol, "0", cellStyle_left);
@@ -4981,7 +5428,8 @@ public class DbReportExportService {
 				medicalOrderSheet
 						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				if (data_Y != null) {
-					addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_EXPENSE").toString())),
+					addRowCell(dataRow, indexCol,
+							addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_EXPENSE").toString())),
 							cellStyle_left);
 				} else {
 					addRowCell(dataRow, indexCol, "0", cellStyle_left);
@@ -5008,8 +5456,7 @@ public class DbReportExportService {
 		titleName = new StringBuffer("");
 //		titleName.append(dataFormat);
 //		titleName.append("總案件數");
-		medicalOrderSheet
-				.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+		medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 		addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 		addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 		addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -5019,8 +5466,7 @@ public class DbReportExportService {
 		if (isLastM) {
 			titleName = new StringBuffer("");
 //			titleName.append("上個月同條件");
-			medicalOrderSheet
-					.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -5030,8 +5476,7 @@ public class DbReportExportService {
 		if (isLastY) {
 			titleName = new StringBuffer("");
 //			titleName.append("去年同期時段");
-			medicalOrderSheet
-					.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -5043,8 +5488,7 @@ public class DbReportExportService {
 			titleName = new StringBuffer("");
 //			titleName.append(dataFormat);
 //			titleName.append("申報總點數");
-			medicalOrderSheet
-					.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -5054,8 +5498,8 @@ public class DbReportExportService {
 			if (isLastM) {
 				titleName = new StringBuffer("");
 //				titleName.append("上個月同條件");
-				medicalOrderSheet.addMergedRegionUnsafe(
-						new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+				medicalOrderSheet
+						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -5065,8 +5509,8 @@ public class DbReportExportService {
 			if (isLastY) {
 				titleName = new StringBuffer("");
 //				titleName.append("去年同期時段");
-				medicalOrderSheet.addMergedRegionUnsafe(
-						new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+				medicalOrderSheet
+						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -5079,8 +5523,7 @@ public class DbReportExportService {
 			titleName = new StringBuffer("");
 //			titleName.append(dataFormat);
 //			titleName.append("自費總金額");
-			medicalOrderSheet
-					.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -5090,8 +5533,8 @@ public class DbReportExportService {
 			if (isLastM) {
 				titleName = new StringBuffer("");
 //				titleName.append("上個月同條件");
-				medicalOrderSheet.addMergedRegionUnsafe(
-						new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+				medicalOrderSheet
+						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -5101,8 +5544,8 @@ public class DbReportExportService {
 			if (isLastY) {
 				titleName = new StringBuffer("");
 //				titleName.append("去年同期時段");
-				medicalOrderSheet.addMergedRegionUnsafe(
-						new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+				medicalOrderSheet
+						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -5111,7 +5554,7 @@ public class DbReportExportService {
 		}
 
 		indexRow++;
-		
+
 		/*
 		 * 各科別案件數、申報點數、自費金額 當科別條件為空，顯示全部科別資料，不為空，顯示指定科別資料
 		 */
@@ -5167,7 +5610,8 @@ public class DbReportExportService {
 				medicalOrderSheet
 						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				if (classData.get(i) != null) {
-					addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity.toString())), cellStyle_left);
+					addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity.toString())),
+							cellStyle_left);
 				} else {
 					addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 				}
@@ -5180,7 +5624,8 @@ public class DbReportExportService {
 					medicalOrderSheet
 							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					if (classData_M != null) {
-						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_M.toString())), cellStyle_left);
+						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_M.toString())),
+								cellStyle_left);
 					} else {
 						addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 					}
@@ -5193,7 +5638,8 @@ public class DbReportExportService {
 					medicalOrderSheet
 							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					if (classData_Y != null) {
-						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_Y.toString())), cellStyle_left);
+						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_Y.toString())),
+								cellStyle_left);
 					} else {
 						addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 					}
@@ -5207,7 +5653,8 @@ public class DbReportExportService {
 					medicalOrderSheet
 							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					if (classData.get(i) != null) {
-						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot.toString())), cellStyle_left);
+						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot.toString())),
+								cellStyle_left);
 					} else {
 						addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 					}
@@ -5220,7 +5667,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData_M != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_M.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_M.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -5233,7 +5681,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData_Y != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_Y.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_Y.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -5248,7 +5697,8 @@ public class DbReportExportService {
 					medicalOrderSheet
 							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					if (classData.get(i) != null) {
-						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense.toString())), cellStyle_left);
+						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense.toString())),
+								cellStyle_left);
 					} else {
 						addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 					}
@@ -5261,7 +5711,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData_M != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense_M.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense_M.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -5274,7 +5725,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData_Y != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense_Y.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense_Y.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -5290,7 +5742,7 @@ public class DbReportExportService {
 
 				// 科別之下醫護人員的案件數、申報點數、自費金額
 				if (medDataList.size() > 0) {
-					
+
 					// 醫護名title
 					HSSFRow titleRow_med = medicalOrderSheet.createRow(indexRow);
 					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, 0, 3));
@@ -5298,13 +5750,13 @@ public class DbReportExportService {
 					addRowCell(titleRow_med, 1, "", cellStyle_left);
 					addRowCell(titleRow_med, 2, "", cellStyle_left);
 					addRowCell(titleRow_med, 3, "", cellStyle_left);
-					
+
 					// 醫護案件數title
 					titleName = new StringBuffer("");
 //					titleName.append(dataFormat);
 //					titleName.append("總案件數");
-					medicalOrderSheet.addMergedRegionUnsafe(
-							new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+					medicalOrderSheet
+							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
 					addRowCell(titleRow_med, indexCol + 1, "", cellStyle_left);
 					addRowCell(titleRow_med, indexCol + 2, "", cellStyle_left);
@@ -5485,7 +5937,8 @@ public class DbReportExportService {
 							medicalOrderSheet.addMergedRegionUnsafe(
 									new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 							if (!medQuantity.toString().equals("")) {
-								addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity.toString())), cellStyle_left);
+								addRowCell(dataRow_med, indexCol,
+										addThousandths(Long.parseLong(medQuantity.toString())), cellStyle_left);
 							} else {
 								addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 							}
@@ -5498,7 +5951,8 @@ public class DbReportExportService {
 								medicalOrderSheet.addMergedRegionUnsafe(
 										new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 								if (!medQuantity_M.toString().equals("")) {
-									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity_M.toString())), cellStyle_left);
+									addRowCell(dataRow_med, indexCol,
+											addThousandths(Long.parseLong(medQuantity_M.toString())), cellStyle_left);
 								} else {
 									addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 								}
@@ -5511,7 +5965,8 @@ public class DbReportExportService {
 								medicalOrderSheet.addMergedRegionUnsafe(
 										new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 								if (!medQuantity_Y.toString().equals("")) {
-									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity_Y.toString())), cellStyle_left);
+									addRowCell(dataRow_med, indexCol,
+											addThousandths(Long.parseLong(medQuantity_Y.toString())), cellStyle_left);
 								} else {
 									addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 								}
@@ -5525,7 +5980,8 @@ public class DbReportExportService {
 								medicalOrderSheet.addMergedRegionUnsafe(
 										new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 								if (!medDot.toString().equals("")) {
-									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot.toString())), cellStyle_left);
+									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot.toString())),
+											cellStyle_left);
 								} else {
 									addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 								}
@@ -5538,7 +5994,8 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medDot_M.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot_M.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medDot_M.toString())), cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -5551,7 +6008,8 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medDot_Y.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot_Y.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medDot_Y.toString())), cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -5566,7 +6024,8 @@ public class DbReportExportService {
 								medicalOrderSheet.addMergedRegionUnsafe(
 										new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 								if (!medExpense.toString().equals("")) {
-									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense.toString())), cellStyle_left);
+									addRowCell(dataRow_med, indexCol,
+											addThousandths(Long.parseLong(medExpense.toString())), cellStyle_left);
 								} else {
 									addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 								}
@@ -5579,7 +6038,9 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medExpense_M.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense_M.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medExpense_M.toString())),
+												cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -5592,7 +6053,9 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medExpense_Y.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense_Y.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medExpense_Y.toString())),
+												cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -5663,7 +6126,8 @@ public class DbReportExportService {
 					medicalOrderSheet
 							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					if (classData.get(i) != null) {
-						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity.toString())), cellStyle_left);
+						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity.toString())),
+								cellStyle_left);
 					} else {
 						addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 					}
@@ -5676,7 +6140,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData_M != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_M.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_M.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -5689,7 +6154,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData_Y != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_Y.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_Y.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -5703,7 +6169,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData.get(i) != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -5716,7 +6183,8 @@ public class DbReportExportService {
 							medicalOrderSheet.addMergedRegionUnsafe(
 									new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 							if (classData_M != null) {
-								addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_M.toString())), cellStyle_left);
+								addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_M.toString())),
+										cellStyle_left);
 							} else {
 								addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 							}
@@ -5729,7 +6197,8 @@ public class DbReportExportService {
 							medicalOrderSheet.addMergedRegionUnsafe(
 									new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 							if (classData_Y != null) {
-								addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_Y.toString())), cellStyle_left);
+								addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_Y.toString())),
+										cellStyle_left);
 							} else {
 								addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 							}
@@ -5744,7 +6213,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData.get(i) != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -5757,7 +6227,8 @@ public class DbReportExportService {
 							medicalOrderSheet.addMergedRegionUnsafe(
 									new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 							if (classData_M != null) {
-								addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense_M.toString())), cellStyle_left);
+								addRowCell(dataRow_class, indexCol,
+										addThousandths(Long.parseLong(expense_M.toString())), cellStyle_left);
 							} else {
 								addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 							}
@@ -5770,7 +6241,8 @@ public class DbReportExportService {
 							medicalOrderSheet.addMergedRegionUnsafe(
 									new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 							if (classData_Y != null) {
-								addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense_Y.toString())), cellStyle_left);
+								addRowCell(dataRow_class, indexCol,
+										addThousandths(Long.parseLong(expense_Y.toString())), cellStyle_left);
 							} else {
 								addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 							}
@@ -5786,7 +6258,7 @@ public class DbReportExportService {
 
 					// 科別之下醫護人員的案件數、申報點數、自費金額
 					if (medDataList.size() > 0) {
-						
+
 						// 醫護名title
 						HSSFRow titleRow_med = medicalOrderSheet.createRow(indexRow);
 						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, 0, 3));
@@ -5984,7 +6456,8 @@ public class DbReportExportService {
 								medicalOrderSheet.addMergedRegionUnsafe(
 										new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 								if (!medQuantity.toString().equals("")) {
-									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity.toString())), cellStyle_left);
+									addRowCell(dataRow_med, indexCol,
+											addThousandths(Long.parseLong(medQuantity.toString())), cellStyle_left);
 								} else {
 									addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 								}
@@ -5997,7 +6470,9 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medQuantity_M.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity_M.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medQuantity_M.toString())),
+												cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -6010,7 +6485,9 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medQuantity_Y.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity_Y.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medQuantity_Y.toString())),
+												cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -6024,7 +6501,8 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medDot.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medDot.toString())), cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -6037,7 +6515,9 @@ public class DbReportExportService {
 										medicalOrderSheet.addMergedRegionUnsafe(
 												new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 										if (!medDot_M.toString().equals("")) {
-											addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot_M.toString())), cellStyle_left);
+											addRowCell(dataRow_med, indexCol,
+													addThousandths(Long.parseLong(medDot_M.toString())),
+													cellStyle_left);
 										} else {
 											addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 										}
@@ -6050,7 +6530,9 @@ public class DbReportExportService {
 										medicalOrderSheet.addMergedRegionUnsafe(
 												new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 										if (!medDot_Y.toString().equals("")) {
-											addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot_Y.toString())), cellStyle_left);
+											addRowCell(dataRow_med, indexCol,
+													addThousandths(Long.parseLong(medDot_Y.toString())),
+													cellStyle_left);
 										} else {
 											addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 										}
@@ -6065,7 +6547,8 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medExpense.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medExpense.toString())), cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -6078,7 +6561,9 @@ public class DbReportExportService {
 										medicalOrderSheet.addMergedRegionUnsafe(
 												new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 										if (!medExpense_M.toString().equals("")) {
-											addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense_M.toString())), cellStyle_left);
+											addRowCell(dataRow_med, indexCol,
+													addThousandths(Long.parseLong(medExpense_M.toString())),
+													cellStyle_left);
 										} else {
 											addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 										}
@@ -6091,7 +6576,9 @@ public class DbReportExportService {
 										medicalOrderSheet.addMergedRegionUnsafe(
 												new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 										if (!medExpense_Y.toString().equals("")) {
-											addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense_Y.toString())), cellStyle_left);
+											addRowCell(dataRow_med, indexCol,
+													addThousandths(Long.parseLong(medExpense_Y.toString())),
+													cellStyle_left);
 										} else {
 											addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 										}
@@ -6295,7 +6782,9 @@ public class DbReportExportService {
 		// 起訖日期之間的案件數
 		medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 		if (data != null) {
-			addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_QUANTITY").toString())), cellStyle_left);
+			addRowCell(dataRow, indexCol,
+					addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_QUANTITY").toString())),
+					cellStyle_left);
 		} else {
 			addRowCell(dataRow, indexCol, "0", cellStyle_left);
 		}
@@ -6307,7 +6796,8 @@ public class DbReportExportService {
 		if (isLastY) {
 			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			if (data_Y != null) {
-				addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_QUANTITY").toString())),
+				addRowCell(dataRow, indexCol,
+						addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_QUANTITY").toString())),
 						cellStyle_left);
 			} else {
 				addRowCell(dataRow, indexCol, "0", cellStyle_left);
@@ -6321,7 +6811,9 @@ public class DbReportExportService {
 		if (feeApplyList.contains("健保")) {
 			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			if (data != null) {
-				addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_DOT").toString())), cellStyle_left);
+				addRowCell(dataRow, indexCol,
+						addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_DOT").toString())),
+						cellStyle_left);
 			} else {
 				addRowCell(dataRow, indexCol, "0", cellStyle_left);
 			}
@@ -6334,7 +6826,8 @@ public class DbReportExportService {
 				medicalOrderSheet
 						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				if (data_Y != null) {
-					addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_DOT").toString())),
+					addRowCell(dataRow, indexCol,
+							addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_DOT").toString())),
 							cellStyle_left);
 				} else {
 					addRowCell(dataRow, indexCol, "0", cellStyle_left);
@@ -6349,7 +6842,9 @@ public class DbReportExportService {
 		if (feeApplyList.contains("自費")) {
 			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			if (data != null) {
-				addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_EXPENSE").toString())), cellStyle_left);
+				addRowCell(dataRow, indexCol,
+						addThousandths(Long.parseLong(data.get(0).get(dataFormatCode + "_EXPENSE").toString())),
+						cellStyle_left);
 			} else {
 				addRowCell(dataRow, indexCol, "0", cellStyle_left);
 			}
@@ -6362,7 +6857,8 @@ public class DbReportExportService {
 				medicalOrderSheet
 						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				if (data_Y != null) {
-					addRowCell(dataRow, indexCol, addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_EXPENSE").toString())),
+					addRowCell(dataRow, indexCol,
+							addThousandths(Long.parseLong(data_Y.get(0).get(dataFormatCode + "_EXPENSE").toString())),
 							cellStyle_left);
 				} else {
 					addRowCell(dataRow, indexCol, "0", cellStyle_left);
@@ -6374,7 +6870,7 @@ public class DbReportExportService {
 		}
 
 		indexRow++;
-		
+
 		// 科名title
 		HSSFRow titleRow_class = medicalOrderSheet.createRow(indexRow);
 		medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, 0, 3));
@@ -6389,8 +6885,7 @@ public class DbReportExportService {
 		titleName = new StringBuffer("");
 //		titleName.append(dataFormat);
 //		titleName.append("總案件數");
-		medicalOrderSheet
-				.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+		medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 		addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 		addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 		addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -6400,8 +6895,7 @@ public class DbReportExportService {
 		if (isLastY) {
 			titleName = new StringBuffer("");
 //			titleName.append("去年同期時段");
-			medicalOrderSheet
-					.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -6413,8 +6907,7 @@ public class DbReportExportService {
 			titleName = new StringBuffer("");
 //			titleName.append(dataFormat);
 //			titleName.append("申報總點數");
-			medicalOrderSheet
-					.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -6424,8 +6917,8 @@ public class DbReportExportService {
 			if (isLastY) {
 				titleName = new StringBuffer("");
 //				titleName.append("去年同期時段");
-				medicalOrderSheet.addMergedRegionUnsafe(
-						new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+				medicalOrderSheet
+						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -6438,8 +6931,7 @@ public class DbReportExportService {
 			titleName = new StringBuffer("");
 //			titleName.append(dataFormat);
 //			titleName.append("自費總金額");
-			medicalOrderSheet
-					.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+			medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 			addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 			addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -6449,8 +6941,8 @@ public class DbReportExportService {
 			if (isLastY) {
 				titleName = new StringBuffer("");
 //				titleName.append("去年同期時段");
-				medicalOrderSheet.addMergedRegionUnsafe(
-						new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+				medicalOrderSheet
+						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				addRowCell(titleRow_class, indexCol, titleName.toString(), cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 1, "", cellStyle_left);
 				addRowCell(titleRow_class, indexCol + 2, "", cellStyle_left);
@@ -6508,7 +7000,8 @@ public class DbReportExportService {
 				medicalOrderSheet
 						.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 				if (classData.get(i) != null) {
-					addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity.toString())), cellStyle_left);
+					addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity.toString())),
+							cellStyle_left);
 				} else {
 					addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 				}
@@ -6521,7 +7014,8 @@ public class DbReportExportService {
 					medicalOrderSheet
 							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					if (classData_Y != null) {
-						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_Y.toString())), cellStyle_left);
+						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_Y.toString())),
+								cellStyle_left);
 					} else {
 						addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 					}
@@ -6535,7 +7029,8 @@ public class DbReportExportService {
 					medicalOrderSheet
 							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					if (classData.get(i) != null) {
-						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot.toString())), cellStyle_left);
+						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot.toString())),
+								cellStyle_left);
 					} else {
 						addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 					}
@@ -6548,7 +7043,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData_Y != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_Y.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_Y.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -6563,7 +7059,8 @@ public class DbReportExportService {
 					medicalOrderSheet
 							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					if (classData.get(i) != null) {
-						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense.toString())), cellStyle_left);
+						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense.toString())),
+								cellStyle_left);
 					} else {
 						addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 					}
@@ -6576,7 +7073,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData_Y != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense_Y.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense_Y.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -6592,7 +7090,7 @@ public class DbReportExportService {
 
 				// 科別之下醫護人員的案件數、申報點數、自費金額
 				if (medDataList.size() > 0) {
-					
+
 					// 醫護名title
 					HSSFRow titleRow_med = medicalOrderSheet.createRow(indexRow);
 					medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, 0, 3));
@@ -6607,8 +7105,8 @@ public class DbReportExportService {
 					titleName = new StringBuffer("");
 //					titleName.append(dataFormat);
 //					titleName.append("總案件數");
-					medicalOrderSheet.addMergedRegionUnsafe(
-							new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
+					medicalOrderSheet
+							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					addRowCell(titleRow_med, indexCol, titleName.toString(), cellStyle_left);
 					addRowCell(titleRow_med, indexCol + 1, "", cellStyle_left);
 					addRowCell(titleRow_med, indexCol + 2, "", cellStyle_left);
@@ -6741,7 +7239,8 @@ public class DbReportExportService {
 							medicalOrderSheet.addMergedRegionUnsafe(
 									new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 							if (!medQuantity.toString().equals("")) {
-								addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity.toString())), cellStyle_left);
+								addRowCell(dataRow_med, indexCol,
+										addThousandths(Long.parseLong(medQuantity.toString())), cellStyle_left);
 							} else {
 								addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 							}
@@ -6754,7 +7253,8 @@ public class DbReportExportService {
 								medicalOrderSheet.addMergedRegionUnsafe(
 										new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 								if (!medQuantity_Y.toString().equals("")) {
-									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity_Y.toString())), cellStyle_left);
+									addRowCell(dataRow_med, indexCol,
+											addThousandths(Long.parseLong(medQuantity_Y.toString())), cellStyle_left);
 								} else {
 									addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 								}
@@ -6768,7 +7268,8 @@ public class DbReportExportService {
 								medicalOrderSheet.addMergedRegionUnsafe(
 										new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 								if (!medDot.toString().equals("")) {
-									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot.toString())), cellStyle_left);
+									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot.toString())),
+											cellStyle_left);
 								} else {
 									addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 								}
@@ -6781,7 +7282,8 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medDot_Y.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot_Y.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medDot_Y.toString())), cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -6796,7 +7298,8 @@ public class DbReportExportService {
 								medicalOrderSheet.addMergedRegionUnsafe(
 										new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 								if (!medExpense.toString().equals("")) {
-									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense.toString())), cellStyle_left);
+									addRowCell(dataRow_med, indexCol,
+											addThousandths(Long.parseLong(medExpense.toString())), cellStyle_left);
 								} else {
 									addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 								}
@@ -6809,7 +7312,9 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medExpense_Y.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense_Y.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medExpense_Y.toString())),
+												cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -6874,7 +7379,8 @@ public class DbReportExportService {
 					medicalOrderSheet
 							.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 					if (classData.get(i) != null) {
-						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity.toString())), cellStyle_left);
+						addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity.toString())),
+								cellStyle_left);
 					} else {
 						addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 					}
@@ -6887,7 +7393,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData_Y != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_Y.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(quantity_Y.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -6901,7 +7408,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData.get(i) != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -6914,7 +7422,8 @@ public class DbReportExportService {
 							medicalOrderSheet.addMergedRegionUnsafe(
 									new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 							if (classData_Y != null) {
-								addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_Y.toString())), cellStyle_left);
+								addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(dot_Y.toString())),
+										cellStyle_left);
 							} else {
 								addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 							}
@@ -6929,7 +7438,8 @@ public class DbReportExportService {
 						medicalOrderSheet.addMergedRegionUnsafe(
 								new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 						if (classData.get(i) != null) {
-							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense.toString())), cellStyle_left);
+							addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense.toString())),
+									cellStyle_left);
 						} else {
 							addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 						}
@@ -6942,7 +7452,8 @@ public class DbReportExportService {
 							medicalOrderSheet.addMergedRegionUnsafe(
 									new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 							if (classData_Y != null) {
-								addRowCell(dataRow_class, indexCol, addThousandths(Long.parseLong(expense_Y.toString())), cellStyle_left);
+								addRowCell(dataRow_class, indexCol,
+										addThousandths(Long.parseLong(expense_Y.toString())), cellStyle_left);
 							} else {
 								addRowCell(dataRow_class, indexCol, "0", cellStyle_left);
 							}
@@ -6956,7 +7467,7 @@ public class DbReportExportService {
 
 					// 科別之下醫護人員的案件數、申報點數、自費金額
 					if (medDataList.size() > 0) {
-						
+
 						// 醫護名title
 						HSSFRow titleRow_med = medicalOrderSheet.createRow(indexRow);
 						medicalOrderSheet.addMergedRegionUnsafe(new CellRangeAddress(indexRow, indexRow, 0, 3));
@@ -7107,7 +7618,8 @@ public class DbReportExportService {
 								medicalOrderSheet.addMergedRegionUnsafe(
 										new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 								if (!medQuantity.toString().equals("")) {
-									addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity.toString())), cellStyle_left);
+									addRowCell(dataRow_med, indexCol,
+											addThousandths(Long.parseLong(medQuantity.toString())), cellStyle_left);
 								} else {
 									addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 								}
@@ -7120,7 +7632,9 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medQuantity_Y.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medQuantity_Y.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medQuantity_Y.toString())),
+												cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -7134,7 +7648,8 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medDot.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medDot.toString())), cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -7147,7 +7662,9 @@ public class DbReportExportService {
 										medicalOrderSheet.addMergedRegionUnsafe(
 												new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 										if (!medDot_Y.toString().equals("")) {
-											addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medDot_Y.toString())), cellStyle_left);
+											addRowCell(dataRow_med, indexCol,
+													addThousandths(Long.parseLong(medDot_Y.toString())),
+													cellStyle_left);
 										} else {
 											addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 										}
@@ -7162,7 +7679,8 @@ public class DbReportExportService {
 									medicalOrderSheet.addMergedRegionUnsafe(
 											new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 									if (!medExpense.toString().equals("")) {
-										addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense.toString())), cellStyle_left);
+										addRowCell(dataRow_med, indexCol,
+												addThousandths(Long.parseLong(medExpense.toString())), cellStyle_left);
 									} else {
 										addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 									}
@@ -7175,7 +7693,9 @@ public class DbReportExportService {
 										medicalOrderSheet.addMergedRegionUnsafe(
 												new CellRangeAddress(indexRow, indexRow, indexCol, indexCol + 2));
 										if (!medExpense_Y.toString().equals("")) {
-											addRowCell(dataRow_med, indexCol, addThousandths(Long.parseLong(medExpense_Y.toString())), cellStyle_left);
+											addRowCell(dataRow_med, indexCol,
+													addThousandths(Long.parseLong(medExpense_Y.toString())),
+													cellStyle_left);
 										} else {
 											addRowCell(dataRow_med, indexCol, "0", cellStyle_left);
 										}
@@ -7385,10 +7905,10 @@ public class DbReportExportService {
 
 		return formatted;
 	}
-	
-	//千分位
+
+	// 千分位
 	public String addThousandths(Long num) {
-		DecimalFormat df=new DecimalFormat("#,###");
+		DecimalFormat df = new DecimalFormat("#,###");
 		return df.format(num);
 	}
 
@@ -7397,13 +7917,13 @@ public class DbReportExportService {
 			return m1.getPrsnId().compareTo(m2.getPrsnId());
 		}
 	};
-	
+
 	public Comparator<DeductedNoteQueryConditionList> mapComparatorDeductedFT = new Comparator<DeductedNoteQueryConditionList>() {
 		public int compare(DeductedNoteQueryConditionList m1, DeductedNoteQueryConditionList m2) {
 			return m1.getFuncType().compareTo(m2.getFuncType());
 		}
 	};
-	
+
 	public Comparator<DeductedNoteQueryConditionCode> mapComparatorDeductedCD = new Comparator<DeductedNoteQueryConditionCode>() {
 		public int compare(DeductedNoteQueryConditionCode m1, DeductedNoteQueryConditionCode m2) {
 			return m1.getCode().compareTo(m2.getCode());

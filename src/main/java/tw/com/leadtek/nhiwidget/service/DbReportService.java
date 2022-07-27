@@ -4746,242 +4746,152 @@ public class DbReportService {
 			for (String str : dataformatList) {
 				switch (str) {
 				case "all":
-					selectColumn.append(" (SELECT COUNT(ID) AS ALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 ");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+					selectColumn.append(" (SELECT (QIP + QOP) AS ALL_QUANTITY, (EIP + EOP) AS ALL_EXPENSE FROM ");
+					selectColumn.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QIP, IFNULL(SUM(EXPENSE),0) AS EIP FROM ");
+					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+					
+					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 					if (icdAllList.size() > 0)
 						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
 						}
 
 					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 
 					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) a, ");
+						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+					groupBy.append("  GROUP BY IP_P.ORDER_CODE))a, ");
 					selectColumn.append(where);
-					selectColumn
-							.append(" (SELECT IFNULL(SUM(OWN_EXPENSE),0) ALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0  ");
-					where = new StringBuffer("");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
-
-					if (icdAllList.size() > 0)
-						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-						}
-
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) b, ");
+					selectColumn.append(groupBy);
+					
+					selectColumn.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QOP, IFNULL(SUM(EXPENSE),0) AS EOP FROM ");
+					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					selectColumn.append(where);
+					groupBy = new StringBuffer("");
+					groupBy.append(" GROUP BY OP_P.DRUG_NO ))b)a, ");
+					selectColumn.append(groupBy);
+					
+					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
 				case "totalop":
 					selectColumn.append(
-							" (SELECT COUNT(ID) AS OPALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
-
-					if (icdAllList.size() > 0)
-						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-						}
-
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) c, ");
-					selectColumn.append(where);
+							" (SELECT IFNULL(SUM(QUANTITY),0) AS  OPALL_QUANTITY, IFNULL(SUM(EXPENSE),0) AS OPALL_EXPENSE FROM ");
 					selectColumn.append(
-							" (SELECT IFNULL(SUM(OWN_EXPENSE),0) OPALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
-					where = new StringBuffer("");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 					if (icdAllList.size() > 0)
 						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
 						}
 
 					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 
 					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) d, ");
+						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+					groupBy.append("  GROUP BY OP_P.DRUG_NO))b, ");
 					selectColumn.append(where);
+					selectColumn.append(groupBy);
+					
+					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
 				case "op":
 					selectColumn.append(
-							" (SELECT COUNT(ID) AS OP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							" (SELECT IFNULL(SUM(QUANTITY),0) AS  OP_QUANTITY, IFNULL(SUM(EXPENSE),0) AS OP_EXPENSE FROM  ");
+					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
+					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 					if (icdAllList.size() > 0)
 						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
 						}
 
 					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 
 					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) e, ");
+						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+					groupBy.append("  GROUP BY OP_P.DRUG_NO))c, ");
 					selectColumn.append(where);
-					selectColumn.append(
-							" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) OP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
-					where = new StringBuffer("");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
-
-					if (icdAllList.size() > 0)
-						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-						}
-
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) f, ");
-					selectColumn.append(where);
+					selectColumn.append(groupBy);
+					
+					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
 				case "em":
 					selectColumn.append(
-							" (SELECT COUNT(ID) AS EM_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22' ");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							" (SELECT IFNULL(SUM(QUANTITY),0) AS  EM_QUANTITY, IFNULL(SUM(EXPENSE),0) AS EM_EXPENSE FROM  ");
+					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
+					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 					if (icdAllList.size() > 0)
 						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
 						}
 
 					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 
 					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) g, ");
+						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+					groupBy.append("  GROUP BY OP_P.DRUG_NO))d, ");
 					selectColumn.append(where);
-					selectColumn.append(
-							" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) EM_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22' ");
-					where = new StringBuffer("");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
-
-					if (icdAllList.size() > 0)
-						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-						}
-
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) h, ");
-					selectColumn.append(where);
+					selectColumn.append(groupBy);
+					
+					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
 				case "ip":
 					selectColumn.append(
-							" (SELECT COUNT(ID) AS IP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							" (SELECT IFNULL(SUM(QUANTITY),0) AS  IP_QUANTITY, IFNULL(SUM(EXPENSE),0) AS IP_EXPENSE FROM ");
+					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 					if (icdAllList.size() > 0)
 						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
 						}
 
 					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 
 					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) i, ");
+						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+					groupBy.append("  GROUP BY IP_P.ORDER_CODE))e, ");
 					selectColumn.append(where);
-					selectColumn.append(
-							" (SELECT IFNULL(SUM(OWN_EXPENSE),0) IP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
-					where = new StringBuffer("");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
-
-					if (icdAllList.size() > 0)
-						for (String s : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-						}
-
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					/// 條件最後添加別名
-					where.append(" ) j, ");
-					selectColumn.append(where);
+					selectColumn.append(groupBy);
+					
+					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
 				default:
@@ -5012,7 +4922,10 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" (SELECT '不分區' AS DATA_FORMAT,  MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0  ");
+							" SELECT  '不分區' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE, ");
+					selectColumn.append(" (SELECT * FROM ( ");
+					selectColumn.append(" SELECT  FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+					selectColumn.append(" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
@@ -5031,12 +4944,17 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-
-					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
-
+					groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-
+					groupBy = new StringBuffer("");
+					selectColumn.append(" UNION ALL ");
+					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+					selectColumn.append(" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+					selectColumn.append(where);
+					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+					selectColumn.append(groupBy);
+					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					break;
@@ -5045,8 +4963,10 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" (SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10'  ");
-
+							" SELECT  '門急診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
+					selectColumn.append(" (SELECT * FROM ( ");
+					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+					selectColumn.append(" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5064,11 +4984,10 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-
-					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
-
+					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
+					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -5078,8 +4997,10 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" (SELECT '門診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
-
+							" SELECT  '門診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
+					selectColumn.append(" (SELECT * FROM ( ");
+					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+					selectColumn.append(" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5097,11 +5018,10 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-
-					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
-
+					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
+					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -5112,8 +5032,10 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" (SELECT '急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
-
+							" SELECT  '急診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
+					selectColumn.append(" (SELECT * FROM ( ");
+					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+					selectColumn.append(" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5131,11 +5053,10 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-
-					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
-
+					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
+					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -5145,8 +5066,10 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" (SELECT '住院' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20'  ");
-
+							" SELECT  '住院' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
+					selectColumn.append(" (SELECT * FROM ( ");
+					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+					selectColumn.append(" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5164,11 +5087,10 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-
-					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
-
+					groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
+					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
