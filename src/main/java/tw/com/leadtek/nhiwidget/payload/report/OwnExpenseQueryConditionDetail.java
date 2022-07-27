@@ -1,9 +1,11 @@
 package tw.com.leadtek.nhiwidget.payload.report;
 
 import java.io.Serializable;
+import java.util.List;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+
 @ApiModel("自費項目清單詳細")
 public class OwnExpenseQueryConditionDetail implements Serializable {
 
@@ -20,6 +22,8 @@ public class OwnExpenseQueryConditionDetail implements Serializable {
 	private Long expense;
 	@ApiModelProperty(value = "醫護人員", required = false)
 	private String prsnId;
+	@ApiModelProperty(value = "醫令資訊", required = false)
+	private List<OwnExpenseQueryConditionIhnCodeInfo> ihnCodeInfo;
 
 	public String getFuncType() {
 		return funcType;
@@ -68,7 +72,13 @@ public class OwnExpenseQueryConditionDetail implements Serializable {
 	public void setPrsnId(String prsnId) {
 		this.prsnId = prsnId;
 	}
-	
-	
 
+	public List<OwnExpenseQueryConditionIhnCodeInfo> getIhnCodeInfo() {
+		return ihnCodeInfo;
+	}
+
+	public void setIhnCodeInfo(List<OwnExpenseQueryConditionIhnCodeInfo> ihnCodeInfo) {
+		this.ihnCodeInfo = ihnCodeInfo;
+	}
+	
 }

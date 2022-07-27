@@ -1,11 +1,14 @@
 package tw.com.leadtek.nhiwidget.service;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
+
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +40,8 @@ import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionList;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionResponse;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionDetail;
+import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionIhnCodeInfo;
+import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionResponse;
 //import tw.com.leadtek.nhiwidget.payload.report.DrgQueryConditionPayload;
 import tw.com.leadtek.nhiwidget.payload.report.QuarterData;
 import tw.com.leadtek.tools.StringUtility;
@@ -3514,24 +3519,27 @@ public class DbReportService {
 		List<POINT_MONTHLY> list = pointMonthlyDao.getByYmInOrderByYm(yearMonthBetween);
 		for (int i = 0; i < yList.size(); i++) {
 			String displayName = "";
-			POINT_MONTHLY pm = list.get(i);
-			pm.checkNull();
-			if (pm.getYm().intValue() == yearMonthBetween.get(i)) {
-				String name = yearMonthBetween.get(i).toString();
-				String s1 = name.substring(0, name.length() - 2);
-				String s2 = name.substring(name.length() - 2, name.length());
-				String show = s1 + "/" + s2;
-				/// 如果有條件帶入才進來
-				if (mapList.size() > 0) {
-					for (Map<String, Object> mm : mapList) {
-						String ym = mm.get("YM").toString();
-						if (name.equals(ym)) {
-							displayName = mm.get("displayName").toString();
+			if(list.size() > 0) {
+				
+				POINT_MONTHLY pm = list.get(i);
+				pm.checkNull();
+				if (pm.getYm().intValue() == yearMonthBetween.get(i)) {
+					String name = yearMonthBetween.get(i).toString();
+					String s1 = name.substring(0, name.length() - 2);
+					String s2 = name.substring(name.length() - 2, name.length());
+					String show = s1 + "/" + s2;
+					/// 如果有條件帶入才進來
+					if (mapList.size() > 0) {
+						for (Map<String, Object> mm : mapList) {
+							String ym = mm.get("YM").toString();
+							if (name.equals(ym)) {
+								displayName = mm.get("displayName").toString();
+							}
 						}
 					}
+					
+					calculateAchievementQuarter(result, pm, show, displayName);
 				}
-
-				calculateAchievementQuarter(result, pm, show, displayName);
 			}
 
 		}
@@ -4636,17 +4644,17 @@ public class DbReportService {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public Map<String, Object> getOwnExpenseQueryCondition(String betweenSDate, String betweenEDate, String dataFormats,
+	public OwnExpenseQueryConditionResponse getOwnExpenseQueryCondition(String betweenSDate, String betweenEDate, String dataFormats,
 			String funcTypes, String medNames, String icdAll, String payCode, String inhCode, boolean isLastY,
 			boolean isShowOwnExpense) {
-		Map<String, Object> result = new HashMap<String, Object>();
 		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> sqlMapList1 = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> sqlMapList2 = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> sqlMapList2_2 = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> sqlMapList3 = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> sqlMapList3_2 = new ArrayList<Map<String, Object>>();
 		/// 就醫類別
 		List<String> dataformatList = new ArrayList<String>();
-		String dateformatSql = "";
 		/// 科別
 		List<String> funcTypeList = new ArrayList<String>();
 		String funcTypeSql = "";
@@ -4728,7 +4736,7 @@ public class DbReportService {
 		StringBuffer groupBy = new StringBuffer("");
 		/// orderBy
 		StringBuffer orderBy = new StringBuffer("");
-
+		List<Map<String,Object>> retList = new ArrayList<Map<String,Object>>();
 		for (int i = 0; i < mapList.size(); i++) {
 			String sd = mapList.get(i).get("sDate").toString();
 			String ed = mapList.get(i).get("eDate").toString();
@@ -4999,12 +5007,13 @@ public class DbReportService {
 			for (String str : dataformatList) {
 				switch (str) {
 				case "all":
+
 					if (selectColumn.length() > 0) {
 						selectColumn.append(" UNION ALL ");
 					}
-					selectColumn.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 					selectColumn.append(
-							" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+							" (SELECT '不分區' AS DATA_FORMAT,  MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0  ");
+
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5022,103 +5031,22 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+
+					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
+
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
-					///
-
-					if (isShowOwnExpense) {
-						selectColumn.append(" UNION ALL ");
-						selectColumn
-								.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(
-									" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						} else {
-							selectColumn.append(
-									" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						}
-						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-						if (funcTypeList.size() > 0)
-							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-						if (medNameList.size() > 0)
-							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-
-						if (icdAllList.size() > 0)
-							for (String s : icdAllList) {
-								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-							}
-
-						if (payCode != null && payCode.length() > 0)
-							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-						if (inhCode != null && inhCode.length() > 0)
-							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							groupBy.append(" GROUP BY IP_P.ORDER_CODE , CODE_TABLE.DESC_CHI ) ");
-						} else {
-							groupBy.append(" GROUP BY IP_P.ORDER_CODE) ");
-						}
-
-						selectColumn.append(where);
-						selectColumn.append(groupBy);
-
-						where = new StringBuffer("");
-						groupBy = new StringBuffer("");
-						selectColumn.append(" UNION ALL ");
-						selectColumn
-								.append(" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(
-									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						} else {
-							selectColumn.append(
-									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						}
-
-						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-						if (funcTypeList.size() > 0)
-							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-						if (medNameList.size() > 0)
-							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-
-						if (icdAllList.size() > 0)
-							for (String s : icdAllList) {
-								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-							}
-
-						if (payCode != null && payCode.length() > 0)
-							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-						if (inhCode != null && inhCode.length() > 0)
-							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-						} else {
-							groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
-						}
-
-						selectColumn.append(where);
-						selectColumn.append(groupBy);
-						selectColumn.append(orderBy);
-						where = new StringBuffer("");
-						groupBy = new StringBuffer("");
-						orderBy = new StringBuffer("");
-
-					}
 					break;
 				case "totalop":
 					if (selectColumn.length() > 0) {
 						selectColumn.append(" UNION ALL ");
 					}
-					selectColumn.append(" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 					selectColumn.append(
-							" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+							" (SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10'  ");
+
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5136,63 +5064,22 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+
+					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
+
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
-					///
-					if (isShowOwnExpense) {
-						selectColumn.append(" UNION ALL ");
-						selectColumn
-								.append(" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(
-									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						} else {
-							selectColumn.append(
-									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
-						}
-
-						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-						if (funcTypeList.size() > 0)
-							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-						if (medNameList.size() > 0)
-							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-
-						if (icdAllList.size() > 0)
-							for (String s : icdAllList) {
-								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-							}
-
-						if (payCode != null && payCode.length() > 0)
-							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-						if (inhCode != null && inhCode.length() > 0)
-							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-						} else {
-							groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
-						}
-
-						selectColumn.append(where);
-						selectColumn.append(groupBy);
-						selectColumn.append(orderBy);
-						where = new StringBuffer("");
-						groupBy = new StringBuffer("");
-						orderBy = new StringBuffer("");
-					}
 					break;
 				case "op":
 					if (selectColumn.length() > 0) {
 						selectColumn.append(" UNION ALL ");
 					}
-					selectColumn.append(" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 					selectColumn.append(
-							" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+							" (SELECT '門診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5210,63 +5097,23 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+
+					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
+
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
-					///
-					if (isShowOwnExpense) {
-						selectColumn.append(" UNION ALL ");
-						selectColumn
-								.append(" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(
-									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE <> '22' ");
-						} else {
-							selectColumn.append(
-									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
-						}
 
-						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-						if (funcTypeList.size() > 0)
-							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-						if (medNameList.size() > 0)
-							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-
-						if (icdAllList.size() > 0)
-							for (String s : icdAllList) {
-								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-							}
-
-						if (payCode != null && payCode.length() > 0)
-							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-						if (inhCode != null && inhCode.length() > 0)
-							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-						} else {
-							groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
-						}
-
-						selectColumn.append(where);
-						selectColumn.append(groupBy);
-						selectColumn.append(orderBy);
-						where = new StringBuffer("");
-						groupBy = new StringBuffer("");
-						orderBy = new StringBuffer("");
-					}
 					break;
 				case "em":
 					if (selectColumn.length() > 0) {
 						selectColumn.append(" UNION ALL ");
 					}
-					selectColumn.append(" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 					selectColumn.append(
-							" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
+							" (SELECT '急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
+
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5284,62 +5131,22 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+
+					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
+
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
-					///
-					if (isShowOwnExpense) {
-						selectColumn.append(" UNION ALL ");
-						selectColumn
-								.append(" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(
-									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
-						} else {
-
-							selectColumn.append(
-									" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
-						}
-						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-						if (funcTypeList.size() > 0)
-							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-						if (medNameList.size() > 0)
-							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-
-						if (icdAllList.size() > 0)
-							for (String s : icdAllList) {
-								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-							}
-
-						if (payCode != null && payCode.length() > 0)
-							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-						if (inhCode != null && inhCode.length() > 0)
-							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-						} else {
-							groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
-						}
-						selectColumn.append(where);
-						selectColumn.append(groupBy);
-						selectColumn.append(orderBy);
-						where = new StringBuffer("");
-						groupBy = new StringBuffer("");
-						orderBy = new StringBuffer("");
-					}
 					break;
 				case "ip":
 					if (selectColumn.length() > 0) {
 						selectColumn.append(" UNION ALL ");
 					}
-					selectColumn.append(" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 					selectColumn.append(
-							" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+							" (SELECT '住院' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20'  ");
+
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5357,99 +5164,51 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+
+					groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI  ORDER BY FUNC_TYPE) ");
+
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
-					///
-					if (isShowOwnExpense) {
-						selectColumn.append(" UNION ALL ");
-						selectColumn
-								.append(" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							selectColumn.append(
-									" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						} else {
-
-							selectColumn.append(
-									" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-						}
-						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-						if (funcTypeList.size() > 0)
-							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-						if (medNameList.size() > 0)
-							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-
-						if (icdAllList.size() > 0)
-							for (String s : icdAllList) {
-								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-							}
-
-						if (payCode != null && payCode.length() > 0)
-							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-						if (inhCode != null && inhCode.length() > 0)
-							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-							groupBy.append(" GROUP BY IP_P.ORDER_CODE , CODE_TABLE.DESC_CHI ) ");
-						} else {
-							groupBy.append(" GROUP BY IP_P.ORDER_CODE) ");
-						}
-						selectColumn.append(where);
-						selectColumn.append(groupBy);
-						selectColumn.append(orderBy);
-						where = new StringBuffer("");
-						groupBy = new StringBuffer("");
-						orderBy = new StringBuffer("");
-					}
-					break;
-				default:
 					break;
 				}
 			}
-
 			/// 傳統sql語法組成資料
 			sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 			sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
-			dataMap.clear();
-			dataMap = sqlQuery.getResultList();
-			if (i > 0) {
-				/// 存放去年資料
-				sqlMapList2_2.addAll(dataMap);
-			} else {
-				/// 存放指定期間資料
-				sqlMapList2.addAll(dataMap);
-			}
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> dataMap1 = sqlQuery.getResultList();
+			sqlMapList1.addAll(dataMap1);
 			selectColumn = new StringBuffer("");
 			entityManager.close();
 
 			selectColumn = new StringBuffer("");
 			where = new StringBuffer("");
 			groupBy = new StringBuffer("");
-			orderBy = new StringBuffer("");
-			/// 第三段sql，獨立取得醫護人員資料
-			if (medNames != null && medNames.length() > 0) {
-				String[] nameSplit = StringUtility.splitBySpace(medNames);
-				for (int v = 0; v < nameSplit.length; v++) {
-					for (String str : dataformatList) {
-						switch (str) {
-						case "all":
-							if (selectColumn.length() > 0) {
-								selectColumn.append(" UNION ALL ");
-							}
-							selectColumn.append(" SELECT '" + nameSplit[v]
-									+ "' AS PRSN_ID,  '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+			/// 第三段sql
+			if (isShowOwnExpense) {
+				for (String str : dataformatList) {
+					switch (str) {
+					case "all":
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+
+						if (isShowOwnExpense) {
 							selectColumn.append(
-									" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+									" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+
+							selectColumn.append(
+									" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+
 							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 							if (funcTypeList.size() > 0)
 								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 							if (medNameList.size() > 0)
-								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+								where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 							if (icdAllList.size() > 0)
 								for (String s : icdAllList) {
@@ -5461,31 +5220,436 @@ public class DbReportService {
 
 							if (inhCode != null && inhCode.length() > 0)
 								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+
+							groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) ");
+
 							selectColumn.append(where);
 							selectColumn.append(groupBy);
 
 							where = new StringBuffer("");
 							groupBy = new StringBuffer("");
-							///
+							selectColumn.append(" UNION ALL ");
+							selectColumn.append(
+									" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM  ");
+
+							selectColumn.append(
+									" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+							selectColumn.append(orderBy);
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							orderBy = new StringBuffer("");
+
+						}
+						break;
+					case "totalop":
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+
+						if (isShowOwnExpense) {
+							selectColumn.append(
+									" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+							selectColumn.append(
+									" (SELECT MR.FUNC_TYPE , OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0   ");
+
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+							selectColumn.append(orderBy);
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							orderBy = new StringBuffer("");
+						}
+						break;
+					case "op":
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+						if (isShowOwnExpense) {
+							selectColumn.append(
+									" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE,  IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+							selectColumn.append(
+									" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
+
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+							selectColumn.append(orderBy);
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							orderBy = new StringBuffer("");
+						}
+						break;
+					case "em":
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+
+						if (isShowOwnExpense) {
+							selectColumn.append(
+									" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+
+							selectColumn.append(
+									" (SELECT MR.FUNC_TYPE,  OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+							selectColumn.append(orderBy);
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							orderBy = new StringBuffer("");
+						}
+						break;
+					case "ip":
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+						if (isShowOwnExpense) {
+							selectColumn.append(
+									" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM   ");
+
+							selectColumn.append(
+									" (SELECT MR.FUNC_TYPE , IP_P.ORDER_CODE AS IHN_CODE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+
+							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+							if (funcTypeList.size() > 0)
+								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+							if (medNameList.size() > 0)
+								where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+							if (icdAllList.size() > 0)
+								for (String s : icdAllList) {
+									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+								}
+
+							if (payCode != null && payCode.length() > 0)
+								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+							if (inhCode != null && inhCode.length() > 0)
+								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+							groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) ");
+
+							selectColumn.append(where);
+							selectColumn.append(groupBy);
+							selectColumn.append(orderBy);
+							where = new StringBuffer("");
+							groupBy = new StringBuffer("");
+							orderBy = new StringBuffer("");
+						}
+						break;
+					default:
+						break;
+					}
+				}
+
+				/// 傳統sql語法組成資料
+				sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+				sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+				dataMap.clear();
+				@SuppressWarnings("unchecked")
+				List<Map<String, Object>> dataMap2 = sqlQuery.getResultList();
+				sqlMapList2.addAll(dataMap2);
+				selectColumn = new StringBuffer("");
+				entityManager.close();
+
+				selectColumn = new StringBuffer("");
+				entityManager.close();
+
+				selectColumn = new StringBuffer("");
+				where = new StringBuffer("");
+				groupBy = new StringBuffer("");
+				orderBy = new StringBuffer("");
+			}
+			
+			/// 第四段sql，獨立取得醫護人員資料
+			if (medNames != null && medNames.length() > 0) {
+				for (String str : dataformatList) {
+					switch (str) {
+					case "all":
+
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+						selectColumn.append(
+								" (SELECT MR.PRSN_ID , '不分區' AS DATA_FORMAT,  MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0  ");
+
+						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+						groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI, MR.PRSN_ID  ORDER BY FUNC_TYPE) ");
+
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						break;
+					case "totalop":
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+						selectColumn.append(
+								" (SELECT  MR.PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10'  ");
+
+						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+						groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI, MR.PRSN_ID ORDER BY FUNC_TYPE) ");
+
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						break;
+					case "op":
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+						selectColumn.append(
+								" (SELECT MR.PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+
+						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+						groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI, MR.PRSN_ID ORDER BY FUNC_TYPE) ");
+
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+
+						break;
+					case "em":
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+						selectColumn.append(
+								" (SELECT MR.PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
+
+						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+						groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI, MR.PRSN_ID ORDER BY FUNC_TYPE) ");
+
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						break;
+					case "ip":
+						if (selectColumn.length() > 0) {
+							selectColumn.append(" UNION ALL ");
+						}
+						selectColumn.append(
+								" (SELECT MR.PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20'  ");
+
+						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						if (funcTypeList.size() > 0)
+							where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+
+						if (medNameList.size() > 0)
+							where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+
+						if (icdAllList.size() > 0)
+							for (String s : icdAllList) {
+								where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+							}
+
+						if (payCode != null && payCode.length() > 0)
+							where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+
+						if (inhCode != null && inhCode.length() > 0)
+							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
+						groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI, MR.PRSN_ID ORDER BY FUNC_TYPE) ");
+
+						selectColumn.append(where);
+						selectColumn.append(groupBy);
+
+						where = new StringBuffer("");
+						groupBy = new StringBuffer("");
+						break;
+					}
+				}
+				/// 傳統sql語法組成資料
+				sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+				sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+				@SuppressWarnings("unchecked")
+				List<Map<String, Object>> dataMap3 = sqlQuery.getResultList();
+				sqlMapList3.addAll(dataMap3);
+				selectColumn = new StringBuffer("");
+				entityManager.close();
+
+				selectColumn = new StringBuffer("");
+				where = new StringBuffer("");
+				groupBy = new StringBuffer("");
+				
+				
+				if (isShowOwnExpense) {
+					for (String str : dataformatList) {
+						switch (str) {
+						case "all":
+							if (selectColumn.length() > 0) {
+								selectColumn.append(" UNION ALL ");
+							}
 
 							if (isShowOwnExpense) {
-								selectColumn.append(" UNION ALL ");
-								selectColumn.append(" SELECT '" + nameSplit[v]
-										+ "' AS PRSN_ID, '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									selectColumn.append(
-											" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-								} else {
-									selectColumn.append(
-											" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-								}
+								selectColumn.append(
+										" SELECT PRSN_ID, '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+
+								selectColumn.append(
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
 									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 								if (medNameList.size() > 0)
-									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+									where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 								if (icdAllList.size() > 0)
 									for (String s : icdAllList) {
@@ -5497,11 +5661,8 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									groupBy.append(" GROUP BY IP_P.ORDER_CODE , CODE_TABLE.DESC_CHI ) ");
-								} else {
-									groupBy.append(" GROUP BY IP_P.ORDER_CODE) ");
-								}
+
+								groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE, MR.PRSN_ID) ");
 
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
@@ -5509,22 +5670,18 @@ public class DbReportService {
 								where = new StringBuffer("");
 								groupBy = new StringBuffer("");
 								selectColumn.append(" UNION ALL ");
-								selectColumn.append(" SELECT '" + nameSplit[v]
-										+ "' AS PRSN_ID, '不分區' AS DATA_FORMAT, FUNC_TYPE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									selectColumn.append(
-											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-								} else {
-									selectColumn.append(
-											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-								}
+								selectColumn.append(
+										" SELECT PRSN_ID, '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM  ");
+
+								selectColumn.append(
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
 
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
 									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 								if (medNameList.size() > 0)
-									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+									where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 								if (icdAllList.size() > 0)
 									for (String s : icdAllList) {
@@ -5536,11 +5693,8 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-								} else {
-									groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
-								}
+
+								groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE, MR.PRSN_ID) ");
 
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
@@ -5555,52 +5709,19 @@ public class DbReportService {
 							if (selectColumn.length() > 0) {
 								selectColumn.append(" UNION ALL ");
 							}
-							selectColumn.append(" SELECT '" + nameSplit[v]
-									+ "' AS PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-							selectColumn.append(
-									" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
-							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-							if (funcTypeList.size() > 0)
-								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
-							if (medNameList.size() > 0)
-								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
-
-							if (icdAllList.size() > 0)
-								for (String s : icdAllList) {
-									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-								}
-
-							if (payCode != null && payCode.length() > 0)
-								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-							if (inhCode != null && inhCode.length() > 0)
-								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
-							selectColumn.append(where);
-							selectColumn.append(groupBy);
-
-							where = new StringBuffer("");
-							groupBy = new StringBuffer("");
-							///
 							if (isShowOwnExpense) {
-								selectColumn.append(" UNION ALL ");
-								selectColumn.append(" SELECT '" + nameSplit[v]
-										+ "' AS PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									selectColumn.append(
-											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-								} else {
-									selectColumn.append(
-											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
-								}
+								selectColumn.append(
+										" SELECT PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+								selectColumn.append(
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE , OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0   ");
 
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
 									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 								if (medNameList.size() > 0)
-									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+									where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 								if (icdAllList.size() > 0)
 									for (String s : icdAllList) {
@@ -5612,11 +5733,7 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-								} else {
-									groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
-								}
+								groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE, MR.PRSN_ID) ");
 
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
@@ -5630,52 +5747,18 @@ public class DbReportService {
 							if (selectColumn.length() > 0) {
 								selectColumn.append(" UNION ALL ");
 							}
-							selectColumn.append(" SELECT '" + nameSplit[v]
-									+ "' AS PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-							selectColumn.append(
-									" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
-							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-							if (funcTypeList.size() > 0)
-								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-							if (medNameList.size() > 0)
-								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
-
-							if (icdAllList.size() > 0)
-								for (String s : icdAllList) {
-									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-								}
-
-							if (payCode != null && payCode.length() > 0)
-								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-							if (inhCode != null && inhCode.length() > 0)
-								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
-							selectColumn.append(where);
-							selectColumn.append(groupBy);
-
-							where = new StringBuffer("");
-							groupBy = new StringBuffer("");
-							///
 							if (isShowOwnExpense) {
-								selectColumn.append(" UNION ALL ");
-								selectColumn.append(" SELECT '" + nameSplit[v]
-										+ "' AS PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									selectColumn.append(
-											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE <> '22' ");
-								} else {
-									selectColumn.append(
-											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
-								}
+								selectColumn.append(
+										" SELECT PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE,  IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+								selectColumn.append(
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
 
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
 									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 								if (medNameList.size() > 0)
-									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+									where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 								if (icdAllList.size() > 0)
 									for (String s : icdAllList) {
@@ -5687,11 +5770,8 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-								} else {
-									groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
-								}
+
+								groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE, MR.PRSN_ID) ");
 
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
@@ -5705,52 +5785,19 @@ public class DbReportService {
 							if (selectColumn.length() > 0) {
 								selectColumn.append(" UNION ALL ");
 							}
-							selectColumn.append(" SELECT '" + nameSplit[v]
-									+ "' AS PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-							selectColumn.append(
-									" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
-							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-							if (funcTypeList.size() > 0)
-								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
-							if (medNameList.size() > 0)
-								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
-
-							if (icdAllList.size() > 0)
-								for (String s : icdAllList) {
-									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-								}
-
-							if (payCode != null && payCode.length() > 0)
-								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-							if (inhCode != null && inhCode.length() > 0)
-								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
-							selectColumn.append(where);
-							selectColumn.append(groupBy);
-
-							where = new StringBuffer("");
-							groupBy = new StringBuffer("");
-							///
 							if (isShowOwnExpense) {
-								selectColumn.append(" UNION ALL ");
-								selectColumn.append(" SELECT '" + nameSplit[v]
-										+ "' AS PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									selectColumn.append(
-											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, CODE_TABLE.DESC_CHI AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P, CODE_TABLE WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
-								} else {
+								selectColumn.append(
+										" SELECT PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 
-									selectColumn.append(
-											" (SELECT OP_P.DRUG_NO  AS FUNC_TYPE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
-								}
+								selectColumn.append(
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE,  OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
 									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 								if (medNameList.size() > 0)
-									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+									where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 								if (icdAllList.size() > 0)
 									for (String s : icdAllList) {
@@ -5762,11 +5809,9 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									groupBy.append(" GROUP BY OP_P.DRUG_NO, CODE_TABLE.DESC_CHI ) ");
-								} else {
-									groupBy.append(" GROUP BY OP_P.DRUG_NO) ");
-								}
+
+								groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE, MR.PRSN_ID) ");
+
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
 								selectColumn.append(orderBy);
@@ -5779,52 +5824,19 @@ public class DbReportService {
 							if (selectColumn.length() > 0) {
 								selectColumn.append(" UNION ALL ");
 							}
-							selectColumn.append(" SELECT '" + nameSplit[v]
-									+ "' AS PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-							selectColumn.append(
-									" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
-							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-							if (funcTypeList.size() > 0)
-								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-
-							if (medNameList.size() > 0)
-								where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
-
-							if (icdAllList.size() > 0)
-								for (String s : icdAllList) {
-									where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-								}
-
-							if (payCode != null && payCode.length() > 0)
-								where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-
-							if (inhCode != null && inhCode.length() > 0)
-								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-							groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
-							selectColumn.append(where);
-							selectColumn.append(groupBy);
-
-							where = new StringBuffer("");
-							groupBy = new StringBuffer("");
-							///
 							if (isShowOwnExpense) {
-								selectColumn.append(" UNION ALL ");
-								selectColumn.append(" SELECT '" + nameSplit[v]
-										+ "' AS PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									selectColumn.append(
-											" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , CODE_TABLE.DESC_CHI AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P, CODE_TABLE WHERE  MR.ID = IP_P.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE  AND CODE_TABLE.CAT = 'FUNC_TYPE' AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-								} else {
+								selectColumn.append(
+										" SELECT PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM   ");
 
-									selectColumn.append(
-											" (SELECT  IP_P.ORDER_CODE AS FUNC_TYPE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-								}
+								selectColumn.append(
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE , IP_P.ORDER_CODE AS IHN_CODE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
 									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
 								if (medNameList.size() > 0)
-									where.append(" AND MR.PRSN_ID = '" + nameSplit[v] + "' ");
+									where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
 								if (icdAllList.size() > 0)
 									for (String s : icdAllList) {
@@ -5836,11 +5848,9 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								if (funcTypeList.size() > 0 && medNameList.size() > 0) {
-									groupBy.append(" GROUP BY IP_P.ORDER_CODE , CODE_TABLE.DESC_CHI ) ");
-								} else {
-									groupBy.append(" GROUP BY IP_P.ORDER_CODE) ");
-								}
+
+								groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE, MR.PRSN_ID) ");
+
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
 								selectColumn.append(orderBy);
@@ -5853,37 +5863,56 @@ public class DbReportService {
 							break;
 						}
 					}
+
+					/// 傳統sql語法組成資料
+					sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+					sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+					dataMap.clear();
+					@SuppressWarnings("unchecked")
+					List<Map<String, Object>> dataMap3_2 = sqlQuery.getResultList();
+					sqlMapList3_2.addAll(dataMap3_2);
+					selectColumn = new StringBuffer("");
+					entityManager.close();
+
+					selectColumn = new StringBuffer("");
+					where = new StringBuffer("");
+					groupBy = new StringBuffer("");
+					orderBy = new StringBuffer("");
 				}
-				/// 傳統sql語法組成資料
-				sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
-				sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
-				dataMap.clear();
-				dataMap = sqlQuery.getResultList();
-				if (i > 0) {
-					/// 存放去年資料
-					sqlMapList2_2.addAll(dataMap);
-				} else {
-					/// 存放指定期間資料
-					sqlMapList2.addAll(dataMap);
-				}
-				selectColumn = new StringBuffer("");
-				entityManager.close();
 			}
-
+			
+			Map<String,Object> ret = new LinkedHashMap<String, Object>();
+			if(i==0) {
+				sqlMapList.get(0).put("displayName", "");
+				sqlMapList.get(0).put("date", sd +"~"+ ed);
+			}
+			else {
+				sqlMapList.get(0).put("displayName", "去年同期時段相比");
+				sqlMapList.get(0).put("date",  sd +"~"+ ed);
+			}
+			ret.put("sqlMapList", sqlMapList);
+			ret.put("sqlMapList1", sqlMapList1);
+			ret.put("sqlMapList2", sqlMapList2);
+			ret.put("sqlMapList2_2", sqlMapList2_2);
+			ret.put("sqlMapList3", sqlMapList3);
+			ret.put("sqlMapList3_2", sqlMapList3_2);
+			retList.add(ret);
+			ret = new HashMap<String, Object>();
+			sqlMapList = new ArrayList<Map<String, Object>>();
+			sqlMapList1 = new ArrayList<Map<String, Object>>();
+			sqlMapList2 = new ArrayList<Map<String, Object>>();
+			sqlMapList2_2 = new ArrayList<Map<String, Object>>();
+			sqlMapList3 = new ArrayList<Map<String, Object>>();
+			sqlMapList3_2 = new ArrayList<Map<String, Object>>();
 		}
-		if (sqlMapList.size() > 1) {
-			sqlMapList.get(0).put("displayName", "");
-			sqlMapList.get(1).put("displayName", "去年同期時段相比");
-		}
+		
 
-		List<OwnExpenseQueryCondition> modelList = mapToObj(sqlMapList, sqlMapList2, sqlMapList2_2, isShowOwnExpense,
+		OwnExpenseQueryConditionResponse response = mapToObj(retList, isShowOwnExpense,
 				funcTypes, medNames);
 
-		result.put("result", "success");
-		result.put("message", null);
-		result.put("dataList", modelList);
+		
 
-		return result;
+		return response;
 	}
 
 	/**
@@ -5934,13 +5963,12 @@ public class DbReportService {
 		String medLogCodeSql = "";
 		/// 不分區ICD碼
 		List<String> icdAllList = new ArrayList<String>();
-		String icdAllSql = "";
 
 		/// 如果payCodeTypes有值
 		if (payCodeTypes != null && payCodeTypes.length() > 0) {
 			String[] pcTypeArr = StringUtility.splitBySpace(payCodeTypes);
 			for (String str : pcTypeArr) {
-				CODE_TABLE ct =	code_TABLEDao.findByDescChiAndCat(str, "PAY_CODE_TYPE");
+				CODE_TABLE ct = code_TABLEDao.findByDescChiAndCat(str, "PAY_CODE_TYPE");
 				payCodeTypeList.add(ct.getCode());
 			}
 		}
@@ -7807,9 +7835,9 @@ public class DbReportService {
 	 * @param isLastY
 	 * @return
 	 */
-	public DeductedNoteQueryConditionResponse getDeductedNoteQueryCondition(String year, String month, String dataFormats,
-			String funcTypes, String medNames, String icdAll, String payCode, String inhCode, boolean isLastM,
-			boolean isLastY) {
+	public DeductedNoteQueryConditionResponse getDeductedNoteQueryCondition(String year, String month,
+			String dataFormats, String funcTypes, String medNames, String icdAll, String payCode, String inhCode,
+			boolean isLastM, boolean isLastY) {
 
 		Map<String, Object> result = new HashMap<String, Object>();
 		Map<String, Object> ret = new HashMap<String, Object>();
@@ -8018,7 +8046,7 @@ public class DbReportService {
 
 			/// 第二段sql
 			selectColumn.append(" SELECT * FROM ");
-			
+
 			selectColumnOp.append(
 					" (SELECT DATA_FORMAT AS DATA_FORMAT, FUNC_TYPE AS FUNYPE, DESC_CHI AS DESC_CHI, PRSN_ID AS PRSN_ID, INH_CLINIC_ID AS INH_CLINIC_ID, DEDUCTED_NOTE.CODE AS CODE, DEDUCTED_ORDER AS DEDUCTED_ORDER, COALESCE(DEDUCTED_QUANTITY,0) AS DEDUCTED_QUANTITY, COALESCE(DEDUCTED_AMOUNT,0) AS DEDUCTED_AMOUNT, COALESCE(ROLLBACK_M,0) AS ROLLBACK_M, AFR_NO_PAY_CODE AS AFR_NO_PAY_CODE, COALESCE(AFR_PAY_QUANTITY,0) AS AFR_PAY_QUANTITY, COALESCE(AFR_PAY_AMOUNT,0) AS AFR_PAY_AMOUNT  FROM DEDUCTED_NOTE, MR, CODE_TABLE WHERE MR.ID = DEDUCTED_NOTE.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT = 'FUNC_TYPE' AND MR.DATA_FORMAT = '10' AND DEDUCTED_DATE LIKE CONCAT('"
 							+ yearMonthBetweenStr.get(i) + "','%') ");
@@ -8030,20 +8058,21 @@ public class DbReportService {
 			selectColumnIp.append(where);
 			selectColumnIp.append(" )ip, ");
 
-			if((dataformatList.contains("all")) || (dataformatList.contains("totalop") && dataformatList.contains("ip"))) {
+			if ((dataformatList.contains("all"))
+					|| (dataformatList.contains("totalop") && dataformatList.contains("ip"))) {
 				selectColumn.append(
 						" (SELECT DATA_FORMAT AS DATA_FORMAT, FUNC_TYPE AS FUNC_TYPE, DESC_CHI AS DESC_CHI, PRSN_ID AS PRSN_ID, INH_CLINIC_ID AS INH_CLINIC_ID, DEDUCTED_NOTE.CODE AS CODE, DEDUCTED_ORDER AS DEDUCTED_ORDER, COALESCE(DEDUCTED_QUANTITY,0) AS DEDUCTED_QUANTITY, COALESCE(DEDUCTED_AMOUNT,0) AS DEDUCTED_AMOUNT, COALESCE(ROLLBACK_M,0) AS ROLLBACK_M, AFR_NO_PAY_CODE AS AFR_NO_PAY_CODE, COALESCE(AFR_PAY_QUANTITY,0) AS AFR_PAY_QUANTITY, COALESCE(AFR_PAY_AMOUNT,0) AS AFR_PAY_AMOUNT  FROM DEDUCTED_NOTE, MR, CODE_TABLE WHERE MR.ID = DEDUCTED_NOTE.MR_ID AND MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT = 'FUNC_TYPE' AND DEDUCTED_DATE LIKE CONCAT('"
 								+ yearMonthBetweenStr.get(i) + "','%') ");
 				selectColumn.append(where);
 				selectColumn.append(" )a, ");
-			}
-			else if((!dataformatList.contains("all")) && (!dataformatList.contains("ip") && !dataformatList.contains("em") && !dataformatList.contains("op"))) {
+			} else if ((!dataformatList.contains("all")) && (!dataformatList.contains("ip")
+					&& !dataformatList.contains("em") && !dataformatList.contains("op"))) {
 				selectColumn.append(selectColumnOp);
-			}
-			else if((!dataformatList.contains("all")) && (!dataformatList.contains("totalop") && !dataformatList.contains("em") && !dataformatList.contains("op"))) {
+			} else if ((!dataformatList.contains("all")) && (!dataformatList.contains("totalop")
+					&& !dataformatList.contains("em") && !dataformatList.contains("op"))) {
 				selectColumn.append(selectColumnIp);
 			}
-			
+
 			//// 最後添加輸入日期
 			selectColumn.append(" (SELECT DISTINCT '" + yearMonthBetweenStr.get(i) + "' AS DATE FROM MR) x ");
 			/// 傳統sql語法組成資料
@@ -8084,9 +8113,9 @@ public class DbReportService {
 			ret.put("DATE", yearMonthBetweenStr.get(i));
 			resList.add(ret);
 			ret = new HashMap<String, Object>();
-			sqlMapList = new ArrayList<Map<String,Object>>();
-			sqlMapList2 = new ArrayList<Map<String,Object>>();
-			sqlMapList3 = new ArrayList<Map<String,Object>>();
+			sqlMapList = new ArrayList<Map<String, Object>>();
+			sqlMapList2 = new ArrayList<Map<String, Object>>();
+			sqlMapList3 = new ArrayList<Map<String, Object>>();
 		}
 
 		if (mapList.size() > 0) {
@@ -8112,8 +8141,6 @@ public class DbReportService {
 			}
 		}
 		DeductedNoteQueryConditionResponse response = deductedMaptoObj(resList);
-
-		
 
 		return response;
 	}
@@ -8199,9 +8226,9 @@ public class DbReportService {
 	 * @param sqlList2_2[去年detail資料]
 	 * @return
 	 */
-	private List<OwnExpenseQueryCondition> mapToObj(List<Map<String, Object>> sqlList,
-			List<Map<String, Object>> sqlList2, List<Map<String, Object>> sqlList2_2, boolean isShowOwnExpense,
+	private OwnExpenseQueryConditionResponse mapToObj(List<Map<String, Object>> retList, boolean isShowOwnExpense,
 			String funcTypes, String medNames) {
+		OwnExpenseQueryConditionResponse response = new OwnExpenseQueryConditionResponse();
 		OwnExpenseQueryCondition model = new OwnExpenseQueryCondition();
 		OwnExpenseQueryConditionDetail detail = new OwnExpenseQueryConditionDetail();
 		List<OwnExpenseQueryCondition> modelList = new ArrayList<OwnExpenseQueryCondition>();
@@ -8210,174 +8237,138 @@ public class DbReportService {
 		List<OwnExpenseQueryConditionDetail> opList = new ArrayList<OwnExpenseQueryConditionDetail>();
 		List<OwnExpenseQueryConditionDetail> emList = new ArrayList<OwnExpenseQueryConditionDetail>();
 		List<OwnExpenseQueryConditionDetail> ipList = new ArrayList<OwnExpenseQueryConditionDetail>();
+		List<OwnExpenseQueryConditionDetail> allPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+		List<OwnExpenseQueryConditionDetail> opAllPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+		List<OwnExpenseQueryConditionDetail> opPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+		List<OwnExpenseQueryConditionDetail> emPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+		List<OwnExpenseQueryConditionDetail> ipPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+		OwnExpenseQueryConditionIhnCodeInfo codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+		List<OwnExpenseQueryConditionIhnCodeInfo> codeList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+		for (Map<String, Object> ret : retList) {
+			List<Map<String,Object>> sqlList = (List<Map<String, Object>>) ret.get("sqlMapList");
+			List<Map<String,Object>> sqlList1 = (List<Map<String, Object>>) ret.get("sqlMapList1");
+			List<Map<String,Object>> sqlList2 = (List<Map<String, Object>>) ret.get("sqlMapList2");
+			List<Map<String,Object>> sqlList2_2 = (List<Map<String, Object>>) ret.get("sqlMapList2_2");
+			List<Map<String,Object>> sqlList3 = (List<Map<String, Object>>) ret.get("sqlMapList3");
+			List<Map<String,Object>> sqlList3_2 = (List<Map<String, Object>>) ret.get("sqlMapList3_2");
+			for (Map<String, Object> map : sqlList) {
+				Object aq = map.get("ALL_QUANTITY");
+				Object ae = map.get("ALL_EXPENSE");
+				Object opaq = map.get("OPALL_QUANTITY");
+				Object opae = map.get("OPALL_EXPENSE");
+				Object oq = map.get("OP_QUANTITY");
+				Object oe = map.get("OP_EXPENSE");
+				Object eq = map.get("EM_QUANTITY");
+				Object ee = map.get("EM_EXPENSE");
+				Object iq = map.get("IP_QUANTITY");
+				Object ie = map.get("IP_EXPENSE");
+				Object disName = map.get("displayName");
+				Object date = map.get("date");
 
-		for (Map<String, Object> map : sqlList) {
-			Object aq = map.get("ALL_QUANTITY");
-			Object ae = map.get("ALL_EXPENSE");
-			Object opaq = map.get("OPALL_QUANTITY");
-			Object opae = map.get("OPALL_EXPENSE");
-			Object oq = map.get("OP_QUANTITY");
-			Object oe = map.get("OP_EXPENSE");
-			Object eq = map.get("EM_QUANTITY");
-			Object ee = map.get("EM_EXPENSE");
-			Object iq = map.get("IP_QUANTITY");
-			Object ie = map.get("IP_EXPENSE");
-			Object disName = map.get("displayName");
-
-			if (aq != null) {
-				model.setAllQuantity(Long.parseLong(aq.toString()));
-				model.setAllExpense(Long.parseLong(ae.toString()));
-			}
-			if (opaq != null) {
-				model.setOpAllQuantity(Long.parseLong(opaq.toString()));
-				model.setOpAllExpense(Long.parseLong(opae.toString()));
-			}
-			if (oq != null) {
-				model.setOpQuantity(Long.parseLong(oq.toString()));
-				model.setOpExpense(Long.parseLong(oe.toString()));
-			}
-			if (eq != null) {
-				model.setEmQuantity(Long.parseLong(eq.toString()));
-				model.setEmExpense(Long.parseLong(ee.toString()));
-			}
-			if (iq != null) {
-				model.setIpQuantity(Long.parseLong(iq.toString()));
-				model.setIpExpense(Long.parseLong(ie.toString()));
-			}
-			if (disName != null) {
-
-				model.setDisplayName(disName.toString());
-
-				if (disName.toString().length() == 0) {
-
-					for (Map<String, Object> m2 : sqlList2) {
-						Object df = m2.get("DATA_FORMAT");
-						Object ft = m2.get("FUNC_TYPE");
-						Object dc = m2.get("DESC_CHI");
-						Object q = m2.get("QUANTITY");
-						Object e = m2.get("EXPENSE");
-						Object pi = m2.get("PRSN_ID");
-						detail.setDataFormat(df.toString());
-						if (dc != null) {
-							detail.setDescChi(dc.toString());
-						}
-						if (ft != null) {
-							detail.setFuncType(ft.toString());
-						}
-						if (q != null) {
-							detail.setQuantity(Long.parseLong(q.toString()));
-						}
-						if (e != null) {
-							detail.setExpense(Long.parseLong(e.toString()));
-						}
-						if (pi != null) {
-							detail.setPrsnId(pi.toString());
-						}
-						switch (df.toString()) {
-						case "不分區":
-							allList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						case "門急診":
-
-							opAllList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						case "門診":
-
-							opList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						case "急診":
-
-							emList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						case "住院":
-
-							ipList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						}
-					}
-				} else {
-					for (Map<String, Object> m2 : sqlList2_2) {
-						Object df = m2.get("DATA_FORMAT");
-						Object ft = m2.get("FUNC_TYPE");
-						Object dc = m2.get("DESC_CHI");
-						Object q = m2.get("QUANTITY");
-						Object e = m2.get("EXPENSE");
-						Object pi = m2.get("PRSN_ID");
-						detail.setDataFormat(df.toString());
-						if (dc != null) {
-							detail.setDescChi(dc.toString());
-						}
-						if (ft != null) {
-							detail.setFuncType(ft.toString());
-						}
-						if (q != null) {
-							detail.setQuantity(Long.parseLong(q.toString()));
-						}
-						if (e != null) {
-							detail.setExpense(Long.parseLong(e.toString()));
-						}
-						if (pi != null) {
-							detail.setPrsnId(pi.toString());
-						}
-						switch (df.toString()) {
-						case "不分區":
-							allList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						case "門急診":
-
-							opAllList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						case "門診":
-
-							opList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						case "急診":
-
-							emList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						case "住院":
-
-							ipList.add(detail);
-							detail = new OwnExpenseQueryConditionDetail();
-							break;
-						}
-					}
-
+				if (aq != null) {
+					model.setAllQuantity(Long.parseLong(aq.toString()));
+					model.setAllExpense(Long.parseLong(ae.toString()));
 				}
-			} else {
-				for (Map<String, Object> m2 : sqlList2) {
-					Object df = m2.get("DATA_FORMAT");
-					Object ft = m2.get("FUNC_TYPE");
-					Object dc = m2.get("DESC_CHI");
-					Object q = m2.get("QUANTITY");
-					Object e = m2.get("EXPENSE");
-					Object pi = m2.get("PRSN_ID");
-					detail.setDataFormat(df.toString());
-					if (dc != null) {
-						detail.setDescChi(dc.toString());
+				if (opaq != null) {
+					model.setOpAllQuantity(Long.parseLong(opaq.toString()));
+					model.setOpAllExpense(Long.parseLong(opae.toString()));
+				}
+				if (oq != null) {
+					model.setOpQuantity(Long.parseLong(oq.toString()));
+					model.setOpExpense(Long.parseLong(oe.toString()));
+				}
+				if (eq != null) {
+					model.setEmQuantity(Long.parseLong(eq.toString()));
+					model.setEmExpense(Long.parseLong(ee.toString()));
+				}
+				if (iq != null) {
+					model.setIpQuantity(Long.parseLong(iq.toString()));
+					model.setIpExpense(Long.parseLong(ie.toString()));
+				}
+				if (disName != null) {
+					model.setDisplayName(disName.toString());
+				} else {
+					model.setDisplayName("");
+				}
+				if(date != null) {
+					model.setDate(date.toString());
+				}
+				else {
+					model.setDate("");
+				}
+				for (Map<String, Object> m1 : sqlList1) {
+					Object df1 = m1.get("DATA_FORMAT");
+					Object ft1 = m1.get("FUNC_TYPE");
+					Object dc1 = m1.get("DESC_CHI");
+					Object q1 = m1.get("QUANTITY");
+					Object e1 = m1.get("EXPENSE");
+					Object pi1 = m1.get("PRSN_ID");
+					detail.setDataFormat(df1.toString());
+					if (dc1 != null) {
+						detail.setDescChi(dc1.toString());
 					}
-					if (ft != null) {
-						detail.setFuncType(ft.toString());
+					else {
+						detail.setDescChi("");
 					}
-					if (q != null) {
-						detail.setQuantity(Long.parseLong(q.toString()));
+					if (ft1 != null) {
+						detail.setFuncType(ft1.toString());
 					}
-					if (e != null) {
-						detail.setExpense(Long.parseLong(e.toString()));
+					if (q1 != null) {
+						detail.setQuantity(Long.parseLong(q1.toString()));
 					}
-					if (pi != null) {
-						detail.setPrsnId(pi.toString());
+					else {
+						detail.setQuantity(0L);
 					}
-					switch (df.toString()) {
+					if (e1 != null) {
+						detail.setExpense(Long.parseLong(e1.toString()));
+					}
+					else {
+						detail.setExpense(0L);
+					}
+					if (pi1 != null) {
+						detail.setPrsnId(pi1.toString());
+					}
+					else {
+						detail.setPrsnId("");
+					}
+					
+					for (Map<String, Object> m2 : sqlList2) {
+						Object df2 = m2.get("DATA_FORMAT");
+						Object ft2 = m2.get("FUNC_TYPE");
+						Object dc2 = m2.get("DESC_CHI");
+						Object q2 = m2.get("QUANTITY");
+						Object e2 = m2.get("EXPENSE");
+						Object code2 = m2.get("IHN_CODE");
+						if(df1.equals(df2)) {
+							if(ft1.equals(ft2)) {
+								codeInfo.setDataFormat(df2.toString());
+								if (ft2 != null) {
+									codeInfo.setFuncType(ft2.toString());
+								}
+								if (q2 != null) {
+									codeInfo.setQuantity(Long.parseLong(q2.toString()));
+								}
+								else {
+									codeInfo.setQuantity(0L);
+								}
+								if (e2 != null) {
+									codeInfo.setExpense(Long.parseLong(e2.toString()));
+								}
+								else {
+									codeInfo.setExpense(0L);
+								}
+								if(code2 != null) {
+									codeInfo.setIhnCode(code2.toString());
+								}
+								
+								codeList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+						}
+					}
+					detail.setIhnCodeInfo(codeList);
+					codeList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+					switch (df1.toString()) {
 					case "不分區":
 						allList.add(detail);
 						detail = new OwnExpenseQueryConditionDetail();
@@ -8403,29 +8394,145 @@ public class DbReportService {
 						detail = new OwnExpenseQueryConditionDetail();
 						break;
 					}
+					
 				}
-			}
+				if(sqlList3.size() > 0) {
+					for (Map<String, Object> m3 : sqlList3) {
+						Object df3 = m3.get("DATA_FORMAT");
+						Object ft3 = m3.get("FUNC_TYPE");
+						Object dc3 = m3.get("DESC_CHI");
+						Object q3 = m3.get("QUANTITY");
+						Object e3 = m3.get("EXPENSE");
+						Object pi3 = m3.get("PRSN_ID");
+						detail.setDataFormat(df3.toString());
+						if (dc3 != null) {
+							detail.setDescChi(dc3.toString());
+						}
+						else {
+							detail.setDescChi("");
+						}
+						if (ft3 != null) {
+							detail.setFuncType(ft3.toString());
+						}
+						if (q3 != null) {
+							detail.setQuantity(Long.parseLong(q3.toString()));
+						}
+						else {
+							detail.setQuantity(0L);
+						}
+						if (e3 != null) {
+							detail.setExpense(Long.parseLong(e3.toString()));
+						}
+						else {
+							detail.setExpense(0L);
+						}
+						if (pi3 != null) {
+							detail.setPrsnId(pi3.toString());
+						}
+						else {
+							detail.setPrsnId("");
+						}
+						
+						for (Map<String, Object> m3_2 : sqlList3_2) {
+							Object df3_2 = m3_2.get("DATA_FORMAT");
+							Object ft3_2 = m3_2.get("FUNC_TYPE");
+							Object dc3_2 = m3_2.get("DESC_CHI");
+							Object q3_2 = m3_2.get("QUANTITY");
+							Object e3_2 = m3_2.get("EXPENSE");
+							Object code3_2 = m3_2.get("IHN_CODE");
+							if(df3.equals(df3_2)) {
+								if(ft3.equals(ft3_2)) {
+									codeInfo.setDataFormat(df3_2.toString());
+									if (ft3_2 != null) {
+										codeInfo.setFuncType(ft3_2.toString());
+									}
+									if (q3_2 != null) {
+										codeInfo.setQuantity(Long.parseLong(q3_2.toString()));
+									}
+									else {
+										codeInfo.setQuantity(0L);
+									}
+									if (e3_2 != null) {
+										codeInfo.setExpense(Long.parseLong(e3_2.toString()));
+									}
+									else {
+										codeInfo.setExpense(0L);
+									}
+									if(code3_2 != null) {
+										codeInfo.setIhnCode(code3_2.toString());
+									}
+									
+									codeList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+							}
+						}
+						detail.setIhnCodeInfo(codeList);
+						codeList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+						switch (df3.toString()) {
+						case "不分區":
+							allPrsnList.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+							break;
+						case "門急診":
 
-			model.setAllList(allList);
-			model.setOpAllList(opAllList);
-			model.setOpList(opList);
-			model.setEmList(emList);
-			model.setIpList(ipList);
-			modelList.add(model);
-			model = new OwnExpenseQueryCondition();
-			allList = new ArrayList<OwnExpenseQueryConditionDetail>();
-			opAllList = new ArrayList<OwnExpenseQueryConditionDetail>();
-			opList = new ArrayList<OwnExpenseQueryConditionDetail>();
-			emList = new ArrayList<OwnExpenseQueryConditionDetail>();
-			ipList = new ArrayList<OwnExpenseQueryConditionDetail>();
+							opAllPrsnList.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+							break;
+						case "門診":
+
+							opPrsnList.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+							break;
+						case "急診":
+
+							emPrsnList.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+							break;
+						case "住院":
+
+							ipPrsnList.add(detail);
+							detail = new OwnExpenseQueryConditionDetail();
+							break;
+						}
+						
+					}
+				}
+
+
+
+				model.setAllList(allList);
+				model.setOpAllList(opAllList);
+				model.setOpList(opList);
+				model.setEmList(emList);
+				model.setIpList(ipList);
+				model.setAllPrsnList(allPrsnList);
+				model.setOpAllPrsnList(opAllPrsnList);
+				model.setOpPrsnList(opPrsnList);
+				model.setEmPrsnList(emPrsnList);
+				model.setIpPrsnList(ipPrsnList);
+				modelList.add(model);
+				model = new OwnExpenseQueryCondition();
+				allList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				opAllList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				opList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				emList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				ipList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				allPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				opAllPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				opPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				emPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+				ipPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
+			}
 		}
+		
 
 		/// 將指定區間與去年資料筆數同步
 		if (modelList.size() > 1) {
 			List<OwnExpenseQueryConditionDetail> all = modelList.get(0).getAllList();
 			List<OwnExpenseQueryConditionDetail> allLast = modelList.get(1).getAllList();
 			List<OwnExpenseQueryConditionDetail> opAll = modelList.get(0).getOpAllList();
-			List<OwnExpenseQueryConditionDetail> opAllLast = modelList.get(1).getOpAllList();
+			List<OwnExpenseQueryConditionDetail> opAllLast = modelList.get(1).getOpAllPrsnList();
 			List<OwnExpenseQueryConditionDetail> op = modelList.get(0).getOpList();
 			List<OwnExpenseQueryConditionDetail> opLast = modelList.get(1).getOpList();
 			List<OwnExpenseQueryConditionDetail> em = modelList.get(0).getEmList();
@@ -8434,13 +8541,17 @@ public class DbReportService {
 			List<OwnExpenseQueryConditionDetail> ipLast = modelList.get(1).getIpList();
 			detail = new OwnExpenseQueryConditionDetail();
 			boolean isSame = false;
+			boolean isSame2 = false;
+			int cc = 0;
 			try {
-				/// 不分科
+				/// 不分區
 				if (all.size() > 0) {
 					/// 將區間和去年比數作同步，方便取資料
 					for (OwnExpenseQueryConditionDetail allModel : all) {
 						String ft = allModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allLastModel : allLast) {
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 							String ftl = allLastModel.getFuncType();
 							if (ft.equals(ftl)) {
 								isSame = true;
@@ -8448,37 +8559,62 @@ public class DbReportService {
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allModel.getDataFormat());
 							detail.setDescChi(allModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							allLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
 						isSame = false;
 					}
-
 					isSame = false;
 					for (OwnExpenseQueryConditionDetail allLastModel : allLast) {
 						String ftl = allLastModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allModel : all) {
 							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 							if (ft.equals(ftl)) {
 								isSame = true;
 								break;
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allLastModel.getDataFormat());
 							detail.setDescChi(allLastModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allLastModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							all.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
@@ -8486,14 +8622,252 @@ public class DbReportService {
 					}
 					Collections.sort(allLast, mapComparatorFT);
 					Collections.sort(all, mapComparatorFT);
-
+					isSame = false;
+					///自費分項列出，今年與去年資料同步欄位
+					if(isShowOwnExpense) {
+						for (OwnExpenseQueryConditionDetail allModel : all) {
+							String ft = allModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allLastModel : allLast) {
+								String ftl = allLastModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										String acft = ac.getFuncType();
+										String acCode = ac.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(ac.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(ac.getFuncType());
+											codeInfo.setIhnCode(ac.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCodeLast.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+								}
+							}
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : allLast) {
+							String ftl = allLastModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allModel : all) {
+								String ft = allModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										String acftl = acl.getFuncType();
+										String acCodel = acl.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(acl.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(acl.getFuncType());
+											codeInfo.setIhnCode(acl.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCode.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+									Collections.sort(allCode,mapComparatorIhnCode);
+									Collections.sort(allCodeLast,mapComparatorIhnCode);
+								}
+							}
+						}
+					}
+					
+					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getAllPrsnList();
+					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getAllPrsnList();
+					///醫療人員資訊，與上面相同邏輯
+					if(allPrsn != null && allPrsn.size() > 0) {
+						
+						/// 將區間和去年比數作同步，方便取資料
+						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+								String ftl = allLastModel.getFuncType();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allModel.getDataFormat());
+								detail.setDescChi(allModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								allLast.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+							String ftl = allLastModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allLastModel.getDataFormat());
+								detail.setDescChi(allLastModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allLastModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allLastModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								all.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						Collections.sort(allPrsnLast, mapComparatorFT);
+						Collections.sort(allPrsn, mapComparatorFT);
+						isSame = false;
+						///自費分項列出，今年與去年資料同步欄位
+						if(isShowOwnExpense) {
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+									String ftl = allLastModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+												String acftl = acl.getFuncType();
+												String acCodel = acl.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(ac.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(ac.getFuncType());
+												codeInfo.setIhnCode(ac.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCodeLast.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+									}
+								}
+							}
+							isSame = false;
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								String ftl = allLastModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+									String ft = allModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+												String acft = ac.getFuncType();
+												String acCode = ac.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(acl.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(acl.getFuncType());
+												codeInfo.setIhnCode(acl.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCode.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+										Collections.sort(allCode,mapComparatorIhnCode);
+										Collections.sort(allCodeLast,mapComparatorIhnCode);
+									}
+								}
+							}
+						}
+					}
 				}
 				/// 門急診
 				if (opAll.size() > 0) {
 					/// 將區間和去年比數作同步，方便取資料
 					for (OwnExpenseQueryConditionDetail allModel : opAll) {
 						String ft = allModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allLastModel : opAllLast) {
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 							String ftl = allLastModel.getFuncType();
 							if (ft.equals(ftl)) {
 								isSame = true;
@@ -8501,52 +8875,315 @@ public class DbReportService {
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allModel.getDataFormat());
 							detail.setDescChi(allModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							opAllLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
 						isSame = false;
 					}
-
 					isSame = false;
 					for (OwnExpenseQueryConditionDetail allLastModel : opAllLast) {
 						String ftl = allLastModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allModel : opAll) {
 							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 							if (ft.equals(ftl)) {
 								isSame = true;
 								break;
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allLastModel.getDataFormat());
 							detail.setDescChi(allLastModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allLastModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							opAll.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
 						isSame = false;
 					}
-					Collections.sort(opAll, mapComparatorFT);
 					Collections.sort(opAllLast, mapComparatorFT);
-
+					Collections.sort(opAll, mapComparatorFT);
+					isSame = false;
+					///自費分項列出，今年與去年資料同步欄位
+					if(isShowOwnExpense) {
+						for (OwnExpenseQueryConditionDetail allModel : opAll) {
+							String ft = allModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allLastModel : opAllLast) {
+								String ftl = allLastModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										String acft = ac.getFuncType();
+										String acCode = ac.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(ac.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(ac.getFuncType());
+											codeInfo.setIhnCode(ac.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCodeLast.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+								}
+							}
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : opAllLast) {
+							String ftl = allLastModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allModel : opAll) {
+								String ft = allModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										String acftl = acl.getFuncType();
+										String acCodel = acl.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(acl.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(acl.getFuncType());
+											codeInfo.setIhnCode(acl.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCode.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+									Collections.sort(allCode,mapComparatorIhnCode);
+									Collections.sort(allCodeLast,mapComparatorIhnCode);
+								}
+							}
+						}
+					}
+					
+					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getOpAllPrsnList();
+					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getOpAllPrsnList();
+					///醫療人員資訊，與上面相同邏輯
+					if(allPrsn != null && allPrsn.size() > 0) {
+						
+						/// 將區間和去年比數作同步，方便取資料
+						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+								String ftl = allLastModel.getFuncType();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allModel.getDataFormat());
+								detail.setDescChi(allModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								allPrsnLast.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+							String ftl = allLastModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allLastModel.getDataFormat());
+								detail.setDescChi(allLastModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allLastModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allLastModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								allPrsn.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						Collections.sort(allPrsnLast, mapComparatorFT);
+						Collections.sort(allPrsn, mapComparatorFT);
+						isSame = false;
+						///自費分項列出，今年與去年資料同步欄位
+						if(isShowOwnExpense) {
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+									String ftl = allLastModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+												String acftl = acl.getFuncType();
+												String acCodel = acl.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(ac.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(ac.getFuncType());
+												codeInfo.setIhnCode(ac.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCodeLast.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+									}
+								}
+							}
+							isSame = false;
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								String ftl = allLastModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+									String ft = allModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+												String acft = ac.getFuncType();
+												String acCode = ac.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(acl.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(acl.getFuncType());
+												codeInfo.setIhnCode(acl.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCode.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+										Collections.sort(allCode,mapComparatorIhnCode);
+										Collections.sort(allCodeLast,mapComparatorIhnCode);
+									}
+								}
+							}
+						}
+					}
 				}
 				/// 門診
 				if (op.size() > 0) {
 					/// 將區間和去年比數作同步，方便取資料
 					for (OwnExpenseQueryConditionDetail allModel : op) {
 						String ft = allModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allLastModel : opLast) {
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 							String ftl = allLastModel.getFuncType();
 							if (ft.equals(ftl)) {
 								isSame = true;
@@ -8554,44 +9191,306 @@ public class DbReportService {
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allModel.getDataFormat());
 							detail.setDescChi(allModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							opLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
 						isSame = false;
 					}
-
 					isSame = false;
 					for (OwnExpenseQueryConditionDetail allLastModel : opLast) {
 						String ftl = allLastModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allModel : op) {
 							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 							if (ft.equals(ftl)) {
 								isSame = true;
 								break;
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allLastModel.getDataFormat());
 							detail.setDescChi(allLastModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allLastModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							op.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
 						isSame = false;
 					}
-					Collections.sort(op, mapComparatorFT);
 					Collections.sort(opLast, mapComparatorFT);
+					Collections.sort(op, mapComparatorFT);
+					isSame = false;
+					///自費分項列出，今年與去年資料同步欄位
+					if(isShowOwnExpense) {
+						for (OwnExpenseQueryConditionDetail allModel : op) {
+							String ft = allModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allLastModel : opLast) {
+								String ftl = allLastModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										String acft = ac.getFuncType();
+										String acCode = ac.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(ac.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(ac.getFuncType());
+											codeInfo.setIhnCode(ac.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCodeLast.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+								}
+							}
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : opLast) {
+							String ftl = allLastModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allModel : op) {
+								String ft = allModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										String acftl = acl.getFuncType();
+										String acCodel = acl.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(acl.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(acl.getFuncType());
+											codeInfo.setIhnCode(acl.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCode.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+									Collections.sort(allCode,mapComparatorIhnCode);
+									Collections.sort(allCodeLast,mapComparatorIhnCode);
+								}
+							}
+						}
+					}
+					
+					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getOpPrsnList();
+					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getOpPrsnList();
+					///醫療人員資訊，與上面相同邏輯
+					if(allPrsn != null && allPrsn.size() > 0) {
+						
+						/// 將區間和去年比數作同步，方便取資料
+						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+								String ftl = allLastModel.getFuncType();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allModel.getDataFormat());
+								detail.setDescChi(allModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								allPrsnLast.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+							String ftl = allLastModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allLastModel.getDataFormat());
+								detail.setDescChi(allLastModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allLastModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allLastModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								allPrsn.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						Collections.sort(allPrsnLast, mapComparatorFT);
+						Collections.sort(allPrsn, mapComparatorFT);
+						isSame = false;
+						///自費分項列出，今年與去年資料同步欄位
+						if(isShowOwnExpense) {
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+									String ftl = allLastModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+												String acftl = acl.getFuncType();
+												String acCodel = acl.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(ac.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(ac.getFuncType());
+												codeInfo.setIhnCode(ac.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCodeLast.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+									}
+								}
+							}
+							isSame = false;
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								String ftl = allLastModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+									String ft = allModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+												String acft = ac.getFuncType();
+												String acCode = ac.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(acl.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(acl.getFuncType());
+												codeInfo.setIhnCode(acl.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCode.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+										Collections.sort(allCode,mapComparatorIhnCode);
+										Collections.sort(allCodeLast,mapComparatorIhnCode);
+									}
+								}
+							}
+						}
+					}
 
 				}
 				/// 急診
@@ -8599,7 +9498,9 @@ public class DbReportService {
 					/// 將區間和去年比數作同步，方便取資料
 					for (OwnExpenseQueryConditionDetail allModel : em) {
 						String ft = allModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allLastModel : emLast) {
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 							String ftl = allLastModel.getFuncType();
 							if (ft.equals(ftl)) {
 								isSame = true;
@@ -8607,44 +9508,306 @@ public class DbReportService {
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allModel.getDataFormat());
 							detail.setDescChi(allModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							emLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
 						isSame = false;
 					}
-
 					isSame = false;
 					for (OwnExpenseQueryConditionDetail allLastModel : emLast) {
 						String ftl = allLastModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allModel : em) {
 							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 							if (ft.equals(ftl)) {
 								isSame = true;
 								break;
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allLastModel.getDataFormat());
 							detail.setDescChi(allLastModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allLastModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							em.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
 						isSame = false;
 					}
-					Collections.sort(em, mapComparatorFT);
 					Collections.sort(emLast, mapComparatorFT);
+					Collections.sort(em, mapComparatorFT);
+					isSame = false;
+					///自費分項列出，今年與去年資料同步欄位
+					if(isShowOwnExpense) {
+						for (OwnExpenseQueryConditionDetail allModel : em) {
+							String ft = allModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allLastModel : emLast) {
+								String ftl = allLastModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										String acft = ac.getFuncType();
+										String acCode = ac.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(ac.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(ac.getFuncType());
+											codeInfo.setIhnCode(ac.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCodeLast.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+								}
+							}
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : emLast) {
+							String ftl = allLastModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allModel : em) {
+								String ft = allModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										String acftl = acl.getFuncType();
+										String acCodel = acl.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(acl.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(acl.getFuncType());
+											codeInfo.setIhnCode(acl.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCode.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+									Collections.sort(allCode,mapComparatorIhnCode);
+									Collections.sort(allCodeLast,mapComparatorIhnCode);
+								}
+							}
+						}
+					}
+					
+					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getEmPrsnList();
+					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getEmPrsnList();
+					///醫療人員資訊，與上面相同邏輯
+					if(allPrsn != null && allPrsn.size() > 0) {
+						
+						/// 將區間和去年比數作同步，方便取資料
+						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+								String ftl = allLastModel.getFuncType();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allModel.getDataFormat());
+								detail.setDescChi(allModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								allPrsnLast.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+							String ftl = allLastModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allLastModel.getDataFormat());
+								detail.setDescChi(allLastModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allLastModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allLastModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								allPrsn.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						Collections.sort(allPrsnLast, mapComparatorFT);
+						Collections.sort(allPrsn, mapComparatorFT);
+						isSame = false;
+						///自費分項列出，今年與去年資料同步欄位
+						if(isShowOwnExpense) {
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+									String ftl = allLastModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+												String acftl = acl.getFuncType();
+												String acCodel = acl.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(ac.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(ac.getFuncType());
+												codeInfo.setIhnCode(ac.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCodeLast.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+									}
+								}
+							}
+							isSame = false;
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								String ftl = allLastModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+									String ft = allModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+												String acft = ac.getFuncType();
+												String acCode = ac.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(acl.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(acl.getFuncType());
+												codeInfo.setIhnCode(acl.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCode.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+										Collections.sort(allCode,mapComparatorIhnCode);
+										Collections.sort(allCodeLast,mapComparatorIhnCode);
+									}
+								}
+							}
+						}
+					}
 
 				}
 				/// 住院
@@ -8652,7 +9815,9 @@ public class DbReportService {
 					/// 將區間和去年比數作同步，方便取資料
 					for (OwnExpenseQueryConditionDetail allModel : ip) {
 						String ft = allModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allLastModel : ipLast) {
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 							String ftl = allLastModel.getFuncType();
 							if (ft.equals(ftl)) {
 								isSame = true;
@@ -8660,44 +9825,306 @@ public class DbReportService {
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allModel.getDataFormat());
 							detail.setDescChi(allModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							ipLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
 						isSame = false;
 					}
-
 					isSame = false;
 					for (OwnExpenseQueryConditionDetail allLastModel : ipLast) {
 						String ftl = allLastModel.getFuncType();
+						List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
 						for (OwnExpenseQueryConditionDetail allModel : ip) {
 							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
 							if (ft.equals(ftl)) {
 								isSame = true;
 								break;
 							}
 						}
 						if (!isSame) {
-
 							detail.setDataFormat(allLastModel.getDataFormat());
 							detail.setDescChi(allLastModel.getDescChi());
 							detail.setExpense(0L);
 							detail.setFuncType(allLastModel.getFuncType());
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
+							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+								
+								codeInfo.setDataFormat(info.getDataFormat());
+								codeInfo.setFuncType(info.getFuncType());
+								codeInfo.setExpense(0L);
+								codeInfo.setQuantity(0L);
+								codeInfo.setIhnCode(info.getIhnCode());
+								cList.add(codeInfo);
+								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+							}
+							
+							detail.setIhnCodeInfo(cList);
 							ip.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
 						}
 						isSame = false;
 					}
-					Collections.sort(ip, mapComparatorFT);
 					Collections.sort(ipLast, mapComparatorFT);
+					Collections.sort(ip, mapComparatorFT);
+					isSame = false;
+					///自費分項列出，今年與去年資料同步欄位
+					if(isShowOwnExpense) {
+						for (OwnExpenseQueryConditionDetail allModel : ip) {
+							String ft = allModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allLastModel : ipLast) {
+								String ftl = allLastModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										String acft = ac.getFuncType();
+										String acCode = ac.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(ac.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(ac.getFuncType());
+											codeInfo.setIhnCode(ac.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCodeLast.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+								}
+							}
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : ipLast) {
+							String ftl = allLastModel.getFuncType();
+							for (OwnExpenseQueryConditionDetail allModel : ip) {
+								String ft = allModel.getFuncType();
+								if(ft.equals(ftl)) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										String acftl = acl.getFuncType();
+										String acCodel = acl.getIhnCode();
+										
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											if(acft.equals(acftl)) {
+												if(acCode.equals(acCodel)) {
+													isSame = true;
+													break;
+												}
+											}
+										}
+										if (!isSame) {
+											codeInfo.setDataFormat(acl.getDataFormat());
+											codeInfo.setExpense(0L);
+											codeInfo.setFuncType(acl.getFuncType());
+											codeInfo.setIhnCode(acl.getIhnCode());
+											codeInfo.setQuantity(0L);
+											allCode.add(codeInfo);
+											codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+										}
+										isSame = false;
+									}
+									Collections.sort(allCode,mapComparatorIhnCode);
+									Collections.sort(allCodeLast,mapComparatorIhnCode);
+								}
+							}
+						}
+					}
+					
+					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getIpPrsnList();
+					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getIpPrsnList();
+					///醫療人員資訊，與上面相同邏輯
+					if(allPrsn != null && allPrsn.size() > 0) {
+						
+						/// 將區間和去年比數作同步，方便取資料
+						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+							String ft = allModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+								String ftl = allLastModel.getFuncType();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allModel.getDataFormat());
+								detail.setDescChi(allModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								allPrsnLast.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						isSame = false;
+						for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+							String ftl = allLastModel.getFuncType();
+							List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+								if (ft.equals(ftl)) {
+									isSame = true;
+									break;
+								}
+							}
+							if (!isSame) {
+								detail.setDataFormat(allLastModel.getDataFormat());
+								detail.setDescChi(allLastModel.getDescChi());
+								detail.setExpense(0L);
+								detail.setFuncType(allLastModel.getFuncType());
+								detail.setQuantity(0L);
+								detail.setPrsnId(allLastModel.getPrsnId());
+								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
+								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
+									
+									codeInfo.setDataFormat(info.getDataFormat());
+									codeInfo.setFuncType(info.getFuncType());
+									codeInfo.setExpense(0L);
+									codeInfo.setQuantity(0L);
+									codeInfo.setIhnCode(info.getIhnCode());
+									cList.add(codeInfo);
+									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+								}
+								
+								detail.setIhnCodeInfo(cList);
+								allPrsn.add(detail);
+								detail = new OwnExpenseQueryConditionDetail();
+							}
+							isSame = false;
+						}
+						Collections.sort(allPrsnLast, mapComparatorFT);
+						Collections.sort(allPrsn, mapComparatorFT);
+						isSame = false;
+						///自費分項列出，今年與去年資料同步欄位
+						if(isShowOwnExpense) {
+							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+								String ft = allModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+									String ftl = allLastModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+											String acft = ac.getFuncType();
+											String acCode = ac.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+												String acftl = acl.getFuncType();
+												String acCodel = acl.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(ac.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(ac.getFuncType());
+												codeInfo.setIhnCode(ac.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCodeLast.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+									}
+								}
+							}
+							isSame = false;
+							for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
+								String ftl = allLastModel.getFuncType();
+								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
+									String ft = allModel.getFuncType();
+									if(ft.equals(ftl)) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
+										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+											String acftl = acl.getFuncType();
+											String acCodel = acl.getIhnCode();
+											
+											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+												String acft = ac.getFuncType();
+												String acCode = ac.getIhnCode();
+												if(acft.equals(acftl)) {
+													if(acCode.equals(acCodel)) {
+														isSame = true;
+														break;
+													}
+												}
+											}
+											if (!isSame) {
+												codeInfo.setDataFormat(acl.getDataFormat());
+												codeInfo.setExpense(0L);
+												codeInfo.setFuncType(acl.getFuncType());
+												codeInfo.setIhnCode(acl.getIhnCode());
+												codeInfo.setQuantity(0L);
+												allCode.add(codeInfo);
+												codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
+											}
+											isSame = false;
+										}
+										Collections.sort(allCode,mapComparatorIhnCode);
+										Collections.sort(allCodeLast,mapComparatorIhnCode);
+									}
+								}
+							}
+						}
+					}
 
 				}
 			} catch (Exception e) {
@@ -8705,8 +10132,9 @@ public class DbReportService {
 			}
 
 		}
+		response.setData(modelList);
 
-		return modelList;
+		return response;
 	}
 
 	private List<AchievePointQueryCondition> mapToObj2(List<Map<String, Object>> sqlList) {
@@ -8927,7 +10355,16 @@ public class DbReportService {
 	}
 
 	public Comparator<OwnExpenseQueryConditionDetail> mapComparatorFT = new Comparator<OwnExpenseQueryConditionDetail>() {
-		public int compare(OwnExpenseQueryConditionDetail m1,OwnExpenseQueryConditionDetail m2){return m1.getFuncType().compareTo(m2.getFuncType());}};
+		public int compare(OwnExpenseQueryConditionDetail m1, OwnExpenseQueryConditionDetail m2) {
+			return m1.getFuncType().compareTo(m2.getFuncType());
+		}
+	};
+	
+	public Comparator<OwnExpenseQueryConditionIhnCodeInfo> mapComparatorIhnCode = new Comparator<OwnExpenseQueryConditionIhnCodeInfo>() {
+		public int compare(OwnExpenseQueryConditionIhnCodeInfo m1, OwnExpenseQueryConditionIhnCodeInfo m2) {
+			return m1.getIhnCode().compareTo(m2.getIhnCode());
+		}
+	};
 
 	public List<Map<String, Object>> duplicateRemove(List<Map<String, Object>> list) {
 
@@ -8991,7 +10428,7 @@ public class DbReportService {
 		return result;
 	}
 
-	public DeductedNoteQueryConditionResponse deductedMaptoObj(List<Map<String,Object>> sqlList) {
+	public DeductedNoteQueryConditionResponse deductedMaptoObj(List<Map<String, Object>> sqlList) {
 		DeductedNoteQueryConditionResponse result = new DeductedNoteQueryConditionResponse();
 		DeductedNoteQueryCondition deductedModel = new DeductedNoteQueryCondition();
 		List<DeductedNoteQueryCondition> deductedModeList = new ArrayList<DeductedNoteQueryCondition>();
@@ -9002,34 +10439,44 @@ public class DbReportService {
 		DeductedNoteQueryConditionCode deductedCode = new DeductedNoteQueryConditionCode();
 		List<DeductedNoteQueryConditionCode> codeList = new ArrayList<DeductedNoteQueryConditionCode>();
 		List<DeductedNoteQueryConditionCode> finalCodeList = new ArrayList<DeductedNoteQueryConditionCode>();
-		if(sqlList.size() > 0) {
-			for(int i=0; i < sqlList.size(); i++) {
+		if (sqlList.size() > 0) {
+			for (int i = 0; i < sqlList.size(); i++) {
 				deductedModel.setDate(sqlList.get(i).get("DATE").toString());
 				deductedModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());
 				@SuppressWarnings("unchecked")
-				List<Map<String,Object>> info = (List<Map<String, Object>>) sqlList.get(i).get("info");
+				List<Map<String, Object>> info = (List<Map<String, Object>>) sqlList.get(i).get("info");
 				@SuppressWarnings("unchecked")
-				List<Map<String,Object>> list = (List<Map<String, Object>>) sqlList.get(i).get("list");
+				List<Map<String, Object>> list = (List<Map<String, Object>>) sqlList.get(i).get("list");
 				@SuppressWarnings("unchecked")
-				List<Map<String,Object>> codes = (List<Map<String, Object>>) sqlList.get(i).get("codes");
-				
-				if(info.size() > 0) {
-					for(int j=0; j < info.size(); j++) {
+				List<Map<String, Object>> codes = (List<Map<String, Object>>) sqlList.get(i).get("codes");
+
+				if (info.size() > 0) {
+					for (int j = 0; j < info.size(); j++) {
 						deductedInfo.setDate(info.get(j).get("DATE").toString());
-						if(info.get(j).get("DEDUCTED_AMOUNT_OP") != null) {
-							deductedInfo.setDeductedAmountOp(Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_OP").toString()));
-							deductedInfo.setDeductedQuantityOp(Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_OP").toString()));
+						if (info.get(j).get("DEDUCTED_AMOUNT_OP") != null) {
+							deductedInfo.setDeductedAmountOp(
+									Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_OP").toString()));
+							deductedInfo.setDeductedQuantityOp(
+									Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_OP").toString()));
 							deductedInfo.setRollbackMOp(Long.valueOf(info.get(j).get("ROLLBACK_M_OP").toString()));
 						}
-						if(info.get(j).get("DEDUCTED_AMOUNT_IP") != null) {
-							deductedInfo.setDeductedAmountIp(Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_IP").toString()));
-							deductedInfo.setDeductedQuantityIp(Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_IP").toString()));
+						if (info.get(j).get("DEDUCTED_AMOUNT_IP") != null) {
+							deductedInfo.setDeductedAmountIp(
+									Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_IP").toString()));
+							deductedInfo.setDeductedQuantityIp(
+									Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_IP").toString()));
 							deductedInfo.setRollbackMIp(Long.valueOf(info.get(j).get("ROLLBACK_M_IP").toString()));
 						}
-						if(info.get(j).get("DEDUCTED_AMOUNT_OP") != null && info.get(j).get("DEDUCTED_AMOUNT_IP") != null) {
-							deductedInfo.setDeductedAmountAll(Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_OP").toString()) + Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_IP").toString()));
-							deductedInfo.setDeductedQuantityAll(Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_OP").toString()) + Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_IP").toString()));
-							deductedInfo.setRollbackMAll(Long.valueOf(info.get(j).get("ROLLBACK_M_IP").toString()) + Long.valueOf(info.get(j).get("ROLLBACK_M_OP").toString()));
+						if (info.get(j).get("DEDUCTED_AMOUNT_OP") != null
+								&& info.get(j).get("DEDUCTED_AMOUNT_IP") != null) {
+							deductedInfo
+									.setDeductedAmountAll(Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_OP").toString())
+											+ Long.valueOf(info.get(j).get("DEDUCTED_AMOUNT_IP").toString()));
+							deductedInfo.setDeductedQuantityAll(
+									Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_OP").toString())
+											+ Long.valueOf(info.get(j).get("DEDUCTED_QUANTITY_IP").toString()));
+							deductedInfo.setRollbackMAll(Long.valueOf(info.get(j).get("ROLLBACK_M_IP").toString())
+									+ Long.valueOf(info.get(j).get("ROLLBACK_M_OP").toString()));
 						}
 						deductedInfo.setExtractCase(Long.valueOf(info.get(j).get("EXTRACTCASE").toString()));
 						infoList.add(deductedInfo);
@@ -9037,20 +10484,23 @@ public class DbReportService {
 					}
 					deductedModel.setDeductedNoteInfo(infoList);
 				}
-				
-				if(list.size() > 0) {
-					for(int k=0; k < list.size(); k++) {
-						if(list.get(k).get("DATA_FORMAT") != null) {
-							
+
+				if (list.size() > 0) {
+					for (int k = 0; k < list.size(); k++) {
+						if (list.get(k).get("DATA_FORMAT") != null) {
+
 							deductedList.setDataFormat(list.get(k).get("DATA_FORMAT").toString());
 							deductedList.setFuncType(list.get(k).get("FUNC_TYPE").toString());
 							deductedList.setFuncTypeName(list.get(k).get("DESC_CHI").toString());
-							deductedList.setAfrNoPayCode(list.get(k).get("AFR_NO_PAY_CODE") == null ? "" : list.get(k).get("AFR_NO_PAY_CODE").toString());
+							deductedList.setAfrNoPayCode(list.get(k).get("AFR_NO_PAY_CODE") == null ? ""
+									: list.get(k).get("AFR_NO_PAY_CODE").toString());
 							deductedList.setCode(list.get(k).get("CODE").toString());
 							deductedList.setDeductedOrder(list.get(k).get("DEDUCTED_ORDER").toString());
 							deductedList.setPrsnId(list.get(k).get("PRSN_ID").toString());
-							deductedList.setInhClinicId(list.get(k).get("INH_CLINIC_ID") == null ? "" : list.get(k).get("INH_CLINIC_ID").toString());
-							deductedList.setDeductedQuantity(Long.valueOf(list.get(k).get("DEDUCTED_QUANTITY").toString()));
+							deductedList.setInhClinicId(list.get(k).get("INH_CLINIC_ID") == null ? ""
+									: list.get(k).get("INH_CLINIC_ID").toString());
+							deductedList
+									.setDeductedQuantity(Long.valueOf(list.get(k).get("DEDUCTED_QUANTITY").toString()));
 							deductedList.setDeductedAmount(Long.valueOf(list.get(k).get("DEDUCTED_AMOUNT").toString()));
 							deductedList.setRollbackM(Long.valueOf(list.get(k).get("ROLLBACK_M").toString()));
 							deductedList.setAfrPayAmount(Long.valueOf(list.get(k).get("ROLLBACK_M").toString()));
@@ -9061,15 +10511,17 @@ public class DbReportService {
 					}
 					deductedModel.setDeductedList(listList);
 				}
-				
-				if(codes.size() > 0) {
-					for(int l=0; l < codes.size(); l++) {
-						if(codes.get(l).get("DATA_FORMAT") != null) {
-							
+
+				if (codes.size() > 0) {
+					for (int l = 0; l < codes.size(); l++) {
+						if (codes.get(l).get("DATA_FORMAT") != null) {
+
 							deductedCode.setCode(codes.get(l).get("CODE").toString());
 							deductedCode.setDataFormat(codes.get(l).get("DATA_FORMAT").toString());
-							deductedCode.setDeductedQuantity(Long.valueOf(codes.get(l).get("DEDUCTED_QUANTITY").toString()));
-							deductedCode.setDeductedAmount(Long.valueOf(codes.get(l).get("DEDUCTED_AMOUNT").toString()));
+							deductedCode.setDeductedQuantity(
+									Long.valueOf(codes.get(l).get("DEDUCTED_QUANTITY").toString()));
+							deductedCode
+									.setDeductedAmount(Long.valueOf(codes.get(l).get("DEDUCTED_AMOUNT").toString()));
 							codeList.add(deductedCode);
 							deductedCode = new DeductedNoteQueryConditionCode();
 						}
@@ -9082,17 +10534,16 @@ public class DbReportService {
 				listList = new ArrayList<DeductedNoteQueryConditionList>();
 				codeList = new ArrayList<DeductedNoteQueryConditionCode>();
 			}
-			///資料統計，先區分門急診／住院
+			/// 資料統計，先區分門急診／住院
 			List<DeductedNoteQueryConditionCode> opCodes = new ArrayList<DeductedNoteQueryConditionCode>();
 			List<DeductedNoteQueryConditionCode> ipCodes = new ArrayList<DeductedNoteQueryConditionCode>();
-			for(int i=0; i<deductedModeList.size(); i++) {
+			for (int i = 0; i < deductedModeList.size(); i++) {
 				List<DeductedNoteQueryConditionCode> codes = deductedModeList.get(i).getDeductedCode();
-				if(codes != null && codes.size() > 0) {
-					for(int v=0; v<codes.size(); v++) {
-						if(codes.get(v).getDataFormat().equals("10")) {
+				if (codes != null && codes.size() > 0) {
+					for (int v = 0; v < codes.size(); v++) {
+						if (codes.get(v).getDataFormat().equals("10")) {
 							opCodes.add(codes.get(v));
-						}
-						else {
+						} else {
 							ipCodes.add(codes.get(v));
 						}
 					}
@@ -9102,25 +10553,27 @@ public class DbReportService {
 			List<DeductedNoteQueryConditionCode> finalIpCodes = new ArrayList<DeductedNoteQueryConditionCode>();
 			List<DeductedNoteQueryConditionCode> finalOpCodes = new ArrayList<DeductedNoteQueryConditionCode>();
 			List<DeductedNoteQueryConditionCode> finalCodes = new ArrayList<DeductedNoteQueryConditionCode>();
-			if(opCodes.size() > 0) {
+			if (opCodes.size() > 0) {
 				Collections.sort(opCodes, mapComparatorDeductedCD);
 				DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
 				int index = -1;
 				String key = "";
 				Long quantity = 0L;
 				Long amount = 0L;
-				for(int i=0; i<opCodes.size(); i++) {
+				for (int i = 0; i < opCodes.size(); i++) {
 					String ic = opCodes.get(i).getCode();
-					if(ic.equals(key)) {break;}
-					for(int j=0; j<opCodes.size(); j++) {
+					if (ic.equals(key)) {
+						break;
+					}
+					for (int j = 0; j < opCodes.size(); j++) {
 						String jc = opCodes.get(j).getCode();
-						if(ic.equals(jc)) {
+						if (ic.equals(jc)) {
 							key = jc;
 							amount += opCodes.get(j).getDeductedAmount();
 							quantity += opCodes.get(j).getDeductedQuantity();
 							index = 1;
-							///最後一筆直接+
-							if(i == opCodes.size() - 1) {
+							/// 最後一筆直接+
+							if (i == opCodes.size() - 1) {
 								codeModel.setCode(ic);
 								codeModel.setDataFormat("10");
 								codeModel.setDeductedAmount(amount);
@@ -9131,9 +10584,8 @@ public class DbReportService {
 								quantity = 0L;
 								index = -1;
 							}
-						}
-						else {
-							if(index > 0) {
+						} else {
+							if (index > 0) {
 								codeModel.setCode(ic);
 								codeModel.setDataFormat("10");
 								codeModel.setDeductedAmount(amount);
@@ -9144,8 +10596,7 @@ public class DbReportService {
 								quantity = 0L;
 								index = -1;
 								break;
-							}
-							else {
+							} else {
 								index = -1;
 								continue;
 							}
@@ -9153,25 +10604,27 @@ public class DbReportService {
 					}
 				}
 			}
-			if(ipCodes.size() > 0) {
+			if (ipCodes.size() > 0) {
 				Collections.sort(ipCodes, mapComparatorDeductedCD);
 				DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
 				int index = -1;
 				String key = "";
 				Long quantity = 0L;
 				Long amount = 0L;
-				for(int i=0; i<ipCodes.size(); i++) {
+				for (int i = 0; i < ipCodes.size(); i++) {
 					String ic = ipCodes.get(i).getCode();
-					if(ic.equals(key)) {break;}
-					for(int j=0; j<ipCodes.size(); j++) {
+					if (ic.equals(key)) {
+						break;
+					}
+					for (int j = 0; j < ipCodes.size(); j++) {
 						String jc = ipCodes.get(j).getCode();
-						if(ic.equals(jc)) {
+						if (ic.equals(jc)) {
 							key = jc;
 							amount += ipCodes.get(j).getDeductedAmount();
 							quantity += ipCodes.get(j).getDeductedQuantity();
 							index = 1;
-							///最後一筆直接+
-							if(i == ipCodes.size() - 1) {
+							/// 最後一筆直接+
+							if (i == ipCodes.size() - 1) {
 								codeModel.setCode(ic);
 								codeModel.setDataFormat("20");
 								codeModel.setDeductedAmount(amount);
@@ -9182,9 +10635,8 @@ public class DbReportService {
 								quantity = 0L;
 								index = -1;
 							}
-						}
-						else {
-							if(index > 0) {
+						} else {
+							if (index > 0) {
 								codeModel.setCode(ic);
 								codeModel.setDataFormat("20");
 								codeModel.setDeductedAmount(amount);
@@ -9195,8 +10647,7 @@ public class DbReportService {
 								quantity = 0L;
 								index = -1;
 								break;
-							}
-							else {
+							} else {
 								index = -1;
 								continue;
 							}
@@ -9206,15 +10657,15 @@ public class DbReportService {
 			}
 			finalCodes.addAll(finalOpCodes);
 			finalCodes.addAll(finalIpCodes);
-			for(DeductedNoteQueryCondition dic : deductedModeList) {
+			for (DeductedNoteQueryCondition dic : deductedModeList) {
 				dic.setFinalDeductedCode(finalCodes);
 			}
 		}
 		result.setData(deductedModeList);
-		
+
 		return result;
 	}
-	
+
 	public Comparator<DeductedNoteQueryConditionCode> mapComparatorDeductedCD = new Comparator<DeductedNoteQueryConditionCode>() {
 		public int compare(DeductedNoteQueryConditionCode m1, DeductedNoteQueryConditionCode m2) {
 			return m1.getCode().compareTo(m2.getCode());

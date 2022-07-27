@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -1516,8 +1517,9 @@ public class DbReportExportService {
 			String funcTypes, String medNames, String icdAll, String payCode, String inhCode, boolean isLastY,
 			boolean isShowOwnExpense, HttpServletResponse response) throws IOException {
 
-		Map<String, Object> dataMap = dbrService.getOwnExpenseQueryCondition(betweenSDate, betweenEDate, dataFormats,
-				funcTypes, medNames, icdAll, payCode, inhCode, isLastY, isShowOwnExpense);
+//		Map<String, Object> dataMap = dbrService.getOwnExpenseQueryCondition(betweenSDate, betweenEDate, dataFormats,
+//				funcTypes, medNames, icdAll, payCode, inhCode, isLastY, isShowOwnExpense);
+		Map<String, Object> dataMap = new LinkedHashMap<String, Object>();
 
 		List<OwnExpenseQueryCondition> modelList = (List<OwnExpenseQueryCondition>) dataMap.get("dataList");
 

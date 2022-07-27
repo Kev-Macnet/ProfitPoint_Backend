@@ -9,7 +9,7 @@ import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 
 @ApiModel("自費項目清單")
-public class OwnExpenseQueryCondition extends BaseResponse implements Serializable {
+public class OwnExpenseQueryCondition implements Serializable {
 
 	private static final long serialVersionUID = -6963338333989451514L;
 
@@ -35,6 +35,8 @@ public class OwnExpenseQueryCondition extends BaseResponse implements Serializab
 	private Long ipExpense;
 	@ApiModelProperty(value = "顯示名稱", required = false)
 	private String displayName;
+	@ApiModelProperty(value = "統計日期", required = false)
+	private String date;
 	@ApiModelProperty(value = "不分科資料詳細列表", required = false)
 	private List<OwnExpenseQueryConditionDetail> allList;
 	@ApiModelProperty(value = "門急診資料詳細列表", required = false)
@@ -45,6 +47,16 @@ public class OwnExpenseQueryCondition extends BaseResponse implements Serializab
 	private List<OwnExpenseQueryConditionDetail> emList;
 	@ApiModelProperty(value = "住院資料詳細列表", required = false)
 	private List<OwnExpenseQueryConditionDetail> ipList;
+	@ApiModelProperty(value = "不分科醫護人員資料詳細列表", required = false)
+	private List<OwnExpenseQueryConditionDetail> allPrsnList;
+	@ApiModelProperty(value = "門急診醫護人員資料詳細列表", required = false)
+	private List<OwnExpenseQueryConditionDetail> opAllPrsnList;
+	@ApiModelProperty(value = "門診醫護人員資料詳細列表", required = false)
+	private List<OwnExpenseQueryConditionDetail> opPrsnList;
+	@ApiModelProperty(value = "急診醫護人員資料詳細列表", required = false)
+	private List<OwnExpenseQueryConditionDetail> emPrsnList;
+	@ApiModelProperty(value = "住院醫護人員資料詳細列表", required = false)
+	private List<OwnExpenseQueryConditionDetail> ipPrsnList;
 
 	public Long getAllQuantity() {
 		return allQuantity;
@@ -134,6 +146,14 @@ public class OwnExpenseQueryCondition extends BaseResponse implements Serializab
 		this.displayName = displayName;
 	}
 
+	public String getDate() {
+		return date;
+	}
+
+	public void setDate(String date) {
+		this.date = date;
+	}
+
 	public List<OwnExpenseQueryConditionDetail> getAllList() {
 		return allList;
 	}
@@ -172,6 +192,46 @@ public class OwnExpenseQueryCondition extends BaseResponse implements Serializab
 
 	public void setIpList(List<OwnExpenseQueryConditionDetail> ipList) {
 		this.ipList = ipList;
+	}
+
+	public List<OwnExpenseQueryConditionDetail> getAllPrsnList() {
+		return allPrsnList;
+	}
+
+	public void setAllPrsnList(List<OwnExpenseQueryConditionDetail> allPrsnList) {
+		this.allPrsnList = allPrsnList;
+	}
+
+	public List<OwnExpenseQueryConditionDetail> getOpAllPrsnList() {
+		return opAllPrsnList;
+	}
+
+	public void setOpAllPrsnList(List<OwnExpenseQueryConditionDetail> opAllPrsnList) {
+		this.opAllPrsnList = opAllPrsnList;
+	}
+
+	public List<OwnExpenseQueryConditionDetail> getOpPrsnList() {
+		return opPrsnList;
+	}
+
+	public void setOpPrsnList(List<OwnExpenseQueryConditionDetail> opPrsnList) {
+		this.opPrsnList = opPrsnList;
+	}
+
+	public List<OwnExpenseQueryConditionDetail> getEmPrsnList() {
+		return emPrsnList;
+	}
+
+	public void setEmPrsnList(List<OwnExpenseQueryConditionDetail> emPrsnList) {
+		this.emPrsnList = emPrsnList;
+	}
+
+	public List<OwnExpenseQueryConditionDetail> getIpPrsnList() {
+		return ipPrsnList;
+	}
+
+	public void setIpPrsnList(List<OwnExpenseQueryConditionDetail> ipPrsnList) {
+		this.ipPrsnList = ipPrsnList;
 	}
 
 }

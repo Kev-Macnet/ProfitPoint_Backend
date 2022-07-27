@@ -2,9 +2,7 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -28,6 +26,7 @@ import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.CaseStatusAndQuantity;
 import tw.com.leadtek.nhiwidget.payload.report.DatabaseCalculateExportFactor;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionResponse;
+import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionResponse;
 import tw.com.leadtek.nhiwidget.service.CaseStatusAndQuantityService;
 import tw.com.leadtek.nhiwidget.service.DbReportExportService;
 import tw.com.leadtek.nhiwidget.service.DbReportService;
@@ -492,7 +491,7 @@ public class DbReportController extends BaseController {
 	@ApiOperation(value = "取得自費項目清單", notes = "取得自費項目清單")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/ownExpenseQueryCondition")
-	public ResponseEntity<Map<String, Object>> getOwnExpenseQueryCondition(
+	public ResponseEntity<OwnExpenseQueryConditionResponse> getOwnExpenseQueryCondition(
 			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = true) String betweenSDate,
 			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = true) String betweenEDate,
 			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = true) String dataFormats,
@@ -505,23 +504,23 @@ public class DbReportController extends BaseController {
 			@ApiParam(name = "isShowOwnExpense", value = "自費分項列出", example = "false") @RequestParam(required = false) boolean isShowOwnExpense)
 			throws ParseException {
 
-		Map<String, Object> result = new HashMap<String, Object>();
+		OwnExpenseQueryConditionResponse result = new OwnExpenseQueryConditionResponse();
 		
 		if(betweenSDate == null || betweenSDate.isEmpty()) {
-			result.put("result", BaseResponse.ERROR);
-			result.put("message", "起始日必填");
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("起始日必填");
 			return ResponseEntity.badRequest().body(result);
 		}
 		
 		if(betweenEDate == null || betweenEDate.isEmpty()) {
-			result.put("result", BaseResponse.ERROR);
-			result.put("message", "迄日必填");
+			result.setResult(BaseResponse.ERROR);
+			result.setMessage("迄日必填");
 			return ResponseEntity.badRequest().body(result);
 		}
 		
 		if(dataFormats == null || dataFormats.isEmpty() ) {
-			result.put("result", BaseResponse.ERROR);
-			result.put("message", "就醫類別必填");
+			result.setResult( BaseResponse.ERROR);
+			result.setMessage("就醫類別必填");
 			return ResponseEntity.badRequest().body(result);
 		}
 		
