@@ -14,13 +14,15 @@ import tw.com.leadtek.nhiwidget.model.rdb.POINT_WEEKLY;
 
 public interface POINT_WEEKLYDao extends JpaRepository<POINT_WEEKLY, Long> {
 
-  public POINT_WEEKLY findByPyearAndPweekAndFuncType(int year, int week, String funcType);
+  public List<POINT_WEEKLY> findByPyearAndPweekAndFuncType(int year, int week, String funcType);
   
   public POINT_WEEKLY findByStartDateAndEndDateAndFuncType(Date sdate, Date edate, String funcType);
   
   public List<POINT_WEEKLY> findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(Date edate, String funcType);
   
   public List<POINT_WEEKLY> findByEndDateLessThanEqualOrderByEndDateDesc(Date edate);
+  
+  public Integer countByEndDateLessThanEqualAndFuncType(Date edate, String funcType);
   
   /**
    * 條件funcType取得趨勢圖資料

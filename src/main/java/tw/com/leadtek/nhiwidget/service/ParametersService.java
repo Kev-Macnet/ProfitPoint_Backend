@@ -788,7 +788,7 @@ public class ParametersService {
    */
   public Object getParameterValueBetween(String name, Date date) {
     List<PARAMETERS> list =
-        parametersDao.findByNameAndStartDateLessThanAndEndDateGreaterThan(name, date, date);
+        parametersDao.findByNameAndStartDateLessThanEqualAndEndDateGreaterThanEqual(name, date, date);
     if (list == null || list.size() == 0) {
       return null;
     }

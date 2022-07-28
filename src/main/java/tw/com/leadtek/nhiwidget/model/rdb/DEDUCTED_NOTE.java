@@ -178,19 +178,19 @@ public class DEDUCTED_NOTE implements Serializable {
 	@Transient
 	private String modifyStatus;
 
-	@ApiModelProperty(value = "核刪日期", required = false)
+	@ApiModelProperty(value = "核刪日期，格式yyyy-MM-dd", required = false)
 	@Column(name = "DEDUCTED_DATE", nullable = false)
-	 @JsonFormat(pattern = "yyyy/MM/dd", timezone = "GMT+8")
+	@JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
 	private Date deductedDate;
 
-	@ApiModelProperty(value = "放大回推日期", required = false)
+	@ApiModelProperty(value = "放大回推日期，格式yyyy-MM-dd", required = false)
 	@Column(name = "ROLLBACK_DATE", nullable = false)
-	 @JsonFormat(pattern = "yyyy/MM/dd", timezone = "GMT+8")
+	@JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
 	private Date rollbackDate;
 
-	@ApiModelProperty(value = "爭議日期", required = false)
+	@ApiModelProperty(value = "爭議日期，格式yyyy-MM-dd", required = false)
 	@Column(name = "DISPUTE_DATE", nullable = false)
-	 @JsonFormat(pattern = "yyyy/MM/dd", timezone = "GMT+8")
+	@JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
 	private Date disputeDate;
 
 	/**

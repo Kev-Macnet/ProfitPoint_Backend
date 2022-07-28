@@ -3,7 +3,11 @@
  */
 package tw.com.leadtek.nhiwidget.drg;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -22,6 +26,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import tw.com.leadtek.nhiwidget.NHIWidget;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
+import tw.com.leadtek.nhiwidget.dao.DRG_CALDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.IP_TDao;
@@ -32,6 +37,7 @@ import tw.com.leadtek.nhiwidget.dao.OP_TDao;
 import tw.com.leadtek.nhiwidget.dao.PT_PAYMENT_TERMSDao;
 import tw.com.leadtek.nhiwidget.importdata.ImportJsonFile;
 import tw.com.leadtek.nhiwidget.model.DrgCalculate;
+import tw.com.leadtek.nhiwidget.model.rdb.DRG_CAL;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_T;
@@ -46,6 +52,7 @@ import tw.com.leadtek.nhiwidget.payload.intelligent.PilotProject;
 import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
+import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.ReportService;
@@ -105,6 +112,12 @@ public class TestDrgCalService {
   
   @Autowired
   private PaymentTermsDao paymentTermsDao;
+  
+  @Autowired
+  private DRG_CALDao drgCalDao;
+  
+  @Autowired
+  private LogDataService logDataService;
   
   /**
    * 計算所有住院病歷的 DRG 代碼、區間、定額
@@ -226,15 +239,18 @@ public class TestDrgCalService {
     }
   }
 
-  @Ignore
+  //@Ignore
   @Test
   public void calculateWeekly() {
     // start date : 2019/01/01
-    Calendar cal = Calendar.getInstance();
-    cal.set(Calendar.YEAR, 2018);
-    cal.set(Calendar.MONTH, 10);
-    cal.set(Calendar.DAY_OF_MONTH, 1);
-    reportService.calculatePointWeekly(cal);
+//    Calendar calMax = parametersService.getMinMaxCalendar(new Date(), false);
+//    reportService.calculatePointWeekly(calMax, true);
+
+//    reportService.calculatePointMR("202201");
+//    reportService.calculateDRGMonthly("202201");
+
+    reportService.calculatePointMR("202203");
+    reportService.calculateDRGMonthly("202203");
   }
   
   @Ignore
@@ -704,6 +720,7 @@ public class TestDrgCalService {
 
   }
   
+  @Ignore
   @Test
   public void testDrgCalByFile() {
     List<MR> mrList = mrDao.getTodayUpdatedMR();
@@ -718,5 +735,115 @@ public class TestDrgCalService {
     drgCalService.callDrgCalProgram(file, mrList, mrIdList, ipdMap);
     long usedTime = System.currentTimeMillis() - start;
     logger.info("runDrgCalculate finished using " + usedTime);
+  }
+  
+  @Ignore
+  @Test
+  public void testDrgCalFunction() {
+    int adYM = 202203;
+    String drg = "49302";
+    int medDot = 49669;
+    DrgCalculate drgCodeDetail = drgCalService.getDRGSection(drg, String.valueOf(adYM - 191100),
+        medDot, 0);
+    System.out.println("drg code:" + drg + ",medDot=" + medDot + ", fixed=" + drgCodeDetail.getFixed() + ", llmit="
+       + drgCodeDetail.getLlimit() + ",ulimit=" + drgCodeDetail.getUlimit() +", section=" + drgCodeDetail.getSection());
+    
+    File file = new File("D:\\Users\\2268\\2020\\健保點數申報\\src\\NHIWidget\\drg_data\\demo\\1658729665857B.txt");
+    List<MR> mrList = mrDao.findByApplYmAndDataFormatOrderById("11103", "20");
+    List<Long> mrIdList = drgCalService.getMrIdByDataFormat(mrList, XMLConstant.DATA_FORMAT_IP);
+
+    HashMap<String, DrgCalculate> drgCodes = new HashMap<String, DrgCalculate>();
+    HashMap<String, Integer> drgApplDot = new HashMap<String, Integer>();
+    try {
+      drgCalDao.deleteByMrId(mrIdList);
+      FileInputStream fis = new FileInputStream(file);
+      BufferedReader isReader =
+          new java.io.BufferedReader(new InputStreamReader(fis, "big5"));
+      // 跳過檔頭
+      isReader.readLine();
+      String str;
+      while ((str = isReader.readLine()) != null) {
+        String[] ss = str.split(",");
+        DRG_CAL dc = new DRG_CAL();
+        
+        if (ss.length > 55 && ss[55].trim().length() > 0) {
+         dc.setError(logDataService.getErrorMessage(ss[55].trim()));
+        }
+        
+        dc.setMrId(Long.parseLong(ss[3]));
+        dc.setIcdCM1(NHIWidgetXMLService.addICDCMDot(ss[7]));
+        dc.setIcdOPCode1(NHIWidgetXMLService.addICDCMDot(ss[12]));
+        dc.setMedDot(Integer.parseInt(ss[19].substring(1)));
+        dc.setCc(ss[22]);
+        dc.setDrg(ss[21]);
+        dc.setMdc(ss[23]);
+        
+        MR mr = getMrById(mrList, dc.getMrId().longValue());
+        List<IP_D> ipdList = ipdDao.findByMrId(mr.getId());
+        IP_D ipd = ipdList.get(0);
+        // 西元年
+        adYM = Integer.parseInt(ss[1]);
+        int newApplDot = 0;
+        drgCodeDetail = drgCalService.getDRGSection(dc.getDrg(), String.valueOf(adYM - 191100),
+              dc.getMedDot(), 0);
+        if (drgCodeDetail == null || (!drgCodeDetail.isStarted() && dc.getError() != null
+            && dc.getError().length() == 0)) {
+          // DRG代碼尚未導入
+          dc.setError("C");
+        } else {
+          drgCodes.put(dc.getDrg(), drgCodeDetail);
+          DecimalFormat df = new DecimalFormat("#.###");
+          dc.setRw(Double.parseDouble(df.format(drgCodeDetail.getRw())));
+          dc.setAvgInDay(drgCodeDetail.getAvgInDay());
+          dc.setUlimit(drgCodeDetail.getUlimit());
+          dc.setLlimit(drgCodeDetail.getLlimit());
+          dc.setDrgFix(drgCodeDetail.getFixed());
+          dc.setDrgSection(drgCodeDetail.getSection());
+          
+          if (drgApplDot.get(dc.getDrg()) != null) {
+            newApplDot = drgApplDot.get(dc.getDrg()).intValue();
+          } else {
+            boolean isInCase20 =  drgCalService.checkCase20(drgCodeDetail, ss[1]);
+            newApplDot =  drgCalService.getApplDot(drgCodeDetail, ipd.getMedDot(), ipd.getPartDot(), 
+                ipd.getNonApplDot(), mr.getId(), ipd.getEbedDay(), ipd.getTranCode(), isInCase20);
+            drgApplDot.put(dc.getDrg(), newApplDot);
+          }
+          dc.setDrgDot(newApplDot);
+//          System.out.println(dc.getMrId() + ",icd=" + dc.getIcdCM1() + ", opCode=" + dc.getIcdOPCode1() +
+//              ",cc=" + dc.getCc() + ", drg=" + dc.getDrg() + ",drgSection=" + dc.getDrgSection() +
+//              ",mdc=" + dc.getMdc());
+          if (dc.getIcdCM1().equals(mr.getIcdcm1())) {
+            mr.setDrgCode(dc.getDrg());
+            mr.setDrgFixed(dc.getDrgFix());
+            mr.setDrgSection(dc.getDrgSection());
+            System.out.println("drgCode:" + mr.getDrgCode() + ",fixed=" + mr.getDrgFixed() + ", section=" + mr.getDrgSection());
+            mrDao.updateDRG(dc.getDrg(), dc.getDrgFix(), dc.getDrgSection(), mr.getId());
+          }
+        }
+        dc.setUpdateAt(new Date());
+        drgCalDao.save(dc);
+      }
+      isReader.close();
+      fis.close();
+    } catch (java.io.IOException e) {
+      e.printStackTrace();
+    } finally {
+      File fileB = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 4) + "B.txt");
+      if (fileB.exists()) {
+        //fileB.delete();
+      }
+      if (file.exists()) {
+        //file.delete();
+      }
+    }
+  }
+  
+  private MR getMrById(List<MR> mrList, long id) {
+    for (MR mr : mrList) {
+      if (mr.getId().longValue() == id) {
+        return mr;
+      }
+    }
+    return null;
   }
 }

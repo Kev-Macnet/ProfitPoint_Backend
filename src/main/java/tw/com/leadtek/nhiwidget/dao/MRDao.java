@@ -107,12 +107,11 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
       + "FROM MR, IP_D WHERE DRG_SECTION IS NOT NULL AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND "
       + "IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) DRG," + 
       "(SELECT MR.FUNC_TYPE AS NONDRG_FUNC_TYPE, COUNT(1) AS NONDRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) "
-      + "AS NONDRG_POINT FROM MR, IP_D WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_END_DATE >= ?3 AND "
-      + "MR_END_DATE <= ?4 AND MR.FUNC_TYPE IN (SELECT DISTINCT(FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL " +
-      " AND MR_END_DATE >= ?5 AND MR_END_DATE <= ?6) AND IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) NODRG " +
+      + "AS NONDRG_POINT FROM MR, IP_D WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_END_DATE >= ?1 AND "
+      + "MR_END_DATE <= ?2 AND MR.FUNC_TYPE IN (SELECT DISTINCT(FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL " +
+      " AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) AND IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) NODRG " +
       "WHERE DRG.FUNC_TYPE = NODRG.NONDRG_FUNC_TYPE", nativeQuery = true)
-  public List<Object[]> countDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1, Date startDate2, Date endDate2, 
-      Date startDate3, Date endDate3);
+  public List<Object[]> countAllDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
   
   /**
    * 取得DRG各科在指定日期區間的件數及點數

@@ -83,6 +83,12 @@ public class UserService {
 
   @Autowired
   private JwtUtils jwtUtils;
+  
+  @Autowired
+  private ReportService reportService;
+  
+  @Autowired
+  private CodeTableService codeTableService; 
 
   @Value("${project.jwt.afk}")
   private long afkTime;
@@ -487,7 +493,11 @@ public class UserService {
     List<DEPARTMENT> result = new ArrayList<DEPARTMENT>();
     List<DEPARTMENT> all = new ArrayList<DEPARTMENT>(departmentHash.values());
     if ((code == null || code.length() == 0) && (name == null || name.length() == 0)) {
-      return all;
+      result = getAllFuncTypeInMR();
+      if (result == null || result.size() ==0) {
+        return all;
+      }
+      return result;
     }
     if (code != null && code.length() > 0) {
       for (DEPARTMENT department : all) {
@@ -502,6 +512,22 @@ public class UserService {
           result.add(department);
         }
       }
+    }
+    return result;
+  }
+  
+  /**
+   * 取得病歷有的科別
+   * @return
+   */
+  private List<DEPARTMENT> getAllFuncTypeInMR(){
+    List<DEPARTMENT> result = new ArrayList<DEPARTMENT>();
+    List<String> funcTypes = reportService.findAllFuncTypes(true);
+    for (String string : funcTypes) {
+      DEPARTMENT department = new DEPARTMENT();
+      department.setCode(string);
+      department.setName(codeTableService.getDesc("FUNC_TYPE", string));
+      result.add(department);
     }
     return result;
   }

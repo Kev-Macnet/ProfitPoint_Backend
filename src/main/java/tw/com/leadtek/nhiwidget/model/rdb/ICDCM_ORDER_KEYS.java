@@ -10,9 +10,6 @@ import javax.persistence.Embeddable;
 @Embeddable
 public class ICDCM_ORDER_KEYS implements Serializable {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -68,4 +65,19 @@ public class ICDCM_ORDER_KEYS implements Serializable {
 	public void setDataFormat(String dataFormat) {
 		this.dataFormat = dataFormat;
 	}
+	
+    @Override
+    public int hashCode() {
+      return icdcm.hashCode() + orderCode.hashCode() + dataFormat.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object object) {
+      if (object instanceof ICDCM_ORDER_KEYS) {
+        ICDCM_ORDER_KEYS pk = (ICDCM_ORDER_KEYS) object;
+        return icdcm.equals(pk.getIcdcm()) && orderCode.equals(pk.getOrderCode())
+            && dataFormat.equals(pk.getDataFormat());
+      }
+      return false;
+    }
 }

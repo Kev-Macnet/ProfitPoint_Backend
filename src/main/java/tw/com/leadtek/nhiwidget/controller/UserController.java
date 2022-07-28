@@ -213,7 +213,7 @@ public class UserController extends BaseController {
 
   @ApiOperation(value = "登出", notes = "登出，將 session 清空")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "登出成功")})
-  @ApiImplicitParams({@ApiImplicitParam(name = "Authorization", dataType = "string",
+  @ApiImplicitParams({@ApiImplicitParam(name = "Authorization", dataType = "String",
       paramType = "header", required = true)})
   @PostMapping("/user/logout")
   public ResponseEntity<BaseResponse> logout(HttpServletRequest request,
@@ -287,7 +287,7 @@ public class UserController extends BaseController {
   }
 
   /**
-   * 取得同義詞/代碼表資料
+   * 取得所有部門。因前端會抓此結果當做報表的科別，因此改讀所有病歷科別。2022/7/28.
    * 
    * @param name
    * @param model

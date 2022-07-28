@@ -1438,7 +1438,7 @@ public class SystemService {
           }
         }
         long startImport = System.currentTimeMillis();
-        importFile(file);
+        importXMLFile(file);
         logger.info("importFileThread " + file.getAbsolutePath() + " done");
         long usedTime = System.currentTimeMillis() - startImport;
         if (checkAllTime > 0) {
@@ -1455,7 +1455,7 @@ public class SystemService {
     thread.start();
   }
 
-  public void importFile(File file) {
+  public void importXMLFile(File file) {
     ObjectMapper xmlMapper = new XmlMapper();
     try {
       if (readFile(file)) {
@@ -1538,7 +1538,8 @@ public class SystemService {
     boolean hasNewFile = false;
     List<FILE_DOWNLOAD> oldFiles = downloadDao.findAllByUserIdOrderByUpdateAtDesc(0L);
     for (File file : files) {
-      if (!file.getName().endsWith(".xlsx") || file.getName().indexOf('~') > -1) {
+      if (file.getName().indexOf('~') > -1
+          || !(file.getName().endsWith(".xlsx") || file.getName().endsWith(".xml"))) {
         continue;
       }
       boolean isOldFile = false;
@@ -1572,23 +1573,28 @@ public class SystemService {
       fd.setUserId(0L);
       downloadDao.save(fd);
       logger.info("process " + fd.getFilename());
-      XSSFWorkbook workbook = null;
-      try {
-        workbook = new XSSFWorkbook(new FileInputStream(file));
-        xmlService.readTheseSheet(workbook.getSheetAt(0));
-        hasNewFile = true;
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
-      } catch (IOException e) {
-        e.printStackTrace();
-      } finally {
-        if (workbook != null) {
-          try {
-            workbook.close();
-          } catch (IOException e) {
-            e.printStackTrace();
+      
+      if (file.getName().endsWith(".xlsx")) {
+        XSSFWorkbook workbook = null;
+        try {
+          workbook = new XSSFWorkbook(new FileInputStream(file));
+          xmlService.readTheseSheet(workbook.getSheetAt(0));
+          hasNewFile = true;
+        } catch (FileNotFoundException e) {
+          e.printStackTrace();
+        } catch (IOException e) {
+          e.printStackTrace();
+        } finally {
+          if (workbook != null) {
+            try {
+              workbook.close();
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
           }
         }
+      } else if (file.getName().endsWith(".xml")) {
+        importXMLFile(file);
       }
     }
     if (hasNewFile) {

@@ -7,6 +7,7 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -1180,6 +1181,106 @@ public class IntelligentService {
       }
     }
   }
+  
+  /**
+   * 單一病患幾天內使用超過 max 次
+   * 
+   * @param dataFormat
+   * @param ct
+   * @param max
+   * @param wording
+   */
+  private void processPatientUseTimes(String chineseYm, String dataFormat, CODE_THRESHOLD ct, int max,
+      String wording, int conditionCode, List<INTELLIGENT> intelligentList) {
+    String fieldName = ct.getCode() == null ? "inhCode" : "codeAll";
+    String code = ct.getCode() == null ? ct.getInhCode() : ct.getCode();
+
+    Calendar cal = DateTool.chineseYmToCalendar(chineseYm);
+    int day =
+        XMLConstant.DATA_FORMAT_OP.equals(dataFormat) ? ct.getOpTimesDay() : ct.getIpTimesDay();
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+
+    Calendar firstCal = DateTool.chineseYmToCalendar(chineseYm);
+    firstCal.set(Calendar.DAY_OF_MONTH, 1);
+    firstCal.add(Calendar.DAY_OF_YEAR, -day);
+    int diffMonth = cal.get(Calendar.YEAR) * 12 + cal.get(Calendar.MONTH)
+        - (firstCal.get(Calendar.YEAR) * 12 + firstCal.get(Calendar.MONTH));
+    if (diffMonth == 0) {
+      diffMonth = 1;
+    }
+    String[] lastNMonth = getLastNMonth(cal, diffMonth);
+    // 取得有使用orderCode且往前推 day的病歷
+    List<MR> list = getMRByCode(dataFormat, lastNMonth, fieldName, code, 0, false);
+    List<Long> mrIdList = getMrId(list, code);
+    // 1. 先檢查總數有沒有超過 max
+    List<Object[]> ids = (XMLConstant.DATA_FORMAT_OP.equals(dataFormat)) ? oppDao.getMrIdByOrderCodeCount(ct.getCode(), mrIdList, max)
+        : ippDao.getMrIdByOrderCodeCount(ct.getCode(), mrIdList, max);
+    if (ids == null || ids.size() == 0) {
+      return;
+    }
+    List<Long> violateMrIdList = new ArrayList<Long>();
+    for (Object[] obj : ids) {
+      violateMrIdList.add(((BigInteger) obj[0]).longValue());
+    }
+    
+ // 2. 再檢查天數，將有超過的一個一個調出來看 end_time - start_time , 用量 / 天數，取得每天使用量
+    List<Object[]> data =
+        (XMLConstant.DATA_FORMAT_OP.equals(dataFormat)) ? oppDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(ct.getCode(), violateMrIdList)
+            : ippDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(ct.getCode(), violateMrIdList);
+    // System.out.println("checkUseTimesEveryDayByDataFormat violateMr size=" +
+    // violateMrIdList.size() + ", order count=" + data.size());
+    // 存在違反規則的 MR ID
+    HashMap<Long, String> mrIdMap = new HashMap<Long, String>();
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
+    int daysSum = 0;
+    int total = 0;
+    long lastMrId = 0;
+    for (Object[] obj : data) {
+      long mrId = ((BigInteger) obj[0]).longValue();
+      if (lastMrId != mrId) {
+        daysSum = 0;
+        total = 0;
+        lastMrId = mrId;
+      }
+      String startTime = (String) obj[1];
+      String endTime = (String) obj[2];
+      if (mrIdMap.containsKey(Long.valueOf(mrId))) {
+        continue;
+      }
+      if (day == 1) {
+        // 每日不可超過 max 次數
+        if (startTime == null || endTime == null
+            || startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
+          // 同一天
+          if (((Double) obj[3]).intValue() > max) {
+            mrIdMap.put(mrId, "");
+          }
+        } else {
+          int diffDays = diffDays(startTime, endTime, sdf);
+          int totalQ = ((Double) obj[3]).intValue();
+          double avg = (double) totalQ / (double) diffDays;
+          if (avg > max) {
+            mrIdMap.put(mrId, "");
+          }
+        }
+      } else {
+        if (startTime == null || endTime == null
+            || startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
+          // 同一天
+          daysSum++;
+          total += ((Double) obj[3]).intValue();
+        } else {
+          daysSum += diffDays(startTime, endTime, sdf);
+          total += ((Double) obj[3]).intValue();
+        }
+        if (daysSum <= day && total > max) {
+          mrIdMap.put(mrId, "");
+        }
+      }
+    }
+    String wordingNew = String.format(wording, code, max);
+    insertIntelligent(mrIdMap, list, null, conditionCode, ct.getCode(), wordingNew);
+  }
 
   /**
    * 單一就診紀錄使用數量超過 max 次
@@ -1410,11 +1511,13 @@ public class IntelligentService {
             wording1M, conditionCode, list);
       }
       if (ct.getOpTimes6mStatus().intValue() == 1) {
+        // 就醫月份前六個月平均值相比，應用超過 n次
         processHighRatio6M(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimes6m().intValue(),
             wording6M, conditionCode, list);
       }
       if (ct.getOpTimesDStatus().intValue() == 1) {
-        processPatient(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimesD(), wordingTotal,
+        // 單一病患 n 天內，使用數量超過 x 次
+        processPatientUseTimes(chineseYm, XMLConstant.DATA_FORMAT_OP, ct, ct.getOpTimesD(), wordingTotal,
             conditionCode, list);
       }
     }
@@ -1436,7 +1539,7 @@ public class IntelligentService {
             wording6M, conditionCode, list);
       }
       if (ct.getIpTimesDStatus().intValue() == 1) {
-        processPatient(chineseYm, XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimesD(), wordingTotal,
+        processPatientUseTimes(chineseYm, XMLConstant.DATA_FORMAT_IP, ct, ct.getIpTimesD(), wordingTotal,
             conditionCode, list);
       }
     }
@@ -2667,15 +2770,33 @@ public class IntelligentService {
     logger.info("start check AI");
     // 臨床路徑差異
     for (String ym : applYm) {
-      calculateAICost(ym);
+      try {
+        calculateAICost(ym);
+      } catch (Exception e) {
+        logger.error("calculateAICost:", e);
+      }
       logger.info("check AI Cost finished");
-      calculateAIIpDays(ym);
+      
+      try {
+        calculateAIIpDays(ym);
+      } catch (Exception e) {
+        logger.error("calculateAIIpDays:", e);
+      }
       logger.info("check AI IpDays finished");
-      calculateAIOrderDrug(ym);
+      
+      try {
+        calculateAIOrderDrug(ym);
+      } catch (Exception e) {
+        logger.error("calculateAIOrderDrug:", e);
+      }
     }
     logger.info("start check AI finished.");
     // 週報表資料
-    reportService.calculatePointWeekly(calStart);
+    try {
+      reportService.calculatePointWeekly(calStart, true);
+    } catch (Exception e) {
+      logger.error("calculatePointWeekly:", e);
+    }
     logger.info("start checkAllIntelligentCondition finished");
     setIntelligentRunning(INTELLIGENT_REASON.XML.value(), false);
   }
@@ -2820,4 +2941,94 @@ public class IntelligentService {
     return new ArrayList<String>(map.keySet());
   }
 
+  public List<Long> getMrId(List<MR> mrList, String nhiNo) {
+    List<Long> result = new ArrayList<Long>();
+    for (MR mr : mrList) {
+      if (nhiNo != null) {
+        if (mr.getCodeAll().indexOf("," + nhiNo + ",") < 0) {
+          continue;
+        }
+      }
+      result.add(mr.getId());
+    }
+    return result;
+  }
+  
+  /**
+   * 醫令使用天數
+   * @param startTime 民國年月日時分 yyyMMddHHmm
+   * @param endTime 民國年月日時分 yyyMMddHHmm
+   * @param sdf SimpleDateFormat("yyyyMMddHHmm")
+   * @return
+   */
+  public static int diffDays(String startTime, String endTime, SimpleDateFormat sdf) {
+    Date sDate = DateTool.convertChineseToYears(startTime, sdf);
+    Date eDate = DateTool.convertChineseToYears(endTime, sdf);
+
+    return daysBetween(sDate, eDate);
+  }
+  
+  /**
+   * 使用天數
+   * @param start 
+   * @param end
+   * @return
+   */
+  public static int daysBetween(Date start, Date end) {
+    long diff = end.getTime() - start.getTime();
+    return ((int) (((diff / 1000) / 3600) / 24)) + 1;
+  }
+  
+  private void insertIntelligent(HashMap<Long, String> mrIdMap, List<MR> mrList,
+      List<INTELLIGENT> batch, int reasonCode, String nhiNo, String wording) {
+    if (mrIdMap == null || mrIdMap.size() == 0) {
+      return;
+    }
+    ArrayList<Long> violateMrIdList = new ArrayList<Long>();
+    for (Long mrId : mrIdMap.keySet()) {
+      violateMrIdList.add(mrId);
+    }
+    insertIntelligent(mrList, violateMrIdList, batch, reasonCode, nhiNo, wording);
+  }
+  
+  private void insertIntelligent(List<MR> mrList, List<Long> mrIdList, List<INTELLIGENT> batch,
+     int reasonCode,  String nhiNo, String wording) {
+    String reason = wording.length() < 100 ? wording : wording.substring(0, 99);
+    List<MR> violateMrList = null;
+    boolean needAddMrIdList = false;
+    if (mrIdList == null) {
+      needAddMrIdList = true;
+      mrIdList = new ArrayList<Long>();
+      violateMrList = mrList;
+    } else if (mrIdList != null && mrIdList.size() == 0) {
+      return;
+    } else {
+      violateMrList = getMrByMrId(mrList, mrIdList);
+    }
+
+    long start = System.currentTimeMillis();
+    for (MR violateMr : violateMrList) {
+      insertIntelligent(violateMr, reasonCode, nhiNo,
+          reason, true, batch);
+      if (needAddMrIdList) {
+        mrIdList.add(violateMr.getId());
+      }
+    }
+    //mrDao.updateMultiMrStauts(MR_STATUS.WAIT_CONFIRM.value(), mrIdList);
+    long usedTime = System.currentTimeMillis() - start;
+    // System.out.println("insertIntelligent " + mrList.size() + " use " + usedTime);
+  }
+  
+  public List<MR> getMrByMrId(List<MR> mrList, List<Long> mrIdList) {
+    List<MR> result = new ArrayList<MR>();
+    for (Long mrId : mrIdList) {
+      for (MR mr : mrList) {
+        if (mr.getId().longValue() == mrId.longValue()) {
+          result.add(mr);
+          break;
+        }
+      }
+    }
+    return result;
+  }
 }

@@ -227,7 +227,7 @@ public class InitialDataService {
       // 讀到 "基本診療 - 門診診察費" 要轉成 "門診診察費"
       List<PARAMETERS> payCodeType = parametersService.getByCat("PAY_CODE_TYPE_" + fileFormat);
       if (payCodeType == null || payCodeType.size() == 0) {
-          parametersService.getByCat("PAY_CODE_TYPE");
+        payCodeType = parametersService.getByCat("PAY_CODE_TYPE");
       }
       
       ObjectMapper objectMapper = new ObjectMapper();
@@ -286,7 +286,7 @@ public class InitialDataService {
         if (pc.getCodeType() == null || NO_TYPE.equals(pc.getCodeType())) {
           String codeDrug = pc.getCode() != null ? pc.getCode() : pc.getInhCode();
             if (codeDrug.length() == 10) {
-              pc.setCodeType("藥費");
+              pc.setCodeType("西醫藥品");
             } else if (codeDrug.length() == 12) {
               pc.setCodeType("衛材品項");
             }
@@ -1013,8 +1013,12 @@ public class InitialDataService {
       }
       try {
         if (string.indexOf("detailCat") > 0 || string.indexOf("sDate") > 0
-            || string.indexOf("level") > 0 || string.indexOf("law") > 0) {
-          //OrderCode oc = mapper.readValue(string, OrderCode.class);
+            || string.indexOf("level") > 0 || string.indexOf("law") > 0
+            || string.indexOf("\"p\"") > 0) {
+//          OrderCode oc = mapper.readValue(string, OrderCode.class);
+//          if (oc.getCode().toLowerCase().equals(code.toLowerCase())) {
+//              return oc.getId();
+//            }
         } else {
           CodeBaseLongId cb = mapper.readValue(string, CodeBaseLongId.class);
           if (cb.getCode().toLowerCase().equals(code.toLowerCase())) {
@@ -1311,16 +1315,21 @@ public class InitialDataService {
       if (s == null) {
         continue;
       }
-      //System.out.println(s);
 
       try {
         if (s.indexOf("\"p\"") > 0) {
           OrderCode oc =  mapper.readValue(s, OrderCode.class);
+          if (oc.getCode() == null || oc.getCategory() == null) {
+        	  continue;
+          }
           if (oc.getCode().toLowerCase().equals(searchKey) && oc.getCategory().equals(category)) {
             return oc;
           }
         } else {
           CodeBaseLongId cbRedis = mapper.readValue(s, CodeBaseLongId.class);
+          if (cbRedis.getCode() == null || cbRedis.getCategory() == null) {
+        	  continue;
+          }
           if (cbRedis.getCode().toLowerCase().equals(searchKey) && cbRedis.getCategory().equals(category)) {
             return cbRedis;
           }

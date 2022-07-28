@@ -635,7 +635,11 @@ public class MR {
   }
 
   public void setDrgSection(String drgSection) {
-    this.drgSection = drgSection;
+    if (drgSection != null && drgSection.length() > 0) {
+      this.drgSection = drgSection;
+    } else {
+      this.drgSection = null;
+    }
   }
 
   public Integer getApplDot() {
