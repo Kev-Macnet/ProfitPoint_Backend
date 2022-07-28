@@ -22,7 +22,7 @@ public class BackupLogDao {
     public java.util.List<Map<String, Object>> findAllById(long id, String userName) {
         String sql;
         sql = "Select ID, USERNAME, FILENAME, MODE, DESCRIPTION, UPDATE_TM\r\n"
-                + "From BACKUP_LOG\r\n"
+                + "From NWUSER.BACKUP_LOG\r\n"
                 + "Where (1=1)\r\n"
                 + " -- and (ID=%d)\r\n"
                 + " -- and (USERNAME='%s')\r\n"
@@ -35,7 +35,9 @@ public class BackupLogDao {
             sql = sql.replace("-- and (USERNAME=", " and (USERNAME=");
         }
         logger.debug(sql);
+        sql = "Select ID, USERNAME, FILENAME, MODE, DESCRIPTION, UPDATE_TM From BACKUP_LOG";
         java.util.List<Map<String, Object>> retList = jdbcTemplate.query(sql, new ColumnMapRowMapper());
+        System.out.println("dbbackup sql:" + sql + "-- size=" + retList.size());
         return Utility.listLowerCase(retList);
     }
 

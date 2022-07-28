@@ -777,7 +777,7 @@ public class SystemController extends BaseController {
       Calendar cal = Calendar.getInstance();
       cal.add(Calendar.YEAR, -4);
       cal = parametersService.getMinMaxCalendar(cal.getTime(), true);
-      reportService.calculatePointWeekly(cal);
+      reportService.calculatePointWeekly(cal, true);
     } else if ("CostDiff".equals(name)) {
       is.recalculateAICostThread();
     } else if ("IpDays".equals(name)) {

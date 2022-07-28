@@ -489,14 +489,14 @@ public class ExcelUtil {
   public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
       HSSFRow row) {
     HashMap<String, String> result = new HashMap<String, String>();
-    // for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
       String cellValue = null;
       if (row.getCell(i) == null) {
         continue;
       }
       if (row.getCell(i).getCellType() == CellType.NUMERIC) {
-        if (DateUtil.isCellDateFormatted(row.getCell(i)) || row.getCell(i).getCellStyle().getDataFormatString().indexOf("yy") > -1) {
+        if (DateUtil.isCellDateFormatted(row.getCell(i))
+            || row.getCell(i).getCellStyle().getDataFormatString().indexOf("yy") > -1) {
           cellValue = ExcelUtil.SDF_DATETIME.format(row.getCell(i).getDateCellValue());
         } else {
           cellValue = String.valueOf(row.getCell(i).getNumericCellValue());
@@ -508,7 +508,7 @@ public class ExcelUtil {
       } else {
         cellValue = row.getCell(i).getStringCellValue().trim();
       }
-      if (cellValue != null && cellValue.length() > 0) {
+      if (cellValue != null && cellValue.length() > 0 && columnMap.get(new Integer(i)) != null) {
         result.put(columnMap.get(new Integer(i)), cellValue);
       }
     }

@@ -758,13 +758,28 @@ public class DrgCalService {
     return result;
   }
   
+  private void generateDRGBAT(List<MR> mrList) {
+    Date maxDate = new Date(0);
+    for (MR mr : mrList) {
+      if (mr.getMrEndDate().after(maxDate)) {
+        maxDate = mr.getMrEndDate();
+      }
+    }
+    String drgPath = (String) parameters.getParameterValueBetween("DRGSERVICE_PATH", maxDate);
+    String drgEXE = (String) parameters.getParameterValueBetween("DRGSERVICE_NAME", maxDate);
+    if (drgEXE == null) {
+      drgEXE = "DRGICD10.exe";
+    }
+    logDataService.createDrgBatchFile(drgPath, drgEXE);
+  }
+  
   public void callDrgCalProgram(File file, List<MR> mrList, List<Long> mrIdList, HashMap<Long, IP_D> ipdMap) {
+    generateDRGBAT(mrList);
     String targetName = file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 4) + "B.txt";
     targetName = targetName.substring(targetName.lastIndexOf('\\') + 1);
     String pyCommand = DRG_DATA_FILE_PATH + "/DRG.BAT " + file.getName() + " " + targetName + " y";
     execBatch(pyCommand);
    
-    HashMap<String, DrgCalculate> drgCodes = new HashMap<String, DrgCalculate>();
     HashMap<String, Integer> drgApplDot = new HashMap<String, Integer>();
     try {
       drgCalDao.deleteByMrId(mrIdList);
@@ -791,20 +806,17 @@ public class DrgCalService {
         dc.setMdc(ss[23]);
         
         MR mr = getMrById(mrList, dc.getMrId().longValue());
+        IP_D ipd = ipdMap.get(mr.getId());
         // 西元年
         int adYM = Integer.parseInt(ss[1]);
         int newApplDot = 0;
-        DrgCalculate drgCodeDetail = drgCodes.get(dc.getDrg());
-        if (drgCodeDetail == null) {
-          drgCodeDetail = getDRGSection(dc.getDrg(), String.valueOf(adYM - 191100),
-              dc.getMedDot(), mr.getChangeICD());
-        }
+        DrgCalculate drgCodeDetail = getDRGSection(dc.getDrg(), String.valueOf(adYM - 191100),
+              dc.getMedDot(), mr.getChangeICD().intValue());
         if (drgCodeDetail == null || (!drgCodeDetail.isStarted() && dc.getError() != null
             && dc.getError().length() == 0)) {
           // DRG代碼尚未導入
           dc.setError("C");
         } else {
-          drgCodes.put(dc.getDrg(), drgCodeDetail);
           DecimalFormat df = new DecimalFormat("#.###");
           dc.setRw(Double.parseDouble(df.format(drgCodeDetail.getRw())));
           dc.setAvgInDay(drgCodeDetail.getAvgInDay());
@@ -813,7 +825,6 @@ public class DrgCalService {
           dc.setDrgFix(drgCodeDetail.getFixed());
           dc.setDrgSection(drgCodeDetail.getSection());
           
-          IP_D ipd = ipdMap.get(mr.getId());
           if (drgApplDot.get(dc.getDrg()) != null) {
             newApplDot = drgApplDot.get(dc.getDrg()).intValue();
           } else {
@@ -843,10 +854,10 @@ public class DrgCalService {
     } finally {
       File fileB = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 4) + "B.txt");
       if (fileB.exists()) {
-        fileB.delete();
+        //fileB.delete();
       }
       if (file.exists()) {
-        file.delete();
+        //file.delete();
       }
     }
   }

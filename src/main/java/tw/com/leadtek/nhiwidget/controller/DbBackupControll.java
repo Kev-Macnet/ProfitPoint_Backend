@@ -82,7 +82,7 @@ public class DbBackupControll {
     })
     @RequestMapping(value = "/dbbackup/log", method = RequestMethod.POST)
     public ResponseEntity<?> dbBackupLog(@RequestHeader("Authorization") String jwt) throws Exception {
-        
+        //System.out.println("dbbackup:" + parametersService.getParameter(MENU_DBBACKUP));
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
@@ -91,6 +91,7 @@ public class DbBackupControll {
             return ResponseEntity.ok(new BaseResponse("success", null));
           } else {
             java.util.List<Map<String, Object>> retMap = dbBackupService.findAll(0, "");
+            //System.out.println("retMap size=" + retMap.size());
             return new ResponseEntity<>(retMap, HttpStatus.OK);
           }
         }

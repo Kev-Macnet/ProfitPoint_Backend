@@ -1,4 +1,4 @@
-# Replace 59.120.139.62:8081 to localhost:8081 
+# Replace localhost to 59.120.139.62 
 server:
   port: ${port:8081}
   tomcat:

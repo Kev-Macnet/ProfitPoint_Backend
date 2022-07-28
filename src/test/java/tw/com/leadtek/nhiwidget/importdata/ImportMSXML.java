@@ -57,7 +57,7 @@ public class ImportMSXML {
     // importXML("D:\\Users\\2268\\Desktop\\麗臺-門急診");
 
     // importFile(new File("D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\敏盛醫院\\108021.xml"));
-      systemService.importFile(new File(
+      systemService.importXMLFile(new File(
           "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\敏盛醫院\\麗臺-門急診\\10801_0\\A-補報(A+a)\\10801-0-A.xml"));
   }
 

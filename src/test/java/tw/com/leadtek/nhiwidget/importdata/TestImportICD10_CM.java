@@ -134,7 +134,7 @@ public class TestImportICD10_CM {
   /**
    * 將excel檔案資料匯至 Redis
    */
-  @Ignore
+  //@Ignore
   @Test
   public void importICD10ToRedis() {
     System.out.println("importICD10ToRedis");
@@ -744,7 +744,7 @@ public class TestImportICD10_CM {
     }
   }
 
-  //@Ignore
+  @Ignore
   @Test
   public void importATC() {
     String cat = "ATC";

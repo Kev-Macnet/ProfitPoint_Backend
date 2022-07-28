@@ -1014,6 +1014,9 @@ public class NHIWidgetXMLService {
     opd.setIcdCm3(StringUtility.formatICDtoUpperCase(opd.getIcdCm3()));
     opd.setIcdCm4(StringUtility.formatICDtoUpperCase(opd.getIcdCm4()));
     opd.setIcdCm5(StringUtility.formatICDtoUpperCase(opd.getIcdCm5()));
+    if (opd.getOwnExpense() == null) {
+      opd.setOwnExpense(0);
+    }
   }
 
   private void maskOPP(OP_P opp, String caseType) {
@@ -1922,6 +1925,7 @@ public class NHIWidgetXMLService {
     }
     if (smrp.getOnlyDRG() != null && smrp.getOnlyDRG().booleanValue()) {
       predicate.add(cb.isNotNull(root.get("drgSection")));
+      predicate.add(cb.equal(root.get("dataFormat"), "20"));
     }
     boolean notOrderCode =
         smrp.getNotOrderCode() == null ? false : smrp.getNotOrderCode().booleanValue();
@@ -2174,7 +2178,7 @@ public class NHIWidgetXMLService {
         List<Predicate> predicate = searchMRPredicate(root, query, cb, smrp);
         // if (smrp.getOnlyDRG() == null || !smrp.getOnlyDRG().booleanValue()) {
         predicate.add(cb.isNotNull(root.get("drgSection")));
-        // }
+        predicate.add(cb.equal(root.get("dataFormat"), "20"));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
         return query.getRestriction();
@@ -3611,7 +3615,7 @@ public class NHIWidgetXMLService {
             // 藥費點數
             drugDot -= ipp.getTotalDot().intValue();
           } else if (ipp.getOrderCode().length() == 10) {
-            // 支付代碼為10碼列為藥費
+            // 支付代碼為10碼列為西醫藥品
             drugDot -= ipp.getTotalDot();
           } else if ("6".equals(ipp.getPayCodeType())) {
             // 6 為調劑費(藥事服務費)
@@ -5351,6 +5355,15 @@ public class NHIWidgetXMLService {
       isDirty = true;
     }
     update.setSubCat(newNote.getSubCat());
+    if (!checkIfEquals(old.getDeductedDate(), newNote.getDeductedDate())) {
+      isDirty = true;
+    }
+    if (!checkIfEquals(old.getRollbackDate(), newNote.getRollbackDate())) {
+      isDirty = true;
+    }
+    if (!checkIfEquals(old.getDisputeDate(), newNote.getDisputeDate())) {
+      isDirty = true;
+    }
     update.setUpdateAt(new java.util.Date());
     if (isDirty) {
       return update;
@@ -5386,6 +5399,8 @@ public class NHIWidgetXMLService {
       return ((Integer) a).intValue() == ((Integer) b).intValue();
     } else if (a instanceof String) {
       return a.equals(b);
+    } else if (a instanceof Date) {
+      return ((Date) a).getTime() == ((Date) b).getTime();
     }
     return true;
   }
@@ -5426,7 +5441,6 @@ public class NHIWidgetXMLService {
     note.setMrId(Long.parseLong(mrId));
     note.setStatus(1);
     note.setUpdateAt(new java.util.Date());
-    note.setDeductedDate(new java.util.Date());
     deductedNoteDao.save(note);
     parameters.upsertCodeConflictForHighRisk(mr.getIcdcm1(), note.getDeductedOrder(),
         mr.getDataFormat());
@@ -5761,7 +5775,31 @@ public class NHIWidgetXMLService {
       } else {
         drg.setSelected(false);
       }
-      data.add(drg);
+
+      if (data.size() == 0) {
+        data.add(drg);
+      } else {
+        int index = Integer.MAX_VALUE;
+        for (int i=0; i<data.size(); i++) {
+          DrgCalPayload drgCalPayload = data.get(i);
+          if (drgCalPayload.getDrgDot().intValue() < drg.getDrgDot().intValue()) {
+            index = i;
+            break;
+          }
+          if (drgCalPayload.getDrgDot().intValue() == drg.getDrgDot().intValue()) {
+            if (drg.getSelected().booleanValue()) {
+              // 將目前使用的DRG優先放在前面
+              index = i;
+              break;
+            }
+          }
+        }
+        if (index == Integer.MAX_VALUE) {
+          data.add(drg);
+        } else {
+          data.add(index, drg);
+        }
+      }
     }
     result.setData(data);
     return result;
@@ -7045,6 +7083,11 @@ public class NHIWidgetXMLService {
       // 存放有差異的欄位
       List<FILE_DIFF> diffList = null;
       IP_D ipd = getIpd(values);
+//      System.out.println("ipd.name:" + ipd.getName() + "," + values.get("NAME") + ",inh_mr:"+ values.get("INH_MR") + ",inhNO:" +  values.get("INH_NO") ) ;
+//      for (String key : values.keySet()) {
+//        System.out.print(key + ":" + values.get(key) +", ");
+//      }
+//      System.out.println("");
       ipd.setIptId(ipt.getId());
       maskIPD(ipd);
       MR mr = findMR(mrList, values.get("INH_NO"));
@@ -8638,8 +8681,8 @@ public class NHIWidgetXMLService {
         if ("20".equals(payCodeType) || payCodeType == null) {
           if (ipp.getOrderCode() != null) {
             if (ipp.getOrderCode().length() == 10) {
-              // 藥費
-              payCodeType = "7";
+              // 西醫藥品
+              payCodeType = "22";
             } else if (ipp.getOrderCode().length() == 10) {
               // 衛材品項費
               payCodeType = "23";
@@ -8733,7 +8776,7 @@ public class NHIWidgetXMLService {
         if (opp.getDrugNo() != null) {
           if (opp.getDrugNo().length() == 10) {
             // 藥費
-            opp.setPayCodeType("7");
+            opp.setPayCodeType("22");
             // 醫令類別：用藥明細
             opp.setOrderType("1");
           } else if (opp.getDrugNo().length() == 12) {
@@ -9147,7 +9190,7 @@ public class NHIWidgetXMLService {
       if (opp.getDrugNo() != null) {
         if (opp.getDrugNo().length() == 10) {
           // 藥費
-          opp.setPayCodeType("7");
+          opp.setPayCodeType("22");
           // 醫令類別：用藥明細
           opp.setOrderType("1");
         } else if (opp.getDrugNo().length() == 12) {

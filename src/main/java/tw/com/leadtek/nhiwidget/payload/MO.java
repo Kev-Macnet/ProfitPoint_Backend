@@ -99,9 +99,13 @@ public class MO implements Serializable {
   @Transient
   private String orderCode;
   
-  @ApiModelProperty(value = "藥品(項目)代號(門急診)", required = false)
-  @Column(name = "DRUG_NO")
+  @ApiModelProperty(value = "藥品(項目)代號說明", required = false)
+  @Transient
   private String drugNo;
+  
+  @ApiModelProperty(value = "藥品(項目)代號", required = false)
+  @Column(name = "DRUG_NO")
+  private String drugNoCode;
   
   @ApiModelProperty(value = "藥品用量", required = false)
   @Column(name = "DRUG_USE")
@@ -581,6 +585,14 @@ public class MO implements Serializable {
   public void setConFuncTypeCode(String conFuncTypeCode) {
     this.conFuncTypeCode = conFuncTypeCode;
   }
+  
+  public String getDrugNoCode() {
+    return drugNoCode;
+  }
+
+  public void setDrugNoCode(String drugNoCode) {
+    this.drugNoCode = drugNoCode;
+  }
 
   public void setOPPData(OP_P opp, CodeTableService cts) {
     this.orderSeqNo = opp.getOrderSeqNo();
@@ -592,6 +604,7 @@ public class MO implements Serializable {
     this.orderType = CodeTableService.getDesc(cts, "ORDER_TYPE", opp.getOrderType());
     this.orderTypeCode = opp.getOrderType();
     this.drugNo = CodeTableService.getDesc(cts, "ORDER", opp.getDrugNo());
+    this.drugNoCode = opp.getDrugNo();
     this.drugUse = opp.getDrugUse();
     this.totalQ = opp.getTotalQ();
     this.unitP = opp.getUnitP();
