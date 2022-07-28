@@ -850,9 +850,13 @@ public class DbReportExportService {
 
 							String date = total.get(v).getDate();
 							String code = total.get(v).getDrgCode();
+							String displayName = total.get(v).getDisplayName();
 							if (!code.isEmpty()) {
 								cellValue = code;
 							} else {
+								if(displayName != null && displayName.length()>0) {
+									cellValue = displayName;
+								}
 								cellValue = date;
 							}
 
@@ -917,9 +921,13 @@ public class DbReportExportService {
 
 								String date = sectionA.get(v).getDate();
 								String code = sectionA.get(v).getDrgCode();
+								String displayName = sectionA.get(v).getDisplayName();
 								if (!code.isEmpty()) {
 									cellValue = code;
 								} else {
+									if(displayName != null && displayName.length()>0) {
+										cellValue = displayName;
+									}
 									cellValue = date;
 								}
 
@@ -1020,9 +1028,13 @@ public class DbReportExportService {
 
 								String date = sectionB1.get(v).getDate();
 								String code = sectionB1.get(v).getDrgCode();
+								String displayName = sectionB1.get(v).getDisplayName();
 								if (!code.isEmpty()) {
 									cellValue = code;
 								} else {
+									if(displayName != null && displayName.length()>0) {
+										cellValue = displayName;
+									}
 									cellValue = date;
 								}
 
@@ -1123,9 +1135,13 @@ public class DbReportExportService {
 
 								String date = sectionB2.get(v).getDate();
 								String code = sectionB2.get(v).getDrgCode();
+								String displayName = sectionB2.get(v).getDisplayName();
 								if (!code.isEmpty()) {
 									cellValue = code;
 								} else {
+									if(displayName != null && displayName.length()>0) {
+										cellValue = displayName;
+									}
 									cellValue = date;
 								}
 
@@ -1226,9 +1242,13 @@ public class DbReportExportService {
 
 								String date = sectionC.get(v).getDate();
 								String code = sectionC.get(v).getDrgCode();
+								String displayName = sectionC.get(v).getDisplayName();
 								if (!code.isEmpty()) {
 									cellValue = code;
 								} else {
+									if(displayName != null && displayName.length()>0) {
+										cellValue = displayName;
+									}
 									cellValue = date;
 								}
 
