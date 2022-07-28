@@ -1,7 +1,5 @@
 package tw.com.leadtek.nhiwidget.service;
 
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
-
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -38,6 +36,9 @@ import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionCode;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionInfo;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionList;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionResponse;
+import tw.com.leadtek.nhiwidget.payload.report.DrgQueryCoditionResponse;
+import tw.com.leadtek.nhiwidget.payload.report.DrgQueryCondition;
+import tw.com.leadtek.nhiwidget.payload.report.DrgQueryConditionDetail;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionDetail;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionIhnCodeInfo;
@@ -3519,8 +3520,8 @@ public class DbReportService {
 		List<POINT_MONTHLY> list = pointMonthlyDao.getByYmInOrderByYm(yearMonthBetween);
 		for (int i = 0; i < yList.size(); i++) {
 			String displayName = "";
-			if(list.size() > 0) {
-				
+			if (list.size() > 0) {
+
 				POINT_MONTHLY pm = list.get(i);
 				pm.checkNull();
 				if (pm.getYm().intValue() == yearMonthBetween.get(i)) {
@@ -3537,7 +3538,7 @@ public class DbReportService {
 							}
 						}
 					}
-					
+
 					calculateAchievementQuarter(result, pm, show, displayName);
 				}
 			}
@@ -3574,14 +3575,14 @@ public class DbReportService {
 	 * @throws ParseException
 	 */
 	@SuppressWarnings("deprecation")
-	public Map<String, Object> getDrgQueryCondition(String dateTypes, String year, String month, String betweenSdate,
+	public DrgQueryCoditionResponse getDrgQueryCondition(String dateTypes, String year, String month, String betweenSdate,
 			String betweenEdate, String sections, String drgCodes, String dataFormats, String funcTypes,
 			String medNames, String icdcms, String medLogCodes, int applMin, int applMax, String icdAll, String payCode,
 			String inhCode, boolean isShowDRGList, boolean isLastM, boolean isLastY) throws ParseException {
 
-//		DrgQueryConditionPayload result = new DrgQueryConditionPayload();
-		Map<String, Object> result = new HashMap<String, Object>();
 		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> sqlMapList2 = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> resList = new ArrayList<Map<String, Object>>();
 		/// 顯示區間
 		List<String> sectionList = new ArrayList<String>();
 		String sectionSql = "";
@@ -3610,8 +3611,9 @@ public class DbReportService {
 		if (sections.length() > 0) {
 			String[] sectionArr = StringUtility.splitBySpace(sections);
 			for (String str : sectionArr) {
-				sectionList.add(str);
-				sectionSql += "'" + str + "',";
+				String replace = str.replaceAll("區", "");
+				sectionList.add(replace);
+				sectionSql += "'" + replace + "',";
 			}
 			sectionSql = sectionSql.substring(0, sectionSql.length() - 1);
 		}
@@ -3761,88 +3763,49 @@ public class DbReportService {
 						+ "' AS DATE, '' AS DRG_CODE, DRG_QUANTITY, DRG_APPL_POINT,  DRG_ACTUAL_POINT FROM ");
 				selectColumn.append(" (SELECT SUM(T) AS DRG_QUANTITY FROM ");
 				selectColumn.append(
-						" (SELECT COUNT(1) AS T  FROM MR m  WHERE Data_format = '20' AND drg_section IS NOT NULL  and MR_END_DATE LIKE CONCAT('"
+						" (SELECT COUNT(1) AS T  FROM MR WHERE DATA_FORMAT = '20' AND drg_section IS NOT NULL  and MR_END_DATE LIKE CONCAT('"
 								+ yearMonthBetweenStr.get(i) + "','%') ");
 				if (drgCodeList.size() > 0)
-					where.append(" AND DRG_CODE IN (" + drgCodeSql + ") ");
+					where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
 				if (funcTypeList.size() > 0)
-					where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+					where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 				if (medNameList.size() > 0)
-					where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+					where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 				if (icdcmList.size() > 0)
-					where.append(" AND ICDCM1 IN (" + icdcmSql + ") ");
+					where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
 				if (medLogCodeList.size() > 0)
-					where.append(" AND INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
+					where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
 				if (icdAllList.size() > 0) {
 					for (String str : icdAllList) {
-						where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
+						where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
 					}
 				}
 				if (payCode != null && payCode.length() > 0)
-					where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+					where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 				if (inhCode != null && inhCode.length() > 0)
-					where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+					where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
 				selectColumn.append(where);
-				where = new StringBuffer("");
 				selectColumn.append(" ))a, ");
 				selectColumn.append(
-						" (SELECT SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_APPL_POINT FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE LIKE CONCAT('"
+						" (SELECT IFNULL(SUM(IP_D.APPL_DOT + IP_D.PART_DOT),0) AS DRG_APPL_POINT FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE LIKE CONCAT('"
 								+ yearMonthBetweenStr.get(i) + "','%') ");
-				if (drgCodeList.size() > 0)
-					where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
-				if (funcTypeList.size() > 0)
-					where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-				if (medNameList.size() > 0)
-					where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-				if (icdcmList.size() > 0)
-					where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-				if (medLogCodeList.size() > 0)
-					where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-				if (icdAllList.size() > 0) {
-					for (String str : icdAllList) {
-						where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
-					}
-				}
-				if (payCode != null && payCode.length() > 0)
-					where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-				if (inhCode != null && inhCode.length() > 0)
-					where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
 				selectColumn.append(where);
-				where = new StringBuffer("");
 				selectColumn.append(" )b, ");
 				selectColumn.append(
-						" (SELECT SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS DRG_ACTUAL_POINT FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE LIKE CONCAT('"
+						" (SELECT IFNULL(SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT),0) AS DRG_ACTUAL_POINT FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE LIKE CONCAT('"
 								+ yearMonthBetweenStr.get(i) + "','%') ");
-				if (drgCodeList.size() > 0)
-					where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
-				if (funcTypeList.size() > 0)
-					where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-				if (medNameList.size() > 0)
-					where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-				if (icdcmList.size() > 0)
-					where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-				if (medLogCodeList.size() > 0)
-					where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-				if (icdAllList.size() > 0) {
-					for (String str : icdAllList) {
-						where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
-					}
-				}
-				if (payCode != null && payCode.length() > 0)
-					where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-				if (inhCode != null && inhCode.length() > 0)
-					where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
 				selectColumn.append(where);
 				where = new StringBuffer("");
 				selectColumn.append(" )c ");
 				if (!isShowDRGList && drgCodeList.size() == 0) {
-					if (applMin > 0)
-						where.append(" WHERE b.DRG_APPL_POINT >= " + applMin + " ");
-					if (applMax > 0)
+					if (applMin >= 0 && applMax > 0) {
+						where.append(" WHERE 1=1 ");
+						where.append(" AND b.DRG_APPL_POINT >= " + applMin + " ");
 						where.append(" AND b.DRG_APPL_POINT <= " + applMax + " ");
+					}
 
 					selectColumn.append(where);
 					where = new StringBuffer("");
@@ -3855,83 +3818,43 @@ public class DbReportService {
 					selectColumn.append(
 							" (SELECT a.DRG_CODE AS DRG_CODE, a.DRG_QUANTITY AS DRG_QUANTITY, b.DRG_APPL_POINT AS DRG_APPL_POINT, c.DRG_ACTUAL_POINT  AS DRG_ACTUAL_POINT FROM ");
 					selectColumn.append(
-							" (SELECT  COUNT(1) AS DRG_QUANTITY, DRG_CODE  FROM MR m  WHERE Data_format = '20' AND drg_section IS NOT NULL  and MR_END_DATE LIKE CONCAT('"
+							" (SELECT  COUNT(1) AS DRG_QUANTITY, DRG_CODE  FROM MR WHERE DATA_FORMAT = '20' AND drg_section IS NOT NULL  and MR_END_DATE LIKE CONCAT('"
 									+ yearMonthBetweenStr.get(i) + "','%') ");
 					if (drgCodeList.size() > 0)
-						where.append(" AND DRG_CODE IN (" + drgCodeSql + ") ");
+						where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
 					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 					if (icdcmList.size() > 0)
-						where.append(" AND ICDCM1 IN (" + icdcmSql + ") ");
+						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
 					if (medLogCodeList.size() > 0)
-						where.append(" AND INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
+						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
 					if (icdAllList.size() > 0) {
 						for (String str : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
+							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
 						}
 					}
 					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 					selectColumn.append(where);
 					groupBy.append(" GROUP BY DRG_CODE)a, ");
 					selectColumn.append(groupBy);
-					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 
 					selectColumn.append(
 							" (SELECT MR.DRG_CODE, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_APPL_POINT  FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE LIKE CONCAT('"
 									+ yearMonthBetweenStr.get(i) + "','%') ");
-					if (drgCodeList.size() > 0)
-						where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
-					if (funcTypeList.size() > 0)
-						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-					if (medNameList.size() > 0)
-						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-					if (icdcmList.size() > 0)
-						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-					if (medLogCodeList.size() > 0)
-						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-					if (icdAllList.size() > 0) {
-						for (String str : icdAllList) {
-							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
-						}
-					}
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 					selectColumn.append(where);
 					groupBy.append(" GROUP BY DRG_CODE)b, ");
 					selectColumn.append(groupBy);
-					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 
 					selectColumn.append(
 							" (SELECT MR.DRG_CODE, SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS DRG_ACTUAL_POINT  FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE LIKE CONCAT('"
 									+ yearMonthBetweenStr.get(i) + "','%') ");
-					if (drgCodeList.size() > 0)
-						where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
-					if (funcTypeList.size() > 0)
-						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-					if (medNameList.size() > 0)
-						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-					if (icdcmList.size() > 0)
-						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-					if (medLogCodeList.size() > 0)
-						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-					if (icdAllList.size() > 0) {
-						for (String str : icdAllList) {
-							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
-						}
-					}
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 					selectColumn.append(where);
 					groupBy.append(" GROUP BY DRG_CODE)c ");
 					selectColumn.append(groupBy);
@@ -3939,10 +3862,12 @@ public class DbReportService {
 					groupBy = new StringBuffer("");
 
 					selectColumn.append(" WHERE  a.DRG_CODE = b.DRG_CODE AND  b.DRG_CODE = c.DRG_CODE )t ");
-					if (applMin > 0)
-						where.append(" WHERE DRG_APPL_POINT >= " + applMin + " ");
-					if (applMax > 0)
+					if (applMin >= 0 && applMax > 0) {
+						where.append(" WHERE 1=1 ");
+						where.append(" AND DRG_APPL_POINT >= " + applMin + " ");
 						where.append(" AND DRG_APPL_POINT <= " + applMax + " ");
+					}
+
 					selectColumn.append(where);
 					orderBy.append(" ORDER BY DRG_CODE ");
 					selectColumn.append(orderBy);
@@ -3957,34 +3882,12 @@ public class DbReportService {
 				sqlMapList.addAll(dataMap);
 				selectColumn = new StringBuffer("");
 				entityManager.close();
-			}
-			if (mapList.size() > 0) {
-				for (int j = 0; j < mapList.size(); j++) {
-					String ym = mapList.get(j).get("YM").toString();
-					String displayName = mapList.get(j).get("displayName").toString();
-					for (int i = 0; i < sqlMapList.size(); i++) {
-						String date = sqlMapList.get(i).get("DATE").toString().replace("-", "");
-						String drgcode = sqlMapList.get(i).get("DRG_CODE").toString();
-						if (ym.equals(date)) {
-							if (drgcode.length() == 0) {
-								sqlMapList.get(i).put("disPlayName", displayName);
-							} else {
-								sqlMapList.get(i).put("disPlayName", "");
-							}
-							continue;
-						}
-						if (sqlMapList.get(i).get("disPlayName") == null) {
-							sqlMapList.get(i).put("disPlayName", "");
-						}
-					}
-				}
-			}
-			/// 跑新sql先初始化
-			selectColumn = new StringBuffer("");
-			where = new StringBuffer("");
-			groupBy = new StringBuffer("");
-			orderBy = new StringBuffer("");
-			for (int i = 0; i < yearMonthBetweenStr.size(); i++) {
+
+				/// 跑新sql先初始化
+				selectColumn = new StringBuffer("");
+				where = new StringBuffer("");
+				groupBy = new StringBuffer("");
+				orderBy = new StringBuffer("");
 				selectColumn.append(" SELECT '" + yearMonthBetweenStr.get(i)
 						+ "' AS DATE, '' AS DRG_CODE,DRG_SECTION,DRG_QUANTITY,DRG_APPL_POINT,DRG_ACTUAL_POINT FROM  ");
 				selectColumn.append(
@@ -4024,10 +3927,11 @@ public class DbReportService {
 				groupBy = new StringBuffer("");
 				orderBy = new StringBuffer("");
 				if (!isShowDRGList && drgCodeList.size() == 0) {
-					if (applMin > 0)
-						where.append(" WHERE DRG_APPL_POINT >= " + applMin + " ");
-					if (applMax > 0)
+					if (applMin >= 0 && applMax > 0) {
+						where.append(" WHERE 1=1 ");
+						where.append(" AND DRG_APPL_POINT >= " + applMin + " ");
 						where.append(" AND DRG_APPL_POINT <= " + applMax + " ");
+					}
 
 					selectColumn.append(where);
 					where = new StringBuffer("");
@@ -4071,11 +3975,11 @@ public class DbReportService {
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					orderBy = new StringBuffer("");
-
-					if (applMin > 0)
-						where.append(" WHERE DRG_APPL_POINT >= " + applMin + " ");
-					if (applMax > 0)
+					if (applMin >= 0 && applMax > 0) {
+						where.append(" WHERE 1=1 ");
+						where.append(" AND DRG_APPL_POINT >= " + applMin + " ");
 						where.append(" AND DRG_APPL_POINT <= " + applMax + " ");
+					}
 					selectColumn.append(where);
 					orderBy.append(" ORDER BY DRG_CODE ");
 					selectColumn.append(orderBy);
@@ -4083,91 +3987,44 @@ public class DbReportService {
 					orderBy = new StringBuffer("");
 				}
 				/// 傳統sql語法組成資料
-				Query sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+				sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 				sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
-				@SuppressWarnings("unchecked")
-				List<Map<String, Object>> dataMap = sqlQuery.getResultList();
-				for (int y = 0; y < dataMap.size(); y++) {
-					String yd = dataMap.get(y).get("DATE").toString();
-					String ydc = dataMap.get(y).get("DRG_CODE").toString();
-					for (int z = 0; z < sqlMapList.size(); z++) {
-						String zd = sqlMapList.get(z).get("DATE").toString();
-						String zdc = sqlMapList.get(z).get("DRG_CODE").toString();
-						if (yd.equals(zd) && ydc.equals(zdc)) {
-
-							if (dataMap.get(y).get("DRG_SECTION") != null) {
-								String area = dataMap.get(y).get("DRG_SECTION").toString();
-								switch (area) {
-								case "A":
-									sqlMapList.get(z).put("SECTION_A",
-											Long.parseLong(dataMap.get(y).get("DRG_QUANTITY").toString()));
-									sqlMapList.get(z).put("SECTION_A_APPL",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()));
-									sqlMapList.get(z).put("SECTION_A_ACTUAL",
-											Long.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									sqlMapList.get(z).put("DIFFA",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()) - Long
-													.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									break;
-								case "B1":
-									sqlMapList.get(z).put("SECTION_B1",
-											Long.parseLong(dataMap.get(y).get("DRG_QUANTITY").toString()));
-									sqlMapList.get(z).put("SECTION_B1_APPL",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()));
-									sqlMapList.get(z).put("SECTION_B1_ACTUAL",
-											Long.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									sqlMapList.get(z).put("DIFFB1",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()) - Long
-													.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									break;
-								case "B2":
-									sqlMapList.get(z).put("SECTION_B2",
-											Long.parseLong(dataMap.get(y).get("DRG_QUANTITY").toString()));
-									sqlMapList.get(z).put("SECTION_B2_APPL",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()));
-									sqlMapList.get(z).put("SECTION_B2_ACTUAL",
-											Long.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									sqlMapList.get(z).put("DIFFB2",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()) - Long
-													.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									break;
-								case "C":
-									sqlMapList.get(z).put("SECTION_C",
-											Long.parseLong(dataMap.get(y).get("DRG_QUANTITY").toString()));
-									sqlMapList.get(z).put("SECTION_C_APPL",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()));
-									sqlMapList.get(z).put("SECTION_C_ACTUAL",
-											Long.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									sqlMapList.get(z).put("DIFFC",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()) - Long
-													.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									break;
-								}
-							}
-						}
-					}
-				}
+				List<Map<String, Object>> dataMap2 = sqlQuery.getResultList();
+				sqlMapList2.addAll(dataMap2);
 				selectColumn = new StringBuffer("");
+				where = new StringBuffer("");
+				groupBy = new StringBuffer("");
+				orderBy = new StringBuffer("");
 				entityManager.close();
+				Map<String, Object> ret = new LinkedHashMap<String, Object>();
+				ret.put("info", sqlMapList);
+				ret.put("list", sqlMapList2);
+				ret.put("DATE", yearMonthBetweenStr.get(i));
+				resList.add(ret);
+				ret = new HashMap<String, Object>();
+				sqlMapList = new ArrayList<Map<String, Object>>();
+				sqlMapList2 = new ArrayList<Map<String, Object>>();
+
 			}
 			if (mapList.size() > 0) {
 				for (int j = 0; j < mapList.size(); j++) {
 					String ym = mapList.get(j).get("YM").toString();
 					String displayName = mapList.get(j).get("displayName").toString();
-					for (int i = 0; i < sqlMapList.size(); i++) {
-						String date = sqlMapList.get(i).get("DATE").toString().replace("-", "");
-						String drgcode = sqlMapList.get(i).get("DRG_CODE").toString();
+					for (int i = 0; i < resList.size(); i++) {
+						String date = resList.get(i).get("DATE").toString().replace("-", "");
 						if (ym.equals(date)) {
-							if (drgcode.length() == 0) {
-								sqlMapList.get(i).put("disPlayName", displayName);
-							} else {
-								sqlMapList.get(i).put("disPlayName", "");
-							}
+							resList.get(i).put("disPlayName", displayName);
 							continue;
 						}
-						if (sqlMapList.get(i).get("disPlayName") == null) {
-							sqlMapList.get(i).put("disPlayName", "");
+						if (resList.get(i).get("disPlayName") == null) {
+							resList.get(i).put("disPlayName", "");
 						}
+					}
+				}
+			} else {
+				for (int i = 0; i < resList.size(); i++) {
+					if (resList.get(i).get("disPlayName") == null) {
+						resList.get(i).put("disPlayName", "");
 					}
 				}
 			}
@@ -4209,89 +4066,48 @@ public class DbReportService {
 						+ "' AS DATE, '' AS DRG_CODE, DRG_QUANTITY, DRG_APPL_POINT,  DRG_ACTUAL_POINT FROM ");
 				selectColumn.append(" (SELECT SUM(T) AS DRG_QUANTITY FROM ");
 				selectColumn.append(
-						" (SELECT COUNT(1) AS T  FROM MR m  WHERE Data_format = '20' AND drg_section IS NOT NULL  and MR_END_DATE BETWEEN '"
+						" (SELECT COUNT(1) AS T  FROM MR WHERE DATA_FORMAT = '20' AND drg_section IS NOT NULL  and MR_END_DATE BETWEEN '"
 								+ mapList.get(i).get("sDate") + "' AND '" + mapList.get(i).get("eDate") + "'  ");
 				if (drgCodeList.size() > 0)
-					where.append(" AND DRG_CODE IN (" + drgCodeSql + ") ");
+					where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
 				if (funcTypeList.size() > 0)
-					where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+					where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 				if (medNameList.size() > 0)
-					where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+					where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 				if (icdcmList.size() > 0)
-					where.append(" AND ICDCM1 IN (" + icdcmSql + ") ");
+					where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
 				if (medLogCodeList.size() > 0)
-					where.append(" AND INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
+					where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
 				if (icdAllList.size() > 0) {
 					for (String str : icdAllList) {
-						where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
+						where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
 					}
 				}
 				if (payCode != null && payCode.length() > 0)
-					where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+					where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 				if (inhCode != null && inhCode.length() > 0)
-					where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+					where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
 				selectColumn.append(where);
-				where = new StringBuffer("");
 				selectColumn.append(" ))a, ");
 				selectColumn.append(
-						" (SELECT SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_APPL_POINT FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE BETWEEN '"
+						" (SELECT IFNULL(SUM(IP_D.APPL_DOT + IP_D.PART_DOT),0) AS DRG_APPL_POINT FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE BETWEEN '"
 								+ mapList.get(i).get("sDate") + "' AND '" + mapList.get(i).get("eDate") + "' ");
-				if (drgCodeList.size() > 0)
-					where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
-				if (funcTypeList.size() > 0)
-					where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-				if (medNameList.size() > 0)
-					where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-				if (icdcmList.size() > 0)
-					where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-				if (medLogCodeList.size() > 0)
-					where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-				if (icdAllList.size() > 0) {
-					for (String str : icdAllList) {
-						where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
-					}
-				}
-				if (payCode != null && payCode.length() > 0)
-					where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-				if (inhCode != null && inhCode.length() > 0)
-					where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-
 				selectColumn.append(where);
-				where = new StringBuffer("");
 				selectColumn.append(" )b, ");
-				selectColumn.append(
-						" (SELECT SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS DRG_ACTUAL_POINT FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE BETWEEN '"
-								+ mapList.get(i).get("sDate") + "' AND '" + mapList.get(i).get("eDate") + "' ");
-				if (drgCodeList.size() > 0)
-					where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
-				if (funcTypeList.size() > 0)
-					where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-				if (medNameList.size() > 0)
-					where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-				if (icdcmList.size() > 0)
-					where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-				if (medLogCodeList.size() > 0)
-					where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-				if (icdAllList.size() > 0) {
-					for (String str : icdAllList) {
-						where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
-					}
-				}
-				if (payCode != null && payCode.length() > 0)
-					where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-				if (inhCode != null && inhCode.length() > 0)
-					where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
+				selectColumn.append(
+						" (SELECT IFNULL(SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT),0) AS DRG_ACTUAL_POINT FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE BETWEEN '"
+								+ mapList.get(i).get("sDate") + "' AND '" + mapList.get(i).get("eDate") + "' ");
 				selectColumn.append(where);
 				where = new StringBuffer("");
 				selectColumn.append(" )c ");
 				if (!isShowDRGList && drgCodeList.size() == 0) {
-					if (applMin > 0)
-						where.append(" WHERE b.DRG_APPL_POINT >= " + applMin + " ");
-					if (applMax > 0)
+					if (applMin >= 0 && applMax > 0) {
+						where.append(" WHERE 1=1 ");
+						where.append(" AND b.DRG_APPL_POINT >= " + applMin + " ");
 						where.append(" AND b.DRG_APPL_POINT <= " + applMax + " ");
-
+					}
 					selectColumn.append(where);
 					where = new StringBuffer("");
 				}
@@ -4302,83 +4118,45 @@ public class DbReportService {
 					selectColumn.append(
 							" (SELECT a.DRG_CODE AS DRG_CODE, a.DRG_QUANTITY AS DRG_QUANTITY, b.DRG_APPL_POINT AS DRG_APPL_POINT, c.DRG_ACTUAL_POINT  AS DRG_ACTUAL_POINT FROM ");
 					selectColumn.append(
-							" (SELECT  COUNT(1) AS DRG_QUANTITY, DRG_CODE  FROM MR m  WHERE Data_format = '20' AND drg_section IS NOT NULL  and MR_END_DATE BETWEEN '"
+							" (SELECT  COUNT(1) AS DRG_QUANTITY, DRG_CODE  FROM MR WHERE DATA_FORMAT = '20' AND drg_section IS NOT NULL  and MR_END_DATE BETWEEN '"
 									+ mapList.get(i).get("sDate") + "' AND '" + mapList.get(i).get("eDate") + "' ");
 					if (drgCodeList.size() > 0)
-						where.append(" AND DRG_CODE IN (" + drgCodeSql + ") ");
+						where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
 					if (funcTypeList.size() > 0)
-						where.append(" AND FUNC_TYPE IN (" + funcTypeSql + ") ");
+						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 					if (medNameList.size() > 0)
-						where.append(" AND PRSN_ID IN (" + medNameSql + ") ");
+						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 					if (icdcmList.size() > 0)
-						where.append(" AND ICDCM1 IN (" + icdcmSql + ") ");
+						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
 					if (medLogCodeList.size() > 0)
-						where.append(" AND INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
+						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
 					if (icdAllList.size() > 0) {
 						for (String str : icdAllList) {
-							where.append(" AND ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
+							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
 						}
 					}
 					if (payCode != null && payCode.length() > 0)
-						where.append(" AND CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 					selectColumn.append(where);
 					groupBy.append(" GROUP BY DRG_CODE)a, ");
 					selectColumn.append(groupBy);
-					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 
 					selectColumn.append(
 							" (SELECT MR.DRG_CODE, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_APPL_POINT  FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE BETWEEN '"
 									+ mapList.get(i).get("sDate") + "' AND '" + mapList.get(i).get("eDate") + "' ");
-					if (drgCodeList.size() > 0)
-						where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
-					if (funcTypeList.size() > 0)
-						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-					if (medNameList.size() > 0)
-						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-					if (icdcmList.size() > 0)
-						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-					if (medLogCodeList.size() > 0)
-						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-					if (icdAllList.size() > 0) {
-						for (String str : icdAllList) {
-							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
-						}
-					}
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
 					selectColumn.append(where);
 					groupBy.append(" GROUP BY DRG_CODE)b, ");
 					selectColumn.append(groupBy);
-					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 
 					selectColumn.append(
 							" (SELECT MR.DRG_CODE, SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS DRG_ACTUAL_POINT  FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND  MR.DATA_FORMAT  = '20' AND MR.DRG_SECTION IS NOT NULL  and MR.MR_END_DATE BETWEEN '"
 									+ mapList.get(i).get("sDate") + "' AND '" + mapList.get(i).get("eDate") + "' ");
-					if (drgCodeList.size() > 0)
-						where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
-					if (funcTypeList.size() > 0)
-						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-					if (medNameList.size() > 0)
-						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-					if (icdcmList.size() > 0)
-						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-					if (medLogCodeList.size() > 0)
-						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-					if (icdAllList.size() > 0) {
-						for (String str : icdAllList) {
-							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + str + "'),'%') ");
-						}
-					}
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+
 					selectColumn.append(where);
 					groupBy.append(" GROUP BY DRG_CODE)c ");
 					selectColumn.append(groupBy);
@@ -4386,10 +4164,11 @@ public class DbReportService {
 					groupBy = new StringBuffer("");
 
 					selectColumn.append(" WHERE  a.DRG_CODE = b.DRG_CODE AND  b.DRG_CODE = c.DRG_CODE )t ");
-					if (applMin > 0)
-						where.append(" WHERE DRG_APPL_POINT >= " + applMin + " ");
-					if (applMax > 0)
+					if (applMin >= 0 && applMax > 0) {
+						where.append(" WHERE 1=1 ");
+						where.append(" AND DRG_APPL_POINT >= " + applMin + " ");
 						where.append(" AND DRG_APPL_POINT <= " + applMax + " ");
+					}
 					selectColumn.append(where);
 					orderBy.append(" ORDER BY DRG_CODE ");
 					selectColumn.append(orderBy);
@@ -4404,34 +4183,12 @@ public class DbReportService {
 				sqlMapList.addAll(dataMap);
 				selectColumn = new StringBuffer("");
 				entityManager.close();
-			}
-			if (mapList.size() > 0) {
-				for (int j = 0; j < mapList.size(); j++) {
-					String ym = mapList.get(j).get("sDate").toString();
-					String displayName = mapList.get(j).get("displayName").toString();
-					for (int i = 0; i < sqlMapList.size(); i++) {
-						String date = sqlMapList.get(i).get("DATE").toString();
-						String drgcode = sqlMapList.get(i).get("DRG_CODE").toString();
-						if (date.contains(ym)) {
-							if (drgcode.length() == 0) {
-								sqlMapList.get(i).put("disPlayName", displayName);
-							} else {
-								sqlMapList.get(i).put("disPlayName", "");
-							}
-							continue;
-						}
-						if (sqlMapList.get(i).get("disPlayName") == null) {
-							sqlMapList.get(i).put("disPlayName", "");
-						}
-					}
-				}
-			}
-			/// 跑新sql先初始化
-			selectColumn = new StringBuffer("");
-			where = new StringBuffer("");
-			groupBy = new StringBuffer("");
-			orderBy = new StringBuffer("");
-			for (int i = 0; i < mapList.size(); i++) {
+
+				/// 跑新sql先初始化
+				selectColumn = new StringBuffer("");
+				where = new StringBuffer("");
+				groupBy = new StringBuffer("");
+				orderBy = new StringBuffer("");
 				selectColumn.append(" SELECT '" + mapList.get(i).get("sDate") + " " + mapList.get(i).get("eDate")
 						+ "' AS DATE, '' AS DRG_CODE,DRG_SECTION,DRG_QUANTITY,DRG_APPL_POINT,DRG_ACTUAL_POINT FROM  ");
 				selectColumn.append(
@@ -4472,10 +4229,11 @@ public class DbReportService {
 				groupBy = new StringBuffer("");
 				orderBy = new StringBuffer("");
 				if (!isShowDRGList && drgCodeList.size() == 0) {
-					if (applMin > 0)
-						where.append(" WHERE DRG_APPL_POINT >= " + applMin + " ");
-					if (applMax > 0)
+					if (applMin >= 0 && applMax > 0) {
+						where.append(" WHERE 1=1 ");
+						where.append(" AND DRG_APPL_POINT >= " + applMin + " ");
 						where.append(" AND DRG_APPL_POINT <= " + applMax + " ");
+					}
 
 					selectColumn.append(where);
 					where = new StringBuffer("");
@@ -4486,7 +4244,8 @@ public class DbReportService {
 							+ "' AS DATE, DRG_CODE,DRG_SECTION,DRG_QUANTITY,DRG_APPL_POINT,DRG_ACTUAL_POINT FROM ");
 					selectColumn.append(
 							" (SELECT MR.DRG_CODE, MR.DRG_SECTION  AS DRG_SECTION, COUNT(1) AS DRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_APPL_POINT, SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS DRG_ACTUAL_POINT "
-									+ "FROM MR, IP_D WHERE DRG_SECTION IS NOT  NULL AND DATA_FORMAT = '20' AND MR_END_DATE LIKE CONCAT('2020-06','%') "
+									+ "FROM MR, IP_D WHERE DRG_SECTION IS NOT  NULL AND DATA_FORMAT = '20' AND MR_END_DATE BETWEEN '"
+									+ mapList.get(i).get("sDate") + "' AND '" + mapList.get(i).get("eDate") + "' "
 									+ "AND IP_D.MR_ID = MR.ID ");
 					if (drgCodeList.size() > 0)
 						where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
@@ -4519,11 +4278,11 @@ public class DbReportService {
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					orderBy = new StringBuffer("");
-
-					if (applMin > 0)
-						where.append(" WHERE DRG_APPL_POINT >= " + applMin + " ");
-					if (applMax > 0)
+					if (applMin >= 0 && applMax > 0) {
+						where.append(" WHERE 1=1 ");
+						where.append(" AND DRG_APPL_POINT >= " + applMin + " ");
 						where.append(" AND DRG_APPL_POINT <= " + applMax + " ");
+					}
 					selectColumn.append(where);
 					orderBy.append(" ORDER BY DRG_CODE ");
 					selectColumn.append(orderBy);
@@ -4531,100 +4290,33 @@ public class DbReportService {
 					orderBy = new StringBuffer("");
 				}
 				/// 傳統sql語法組成資料
-				Query sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+				sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 				sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
-				@SuppressWarnings("unchecked")
-				List<Map<String, Object>> dataMap = sqlQuery.getResultList();
-				for (int y = 0; y < dataMap.size(); y++) {
-					String yd = dataMap.get(y).get("DATE").toString();
-					String ydc = dataMap.get(y).get("DRG_CODE").toString();
-					for (int z = 0; z < sqlMapList.size(); z++) {
-						String zd = sqlMapList.get(z).get("DATE").toString();
-						String zdc = sqlMapList.get(z).get("DRG_CODE").toString();
-						if (yd.equals(zd) && ydc.equals(zdc)) {
-
-							if (dataMap.get(y).get("DRG_SECTION") != null) {
-								String area = dataMap.get(y).get("DRG_SECTION").toString();
-								switch (area) {
-								case "A":
-									sqlMapList.get(z).put("SECTION_A",
-											Long.parseLong(dataMap.get(y).get("DRG_QUANTITY").toString()));
-									sqlMapList.get(z).put("SECTION_A_APPL",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()));
-									sqlMapList.get(z).put("SECTION_A_ACTUAL",
-											Long.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									sqlMapList.get(z).put("DIFFA",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()) - Long
-													.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									break;
-								case "B1":
-									sqlMapList.get(z).put("SECTION_B1",
-											Long.parseLong(dataMap.get(y).get("DRG_QUANTITY").toString()));
-									sqlMapList.get(z).put("SECTION_B1_APPL",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()));
-									sqlMapList.get(z).put("SECTION_B1_ACTUAL",
-											Long.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									sqlMapList.get(z).put("DIFFB1",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()) - Long
-													.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									break;
-								case "B2":
-									sqlMapList.get(z).put("SECTION_B2",
-											Long.parseLong(dataMap.get(y).get("DRG_QUANTITY").toString()));
-									sqlMapList.get(z).put("SECTION_B2_APPL",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()));
-									sqlMapList.get(z).put("SECTION_B2_ACTUAL",
-											Long.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									sqlMapList.get(z).put("DIFFB2",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()) - Long
-													.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									break;
-								case "C":
-									sqlMapList.get(z).put("SECTION_C",
-											Long.parseLong(dataMap.get(y).get("DRG_QUANTITY").toString()));
-									sqlMapList.get(z).put("SECTION_C_APPL",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()));
-									sqlMapList.get(z).put("SECTION_C_ACTUAL",
-											Long.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									sqlMapList.get(z).put("DIFFC",
-											Long.parseLong(dataMap.get(y).get("DRG_APPL_POINT").toString()) - Long
-													.parseLong(dataMap.get(y).get("DRG_ACTUAL_POINT").toString()));
-									break;
-								}
-							}
-						}
-					}
-				}
+				List<Map<String, Object>> dataMap2 = sqlQuery.getResultList();
+				sqlMapList2.addAll(dataMap2);
 				selectColumn = new StringBuffer("");
-				entityManager.close();
-			}
-			if (mapList.size() > 0) {
-				for (int j = 0; j < mapList.size(); j++) {
-					String ym = mapList.get(j).get("sDate").toString();
-					String displayName = mapList.get(j).get("displayName").toString();
-					for (int i = 0; i < sqlMapList.size(); i++) {
-						String date = sqlMapList.get(i).get("DATE").toString();
-						String drgcode = sqlMapList.get(i).get("DRG_CODE").toString();
-						if (date.contains(ym)) {
-							if (drgcode.length() == 0) {
-								sqlMapList.get(i).put("disPlayName", displayName);
-							} else {
-								sqlMapList.get(i).put("disPlayName", "");
-							}
-							continue;
-						}
-						if (sqlMapList.get(i).get("disPlayName") == null) {
-							sqlMapList.get(i).put("disPlayName", "");
-						}
-					}
+				where = new StringBuffer("");
+				orderBy = new StringBuffer("");
+				orderBy = new StringBuffer("");
+				Map<String, Object> ret = new LinkedHashMap<String, Object>();
+				ret.put("info", sqlMapList);
+				ret.put("list", sqlMapList2);
+				ret.put("DATE",  mapList.get(i).get("sDate") + " " + mapList.get(i).get("eDate"));
+				if(i==0) {
+					ret.put("disPlayName", "");
 				}
+				else {
+					ret.put("disPlayName", "去年同期時段相比");
+				}
+				resList.add(ret);
+				ret = new HashMap<String, Object>();
+				sqlMapList = new ArrayList<Map<String, Object>>();
+				sqlMapList2 = new ArrayList<Map<String, Object>>();
 			}
 
 		}
-		result.put("result", "success");
-		result.put("message", null);
-		result.put("drgData", sqlMapList);
-
+		DrgQueryCoditionResponse result = drgMaptoObj(resList);
+		
 		return result;
 	}
 
@@ -4644,9 +4336,9 @@ public class DbReportService {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public OwnExpenseQueryConditionResponse getOwnExpenseQueryCondition(String betweenSDate, String betweenEDate, String dataFormats,
-			String funcTypes, String medNames, String icdAll, String payCode, String inhCode, boolean isLastY,
-			boolean isShowOwnExpense) {
+	public OwnExpenseQueryConditionResponse getOwnExpenseQueryCondition(String betweenSDate, String betweenEDate,
+			String dataFormats, String funcTypes, String medNames, String icdAll, String payCode, String inhCode,
+			boolean isLastY, boolean isShowOwnExpense) {
 		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> sqlMapList1 = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> sqlMapList2 = new ArrayList<Map<String, Object>>();
@@ -4736,7 +4428,7 @@ public class DbReportService {
 		StringBuffer groupBy = new StringBuffer("");
 		/// orderBy
 		StringBuffer orderBy = new StringBuffer("");
-		List<Map<String,Object>> retList = new ArrayList<Map<String,Object>>();
+		List<Map<String, Object>> retList = new ArrayList<Map<String, Object>>();
 		for (int i = 0; i < mapList.size(); i++) {
 			String sd = mapList.get(i).get("sDate").toString();
 			String ed = mapList.get(i).get("eDate").toString();
@@ -4747,9 +4439,11 @@ public class DbReportService {
 				switch (str) {
 				case "all":
 					selectColumn.append(" (SELECT (QIP + QOP) AS ALL_QUANTITY, (EIP + EOP) AS ALL_EXPENSE FROM ");
-					selectColumn.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QIP, IFNULL(SUM(EXPENSE),0) AS EIP FROM ");
-					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-					
+					selectColumn
+							.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QIP, IFNULL(SUM(EXPENSE),0) AS EIP FROM ");
+					selectColumn.append(
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4770,14 +4464,16 @@ public class DbReportService {
 					groupBy.append("  GROUP BY IP_P.ORDER_CODE))a, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					
-					selectColumn.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QOP, IFNULL(SUM(EXPENSE),0) AS EOP FROM ");
-					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+
+					selectColumn
+							.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QOP, IFNULL(SUM(EXPENSE),0) AS EOP FROM ");
+					selectColumn.append(
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					selectColumn.append(where);
 					groupBy = new StringBuffer("");
 					groupBy.append(" GROUP BY OP_P.DRUG_NO ))b)a, ");
 					selectColumn.append(groupBy);
-					
+
 					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
@@ -4806,14 +4502,15 @@ public class DbReportService {
 					groupBy.append("  GROUP BY OP_P.DRUG_NO))b, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					
+
 					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
 				case "op":
 					selectColumn.append(
 							" (SELECT IFNULL(SUM(QUANTITY),0) AS  OP_QUANTITY, IFNULL(SUM(EXPENSE),0) AS OP_EXPENSE FROM  ");
-					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
+					selectColumn.append(
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4834,14 +4531,15 @@ public class DbReportService {
 					groupBy.append("  GROUP BY OP_P.DRUG_NO))c, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					
+
 					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
 				case "em":
 					selectColumn.append(
 							" (SELECT IFNULL(SUM(QUANTITY),0) AS  EM_QUANTITY, IFNULL(SUM(EXPENSE),0) AS EM_EXPENSE FROM  ");
-					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
+					selectColumn.append(
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4862,15 +4560,17 @@ public class DbReportService {
 					groupBy.append("  GROUP BY OP_P.DRUG_NO))d, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					
+
 					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
 				case "ip":
 					selectColumn.append(
 							" (SELECT IFNULL(SUM(QUANTITY),0) AS  IP_QUANTITY, IFNULL(SUM(EXPENSE),0) AS IP_EXPENSE FROM ");
-					selectColumn.append(" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
-					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+					selectColumn.append(
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
@@ -4890,7 +4590,7 @@ public class DbReportService {
 					groupBy.append("  GROUP BY IP_P.ORDER_CODE))e, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					
+
 					groupBy = new StringBuffer("");
 					where = new StringBuffer("");
 					break;
@@ -4925,7 +4625,8 @@ public class DbReportService {
 							" SELECT  '不分區' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE, ");
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT  FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-					selectColumn.append(" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+					selectColumn.append(
+							" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
@@ -4950,11 +4651,13 @@ public class DbReportService {
 					groupBy = new StringBuffer("");
 					selectColumn.append(" UNION ALL ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-					selectColumn.append(" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+					selectColumn.append(
+							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					selectColumn.append(where);
 					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
 					selectColumn.append(groupBy);
-					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+					selectColumn.append(
+							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					break;
@@ -4966,7 +4669,8 @@ public class DbReportService {
 							" SELECT  '門急診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-					selectColumn.append(" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+					selectColumn.append(
+							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4987,7 +4691,8 @@ public class DbReportService {
 					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+					selectColumn.append(
+							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -5000,7 +4705,8 @@ public class DbReportService {
 							" SELECT  '門診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-					selectColumn.append(" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
+					selectColumn.append(
+							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5021,7 +4727,8 @@ public class DbReportService {
 					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+					selectColumn.append(
+							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -5035,7 +4742,8 @@ public class DbReportService {
 							" SELECT  '急診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-					selectColumn.append(" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
+					selectColumn.append(
+							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5056,7 +4764,8 @@ public class DbReportService {
 					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+					selectColumn.append(
+							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -5069,7 +4778,8 @@ public class DbReportService {
 							" SELECT  '住院' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
-					selectColumn.append(" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+					selectColumn.append(
+							" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5090,7 +4800,8 @@ public class DbReportService {
 					groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
-					selectColumn.append(" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+					selectColumn.append(
+							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -5363,7 +5074,7 @@ public class DbReportService {
 				groupBy = new StringBuffer("");
 				orderBy = new StringBuffer("");
 			}
-			
+
 			/// 第四段sql，獨立取得醫護人員資料
 			if (medNames != null && medNames.length() > 0) {
 				for (String str : dataformatList) {
@@ -5394,7 +5105,8 @@ public class DbReportService {
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
-						groupBy.append("  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI, MR.PRSN_ID  ORDER BY FUNC_TYPE) ");
+						groupBy.append(
+								"  GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI, MR.PRSN_ID  ORDER BY FUNC_TYPE) ");
 
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
@@ -5549,8 +5261,7 @@ public class DbReportService {
 				selectColumn = new StringBuffer("");
 				where = new StringBuffer("");
 				groupBy = new StringBuffer("");
-				
-				
+
 				if (isShowOwnExpense) {
 					for (String str : dataformatList) {
 						switch (str) {
@@ -5802,15 +5513,14 @@ public class DbReportService {
 					orderBy = new StringBuffer("");
 				}
 			}
-			
-			Map<String,Object> ret = new LinkedHashMap<String, Object>();
-			if(i==0) {
+
+			Map<String, Object> ret = new LinkedHashMap<String, Object>();
+			if (i == 0) {
 				sqlMapList.get(0).put("displayName", "");
-				sqlMapList.get(0).put("date", sd +"~"+ ed);
-			}
-			else {
+				sqlMapList.get(0).put("date", sd + "~" + ed);
+			} else {
 				sqlMapList.get(0).put("displayName", "去年同期時段相比");
-				sqlMapList.get(0).put("date",  sd +"~"+ ed);
+				sqlMapList.get(0).put("date", sd + "~" + ed);
 			}
 			ret.put("sqlMapList", sqlMapList);
 			ret.put("sqlMapList1", sqlMapList1);
@@ -5827,12 +5537,8 @@ public class DbReportService {
 			sqlMapList3 = new ArrayList<Map<String, Object>>();
 			sqlMapList3_2 = new ArrayList<Map<String, Object>>();
 		}
-		
 
-		OwnExpenseQueryConditionResponse response = mapToObj(retList, isShowOwnExpense,
-				funcTypes, medNames);
-
-		
+		OwnExpenseQueryConditionResponse response = mapToObj(retList, isShowOwnExpense, funcTypes, medNames);
 
 		return response;
 	}
@@ -8167,12 +7873,12 @@ public class DbReportService {
 		OwnExpenseQueryConditionIhnCodeInfo codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 		List<OwnExpenseQueryConditionIhnCodeInfo> codeList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
 		for (Map<String, Object> ret : retList) {
-			List<Map<String,Object>> sqlList = (List<Map<String, Object>>) ret.get("sqlMapList");
-			List<Map<String,Object>> sqlList1 = (List<Map<String, Object>>) ret.get("sqlMapList1");
-			List<Map<String,Object>> sqlList2 = (List<Map<String, Object>>) ret.get("sqlMapList2");
-			List<Map<String,Object>> sqlList2_2 = (List<Map<String, Object>>) ret.get("sqlMapList2_2");
-			List<Map<String,Object>> sqlList3 = (List<Map<String, Object>>) ret.get("sqlMapList3");
-			List<Map<String,Object>> sqlList3_2 = (List<Map<String, Object>>) ret.get("sqlMapList3_2");
+			List<Map<String, Object>> sqlList = (List<Map<String, Object>>) ret.get("sqlMapList");
+			List<Map<String, Object>> sqlList1 = (List<Map<String, Object>>) ret.get("sqlMapList1");
+			List<Map<String, Object>> sqlList2 = (List<Map<String, Object>>) ret.get("sqlMapList2");
+			List<Map<String, Object>> sqlList2_2 = (List<Map<String, Object>>) ret.get("sqlMapList2_2");
+			List<Map<String, Object>> sqlList3 = (List<Map<String, Object>>) ret.get("sqlMapList3");
+			List<Map<String, Object>> sqlList3_2 = (List<Map<String, Object>>) ret.get("sqlMapList3_2");
 			for (Map<String, Object> map : sqlList) {
 				Object aq = map.get("ALL_QUANTITY");
 				Object ae = map.get("ALL_EXPENSE");
@@ -8212,10 +7918,9 @@ public class DbReportService {
 				} else {
 					model.setDisplayName("");
 				}
-				if(date != null) {
+				if (date != null) {
 					model.setDate(date.toString());
-				}
-				else {
+				} else {
 					model.setDate("");
 				}
 				for (Map<String, Object> m1 : sqlList1) {
@@ -8228,8 +7933,7 @@ public class DbReportService {
 					detail.setDataFormat(df1.toString());
 					if (dc1 != null) {
 						detail.setDescChi(dc1.toString());
-					}
-					else {
+					} else {
 						detail.setDescChi("");
 					}
 					if (ft1 != null) {
@@ -8237,23 +7941,20 @@ public class DbReportService {
 					}
 					if (q1 != null) {
 						detail.setQuantity(Long.parseLong(q1.toString()));
-					}
-					else {
+					} else {
 						detail.setQuantity(0L);
 					}
 					if (e1 != null) {
 						detail.setExpense(Long.parseLong(e1.toString()));
-					}
-					else {
+					} else {
 						detail.setExpense(0L);
 					}
 					if (pi1 != null) {
 						detail.setPrsnId(pi1.toString());
-					}
-					else {
+					} else {
 						detail.setPrsnId("");
 					}
-					
+
 					for (Map<String, Object> m2 : sqlList2) {
 						Object df2 = m2.get("DATA_FORMAT");
 						Object ft2 = m2.get("FUNC_TYPE");
@@ -8261,28 +7962,26 @@ public class DbReportService {
 						Object q2 = m2.get("QUANTITY");
 						Object e2 = m2.get("EXPENSE");
 						Object code2 = m2.get("IHN_CODE");
-						if(df1.equals(df2)) {
-							if(ft1.equals(ft2)) {
+						if (df1.equals(df2)) {
+							if (ft1.equals(ft2)) {
 								codeInfo.setDataFormat(df2.toString());
 								if (ft2 != null) {
 									codeInfo.setFuncType(ft2.toString());
 								}
 								if (q2 != null) {
 									codeInfo.setQuantity(Long.parseLong(q2.toString()));
-								}
-								else {
+								} else {
 									codeInfo.setQuantity(0L);
 								}
 								if (e2 != null) {
 									codeInfo.setExpense(Long.parseLong(e2.toString()));
-								}
-								else {
+								} else {
 									codeInfo.setExpense(0L);
 								}
-								if(code2 != null) {
+								if (code2 != null) {
 									codeInfo.setIhnCode(code2.toString());
 								}
-								
+
 								codeList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
@@ -8316,9 +8015,9 @@ public class DbReportService {
 						detail = new OwnExpenseQueryConditionDetail();
 						break;
 					}
-					
+
 				}
-				if(sqlList3.size() > 0) {
+				if (sqlList3.size() > 0) {
 					for (Map<String, Object> m3 : sqlList3) {
 						Object df3 = m3.get("DATA_FORMAT");
 						Object ft3 = m3.get("FUNC_TYPE");
@@ -8329,8 +8028,7 @@ public class DbReportService {
 						detail.setDataFormat(df3.toString());
 						if (dc3 != null) {
 							detail.setDescChi(dc3.toString());
-						}
-						else {
+						} else {
 							detail.setDescChi("");
 						}
 						if (ft3 != null) {
@@ -8338,23 +8036,20 @@ public class DbReportService {
 						}
 						if (q3 != null) {
 							detail.setQuantity(Long.parseLong(q3.toString()));
-						}
-						else {
+						} else {
 							detail.setQuantity(0L);
 						}
 						if (e3 != null) {
 							detail.setExpense(Long.parseLong(e3.toString()));
-						}
-						else {
+						} else {
 							detail.setExpense(0L);
 						}
 						if (pi3 != null) {
 							detail.setPrsnId(pi3.toString());
-						}
-						else {
+						} else {
 							detail.setPrsnId("");
 						}
-						
+
 						for (Map<String, Object> m3_2 : sqlList3_2) {
 							Object df3_2 = m3_2.get("DATA_FORMAT");
 							Object ft3_2 = m3_2.get("FUNC_TYPE");
@@ -8362,28 +8057,26 @@ public class DbReportService {
 							Object q3_2 = m3_2.get("QUANTITY");
 							Object e3_2 = m3_2.get("EXPENSE");
 							Object code3_2 = m3_2.get("IHN_CODE");
-							if(df3.equals(df3_2)) {
-								if(ft3.equals(ft3_2)) {
+							if (df3.equals(df3_2)) {
+								if (ft3.equals(ft3_2)) {
 									codeInfo.setDataFormat(df3_2.toString());
 									if (ft3_2 != null) {
 										codeInfo.setFuncType(ft3_2.toString());
 									}
 									if (q3_2 != null) {
 										codeInfo.setQuantity(Long.parseLong(q3_2.toString()));
-									}
-									else {
+									} else {
 										codeInfo.setQuantity(0L);
 									}
 									if (e3_2 != null) {
 										codeInfo.setExpense(Long.parseLong(e3_2.toString()));
-									}
-									else {
+									} else {
 										codeInfo.setExpense(0L);
 									}
-									if(code3_2 != null) {
+									if (code3_2 != null) {
 										codeInfo.setIhnCode(code3_2.toString());
 									}
-									
+
 									codeList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
@@ -8417,11 +8110,9 @@ public class DbReportService {
 							detail = new OwnExpenseQueryConditionDetail();
 							break;
 						}
-						
+
 					}
 				}
-
-
 
 				model.setAllList(allList);
 				model.setOpAllList(opAllList);
@@ -8447,7 +8138,6 @@ public class DbReportService {
 				ipPrsnList = new ArrayList<OwnExpenseQueryConditionDetail>();
 			}
 		}
-		
 
 		/// 將指定區間與去年資料筆數同步
 		if (modelList.size() > 1) {
@@ -8488,8 +8178,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -8498,7 +8188,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							allLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -8525,8 +8215,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -8535,7 +8225,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							all.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -8545,24 +8235,25 @@ public class DbReportService {
 					Collections.sort(allLast, mapComparatorFT);
 					Collections.sort(all, mapComparatorFT);
 					isSame = false;
-					///自費分項列出，今年與去年資料同步欄位
-					if(isShowOwnExpense) {
+					/// 自費分項列出，今年與去年資料同步欄位
+					if (isShowOwnExpense) {
 						for (OwnExpenseQueryConditionDetail allModel : all) {
 							String ft = allModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allLastModel : allLast) {
 								String ftl = allLastModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 										String acft = ac.getFuncType();
 										String acCode = ac.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -8587,18 +8278,19 @@ public class DbReportService {
 							String ftl = allLastModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allModel : all) {
 								String ft = allModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 										String acftl = acl.getFuncType();
 										String acCodel = acl.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -8615,18 +8307,18 @@ public class DbReportService {
 										}
 										isSame = false;
 									}
-									Collections.sort(allCode,mapComparatorIhnCode);
-									Collections.sort(allCodeLast,mapComparatorIhnCode);
+									Collections.sort(allCode, mapComparatorIhnCode);
+									Collections.sort(allCodeLast, mapComparatorIhnCode);
 								}
 							}
 						}
 					}
-					
+
 					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getAllPrsnList();
 					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getAllPrsnList();
-					///醫療人員資訊，與上面相同邏輯
-					if(allPrsn != null && allPrsn.size() > 0) {
-						
+					/// 醫療人員資訊，與上面相同邏輯
+					if (allPrsn != null && allPrsn.size() > 0) {
+
 						/// 將區間和去年比數作同步，方便取資料
 						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 							String ft = allModel.getFuncType();
@@ -8647,8 +8339,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -8657,7 +8349,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								allLast.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -8684,8 +8376,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allLastModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -8694,7 +8386,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								all.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -8704,24 +8396,25 @@ public class DbReportService {
 						Collections.sort(allPrsnLast, mapComparatorFT);
 						Collections.sort(allPrsn, mapComparatorFT);
 						isSame = false;
-						///自費分項列出，今年與去年資料同步欄位
-						if(isShowOwnExpense) {
+						/// 自費分項列出，今年與去年資料同步欄位
+						if (isShowOwnExpense) {
 							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 								String ft = allModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
 									String ftl = allLastModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 												String acftl = acl.getFuncType();
 												String acCodel = acl.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -8746,18 +8439,19 @@ public class DbReportService {
 								String ftl = allLastModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 									String ft = allModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 												String acft = ac.getFuncType();
 												String acCode = ac.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -8774,8 +8468,8 @@ public class DbReportService {
 											}
 											isSame = false;
 										}
-										Collections.sort(allCode,mapComparatorIhnCode);
-										Collections.sort(allCodeLast,mapComparatorIhnCode);
+										Collections.sort(allCode, mapComparatorIhnCode);
+										Collections.sort(allCodeLast, mapComparatorIhnCode);
 									}
 								}
 							}
@@ -8804,8 +8498,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -8814,7 +8508,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							opAllLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -8841,8 +8535,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -8851,7 +8545,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							opAll.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -8861,24 +8555,25 @@ public class DbReportService {
 					Collections.sort(opAllLast, mapComparatorFT);
 					Collections.sort(opAll, mapComparatorFT);
 					isSame = false;
-					///自費分項列出，今年與去年資料同步欄位
-					if(isShowOwnExpense) {
+					/// 自費分項列出，今年與去年資料同步欄位
+					if (isShowOwnExpense) {
 						for (OwnExpenseQueryConditionDetail allModel : opAll) {
 							String ft = allModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allLastModel : opAllLast) {
 								String ftl = allLastModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 										String acft = ac.getFuncType();
 										String acCode = ac.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -8903,18 +8598,19 @@ public class DbReportService {
 							String ftl = allLastModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allModel : opAll) {
 								String ft = allModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 										String acftl = acl.getFuncType();
 										String acCodel = acl.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -8931,18 +8627,18 @@ public class DbReportService {
 										}
 										isSame = false;
 									}
-									Collections.sort(allCode,mapComparatorIhnCode);
-									Collections.sort(allCodeLast,mapComparatorIhnCode);
+									Collections.sort(allCode, mapComparatorIhnCode);
+									Collections.sort(allCodeLast, mapComparatorIhnCode);
 								}
 							}
 						}
 					}
-					
+
 					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getOpAllPrsnList();
 					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getOpAllPrsnList();
-					///醫療人員資訊，與上面相同邏輯
-					if(allPrsn != null && allPrsn.size() > 0) {
-						
+					/// 醫療人員資訊，與上面相同邏輯
+					if (allPrsn != null && allPrsn.size() > 0) {
+
 						/// 將區間和去年比數作同步，方便取資料
 						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 							String ft = allModel.getFuncType();
@@ -8963,8 +8659,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -8973,7 +8669,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								allPrsnLast.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -9000,8 +8696,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allLastModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -9010,7 +8706,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								allPrsn.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -9020,24 +8716,25 @@ public class DbReportService {
 						Collections.sort(allPrsnLast, mapComparatorFT);
 						Collections.sort(allPrsn, mapComparatorFT);
 						isSame = false;
-						///自費分項列出，今年與去年資料同步欄位
-						if(isShowOwnExpense) {
+						/// 自費分項列出，今年與去年資料同步欄位
+						if (isShowOwnExpense) {
 							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 								String ft = allModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
 									String ftl = allLastModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 												String acftl = acl.getFuncType();
 												String acCodel = acl.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -9062,18 +8759,19 @@ public class DbReportService {
 								String ftl = allLastModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 									String ft = allModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 												String acft = ac.getFuncType();
 												String acCode = ac.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -9090,8 +8788,8 @@ public class DbReportService {
 											}
 											isSame = false;
 										}
-										Collections.sort(allCode,mapComparatorIhnCode);
-										Collections.sort(allCodeLast,mapComparatorIhnCode);
+										Collections.sort(allCode, mapComparatorIhnCode);
+										Collections.sort(allCodeLast, mapComparatorIhnCode);
 									}
 								}
 							}
@@ -9120,8 +8818,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -9130,7 +8828,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							opLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -9157,8 +8855,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -9167,7 +8865,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							op.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -9177,24 +8875,25 @@ public class DbReportService {
 					Collections.sort(opLast, mapComparatorFT);
 					Collections.sort(op, mapComparatorFT);
 					isSame = false;
-					///自費分項列出，今年與去年資料同步欄位
-					if(isShowOwnExpense) {
+					/// 自費分項列出，今年與去年資料同步欄位
+					if (isShowOwnExpense) {
 						for (OwnExpenseQueryConditionDetail allModel : op) {
 							String ft = allModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allLastModel : opLast) {
 								String ftl = allLastModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 										String acft = ac.getFuncType();
 										String acCode = ac.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -9219,18 +8918,19 @@ public class DbReportService {
 							String ftl = allLastModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allModel : op) {
 								String ft = allModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 										String acftl = acl.getFuncType();
 										String acCodel = acl.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -9247,18 +8947,18 @@ public class DbReportService {
 										}
 										isSame = false;
 									}
-									Collections.sort(allCode,mapComparatorIhnCode);
-									Collections.sort(allCodeLast,mapComparatorIhnCode);
+									Collections.sort(allCode, mapComparatorIhnCode);
+									Collections.sort(allCodeLast, mapComparatorIhnCode);
 								}
 							}
 						}
 					}
-					
+
 					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getOpPrsnList();
 					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getOpPrsnList();
-					///醫療人員資訊，與上面相同邏輯
-					if(allPrsn != null && allPrsn.size() > 0) {
-						
+					/// 醫療人員資訊，與上面相同邏輯
+					if (allPrsn != null && allPrsn.size() > 0) {
+
 						/// 將區間和去年比數作同步，方便取資料
 						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 							String ft = allModel.getFuncType();
@@ -9279,8 +8979,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -9289,7 +8989,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								allPrsnLast.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -9316,8 +9016,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allLastModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -9326,7 +9026,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								allPrsn.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -9336,24 +9036,25 @@ public class DbReportService {
 						Collections.sort(allPrsnLast, mapComparatorFT);
 						Collections.sort(allPrsn, mapComparatorFT);
 						isSame = false;
-						///自費分項列出，今年與去年資料同步欄位
-						if(isShowOwnExpense) {
+						/// 自費分項列出，今年與去年資料同步欄位
+						if (isShowOwnExpense) {
 							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 								String ft = allModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
 									String ftl = allLastModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 												String acftl = acl.getFuncType();
 												String acCodel = acl.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -9378,18 +9079,19 @@ public class DbReportService {
 								String ftl = allLastModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 									String ft = allModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 												String acft = ac.getFuncType();
 												String acCode = ac.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -9406,8 +9108,8 @@ public class DbReportService {
 											}
 											isSame = false;
 										}
-										Collections.sort(allCode,mapComparatorIhnCode);
-										Collections.sort(allCodeLast,mapComparatorIhnCode);
+										Collections.sort(allCode, mapComparatorIhnCode);
+										Collections.sort(allCodeLast, mapComparatorIhnCode);
 									}
 								}
 							}
@@ -9437,8 +9139,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -9447,7 +9149,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							emLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -9474,8 +9176,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -9484,7 +9186,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							em.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -9494,24 +9196,25 @@ public class DbReportService {
 					Collections.sort(emLast, mapComparatorFT);
 					Collections.sort(em, mapComparatorFT);
 					isSame = false;
-					///自費分項列出，今年與去年資料同步欄位
-					if(isShowOwnExpense) {
+					/// 自費分項列出，今年與去年資料同步欄位
+					if (isShowOwnExpense) {
 						for (OwnExpenseQueryConditionDetail allModel : em) {
 							String ft = allModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allLastModel : emLast) {
 								String ftl = allLastModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 										String acft = ac.getFuncType();
 										String acCode = ac.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -9536,18 +9239,19 @@ public class DbReportService {
 							String ftl = allLastModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allModel : em) {
 								String ft = allModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 										String acftl = acl.getFuncType();
 										String acCodel = acl.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -9564,18 +9268,18 @@ public class DbReportService {
 										}
 										isSame = false;
 									}
-									Collections.sort(allCode,mapComparatorIhnCode);
-									Collections.sort(allCodeLast,mapComparatorIhnCode);
+									Collections.sort(allCode, mapComparatorIhnCode);
+									Collections.sort(allCodeLast, mapComparatorIhnCode);
 								}
 							}
 						}
 					}
-					
+
 					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getEmPrsnList();
 					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getEmPrsnList();
-					///醫療人員資訊，與上面相同邏輯
-					if(allPrsn != null && allPrsn.size() > 0) {
-						
+					/// 醫療人員資訊，與上面相同邏輯
+					if (allPrsn != null && allPrsn.size() > 0) {
+
 						/// 將區間和去年比數作同步，方便取資料
 						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 							String ft = allModel.getFuncType();
@@ -9596,8 +9300,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -9606,7 +9310,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								allPrsnLast.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -9633,8 +9337,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allLastModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -9643,7 +9347,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								allPrsn.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -9653,24 +9357,25 @@ public class DbReportService {
 						Collections.sort(allPrsnLast, mapComparatorFT);
 						Collections.sort(allPrsn, mapComparatorFT);
 						isSame = false;
-						///自費分項列出，今年與去年資料同步欄位
-						if(isShowOwnExpense) {
+						/// 自費分項列出，今年與去年資料同步欄位
+						if (isShowOwnExpense) {
 							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 								String ft = allModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
 									String ftl = allLastModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 												String acftl = acl.getFuncType();
 												String acCodel = acl.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -9695,18 +9400,19 @@ public class DbReportService {
 								String ftl = allLastModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 									String ft = allModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 												String acft = ac.getFuncType();
 												String acCode = ac.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -9723,8 +9429,8 @@ public class DbReportService {
 											}
 											isSame = false;
 										}
-										Collections.sort(allCode,mapComparatorIhnCode);
-										Collections.sort(allCodeLast,mapComparatorIhnCode);
+										Collections.sort(allCode, mapComparatorIhnCode);
+										Collections.sort(allCodeLast, mapComparatorIhnCode);
 									}
 								}
 							}
@@ -9754,8 +9460,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -9764,7 +9470,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							ipLast.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -9791,8 +9497,8 @@ public class DbReportService {
 							detail.setQuantity(0L);
 							detail.setPrsnId(allLastModel.getPrsnId());
 							List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-							for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-								
+							for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 								codeInfo.setDataFormat(info.getDataFormat());
 								codeInfo.setFuncType(info.getFuncType());
 								codeInfo.setExpense(0L);
@@ -9801,7 +9507,7 @@ public class DbReportService {
 								cList.add(codeInfo);
 								codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 							}
-							
+
 							detail.setIhnCodeInfo(cList);
 							ip.add(detail);
 							detail = new OwnExpenseQueryConditionDetail();
@@ -9811,24 +9517,25 @@ public class DbReportService {
 					Collections.sort(ipLast, mapComparatorFT);
 					Collections.sort(ip, mapComparatorFT);
 					isSame = false;
-					///自費分項列出，今年與去年資料同步欄位
-					if(isShowOwnExpense) {
+					/// 自費分項列出，今年與去年資料同步欄位
+					if (isShowOwnExpense) {
 						for (OwnExpenseQueryConditionDetail allModel : ip) {
 							String ft = allModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allLastModel : ipLast) {
 								String ftl = allLastModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 										String acft = ac.getFuncType();
 										String acCode = ac.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -9853,18 +9560,19 @@ public class DbReportService {
 							String ftl = allLastModel.getFuncType();
 							for (OwnExpenseQueryConditionDetail allModel : ip) {
 								String ft = allModel.getFuncType();
-								if(ft.equals(ftl)) {
+								if (ft.equals(ftl)) {
 									List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-									for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+									List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+											.getIhnCodeInfo();
+									for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 										String acftl = acl.getFuncType();
 										String acCodel = acl.getIhnCode();
-										
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											if(acft.equals(acftl)) {
-												if(acCode.equals(acCodel)) {
+											if (acft.equals(acftl)) {
+												if (acCode.equals(acCodel)) {
 													isSame = true;
 													break;
 												}
@@ -9881,18 +9589,18 @@ public class DbReportService {
 										}
 										isSame = false;
 									}
-									Collections.sort(allCode,mapComparatorIhnCode);
-									Collections.sort(allCodeLast,mapComparatorIhnCode);
+									Collections.sort(allCode, mapComparatorIhnCode);
+									Collections.sort(allCodeLast, mapComparatorIhnCode);
 								}
 							}
 						}
 					}
-					
+
 					List<OwnExpenseQueryConditionDetail> allPrsn = modelList.get(0).getIpPrsnList();
 					List<OwnExpenseQueryConditionDetail> allPrsnLast = modelList.get(1).getIpPrsnList();
-					///醫療人員資訊，與上面相同邏輯
-					if(allPrsn != null && allPrsn.size() > 0) {
-						
+					/// 醫療人員資訊，與上面相同邏輯
+					if (allPrsn != null && allPrsn.size() > 0) {
+
 						/// 將區間和去年比數作同步，方便取資料
 						for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 							String ft = allModel.getFuncType();
@@ -9913,8 +9621,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -9923,7 +9631,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								allPrsnLast.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -9950,8 +9658,8 @@ public class DbReportService {
 								detail.setQuantity(0L);
 								detail.setPrsnId(allLastModel.getPrsnId());
 								List<OwnExpenseQueryConditionIhnCodeInfo> cList = new ArrayList<OwnExpenseQueryConditionIhnCodeInfo>();
-								for(OwnExpenseQueryConditionIhnCodeInfo info :allLastModel.getIhnCodeInfo()) {
-									
+								for (OwnExpenseQueryConditionIhnCodeInfo info : allLastModel.getIhnCodeInfo()) {
+
 									codeInfo.setDataFormat(info.getDataFormat());
 									codeInfo.setFuncType(info.getFuncType());
 									codeInfo.setExpense(0L);
@@ -9960,7 +9668,7 @@ public class DbReportService {
 									cList.add(codeInfo);
 									codeInfo = new OwnExpenseQueryConditionIhnCodeInfo();
 								}
-								
+
 								detail.setIhnCodeInfo(cList);
 								allPrsn.add(detail);
 								detail = new OwnExpenseQueryConditionDetail();
@@ -9970,24 +9678,25 @@ public class DbReportService {
 						Collections.sort(allPrsnLast, mapComparatorFT);
 						Collections.sort(allPrsn, mapComparatorFT);
 						isSame = false;
-						///自費分項列出，今年與去年資料同步欄位
-						if(isShowOwnExpense) {
+						/// 自費分項列出，今年與去年資料同步欄位
+						if (isShowOwnExpense) {
 							for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 								String ft = allModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allLastModel : allPrsnLast) {
 									String ftl = allLastModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 											String acft = ac.getFuncType();
 											String acCode = ac.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 												String acftl = acl.getFuncType();
 												String acCodel = acl.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -10012,18 +9721,19 @@ public class DbReportService {
 								String ftl = allLastModel.getFuncType();
 								for (OwnExpenseQueryConditionDetail allModel : allPrsn) {
 									String ft = allModel.getFuncType();
-									if(ft.equals(ftl)) {
+									if (ft.equals(ftl)) {
 										List<OwnExpenseQueryConditionIhnCodeInfo> allCode = allModel.getIhnCodeInfo();
-										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel.getIhnCodeInfo();
-										for(OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
+										List<OwnExpenseQueryConditionIhnCodeInfo> allCodeLast = allLastModel
+												.getIhnCodeInfo();
+										for (OwnExpenseQueryConditionIhnCodeInfo acl : allCodeLast) {
 											String acftl = acl.getFuncType();
 											String acCodel = acl.getIhnCode();
-											
-											for(OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
+
+											for (OwnExpenseQueryConditionIhnCodeInfo ac : allCode) {
 												String acft = ac.getFuncType();
 												String acCode = ac.getIhnCode();
-												if(acft.equals(acftl)) {
-													if(acCode.equals(acCodel)) {
+												if (acft.equals(acftl)) {
+													if (acCode.equals(acCodel)) {
 														isSame = true;
 														break;
 													}
@@ -10040,8 +9750,8 @@ public class DbReportService {
 											}
 											isSame = false;
 										}
-										Collections.sort(allCode,mapComparatorIhnCode);
-										Collections.sort(allCodeLast,mapComparatorIhnCode);
+										Collections.sort(allCode, mapComparatorIhnCode);
+										Collections.sort(allCodeLast, mapComparatorIhnCode);
 									}
 								}
 							}
@@ -10281,7 +9991,7 @@ public class DbReportService {
 			return m1.getFuncType().compareTo(m2.getFuncType());
 		}
 	};
-	
+
 	public Comparator<OwnExpenseQueryConditionIhnCodeInfo> mapComparatorIhnCode = new Comparator<OwnExpenseQueryConditionIhnCodeInfo>() {
 		public int compare(OwnExpenseQueryConditionIhnCodeInfo m1, OwnExpenseQueryConditionIhnCodeInfo m2) {
 			return m1.getIhnCode().compareTo(m2.getIhnCode());
@@ -10594,4 +10304,149 @@ public class DbReportService {
 		}
 	};
 
+	public DrgQueryCoditionResponse drgMaptoObj(List<Map<String, Object>> sqlList) {
+		DrgQueryCoditionResponse result = new DrgQueryCoditionResponse();
+		List<DrgQueryCondition> retList = new ArrayList<DrgQueryCondition>();
+		DrgQueryCondition dqcModel = new DrgQueryCondition();
+		DrgQueryConditionDetail detailModel = new DrgQueryConditionDetail();
+		List<DrgQueryConditionDetail> total = new ArrayList<DrgQueryConditionDetail>();
+		List<DrgQueryConditionDetail> sectionA = new ArrayList<DrgQueryConditionDetail>();
+		List<DrgQueryConditionDetail> sectionB1 = new ArrayList<DrgQueryConditionDetail>();
+		List<DrgQueryConditionDetail> sectionB2 = new ArrayList<DrgQueryConditionDetail>();
+		List<DrgQueryConditionDetail> sectionC = new ArrayList<DrgQueryConditionDetail>();
+		if(sqlList.size() > 0) {
+			for(int i=0; i<sqlList.size(); i++) {
+				dqcModel.setDate(sqlList.get(i).get("DATE").toString());
+				dqcModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());
+				@SuppressWarnings("unchecked")
+				List<Map<String, Object>> info = (List<Map<String, Object>>) sqlList.get(i).get("info");
+				@SuppressWarnings("unchecked")
+				List<Map<String, Object>> list = (List<Map<String, Object>>) sqlList.get(i).get("list");
+				
+				if(info !=null && info.size() > 0) {
+					for(int j=0; j<info.size(); j++) {
+						detailModel.setDate(info.get(j).get("DATE").toString());
+						detailModel.setDrgCode(info.get(j).get("DRG_CODE").toString());
+						detailModel.setDrgQuantity(Long.valueOf(info.get(j).get("DRG_QUANTITY").toString()));
+						detailModel.setDrgActual(Long.valueOf(info.get(j).get("DRG_ACTUAL_POINT").toString()));
+						detailModel.setDrgApplPoint(Long.valueOf(info.get(j).get("DRG_APPL_POINT").toString()));
+						total.add(detailModel);
+						detailModel = new DrgQueryConditionDetail();
+					}
+				}
+				if(list != null && list.size() > 0) {
+					Long quantityA = 0L;
+					Long quantityB1 = 0L;
+					Long quantityB2 = 0L;
+					Long quantityC = 0L;
+					///先跑回圈計算總各區總和
+					for(int j=0; j<list.size(); j++) {
+						String section = list.get(j).get("DRG_SECTION").toString();
+						String drgCode = list.get(j).get("DRG_CODE").toString();
+						if(drgCode.isEmpty()) continue;
+						if(section.equals("A")) {
+							quantityA += Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
+						}
+						else if(section.equals("B1")) {
+							quantityB1 += Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
+						}
+						else if(section.equals("B2")) {
+							quantityB2 += Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
+						}
+						else if(section.equals("C")) {
+							quantityC += Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
+						}
+					}
+					for(int j=0; j<list.size(); j++) {
+						String section = list.get(j).get("DRG_SECTION").toString();
+						String date = list.get(j).get("DATE").toString();
+						String drgCode = list.get(j).get("DRG_CODE").toString();
+						Long drgQuantity = Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
+						Long drgActual = Long.valueOf(list.get(j).get("DRG_ACTUAL_POINT").toString());
+						Long drgAppl = Long.valueOf(list.get(j).get("DRG_APPL_POINT").toString());
+						if(section.equals("A")) {
+							detailModel.setDate(date);
+							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());		
+							detailModel.setDrgCode(drgCode);
+							detailModel.setDrgQuantity(drgQuantity);		
+							detailModel.setDrgActual(drgActual);
+							detailModel.setDrgApplPoint(drgAppl);
+							detailModel.setDiff(drgAppl - drgActual);
+							double d = Math.round(drgQuantity.doubleValue() / quantityA.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
+							detailModel.setPercent(d);
+							sectionA.add(detailModel);
+							detailModel = new DrgQueryConditionDetail();
+						}
+						else if(section.equals("B1")) {
+							detailModel.setDate(date);
+							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());	
+							detailModel.setDrgCode(drgCode);
+							detailModel.setDrgQuantity(drgQuantity);	
+							detailModel.setDrgActual(drgActual);
+							detailModel.setDrgApplPoint(drgAppl);
+							detailModel.setDiff(drgAppl - drgActual);
+							double d = Math.round(drgQuantity.doubleValue() / quantityB1.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
+							detailModel.setPercent(d);
+							sectionB1.add(detailModel);
+							detailModel = new DrgQueryConditionDetail();
+						}
+						else if(section.equals("B2")) {
+							detailModel.setDate(date);
+							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());	
+							detailModel.setDrgCode(drgCode);
+							detailModel.setDrgQuantity(drgQuantity);	
+							detailModel.setDrgActual(drgActual);
+							detailModel.setDrgApplPoint(drgAppl);
+							detailModel.setDiff(drgAppl - drgActual);
+							double d = Math.round(drgQuantity.doubleValue() / quantityB2.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
+							detailModel.setPercent(d);
+							sectionB2.add(detailModel);
+							detailModel = new DrgQueryConditionDetail();
+						}
+						else if(section.equals("C")) {
+							detailModel.setDate(date);
+							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());	
+							detailModel.setDrgCode(drgCode);
+							detailModel.setDrgQuantity(drgQuantity);	
+							detailModel.setDrgActual(drgActual);
+							detailModel.setDrgApplPoint(drgAppl);
+							detailModel.setDiff(drgAppl - drgActual);
+							double d = Math.round(drgQuantity.doubleValue() / quantityC.doubleValue() * 100.0 * 100.0)
+									/ 100.0;
+							detailModel.setPercent(d);
+							sectionC.add(detailModel);
+							detailModel = new DrgQueryConditionDetail();
+					    }
+					}
+				}
+				Collections.sort(total,mapComparatorDrgCD);
+				Collections.sort(sectionA,mapComparatorDrgCD);
+				Collections.sort(sectionB1,mapComparatorDrgCD);
+				Collections.sort(sectionB2,mapComparatorDrgCD);
+				Collections.sort(sectionC,mapComparatorDrgCD);
+				dqcModel.setTotal(total);
+				dqcModel.setSectionA(sectionA);
+				dqcModel.setSectionB1(sectionB1);
+				dqcModel.setSectionB2(sectionB2);
+				dqcModel.setSectionC(sectionC);
+				retList.add(dqcModel);
+				dqcModel = new DrgQueryCondition();
+				total = new ArrayList<DrgQueryConditionDetail>();
+				sectionA = new ArrayList<DrgQueryConditionDetail>();
+				sectionB1 = new ArrayList<DrgQueryConditionDetail>();
+				sectionB2 = new ArrayList<DrgQueryConditionDetail>();
+				sectionC = new ArrayList<DrgQueryConditionDetail>();
+			}
+			result.setData(retList);
+		}
+		return result;
+	}
+	public Comparator<DrgQueryConditionDetail> mapComparatorDrgCD = new Comparator<DrgQueryConditionDetail>() {
+		public int compare(DrgQueryConditionDetail m1, DrgQueryConditionDetail m2) {
+			return m1.getDrgCode().compareTo(m2.getDrgCode());
+		}
+	};
 }

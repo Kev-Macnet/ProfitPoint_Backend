@@ -43,6 +43,9 @@ import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionCode;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionInfo;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionList;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionResponse;
+import tw.com.leadtek.nhiwidget.payload.report.DrgQueryCoditionResponse;
+import tw.com.leadtek.nhiwidget.payload.report.DrgQueryCondition;
+import tw.com.leadtek.nhiwidget.payload.report.DrgQueryConditionDetail;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryCondition;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionDetail;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionIhnCodeInfo;
@@ -557,14 +560,18 @@ public class DbReportExportService {
 			String medNames, String icdcms, String medLogCodes, int applMin, int applMax, String icdAll, String payCode,
 			String inhCode, boolean isShowDRGList, boolean isLastM, boolean isLastY, HttpServletResponse response)
 			throws ParseException, IOException {
-		Map<String, Object> dataMap = dbrService.getDrgQueryCondition(dateTypes, year, month, betweenSdate,
+		DrgQueryCoditionResponse dataMap = dbrService.getDrgQueryCondition(dateTypes, year, month, betweenSdate,
 				betweenEdate, sections, drgCodes, dataFormats, funcTypes, medNames, icdcms, medLogCodes, applMin,
 				applMax, icdAll, payCode, inhCode, isShowDRGList, isLastM, isLastY);
 
-		@SuppressWarnings("unchecked")
-		List<Map<String, Object>> drgDataList = (List<Map<String, Object>>) dataMap.get("drgData");
-		List<Map<String, Object>> appendList = new ArrayList<Map<String, Object>>();
-
+		List<DrgQueryCondition> dataList = dataMap.getData();
+		DrgQueryCondition dqcModel = new DrgQueryCondition();
+		DrgQueryConditionDetail detailModel = new DrgQueryConditionDetail();
+		List<DrgQueryConditionDetail> total = new ArrayList<DrgQueryConditionDetail>();
+		List<DrgQueryConditionDetail> sectionA = new ArrayList<DrgQueryConditionDetail>();
+		List<DrgQueryConditionDetail> sectionB1 = new ArrayList<DrgQueryConditionDetail>();
+		List<DrgQueryConditionDetail> sectionB2 = new ArrayList<DrgQueryConditionDetail>();
+		List<DrgQueryConditionDetail> sectionC = new ArrayList<DrgQueryConditionDetail>();
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
 		// 樣式
@@ -577,7 +584,7 @@ public class DbReportExportService {
 		cellStyle.setBorderRight(BorderStyle.MEDIUM);
 
 		HSSFCellStyle cellTitleStyle = workbook.createCellStyle();
-		cellTitleStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellTitleStyle.setAlignment(HorizontalAlignment.CENTER);
 		cellTitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 		cellTitleStyle.setBorderBottom(BorderStyle.MEDIUM);
 		cellTitleStyle.setBorderTop(BorderStyle.MEDIUM);
@@ -602,7 +609,7 @@ public class DbReportExportService {
 		String[] tableRowHeadersB2 = { "統計月份", "B2區DRG總案件數", "案件佔率", "案件病例總點數(不含自費)", "案件申報總點數", "點數差額" };
 		String[] tableRowHeadersC = { "統計月份", "C區DRG總案件數", "案件佔率", "案件病例總點數(不含自費)", "案件申報總點數", "點數差額" };
 
-		if (drgDataList.size() > 0) {
+		if (dataList.size() > 0) {
 			HSSFSheet sheet = workbook.createSheet("DRG案件數分佈佔率與定額、實際點數");
 			/// 欄位A1
 			HSSFRow row = sheet.createRow(0);
@@ -610,42 +617,13 @@ public class DbReportExportService {
 			cell.setCellValue("統計月份");
 			cell.setCellStyle(cellStyle);
 			/// 欄位B1
-			cell = row.createCell(1);
-			String cellValue = "";
-			String cellValue2 = "";
-			List<Integer> il = new ArrayList<Integer>();
-			int count = 0;
-			for (Map<String, Object> map : drgDataList) {
-				String date = map.get("DATE").toString();
-				String dc = map.get("DRG_CODE").toString();
-				Object dn = map.get("disPlayName");
-				if (dc.isEmpty() && (dn == null || dn.toString().length() == 0)) {
-					cellValue += date + "、";
-				} else if (dc.isEmpty() && !dn.toString().isEmpty()) {
-					cellValue2 += dn + "、";
-					il.add(count);
-					appendList.add(map);
-				}
-				count++;
-			}
-			if (il.size() > 0) {
-				for (int i : il) {
-					drgDataList.remove(0);
-				}
-				drgDataList.addAll(appendList);
-			}
-			cellValue = cellValue.substring(0, cellValue.length() - 1);
-			if (cellValue2.length() > 0) {
-				cellValue2 = cellValue2.substring(0, cellValue2.length() - 1);
-				cellValue += "、" + cellValue2;
-			}
-			String[] split = cellValue.split("、");
-			cellIndex = 2;
-			for (String str : split) {
-				cell.setCellValue(str);
+			cellIndex = 1;
+			cell = row.createCell(cellIndex);
+			for (DrgQueryCondition dic : dataList) {
+				cell.setCellValue(dic.getDate());
 				cell.setCellStyle(cellStyle);
-				cell = row.createCell(cellIndex);
 				cellIndex++;
+				cell = row.createCell(cellIndex);
 			}
 
 			cellIndex = 0;
@@ -677,8 +655,8 @@ public class DbReportExportService {
 				cellIndex++;
 
 				cell = row.createCell(cellIndex);
-				split = StringUtility.splitBySpace(dataFormats);
-				cellValue = "";
+				String[] split = StringUtility.splitBySpace(dataFormats);
+				String cellValue = "";
 				for (String str : split) {
 					switch (str) {
 					case "all":
@@ -863,50 +841,50 @@ public class DbReportExportService {
 				cell.setCellStyle(cellStyle);
 				switch (y) {
 				case 0:
-					for (int x = 0; x < drgDataList.size(); x++) {
+					for (int x = 0; x < dataList.size(); x++) {
+						String cellValue = "";
+						total = dataList.get(x).getTotal();
+						for (int v = 0; v < total.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
 
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-						String date = drgDataList.get(x).get("DATE").toString();
-						String dc = drgDataList.get(x).get("DRG_CODE").toString();
-						Object dn = drgDataList.get(x).get("disPlayName");
-						cellValue = date;
-						if (dc.isEmpty() && dn == null) {
-							cellValue = date;
-						} else if (dc.isEmpty() && dn.toString().isEmpty()) {
-							cellValue = date;
-						} else if (dc.isEmpty() && dn.toString().length() > 0) {
-							cellValue = dn.toString();
-						} else if (dc.length() > 0) {
-							cellValue = dc;
+							String date = total.get(v).getDate();
+							String code = total.get(v).getDrgCode();
+							if (!code.isEmpty()) {
+								cellValue = code;
+							} else {
+								cellValue = date;
+							}
+
+							cell.setCellValue(cellValue);
+							cell.setCellStyle(cellStyle);
 						}
-						cell.setCellValue(cellValue);
-						cell.setCellStyle(cellStyle);
 					}
 					cellIndex = 0;
 					break;
 				case 1:
-					for (int x = 0; x < drgDataList.size(); x++) {
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-						Long dq = Long.parseLong(drgDataList.get(x).get("DRG_QUANTITY").toString());
-						cell.setCellValue(dq.doubleValue());
-						cell.setCellStyle(cellFormatStyle);
+					for (int x = 0; x < dataList.size(); x++) {
+						total = dataList.get(x).getTotal();
+						for (int v = 0; v < total.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(total.get(v).getDrgQuantity());
+							cell.setCellStyle(cellFormatStyle);
+
+						}
 					}
 					cellIndex = 0;
 					break;
 				case 2:
-					for (int x = 0; x < drgDataList.size(); x++) {
-						cellIndex++;
-						cell = row.createCell(cellIndex);
-						if (drgDataList.get(x).get("DRG_APPL_POINT") == null) {
-							cell.setCellValue(0);
-						} else {
+					for (int x = 0; x < dataList.size(); x++) {
+						total = dataList.get(x).getTotal();
+						for (int v = 0; v < total.size(); v++) {
+							cellIndex++;
+							cell = row.createCell(cellIndex);
+							cell.setCellValue(total.get(v).getDrgApplPoint());
+							cell.setCellStyle(cellFormatStyle);
 
-							Long da = Long.parseLong(drgDataList.get(x).get("DRG_APPL_POINT").toString());
-							cell.setCellValue(da.doubleValue());
 						}
-						cell.setCellStyle(cellFormatStyle);
 					}
 					cellIndex = 0;
 					break;
@@ -918,550 +896,421 @@ public class DbReportExportService {
 			}
 
 			cellIndex = 0;
-			if (sections != null && sections.length() > 0) {
-				Long sectionA = 0L;
-				Long sectionB1 = 0L;
-				Long sectionB2 = 0L;
-				Long sectionC = 0L;
-				/// 計算分區各案件數量
-				for (int v = 0; v < drgDataList.size(); v++) {
-					Object a = drgDataList.get(v).get("SECTION_A");
-					Object b1 = drgDataList.get(v).get("SECTION_B1");
-					Object b2 = drgDataList.get(v).get("SECTION_B2");
-					Object c = drgDataList.get(v).get("SECTION_C");
-					if ((drgCodes != null && drgCodes.length() > 0) || isShowDRGList) {
-
-						if (drgDataList.get(v).get("DRG_CODE") != null
-								&& drgDataList.get(v).get("DRG_CODE").toString().length() == 0) {
-							continue;
-						}
-					}
-					if (a != null)
-						sectionA += Long.parseLong(a.toString());
-					if (b1 != null)
-						sectionB1 += Long.parseLong(b1.toString());
-					if (b2 != null)
-						sectionB2 += Long.parseLong(b2.toString());
-					if (c != null)
-						sectionC += Long.parseLong(c.toString());
-				}
-				split = StringUtility.splitBySpace(sections);
+			try {
 				/// 欄位A
 				rowIndex++;
 				row = sheet.createRow(rowIndex);
-				for (String str : split) {
-					switch (str) {
-					case "A":
-						cellIndex = 0;
-						for (int y = 0; y < tableRowHeadersA.length; y++) {
-							cell = row.createCell(cellIndex);
-							cell.setCellValue(tableRowHeadersA[y]);
-							cell.setCellStyle(cellStyle);
-							switch (y) {
-							case 0:
-								for (int x = 0; x < drgDataList.size(); x++) {
+				for (int y = 0; y < tableRowHeadersA.length; y++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(tableRowHeadersA[y]);
+					cell.setCellStyle(cellStyle);
 
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									String date = drgDataList.get(x).get("DATE").toString();
-									String dc = drgDataList.get(x).get("DRG_CODE").toString();
-									Object dn = drgDataList.get(x).get("disPlayName");
+					switch (y) {
+					case 0:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionA = dataList.get(x).getSectionA();
+							String cellValue = "";
+
+							for (int v = 0; v < sectionA.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+
+								String date = sectionA.get(v).getDate();
+								String code = sectionA.get(v).getDrgCode();
+								if (!code.isEmpty()) {
+									cellValue = code;
+								} else {
 									cellValue = date;
-									if (dc.isEmpty() && dn == null) {
-										cellValue = date;
-									} else if (dc.isEmpty() && dn.toString().isEmpty()) {
-										cellValue = date;
-									} else if (dc.isEmpty() && dn.toString().length() > 0) {
-										cellValue = dn.toString();
-									} else if (dc.length() > 0) {
-										cellValue = dc;
-									}
-									cell.setCellValue(cellValue);
-									cell.setCellStyle(cellStyle);
 								}
-								cellIndex = 0;
-								break;
-							case 1:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_A") != null) {
 
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_A").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 2:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_A") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_A").toString());
-										double d = Math.round(dq.doubleValue() / sectionA.doubleValue() * 100.0 * 100.0)
-												/ 100.0;
-										cell.setCellValue(d + "%");
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 3:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_A_ACTUAL") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_A_ACTUAL").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 4:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_A_APPL") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_A_APPL").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 5:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("DIFFA") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("DIFFA").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							default:
-								break;
+								cell.setCellValue(cellValue);
+								cell.setCellStyle(cellStyle);
 							}
-							rowIndex++;
-							row = sheet.createRow(rowIndex);
 						}
-						rowIndex++;
-						row = sheet.createRow(rowIndex);
+						cellIndex = 0;
 						break;
-					case "B1":
-						cellIndex = 0;
-						for (int y = 0; y < tableRowHeadersB1.length; y++) {
-							cell = row.createCell(cellIndex);
-							cell.setCellValue(tableRowHeadersB1[y]);
-							cell.setCellStyle(cellStyle);
-							switch (y) {
-							case 0:
-								for (int x = 0; x < drgDataList.size(); x++) {
+					case 1:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionA = dataList.get(x).getSectionA();
+							for (int v = 0; v < sectionA.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionA.get(v).getDrgQuantity());
+								cell.setCellStyle(cellFormatStyle);
 
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									String date = drgDataList.get(x).get("DATE").toString();
-									String dc = drgDataList.get(x).get("DRG_CODE").toString();
-									Object dn = drgDataList.get(x).get("disPlayName");
-									cellValue = date;
-									if (dc.isEmpty() && dn == null) {
-										cellValue = date;
-									} else if (dc.isEmpty() && dn.toString().isEmpty()) {
-										cellValue = date;
-									} else if (dc.isEmpty() && dn.toString().length() > 0) {
-										cellValue = dn.toString();
-									} else if (dc.length() > 0) {
-										cellValue = dc;
-									}
-									cell.setCellValue(cellValue);
-									cell.setCellStyle(cellStyle);
-								}
-								cellIndex = 0;
-								break;
-							case 1:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_B1") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_B1").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 2:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_B1") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_B1").toString());
-										double d = Math.round(
-												dq.doubleValue() / sectionB1.doubleValue() * 100.0 * 100.0) / 100.0;
-										cell.setCellValue(d + "%");
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 3:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_B1_ACTUAL") != null) {
-
-										Long dq = Long
-												.parseLong(drgDataList.get(x).get("SECTION_B1_ACTUAL").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 4:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_B1_APPL") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_B1_APPL").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 5:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("DIFFB1") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("DIFFB1").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							default:
-								break;
 							}
-							rowIndex++;
-							row = sheet.createRow(rowIndex);
 						}
-						rowIndex++;
-						row = sheet.createRow(rowIndex);
+						cellIndex = 0;
 						break;
-					case "B2":
-						cellIndex = 0;
-						for (int y = 0; y < tableRowHeadersB2.length; y++) {
-							cell = row.createCell(cellIndex);
-							cell.setCellValue(tableRowHeadersB2[y]);
-							cell.setCellStyle(cellStyle);
-							switch (y) {
-							case 0:
-								for (int x = 0; x < drgDataList.size(); x++) {
+					case 2:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionA = dataList.get(x).getSectionA();
+							for (int v = 0; v < sectionA.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionA.get(v).getPercent().doubleValue() + "%");
+								cell.setCellStyle(cellFormatStyle);
 
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									String date = drgDataList.get(x).get("DATE").toString();
-									String dc = drgDataList.get(x).get("DRG_CODE").toString();
-									Object dn = drgDataList.get(x).get("disPlayName");
-									cellValue = date;
-									if (dc.isEmpty() && dn == null) {
-										cellValue = date;
-									} else if (dc.isEmpty() && dn.toString().isEmpty()) {
-										cellValue = date;
-									} else if (dc.isEmpty() && dn.toString().length() > 0) {
-										cellValue = dn.toString();
-									} else if (dc.length() > 0) {
-										cellValue = dc;
-									}
-									cell.setCellValue(cellValue);
-									cell.setCellStyle(cellStyle);
-								}
-								cellIndex = 0;
-								break;
-							case 1:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_B2") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_B2").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 2:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_B2") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_B2").toString());
-										double d = Math.round(
-												dq.doubleValue() / sectionB2.doubleValue() * 100.0 * 100.0) / 100.0;
-										cell.setCellValue(d + "%");
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 3:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_B2_ACTUAL") != null) {
-
-										Long dq = Long
-												.parseLong(drgDataList.get(x).get("SECTION_B2_ACTUAL").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 4:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_B2_APPL") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_B2_APPL").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 5:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("DIFFB2") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("DIFFB2").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							default:
-								break;
 							}
-							rowIndex++;
-							row = sheet.createRow(rowIndex);
 						}
-						rowIndex++;
-						row = sheet.createRow(rowIndex);
+						cellIndex = 0;
 						break;
-					case "C":
-						cellIndex = 0;
-						for (int y = 0; y < tableRowHeadersC.length; y++) {
-							cell = row.createCell(cellIndex);
-							cell.setCellValue(tableRowHeadersC[y]);
-							cell.setCellStyle(cellStyle);
-							switch (y) {
-							case 0:
-								for (int x = 0; x < drgDataList.size(); x++) {
-
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									String date = drgDataList.get(x).get("DATE").toString();
-									String dc = drgDataList.get(x).get("DRG_CODE").toString();
-									Object dn = drgDataList.get(x).get("disPlayName");
-									cellValue = date;
-									if (dc.isEmpty() && dn == null) {
-										cellValue = date;
-									} else if (dc.isEmpty() && dn.toString().isEmpty()) {
-										cellValue = date;
-									} else if (dc.isEmpty() && dn.toString().length() > 0) {
-										cellValue = dn.toString();
-									} else if (dc.length() > 0) {
-										cellValue = dc;
-									}
-									cell.setCellValue(cellValue);
-									cell.setCellStyle(cellStyle);
-								}
-								cellIndex = 0;
-								break;
-							case 1:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_C") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_C").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 2:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_C") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_C").toString());
-										double d = Math.round(dq.doubleValue() / sectionC.doubleValue() * 100.0 * 100.0)
-												/ 100.0;
-										cell.setCellValue(d + "%");
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 3:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_C_ACTUAL") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_C_ACTUAL").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 4:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("SECTION_C_APPL") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("SECTION_C_APPL").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							case 5:
-								for (int x = 0; x < drgDataList.size(); x++) {
-									cellIndex++;
-									cell = row.createCell(cellIndex);
-									if (drgDataList.get(x).get("DIFFC") != null) {
-
-										Long dq = Long.parseLong(drgDataList.get(x).get("DIFFC").toString());
-										cell.setCellValue(dq.doubleValue());
-										cell.setCellStyle(cellFormatStyle);
-									} else {
-										cell.setCellValue(0);
-										cell.setCellStyle(cellFormatStyle);
-									}
-
-								}
-								cellIndex = 0;
-								break;
-							default:
-								break;
+					case 3:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionA = dataList.get(x).getSectionA();
+							for (int v = 0; v < sectionA.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionA.get(v).getDrgActual());
+								cell.setCellStyle(cellFormatStyle);
 							}
-							rowIndex++;
-							row = sheet.createRow(rowIndex);
 						}
+						cellIndex = 0;
+						break;
+					case 4:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionA = dataList.get(x).getSectionA();
+							for (int v = 0; v < sectionA.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionA.get(v).getDrgApplPoint());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 5:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionA = dataList.get(x).getSectionA();
+							for (int v = 0; v < sectionA.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionA.get(v).getDiff());
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
 						break;
 					default:
 						break;
 					}
-
+					rowIndex++;
+					row = sheet.createRow(rowIndex);
 				}
+				
+				cellIndex = 0;
+				/// 欄位A
+				rowIndex++;
+				row = sheet.createRow(rowIndex);
+				for (int y = 0; y < tableRowHeadersB1.length; y++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(tableRowHeadersB1[y]);
+					cell.setCellStyle(cellStyle);
 
+					switch (y) {
+					case 0:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB1 = dataList.get(x).getSectionB1();
+							String cellValue = "";
+
+							for (int v = 0; v < sectionB1.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+
+								String date = sectionB1.get(v).getDate();
+								String code = sectionB1.get(v).getDrgCode();
+								if (!code.isEmpty()) {
+									cellValue = code;
+								} else {
+									cellValue = date;
+								}
+
+								cell.setCellValue(cellValue);
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 1:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB1 = dataList.get(x).getSectionB1();
+							for (int v = 0; v < sectionB1.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB1.get(v).getDrgQuantity());
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 2:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB1 = dataList.get(x).getSectionB1();
+							for (int v = 0; v < sectionB1.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB1.get(v).getPercent().doubleValue() + "%");
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 3:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB1 = dataList.get(x).getSectionB1();
+							for (int v = 0; v < sectionB1.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB1.get(v).getDrgActual());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 4:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB1 = dataList.get(x).getSectionB1();
+							for (int v = 0; v < sectionB1.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB1.get(v).getDrgApplPoint());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 5:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB1 = dataList.get(x).getSectionB1();
+							for (int v = 0; v < sectionB1.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB1.get(v).getDiff());
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
+						break;
+					default:
+						break;
+					}
+					rowIndex++;
+					row = sheet.createRow(rowIndex);
+				}
+				
+				cellIndex = 0;
+				/// 欄位A
+				rowIndex++;
+				row = sheet.createRow(rowIndex);
+				for (int y = 0; y < tableRowHeadersB2.length; y++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(tableRowHeadersB2[y]);
+					cell.setCellStyle(cellStyle);
+
+					switch (y) {
+					case 0:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB2 = dataList.get(x).getSectionB2();
+							String cellValue = "";
+
+							for (int v = 0; v < sectionB2.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+
+								String date = sectionB2.get(v).getDate();
+								String code = sectionB2.get(v).getDrgCode();
+								if (!code.isEmpty()) {
+									cellValue = code;
+								} else {
+									cellValue = date;
+								}
+
+								cell.setCellValue(cellValue);
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 1:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB2 = dataList.get(x).getSectionB2();
+							for (int v = 0; v < sectionB2.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB2.get(v).getDrgQuantity());
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 2:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB2 = dataList.get(x).getSectionB2();
+							for (int v = 0; v < sectionB2.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB2.get(v).getPercent().doubleValue() + "%");
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 3:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB2 = dataList.get(x).getSectionB2();
+							for (int v = 0; v < sectionB2.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB2.get(v).getDrgActual());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 4:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB2 = dataList.get(x).getSectionB2();
+							for (int v = 0; v < sectionB2.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB2.get(v).getDrgApplPoint());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 5:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionB2 = dataList.get(x).getSectionB2();
+							for (int v = 0; v < sectionB2.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionB2.get(v).getDiff());
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
+						break;
+					default:
+						break;
+					}
+					rowIndex++;
+					row = sheet.createRow(rowIndex);
+				}
+				
+				cellIndex = 0;
+				/// 欄位A
+				rowIndex++;
+				row = sheet.createRow(rowIndex);
+				for (int y = 0; y < tableRowHeadersC.length; y++) {
+					cell = row.createCell(cellIndex);
+					cell.setCellValue(tableRowHeadersC[y]);
+					cell.setCellStyle(cellStyle);
+
+					switch (y) {
+					case 0:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionC = dataList.get(x).getSectionC();
+							String cellValue = "";
+
+							for (int v = 0; v < sectionC.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+
+								String date = sectionC.get(v).getDate();
+								String code = sectionC.get(v).getDrgCode();
+								if (!code.isEmpty()) {
+									cellValue = code;
+								} else {
+									cellValue = date;
+								}
+
+								cell.setCellValue(cellValue);
+								cell.setCellStyle(cellStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 1:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionC = dataList.get(x).getSectionC();
+							for (int v = 0; v < sectionC.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionC.get(v).getDrgQuantity());
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 2:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionC = dataList.get(x).getSectionC();
+							for (int v = 0; v < sectionC.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionC.get(v).getPercent().doubleValue() + "%");
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 3:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionC = dataList.get(x).getSectionC();
+							for (int v = 0; v < sectionC.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionC.get(v).getDrgActual());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 4:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionC = dataList.get(x).getSectionC();
+							for (int v = 0; v < sectionC.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionC.get(v).getDrgApplPoint());
+								cell.setCellStyle(cellFormatStyle);
+							}
+						}
+						cellIndex = 0;
+						break;
+					case 5:
+						for (int x = 0; x < dataList.size(); x++) {
+							sectionC = dataList.get(x).getSectionC();
+							for (int v = 0; v < sectionC.size(); v++) {
+								cellIndex++;
+								cell = row.createCell(cellIndex);
+								cell.setCellValue(sectionC.get(v).getDiff());
+								cell.setCellStyle(cellFormatStyle);
+
+							}
+						}
+						cellIndex = 0;
+						break;
+					default:
+						break;
+					}
+					rowIndex++;
+					row = sheet.createRow(rowIndex);
+				}
+			}catch(Exception e) {
+				e.printStackTrace();
 			}
+			
 
 			/// 最後設定autosize
 			for (int i = 0; i < tableRowHeadersA.length + 2; i++) {
@@ -2437,8 +2286,8 @@ public class DbReportExportService {
 									cell = row.createCell(cellIndex);
 								}
 							} else {
-								if(dataFormatAppend.contains("門急診")) {
-									
+								if (dataFormatAppend.contains("門急診")) {
+
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
@@ -2480,8 +2329,8 @@ public class DbReportExportService {
 									cell = row.createCell(cellIndex);
 								}
 							} else {
-								if(dataFormatAppend.contains("門診")) {
-									
+								if (dataFormatAppend.contains("門診")) {
+
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
@@ -2523,8 +2372,8 @@ public class DbReportExportService {
 									cell = row.createCell(cellIndex);
 								}
 							} else {
-								if(dataFormatAppend.contains("急診")) {
-									
+								if (dataFormatAppend.contains("急診")) {
+
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
@@ -2565,8 +2414,8 @@ public class DbReportExportService {
 									cell = row.createCell(cellIndex);
 								}
 							} else {
-								if(dataFormatAppend.contains("住院")) {
-									
+								if (dataFormatAppend.contains("住院")) {
+
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
@@ -2944,8 +2793,8 @@ public class DbReportExportService {
 										cell = row.createCell(cellIndex);
 									}
 								} else {
-									if(dataFormatAppend.contains("門急診")) {
-										
+									if (dataFormatAppend.contains("門急診")) {
+
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
@@ -2987,8 +2836,8 @@ public class DbReportExportService {
 										cell = row.createCell(cellIndex);
 									}
 								} else {
-									if(dataFormatAppend.contains("門診")) {
-										
+									if (dataFormatAppend.contains("門診")) {
+
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
@@ -3030,8 +2879,8 @@ public class DbReportExportService {
 										cell = row.createCell(cellIndex);
 									}
 								} else {
-									if(dataFormatAppend.contains("急診")) {
-										
+									if (dataFormatAppend.contains("急診")) {
+
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
@@ -3072,8 +2921,8 @@ public class DbReportExportService {
 										cell = row.createCell(cellIndex);
 									}
 								} else {
-									if(dataFormatAppend.contains("住院")) {
-										
+									if (dataFormatAppend.contains("住院")) {
+
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);

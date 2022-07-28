@@ -5,7 +5,9 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+
 import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -23,6 +26,7 @@ import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.CaseStatusAndQuantity;
 import tw.com.leadtek.nhiwidget.payload.report.DatabaseCalculateExportFactor;
 import tw.com.leadtek.nhiwidget.payload.report.DeductedNoteQueryConditionResponse;
+import tw.com.leadtek.nhiwidget.payload.report.DrgQueryCoditionResponse;
 import tw.com.leadtek.nhiwidget.payload.report.OwnExpenseQueryConditionResponse;
 import tw.com.leadtek.nhiwidget.service.CaseStatusAndQuantityService;
 import tw.com.leadtek.nhiwidget.service.DbReportExportService;
@@ -377,7 +381,7 @@ public class DbReportController extends BaseController {
 	@ApiOperation(value = "取得DRG案件數分佈佔率與定額、實際點數", notes = "取得DRG案件數分佈佔率與定額、實際點數")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgQueryCondition")
-	public ResponseEntity<Map<String, Object>> getDrgQueryCondition(
+	public ResponseEntity<DrgQueryCoditionResponse> getDrgQueryCondition(
 			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
 			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2021 2021 2021") @RequestParam(required = true) String year,
 			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = true) String month,
@@ -400,20 +404,20 @@ public class DbReportController extends BaseController {
 			@ApiParam(name = "isLastY", value = "去年同期時段相比", example = "false") @RequestParam(required = false) boolean isLastY)
 			throws ParseException {
 
-		Map<String, Object> result = new HashMap<String, Object>();
+		DrgQueryCoditionResponse result = new DrgQueryCoditionResponse();
 
 
 		if (dateType.equals("0")) {
 			if (year.isEmpty() || month.isEmpty()) {
-				result.put("result", BaseResponse.ERROR);
-				result.put("message", "dateType為0時，西元年或月為必填");
+				result.setResult(BaseResponse.ERROR);
+				result.setMessage("dateType為0時，西元年或月為必填");
 				return ResponseEntity.badRequest().body(result);
 			}
 		} else {
 			isLastM = false;
 			if (betweenSDate.isEmpty() || betweenEDate.isEmpty()) {
-				result.put("result", BaseResponse.ERROR);
-				result.put("message", "dateType為1時，日期區間起迄日為必填");
+				result.setMessage(BaseResponse.ERROR);
+				result.setResult("dateType為1時，日期區間起迄日為必填");
 				return ResponseEntity.badRequest().body(result);
 			}
 		}
