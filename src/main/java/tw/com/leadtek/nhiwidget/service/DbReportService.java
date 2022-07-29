@@ -3514,16 +3514,59 @@ public class DbReportService {
 		}
 
 		List<Integer> yearMonthBetween = findYearMonth(yList, mList);
+		List<Integer> appendYM = new ArrayList<Integer>();
 		/// 這裡做排序，name才會對應正確值
 		Collections.sort(yearMonthBetween);
 
 		List<POINT_MONTHLY> list = pointMonthlyDao.getByYmInOrderByYm(yearMonthBetween);
+		/// 先判斷資料庫是否有值
+		if (list.size() > 0) {
+			boolean isContinue = false;
+			int x = 0;
+			/// 如果日期size大於資料size，補日期和0
+			if (yearMonthBetween.size() > list.size()) {
+				for (int ym : yearMonthBetween) {
+					for (POINT_MONTHLY dic : list) {
+						if (dic.getYm() == ym) {
+							isContinue = true;
+							break;
+						}
+						isContinue = false;
+					}
+					if (isContinue) {
+						x++;
+						continue;
+					}
+					POINT_MONTHLY pm = new POINT_MONTHLY();
+					pm.setTotalAll(0L);
+					pm.setAssignedAll(0L);
+					pm.setNoApplAll(0L);
+					pm.setPatientOp(0L);
+					pm.setPatientEm(0L);
+					pm.setIpQuantity(0L);
+					pm.setTotalIp(0L);
+					pm.setAssignedIp(0L);
+					pm.setNoApplIp(0L);
+					pm.setTotalOpAll(0L);
+					pm.setAssignedOpAll(0L);
+					pm.setNoApplOp(0L);
+					pm.setYm(ym);
+					list.add(x, pm);
+					x++;
+
+				}
+			}
+
+		}
+
 		for (int i = 0; i < yList.size(); i++) {
 			String displayName = "";
-			if (list.size() > 0) {
 
-				POINT_MONTHLY pm = list.get(i);
+			if (list.size() > 0) {
+				POINT_MONTHLY pm = new POINT_MONTHLY();
+				pm = list.get(i);
 				pm.checkNull();
+				
 				if (pm.getYm().intValue() == yearMonthBetween.get(i)) {
 					String name = yearMonthBetween.get(i).toString();
 					String s1 = name.substring(0, name.length() - 2);
@@ -3542,7 +3585,6 @@ public class DbReportService {
 					calculateAchievementQuarter(result, pm, show, displayName);
 				}
 			}
-
 		}
 
 		return result;
@@ -3575,10 +3617,11 @@ public class DbReportService {
 	 * @throws ParseException
 	 */
 	@SuppressWarnings("deprecation")
-	public DrgQueryCoditionResponse getDrgQueryCondition(String dateTypes, String year, String month, String betweenSdate,
-			String betweenEdate, String sections, String drgCodes, String dataFormats, String funcTypes,
-			String medNames, String icdcms, String medLogCodes, int applMin, int applMax, String icdAll, String payCode,
-			String inhCode, boolean isShowDRGList, boolean isLastM, boolean isLastY) throws ParseException {
+	public DrgQueryCoditionResponse getDrgQueryCondition(String dateTypes, String year, String month,
+			String betweenSdate, String betweenEdate, String sections, String drgCodes, String dataFormats,
+			String funcTypes, String medNames, String icdcms, String medLogCodes, int applMin, int applMax,
+			String icdAll, String payCode, String inhCode, boolean isShowDRGList, boolean isLastM, boolean isLastY)
+			throws ParseException {
 
 		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> sqlMapList2 = new ArrayList<Map<String, Object>>();
@@ -4301,11 +4344,10 @@ public class DbReportService {
 				Map<String, Object> ret = new LinkedHashMap<String, Object>();
 				ret.put("info", sqlMapList);
 				ret.put("list", sqlMapList2);
-				ret.put("DATE",  mapList.get(i).get("sDate") + " " + mapList.get(i).get("eDate"));
-				if(i==0) {
+				ret.put("DATE", mapList.get(i).get("sDate") + " " + mapList.get(i).get("eDate"));
+				if (i == 0) {
 					ret.put("disPlayName", "");
-				}
-				else {
+				} else {
 					ret.put("disPlayName", "去年同期時段相比");
 				}
 				resList.add(ret);
@@ -4316,7 +4358,7 @@ public class DbReportService {
 
 		}
 		DrgQueryCoditionResponse result = drgMaptoObj(resList);
-		
+
 		return result;
 	}
 
@@ -7813,8 +7855,13 @@ public class DbReportService {
 		qdAll.setAssigned(qdAll.getAssigned() + pm.getAssignedAll());
 		qdAll.setOriginal(qdAll.getOriginal() + pm.getTotalAll() + pm.getNoApplAll());
 		qdAll.setOver(qdAll.getActual().longValue() - qdAll.getAssigned().longValue());
-		qdAll.setPercent(Float.parseFloat(
-				df.format((double) (qdAll.getActual().longValue() * 100) / qdAll.getAssigned().doubleValue())));
+		if (qdAll.getActual() < 1) {
+			qdAll.setPercent(0f);
+		} else {
+
+			qdAll.setPercent(Float.parseFloat(
+					df.format((double) (qdAll.getActual().longValue() * 100) / qdAll.getAssigned().doubleValue())));
+		}
 		qdAll.setCases(pm.getPatientOp() + pm.getPatientEm() + pm.getIpQuantity());
 		qdAll.setDispalyName(displayName);
 
@@ -7822,8 +7869,13 @@ public class DbReportService {
 		qdIp.setAssigned(qdIp.getAssigned() + pm.getAssignedIp());
 		qdIp.setOriginal(qdIp.getOriginal() + pm.getTotalIp() + pm.getNoApplIp());
 		qdIp.setOver(qdIp.getActual().longValue() - qdIp.getAssigned().longValue());
-		qdIp.setPercent(Float.parseFloat(
-				df.format((double) (qdIp.getActual().longValue() * 100) / qdIp.getAssigned().doubleValue())));
+		if (qdIp.getActual() < 1) {
+			qdIp.setPercent(0f);
+		} else {
+
+			qdIp.setPercent(Float.parseFloat(
+					df.format((double) (qdIp.getActual().longValue() * 100) / qdIp.getAssigned().doubleValue())));
+		}
 		qdIp.setCases(pm.getIpQuantity());
 		qdIp.setDispalyName(displayName);
 
@@ -7831,8 +7883,13 @@ public class DbReportService {
 		qdOp.setAssigned(qdOp.getAssigned() + pm.getAssignedOpAll());
 		qdOp.setOriginal(qdOp.getOriginal() + pm.getTotalOpAll() + pm.getNoApplOp());
 		qdOp.setOver(qdOp.getActual().longValue() - qdOp.getAssigned().longValue());
-		qdOp.setPercent(Float.parseFloat(
-				df.format((double) (qdOp.getActual().longValue() * 100) / qdOp.getAssigned().doubleValue())));
+		if (qdOp.getActual() < 1) {
+			qdOp.setPercent(0f);
+		} else {
+			qdOp.setPercent(Float.parseFloat(
+					df.format((double) (qdOp.getActual().longValue() * 100) / qdOp.getAssigned().doubleValue())));
+		}
+
 		qdOp.setCases(pm.getPatientOp() + pm.getPatientEm());
 		qdOp.setDispalyName(displayName);
 
@@ -10314,17 +10371,17 @@ public class DbReportService {
 		List<DrgQueryConditionDetail> sectionB1 = new ArrayList<DrgQueryConditionDetail>();
 		List<DrgQueryConditionDetail> sectionB2 = new ArrayList<DrgQueryConditionDetail>();
 		List<DrgQueryConditionDetail> sectionC = new ArrayList<DrgQueryConditionDetail>();
-		if(sqlList.size() > 0) {
-			for(int i=0; i<sqlList.size(); i++) {
+		if (sqlList.size() > 0) {
+			for (int i = 0; i < sqlList.size(); i++) {
 				dqcModel.setDate(sqlList.get(i).get("DATE").toString());
 				dqcModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());
 				@SuppressWarnings("unchecked")
 				List<Map<String, Object>> info = (List<Map<String, Object>>) sqlList.get(i).get("info");
 				@SuppressWarnings("unchecked")
 				List<Map<String, Object>> list = (List<Map<String, Object>>) sqlList.get(i).get("list");
-				
-				if(info !=null && info.size() > 0) {
-					for(int j=0; j<info.size(); j++) {
+
+				if (info != null && info.size() > 0) {
+					for (int j = 0; j < info.size(); j++) {
 						detailModel.setDate(info.get(j).get("DATE").toString());
 						detailModel.setDrgCode(info.get(j).get("DRG_CODE").toString());
 						detailModel.setDrgQuantity(Long.valueOf(info.get(j).get("DRG_QUANTITY").toString()));
@@ -10334,99 +10391,118 @@ public class DbReportService {
 						detailModel = new DrgQueryConditionDetail();
 					}
 				}
-				if(list != null && list.size() > 0) {
+				if (list != null && list.size() > 0) {
 					Long quantityA = 0L;
 					Long quantityB1 = 0L;
 					Long quantityB2 = 0L;
 					Long quantityC = 0L;
-					///先跑回圈計算總各區總和
-					for(int j=0; j<list.size(); j++) {
+					/// 先跑回圈計算總各區總和
+					for (int j = 0; j < list.size(); j++) {
 						String section = list.get(j).get("DRG_SECTION").toString();
 						String drgCode = list.get(j).get("DRG_CODE").toString();
-						if(drgCode.isEmpty()) continue;
-						if(section.equals("A")) {
+						if (drgCode.isEmpty())
+							continue;
+						if (section.equals("A")) {
 							quantityA += Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
-						}
-						else if(section.equals("B1")) {
+						} else if (section.equals("B1")) {
 							quantityB1 += Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
-						}
-						else if(section.equals("B2")) {
+						} else if (section.equals("B2")) {
 							quantityB2 += Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
-						}
-						else if(section.equals("C")) {
+						} else if (section.equals("C")) {
 							quantityC += Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
 						}
 					}
-					for(int j=0; j<list.size(); j++) {
+					for (int j = 0; j < list.size(); j++) {
 						String section = list.get(j).get("DRG_SECTION").toString();
 						String date = list.get(j).get("DATE").toString();
 						String drgCode = list.get(j).get("DRG_CODE").toString();
 						Long drgQuantity = Long.valueOf(list.get(j).get("DRG_QUANTITY").toString());
 						Long drgActual = Long.valueOf(list.get(j).get("DRG_ACTUAL_POINT").toString());
 						Long drgAppl = Long.valueOf(list.get(j).get("DRG_APPL_POINT").toString());
-						if(section.equals("A")) {
+						if (section.equals("A")) {
 							detailModel.setDate(date);
-							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());		
+							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());
 							detailModel.setDrgCode(drgCode);
-							detailModel.setDrgQuantity(drgQuantity);		
+							detailModel.setDrgQuantity(drgQuantity);
 							detailModel.setDrgActual(drgActual);
 							detailModel.setDrgApplPoint(drgAppl);
 							detailModel.setDiff(drgAppl - drgActual);
 							double d = Math.round(drgQuantity.doubleValue() / quantityA.doubleValue() * 100.0 * 100.0)
 									/ 100.0;
-							detailModel.setPercent(d);
+							if (drgCode.isEmpty()) {
+								detailModel.setPercent(100.0);
+							}
+							else {
+								
+								detailModel.setPercent(d);
+							}
 							sectionA.add(detailModel);
 							detailModel = new DrgQueryConditionDetail();
-						}
-						else if(section.equals("B1")) {
+						} else if (section.equals("B1")) {
 							detailModel.setDate(date);
-							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());	
+							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());
 							detailModel.setDrgCode(drgCode);
-							detailModel.setDrgQuantity(drgQuantity);	
+							detailModel.setDrgQuantity(drgQuantity);
 							detailModel.setDrgActual(drgActual);
 							detailModel.setDrgApplPoint(drgAppl);
 							detailModel.setDiff(drgAppl - drgActual);
 							double d = Math.round(drgQuantity.doubleValue() / quantityB1.doubleValue() * 100.0 * 100.0)
 									/ 100.0;
-							detailModel.setPercent(d);
+							if (drgCode.isEmpty()) {
+								detailModel.setPercent(100.0);
+							}
+							else {
+								
+								detailModel.setPercent(d);
+							}
 							sectionB1.add(detailModel);
 							detailModel = new DrgQueryConditionDetail();
-						}
-						else if(section.equals("B2")) {
+						} else if (section.equals("B2")) {
 							detailModel.setDate(date);
-							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());	
+							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());
 							detailModel.setDrgCode(drgCode);
-							detailModel.setDrgQuantity(drgQuantity);	
+							detailModel.setDrgQuantity(drgQuantity);
 							detailModel.setDrgActual(drgActual);
 							detailModel.setDrgApplPoint(drgAppl);
 							detailModel.setDiff(drgAppl - drgActual);
 							double d = Math.round(drgQuantity.doubleValue() / quantityB2.doubleValue() * 100.0 * 100.0)
 									/ 100.0;
-							detailModel.setPercent(d);
+							if (drgCode.isEmpty()) {
+								detailModel.setPercent(100.0);
+							}
+							else {
+								
+								detailModel.setPercent(d);
+							}
 							sectionB2.add(detailModel);
 							detailModel = new DrgQueryConditionDetail();
-						}
-						else if(section.equals("C")) {
+						} else if (section.equals("C")) {
 							detailModel.setDate(date);
-							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());	
+							detailModel.setDisplayName(sqlList.get(i).get("disPlayName").toString());
 							detailModel.setDrgCode(drgCode);
-							detailModel.setDrgQuantity(drgQuantity);	
+							detailModel.setDrgQuantity(drgQuantity);
 							detailModel.setDrgActual(drgActual);
 							detailModel.setDrgApplPoint(drgAppl);
 							detailModel.setDiff(drgAppl - drgActual);
 							double d = Math.round(drgQuantity.doubleValue() / quantityC.doubleValue() * 100.0 * 100.0)
 									/ 100.0;
-							detailModel.setPercent(d);
+							if (drgCode.isEmpty()) {
+								detailModel.setPercent(100.0);
+							}
+							else {
+								
+								detailModel.setPercent(d);
+							}
 							sectionC.add(detailModel);
 							detailModel = new DrgQueryConditionDetail();
-					    }
+						}
 					}
 				}
-				Collections.sort(total,mapComparatorDrgCD);
-				Collections.sort(sectionA,mapComparatorDrgCD);
-				Collections.sort(sectionB1,mapComparatorDrgCD);
-				Collections.sort(sectionB2,mapComparatorDrgCD);
-				Collections.sort(sectionC,mapComparatorDrgCD);
+				Collections.sort(total, mapComparatorDrgCD);
+				Collections.sort(sectionA, mapComparatorDrgCD);
+				Collections.sort(sectionB1, mapComparatorDrgCD);
+				Collections.sort(sectionB2, mapComparatorDrgCD);
+				Collections.sort(sectionC, mapComparatorDrgCD);
 				dqcModel.setTotal(total);
 				dqcModel.setSectionA(sectionA);
 				dqcModel.setSectionB1(sectionB1);
@@ -10444,6 +10520,7 @@ public class DbReportService {
 		}
 		return result;
 	}
+
 	public Comparator<DrgQueryConditionDetail> mapComparatorDrgCD = new Comparator<DrgQueryConditionDetail>() {
 		public int compare(DrgQueryConditionDetail m1, DrgQueryConditionDetail m2) {
 			return m1.getDrgCode().compareTo(m2.getDrgCode());

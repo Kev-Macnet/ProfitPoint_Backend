@@ -565,8 +565,6 @@ public class DbReportExportService {
 				applMax, icdAll, payCode, inhCode, isShowDRGList, isLastM, isLastY);
 
 		List<DrgQueryCondition> dataList = dataMap.getData();
-		DrgQueryCondition dqcModel = new DrgQueryCondition();
-		DrgQueryConditionDetail detailModel = new DrgQueryConditionDetail();
 		List<DrgQueryConditionDetail> total = new ArrayList<DrgQueryConditionDetail>();
 		List<DrgQueryConditionDetail> sectionA = new ArrayList<DrgQueryConditionDetail>();
 		List<DrgQueryConditionDetail> sectionB1 = new ArrayList<DrgQueryConditionDetail>();
@@ -610,6 +608,22 @@ public class DbReportExportService {
 		String[] tableRowHeadersC = { "統計月份", "C區DRG總案件數", "案件佔率", "案件病例總點數(不含自費)", "案件申報總點數", "點數差額" };
 
 		if (dataList.size() > 0) {
+			List<DrgQueryCondition> lastData = new ArrayList<DrgQueryCondition>();
+			if(dateTypes.equals("0")) {
+				if(isLastM || isLastY) {
+					
+					for(DrgQueryCondition dic : dataList) {
+						if(!dic.getDisplayName().isEmpty()) {
+							lastData.add(dic);
+						}
+					}
+					for(DrgQueryCondition dic :lastData) {
+						dataList.remove(0);
+					}
+					dataList.addAll(lastData);
+				}
+				
+			}
 			HSSFSheet sheet = workbook.createSheet("DRG案件數分佈佔率與定額、實際點數");
 			/// 欄位A1
 			HSSFRow row = sheet.createRow(0);
@@ -857,7 +871,9 @@ public class DbReportExportService {
 								if(displayName != null && displayName.length()>0) {
 									cellValue = displayName;
 								}
-								cellValue = date;
+								else {
+									cellValue = date;
+								}
 							}
 
 							cell.setCellValue(cellValue);
@@ -928,7 +944,9 @@ public class DbReportExportService {
 									if(displayName != null && displayName.length()>0) {
 										cellValue = displayName;
 									}
-									cellValue = date;
+									else {
+										cellValue = date;
+									}
 								}
 
 								cell.setCellValue(cellValue);
@@ -1035,7 +1053,9 @@ public class DbReportExportService {
 									if(displayName != null && displayName.length()>0) {
 										cellValue = displayName;
 									}
-									cellValue = date;
+									else {
+										cellValue = date;
+									}
 								}
 
 								cell.setCellValue(cellValue);
@@ -1142,7 +1162,9 @@ public class DbReportExportService {
 									if(displayName != null && displayName.length()>0) {
 										cellValue = displayName;
 									}
-									cellValue = date;
+									else {
+										cellValue = date;
+									}
 								}
 
 								cell.setCellValue(cellValue);
@@ -1249,7 +1271,9 @@ public class DbReportExportService {
 									if(displayName != null && displayName.length()>0) {
 										cellValue = displayName;
 									}
-									cellValue = date;
+									else {
+										cellValue = date;
+									}
 								}
 
 								cell.setCellValue(cellValue);
