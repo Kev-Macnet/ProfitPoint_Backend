@@ -1,7 +1,7 @@
 # 敏盛醫院設定檔
-# Replace localhost:8081 to 192.168.2.171:8080 
+# Replace localhost:8081 to 192.168.2.172
 server:
-  port: ${port:8081}
+  port: ${port:80}
   tomcat:
     uri-encoding: UTF-8
     max-connections: 3000
@@ -103,7 +103,7 @@ project:
     port: 25
     fromEmail: monitor@leadtek.com.tw
     password: z5z8tah5
-  serverUrl: "http://192.168.2.171:80/#/warehouse/"
+  serverUrl: "http://192.168.2.172:80/#/warehouse/"
   apiUrl: "http://localhost:8081/"
   hospId: 1532011154
   isMask: false

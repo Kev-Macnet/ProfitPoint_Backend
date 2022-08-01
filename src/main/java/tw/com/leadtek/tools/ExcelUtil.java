@@ -528,7 +528,7 @@ public class ExcelUtil {
    */
   public static HashMap<Integer, String> readTitleRow(XSSFRow row, List<PARAMETERS> parameterList) {
     HashMap<Integer, String> result = new HashMap<Integer, String>();
-    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+    for (int i = 0; i < 130; i++) {
       if (row.getCell(i) == null) {
         continue;
       }

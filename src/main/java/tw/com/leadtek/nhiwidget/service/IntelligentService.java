@@ -2794,6 +2794,7 @@ public class IntelligentService {
     // 週報表資料
     try {
       reportService.calculatePointWeekly(calStart, true);
+      logger.info("calculatePointWeekly done");
     } catch (Exception e) {
       logger.error("calculatePointWeekly:", e);
     }
@@ -2824,6 +2825,22 @@ public class IntelligentService {
         drgCalService.callDrgCalProgram(file, mrList, mrIdList, ipdMap);
         long usedTime = System.currentTimeMillis() - start;
         logger.info("runDrgCalculate finished using " + usedTime);
+        
+        List<String> applYm = getDistinctApplYm(mrList);
+        // 月報表資料
+        for (String ym : applYm) {
+          reportService.calculateDRGMonthly(ym);
+        }
+        
+        Date firstDate = new Date();
+        for (MR mr : mrList) {
+          if (mr.getMrDate().before(firstDate)) {
+            firstDate = mr.getMrDate();
+          }
+        }
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTime(firstDate);
+        reportService.calculatePointWeekly(startCal, true);
       }
     });
     thread.start();

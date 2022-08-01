@@ -75,4 +75,9 @@ dependencies {
 	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-quartz', version: '2.6.1'
 }
 
+/** 含source code
+tasks.withType(Jar){
+	from sourceSets.main.allSource
+}
+**/
 ext['log4j2.version'] = '2.17.2'
