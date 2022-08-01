@@ -504,7 +504,7 @@ public class ViolatePaymentTermsService {
     String funcTypeString = appendStringListToString(funcTypeList);
     String[] funcTypeCodeList = new String[funcTypeList.size()];
     for (int i = 0; i < funcTypeList.size(); i++) {
-      funcTypeCodeList[i] = cts.getCodeByDesc("FUNC_TYPE", funcTypeList.get(i));
+      funcTypeCodeList[i] = cts.getFuncTypeCodeByName(funcTypeList.get(i));
     }
     String wording = String.format(wordings.get("VIOLATE_FUNC_TYPE"), nhiNo, funcTypeString);
     List<MR> violateMr = new ArrayList<MR>();

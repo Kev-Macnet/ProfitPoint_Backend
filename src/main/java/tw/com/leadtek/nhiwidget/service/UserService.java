@@ -95,7 +95,7 @@ public class UserService {
 
   private HashMap<Long, DEPARTMENT> departmentHash;
 
-  private void retrieveData() {
+  public void retrieveData() {
     HashMap<Long, DEPARTMENT> newDepartments = new HashMap<Long, DEPARTMENT>();
     List<DEPARTMENT> departmentList = departmentDao.findAll();
     for (DEPARTMENT department : departmentList) {
@@ -363,6 +363,18 @@ public class UserService {
     }
     return null;
   }
+  
+  public DEPARTMENT findDepartmentByName(String name) {
+    if (departmentHash == null) {
+      retrieveData();
+    }
+    for (DEPARTMENT department : departmentHash.values()) {
+      if (department.getName().equals(name) && department.getNhCode() != null) {
+        return department;
+      }
+    }
+    return null;
+  }
 
   public String deleteDepartment(Long id) {
     departmentHash.remove(id);
@@ -486,18 +498,20 @@ public class UserService {
     return -1L;
   }
 
-  public List<DEPARTMENT> getAllDepartment(String code, String name) {
+  public List<DEPARTMENT> getAllDepartment(String code, String name, long loginTime) {
     if (departmentHash == null) {
       retrieveData();
     }
+//    System.out.println(System.currentTimeMillis());
+//    System.out.println(loginTime);
     List<DEPARTMENT> result = new ArrayList<DEPARTMENT>();
     List<DEPARTMENT> all = new ArrayList<DEPARTMENT>(departmentHash.values());
     if ((code == null || code.length() == 0) && (name == null || name.length() == 0)) {
       result = getAllFuncTypeInMR();
-      if (result == null || result.size() ==0) {
-        return all;
+      if (result == null || result.size() ==0 || ((System.currentTimeMillis() - loginTime) < 2000)) {
+        return result;
       }
-      return result;
+      return all;
     }
     if (code != null && code.length() > 0) {
       for (DEPARTMENT department : all) {
@@ -749,7 +763,7 @@ public class UserService {
   }
 
   private List<Long> getDepartmentIds(String funcType, String funcTypeC) {
-    if ("不分科".equals(funcTypeC) || "00".equals(funcType)
+    if ("不分科".equals(funcTypeC) || "00".equals(funcType) || "0".equals(funcType)
         || (funcType == null && funcTypeC == null)) {
       return new ArrayList<Long>(departmentHash.keySet());
     }

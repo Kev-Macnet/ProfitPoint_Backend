@@ -769,12 +769,12 @@ public class NHIWidgetXMLController extends BaseController {
       }
     }
     if (funcTypeC != null && funcTypeC.length() > 0) {
-      List<DEPARTMENT> departments = userService.getAllDepartment(null, null);
+      List<DEPARTMENT> departments = userService.getAllDepartment(null, null, 0);
       String[] ss = funcTypeC.split(" ");
       for (String string : ss) {
         boolean isFound = false;
         for (DEPARTMENT department : departments) {
-          if (department.getName().equals(string)) {
+          if (string.equals(department.getName()) || string.equals(department.getNhName())) {
             sb.append(department.getCode());
             sb.append(" ");
             isFound = true;

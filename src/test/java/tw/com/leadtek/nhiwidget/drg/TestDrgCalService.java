@@ -246,11 +246,11 @@ public class TestDrgCalService {
 //    Calendar calMax = parametersService.getMinMaxCalendar(new Date(), false);
 //    reportService.calculatePointWeekly(calMax, true);
 
-//    reportService.calculatePointMR("202201");
-//    reportService.calculateDRGMonthly("202201");
+    reportService.calculatePointMR("202101");
+    reportService.calculateDRGMonthly("202101");
 
-    reportService.calculatePointMR("202203");
-    reportService.calculateDRGMonthly("202203");
+//    reportService.calculatePointMR("202203");
+//    reportService.calculateDRGMonthly("202203");
   }
   
   @Ignore

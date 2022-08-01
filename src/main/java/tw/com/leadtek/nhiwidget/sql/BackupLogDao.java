@@ -35,9 +35,9 @@ public class BackupLogDao {
             sql = sql.replace("-- and (USERNAME=", " and (USERNAME=");
         }
         logger.debug(sql);
-        sql = "Select ID, USERNAME, FILENAME, MODE, DESCRIPTION, UPDATE_TM From BACKUP_LOG";
+        //sql = "Select ID, USERNAME, FILENAME, MODE, DESCRIPTION, UPDATE_TM From BACKUP_LOG";
         java.util.List<Map<String, Object>> retList = jdbcTemplate.query(sql, new ColumnMapRowMapper());
-        System.out.println("dbbackup sql:" + sql + "-- size=" + retList.size());
+        //System.out.println("dbbackup sql:" + sql + "-- size=" + retList.size());
         return Utility.listLowerCase(retList);
     }
 

@@ -35,6 +35,9 @@ public class UserDetailsImpl implements UserDetails {
   
   private String role;
   
+  /**
+   * 最近一次有call後端API時間
+   */
   private long loginTime;
 
   private Collection<? extends GrantedAuthority> authorities;

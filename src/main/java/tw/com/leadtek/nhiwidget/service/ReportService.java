@@ -184,21 +184,21 @@ public class ReportService {
 		}
 		pm.setYm(Integer.parseInt(adYM));
 
-		long optId = 0;
-		long iptId = 0;
-		List<OP_T> listOPT = optDao.findByFeeYmOrderById(chineseYM);
-		if (listOPT != null && listOPT.size() > 0) {
-			optId = listOPT.get(0).getId();
-		} else {
-			return;
-		}
-
-		List<IP_T> listIPT = iptDao.findByFeeYmOrderById(chineseYM);
-		if (listIPT != null && listIPT.size() > 0) {
-			iptId = listIPT.get(0).getId();
-		} else {
-			return;
-		}
+//		long optId = 0;
+//		long iptId = 0;
+//		List<OP_T> listOPT = optDao.findByFeeYmOrderById(chineseYM);
+//		if (listOPT != null && listOPT.size() > 0) {
+//			optId = listOPT.get(0).getId();
+//		} else {
+//			return;
+//		}
+//
+//		List<IP_T> listIPT = iptDao.findByFeeYmOrderById(chineseYM);
+//		if (listIPT != null && listIPT.size() > 0) {
+//			iptId = listIPT.get(0).getId();
+//		} else {
+//			return;
+//		}
 		String year = adYM.substring(0,4);
 		String month = adYM.substring(adYM.length() - 2, adYM.length());
 		String append = year + "-" + month;
@@ -297,10 +297,21 @@ public class ReportService {
 		pm.setAssignedIp(ap.getWmIpPoints());
 		pm.setAssignedAll(ap.getWmp());
 
-		pm.setRateAll(cutPointNumber(((double) pm.getTotalAll() * (double) 100) / (double) pm.getAssignedAll()));
-		pm.setRateOpAll(cutPointNumber(((double) pm.getTotalOpAll() * (double) 100) / (double) pm.getAssignedOpAll()));
-		pm.setRateIp(cutPointNumber(((double) pm.getTotalIp() * (double) 100) / (double) pm.getAssignedIp()));
-		pm.setRemaining(pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll());
+        if (pm.getAssignedAll() == null) {
+          pm.setRateAll(0.0);
+          pm.setRateOpAll(0.0);
+          pm.setRateIp(0.0);
+          pm.setRemaining(0L);
+        } else {
+          pm.setRateAll(cutPointNumber(
+              ((double) pm.getTotalAll() * (double) 100) / (double) pm.getAssignedAll()));
+          pm.setRateOpAll(cutPointNumber(
+              ((double) pm.getTotalOpAll() * (double) 100) / (double) pm.getAssignedOpAll()));
+          pm.setRateIp(cutPointNumber(
+              ((double) pm.getTotalIp() * (double) 100) / (double) pm.getAssignedIp()));
+          pm.setRemaining(
+              pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll());
+        }
 		pointMonthlyDao.save(pm);
 	}
 
@@ -703,11 +714,6 @@ public class ReportService {
 	
 
 	public POINT_WEEKLY calculatePointByWeek(Date sdate, Date edate, List<String> funcTypes) {
-//		if (!checkWeekday(sdate, Calendar.SUNDAY) || !checkWeekday(edate, Calendar.SATURDAY)) {
-//			logger.error("calculatePointByWeek failed");
-//			return null;
-//		}
-
 		java.sql.Date s = new java.sql.Date(sdate.getTime());
 		java.sql.Date e = new java.sql.Date(edate.getTime());
 		POINT_WEEKLY pw = calculatePointByWeek(s, e, XMLConstant.FUNC_TYPE_ALL);
@@ -817,7 +823,6 @@ public class ReportService {
         calculateDRGPointByWeek(start, end, funcTypesDRG);
         cal.add(Calendar.DAY_OF_YEAR, 1);
       } while (cal.before(calMax));
-      logger.info("calculatePointWeekly done");
     }
     
 	public void initialPointWeekly(List<String> funcTypes) {
@@ -889,8 +894,14 @@ public class ReportService {
         DRG_WEEKLY drgWeeklyAll = selectOrCreateDrgWeekly(XMLConstant.FUNC_TYPE_ALL, s, e,
             startCal.get(Calendar.YEAR), startCal.get(Calendar.WEEK_OF_YEAR));
 		List<Object[]> list = mrDao.countAllDRGPointByStartDateAndEndDate(s, e);
+		// 記錄有出現過的科別代碼，有出現就不處理
+		HashMap<String, String> funcTypeSelect = new HashMap<String, String>();
 		for (Object[] obj : list) {
 			String funcType = (String) obj[0];
+			if (funcTypeSelect.containsKey(funcType)) {
+			  continue;
+			}
+			funcTypeSelect.put(funcType, "");
 			elapseFuncType.remove(funcType);
             DRG_WEEKLY drgWeekly = selectOrCreateDrgWeekly(funcType, s, e,
                 startCal.get(Calendar.YEAR), startCal.get(Calendar.WEEK_OF_YEAR));
@@ -1192,6 +1203,9 @@ public class ReportService {
 			cal.set(Calendar.DAY_OF_MONTH, 1);
 			cal.add(Calendar.MONTH, 1);
 			cal.add(Calendar.DAY_OF_YEAR, -1);
+			while(cal.get(Calendar.DAY_OF_WEEK) != Calendar.SATURDAY) {
+			  cal.add(Calendar.DAY_OF_YEAR, 1);
+			}
 			return new java.sql.Date(cal.getTimeInMillis());
 		} catch (ParseException e) {
 			e.printStackTrace();

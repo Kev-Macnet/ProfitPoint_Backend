@@ -3632,7 +3632,7 @@ public class NHIWidgetXMLService {
             // 藥費點數
             drugDot -= ipp.getTotalDot().intValue();
           } else if (ipp.getOrderCode().length() == 10) {
-            // 支付代碼為10碼列為西醫藥品
+            // 支付代碼為10碼列為西藥藥品
             drugDot -= ipp.getTotalDot();
           } else if ("6".equals(ipp.getPayCodeType())) {
             // 6 為調劑費(藥事服務費)
@@ -8698,7 +8698,7 @@ public class NHIWidgetXMLService {
         if ("20".equals(payCodeType) || payCodeType == null) {
           if (ipp.getOrderCode() != null) {
             if (ipp.getOrderCode().length() == 10) {
-              // 西醫藥品
+              // 西藥藥品
               payCodeType = "22";
             } else if (ipp.getOrderCode().length() == 10) {
               // 衛材品項費

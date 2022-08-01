@@ -98,9 +98,15 @@ public class SystemController extends BaseController {
   
   private final static String INIT_FILE_INFECTIOUS = "法定傳染病";
   
-  private final static String INIT_FILE_USER = "USER";
+  private final static String INIT_FILE_USER = "USER_";
   
-  private final static String INIT_FILE_DEPARTMENT = "DEPARTMENT";
+  private final static String INIT_FILE_DEPARTMENT = "DEPARTMENT_";
+  
+  private final static String INIT_FILE_USER_DEPARTMENT = "UD_";
+  
+  private final static String INIT_FILE_DEDUCTED_COMPUTER = "(行政審查)全民健康保險檔案分析審查異常不予支付";
+  
+  private final static String INIT_FILE_DEDUCTED_ARTIFICIAL = "(專業審查)不予支付理由";
   
   @Autowired
   private DrgCalService drgCalService;
@@ -910,6 +916,12 @@ public class SystemController extends BaseController {
         initial.importUserFile(saveFile, 0);
       } else if (saveFile.getName().startsWith(INIT_FILE_DEPARTMENT)) {
         initial.importDepartmentFile(saveFile, 0);
+      } else if (saveFile.getName().startsWith(INIT_FILE_USER_DEPARTMENT)) {
+        initial.importUserDepartmentFile(saveFile, 0);
+      } else if (saveFile.getName().startsWith(INIT_FILE_DEDUCTED_COMPUTER)) {
+        initial.importDeductedFile(saveFile, false);
+      } else if (saveFile.getName().startsWith(INIT_FILE_DEDUCTED_ARTIFICIAL)) {
+        initial.importDeductedFile(saveFile, true);
       } else if (saveFile.getName().endsWith(".xls")) {
         // 麗臺規格excel
         long startImport = System.currentTimeMillis();
