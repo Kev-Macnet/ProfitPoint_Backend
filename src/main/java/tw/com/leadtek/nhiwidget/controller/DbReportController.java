@@ -383,8 +383,8 @@ public class DbReportController extends BaseController {
 	@GetMapping("/drgQueryCondition")
 	public ResponseEntity<DrgQueryCoditionResponse> getDrgQueryCondition(
 			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
-			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2021 2021 2021") @RequestParam(required = true) String year,
-			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = true) String month,
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2021 2021 2021") @RequestParam(required = false) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = false) String month,
 			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = false) String betweenSDate,
 			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = false) String betweenEDate,
 			@ApiParam(name = "sections", value = "顯示區間，若為多筆資料，用空格隔開", example = "A B1 B2 C") @RequestParam(required = true) String sections,
@@ -436,8 +436,8 @@ public class DbReportController extends BaseController {
 	@GetMapping("/drgQueryConditionExport")
 	public ResponseEntity<Map<String, Object>> getDrgQueryConditionExport(
 			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
-			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2021 2021 2021") @RequestParam(required = true) String year,
-			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = true) String month,
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2021 2021 2021") @RequestParam(required = false) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = false) String month,
 			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = false) String betweenSDate,
 			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = false) String betweenEDate,
 			@ApiParam(name = "sections", value = "顯示區間，若為多筆資料，用空格隔開", example = "A B1 B2 C") @RequestParam(required = true) String sections,

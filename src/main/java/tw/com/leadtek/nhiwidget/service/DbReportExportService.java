@@ -844,6 +844,37 @@ public class DbReportExportService {
 			}
 			if ((payCode != null && payCode.length() > 0) && (inhCode != null && inhCode.length() > 0))
 				rowIndex++;
+			
+			if(sections != null && sections.length() > 1) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("顯示區間");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				String[] split = StringUtility.splitBySpace(sections);
+				String cellValue = "";
+				for (String str : split) {
+					switch (str.replaceAll("區", "")) {
+					case "A":
+						cellValue += "A區" + "、";
+						break;
+					case "B1":
+						cellValue += "B1區" + "、";
+						break;
+					case "B2":
+						cellValue += "B2區" + "、";
+						break;
+					case "C":
+						cellValue += "C區" + "、";
+						break;
+					}
+				}
+				cellValue = cellValue.substring(0, cellValue.length() - 1);
+				cell.setCellValue(cellValue);
+				cell.setCellStyle(cellStyle);
+				rowIndex++;
+			}
 
 			cellIndex = 0;
 			/// 欄位A
