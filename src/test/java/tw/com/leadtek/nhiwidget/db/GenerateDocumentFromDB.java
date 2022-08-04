@@ -225,14 +225,15 @@ public class GenerateDocumentFromDB {
     // username : NWUSER
     // password : Leadtek2021
 
-//    GenerateDocumentFromDB gen = new GenerateDocumentFromDB(HANA, "NWUSER");
-//    gen.connect("10.10.5.31", 30041, "NWUSER", "Leadtek2021");
-//    gen.gen("NWUSER.csv");
-    String date = "1421217";  
-    int funcEndYear = Integer.parseInt(date.substring(0, 3));
-    int funcEndMonth = Integer.parseInt(date.substring(3, 5));
-    System.out.println("year=" + funcEndYear);
-    System.out.println("month=" + funcEndMonth);
+    GenerateDocumentFromDB gen = new GenerateDocumentFromDB(HANA, "NWUSER");
+    //gen.connect("10.10.5.31", 30041, "NWUSER", "Leadtek2021");
+    gen.connect("192.168.2.171", 30041, "NWUSER", "Leadtek2021");
+    gen.gen("NWUSER-ms.csv");
+//    String date = "1421217";  
+//    int funcEndYear = Integer.parseInt(date.substring(0, 3));
+//    int funcEndMonth = Integer.parseInt(date.substring(3, 5));
+//    System.out.println("year=" + funcEndYear);
+//    System.out.println("month=" + funcEndMonth);
   }
 
 }

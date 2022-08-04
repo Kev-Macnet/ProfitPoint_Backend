@@ -59,7 +59,6 @@ import tw.com.leadtek.nhiwidget.service.ReportService;
 import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
 import tw.com.leadtek.nhiwidget.sql.PaymentTermsDao;
 import tw.com.leadtek.tools.DateTool;
-import tw.com.leadtek.tools.SendHTTP;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = NHIWidget.class)
@@ -615,17 +614,17 @@ public class TestDrgCalService {
 
       // Map<String, String> param = new HashMap<String, String>();
       // param.put("Authorization", "Bearer " + token);
-      try {
-        SendHTTP send = new SendHTTP();
-        send.setServerIP("127.0.0.1");
-        send.setPort("8081");
-        String response = send.postAPI(token, sb.toString(), null);
-        if (response.indexOf(":500,") > 0 || response.indexOf(":401,") > 0) {
-          break;
-        }
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+//      try {
+//        SendHTTP send = new SendHTTP();
+//        send.setServerIP("127.0.0.1");
+//        send.setPort("8081");
+//        String response = send.postAPI(token, sb.toString(), null);
+//        if (response.indexOf(":500,") > 0 || response.indexOf(":401,") > 0) {
+//          break;
+//        }
+//      } catch (Exception e) {
+//        e.printStackTrace();
+//      }
     }
   }
   

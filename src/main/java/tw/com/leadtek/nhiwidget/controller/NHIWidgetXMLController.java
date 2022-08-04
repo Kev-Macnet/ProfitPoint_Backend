@@ -838,17 +838,17 @@ public class NHIWidgetXMLController extends BaseController {
     return returnAPIResult(null);
   }
   
-  @ApiOperation(value = "測試用：新增病歷", notes = "新增病歷")
-  @PostMapping("/nhixml/mrdetail")
-  public ResponseEntity<MRDetail> addMRDetail(
-      @ApiParam(name = "mrDetail", value = "病歷詳細資訊") @RequestBody(required = true) MRDetail mrDetail) {
-    MRDetail result = xmlService.addMRDetail(mrDetail);
-    if (result == null) {
-      return ResponseEntity.ok(result);
-    } else {
-      return ResponseEntity.badRequest().body(result);
-    }
-  }
+//  @ApiOperation(value = "測試用：新增病歷", notes = "新增病歷")
+//  @PostMapping("/nhixml/mrdetail")
+//  public ResponseEntity<MRDetail> addMRDetail(
+//      @ApiParam(name = "mrDetail", value = "病歷詳細資訊") @RequestBody(required = true) MRDetail mrDetail) {
+//    MRDetail result = xmlService.addMRDetail(mrDetail);
+//    if (result == null) {
+//      return ResponseEntity.ok(result);
+//    } else {
+//      return ResponseEntity.badRequest().body(result);
+//    }
+//  }
   
   @ApiOperation(value = "新增病歷核刪註記", notes = "新增病歷核刪註記")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),

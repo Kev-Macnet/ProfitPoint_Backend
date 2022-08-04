@@ -1,7 +1,7 @@
 # 敏盛醫院設定檔
 # Replace localhost:8081 to 192.168.2.172
 server:
-  port: ${port:80}
+  port: ${port:8080}
   tomcat:
     uri-encoding: UTF-8
     max-connections: 3000
@@ -99,12 +99,12 @@ project:
   # away from keyboard 時間，超過30分則刪除 jwt
     afk: 2800000
   mail:
-    host: 59.120.139.196
+    host: mail.e-ms.com.tw
     port: 25
     fromEmail: monitor@leadtek.com.tw
-    password: z5z8tah5
-  serverUrl: "http://192.168.2.172:80/#/warehouse/"
-  apiUrl: "http://localhost:8081/"
+    password:
+  serverUrl: "http://192.168.2.172:8080/#/warehouse/"
+  apiUrl: "http://192.168.2.172:8080/"
   hospId: 1532011154
   isMask: false
 swagger:

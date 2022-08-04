@@ -30,6 +30,7 @@ import javax.persistence.criteria.Root;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -1428,28 +1429,12 @@ public class SystemService {
 
       @Override
       public void run() {
-        long checkAllTime = is.getIntelligentRunningTime(INTELLIGENT_REASON.XML.value());
-        if (checkAllTime > 0) {
-          if (checkAllTime > System.currentTimeMillis()) {
-            // 等待執行中，等匯完申報檔後再跑檢查智能提示條件
-            is.setIntelligentRunningTime(INTELLIGENT_REASON.XML.value(), Long.MAX_VALUE);
-          } else {
-            // 正在執行
-          }
-        }
+        xmlService.checkAll(0, true);
         long startImport = System.currentTimeMillis();
         importXMLFile(file);
-        logger.info("importFileThread " + file.getAbsolutePath() + " done");
         long usedTime = System.currentTimeMillis() - startImport;
-        if (checkAllTime > 0) {
-          if (checkAllTime > System.currentTimeMillis()) {
-            // 等待執行中，將跑檢查智能提示條件改為10秒後，避免每5秒檢查到開始跑
-            is.setIntelligentRunningTime(INTELLIGENT_REASON.XML.value(), System.currentTimeMillis() + 10000);
-          } else {
-            // 正在執行
-          }
-        }
-        xmlService.checkAll((long) (usedTime));
+        logger.info("importFileThread " + file.getAbsolutePath() + " done, used " + usedTime + "ms.");
+        xmlService.checkAll((long) (usedTime), false);
       }
     });
     thread.start();
@@ -1535,23 +1520,76 @@ public class SystemService {
   }
   
   public void refreshMRFromFolder(File[] files) {
-    boolean hasNewFile = false;
     List<FILE_DOWNLOAD> oldFiles = downloadDao.findAllByUserIdOrderByUpdateAtDesc(0L);
+    List<FILE_DOWNLOAD> newFiles = new ArrayList<>();
+    ArrayList<File> needProcessFile = new ArrayList<>();
+    boolean isOldFile = false;
     for (File file : files) {
       if (file.getName().indexOf('~') > -1
-          || !(file.getName().endsWith(".xlsx") || file.getName().endsWith(".xml"))) {
+          || !(file.getName().endsWith(".xlsx") || file.getName().endsWith(".xml")
+          || file.getName().endsWith(".xls"))) {
         continue;
       }
-      boolean isOldFile = false;
       for (FILE_DOWNLOAD oldFile : oldFiles) {
         if (file.getName().equals(oldFile.getFilename())){
           isOldFile = true;
           break;
         }
       }
-      if(isOldFile) {
+      if (!isOldFile) {
+        needProcessFile.add(file);
+        FILE_DOWNLOAD fd = new FILE_DOWNLOAD();
+        fd.setFilename(file.getName());
+        fd.setProgress(0);
+        fd.setUpdateAt(new Date());
+        fd.setUserId(0L);
+        fd = downloadDao.save(fd);
+        newFiles.add(fd);
+      }
+    }
+    if (newFiles.size() == 0) {
+      return;
+    }
+    
+    ArrayList<File> opdList = new ArrayList<File>();
+    ArrayList<File> ipdList = new ArrayList<File>();
+    ArrayList<File> oppList = new ArrayList<File>();
+    ArrayList<File> ippList = new ArrayList<File>();
+    
+    for (File file : needProcessFile) {
+      if (file.getName().endsWith(".xls")) {
+        if (file.getName().startsWith("OPD")) {
+          opdList.add(file);
+        } else if (file.getName().startsWith("OPP")) {
+          oppList.add(file);
+        } else if (file.getName().startsWith("IPD")) {
+          ipdList.add(file);
+        } else if (file.getName().startsWith("IPP")) {
+          ippList.add(file);
+        }
+      } else {
+        opdList.add(file);
+      }
+    }
+    
+    long startImport = System.currentTimeMillis();
+    xmlService.checkAll(0, true);
+    importMRFile(opdList, newFiles);
+    importMRFile(oppList, newFiles);
+    importMRFile(ipdList, newFiles);
+    importMRFile(ippList, newFiles);
+    long usedTime = System.currentTimeMillis() - startImport;
+    xmlService.checkAll(usedTime, false);
+  }
+  
+  private void importMRFile(List<File> files, List<FILE_DOWNLOAD> newFiles) {
+    for (File file : files) {
+      if (file.getName().indexOf('~') > -1
+          || !(file.getName().endsWith(".xlsx") || file.getName().endsWith(".xml")
+          || file.getName().endsWith(".xls"))) {
         continue;
       }
+     
       int count = 0;
       long filesize1 = 0;
       long filesize2 = 0;
@@ -1566,20 +1604,13 @@ public class SystemService {
         filesize2 = file.length();
       } while ((filesize1 == 0 || filesize1 != filesize2) && count < 1800);
       
-      FILE_DOWNLOAD fd = new FILE_DOWNLOAD();
-      fd.setFilename(file.getName());
-      fd.setProgress(100);
-      fd.setUpdateAt(new Date());
-      fd.setUserId(0L);
-      downloadDao.save(fd);
-      logger.info("process " + fd.getFilename());
+      logger.info("process " + file.getName());
       
       if (file.getName().endsWith(".xlsx")) {
         XSSFWorkbook workbook = null;
         try {
           workbook = new XSSFWorkbook(new FileInputStream(file));
           xmlService.readTheseSheet(workbook.getSheetAt(0));
-          hasNewFile = true;
         } catch (FileNotFoundException e) {
           e.printStackTrace();
         } catch (IOException e) {
@@ -1595,11 +1626,53 @@ public class SystemService {
         }
       } else if (file.getName().endsWith(".xml")) {
         importXMLFile(file);
+      } else if (file.getName().endsWith(".xls")) {
+        HSSFWorkbook workbook = null;
+        try {
+          workbook = new HSSFWorkbook(new FileInputStream(file));
+          if (file.getName().toUpperCase().indexOf("OPD") > -1) {
+            if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+              xmlService.readOpdSheet(workbook.getSheetAt(0));
+            }
+          } else if (file.getName().toUpperCase().indexOf("IPD") > -1) {
+            if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+              xmlService.readIpdSheet(workbook.getSheetAt(0));
+            }
+          } else if (file.getName().toUpperCase().indexOf("OPP") > -1) {
+            if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+              xmlService.readOppHSSFSheet(workbook.getSheetAt(0));
+            }
+          } else if (file.getName().toUpperCase().indexOf("IPP") > -1) {
+            if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+              xmlService.readIppHSSFSheet(workbook.getSheetAt(0));
+            }
+          }
+        } catch (FileNotFoundException e) {
+          e.printStackTrace();
+        } catch (IOException e) {
+          e.printStackTrace();
+        } finally {
+          if (workbook != null) {
+            try {
+              workbook.close();
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
+          }
+        }
       }
-    }
-    if (hasNewFile) {
-      xmlService.checkAll(0L);
+      updateFileDownloadFinished(file, newFiles);
     }
   }
   
+  private void updateFileDownloadFinished(File file, List<FILE_DOWNLOAD> newFiles) {
+    for (FILE_DOWNLOAD fd : newFiles) {
+      if (file.getName().equals(fd.getFilename())) {
+        fd.setProgress(100);
+        fd.setUpdateAt(new Date());
+        downloadDao.save(fd);
+        break;
+      }
+    }
+  }
 }

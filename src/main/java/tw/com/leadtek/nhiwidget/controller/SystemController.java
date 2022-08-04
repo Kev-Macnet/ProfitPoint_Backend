@@ -88,6 +88,8 @@ public class SystemController extends BaseController {
   
   public final static String INIT_FILE_PAY_CODE_NAVY = "代碼品項_高雄海總";
   
+  public final static String INIT_FILE_PAY_CODE_MS = "代碼品項_桃園敏盛";
+  
   private final static String INIT_FILE_CODE_TABLE = "CODE_TABLE";
   
   private final static String INIT_FILE_ICDCM = "ICD-10-CM";
@@ -902,6 +904,8 @@ public class SystemController extends BaseController {
         initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_POHAI, 0);
       } else if (saveFile.getName().startsWith(INIT_FILE_PAY_CODE_NAVY)) {
         initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_NAVY, 0);
+      } else if (saveFile.getName().startsWith(INIT_FILE_PAY_CODE_MS)) {
+        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_MS, 0);
       } else if (saveFile.getName().indexOf(INIT_FILE_CODE_TABLE) > -1) {
         initial.importCODE_TABLEToRDB(saveFile, "CODE_TABLE");
       } else if (saveFile.getName().indexOf(INIT_FILE_ICDCM) > 0) {
@@ -924,6 +928,7 @@ public class SystemController extends BaseController {
         initial.importDeductedFile(saveFile, true);
       } else if (saveFile.getName().endsWith(".xls")) {
         // 麗臺規格excel
+        xmlService.checkAll(0, true);
         long startImport = System.currentTimeMillis();
         HSSFWorkbook workbook = null;
         if (saveFile.getName().toUpperCase().indexOf("OPD") > -1) {
@@ -942,7 +947,6 @@ public class SystemController extends BaseController {
             xmlService.readOppHSSFSheet(workbook.getSheetAt(0));
           }
         } else if (saveFile.getName().toUpperCase().indexOf("IPP") > -1) {
-          System.out.println("load " + saveFile.getName());
           workbook = new HSSFWorkbook(new FileInputStream(saveFile));
           if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
             xmlService.readIppHSSFSheet(workbook.getSheetAt(0));
@@ -951,9 +955,9 @@ public class SystemController extends BaseController {
         if (workbook != null) {
           workbook.close();
         }
-     
         long usedTime = System.currentTimeMillis() - startImport;
-        xmlService.checkAll(usedTime);
+        logger.info("import xls:" + saveFile.getName() + " used " + usedTime + " ms.");
+        xmlService.checkAll(usedTime, false);
       } else if (saveFile.getName().endsWith(".xlsx")) {
         XSSFWorkbook workbook = null;
 

@@ -1345,7 +1345,7 @@ public class IntelligentService {
       List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false,
           ct.getStartDate(), ct.getEndDate());
       if (list != null) {
-        String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
+        String reason = (wording != null) ? String.format(wording, code, max) : null;
         for (MR mr : list) {
           INTELLIGENT intelligent = findIntelligentByMrId(mr.getId(), intelligentList);
           insertIntelligent(mr, intelligent, conditionCode, code, reason,
@@ -2254,11 +2254,11 @@ public class IntelligentService {
   }
 
   public synchronized void setIntelligentRunningTime(int intelligentCode, long time) {
-    runningIntelligent.put(new Integer(intelligentCode), time);
+    runningIntelligent.put(Integer.valueOf(intelligentCode), time);
   }
 
   public synchronized long getIntelligentRunningTime(int intelligentCode) {
-    Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
+    Long runningTime = runningIntelligent.get(Integer.valueOf(intelligentCode));
     if (runningTime == null) {
       runningTime = -1L;
     }
@@ -2829,6 +2829,7 @@ public class IntelligentService {
         List<String> applYm = getDistinctApplYm(mrList);
         // 月報表資料
         for (String ym : applYm) {
+          reportService.calculatePointMR(ym);
           reportService.calculateDRGMonthly(ym);
         }
         
