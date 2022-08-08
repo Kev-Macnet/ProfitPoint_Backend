@@ -256,7 +256,7 @@ public class InitialDataService {
       HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRow),
           parametersService.getByCat("PAY_CODE_" + fileFormat));
       HashMap<String, String> values = null;
-      SimpleDateFormat sdf = (SystemController.INIT_FILE_PAY_CODE_POHAI.equals(fileFormat))
+      SimpleDateFormat sdf = (SystemService.INIT_FILE_PAY_CODE_POHAI.equals(fileFormat))
           ? new SimpleDateFormat("yyyy/M/d")
           : new SimpleDateFormat("yyyyMMdd");
       DecimalFormat df = new DecimalFormat("#");
@@ -270,7 +270,7 @@ public class InitialDataService {
         }
         values = ExcelUtil.readCellValue(columnMap, row, df);
         String code = values.get("CODE");
-        if (SystemController.INIT_FILE_PAY_CODE.equals(fileFormat) && code.length() == 0) {
+        if (SystemService.INIT_FILE_PAY_CODE.equals(fileFormat) && code.length() == 0) {
           break;
         }
         total++;

@@ -38,7 +38,7 @@ public class DRG_CAL {
   @Column(name = "DRG")
   protected String drg;
   
-  @ApiModelProperty(value = "醫療費用點數", example = "300", required = false)
+  @ApiModelProperty(value = "醫療費用點數(含自費)", example = "300", required = false)
   @Column(name = "MED_DOT")
   protected Integer medDot;
   

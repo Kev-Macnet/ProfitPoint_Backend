@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
@@ -37,7 +36,6 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFRow;
@@ -60,14 +58,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-
 import io.jsonwebtoken.Claims;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
@@ -86,6 +81,7 @@ import tw.com.leadtek.nhiwidget.dao.MODao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.MR_NOTEDao;
 import tw.com.leadtek.nhiwidget.dao.MR_NOTICEDao;
+import tw.com.leadtek.nhiwidget.dao.MR_SODao;
 import tw.com.leadtek.nhiwidget.dao.MY_MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
@@ -107,6 +103,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.IP_T;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTICE;
+import tw.com.leadtek.nhiwidget.model.rdb.MR_SO;
 import tw.com.leadtek.nhiwidget.model.rdb.MY_MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
@@ -194,8 +191,6 @@ public class NHIWidgetXMLService {
    * 自費院內碼列為部分負擔，而不算自費
    */
   public final static String[] OWN_EXPENSE_TO_PART = new String[] {"REG1", "REGEMG"};
-  
-  private final int IGNORE_STATUS = 100;
   
   // 有新申報檔匯入後最快 3 分鐘開始跑檢查條件及報表 
   private final int CHECK_ALL_AFTER_UPLOAD_WAIT_SECOND = 180;
@@ -289,6 +284,9 @@ public class NHIWidgetXMLService {
   
   @Autowired
   private ExportCSVDao exportCSVDao;
+  
+  @Autowired
+  private MR_SODao mrSoDao;
   
   @Value("${project.serverUrl}")
   private String serverUrl;
@@ -2868,6 +2866,15 @@ public class NHIWidgetXMLService {
       }
     }
     mrDetail.setNotes(notes);
+    
+    if (mrDetail.getInhClinicId() != null) {
+      MR_SO so = mrSoDao.findByInhNo(mrDetail.getInhClinicId());
+      if (so != null) {
+        mrDetail.setSubjective(so.getSubjectText());
+        mrDetail.setObjective(so.getObjectText());
+        mrDetail.setDischarge(so.getDischargeText());
+      }
+    }
   }
 
   public long getTId(java.util.Date date, boolean isIP) {
@@ -5771,13 +5778,17 @@ public class NHIWidgetXMLService {
       result.setResult(BaseResponse.ERROR);
       return result;
     }
-    List<DRG_CAL> list = drgCalDao.findByMrIdAndErrorIsNull(idL);
+    List<DRG_CAL> list = drgCalDao.findByMrId(idL);
     if (list == null || list.size() == 0) {
       result.setMessage("無drg記錄");
       return result;
     }
     List<DrgCalPayload> data = new ArrayList<DrgCalPayload>();
     for (DRG_CAL drgCal : list) {
+      if (drgCal.getError() != null && !"C".equals(drgCal.getError())) {
+        // "C" : DRG代碼尚未導入
+        continue;
+      }
       DrgCalPayload drg = new DrgCalPayload(drgCal);
 
       if (drg.getIcdCM1().equals(ipd.get(0).getIcdCm1())) {
@@ -5785,18 +5796,20 @@ public class NHIWidgetXMLService {
       } else {
         drg.setSelected(false);
       }
-
-      if (data.size() == 0) {
+      // 設定病歷點數
+      drg.setMedDot(ipd.get(0).getMedDot().intValue() + ipd.get(0).getNonApplDot() + ipd.get(0).getOwnExpense().intValue());
+      drg.setMedDotNoOwnExp(ipd.get(0).getMedDot().intValue() + ipd.get(0).getNonApplDot() + ipd.get(0).getOwnExpense().intValue());
+      if (drg.getDrgDot() == null || data.size() == 0) {
         data.add(drg);
       } else {
         int index = Integer.MAX_VALUE;
         for (int i=0; i<data.size(); i++) {
           DrgCalPayload drgCalPayload = data.get(i);
-          if (drgCalPayload.getDrgDot().intValue() < drg.getDrgDot().intValue()) {
+          if (drgCalPayload.getDrgDot() == null || drgCalPayload.getDrgDot().intValue() < drg.getDrgDot().intValue()) {
             index = i;
             break;
           }
-          if (drgCalPayload.getDrgDot().intValue() == drg.getDrgDot().intValue()) {
+          if (drgCalPayload.getDrgDot() != null && drgCalPayload.getDrgDot().intValue() == drg.getDrgDot().intValue()) {
             if (drg.getSelected().booleanValue()) {
               // 將目前使用的DRG優先放在前面
               index = i;
@@ -5830,7 +5843,7 @@ public class NHIWidgetXMLService {
       // 主診斷未變，不處理
       return null;
     }
-    List<DRG_CAL> list = drgCalDao.findByMrIdAndErrorIsNull(idL);
+    List<DRG_CAL> list = drgCalDao.findByMrId(idL);
     if (list == null || list.size() == 0) {
       return "無drg記錄";
     }
@@ -5874,7 +5887,7 @@ public class NHIWidgetXMLService {
   }
 
   public void updateDrgList(String icd, IP_D ipd, MR mr) {
-    List<DRG_CAL> list = drgCalDao.findByMrIdAndErrorIsNull(mr.getId());
+    List<DRG_CAL> list = drgCalDao.findByMrId(mr.getId());
     if (list == null || list.size() == 0) {
       return;
     }
@@ -6027,6 +6040,7 @@ public class NHIWidgetXMLService {
   }
 
   public void readOpdSheet(HSSFSheet sheet) {
+    long start = System.currentTimeMillis();
     int titleRowIndex = 0;
     // 取得各欄位名稱的位置
     HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRowIndex));
@@ -6089,6 +6103,9 @@ public class NHIWidgetXMLService {
       saveDiffList(diffList, mr);
       mr = mrDao.save(mr);
     }
+    long usedTime = System.currentTimeMillis() - start;
+    logger.info("readOpdSheet used " + usedTime + "ms.");
+    System.out.println("readOpdSheet used " + usedTime + "ms.");
   }
 
   private MR findMR(List<MR> mrList, String inhNo) {
@@ -6931,18 +6948,12 @@ public class NHIWidgetXMLService {
     HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
     long start = System.currentTimeMillis();
     HashMap<String, List<OP_P>> opps = aggregateLeadtekOPP(sheet, 1, columnMap);
-    long usedTime = System.currentTimeMillis() - start;
-    logger.info("aggregateLeadtekOPP use " + usedTime + " ms.");
     //OP_T opt = getOpt(applYm);
 
     // 避免重複insert
-    start = System.currentTimeMillis();
     List<MR> mrList = mrDao.getMrByInhClinicId(new ArrayList<String>(opps.keySet()));
-    usedTime = System.currentTimeMillis() - start;
     List<Long> mrIdList = vpts.getMrId(mrList, null);
-    start = System.currentTimeMillis();
     List<OP_D> opdList = opdDao.getOpdListByMrId(mrIdList);
-    usedTime = System.currentTimeMillis() - start;
     HashMap<Long, List<OP_P>> oppListDB = getOPPByMrIdList(mrIdList);
     // 要存到 DB 的 batch
     List<OP_P> oppBatch = new ArrayList<OP_P>();
@@ -7017,7 +7028,9 @@ public class NHIWidgetXMLService {
     if (oppBatch.size() > 0) {
       oppDao.saveAll(oppBatch);
     }
-
+    long usedTime = System.currentTimeMillis() - start;
+    logger.info("readOppHSSFSheet used " + usedTime + " ms.");
+    System.out.println("readOppHSSFSheet used " + usedTime + " ms.");
     return true;
   }
   
@@ -7267,7 +7280,7 @@ public class NHIWidgetXMLService {
 
     String applYm = getApplYmByInhNo(values);
     if (applYm == null) {
-      //return;
+      return;
     }
   
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
@@ -7277,18 +7290,20 @@ public class NHIWidgetXMLService {
         continue;
       }
       values = ExcelUtil.readCellValue(columnMap, row);
-      String ot = values.get("OBJECT_TEXT");
-      for(int j=0;j<ot.length(); j++) {
-        if (ot.charAt(j) == '\r') {
-          System.out.println("is slash r \r");
-        } if (ot.charAt(j) == '\n') {
-          System.out.println("is slash n \n");
-        } 
+      List<Long> mrIdList = mrDao.getIdByInhClinicId((String) values.get("INH_NO"));
+      if (mrIdList == null || mrIdList.size() == 0) {
+        continue;
       }
-      System.out.println(values.get("OBJECT_TEXT"));
-      if (values != null) {
-        break;
+      MR_SO mrSo = mrSoDao.findByInhNo((String) values.get("INH_NO"));
+      if (mrSo == null) {
+        mrSo = new MR_SO();
+        mrSo.setInhNo((String) values.get("INH_NO"));
       }
+      mrSo.setMrId(mrIdList.get(0));
+      mrSo.setObjectText(values.get("OBJECT_TEXT"));
+      mrSo.setSubjectText(values.get("SUBJECT_TEXT"));
+      mrSo.setDischargeText(values.get("DISCHARGE_TEXT"));
+      mrSoDao.save(mrSo);
     }
   }
   
@@ -9837,4 +9852,5 @@ public class NHIWidgetXMLService {
       String backupPath = currentPath+"tempcsv";
       return (backupPath);
   }
+  
 }

@@ -13,7 +13,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.DRG_CALId;
 
 public interface DRG_CALDao extends JpaRepository<DRG_CAL, DRG_CALId> {
 
-  public List<DRG_CAL> findByMrIdAndErrorIsNull(Long mrId);
+  public List<DRG_CAL> findByMrId(Long mrId);
   
   @Transactional
   @Modifying

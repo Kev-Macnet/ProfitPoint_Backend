@@ -59,6 +59,9 @@ public class MRDetail extends MR {
   @ApiModelProperty(value = "藥師代號", required = false)
   protected String pharID;
   
+  @ApiModelProperty(value = "藥師姓名", required = false)
+  protected String pharName;
+  
   @ApiModelProperty(value = "給藥天數", required = false)
   protected Integer drugDay;
   
@@ -313,6 +316,9 @@ public class MRDetail extends MR {
   
   @ApiModelProperty(value = "有差異的醫令位置，起始為0", required = false)
   protected List<Integer> diffMos;
+  
+  @ApiModelProperty(value = "出院摘要", required = false)
+  protected String discharge;
   
   public MRDetail() {
     
@@ -1125,6 +1131,22 @@ public class MRDetail extends MR {
   public void setDiffMos(List<Integer> diffMos) {
     this.diffMos = diffMos;
   }
+  
+  public String getPharName() {
+    return pharName;
+  }
+
+  public void setPharName(String pharName) {
+    this.pharName = pharName;
+  }
+  
+  public String getDischarge() {
+    return discharge;
+  }
+
+  public void setDischarge(String discharge) {
+    this.discharge = discharge;
+  }
 
   /**
    * 將table OP_D 的資料寫到MRDetail object
@@ -1202,6 +1224,7 @@ public class MRDetail extends MR {
     this.oriCardSeqNo = opd.getOriCardSeqNo();
     this.funcDate = opd.getFuncDate();
     this.funcEndDate = opd.getFuncEndDate();
+    this.pharName = opd.getPharName();
   }
   
   /**

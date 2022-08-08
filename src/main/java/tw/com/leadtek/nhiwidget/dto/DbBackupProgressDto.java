@@ -10,6 +10,8 @@ public class DbBackupProgressDto {
     private int abort;
     @ApiModelProperty(value="狀態", example="0", position=3)
     private int status;
+    @ApiModelProperty(value="觸發備份或還原的帳號", example="0", position=3)
+    private String username;
     
     public double getProgress() {
         return progress;
@@ -29,7 +31,12 @@ public class DbBackupProgressDto {
     public void setStatus(int status) {
         this.status = status;
     }
-
+    public String getUsername() {
+      return username;
+    }
+    public void setUsername(String username) {
+      this.username = username;
+    }
 }
 
 

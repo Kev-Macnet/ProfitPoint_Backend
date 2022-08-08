@@ -4,7 +4,6 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
@@ -13,8 +12,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -58,7 +55,6 @@ import tw.com.leadtek.nhiwidget.payload.system.IntelligentConfig;
 import tw.com.leadtek.nhiwidget.payload.system.QuestionMarkPayload;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
-import tw.com.leadtek.nhiwidget.service.InitialDataService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
@@ -72,44 +68,6 @@ import tw.com.leadtek.tools.DateTool;
 @RequestMapping(value = "/sys", produces = "application/json; charset=utf-8")
 public class SystemController extends BaseController {
 
-  private final static String INIT_FILE_PARAMETERS = "PARAMETER";
-  
-  public final static String INIT_FILE_PAY_CODE = "醫療服務給付項目";
-  
-  /**
-   * 高雄霖園醫院 藥品衛材xxxxxxx.xlsx
-   */
-  public final static String INIT_FILE_PAY_CODE_LINYUAN = "代碼品項_高雄霖園";
-  
-  /**
-   * 羅東博愛醫院 基本檔_藥品衛材.xlsx
-   */
-  public final static String INIT_FILE_PAY_CODE_POHAI = "代碼品項_羅東博愛";
-  
-  public final static String INIT_FILE_PAY_CODE_NAVY = "代碼品項_高雄海總";
-  
-  public final static String INIT_FILE_PAY_CODE_MS = "代碼品項_桃園敏盛";
-  
-  private final static String INIT_FILE_CODE_TABLE = "CODE_TABLE";
-  
-  private final static String INIT_FILE_ICDCM = "ICD-10-CM";
-  
-  private final static String INIT_FILE_ICDPCS = "ICD-10-PCS";
-  
-  private final static String INIT_FILE_ATC = "ATC";
-  
-  private final static String INIT_FILE_INFECTIOUS = "法定傳染病";
-  
-  private final static String INIT_FILE_USER = "USER_";
-  
-  private final static String INIT_FILE_DEPARTMENT = "DEPARTMENT_";
-  
-  private final static String INIT_FILE_USER_DEPARTMENT = "UD_";
-  
-  private final static String INIT_FILE_DEDUCTED_COMPUTER = "(行政審查)全民健康保險檔案分析審查異常不予支付";
-  
-  private final static String INIT_FILE_DEDUCTED_ARTIFICIAL = "(專業審查)不予支付理由";
-  
   @Autowired
   private DrgCalService drgCalService;
 
@@ -128,9 +86,6 @@ public class SystemController extends BaseController {
   @Autowired
   private ParametersService parametersService;
   
-  @Autowired
-  private InitialDataService initial;
-
   @ApiOperation(value = "取得DRG列表", notes = "取得DRG列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/drg")
@@ -877,9 +832,13 @@ public class SystemController extends BaseController {
 
     String result = null;
     try {
-      String dirPath = systemService.checkDownloadDir();
-      String filepath =  (System.getProperty("os.name").toLowerCase().startsWith("windows")) ? dirPath + "\\" + file.getOriginalFilename() :
-        dirPath + "/" + file.getOriginalFilename();
+      String dirPath =
+          systemService.checkDownloadDir((parametersService.getParameter("MR_PATH") != null)
+              ? parametersService.getParameter("MR_PATH")
+              : SystemService.FILE_PATH);
+      String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+          ? dirPath + "\\" + file.getOriginalFilename()
+          : dirPath + "/" + file.getOriginalFilename();
       File saveFile = new File(filepath);
       if (saveFile.exists() && saveFile.length() > 0) {
         try {
@@ -888,92 +847,17 @@ public class SystemController extends BaseController {
           logger.error("delete exist file", e);
           return returnAPIResult("檔案已存在");
         }
+      } else if (file != null && file.getSize() == 0) {
+        return returnAPIResult(file.getOriginalFilename()  + " 檔案資料為0筆！");
       }
       try {
+        systemService.deleteInFileDownload(file.getOriginalFilename());
         file.transferTo(saveFile);
+        //systemService.processUploadFile(saveFile);
       } catch (IllegalStateException e) {
         e.printStackTrace();
       }
-      if (saveFile.getName().indexOf(INIT_FILE_PARAMETERS) == 0) {
-        initial.importParametersFromExcel(saveFile, "參數設定", 1);
-      } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE) > -1) {
-        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE, 0);
-      } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE_LINYUAN) == 0) {
-        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_LINYUAN, 0);
-      } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE_POHAI) == 0) {
-        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_POHAI, 0);
-      } else if (saveFile.getName().startsWith(INIT_FILE_PAY_CODE_NAVY)) {
-        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_NAVY, 0);
-      } else if (saveFile.getName().startsWith(INIT_FILE_PAY_CODE_MS)) {
-        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_MS, 0);
-      } else if (saveFile.getName().indexOf(INIT_FILE_CODE_TABLE) > -1) {
-        initial.importCODE_TABLEToRDB(saveFile, "CODE_TABLE");
-      } else if (saveFile.getName().indexOf(INIT_FILE_ICDCM) > 0) {
-        initial.importICD10ToRedis(saveFile, "ICD10-CM");
-      } else if (saveFile.getName().indexOf(INIT_FILE_ICDPCS) > 0) {
-        initial.importICD10ToRedis(saveFile, "ICD10-PCS");
-      } else if (saveFile.getName().indexOf(INIT_FILE_ATC) > -1) {
-        initial.importATC(saveFile);
-      } else if (saveFile.getName().indexOf(INIT_FILE_INFECTIOUS) > -1) {
-        initial.importInfectious(saveFile);
-      } else if (saveFile.getName().startsWith(INIT_FILE_USER)) {
-        initial.importUserFile(saveFile, 0);
-      } else if (saveFile.getName().startsWith(INIT_FILE_DEPARTMENT)) {
-        initial.importDepartmentFile(saveFile, 0);
-      } else if (saveFile.getName().startsWith(INIT_FILE_USER_DEPARTMENT)) {
-        initial.importUserDepartmentFile(saveFile, 0);
-      } else if (saveFile.getName().startsWith(INIT_FILE_DEDUCTED_COMPUTER)) {
-        initial.importDeductedFile(saveFile, false);
-      } else if (saveFile.getName().startsWith(INIT_FILE_DEDUCTED_ARTIFICIAL)) {
-        initial.importDeductedFile(saveFile, true);
-      } else if (saveFile.getName().endsWith(".xls")) {
-        // 麗臺規格excel
-        xmlService.checkAll(0, true);
-        long startImport = System.currentTimeMillis();
-        HSSFWorkbook workbook = null;
-        if (saveFile.getName().toUpperCase().indexOf("OPD") > -1) {
-          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
-          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
-            xmlService.readOpdSheet(workbook.getSheetAt(0));
-          }
-        } else if (saveFile.getName().toUpperCase().indexOf("IPD") > -1) {
-          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
-          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
-            xmlService.readIpdSheet(workbook.getSheetAt(0));
-          }
-        } else if (saveFile.getName().toUpperCase().indexOf("OPP") > -1) {
-          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
-          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
-            xmlService.readOppHSSFSheet(workbook.getSheetAt(0));
-          }
-        } else if (saveFile.getName().toUpperCase().indexOf("IPP") > -1) {
-          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
-          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
-            xmlService.readIppHSSFSheet(workbook.getSheetAt(0));
-          }
-        }
-        if (workbook != null) {
-          workbook.close();
-        }
-        long usedTime = System.currentTimeMillis() - startImport;
-        logger.info("import xls:" + saveFile.getName() + " used " + usedTime + " ms.");
-        xmlService.checkAll(usedTime, false);
-      } else if (saveFile.getName().endsWith(".xlsx")) {
-        XSSFWorkbook workbook = null;
 
-        try {
-          workbook = new XSSFWorkbook(new FileInputStream(saveFile));
-          xmlService.readTheseSheet(workbook.getSheetAt(0));
-        } catch (Exception e) {
-          logger.error("delete exist file", e);
-        } finally {
-          if (workbook != null) {
-            workbook.close();
-          }
-        }
-      } else {
-        systemService.importFileThread(saveFile);
-      }
     } catch (IOException e) {
       logger.error("uploadXML-", e);
     }

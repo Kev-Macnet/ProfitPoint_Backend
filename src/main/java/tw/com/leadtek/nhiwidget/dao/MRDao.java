@@ -4,6 +4,7 @@
 package tw.com.leadtek.nhiwidget.dao;
 
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -514,6 +515,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<MR> findByMrEndDateAndDataFormatOrderById(String dataFormat, java.util.Date sDate, java.util.Date eDate);
   
   public List<MR> findByInhClinicId(String inhClinicId); 
+  
+  @Query(value = "SELECT ID FROM MR WHERE INH_CLINIC_ID = ?1", nativeQuery = true)
+  public List<Long> getIdByInhClinicId(String inhClinicId); 
   
   /**
    * 取得藥用碼出現次數 -門診
