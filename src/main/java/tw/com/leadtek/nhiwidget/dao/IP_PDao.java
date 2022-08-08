@@ -21,6 +21,8 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
   
   public List<IP_P> findByIpdIdOrderByOrderSeqNo(Long ipdId);
   
+  public List<IP_P> findByIpdIdAndOrderSeqNo(Long ipdId, int orderSeqNo);
+  
   @Query(value = "SELECT * FROM IP_P WHERE IPD_ID IN (SELECT D_ID FROM MR WHERE DATA_FORMAT = ?1 AND MR_DATE BETWEEN ?2 AND ?3) ", nativeQuery = true)
   public List<IP_P> findByIpdIDFromMR(String dataFormat, Date sDate, Date eDate);
   
@@ -296,7 +298,7 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	 */
  	@Query(value = "SELECT a.MR_ID FROM (" + 
  	    "SELECT MR_ID, SUM(TOTAL_Q) AS total FROM IP_P WHERE ORDER_CODE =?1 AND mr_id IN ?2 " + 
- 	    "GROUP BY mr_id) A WHERE total >= ?3", nativeQuery = true)
+ 	    "GROUP BY mr_id) A WHERE total > ?3", nativeQuery = true)
  	public List<Object[]> getMrIdByOrderCodeCount(String orderCode, List<Long> mrIdList, int max);
  	
  	/**

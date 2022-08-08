@@ -608,8 +608,8 @@ public class GenerateSqlByClass {
     //testSub();
     //gen.testNormalDistribution();
     //testPercent();
-    testDateTool();
-    //testSystemInformation();
+    //testDateTool();
+    testSystemInformation();
     // gen.generateSQL();
 
     // 改用 generateClassByDB
@@ -721,5 +721,11 @@ public class GenerateSqlByClass {
   
   public static void testSystemInformation() {
     System.out.println("PROCESSOR_IDENTIFIER=" + System.getenv("PROCESSOR_IDENTIFIER"));
+    String s = "\r\n"
+        + "  ";
+      if (s == null || s.trim().length() == 0) {
+        System.out.println("null");
+      }
+      System.out.println("s=" + s);
   }
 }

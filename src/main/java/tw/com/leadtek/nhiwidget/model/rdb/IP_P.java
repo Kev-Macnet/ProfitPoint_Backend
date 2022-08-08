@@ -356,6 +356,15 @@ V:虛醫令,交付調劑之藥品空針
   @JsonIgnore
   @Transient
   private String birthday;
+  
+
+  /**
+   * 就醫記錄編號
+   */
+  @JsonIgnore
+  @Transient
+  private String inhClinicId;
+
 
   /**
    * 序號
@@ -857,6 +866,14 @@ V:虛醫令,交付調劑之藥品空針
 
   public void setBirthday(String birthday) {
     this.birthday = birthday;
+  }
+
+  public String getInhClinicId() {
+    return inhClinicId;
+  }
+
+  public void setInhClinicId(String inhClinicId) {
+    this.inhClinicId = inhClinicId;
   }
 
 }

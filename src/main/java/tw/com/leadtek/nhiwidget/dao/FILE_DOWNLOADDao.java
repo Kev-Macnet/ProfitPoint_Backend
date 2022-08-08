@@ -9,6 +9,8 @@ import tw.com.leadtek.nhiwidget.model.rdb.FILE_DOWNLOAD;
 
 public interface FILE_DOWNLOADDao extends JpaRepository<FILE_DOWNLOAD, Long> {
 
+  public List<FILE_DOWNLOAD> findByFilename(String filename);
+  
   public List<FILE_DOWNLOAD> findByFilenameAndFileType(String filename, String fileType);
   
   /**

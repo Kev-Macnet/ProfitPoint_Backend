@@ -256,7 +256,7 @@ public class InitialDataService {
       HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRow),
           parametersService.getByCat("PAY_CODE_" + fileFormat));
       HashMap<String, String> values = null;
-      SimpleDateFormat sdf = (SystemController.INIT_FILE_PAY_CODE_POHAI.equals(fileFormat))
+      SimpleDateFormat sdf = (SystemService.INIT_FILE_PAY_CODE_POHAI.equals(fileFormat))
           ? new SimpleDateFormat("yyyy/M/d")
           : new SimpleDateFormat("yyyyMMdd");
       DecimalFormat df = new DecimalFormat("#");
@@ -270,7 +270,7 @@ public class InitialDataService {
         }
         values = ExcelUtil.readCellValue(columnMap, row, df);
         String code = values.get("CODE");
-        if (SystemController.INIT_FILE_PAY_CODE.equals(fileFormat) && code.length() == 0) {
+        if (SystemService.INIT_FILE_PAY_CODE.equals(fileFormat) && code.length() == 0) {
           break;
         }
         total++;
@@ -283,6 +283,9 @@ public class InitialDataService {
           pc.setOwnExpense(Double.parseDouble(values.get("OE_POINT")));
         }
         if (values.get("INH_CODE") != null) {
+          if (values.get("INH_CODE").length() > 16) {
+            continue;
+          }
           pc.setInhCode(values.get("INH_CODE"));
         }
         if (values.get("INH_NAME") != null) {
@@ -852,8 +855,20 @@ public class InitialDataService {
   }
   
   private Date getDateFromExcelValue(String date, SimpleDateFormat sdf) throws ParseException {
-    if (date == null || date.length() < 8) {
+    if (date == null) {
       return null;
+    }
+    if ("0".equals(date)) {
+      return sdf.parse("20991231");
+    }
+    if (date.length() == 6 || date.length() == 7) {
+      try {
+        int year = Integer.parseInt(date) + 19110000;
+        date = String.valueOf(year);
+      } catch (NumberFormatException e) {
+        e.printStackTrace();
+        return null;
+      }
     }
     if (date.indexOf(' ') > 0) {
       date = date.split(" ")[0];
@@ -1394,6 +1409,9 @@ public class InitialDataService {
         if (code == null || code.length() == 0) {
           break;
         }
+        if (values.get("NAME") == null || values.get("NAME").length() == 0) {
+          continue;
+        }
         DEPARTMENT department = new DEPARTMENT();
         department.setCode(code.trim());
         department.setName(values.get("NAME").trim());
@@ -1560,39 +1578,33 @@ public class InitialDataService {
         if (dbUser == null) {
           dbUser = new USER();
           dbUser.setUsername(username);
+          dbUser.setInhId(username);
+          if (values.get("INH_ID") != null && dbUser.getInhId() == null) {
+            dbUser.setInhId(values.get("INH_ID"));
+          }
+          if (values.get("DISPLAY_NAME") != null && values.get("DISPLAY_NAME").length() > 0) {
+            dbUser.setDisplayName(values.get("DISPLAY_NAME"));
+          }
           dbUser.setPassword(encoder.encode("test"));
           dbUser.setStatus(USER.STATUS_ACTIVE);
+          if (values.get("ROLE") != null) {
+            dbUser.setRole(values.get("ROLE"));
+          }
+          if (dbUser.getRole() == null) {
+            // 醫護人員
+            dbUser.setRole("E");
+          }
+          if (values.get("EMAIL") != null) {
+            dbUser.setEmail(values.get("EMAIL"));
+          }
+          if (values.get("ROC_ID") != null) {
+            dbUser.setRocId(values.get("ROC_ID"));
+          }
           dbUser.setCreateAt(new Date());
           dbUser.setUpdateAt(new Date());
           dbUser = userDao.save(dbUser);
         }
-//        if (values.get("INH_ID") != null && dbUser.getInhId() == null) {
-//          dbUser.setInhId(values.get("INH_ID"));
-//        } else {
-//          dbUser.setInhId(dbUser.getUsername());
-//        }
-//        if (dbUser.getInhId() != null) {
-//          dbUser.setUsername(dbUser.getInhId());
-//        }
-//        if (values.get("DISPLAY_NAME") != null) {
-//          dbUser.setDisplayName(values.get("DISPLAY_NAME"));
-//        } else {
-//          dbUser.setDisplayName(dbUser.getUsername());
-//        }
-//        if (values.get("ROC_ID") != null) {
-//          dbUser.setRocId(values.get("ROC_ID"));
-//        }
-//        if (values.get("ROLE") != null) {
-//          dbUser.setRole(values.get("ROLE"));
-//        }
-//        if (dbUser.getRole() == null) {
-//          // 醫護人員
-//          dbUser.setRole("E");
-//        }
-//        if (values.get("EMAIL") != null) {
-//          dbUser.setEmail(values.get("EMAIL"));
-//        }
-//        dbUser = userDao.save(dbUser);
+
         if (department != null) {
           List<USER_DEPARTMENT> udList = userDepartmentDao.findByUserIdOrderByDepartmentId(dbUser.getId());
           if (udList == null || udList.size() == 0) {

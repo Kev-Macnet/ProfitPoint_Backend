@@ -876,6 +876,7 @@ public class ReportService {
 		List<String> funcCodes = findAllFuncTypes(includeAll);
 		for (String funcCode : funcCodes) {
 			result.put(funcCode, codeTableService.getDesc("FUNC_TYPE", funcCode));
+			System.out.println("put " + funcCode + "," + result.get(funcCode));
 		}
 		return result;
 	}
@@ -1222,8 +1223,16 @@ public class ReportService {
 		String ym = String.valueOf(year) + "-" + mStr;
 		///取得病例總點數
 		Map<String,Object> pMap =  pointMonthlyDao.getIpPointByDate(ym);
-		result.setMedPointIp(Long.valueOf(pMap.get("IP_DOT").toString()));
-		result.setMedNoOwnPointIp(Long.valueOf(pMap.get("IP_DOT_NOOWN").toString()));
+		if (pMap.get("IP_DOT") != null) {
+		  result.setMedPointIp(Long.valueOf(pMap.get("IP_DOT").toString()));
+		} else {
+		  result.setMedPointIp(0L);
+		}
+		if (pMap.get("IP_DOT_NOOWN") != null) {
+		  result.setMedNoOwnPointIp(Long.valueOf(pMap.get("IP_DOT_NOOWN").toString()));
+		} else {
+		  result.setMedNoOwnPointIp(0L);
+		}
 		result.getFuncTypes().add(FUNC_TYPE_ALL_NAME);
 		java.sql.Date lastDay = getLastDayOfMonth(year, month);
 		addQuantityAndPoint(result, XMLConstant.FUNC_TYPE_ALL, FUNC_TYPE_ALL_NAME, lastDay);
@@ -1917,7 +1926,9 @@ public class ReportService {
 			if (weeks.get(name) == null) {
 				weeks.put(name, "");
 			}
-	
+	        if (funcMap.get(pw.getFuncType()) == null) {
+	          continue;
+	        }
 			try {
 
 				NameValueList3 nvlOpem3 = opemMap3.get(funcMap.get(pw.getFuncType()));

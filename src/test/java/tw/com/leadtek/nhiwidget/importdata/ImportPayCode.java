@@ -43,9 +43,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.NHIWidget;
-import tw.com.leadtek.nhiwidget.TestParameterService;
-import tw.com.leadtek.nhiwidget.constant.XMLConstant;
-import tw.com.leadtek.nhiwidget.controller.SystemController;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.local.InitialEnvironment;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
@@ -54,6 +51,7 @@ import tw.com.leadtek.nhiwidget.model.redis.CodeBaseLongId;
 import tw.com.leadtek.nhiwidget.model.redis.OrderCode;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
 import tw.com.leadtek.nhiwidget.service.RedisService;
+import tw.com.leadtek.nhiwidget.service.SystemService;
 import tw.com.leadtek.tools.ExcelUtil;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -887,7 +885,7 @@ public class ImportPayCode {
       HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRow),
           parametersService.getByCat("PAY_CODE_" + fileFormat));
       HashMap<String, String> values = null;
-      SimpleDateFormat sdf = (SystemController.INIT_FILE_PAY_CODE_POHAI.equals(fileFormat))
+      SimpleDateFormat sdf = (SystemService.INIT_FILE_PAY_CODE_POHAI.equals(fileFormat))
           ? new SimpleDateFormat("yyyy/M/d")
           : new SimpleDateFormat("yyyyMMdd");
       DecimalFormat df = new DecimalFormat("#");
@@ -902,7 +900,7 @@ public class ImportPayCode {
         
         values = ExcelUtil.readCellValue(columnMap, row, df);
         String code = values.get("CODE");
-        if (SystemController.INIT_FILE_PAY_CODE.equals(fileFormat) && code.length() == 0) {
+        if (SystemService.INIT_FILE_PAY_CODE.equals(fileFormat) && code.length() == 0) {
           break;
         }
         OrderCode oc = getOrderCodyByMap(values, sdf, df, maxId, payCodeType);
