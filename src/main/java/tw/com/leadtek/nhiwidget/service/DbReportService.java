@@ -3459,7 +3459,16 @@ public class DbReportService {
 		}
 		if (isLastM) {
 			for (String str : quarters) {
-				int m = Integer.valueOf(str.replace("0", ""));
+				int m = 0;
+				String subM = str.substring(0,1);
+				///如果subM為“1”
+				if(subM.equals(subM)) {
+					m = Integer.valueOf(str);
+				}
+				else {
+					m = Integer.valueOf(str.replace("0", ""));
+				}
+				
 				int y = Integer.valueOf(years[0]);
 				/// 如果是一月的話
 				if (m == 1) {
@@ -3492,8 +3501,16 @@ public class DbReportService {
 			int i = 0;
 			for (String str : years) {
 				int y = Integer.valueOf(str);
-				int m = Integer.valueOf(quarters[i].replace("0", ""));
-				y -= 1;
+				int m = 0;
+				String subM = quarters[i].substring(0,1);
+				///如果subM為“1”
+				if(subM.equals(subM)) {
+					m = Integer.valueOf(quarters[i]);
+				}
+				else {
+					m = Integer.valueOf(quarters[i].replace("0", ""));
+				}
+			
 				yList.add(y);
 				mList.add(m);
 				map.put("YM", String.valueOf((y * 100) + m));
@@ -3557,6 +3574,25 @@ public class DbReportService {
 				}
 			}
 
+		}
+		else {
+			for(int ym : yearMonthBetween) {
+				POINT_MONTHLY pm = new POINT_MONTHLY();
+				pm.setTotalAll(0L);
+				pm.setAssignedAll(0L);
+				pm.setNoApplAll(0L);
+				pm.setPatientOp(0L);
+				pm.setPatientEm(0L);
+				pm.setIpQuantity(0L);
+				pm.setTotalIp(0L);
+				pm.setAssignedIp(0L);
+				pm.setNoApplIp(0L);
+				pm.setTotalOpAll(0L);
+				pm.setAssignedOpAll(0L);
+				pm.setNoApplOp(0L);
+				pm.setYm(ym);
+				list.add(pm);
+			}
 		}
 
 		for (int i = 0; i < yList.size(); i++) {
@@ -7821,7 +7857,14 @@ public class DbReportService {
 		for (int i = 0; i < years.size(); i++) {
 
 			int yearInt = Integer.parseInt(years.get(i).toString()) * 100;
-			int monthInt = Integer.parseInt(quarters.get(i).toString().replace("0", ""));
+			int monthInt = 0;
+			String subM = quarters.get(i).toString().substring(0,1);
+			if(subM.equals("1")) {
+				monthInt = Integer.parseInt(quarters.get(i).toString());
+			}
+			else {
+				monthInt = Integer.parseInt(quarters.get(i).toString().replace("0", ""));
+			}
 
 			resList.add(yearInt + monthInt);
 		}
