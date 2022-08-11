@@ -3510,7 +3510,7 @@ public class DbReportService {
 				else {
 					m = Integer.valueOf(quarters[i].replace("0", ""));
 				}
-			
+				y -= 1;
 				yList.add(y);
 				mList.add(m);
 				map.put("YM", String.valueOf((y * 100) + m));
