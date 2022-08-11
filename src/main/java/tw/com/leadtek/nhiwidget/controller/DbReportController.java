@@ -176,8 +176,8 @@ public class DbReportController extends BaseController {
 	public ResponseEntity<Map<String, Object>> getMedicalOrder(
 			@ApiParam(name = "feeApply", value = "費用申報狀態(可複選)，多選用空格隔開，自費 健保", example = "自費 健保") @RequestParam(required = false) String feeApply,
 			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
-			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2020 2021 2022") @RequestParam(required = true) String year,
-			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = true) String month,
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2020 2021 2022") @RequestParam(required = false) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = false) String month,
 			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = false) String betweenSDate,
 			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = false) String betweenEDate,
 			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = false) String dataFormats,
@@ -230,8 +230,8 @@ public class DbReportController extends BaseController {
 	public ResponseEntity<BaseResponse> getMedicalOrderExport(
 			@ApiParam(name = "feeApply", value = "費用申報狀態(可複選)，多選用空格隔開，自費 健保", example = "自費 健保") @RequestParam(required = false) String feeApply,
 			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
-			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2020 2021 2022") @RequestParam(required = true) String year,
-			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = true) String month,
+			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2020 2021 2022") @RequestParam(required = false) String year,
+			@ApiParam(name = "month", value = "月份，若為多筆資料，用空格隔開，dateType=0時必填", example = "1 2 3") @RequestParam(required = false) String month,
 			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = false) String betweenSDate,
 			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = false) String betweenEDate,
 			@ApiParam(name = "dataFormats", value = "就醫類別，若為多筆資料，用空格隔開，為all totalop op em ip", example = "all") @RequestParam(required = false) String dataFormats,
