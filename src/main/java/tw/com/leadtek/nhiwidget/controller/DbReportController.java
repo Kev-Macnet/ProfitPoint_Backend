@@ -8,6 +8,7 @@ import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -324,10 +325,10 @@ public class DbReportController extends BaseController {
 		 @ApiParam(name = "endDate", value = "結束日期", example = "2022-06-30") @RequestParam(required = false) String endDate,
 	     HttpServletResponse response){
 		  
-			CaseStatusAndQuantity result=new CaseStatusAndQuantity();
+			CaseStatusAndQuantity result = new CaseStatusAndQuantity();
 			
-			if(status.length()==0) {
-				result.setResult(BaseResponse.ERROR);
+			if(StringUtils.isBlank(status)) {
+				result.setResult(null);
 				result.setMessage("無勾選案件狀態");
 			    return ResponseEntity.badRequest().body(result);
 			}

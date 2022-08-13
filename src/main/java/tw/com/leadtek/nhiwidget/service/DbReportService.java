@@ -532,11 +532,10 @@ public class DbReportService {
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 						/// 條件最後添加別名
-						where.append(" ) c, ");
+						where.append(" ) c ");
 						selectColumn.append(where);
 
-						//// 最後添加一個無意義語句避免 “,”使sql錯誤
-						selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+						logger.info("sql語句查詢:" + selectColumn.toString());
 
 						/// 傳統sql語法組成資料
 						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
@@ -2041,11 +2040,10 @@ public class DbReportService {
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 						/// 條件最後添加別名
-						where.append(" ) c, ");
+						where.append(" ) c ");
 						selectColumn.append(where);
 
-						//// 最後添加一個無意義語句避免 “,”使sql錯誤
-						selectColumn.append(" (SELECT DISTINCT 1 FROM MR) x ");
+						logger.info("sql語句查詢:" + selectColumn.toString());
 
 						/// 傳統sql語法組成資料
 						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
@@ -2629,6 +2627,7 @@ public class DbReportService {
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
 
+						logger.info("sql語句查詢:" + selectColumn.toString());
 						/// 傳統sql語法組成資料
 						sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 						sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
@@ -2978,7 +2977,7 @@ public class DbReportService {
 								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
-
+								logger.info("sql語句查詢:" + selectColumn.toString());
 								/// 傳統sql語法組成資料
 								sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 								sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
@@ -3602,7 +3601,7 @@ public class DbReportService {
 				POINT_MONTHLY pm = new POINT_MONTHLY();
 				pm = list.get(i);
 				pm.checkNull();
-				
+
 				if (pm.getYm().intValue() == yearMonthBetween.get(i)) {
 					String name = yearMonthBetween.get(i).toString();
 					String s1 = name.substring(0, name.length() - 2);
@@ -10474,9 +10473,8 @@ public class DbReportService {
 									/ 100.0;
 							if (drgCode.isEmpty()) {
 								detailModel.setPercent(100.0);
-							}
-							else {
-								
+							} else {
+
 								detailModel.setPercent(d);
 							}
 							sectionA.add(detailModel);
@@ -10493,9 +10491,8 @@ public class DbReportService {
 									/ 100.0;
 							if (drgCode.isEmpty()) {
 								detailModel.setPercent(100.0);
-							}
-							else {
-								
+							} else {
+
 								detailModel.setPercent(d);
 							}
 							sectionB1.add(detailModel);
@@ -10512,9 +10509,8 @@ public class DbReportService {
 									/ 100.0;
 							if (drgCode.isEmpty()) {
 								detailModel.setPercent(100.0);
-							}
-							else {
-								
+							} else {
+
 								detailModel.setPercent(d);
 							}
 							sectionB2.add(detailModel);
@@ -10531,9 +10527,8 @@ public class DbReportService {
 									/ 100.0;
 							if (drgCode.isEmpty()) {
 								detailModel.setPercent(100.0);
-							}
-							else {
-								
+							} else {
+
 								detailModel.setPercent(d);
 							}
 							sectionC.add(detailModel);
