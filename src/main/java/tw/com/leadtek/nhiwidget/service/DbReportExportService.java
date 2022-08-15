@@ -190,6 +190,9 @@ public class DbReportExportService {
 				}
 			}
 		}
+		if(!isLastM && !isLastY) {
+			originListL.addAll(qdAllList);		
+		}
 
 		// 建立新工作簿
 		HSSFWorkbook workbook = new HSSFWorkbook();
@@ -565,8 +568,6 @@ public class DbReportExportService {
 				applMax, icdAll, payCode, inhCode, isShowDRGList, isLastM, isLastY);
 
 		List<DrgQueryCondition> dataList = dataMap.getData();
-		DrgQueryCondition dqcModel = new DrgQueryCondition();
-		DrgQueryConditionDetail detailModel = new DrgQueryConditionDetail();
 		List<DrgQueryConditionDetail> total = new ArrayList<DrgQueryConditionDetail>();
 		List<DrgQueryConditionDetail> sectionA = new ArrayList<DrgQueryConditionDetail>();
 		List<DrgQueryConditionDetail> sectionB1 = new ArrayList<DrgQueryConditionDetail>();
@@ -610,6 +611,22 @@ public class DbReportExportService {
 		String[] tableRowHeadersC = { "統計月份", "C區DRG總案件數", "案件佔率", "案件病例總點數(不含自費)", "案件申報總點數", "點數差額" };
 
 		if (dataList.size() > 0) {
+			List<DrgQueryCondition> lastData = new ArrayList<DrgQueryCondition>();
+			if(dateTypes.equals("0")) {
+				if(isLastM || isLastY) {
+					
+					for(DrgQueryCondition dic : dataList) {
+						if(!dic.getDisplayName().isEmpty()) {
+							lastData.add(dic);
+						}
+					}
+					for(DrgQueryCondition dic :lastData) {
+						dataList.remove(0);
+					}
+					dataList.addAll(lastData);
+				}
+				
+			}
 			HSSFSheet sheet = workbook.createSheet("DRG案件數分佈佔率與定額、實際點數");
 			/// 欄位A1
 			HSSFRow row = sheet.createRow(0);
@@ -830,6 +847,37 @@ public class DbReportExportService {
 			}
 			if ((payCode != null && payCode.length() > 0) && (inhCode != null && inhCode.length() > 0))
 				rowIndex++;
+			
+			if(sections != null && sections.length() > 1) {
+				cell = row.createCell(cellIndex);
+				cell.setCellValue("顯示區間");
+				cell.setCellStyle(cellStyle);
+				cellIndex++;
+
+				cell = row.createCell(cellIndex);
+				String[] split = StringUtility.splitBySpace(sections);
+				String cellValue = "";
+				for (String str : split) {
+					switch (str.replaceAll("區", "")) {
+					case "A":
+						cellValue += "A區" + "、";
+						break;
+					case "B1":
+						cellValue += "B1區" + "、";
+						break;
+					case "B2":
+						cellValue += "B2區" + "、";
+						break;
+					case "C":
+						cellValue += "C區" + "、";
+						break;
+					}
+				}
+				cellValue = cellValue.substring(0, cellValue.length() - 1);
+				cell.setCellValue(cellValue);
+				cell.setCellStyle(cellStyle);
+				rowIndex++;
+			}
 
 			cellIndex = 0;
 			/// 欄位A
@@ -857,7 +905,9 @@ public class DbReportExportService {
 								if(displayName != null && displayName.length()>0) {
 									cellValue = displayName;
 								}
-								cellValue = date;
+								else {
+									cellValue = date;
+								}
 							}
 
 							cell.setCellValue(cellValue);
@@ -928,7 +978,9 @@ public class DbReportExportService {
 									if(displayName != null && displayName.length()>0) {
 										cellValue = displayName;
 									}
-									cellValue = date;
+									else {
+										cellValue = date;
+									}
 								}
 
 								cell.setCellValue(cellValue);
@@ -1035,7 +1087,9 @@ public class DbReportExportService {
 									if(displayName != null && displayName.length()>0) {
 										cellValue = displayName;
 									}
-									cellValue = date;
+									else {
+										cellValue = date;
+									}
 								}
 
 								cell.setCellValue(cellValue);
@@ -1142,7 +1196,9 @@ public class DbReportExportService {
 									if(displayName != null && displayName.length()>0) {
 										cellValue = displayName;
 									}
-									cellValue = date;
+									else {
+										cellValue = date;
+									}
 								}
 
 								cell.setCellValue(cellValue);
@@ -1249,7 +1305,9 @@ public class DbReportExportService {
 									if(displayName != null && displayName.length()>0) {
 										cellValue = displayName;
 									}
-									cellValue = date;
+									else {
+										cellValue = date;
+									}
 								}
 
 								cell.setCellValue(cellValue);
@@ -2002,6 +2060,34 @@ public class DbReportExportService {
 					&& (opAllList.size() == 0 && opList.size() == 0 && emList.size() == 0 && allList.size() == 0)) {
 				buildList.addAll(ipList);
 			}
+			else {
+				if((allList.size() > 0 && ipList.size() > 0 && opAllList.size() == 0 && opList.size() == 0 && emList.size() == 0) || 
+				   (allList.size() > 0 && ipList.size() == 0 && opAllList.size() > 0 && emList.size() == 0 && opList.size()==0) ||
+				   (allList.size() > 0 && ipList.size() == 0 && opAllList.size() == 0 && emList.size() > 0 && opList.size()==0) ||
+				   (allList.size() > 0 && ipList.size() == 0 && opAllList.size() == 0 && emList.size() == 0 && opList.size()>0) 
+						) {
+					
+					buildList.addAll(allList);
+				}
+				else if(allList.size() == 0){
+					if(ipList.size() > 0) {
+						
+						buildList.addAll(ipList);
+					}
+					if(opAllList.size() > 0) {
+						buildList.addAll(opAllList);
+					}
+					if(opList.size() > 0) {
+											
+						buildList.addAll(opList);
+					}
+					if(emList.size() > 0) {
+						
+						buildList.addAll(emList);
+					}
+					
+				}
+			}
 
 			if (buildList.size() > 0) {
 				for (int i = 0; i < buildList.size(); i++) {
@@ -2260,27 +2346,30 @@ public class DbReportExportService {
 							sheet.addMergedRegionUnsafe(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
 							cellIndex++;
 							cell = row.createCell(cellIndex);
-							cell.setCellValue(info.getQuantity().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
-										.getQuantity().doubleValue());
+							if(allList.size() >0 && dataFormatAppend.contains("不分")) {
+								
+								cell.setCellValue(info.getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
 								cell = row.createCell(cellIndex);
-							}
-							cell.setCellValue(info.getExpense().doubleValue());
-							cell.setCellStyle(cellFormatStyle);
-							cellIndex++;
-							cell = row.createCell(cellIndex);
-							if (modelList.size() > 1) {
-								cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
-										.getExpense().doubleValue());
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getQuantity().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
+								cell.setCellValue(info.getExpense().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
 								cellIndex++;
 								cell = row.createCell(cellIndex);
+								if (modelList.size() > 1) {
+									cell.setCellValue(modelList.get(1).getAllList().get(i).getIhnCodeInfo().get(v)
+											.getExpense().doubleValue());
+									cell.setCellStyle(cellFormatStyle);
+									cellIndex++;
+									cell = row.createCell(cellIndex);
+								}
 							}
 							if (opAllList.size() > 0 && dataFormatAppend.contains("門急診")) {
 								cell.setCellValue(info.getQuantity().doubleValue());
@@ -2307,17 +2396,20 @@ public class DbReportExportService {
 								}
 							} else {
 								if (dataFormatAppend.contains("門急診")) {
-
+                                    cell.setCellValue(0);
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
+									cell.setCellValue(0);
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
 									if (isLastY) {
+										cell.setCellValue(0);
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
+										cell.setCellValue(0);
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
@@ -2351,16 +2443,20 @@ public class DbReportExportService {
 							} else {
 								if (dataFormatAppend.contains("門診")) {
 
+									cell.setCellValue(0);
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
+									cell.setCellValue(0);
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
 									if (isLastY) {
+										cell.setCellValue(0);
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
+										cell.setCellValue(0);
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
@@ -2394,22 +2490,27 @@ public class DbReportExportService {
 							} else {
 								if (dataFormatAppend.contains("急診")) {
 
+									cell.setCellValue(0);
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
+									cell.setCellValue(0);
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
 									if (isLastY) {
+										cell.setCellValue(0);
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
+										cell.setCellValue(0);
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
 									}
 								}
 							}
+							
 							if (ipList.size() > 0 && dataFormatAppend.contains("住院")) {
 								cell.setCellValue(info.getQuantity().doubleValue());
 								cell.setCellStyle(cellFormatStyle);
@@ -2436,22 +2537,81 @@ public class DbReportExportService {
 							} else {
 								if (dataFormatAppend.contains("住院")) {
 
+									cell.setCellValue(0);
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
+									cell.setCellValue(0);
 									cell.setCellStyle(cellFormatStyle);
 									cellIndex++;
 									cell = row.createCell(cellIndex);
 									if (isLastY) {
+										cell.setCellValue(0);
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
+										cell.setCellValue(0);
 										cell.setCellStyle(cellFormatStyle);
 										cellIndex++;
 										cell = row.createCell(cellIndex);
 									}
 								}
 							}
+							
+//							if(opAllList.size() == 0 && dataFormatAppend.contains("門急診")) {
+//								cellIndex++;
+//								cell = row.createCell(cellIndex);
+//								cell.setCellStyle(cellFormatStyle);
+//								cellIndex++;
+//								cell = row.createCell(cellIndex);
+//								cell.setCellStyle(cellFormatStyle);
+//								if (isLastY) {
+//									cellIndex++;
+//									cell = row.createCell(cellIndex);
+//									cell.setCellStyle(cellFormatStyle);
+//									cellIndex++;
+//									cell = row.createCell(cellIndex);
+//									cell.setCellStyle(cellFormatStyle);
+//									cellIndex++;
+//									cell = row.createCell(cellIndex);
+//								}
+//							}
+//							if(opList.size() == 0 && dataFormatAppend.contains("門診")) {
+//								cellIndex++;
+//								cell = row.createCell(cellIndex);
+//								cell.setCellStyle(cellFormatStyle);
+//								cellIndex++;
+//								cell = row.createCell(cellIndex);
+//								cell.setCellStyle(cellFormatStyle);
+//								if (isLastY) {
+//									cellIndex++;
+//									cell = row.createCell(cellIndex);
+//									cell.setCellStyle(cellFormatStyle);
+//									cellIndex++;
+//									cell = row.createCell(cellIndex);
+//									cell.setCellStyle(cellFormatStyle);
+//									cellIndex++;
+//									cell = row.createCell(cellIndex);
+//								}
+//							}
+//							if(emList.size() == 0 && dataFormatAppend.contains("急診")) {
+//								cellIndex++;
+//								cell = row.createCell(cellIndex);
+//								cell.setCellStyle(cellFormatStyle);
+//								cellIndex++;
+//								cell = row.createCell(cellIndex);
+//								cell.setCellStyle(cellFormatStyle);
+//								if (isLastY) {
+//									cellIndex++;
+//									cell = row.createCell(cellIndex);
+//									cell.setCellStyle(cellFormatStyle);
+//									cellIndex++;
+//									cell = row.createCell(cellIndex);
+//									cell.setCellStyle(cellFormatStyle);
+//									cellIndex++;
+//									cell = row.createCell(cellIndex);
+//								}
+//							}
 
 							rowIndex++;
 							cellIndex = 0;

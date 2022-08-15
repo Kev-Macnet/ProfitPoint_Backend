@@ -4,6 +4,7 @@
 package tw.com.leadtek.nhiwidget.dao;
 
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -100,7 +101,8 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public void updateDRG(String drg, int drgFix, String drgSection, Long mrId);
   
   /**
-   * 取得DRG各科, 非DRG在指定日期區間的件數及點數
+   * 取得DRG各科, 非DRG在指定日期區間的件數及點數.
+   * 2022/7/28 因DRG和NODRG的科別可能會不一樣，因此拿掉WHERE條件。
    */
   @Query(value ="SELECT * FROM " + 
       "(SELECT MR.FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_ACTUAL_POINT "
@@ -109,8 +111,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
       "(SELECT MR.FUNC_TYPE AS NONDRG_FUNC_TYPE, COUNT(1) AS NONDRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) "
       + "AS NONDRG_POINT FROM MR, IP_D WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_END_DATE >= ?1 AND "
       + "MR_END_DATE <= ?2 AND MR.FUNC_TYPE IN (SELECT DISTINCT(FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL " +
-      " AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) AND IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) NODRG " +
-      "WHERE DRG.FUNC_TYPE = NODRG.NONDRG_FUNC_TYPE", nativeQuery = true)
+      " AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) AND IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) NODRG", nativeQuery = true)
   public List<Object[]> countAllDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
   
   /**
@@ -514,6 +515,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<MR> findByMrEndDateAndDataFormatOrderById(String dataFormat, java.util.Date sDate, java.util.Date eDate);
   
   public List<MR> findByInhClinicId(String inhClinicId); 
+  
+  @Query(value = "SELECT ID FROM MR WHERE INH_CLINIC_ID = ?1", nativeQuery = true)
+  public List<Long> getIdByInhClinicId(String inhClinicId); 
   
   /**
    * 取得藥用碼出現次數 -門診

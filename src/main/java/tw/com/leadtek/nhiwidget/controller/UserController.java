@@ -4,9 +4,9 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import java.text.DecimalFormat;
-import java.util.Calendar;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -302,9 +302,10 @@ public class UserController extends BaseController {
       @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...",
           example = "家醫科") @RequestParam(required = false) String funcTypec,
       @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...",
-          example = "家醫科") @RequestParam(required = false) String funcTypeC) {
+          example = "家醫科") @RequestParam(required = false) String funcTypeC, 
+      HttpSession session) {
     String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
-    return ResponseEntity.ok(userService.getAllDepartment(funcType, funcTypeChinese));
+    return ResponseEntity.ok(userService.getAllDepartment(funcType, funcTypeChinese, session.getCreationTime()));
   }
 
   @ApiOperation(value = "新增部門", notes = "新增部門")

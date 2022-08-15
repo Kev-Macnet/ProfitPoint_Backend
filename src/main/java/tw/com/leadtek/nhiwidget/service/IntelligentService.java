@@ -1345,7 +1345,7 @@ public class IntelligentService {
       List<MR> list = getMRByCode(dataFormat, chineseYm, fieldName, code, 0, false,
           ct.getStartDate(), ct.getEndDate());
       if (list != null) {
-        String reason = (wording != null) ? String.format(wording, ct.getCode(), max) : null;
+        String reason = (wording != null) ? String.format(wording, code, max) : null;
         for (MR mr : list) {
           INTELLIGENT intelligent = findIntelligentByMrId(mr.getId(), intelligentList);
           insertIntelligent(mr, intelligent, conditionCode, code, reason,
@@ -2254,11 +2254,11 @@ public class IntelligentService {
   }
 
   public synchronized void setIntelligentRunningTime(int intelligentCode, long time) {
-    runningIntelligent.put(new Integer(intelligentCode), time);
+    runningIntelligent.put(Integer.valueOf(intelligentCode), time);
   }
 
   public synchronized long getIntelligentRunningTime(int intelligentCode) {
-    Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
+    Long runningTime = runningIntelligent.get(Integer.valueOf(intelligentCode));
     if (runningTime == null) {
       runningTime = -1L;
     }
@@ -2794,6 +2794,7 @@ public class IntelligentService {
     // 週報表資料
     try {
       reportService.calculatePointWeekly(calStart, true);
+      logger.info("calculatePointWeekly done");
     } catch (Exception e) {
       logger.error("calculatePointWeekly:", e);
     }
@@ -2824,6 +2825,23 @@ public class IntelligentService {
         drgCalService.callDrgCalProgram(file, mrList, mrIdList, ipdMap);
         long usedTime = System.currentTimeMillis() - start;
         logger.info("runDrgCalculate finished using " + usedTime);
+        
+        List<String> applYm = getDistinctApplYm(mrList);
+        // 月報表資料
+        for (String ym : applYm) {
+          reportService.calculatePointMR(ym);
+          reportService.calculateDRGMonthly(ym);
+        }
+        
+        Date firstDate = new Date();
+        for (MR mr : mrList) {
+          if (mr.getMrDate().before(firstDate)) {
+            firstDate = mr.getMrDate();
+          }
+        }
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTime(firstDate);
+        reportService.calculatePointWeekly(startCal, true);
       }
     });
     thread.start();
