@@ -33,10 +33,9 @@ public class ScheduleTask {
     
     @Scheduled(fixedDelay = 60000, initialDelay = 20000)
     public void runCurrentTimeEveryMinute() throws InterruptedException {
-      if (paramerterService.getParameter("MR_PATH") == null) {
-        return;
-      }
-      File[] files = new File(paramerterService.getParameter("MR_PATH")).listFiles();
+      String path = (paramerterService.getParameter("MR_PATH") == null) ? SystemService.FILE_PATH
+          : paramerterService.getParameter("MR_PATH");
+      File[] files = new File(path).listFiles();
       if (files != null && files.length > 0) {
         systemService.refreshMRFromFolder(files);
       }

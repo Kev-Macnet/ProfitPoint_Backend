@@ -150,6 +150,21 @@ public class CodeTableService {
     return code + "-" + ct.getDescChi();
   }
   
+  public static String getInhCodeDesc(CodeTableService cts, String cat, String inhCode) {
+    if (inhCode == null) { 
+      return null;
+    }
+    String c = inhCode.trim();
+    if (c.length() == 0) {
+      return null; 
+    }
+    List<PAY_CODE> list = cts.getPayCodeDao().findByInhCode(c);
+    if (list != null && list.size() > 0) {
+      return list.get(0).getName();
+    }
+    return null;
+  }
+  
   public String getCodeByDesc(String cat, String desc) {
 	if (codes == null) {
 	  refreshCodes();

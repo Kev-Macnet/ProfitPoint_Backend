@@ -100,6 +100,12 @@ public class DrgCalService {
   @Autowired
   private MRDao mrDao;
   
+  @Autowired
+  private ReportService reportService;
+  
+  @Autowired
+  private IntelligentService intelligentService;
+  
   @Value("${project.hospId}")
   private String HOSPITAL_ID;
 
@@ -779,22 +785,35 @@ public class DrgCalService {
     targetName = targetName.substring(targetName.lastIndexOf('\\') + 1);
     String pyCommand = DRG_DATA_FILE_PATH + "/DRG.BAT " + file.getName() + " " + targetName + " y";
     execBatch(pyCommand);
-   
+    processDrgCalResultFile(new File(DRG_DATA_FILE_PATH + "\\" + targetName), mrList, mrIdList, ipdMap);
+  }
+  
+  public void processDrgCalResultFile(File file, List<MR> mrList, List<Long> mrIdList, HashMap<Long, IP_D> ipdMap) {
+    logger.info("processDrgCalResultFile:" + file.getAbsolutePath());
     HashMap<String, Integer> drgApplDot = new HashMap<String, Integer>();
+    int count = 0;
     try {
-      drgCalDao.deleteByMrId(mrIdList);
-      FileInputStream fis = new FileInputStream(DRG_DATA_FILE_PATH + "\\" + targetName);
+      if (mrIdList != null && mrIdList.size() > 0) {
+        drgCalDao.deleteByMrId(mrIdList);
+      } else {
+        deleteDrgCalInResultFile(file, mrList, ipdMap);
+      }
+      FileInputStream fis = new FileInputStream(file);
       BufferedReader isReader =
           new java.io.BufferedReader(new InputStreamReader(fis, "big5"));
       // 跳過檔頭
       isReader.readLine();
       String str;
       while ((str = isReader.readLine()) != null) {
+        count++;
         String[] ss = str.split(",");
         DRG_CAL dc = new DRG_CAL();
         
         if (ss.length > 55 && ss[55].trim().length() > 0) {
-         dc.setError(logDataService.getErrorMessage(ss[55].trim()));
+          //dc.setError(logDataService.getErrorMessage(ss[55].trim()));
+          dc.setError(ss[55].trim());
+        } else if (ss[24] != null && '0' != ss[24].charAt(0)) {
+          dc.setError(String.valueOf(ss[24].charAt(0)));
         }
         
         dc.setMrId(Long.parseLong(ss[3]));
@@ -812,11 +831,12 @@ public class DrgCalService {
         int newApplDot = 0;
         DrgCalculate drgCodeDetail = getDRGSection(dc.getDrg(), String.valueOf(adYM - 191100),
               dc.getMedDot(), mr.getChangeICD().intValue());
-        if (drgCodeDetail == null || (!drgCodeDetail.isStarted() && dc.getError() != null
-            && dc.getError().length() == 0)) {
+        if (drgCodeDetail != null && !drgCodeDetail.isStarted()) {
           // DRG代碼尚未導入
           dc.setError("C");
-        } else {
+        }
+        if (drgCodeDetail != null) {
+          // 有Error且不是 C (未導入) 就不處理以下code
           DecimalFormat df = new DecimalFormat("#.###");
           dc.setRw(Double.parseDouble(df.format(drgCodeDetail.getRw())));
           dc.setAvgInDay(drgCodeDetail.getAvgInDay());
@@ -824,26 +844,28 @@ public class DrgCalService {
           dc.setLlimit(drgCodeDetail.getLlimit());
           dc.setDrgFix(drgCodeDetail.getFixed());
           dc.setDrgSection(drgCodeDetail.getSection());
-          
-          if (drgApplDot.get(dc.getDrg()) != null) {
-            newApplDot = drgApplDot.get(dc.getDrg()).intValue();
-          } else {
+
+          // 2022/8/12 每筆都計算，不抓上次相同DRG的結果
+//          if (drgApplDot.get(dc.getDrg()) != null) {
+//            newApplDot = drgApplDot.get(dc.getDrg()).intValue();
+//          } else {
             boolean isInCase20 = checkCase20(drgCodeDetail, ss[1]);
-            newApplDot = getApplDot(drgCodeDetail, ipd.getMedDot(), ipd.getPartDot(), 
+            newApplDot = getApplDot(drgCodeDetail, ipd.getMedDot(), ipd.getPartDot(),
                 ipd.getNonApplDot(), mr.getId(), ipd.getEbedDay(), ipd.getTranCode(), isInCase20);
-            drgApplDot.put(dc.getDrg(), newApplDot);
-          }
+          //  drgApplDot.put(dc.getDrg(), newApplDot);
+          //}
           dc.setDrgDot(newApplDot);
-//          System.out.println(dc.getMrId() + ",icd=" + dc.getIcdCM1() + ", opCode=" + dc.getIcdOPCode1() +
-//              ",cc=" + dc.getCc() + ", drg=" + dc.getDrg() + ",drgSection=" + dc.getDrgSection() +
-//              ",mdc=" + dc.getMdc());
+
           if (dc.getIcdCM1().equals(mr.getIcdcm1())) {
             mr.setDrgCode(dc.getDrg());
             mr.setDrgFixed(dc.getDrgFix());
-            mr.setDrgSection(dc.getDrgSection());
+            if ("0".equals(ipd.getTwDrgsSuitMark())) {
+              mr.setDrgSection(dc.getDrgSection());
+            }
             mrDao.updateDRG(dc.getDrg(), dc.getDrgFix(), dc.getDrgSection(), mr.getId());
           }
         }
+
         dc.setUpdateAt(new Date());
         drgCalDao.save(dc);
       }
@@ -852,12 +874,65 @@ public class DrgCalService {
     } catch (java.io.IOException e) {
       e.printStackTrace();
     } finally {
-      File fileB = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 4) + "B.txt");
-      if (fileB.exists()) {
-        //fileB.delete();
+      File fileSource = new File(file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 5) + ".txt");
+      if (fileSource.exists()) {
+        fileSource.delete();
       }
       if (file.exists()) {
         //file.delete();
+      }
+    }
+    logger.info("DrgCalculate result count:" + count);
+    calculateDRGReport(mrList);
+  }
+  
+  private void calculateDRGReport(List<MR> mrList) {
+    List<String> applYm = intelligentService.getDistinctApplYm(mrList);
+    // 月報表資料
+    for (String ym : applYm) {
+      reportService.calculatePointMR(ym);
+      reportService.calculateDRGMonthly(ym);
+    }
+    
+    Date firstDate = new Date();
+    for (MR mr : mrList) {
+      if (mr.getMrDate().before(firstDate)) {
+        firstDate = mr.getMrDate();
+      }
+    }
+    Calendar startCal = Calendar.getInstance();
+    startCal.setTime(firstDate);
+    reportService.calculatePointWeekly(startCal, true);
+  }
+  
+  private void deleteDrgCalInResultFile(File file, List<MR> mrList, HashMap<Long, IP_D> ipdMap) {
+    List<Long> mrIdList = new ArrayList<>();
+    
+    try {
+      FileInputStream fis = new FileInputStream(file);
+      BufferedReader isReader =
+          new java.io.BufferedReader(new InputStreamReader(fis, "big5"));
+      // 跳過檔頭
+      isReader.readLine();
+      String str;
+      while ((str = isReader.readLine()) != null) {
+        String[] ss = str.split(",");
+        mrIdList.add(Long.parseLong(ss[3]));
+      }
+      isReader.close();
+      fis.close();
+    } catch (java.io.IOException e) {
+      logger.error("deleteDrgCalInResultFile", e);
+    }
+    drgCalDao.deleteByMrId(mrIdList);
+    if (mrList.size() == 0) {
+      List<MR> list = mrDao.getMrByIdList(mrIdList);
+      mrList.addAll(list);
+    }
+    if (ipdMap.size() == 0) {
+      List<IP_D> ipdList = ipdDao.getIpdListByMrId(mrIdList);
+      for (IP_D ipd : ipdList) {
+        ipdMap.put(ipd.getMrId(), ipd);
       }
     }
   }

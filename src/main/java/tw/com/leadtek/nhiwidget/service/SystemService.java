@@ -1611,6 +1611,9 @@ public class SystemService {
     ArrayList<File> ippList = new ArrayList<File>();
 
     for (File file : needProcessFile) {
+      if (processSettingFile(file, newFiles)) {
+        continue;
+      }
       if (file.getName().endsWith(".xls")) {
         if (file.getName().startsWith("OPD_SOP")) {
           oppList.add(file);
@@ -1628,17 +1631,23 @@ public class SystemService {
       }
     }
 
-    long startImport = System.currentTimeMillis();
-    xmlService.checkAll(0, true);
-    importMRFile(opdList, newFiles);
-    importMRFile(oppList, newFiles);
-    importMRFile(ipdList, newFiles);
-    importMRFile(ippList, newFiles);
-    long usedTime = System.currentTimeMillis() - startImport;
-    xmlService.checkAll(usedTime, false);
+    if ((opdList.size() + oppList.size() + ippList.size() + ipdList.size()) > 0) {
+      long startImport = System.currentTimeMillis();
+      xmlService.checkAll(0, true);
+      // 病歷相關檔案
+      int mrFile = 0;
+      mrFile += importMRFile(opdList, newFiles);
+      mrFile += importMRFile(oppList, newFiles);
+      mrFile += importMRFile(ipdList, newFiles);
+      mrFile += importMRFile(ippList, newFiles);
+      long usedTime = System.currentTimeMillis() - startImport;
+      logger.info("import " + mrFile + " files used " + usedTime + " ms.");
+      xmlService.checkAll(usedTime, false);
+    }
   }
 
-  private void importMRFile(List<File> files, List<FILE_DOWNLOAD> newFiles) {
+  private int importMRFile(List<File> files, List<FILE_DOWNLOAD> newFiles) {
+    int result = 0;
     for (File file : files) {
       if (file.getName().indexOf('~') > -1 || !(file.getName().endsWith(".xlsx")
           || file.getName().endsWith(".xml") || file.getName().endsWith(".xls"))) {
@@ -1660,16 +1669,19 @@ public class SystemService {
       } while ((filesize1 == 0 || filesize1 != filesize2) && count < 1800);
 
       logger.info("process " + file.getName());
-
+     
       if (file.getName().endsWith(".xlsx")) {
         XSSFWorkbook workbook = null;
         try {
           workbook = new XSSFWorkbook(new FileInputStream(file));
           xmlService.readTheseSheet(workbook.getSheetAt(0));
+          result++;
         } catch (FileNotFoundException e) {
-          e.printStackTrace();
+          logger.error("importMRFile:" + file.getAbsolutePath(), e);
         } catch (IOException e) {
-          e.printStackTrace();
+          logger.error("importMRFile:" + file.getAbsolutePath(), e);
+        } catch (Exception e) {
+          logger.error("importMRFile:" + file.getAbsolutePath(), e);
         } finally {
           if (workbook != null) {
             try {
@@ -1681,11 +1693,14 @@ public class SystemService {
         }
       } else if (file.getName().endsWith(".xml")) {
         importXMLFile(file);
+        result++;
       } else if (file.getName().endsWith(".xls")) {
         processLeadtekXLS(file);
+        result++;
       }
       updateFileDownloadFinished(file, newFiles);
     }
+    return result;
   }
 
   private void updateFileDownloadFinished(File file, List<FILE_DOWNLOAD> newFiles) {
@@ -1699,7 +1714,8 @@ public class SystemService {
     }
   }
 
-  public void processUploadFile(File file) throws IOException {
+  public boolean processSettingFile(File file, List<FILE_DOWNLOAD> newFiles) {
+    long start = System.currentTimeMillis();
     if (file.getName().indexOf(INIT_FILE_PARAMETERS) == 0) {
       initial.importParametersFromExcel(file, "參數設定", 1);
     } else if (file.getName().indexOf(INIT_FILE_PAY_CODE) > -1) {
@@ -1732,26 +1748,13 @@ public class SystemService {
       initial.importDeductedFile(file, false);
     } else if (file.getName().startsWith(INIT_FILE_DEDUCTED_ARTIFICIAL)) {
       initial.importDeductedFile(file, true);
-    } else if (file.getName().endsWith(".xls")) {
-      // 麗臺規格excel
-      processLeadtekXLS(file);
-      xmlService.checkAll(0, false);
-    } else if (file.getName().endsWith(".xlsx")) {
-      XSSFWorkbook workbook = null;
-
-      try {
-        workbook = new XSSFWorkbook(new FileInputStream(file));
-        xmlService.readTheseSheet(workbook.getSheetAt(0));
-      } catch (Exception e) {
-        logger.error("delete exist file", e);
-      } finally {
-        if (workbook != null) {
-          workbook.close();
-        }
-      }
     } else {
-      importFileThread(file);
+      return false;
     }
+    updateFileDownloadFinished(file, newFiles);
+    long usedTime = System.currentTimeMillis() - start;
+    logger.info("import " + file.getName() + " used " + usedTime + " ms.");
+    return true;
   }
 
   public void processLeadtekXLS(File file) {
