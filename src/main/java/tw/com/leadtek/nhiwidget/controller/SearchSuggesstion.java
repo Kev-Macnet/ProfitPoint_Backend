@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
 import tw.com.leadtek.nhiwidget.service.RedisService;
 
@@ -27,6 +29,7 @@ public class SearchSuggesstion extends BaseController {
 
   @ApiOperation(value = "取得搜尋建議", notes = "取得搜尋建議")
   @GetMapping("/nhixml/suggestions")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<?> suggestions(
       @ApiParam(name = "term", value = "搜尋關鍵字，若有多個用空格區隔，如\"diabetes mellitus without\"", example = "l97.") @RequestParam(required = true) String term,
       @ApiParam(name = "cat", value = "有 ICD10-PCS(處置碼), ICD10-CM(診斷碼)", example = "ICD10-CM") @RequestParam(required = false) String cat,
@@ -47,6 +50,7 @@ public class SearchSuggesstion extends BaseController {
   
   @ApiOperation(value = "取得搜尋建議", notes = "取得搜尋建議")
   @GetMapping("/q")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<?> getSuggestions(
       @ApiParam(name = "term", value = "搜尋關鍵字，若有多個用空格區隔，如\"diabetes mellitus without\"", example = "l97.") @RequestParam(required = true) String term,
       @ApiParam(name = "cat", value = "有 ICD10-PCS(處置碼), ICD10-CM(診斷碼)", example = "ICD10-CM") @RequestParam(required = false) String cat,

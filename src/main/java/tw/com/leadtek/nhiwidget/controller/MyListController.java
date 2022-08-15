@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.my.DoctorListResponse;
@@ -44,6 +46,7 @@ public class MyListController extends BaseController {
   
   @ApiOperation(value = "取得我的清單-待辦事項", notes = "取得我的清單-待辦事項")
   @GetMapping("/todo")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<MyTodoListResponse> getMyTodo(
       @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
       example = "2021/03/15") @RequestParam(required = false) String sdate,
@@ -147,6 +150,7 @@ public class MyListController extends BaseController {
   
   @ApiOperation(value = "取得我的清單-比對警示", notes = "取得我的清單-比對警示")
   @GetMapping("/warning")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<WarningOrderResponse> getWarningOrder(
     @ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
       example = "2021/03/15") @RequestParam(required = false) String sdate,
@@ -228,6 +232,7 @@ public class MyListController extends BaseController {
   
   @ApiOperation(value = "取得我的清單-疑問標示", notes = "取得我的清單-疑問標示")
   @GetMapping("/question")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<QuestionMarkResponse> getQuestionMark(
     @ApiParam(name = "applYm", value = "申報西元年月，格式 yyyyMM",
       example = "202103") @RequestParam(required = false) String applYm,
@@ -333,6 +338,7 @@ public class MyListController extends BaseController {
   
   @ApiOperation(value = "取得我的清單-通知記錄", notes = "取得我的清單-通知記錄")
   @GetMapping("/notice")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<NoticeRecordResponse> getNoticeRecord(
     @ApiParam(name = "applYm", value = "申報西元年月，格式 yyyyMM",
       example = "202103") @RequestParam(required = false) String applYm,
@@ -435,6 +441,7 @@ public class MyListController extends BaseController {
   
   @ApiOperation(value = "取得我的清單-醫師查看清單", notes = "取得我的清單-醫師查看清單")
   @GetMapping("/doctor")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<DoctorListResponse> getDoctorList(
       @ApiParam(value = "取得已讀取或未讀取的病歷，read:取得已讀取的病歷，unread:取得未讀取的病歷",
          example = "read") @RequestParam(required = false) String block,

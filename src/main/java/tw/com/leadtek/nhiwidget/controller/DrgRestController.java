@@ -24,6 +24,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
 
@@ -50,6 +52,7 @@ public class DrgRestController {
        @ApiImplicitParam(name = "drg_exe", value = "DRG程式", example="DRGICD10.exe" , dataType = "String", paramType = "query", required = true),
     })
     @RequestMapping(value = "/api/drg/initiate", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> initiateDrg(@RequestHeader("Authorization") String jwt,
             @RequestParam(required=false, defaultValue="") String drg_path,
             @RequestParam(required=false, defaultValue="") String drg_exe) throws Exception {
@@ -84,6 +87,7 @@ public class DrgRestController {
        @ApiImplicitParam(name="in_date", value="住院日(民國年)", example="1100112", dataType="String", paramType="path", required=true)
     })
     @RequestMapping(value = "/api/drg/{id_card}/{in_date}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> calculateDrg(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt, @PathVariable String id_card,
         @PathVariable String in_date) throws Exception {

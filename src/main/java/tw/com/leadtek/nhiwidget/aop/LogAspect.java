@@ -12,12 +12,14 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import tw.com.leadtek.nhiwidget.annotation.LogDefender;
 import tw.com.leadtek.nhiwidget.constant.LogType;
+import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
 
 @Aspect
@@ -48,15 +50,21 @@ public class LogAspect {
 		
 		logger.debug("前端呼叫：" + methodName);
 		
-		if(Arrays.asList(logDefender.value()).contains(LogType.ACTION)) {
+		if(Arrays.asList(logDefender.value()).contains(LogType.ACTION_C)) {
 			
 		}
 		
-		if(Arrays.asList(logDefender.value()).contains(LogType.FORGOT_PASSWORD)) {
-			//用 Mail去關聯 找出USER_ID
-		}
-		
 		result = pjp.proceed(pjp.getArgs());
+		
+		if(Arrays.asList(logDefender.value()).contains(LogType.FORGOT_PASSWORD)) {
+			
+			if("SUCCESS".equalsIgnoreCase(((ResponseEntity<BaseResponse>)result).getBody().getResult())) {
+				
+				Long userId = (Long)request.getAttribute(LogType.FORGOT_PASSWORD.name());
+				
+				logDataService.createLogForgotPassword(userId);
+			}
+		}
 		
 		if(Arrays.asList(logDefender.value()).contains(LogType.IMPORT)) {
 			

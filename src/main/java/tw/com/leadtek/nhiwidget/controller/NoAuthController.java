@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import io.swagger.annotations.Api;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.service.SystemService;
 
@@ -26,6 +28,7 @@ public class NoAuthController extends BaseController {
   private SystemService systemService;
 
   @GetMapping("/downloadXML/{id}") 
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<BaseResponse> downloadSampleFile(@PathVariable String id,
     HttpServletResponse response){
      try {

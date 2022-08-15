@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -24,6 +26,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.dao.DEPARTMENTDao;
 import tw.com.leadtek.nhiwidget.dao.USERDao;
@@ -92,7 +96,10 @@ public class UserService {
 
   @Value("${project.jwt.afk}")
   private long afkTime;
-
+  
+  @Autowired
+  private HttpServletRequest request;
+  
   private HashMap<Long, DEPARTMENT> departmentHash;
 
   public void retrieveData() {
@@ -608,12 +615,16 @@ public class UserService {
     if (existUser.getStatus() == 0) {
       return "帳號停用中，無法申請新密碼";
     }
+
     String newPassword = generateCommonLangPassword();
     emailService.sendMail("忘記密碼-重設新密碼", existUser.getEmail(), "系統隨機產生密碼:" + newPassword);
     existUser.setPassword(encoder.encode(newPassword));
     existUser.setUpdateAt(new Date());
     existUser.setStatus(1);
     userDao.save(existUser);
+    
+    request.setAttribute(LogType.FORGOT_PASSWORD.name(), existUser.getId());
+    
     return null;
   }
 

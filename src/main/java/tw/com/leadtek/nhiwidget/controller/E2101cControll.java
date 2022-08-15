@@ -16,6 +16,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.dto.PtInjectionFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtInjectionFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtInpatientCareDto;
@@ -58,6 +60,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtRadiationFeeDto.class)
     })
     @RequestMapping(value = "/payment/radiationfee/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentRadiationfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -76,6 +79,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/radiationfee/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增放射線診療費設定")
     public ResponseEntity<?> addPaymentRadiationfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtRadiationFeePl params) throws Exception {
@@ -111,6 +115,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/radiationfee/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改放射線診療費設定")
     public ResponseEntity<?> updatePaymentRadiationfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -143,6 +148,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/radiationfee/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除放射線診療費設定")
     public ResponseEntity<?> deletePaymentRadiationfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -170,6 +176,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtInjectionFeeDto.class)
     })
     @RequestMapping(value = "/payment/injectionfee/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentInjectionfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -188,6 +195,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/injectionfee/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增注射費設定")
     public ResponseEntity<?> addPaymentInjectionfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtInjectionFeePl params) throws Exception {
@@ -223,6 +231,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/injectionfee/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改注射費設定")
     public ResponseEntity<?> updatePaymentInjectionfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -255,6 +264,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/injectionfee/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除注射費設定")
     public ResponseEntity<?> deletePaymentInjectionfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -282,6 +292,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtQualityServiceDto.class)
     })
     @RequestMapping(value = "/payment/qualityservice/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentQualityService(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -300,6 +311,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/qualityservice/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增品質支付服務設定")
     public ResponseEntity<?> addPaymentQualityService(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtQualityServicePl params) throws Exception {
@@ -335,6 +347,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/qualityservice/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改品質支付服務設定")
     public ResponseEntity<?> updatePaymentQualityService(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -367,6 +380,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/qualityservice/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除品質支付服務設定")
     public ResponseEntity<?> deletePaymentQualityService(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -394,6 +408,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtInpatientCareDto.class)
     })
     @RequestMapping(value = "/payment/inpatientcare/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentInpatientCare(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -412,6 +427,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/inpatientcare/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增住院安寧療護")
     public ResponseEntity<?> addPaymentInpatientCare(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtInpatientCarePl params) throws Exception {
@@ -447,6 +463,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/inpatientcare/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改住院安寧療護")
     public ResponseEntity<?> updatePaymentInpatientCare(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -479,6 +496,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/inpatientcare/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除住院安寧療護")
     public ResponseEntity<?> deletePaymentInpatientCare(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -506,6 +524,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtRehabilitationFeeDto.class)
     })
     @RequestMapping(value = "/payment/rehabilitationfee/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentRehabilitationfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -524,6 +543,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/rehabilitationfee/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增復健治療費設定")
     public ResponseEntity<?> addPaymentRehabilitationfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtRehabilitationFeePl params) throws Exception {
@@ -559,6 +579,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/rehabilitationfee/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改復健治療費設定")
     public ResponseEntity<?> updatePaymentRehabilitationfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -591,6 +612,7 @@ public class E2101cControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/rehabilitationfee/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除復健治療費設定")
     public ResponseEntity<?> deletePaymentRehabilitationfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {

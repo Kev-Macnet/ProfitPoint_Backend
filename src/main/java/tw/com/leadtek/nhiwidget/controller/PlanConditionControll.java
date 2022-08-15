@@ -23,6 +23,8 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.dto.AdditionalConditionDto;
 import tw.com.leadtek.nhiwidget.dto.AdditionalSearchPl;
 import tw.com.leadtek.nhiwidget.dto.PlanConditionDto;
@@ -48,6 +50,7 @@ public class PlanConditionControll {
         @ApiResponse(code = 200, message="{ ... }", response=PlanSearchListDto.class) //, responseContainer = "List"
     })
     @RequestMapping(value = "/plan/list", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> planConditionList(@RequestHeader("Authorization") String jwt,
             @Valid @RequestBody PlanSearchPl params) throws Exception {
         
@@ -83,6 +86,7 @@ public class PlanConditionControll {
         @ApiResponse(code = 200, message="{ ... }")
     })
     @RequestMapping(value = "/plan/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增計畫可收案病例條件")
     public ResponseEntity<?> addPlanCondition(@RequestHeader("Authorization") String jwt,
             @Valid @RequestBody PlanConditionPl params) throws Exception {
         
@@ -103,6 +107,7 @@ public class PlanConditionControll {
         @ApiResponse(code = 200, message="{ ... }")
     })
     @RequestMapping(value = "/plan/{id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新計畫可收案病例條件")
     public ResponseEntity<?> updatePlanCondition(@RequestHeader("Authorization") String jwt,
             @PathVariable long id,
             @Valid @RequestBody PlanConditionPl params) throws Exception {
@@ -124,6 +129,7 @@ public class PlanConditionControll {
         @ApiResponse(code = 200, message="{ ... }")
     })
     @RequestMapping(value = "/plan/{id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除計畫可收案病例條件")
     public ResponseEntity<?> deletePlanCondition(@RequestHeader("Authorization") String jwt,
             @PathVariable long id) throws Exception {
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
@@ -142,6 +148,7 @@ public class PlanConditionControll {
         @ApiResponse(code = 200, message="{ ... }", response=PlanConditionDto.class)
     })
     @RequestMapping(value = "/plan/{id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> obtainPlanCondition(@RequestHeader("Authorization") String jwt,
             @PathVariable long id) throws Exception {
         java.util.Map<String, Object> jwtValidation = paymentTermsService.jwtValidate(jwt, 4);
@@ -163,6 +170,7 @@ public class PlanConditionControll {
         @ApiImplicitParam(name="state", value="0.未啟動/1.使用中/2.鎖定", dataType="String", paramType="query", required=true)
      })
     @RequestMapping(value = "/plan/setactive/{id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "計畫可收案病例條件狀態設定")
     public ResponseEntity<?> planConditionSetActive(@RequestHeader("Authorization") String jwt,
             @PathVariable long id,
             @RequestParam(required=true, defaultValue="") int state) throws Exception {

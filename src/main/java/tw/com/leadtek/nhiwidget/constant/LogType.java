@@ -20,7 +20,11 @@ public enum LogType {
 	
 	EXPORT("資料匯出次數"),
 	
-	ACTION("使用者操作紀錄"),
+	ACTION_C("使用者操作紀錄(新增)"),
+	
+	ACTION_U("使用者操作紀錄(更新)"),
+	
+	ACTION_D("使用者操作紀錄(刪除)"),
 	
 	SIGNIN("登出入時間");
 	

@@ -300,6 +300,20 @@ public class LogDataDao {
    * return ret; } catch(DataAccessException ex) { return 0; } }
    */
 
+  public int addForgotPassword(Long userId) {
+	    String sql;
+	    sql = "Insert into \r\n" + "LOG_FORGOT_PASSWORD(USER_ID)\r\n" + "Values ('%d')";
+	    sql = String.format(sql, userId);
+	    try {
+	      int ret = jdbcTemplate.update(sql);
+	      return ret;
+	    } catch (DataAccessException ex) {
+	    	ex.printStackTrace();
+	      return 0;
+	    }
+	  }
+
+  
   /**
    * 取得IP_D 的申報點數、不申報點數及部份負擔點數，修正MR table 的 T_DOT 欄位值
    * 

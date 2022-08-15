@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.ParameterListPayload;
@@ -41,6 +43,7 @@ public class IntelligentController extends BaseController {
   
   @ApiOperation(value = "取得智能提示助理清單", notes = "取得智能提示助理清單")
   @GetMapping("/intelligent")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<IntelligentResponse> getIntelligent(
       @ApiParam(value = "選單種類，有以下四種：baseRule(固定條件判斷)，clincal(臨床路徑差異)，suspected(疑似職傷與異常就診記錄判斷)，drgSuggestion(DRG申報建議)",
         example = "baseRule") @RequestParam(required = false, defaultValue = "baseRule") String menu,
