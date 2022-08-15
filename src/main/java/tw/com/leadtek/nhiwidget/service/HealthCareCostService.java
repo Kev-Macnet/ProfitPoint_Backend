@@ -1084,6 +1084,9 @@ public class HealthCareCostService {
 					ClassDrugDotDto classDrugDotDto=classOP_TDot.get(a);
 					
 					for(int b=0;b<OP_ClassTDot.size();b++) {
+					    if (OP_ClassTDot.get(b)[0] == null) {
+					      continue;
+					    }
 						if(code.equals(OP_ClassTDot.get(b)[0].toString())) {
 							if(OP_ClassTDot.get(b)[1]!=null) {
 								classDrugDotDto.setDot(OP_ClassTDot.get(b)[1].toString());
@@ -1098,6 +1101,9 @@ public class HealthCareCostService {
 					ClassDrugDotDto classDrugDotDto=classIP_TDot.get(a);
 					
 					for(int b=0;b<IP_ClassTDot.size();b++) {
+					    if (IP_ClassTDot.get(b)[0] == null) {
+					      continue;
+					    }
 						if(code.equals(IP_ClassTDot.get(b)[0].toString())) {
 							if(IP_ClassTDot.get(b)[1]!=null) {
 								classDrugDotDto.setDot(IP_ClassTDot.get(b)[1].toString());
@@ -1120,6 +1126,9 @@ public class HealthCareCostService {
 							code2=All_ClassTDot.get(b)[0].toString();
 						}
 						else {
+						    if (All_ClassTDot.get(b)[1] == null) {
+						      continue;
+						    }
 							code2=All_ClassTDot.get(b)[1].toString();
 						}
 						
@@ -1154,6 +1163,9 @@ public class HealthCareCostService {
 							code2=All_ClassDrugDot.get(b)[0].toString();
 						}
 						else {
+						  if (All_ClassDrugDot.get(b)[1] == null) {
+						    continue;
+						  }
 							code2=All_ClassDrugDot.get(b)[1].toString();
 						}
 						
@@ -1174,6 +1186,9 @@ public class HealthCareCostService {
 					ClassDrugDotDto classDrugDotDto=classOPList.get(a);
 					
 					for(int b=0;b<OP_ClassDrugDot.size();b++) {
+					  if (OP_ClassDrugDot.get(b)[0] == null) {
+					    continue;
+					  }
 						if(code.equals(OP_ClassDrugDot.get(b)[0].toString())) {	
 							if(OP_ClassDrugDot.get(b)[1]!=null) {
 								classDrugDotDto.setDot(OP_ClassDrugDot.get(b)[1].toString());
@@ -1363,6 +1378,9 @@ public class HealthCareCostService {
 					String desc_chi=classOPCaseCount.get(a).getDesc_chi();
 					
 					for(int b=0;b<class_op_case_count.size();b++) {
+					    if (class_op_case_count.get(b)[0] == null) {
+					      continue;
+					    }
 						if(code.equals(class_op_case_count.get(b)[0].toString())) {
 							if(class_op_case_count.get(b)[1]!=null) {
 								classOPCaseCount.set(a,new ClassCaseCountDto(desc_chi, code, class_op_case_count.get(b)[1].toString()));
@@ -1397,6 +1415,9 @@ public class HealthCareCostService {
 							code2=class_all_case_count.get(b)[0].toString();
 						}
 						else {
+						  if (class_all_case_count.get(b)[1] == null) {
+						    continue;
+						  }
 							code2=class_all_case_count.get(b)[1].toString();
 						}
 						

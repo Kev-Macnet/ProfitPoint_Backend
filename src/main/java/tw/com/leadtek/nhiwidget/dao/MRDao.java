@@ -107,9 +107,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value ="SELECT * FROM " + 
       "(SELECT MR.FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_ACTUAL_POINT "
       + "FROM MR, IP_D WHERE DRG_SECTION IS NOT NULL AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND "
-      + "IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) DRG," + 
+      + "IP_D.MR_ID = MR.ID AND IP_D.TW_DRGS_SUIT_MARK = '0' GROUP BY MR.FUNC_TYPE) DRG," + 
       "(SELECT MR.FUNC_TYPE AS NONDRG_FUNC_TYPE, COUNT(1) AS NONDRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) "
-      + "AS NONDRG_POINT FROM MR, IP_D WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_END_DATE >= ?1 AND "
+      + "AS NONDRG_POINT FROM MR, IP_D WHERE IP_D.TW_DRGS_SUIT_MARK <> '0' AND DATA_FORMAT = '20' AND MR_END_DATE >= ?1 AND "
       + "MR_END_DATE <= ?2 AND MR.FUNC_TYPE IN (SELECT DISTINCT(FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL " +
       " AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) AND IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) NODRG", nativeQuery = true)
   public List<Object[]> countAllDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
@@ -117,22 +117,25 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   /**
    * 取得DRG各科在指定日期區間的件數及點數
    */
-  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(T_DOT) AS DRG_POINT FROM MR " + 
-      " WHERE DRG_SECTION IS NOT NULL AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 GROUP BY FUNC_TYPE", nativeQuery = true)
+  @Query(value ="SELECT MR.FUNC_TYPE, COUNT(1) AS DRG_QUANTITY, SUM(T_DOT) AS DRG_POINT FROM MR, IP_D " + 
+      " WHERE IP_D.TW_DRGS_SUIT_MARK = '0' AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 "
+      + "AND MR.ID = IP_D.MR_ID GROUP BY MR.FUNC_TYPE", nativeQuery = true)
   public List<Object[]> countDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
   
   /**
    * 取得非DRG各科在指定日期區間的件數及點數
    */
-  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS NONDRG_QUANTITY, SUM(T_DOT) AS NONDRG_POINT FROM MR " + 
-      " WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 GROUP BY FUNC_TYPE", nativeQuery = true)
+  @Query(value ="SELECT MR.FUNC_TYPE , COUNT(1) AS NONDRG_QUANTITY, SUM(T_DOT) AS NONDRG_POINT FROM MR, IP_D " + 
+      " WHERE IP_D.TW_DRGS_SUIT_MARK <> '0' AND DATA_FORMAT = '20' AND MR_END_DATE >= ?1 "
+      + "AND MR_END_DATE <= ?2 AND MR.ID = IP_D.MR_ID GROUP BY MR.FUNC_TYPE", nativeQuery = true)
   public List<Object[]> countNonDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
   
   /**
    * 取得DRG指定科別在指定日期區間的不同區的件數及點數
    */
-  @Query(value="SELECT DRG_SECTION, COUNT(1) AS QUANTITY, SUM(T_DOT) AS POINT FROM MR " + 
-      "WHERE DRG_SECTION IS NOT NULL AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND FUNC_TYPE =?3 GROUP BY DRG_SECTION", nativeQuery = true)
+  @Query(value="SELECT DRG_SECTION, COUNT(1) AS QUANTITY, SUM(T_DOT) AS POINT FROM MR, IP_D " + 
+      "WHERE DRG_SECTION IS NOT NULL AND IP_D.TW_DRGS_SUIT_MARK = '0' AND MR_END_DATE >= ?1 "
+      + "AND MR_END_DATE <= ?2 AND MR.FUNC_TYPE =?3 AND MR.ID = IP_D.MR_ID GROUP BY DRG_SECTION", nativeQuery = true)
   public List<Object[]> countDRGPointByFuncTypeGroupByDRGSection(Date startDate1, Date endDate1, String funcType);
   
   /**
@@ -177,8 +180,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @return
    */
   @Query(value="SELECT DRG_SECTION , COUNT(1) AS DRG_COUNT, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS APPLY, "
-      + "SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS ACTUAL FROM MR, IP_D WHERE MR.MR_END_DATE LIKE CONCAT(?1,'%')  AND "
-      + "DRG_SECTION IS NOT NULL AND MR.ID = IP_D.MR_ID AND MR.FUNC_TYPE = ?2 GROUP BY DRG_SECTION ", nativeQuery = true)
+      + "SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS ACTUAL FROM MR, IP_D WHERE MR.MR_END_DATE LIKE CONCAT(?1,'%') AND "
+      + "DRG_SECTION IS NOT NULL AND MR.ID = IP_D.MR_ID AND MR.FUNC_TYPE = ?2 AND IP_D.TW_DRGS_SUIT_MARK = '0' "
+      + "GROUP BY DRG_SECTION", nativeQuery = true)
   public List<Object[]> findDRGCountAndDotByApplYmGroupByDrgSection(String ym, String funcType);
   
   @Query(value = "SELECT MIN(APPL_YM) FROM MR", nativeQuery = true)
@@ -753,6 +757,15 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<Object[]> getMrEndDateByOrderCode(String orderCode);
   
   /**
+   * 取得同一病患使用該支付代碼(注射)的間隔日期
+   * @param orderCode
+   * @return
+   */
+  @Query(value = "SELECT ID, ROC_ID, MR_END_DATE FROM mr WHERE CODE_ALL LIKE ?1 AND "
+      + "MR_END_DATE >= ?2 AND MR_END_DATE <= ?3 ORDER BY ROC_ID, MR_END_DATE ", nativeQuery = true)
+  public List<Object[]> getMrEndDateByOrderCode(String orderCode, Date startDate, Date endDate);
+  
+  /**
    * 取得同一病患使用該支付代碼年月。
    * sample:SELECT ROC_ID, APPL_YM FROM mr WHERE CODE_ALL LIKE '%,P1409C,%' AND ROC_ID IS NOT NULL ORDER BY ROC_ID
    * @param orderCode
@@ -768,5 +781,7 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
 
   @Query(value = "SELECT * FROM mr WHERE INH_CLINIC_ID IN ?1", nativeQuery = true)
   public List<MR> getMrByInhClinicId(List<String> inhClinicId);
-  
+
+  @Query(value = "SELECT * FROM mr WHERE ID IN ?1", nativeQuery = true)
+  public List<MR> getMrByIdList(List<Long> idList);
 }
