@@ -275,7 +275,7 @@ public class UserController extends BaseController {
             loginRequest.getUsername(), loginRequest.getPassword()));
     SecurityContextHolder.getContext().setAuthentication(authentication);
     String jwt = jwtUtils.generateJwtToken(authentication);
-    logService.setLogin(loginRequest.getUsername(), jwt);
+    logService.setLogin(loginRequest.getUsername(), user.getId() ,jwt);
     UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
     userService.loginLog(loginRequest.getUsername(), jwt);
     // List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())
