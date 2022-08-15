@@ -208,10 +208,10 @@ public class LogDataDao {
   }
 
 
-  public int addSignin(String uid, String jwt) {
+  public int addSignin(String uid, Long userId,String jwt) {
     String sql;
-    sql = "Insert into \r\n" + "LOG_SIGNIN(USERNAME, JWT)\r\n" + "Values ('%s', '%s')";
-    sql = String.format(sql, uid, jwt);
+    sql = "Insert into \r\n" + "LOG_SIGNIN(USERNAME, USER_ID, JWT)\r\n" + "Values ('%s', '%d','%s')";
+    sql = String.format(sql, uid, userId, jwt);
     try {
       int ret = jdbcTemplate.update(sql);
       return ret;
@@ -223,7 +223,7 @@ public class LogDataDao {
   public int updateSignout(String jwt) {
     String sql;
     sql = "Update LOG_SIGNIN\r\n" + "Set LOGOUT_TM=CURRENT_TIMESTAMP\r\n"
-        + "Where (JWT='%s')and(LOGOUT_TM is null)";
+        + "Where (JWT='%s')";
     sql = String.format(sql, jwt);
     //System.out.println("updateSignout:" + sql);
     try {
@@ -237,7 +237,7 @@ public class LogDataDao {
   public int updateSignout(String jwt, String logoutTime) {
     String sql;
     sql = "Update LOG_SIGNIN\r\n" + "Set LOGOUT_TM='%s'\r\n"
-        + "Where (JWT='%s')and(LOGOUT_TM is null)";
+        + "Where (JWT='%s')";
     sql = String.format(sql, logoutTime, jwt);
     try {
       int ret = jdbcTemplate.update(sql);

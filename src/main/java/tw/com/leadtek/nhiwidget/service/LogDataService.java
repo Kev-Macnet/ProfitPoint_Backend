@@ -735,10 +735,10 @@ public class LogDataService {
     return newId;
   }
 
-  public int setLogin(String username, String jwt) {
+  public int setLogin(String username, Long userId, String jwt) {
     int ret = -1;
     if (jwt.length() > 20) {
-      logDataDao.addSignin(username, jwt);
+      logDataDao.addSignin(username, userId, jwt);
       ret = 0;
     }
     return ret;
