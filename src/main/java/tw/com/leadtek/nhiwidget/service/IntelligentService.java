@@ -359,9 +359,23 @@ public class IntelligentService {
       calculateRareICD(chineseYm, ct, wording1M, wording6M);
     }
   }
+  
+  private boolean isInPeriod(String chineseYm, long start, long end) {
+    Calendar cal = Calendar.getInstance();
+    cal.set(Calendar.YEAR, Integer.parseInt(chineseYm.substring(0, 3)) + 1911);
+    cal.set(Calendar.MONTH, Integer.parseInt(chineseYm.substring(3, 5)) - 1);
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+    if (cal.getTimeInMillis() >= start && cal.getTimeInMillis() <= end) {
+      return true;
+    }
+    return false;
+  }
 
   public void calculateRareICD(String chineseYm, CODE_THRESHOLD ct, String wording1M,
       String wording6M) {
+    if (!isInPeriod(chineseYm, ct.getStartDate().getTime(), ct.getEndDate().getTime())) {
+      return;
+    }
     if (XMLConstant.FUNC_TYPE_ALL.equals(ct.getDataFormat())
         || XMLConstant.DATA_FORMAT_IP.equals(ct.getDataFormat())
         || CODE_THRESHOLD.DATA_FORMAT_OP_IP_OWNS.equals(ct.getDataFormat())) {
@@ -1493,6 +1507,9 @@ public class IntelligentService {
       String wordingSingle, String wordingTotal, String wording6M, String wording1M,
       int conditionCode) {
 
+    if (!isInPeriod(chineseYm, ct.getStartDate().getTime(), ct.getEndDate().getTime())) {
+      return;
+    }
     String reasonCode = ct.getCode() == null ? ct.getInhCode() : ct.getCode();
 
     List<INTELLIGENT> list =
@@ -2233,9 +2250,9 @@ public class IntelligentService {
 
   public synchronized void setIntelligentRunning(int intelligentCode, boolean isRunning) {
     if (isRunning) {
-      runningIntelligent.put(new Integer(intelligentCode), new Long(System.currentTimeMillis()));
+      runningIntelligent.put(Integer.valueOf(intelligentCode), Long.valueOf(System.currentTimeMillis()));
     } else {
-      runningIntelligent.put(new Integer(intelligentCode), new Long(-1));
+      runningIntelligent.put(Integer.valueOf(intelligentCode), Long.valueOf(-1));
     }
   }
 
@@ -2804,6 +2821,22 @@ public class IntelligentService {
   
   /**
    * 執行DRG試算程式
+   * @param applYm 民國年月
+   */
+  public void runDrgCalculate(String applYm) {
+    if (!System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+      return;
+    }
+    if (applYm == null || applYm.length() != 5) {
+      logger.error("runDrgCalculate applYm format error:" + applYm);
+      return;
+    }
+    List<MR> list = mrDao.findByApplYmAndDataFormatOrderById(applYm, XMLConstant.DATA_FORMAT_IP);
+    runDrgCalculate(list);
+  }
+  
+  /**
+   * 執行DRG試算程式
    * @param mrList
    */
   private void runDrgCalculate(List<MR> mrList) {
@@ -2825,23 +2858,6 @@ public class IntelligentService {
         drgCalService.callDrgCalProgram(file, mrList, mrIdList, ipdMap);
         long usedTime = System.currentTimeMillis() - start;
         logger.info("runDrgCalculate finished using " + usedTime);
-        
-        List<String> applYm = getDistinctApplYm(mrList);
-        // 月報表資料
-        for (String ym : applYm) {
-          reportService.calculatePointMR(ym);
-          reportService.calculateDRGMonthly(ym);
-        }
-        
-        Date firstDate = new Date();
-        for (MR mr : mrList) {
-          if (mr.getMrDate().before(firstDate)) {
-            firstDate = mr.getMrDate();
-          }
-        }
-        Calendar startCal = Calendar.getInstance();
-        startCal.setTime(firstDate);
-        reportService.calculatePointWeekly(startCal, true);
       }
     });
     thread.start();
@@ -2945,7 +2961,7 @@ public class IntelligentService {
     }
   }
 
-  private List<String> getDistinctApplYm(List<MR> mrList) {
+  public List<String> getDistinctApplYm(List<MR> mrList) {
     Map<String, String> map = new HashMap<String, String>();
     for (MR mr : mrList) {
       if (mr.getApplYm() == null) {

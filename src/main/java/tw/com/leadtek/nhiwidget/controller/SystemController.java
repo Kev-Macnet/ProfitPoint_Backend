@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,8 @@ import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
 import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
+import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -776,6 +780,12 @@ public class SystemController extends BaseController {
       is.calculateOverAmount(param);
     } else if ("DRG".equals(name)) {
       reportService.calculateDRGMonthly(param);
+    } else if ("DRGCal".equalsIgnoreCase(name)) {
+      is.runDrgCalculate(param);
+    } else if ("DRGData".equals(name)) {
+      drgCalService.processDrgCalResultFile(
+          new File(DrgCalService.DRG_DATA_FILE_PATH + "\\" + param), new ArrayList<MR>(),
+          new ArrayList<Long>(), new HashMap<Long, IP_D>());
     } else if ("Weekly".equals(name)) {
       Calendar cal = Calendar.getInstance();
       cal.add(Calendar.YEAR, -4);

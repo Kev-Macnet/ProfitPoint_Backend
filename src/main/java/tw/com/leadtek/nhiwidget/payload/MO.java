@@ -603,7 +603,11 @@ public class MO implements Serializable {
     this.medTypeCode = opp.getMedType();
     this.orderType = CodeTableService.getDesc(cts, "ORDER_TYPE", opp.getOrderType());
     this.orderTypeCode = opp.getOrderType();
-    this.drugNo = CodeTableService.getDesc(cts, "ORDER", opp.getDrugNo());
+    if (opp.getDrugNo() == null || opp.getDrugNo().length() == 0) {
+      this.drugNo = CodeTableService.getInhCodeDesc(cts, "ORDER", opp.getInhCode());
+    } else {
+      this.drugNo = CodeTableService.getDesc(cts, "ORDER", opp.getDrugNo());
+    }
     this.drugNoCode = opp.getDrugNo();
     this.drugUse = opp.getDrugUse();
     this.totalQ = opp.getTotalQ();
@@ -650,7 +654,11 @@ public class MO implements Serializable {
     this.orderType = CodeTableService.getDesc(cts, "ORDER_TYPE", ipp.getOrderType());
     this.orderTypeCode = ipp.getOrderType();
     // 醫令代碼
-    this.orderCode = CodeTableService.getDesc(cts, "ORDER", ipp.getOrderCode());
+    if (ipp.getOrderCode() == null || ipp.getOrderCode().length() == 0) {
+      this.orderCode = CodeTableService.getInhCodeDesc(cts, "ORDER", ipp.getOrderCode());
+    } else {
+      this.orderCode = CodeTableService.getDesc(cts, "ORDER", ipp.getOrderCode());
+    }
     this.orderCodeEn = ipp.getOrderCode();
     // 藥品用量
     this.drugUse = ipp.getDrugUse();

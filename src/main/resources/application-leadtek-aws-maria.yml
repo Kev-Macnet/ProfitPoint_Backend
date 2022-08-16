@@ -17,6 +17,11 @@ server:
       force: true
       enabled: true
 spring:
+# avoid error log:Spring Data Redis - Could not safely identify store assignment for repository candidate interface
+  data:
+    redis:
+      repositories:
+        enabled: false
   servlet:
     multipart:
       max-file-size: 256MB
