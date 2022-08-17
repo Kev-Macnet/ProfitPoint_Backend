@@ -2911,6 +2911,19 @@ public class IntelligentService {
       calculateInhExistAndHighRisk(mrList, batch, true);
     } logger.info("check HIGH_RISK finished");
   }
+  
+  /**
+   * 跑所有病歷的違反支付準則
+   */
+  public void checkAllViolation() {
+    List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
+    List<Map<String, Object>> list = mrDao.getAllApplYm();
+    for (Map<String, Object> map : list) {
+        List<MR> mrList = mrDao.findByApplYm((String) map.get("APPL_YM"));
+        checkAllViolation(mrList, batch);
+        logger.info("checkAllViolation " + map.get("APPL_YM"));
+    }
+  }
 
   public void checkAllViolation(List<MR> mrList, List<INTELLIGENT> batch) {
     List<Map<String, Object>> lst =

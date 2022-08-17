@@ -1541,7 +1541,7 @@ public class SystemService {
       public void run() {
         for (Integer intelligentType : needProcess.keySet()) {
           if (intelligentType.intValue() == INTELLIGENT_REASON.VIOLATE.value()) {
-            // @TODO
+            parametersService.switchViolate(needProcess.get(intelligentType));
           } else if (intelligentType.intValue() == INTELLIGENT_REASON.RARE_ICD.value()) {
             parametersService.switchRareICD(needProcess.get(intelligentType));
           } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RATIO.value()) {

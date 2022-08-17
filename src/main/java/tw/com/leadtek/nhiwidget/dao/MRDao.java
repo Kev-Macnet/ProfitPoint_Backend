@@ -515,6 +515,8 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   
   public List<MR> findByApplYmAndDataFormatOrderById(String applYm, String dataFormat);
   
+  public List<MR> findByApplYm(String applYm);
+  
   @Query(value = "SELECT * FROM MR WHERE DATA_FORMAT = ?1 AND MR_END_DATE >= ?2 AND MR_END_DATE <= ?3", nativeQuery = true)
   public List<MR> findByMrEndDateAndDataFormatOrderById(String dataFormat, java.util.Date sDate, java.util.Date eDate);
   
