@@ -2139,7 +2139,7 @@ public class ParametersService {
   }
   
   /**
-   * 取得DB中符合 date 參數最舊/最新的時間，最舊為當月的1日，最新為
+   * 取得DB中符合 date 參數最舊/最新的時間，最舊為當月的1日，最新為當下日期
    * @param date
    * @param isStart
    * @return

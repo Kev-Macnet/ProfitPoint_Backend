@@ -480,6 +480,30 @@ public class OP_D {
   @JsonProperty("ORI_CARD_SEQ_NO")
   @JacksonXmlProperty(localName = "d56")
   private String oriCardSeqNo;
+ 
+  /**
+   * 基本部分負擔點數11005暫緩實施
+   */
+  @Column(name = "BASIC_PART_DOT")
+  @JsonProperty("BASIC_PART_DOT")
+  @JacksonXmlProperty(localName = "d57")
+  private Integer basicPartDot;
+  
+  /**
+   * 藥品部分負擔點數11005暫緩實施
+   */
+  @Column(name = "DRUG_PART_DOT")
+  @JsonProperty("DRUG_PART_DOT")
+  @JacksonXmlProperty(localName = "d58")
+  private Integer drugPartDot;
+  
+  /**
+   * 藥品部分負擔點數11005暫緩實施
+   */
+  @Column(name = "TEST_PART_DOT")
+  @JsonProperty("TEST_PART_DOT")
+  @JacksonXmlProperty(localName = "d59")
+  private Integer testPartDot;
   
   /**
    * MR table ID
@@ -1378,6 +1402,30 @@ public class OP_D {
 
   public void setCardNo(String cardNo) {
     this.cardNo = cardNo;
+  }
+
+  public Integer getBasicPartDot() {
+    return basicPartDot;
+  }
+
+  public void setBasicPartDot(Integer basicPartDot) {
+    this.basicPartDot = basicPartDot;
+  }
+
+  public Integer getDrugPartDot() {
+    return drugPartDot;
+  }
+
+  public void setDrugPartDot(Integer drugPartDot) {
+    this.drugPartDot = drugPartDot;
+  }
+
+  public Integer getTestPartDot() {
+    return testPartDot;
+  }
+
+  public void setTestPartDot(Integer testPartDot) {
+    this.testPartDot = testPartDot;
   }
 
 }

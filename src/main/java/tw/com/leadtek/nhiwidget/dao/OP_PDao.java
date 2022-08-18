@@ -325,7 +325,7 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
      */
     @Query(value = "SELECT a.MR_ID FROM (" + 
         "SELECT MR_ID, SUM(TOTAL_Q) AS total FROM op_p WHERE DRUG_NO =?1 AND mr_id IN ?2 " + 
-        "GROUP BY mr_id) A WHERE total >= ?3", nativeQuery = true)
+        "GROUP BY mr_id) A WHERE total > ?3", nativeQuery = true)
     public List<Object[]> getMrIdByOrderCodeCount(String orderCode, List<Long> mrIdList, int max);
     
     /**
@@ -360,4 +360,15 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
     
     @Query(value = "SELECT * FROM op_p WHERE MR_ID IN ?1 ORDER BY MR_ID", nativeQuery = true)
     public List<OP_P> getOppListByMrIdList(List<Long> mrIdList);
+    
+    /**
+     * 取得醫令的起始與結束時間
+     * @param orderCode
+     * @param mrIdList
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, DRUG_NO, START_TIME FROM op_p "
+        + "WHERE DRUG_NO IN ?1 AND MR_ID IN ?2 AND ORDER_TYPE <> '4' ORDER BY MR_ID, DRUG_NO", nativeQuery = true)
+    public List<Object[]> getMrIdAndOrderCodeAndStartTimeByMrIdAndOrderCode(List<String> orderCodes, List<Long> mrId);
+
 }

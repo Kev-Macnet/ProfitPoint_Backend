@@ -202,7 +202,6 @@ public class ReportService {
 		String year = adYM.substring(0,4);
 		String month = adYM.substring(adYM.length() - 2, adYM.length());
 		String append = year + "-" + month;
-
 //		List<Object[]> list = opdDao.findMonthlyPoint(chineseYM);
 		List<Object[]> list = opdDao.findMonthlyPointByEndDate(append);
 		if (list != null && list.size() > 0) {
@@ -228,14 +227,14 @@ public class ReportService {
 			pm.setPatientOp(((BigInteger) obj[6]).longValue());
 			pm.setPatientEm(((BigInteger) obj[7]).longValue());
 			pm.setPatientIp(((BigInteger) obj[8]).longValue());
-			pm.setChronic(getLongValue(obj[9]));
+			pm.setChronic(0L);
 
-			pm.setIpQuantity(((BigInteger) obj[10]).longValue());
-			pm.setDrgQuantity(((BigInteger) obj[11]).longValue());
-			pm.setDrgApplPoint(getLongValue(obj[12]));
-			pm.setDrgActualPoint(getLongValue(obj[13]));
-			pm.setNoApplIp(getLongValue(obj[14]));
-			pm.setNoApplOp(getLongValue(obj[15]));
+			pm.setIpQuantity(((BigInteger) obj[9]).longValue());
+			pm.setDrgQuantity(((BigInteger) obj[10]).longValue());
+			pm.setDrgApplPoint(getLongValue(obj[11]));
+			pm.setDrgActualPoint(getLongValue(obj[12]));
+			pm.setNoApplIp(getLongValue(obj[13]));
+			pm.setNoApplOp(getLongValue(obj[14]));
 			pm.setNoApplAll(pm.getNoApplIp() + pm.getNoApplOp());
 			pm.setUpdateAt(new Date());
 
@@ -827,34 +826,37 @@ public class ReportService {
     
 	public void initialPointWeekly(List<String> funcTypes) {
 	  Calendar cal = Calendar.getInstance();
-	  cal.add(Calendar.YEAR, -3);
+	  cal.add(Calendar.YEAR, -10);
 	  boolean allFuncTypeReady = true;
 	  for (String funcType : funcTypes) {
 	    if(pointWeeklyDao.countByEndDateLessThanEqualAndFuncType(new java.sql.Date(cal.getTimeInMillis()), funcType) == 0) {
-	      // 該科別無三年內的週報表資料
+	      // 該科別無10年內的週報表資料
 	      allFuncTypeReady = false;
 	      break;
 	    }
       }
 	
 	  if (!allFuncTypeReady) {
-        // 將三年前的週報表資料補 0
+        // 將10年前的週報表資料補 0
 	    cal.add(Calendar.DATE, -7);
 	    calculatePointWeekly(cal, false);
 	  }
 	}
 
-	public List<String> findAllFuncTypes(boolean includeAll) {
-		List<String> result = new ArrayList<String>();
-		List<Object[]> list = mrDao.findAllFuncType();
-		for (Object[] objects : list) {
-			result.add((String) objects[0]);
-		}
-		if (includeAll) {
-			result.add(XMLConstant.FUNC_TYPE_ALL);
-		}
-		return result;
-	}
+    public List<String> findAllFuncTypes(boolean includeAll) {
+      List<String> result = new ArrayList<String>();
+      List<Object[]> list = mrDao.findAllFuncType();
+      for (Object[] objects : list) {
+        if (objects == null || objects[0] == null) {
+          continue;
+        }
+        result.add((String) objects[0]);
+      }
+      if (includeAll) {
+        result.add(XMLConstant.FUNC_TYPE_ALL);
+      }
+      return result;
+    }
 
 	private List<String> findAllFuncTypesName(boolean includeAll) {
 		List<String> result = new ArrayList<String>();
@@ -1013,6 +1015,21 @@ public class ReportService {
 		}
 		return result;
 	}
+    
+    public void calculateDRGWeekly(Date mrEndDate) {
+      Calendar calSunday = Calendar.getInstance();
+      calSunday.setTime(mrEndDate);
+
+      if (calSunday.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
+        calSunday.add(Calendar.DAY_OF_YEAR, Calendar.SUNDAY - calSunday.get(Calendar.DAY_OF_WEEK));
+      }
+      
+      Calendar calSaturday = Calendar.getInstance();
+      calSaturday.setTime(calSunday.getTime());
+      calSaturday.add(Calendar.DAY_OF_YEAR, 6);
+      
+      calculateDRGPointByWeek(calSunday.getTime(), calSaturday.getTime(), getDRGFuncTypes());
+    }
 
 	private boolean checkWeekday(Date date, int weekday) {
 		Calendar cal = Calendar.getInstance();
@@ -1097,7 +1114,7 @@ public class ReportService {
 	}
 
 	/**
-	 * 計算DRG月報表，2022/7/28 會有算愈多次，數字累加問題
+	 * 計算DRG月報表
 	 * @param ym
 	 */
 	public void calculateDRGMonthly(String ym) {

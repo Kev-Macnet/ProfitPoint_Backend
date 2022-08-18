@@ -255,6 +255,9 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   @Query(value = "select * from ip_d where mr_id in(?1) ", nativeQuery = true)
   public List<IP_D> getListByMrId(List<String> mrid);
   
+  @Query(value = "select * from ip_d where mr_id in(?1) ", nativeQuery = true)
+  public List<IP_D> getIpdListByMrId(List<Long> mrIdList);
+  
   /**
    * 每月醫療人員上限筆數比較
    * @param mrid

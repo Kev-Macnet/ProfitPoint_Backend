@@ -4,7 +4,6 @@
 package tw.com.leadtek.nhiwidget.service.pt;
 
 import java.math.BigInteger;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -13,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.poi.util.SystemOutLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
@@ -306,7 +304,8 @@ public class ViolatePaymentTermsService {
     String wording = isNotify
         ? String.format(wordings.get("VIOLATE_EXCLUDE_ORDER_CODE_NOTIFY"), nhiNo, excludeOrderCode)
         : String.format(wordings.get("VIOLATE_EXCLUDE_ORDER_CODE"), nhiNo, excludeOrderCode);
-    List<MR> violateMr = new ArrayList<MR>();
+    List<Long> violateMrIdOp = new ArrayList<Long>();
+    List<Long> violateMrIdIp = new ArrayList<Long>();
     for (MR mr : mrList) {
       for (String excludeNhiNo : excludeNhiNoList) {
         String code = "," + excludeNhiNo + ",";
@@ -314,12 +313,75 @@ public class ViolatePaymentTermsService {
           continue;
         }
         if (mr.getCodeAll().indexOf(code) > -1) {
-          violateMr.add(mr);
+          if (mr.getDataFormat().equals(XMLConstant.DATA_FORMAT_OP)) {
+            violateMrIdOp.add(mr.getId());
+          } else {
+            violateMrIdIp.add(mr.getId());
+          }
           break;
         }
       }
     }
-    insertIntelligent(violateMr, null, batch, nhiNo, wording);
+    List<String> excludeNhiNoListIncludeInhNo = new ArrayList<>(excludeNhiNoList);
+    excludeNhiNoListIncludeInhNo.add(nhiNo);
+    checkCoExistWithoutOrderType4(true, violateMrIdOp, nhiNo, excludeNhiNoListIncludeInhNo);
+    checkCoExistWithoutOrderType4(false, violateMrIdIp, nhiNo, excludeNhiNoListIncludeInhNo);
+    List<Long> violateMrId = new ArrayList<Long>();
+    violateMrId.addAll(violateMrIdOp);
+    violateMrId.addAll(violateMrIdIp);
+    insertIntelligent(mrList, violateMrId, batch, nhiNo, wording);
+  }
+
+  private void checkCoExistWithoutOrderType4(boolean isOp, List<Long> mrList, String nhiNo, List<String> excludeNhiNoList) {
+    List<Object[]> pp =
+        isOp ? oppDao.getMrIdAndOrderCodeAndStartTimeByMrIdAndOrderCode(excludeNhiNoList, mrList)
+            : ippDao.getMrIdAndOrderCodeAndStartTimeByMrIdAndOrderCode(excludeNhiNoList, mrList);
+    // 存放因OrderType為4未找到的 mrId，避免被當做違反支付準則
+    List<Long> notFoundMrIdList = new ArrayList<>(mrList);
+    long mrId = 0;
+    List<String> times = null;
+    for (Object[] obj : pp) {
+      String startTime = ((String) obj[2] == null) ? "" : ((String) obj[2]).substring(0, 7);
+      if (mrId != ((BigInteger) obj[0]).longValue()) {
+        if (times != null) {
+          if (!checkTimesOverlap(times)) {
+            mrList.remove(Long.valueOf(mrId));
+          }
+        }
+        times = new ArrayList<String>();
+        mrId = ((BigInteger) obj[0]).longValue();
+        notFoundMrIdList.remove(Long.valueOf(mrId));
+      }
+      if (nhiNo.equals((String) obj[1])) {
+        times.add(0, startTime);
+      } else {
+        times.add(startTime);
+      }
+    }
+    if (!checkTimesOverlap(times)) {
+      mrList.remove(Long.valueOf(mrId));
+    }
+    for (Long notFoundMrId : notFoundMrIdList) {
+      mrList.remove(notFoundMrId);
+    }
+  }
+  
+  /**
+   * 同一天的不可並存醫令才成立違反支付準則
+   * @param times
+   * @return
+   */
+  private boolean checkTimesOverlap(List<String> times) {
+    if (times == null) {
+      return false;
+    }
+    String firstTime = times.get(0);
+    for (int i=1; i<times.size(); i++) {
+      if (times.get(i).equals(firstTime)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -338,8 +400,8 @@ public class ViolatePaymentTermsService {
       return;
     }
     String includeOrderCode = stringListToString(includeNhiNoList);
-//    System.out.println("checkIncludeOrderCode " + nhiNo + " check order code=" + includeOrderCode
-//        + ", mr size=" + mrList.size());
+    // System.out.println("checkIncludeOrderCode " + nhiNo + " check order code=" + includeOrderCode
+    // + ", mr size=" + mrList.size());
     String wording =
         String.format(wordings.get("VIOLATE_INCLUDE_ORDER_CODE"), nhiNo, includeOrderCode);
     List<MR> violateMr = new ArrayList<MR>();
@@ -445,7 +507,8 @@ public class ViolatePaymentTermsService {
       if (obj[4] != null && ((String) obj[4]).length() > 0) {
         rocBirth = (String) obj[4];
       }
-      String funcDate = (obj[2] == null || ((String)obj[2]).length() == 0) ? (String) obj[1] : (String) obj[2];
+      String funcDate =
+          (obj[2] == null || ((String) obj[2]).length() == 0) ? (String) obj[1] : (String) obj[2];
       checkAge(((BigInteger) obj[0]).longValue(), ageType, age, rocBirth, funcDate,
           violateMrIdList);
     }
@@ -454,7 +517,6 @@ public class ViolatePaymentTermsService {
 
   private void checkAge(long mrId, int ageType, int age, String rocBirth, String funcDate,
       List<Long> violateMrIdList) {
-    System.out.println("mrId =" + mrId + ", rocBirth=" + rocBirth + ", funcDate=" + funcDate);
     int birthYear = Integer.parseInt(rocBirth.substring(0, 3));
     int birthMonthDate = Integer.parseInt(rocBirth.substring(3, 7));
 
@@ -730,7 +792,9 @@ public class ViolatePaymentTermsService {
     for (Object[] obj : ippData) {
       Date sDate = DateTool.convertChineseToYears((String) obj[1], sdf);
       Date eDate = DateTool.convertChineseToYears((String) obj[2], sdf);
-
+      if (sDate == null || eDate == null) {
+        continue;
+      }
       int diffHour = hoursBetween(sDate, eDate);
       if (limitType == 2) {
         // 未滿不可申報
@@ -822,7 +886,7 @@ public class ViolatePaymentTermsService {
     }
 
     String wording = null;
-   
+
     if (days == 1) {
       wording = String.format(wordings.get("VIOLATE_DAILY_MAX"), nhiNo, "日", String.valueOf(max));
     } else {
@@ -858,12 +922,14 @@ public class ViolatePaymentTermsService {
     int daysSum = 0;
     int total = 0;
     long lastMrId = 0;
+    String firstDay = null;
     for (Object[] obj : data) {
       long mrId = ((BigInteger) obj[0]).longValue();
       if (lastMrId != mrId) {
         daysSum = 0;
         total = 0;
         lastMrId = mrId;
+        firstDay = null;
       }
       String startTime = (String) obj[1];
       String endTime = (String) obj[2];
@@ -887,17 +953,28 @@ public class ViolatePaymentTermsService {
           }
         }
       } else {
-        if (startTime == null || endTime == null
-            || startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
+        total += ((Double) obj[3]).intValue();
+        if (startTime == null || endTime == null) {
           // 同一天
           daysSum++;
-          total += ((Double) obj[3]).intValue();
+        } else if (startTime.substring(0, 7).equals(endTime.substring(0, 7))) {
+          // 同一天
+          if (firstDay == null) {
+            firstDay = startTime;
+          } else {
+            daysSum += diffDays(firstDay, endTime, sdf);
+          }
         } else {
-          daysSum += diffDays(startTime, endTime, sdf);
-          total += ((Double) obj[3]).intValue();
+          if (firstDay == null) {
+            firstDay = startTime;
+          }
+          daysSum += diffDays(firstDay, endTime, sdf);
         }
+        // 每3日內限定應用不可超過1次 -> days = 3, max = 1
         if (daysSum <= days && total > max) {
           mrIdMap.put(mrId, "");
+        } else if (startTime != null && !startTime.equals(firstDay)) {
+          firstDay = startTime;
         }
       }
     }
@@ -931,30 +1008,30 @@ public class ViolatePaymentTermsService {
     long lastMrId = 0;
     Date mrDate = null;
 
-      for (Object[] obj : data) {
-        long mrId = ((BigInteger) obj[0]).longValue();
-        if (mrIdMap.containsKey(Long.valueOf(mrId))) {
-          continue;
-        }
+    for (Object[] obj : data) {
+      long mrId = ((BigInteger) obj[0]).longValue();
+      if (mrIdMap.containsKey(Long.valueOf(mrId))) {
+        continue;
+      }
       if (obj[3] == null) {
         continue;
       }
-        if (lastMrId != mrId) {
-          total = 0;
-          mrDate = (Date) obj[1];
-          lastMrId = mrId;
-        }
-        // String startTime = (String) obj[2];
-        String endTime = (String) obj[3];
+      if (lastMrId != mrId) {
+        total = 0;
+        mrDate = (Date) obj[1];
+        lastMrId = mrId;
+      }
+      // String startTime = (String) obj[2];
+      String endTime = (String) obj[3];
       Date endDate = DateTool.convertChineseToYears(endTime, sdf);
 
-        if (daysBetween(mrDate, endDate) > days) {
-          total += ((Double) obj[4]).intValue();
-        }
-        if (total > max) {
-          mrIdMap.put(mrId, "");
-        }
+      if (daysBetween(mrDate, endDate) > days) {
+        total += ((Double) obj[4]).intValue();
       }
+      if (total > max) {
+        mrIdMap.put(mrId, "");
+      }
+    }
 
     insertIntelligent(mrIdMap, mrList, batch, nhiNo, wording);
   }
@@ -1010,7 +1087,7 @@ public class ViolatePaymentTermsService {
     // System.out.println("before insertIntelligent " + usedTime);
     insertIntelligent(mrList, null, batch, nhiNo, wording);
   }
-  
+
   /**
    * 同患者限定每<= ? 日，總申報次數<= ? 次
    */
@@ -1070,11 +1147,11 @@ public class ViolatePaymentTermsService {
         String.valueOf(days), String.valueOf(max));
     insertIntelligent(mrList, violateMrIdList, batch, nhiNo, wording);
   }
-  
+
   /**
    * 限定同患者執行過 ? 支付標準代碼， <= ? 日，申報過此支付代碼
    */
-  private void checkUserUseOtherOrderCodeInDays(boolean isEnable, String nhiNo, List<String> nhiNo2, 
+  private void checkUserUseOtherOrderCodeInDays(boolean isEnable, String nhiNo, List<String> nhiNo2,
       int days, List<MR> mrList, List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
@@ -1115,7 +1192,7 @@ public class ViolatePaymentTermsService {
     }
     List<MR> violateMr = new ArrayList<MR>();
     for (String rocId : rocIdDate.keySet()) {
-     violateMr.addAll(rocIdDate.get(rocId));
+      violateMr.addAll(rocIdDate.get(rocId));
     }
     String wording = String.format(wordings.get("VIOLATE_USER_WITH_ORDER_CODE_N_DAYS"), nhiNo,
         nhiNo2.get(0), String.valueOf(days));
@@ -1149,7 +1226,7 @@ public class ViolatePaymentTermsService {
     List<Object[]> data =
         (isOp) ? oppDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, mrIdList)
             : ippDao.getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(nhiNo, mrIdList);
-     System.out.println("checkUseTimesEveryDayByDataFormat "+ ", order count=" + data.size());
+    //System.out.println("checkUseTimesEveryDayByDataFormat " + ", order count=" + data.size());
     // 存在違反規則的 MR ID
     HashMap<Long, String> mrIdMap = new HashMap<Long, String>();
     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmm");
@@ -1172,15 +1249,11 @@ public class ViolatePaymentTermsService {
         daysSum++;
       } else {
         daysSum += diffDays(startTime, endTime, sdf);
-        if (mrId == 1336070)   {
-          System.out.println("diffdays=" + diffDays(startTime, endTime, sdf) + " limit days=" + days);
-        }
       }
       if (daysSum > days) {
         mrIdMap.put(mrId, "");
       }
     }
-    System.out.println("violate mr size=" + mrIdMap.size());
     insertIntelligent(mrIdMap, mrList, batch, nhiNo, wording);
   }
 
@@ -1207,33 +1280,33 @@ public class ViolatePaymentTermsService {
     // 科別
     Set<String> funcTypes = findDistinctFuncType(mrList);
     // 申請年月
-    List<String> applYms =  findDistinctApplYm(mrList);
+    List<String> applYms = findDistinctApplYm(mrList);
     for (String applYm : applYms) {
       // 違反支付準則的科別
-    List<String> violateFuncTypes = new ArrayList<String>();
-    for (String funcType : funcTypes) {
+      List<String> violateFuncTypes = new ArrayList<String>();
+      for (String funcType : funcTypes) {
         List<Object[]> data =
             mrDao.getMrCountByFuncTypeAndOrderCode(applYm, funcType, "%," + nhiNo + ",%");
-      Object[] obj = data.get(0);
+        Object[] obj = data.get(0);
         double percent =
             (((BigInteger) obj[0]).doubleValue() * 100) / ((BigInteger) obj[1]).doubleValue();
-      if (percent > (double) percentMax) {
-        violateFuncTypes.add(funcType);
+        if (percent > (double) percentMax) {
+          violateFuncTypes.add(funcType);
+        }
       }
-    }
-    for (MR mr : mrList) {
+      for (MR mr : mrList) {
         if (!mr.getApplYm().equals(applYm)) {
           continue;
         }
-      for (String funcType : violateFuncTypes) {
-        if (mr.getFuncType().equals(funcType)) {
-          violateMr.add(mr);
-          break;
+        for (String funcType : violateFuncTypes) {
+          if (mr.getFuncType().equals(funcType)) {
+            violateMr.add(mr);
+            break;
+          }
         }
       }
     }
-    }
-   
+
     insertIntelligent(violateMr, null, batch, nhiNo, wording);
   }
 
@@ -1255,7 +1328,9 @@ public class ViolatePaymentTermsService {
         String.format(wordings.get("VIOLATE_INTERVAL_DAYS"), nhiNo, String.valueOf(days));
     // 存在違反規則的 rocId
     HashMap<String, String> rocIdMap = new HashMap<String, String>();
-    List<Object[]> data = mrDao.getMrEndDateByOrderCode("%," + nhiNo + ",%");
+    java.sql.Date[] minMax = getMinAndMaxDate(mrList);
+    minMax[0] = addDate(minMax[0], -days - 5);
+    List<Object[]> data = mrDao.getMrEndDateByOrderCode("%," + nhiNo + ",%", minMax[0], minMax[1]);
     String rocId = "";
     Date lastDate = null;
     for (Object[] obj : data) {
@@ -1266,7 +1341,10 @@ public class ViolatePaymentTermsService {
         rocId = (String) obj[1];
       } else {
         if (daysBetween(lastDate, (Date) obj[2]) < days) {
-          rocIdMap.put(rocId, "");
+          MR mr = findMrById(mrList, ((BigInteger) obj[0]).longValue());
+          if (mr != null) {
+            rocIdMap.put(rocId, "");
+          }
         }
       }
       lastDate = (Date) obj[2];
@@ -1278,6 +1356,27 @@ public class ViolatePaymentTermsService {
       }
     }
     insertIntelligent(violateMR, null, batch, nhiNo, wording);
+  }
+
+  private java.sql.Date[] getMinAndMaxDate(List<MR> list) {
+    java.sql.Date[] result = new java.sql.Date[2];
+    result[0] = new java.sql.Date(list.get(0).getMrEndDate().getTime());
+    result[1] = result[0];
+    for (MR mr : list) {
+      if (result[0].getTime() > mr.getMrEndDate().getTime()) {
+        result[0] = new java.sql.Date(mr.getMrEndDate().getTime());
+      } else if (result[1].getTime() < mr.getMrEndDate().getTime()) {
+        result[1] = new java.sql.Date(mr.getMrEndDate().getTime());
+      }
+    }
+    return result;
+  }
+
+  private java.sql.Date addDate(java.sql.Date date, int days) {
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(new Date(date.getTime()));
+    cal.add(Calendar.DAY_OF_YEAR, -days);
+    return new java.sql.Date(cal.getTimeInMillis());
   }
 
   /**
@@ -1324,7 +1423,7 @@ public class ViolatePaymentTermsService {
    * @param batch
    */
   private void checkTimesIn1Year(boolean isEnable, String nhiNo, int max, List<MR> mrList,
-    List<INTELLIGENT> batch) {
+      List<INTELLIGENT> batch) {
     if (!isEnable) {
       return;
     }
@@ -1357,7 +1456,7 @@ public class ViolatePaymentTermsService {
         }
       }
     }
-    
+
     List<MR> violateMrList = new ArrayList<MR>();
     for (MR mr : mrList) {
       if (rocIdMap.containsKey(mr.getRocId())) {
@@ -1464,44 +1563,58 @@ public class ViolatePaymentTermsService {
   }
 
   public void checkFee(PaymentTermsPl pt, List<MR> mrList, List<INTELLIGENT> batch) {
-    checkDataFormat(pt, mrList, batch);
-    if (pt instanceof PtOutpatientFeePl) {
-      checkOutpatientFee((PtOutpatientFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtInpatientFeePl) {
-      checkInpatientFee((PtInpatientFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtWardFeePl) {
-      checkWardFee((PtWardFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtPsychiatricWardFeePl) {
-      checkPsychiatricWardFee((PtPsychiatricWardFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtSurgeryFeePl) {
-      checkSurgeryFee((PtSurgeryFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtTreatmentFeePl) {
-      checkTreatmentFee((PtTreatmentFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtNutritionalFeePl) {
-      checkNutritionalFee((PtNutritionalFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtAdjustmentFeePl) {
-      checkAdjustmentFee((PtAdjustmentFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtMedicineFeePl) {
-      checkMedicineFee((PtMedicineFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtRadiationFeePl) {
-      checkRadiationFee((PtRadiationFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtInjectionFeePl) {
-      checkInjectionFee((PtInjectionFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtQualityServicePl) {
-      checkQualityServiceFee((PtQualityServicePl) pt, mrList, batch);
-    } else if (pt instanceof PtRehabilitationFeePl) {
-      checkRehabilitationFee((PtRehabilitationFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtPsychiatricFeePl) {
-      checkPsychiatricFee((PtPsychiatricFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtBoneMarrowTransFeePl) {
-      checkBoneMarrowTransFee((PtBoneMarrowTransFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtAnesthesiaFeePl) {
-      checkAnesthesiaFee((PtAnesthesiaFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtSpecificMedicalFeePl) {
-      checkSpecificMedicalFee((PtSpecificMedicalFeePl) pt, mrList, batch);
-    } else if (pt instanceof PtOthersFeePl) {
-      checkOthersFee((PtOthersFeePl) pt, mrList, batch);
+    List<MR> mrListInDates = getMrInEffectedDate(mrList, pt.getStart_date(), pt.getEnd_date());
+    if (mrListInDates.size() == 0) {
+      return;
     }
+    checkDataFormat(pt, mrListInDates, batch);
+    if (pt instanceof PtOutpatientFeePl) {
+      checkOutpatientFee((PtOutpatientFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtInpatientFeePl) {
+      checkInpatientFee((PtInpatientFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtWardFeePl) {
+      checkWardFee((PtWardFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtPsychiatricWardFeePl) {
+      checkPsychiatricWardFee((PtPsychiatricWardFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtSurgeryFeePl) {
+      checkSurgeryFee((PtSurgeryFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtTreatmentFeePl) {
+      checkTreatmentFee((PtTreatmentFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtNutritionalFeePl) {
+      checkNutritionalFee((PtNutritionalFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtAdjustmentFeePl) {
+      checkAdjustmentFee((PtAdjustmentFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtMedicineFeePl) {
+      checkMedicineFee((PtMedicineFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtRadiationFeePl) {
+      checkRadiationFee((PtRadiationFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtInjectionFeePl) {
+      checkInjectionFee((PtInjectionFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtQualityServicePl) {
+      checkQualityServiceFee((PtQualityServicePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtRehabilitationFeePl) {
+      checkRehabilitationFee((PtRehabilitationFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtPsychiatricFeePl) {
+      checkPsychiatricFee((PtPsychiatricFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtBoneMarrowTransFeePl) {
+      checkBoneMarrowTransFee((PtBoneMarrowTransFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtAnesthesiaFeePl) {
+      checkAnesthesiaFee((PtAnesthesiaFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtSpecificMedicalFeePl) {
+      checkSpecificMedicalFee((PtSpecificMedicalFeePl) pt, mrListInDates, batch);
+    } else if (pt instanceof PtOthersFeePl) {
+      checkOthersFee((PtOthersFeePl) pt, mrListInDates, batch);
+    }
+  }
+
+  private List<MR> getMrInEffectedDate(List<MR> list, long startDate, long endDate) {
+    List<MR> result = new ArrayList<>();
+    for (MR mr : list) {
+      if (mr.getMrEndDate().getTime() >= startDate && mr.getMrEndDate().getTime() <= endDate) {
+        result.add(mr);
+      }
+    }
+    return result;
   }
 
   public List<Long> getMrId(List<MR> mrList, String nhiNo) {
@@ -1528,6 +1641,15 @@ public class ViolatePaymentTermsService {
       }
     }
     return result;
+  }
+
+  public MR findMrById(List<MR> mrList, long id) {
+    for (MR mr : mrList) {
+      if (mr.getId().longValue() == id) {
+        return mr;
+      }
+    }
+    return null;
   }
 
   private String stringListToString(List<String> strList) {
@@ -1735,7 +1857,7 @@ public class ViolatePaymentTermsService {
     // 每件給藥日數不得超過 ? 日
     checkDrugDay(pt.getMax_nday_enable() == 1, pt.getNhi_no(), pt.getMax_nday(), mrList, mrIdList,
         batch);
-    
+
   }
 
   /**
@@ -1810,10 +1932,10 @@ public class ViolatePaymentTermsService {
           batch);
     }
     // 同患者限定每<= ? 日，總申報次數<= ? 次
-    checkUserUseTimesInDays(pt.getEvery_nday_enable() == 1, pt.getNhi_no(), pt.getEvery_nday_days(), 
+    checkUserUseTimesInDays(pt.getEvery_nday_enable() == 1, pt.getNhi_no(), pt.getEvery_nday_days(),
         pt.getEvery_nday_times(), mrList, batch);
   }
-  
+
   /**
    * 復健治療費
    * 
@@ -1840,7 +1962,7 @@ public class ViolatePaymentTermsService {
     checkUserUseOtherOrderCodeInDays(pt.getCoexist_nhi_no_enable() == 1, pt.getNhi_no(),
         pt.getLst_co_nhi_no(), pt.getMin_coexist(), mrList, batch);
   }
-  
+
   /**
    * 檢查精神醫療治療費
    * 
@@ -1864,7 +1986,7 @@ public class ViolatePaymentTermsService {
     checkUserUseTimesInDays(pt.getPatient_nday_enable() == 1, pt.getNhi_no(),
         pt.getPatient_nday_days(), pt.getPatient_nday_times(), mrList, batch);
   }
-  
+
   /**
    * 輸血及骨髓移植費
    * 
@@ -1883,7 +2005,7 @@ public class ViolatePaymentTermsService {
     checkFuncType(pt.getLim_division_enable() == 1, pt.getNhi_no(), pt.getLst_division(), mrList,
         mrIdList, batch);
   }
-  
+
   /**
    * 麻醉費
    * 
@@ -1925,11 +2047,11 @@ public class ViolatePaymentTermsService {
     // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
     checkIntervalDays(pt.getInterval_nday_enable() == 1, pt.getNhi_no(), pt.getInterval_nday(),
         mrList, batch);
-    //  限定同患者前一次應用與當次應用待申報此支付標準代碼，在1年內加總次數不可超過 max.
+    // 限定同患者前一次應用與當次應用待申報此支付標準代碼，在1年內加總次數不可超過 max.
     checkTimesIn1Year(pt.getMax_times_enable() == 1, pt.getNhi_no(), pt.getMax_times(), mrList,
         batch);
   }
-  
+
   /**
    * 檢查不分類
    * 
@@ -1946,15 +2068,15 @@ public class ViolatePaymentTermsService {
     // 限定同患者前一次應用與當次應用待申報此支付標準代碼，每次申報間隔>= ? 日
     checkIntervalDays(pt.getInterval_nday_enable() == 1, pt.getNhi_no(), pt.getInterval_nday(),
         mrList, batch);
-    //  限定同患者前一次應用與當次應用待申報此支付標準代碼，在1年內加總次數不可超過 max.
+    // 限定同患者前一次應用與當次應用待申報此支付標準代碼，在1年內加總次數不可超過 max.
     checkTimesIn1Year(pt.getMax_times_enable() == 1, pt.getNhi_no(), pt.getMax_times(), mrList,
         batch);
     // 檢查單一就醫紀錄應用數量,限定<=次數
     checkAllUseTimes(pt.getMax_inpatient_enable() == 1, pt.getNhi_no(), pt.getMax_inpatient(),
         mrList, mrIdList, batch);
     // 同患者限定每<= ? 日，總申報次數<= ? 次
-//    System.out.println("checkOthersFee " + pt.getPatient_nday_enable() +","+  pt.getNhi_no() +","+ 
-//    pt.getPatient_nday_days() +","+ pt.getPatient_nday_times());
+    // System.out.println("checkOthersFee " + pt.getPatient_nday_enable() +","+ pt.getNhi_no() +","+
+    // pt.getPatient_nday_days() +","+ pt.getPatient_nday_times());
     checkUserUseTimesInDays(pt.getPatient_nday_enable() == 1, pt.getNhi_no(),
         pt.getPatient_nday_days(), pt.getPatient_nday_times(), mrList, batch);
   }
@@ -1978,7 +2100,8 @@ public class ViolatePaymentTermsService {
 
   /**
    * 使用天數
-   * @param start 
+   * 
+   * @param start
    * @param end
    * @return
    */
@@ -1989,6 +2112,7 @@ public class ViolatePaymentTermsService {
 
   /**
    * 醫令使用天數
+   * 
    * @param startTime 民國年月日時分 yyyMMddHHmm
    * @param endTime 民國年月日時分 yyyMMddHHmm
    * @param sdf SimpleDateFormat("yyyyMMddHHmm")
@@ -2022,7 +2146,7 @@ public class ViolatePaymentTermsService {
     }
     return new ArrayList<String>(rocIdMap.keySet());
   }
-  
+
   private List<String> findDistinctApplYm(List<MR> mrList) {
     HashMap<String, String> map = new HashMap<String, String>();
     for (MR mr : mrList) {

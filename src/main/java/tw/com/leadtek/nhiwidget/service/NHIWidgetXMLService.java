@@ -296,6 +296,8 @@ public class NHIWidgetXMLService {
   private MR_SODao mrSoDao;
   
   @Autowired
+  private ReportService reportService;
+  
   protected HttpServletRequest request;
   
   @Value("${project.serverUrl}")
@@ -505,6 +507,9 @@ public class NHIWidgetXMLService {
         mr.setInfectious((ct == null) ? 0 : 1);
         mr = mrDao.save(mr);
         ipd.setMrId(mr.getId());
+        if (ipd.getOwnExpense() == null) {
+          ipd.setOwnExpense(0);
+        }
         ipd = ipdDao.save(ipd);
       } else {
         if (!mr.getIcdcm1().equals(ipd.getIcdCm1())) {
@@ -633,10 +638,8 @@ public class NHIWidgetXMLService {
         mr.setTotalDot(totalDot); 
       }
       mr.setOwnExpense(ownExpense);
-      if (ownExpense > 0) {
-        ipd.setOwnExpense(ownExpense);
-        ipdDao.save(ipd);
-      }
+      ipd.setOwnExpense(ownExpense);
+      ipdDao.save(ipd);
       mrDao.save(mr);
     }
     if (ippBatch.size() > 0) {
@@ -1087,6 +1090,9 @@ public class NHIWidgetXMLService {
     ipd.setIcdCm18(StringUtility.formatICDtoUpperCase(ipd.getIcdCm18()));
     ipd.setIcdCm19(StringUtility.formatICDtoUpperCase(ipd.getIcdCm19()));
     ipd.setIcdCm20(StringUtility.formatICDtoUpperCase(ipd.getIcdCm20()));
+    if (ipd.getOwnExpense() == null) {
+      ipd.setOwnExpense(0);
+    }
   }
 
   /**
@@ -1192,6 +1198,9 @@ public class NHIWidgetXMLService {
         index = i;
         opd.setId(((BigInteger) map.get("id")).longValue());
         opd.setMrId(((BigInteger) map.get("mrId")).longValue());
+        if (opd.getOwnExpense() == null) {
+          opd.setOwnExpense(0);
+        }
         break;
       }
     }
@@ -3074,6 +3083,16 @@ public class NHIWidgetXMLService {
       // System.out.println("ipD.indate=" + ipD.getInDate());
       ipD.setApplDot(mrDetail.getApplDot());
       // ipD.setNonApplDot(mrDetail.getOwnExpense());
+      if (ipD.getTwDrgsSuitMark() != null
+          && !ipD.getTwDrgsSuitMark().equals(mrDetail.getTwDrgsSuitMark())) {
+        if ("0".equals(ipD.getTwDrgsSuitMark()) && !"0".equals(mrDetail.getTwDrgsSuitMark())) {
+          updateNonDrg(ipD, mr, mrDetail.getTwDrgsSuitMark()); 
+          mr.setDrgSection(null);
+        } else if (!"0".equals(ipD.getTwDrgsSuitMark()) && "0".equals(mrDetail.getTwDrgsSuitMark())) {
+          ipD.setTwDrgsSuitMark(mrDetail.getTwDrgsSuitMark());
+          updateDrgList(mrDetail.getIcdCM().get(0).getCode(), ipD, mr);
+        }
+      }
       ipD.setTwDrgsSuitMark(mrDetail.getTwDrgsSuitMark());
       ipD.setTwDrgCode(mrDetail.getDrgCode());
       if (updateIPPByMrDetail(mr, ipD, mrDetail, true)) {
@@ -5842,8 +5861,14 @@ public class NHIWidgetXMLService {
         drg.setSelected(false);
       }
       // 設定病歷點數
+      if (ipd.get(0).getOwnExpense() == null) {
+        ipd.get(0).setOwnExpense(0);
+      }
+      if (ipd.get(0).getNonApplDot() == null) {
+        ipd.get(0).setNonApplDot(0);
+      }
       drg.setMedDot(ipd.get(0).getMedDot().intValue() + ipd.get(0).getNonApplDot() + ipd.get(0).getOwnExpense().intValue());
-      drg.setMedDotNoOwnExp(ipd.get(0).getMedDot().intValue() + ipd.get(0).getNonApplDot() + ipd.get(0).getOwnExpense().intValue());
+      drg.setMedDotNoOwnExp(ipd.get(0).getMedDot().intValue() + ipd.get(0).getNonApplDot());
       if (drg.getDrgDot() == null || data.size() == 0) {
         data.add(drg);
       } else {
@@ -5895,7 +5920,6 @@ public class NHIWidgetXMLService {
     for (DRG_CAL drgCal : list) {
       if (drgCal.getIcdCM1().equals(icd)) {
         String tmp = ipd.getIcdCm1();
-        ipd.setIcdCm1(icd);
         if (ipd.getIcdCm2().equals(icd)) {
           ipd.setIcdCm2(tmp);
         } else if (ipd.getIcdCm3().equals(icd)) {
@@ -5915,16 +5939,7 @@ public class NHIWidgetXMLService {
         } else if (ipd.getIcdCm10().equals(icd)) {
           ipd.setIcdCm10(tmp);
         }
-        ipd.setTwDrgCode(drgCal.getDrg());
-        ipd.setApplDot(drgCal.getDrgDot());
-        ipd.setUpdateAt(new java.util.Date());
-        mr.setDrgCode(drgCal.getDrg());
-        mr.setDrgFixed(drgCal.getDrgFix());
-        mr.setDrgSection(drgCal.getDrgSection());
-        mr.setApplDot(ipd.getApplDot());
-        mr.setUpdateAt(new java.util.Date());
-        ipdDao.save(ipd);
-        mrDao.save(mr);
+        updateDrg(drgCal, ipd, mr);
         break;
       }
     }
@@ -5938,18 +5953,51 @@ public class NHIWidgetXMLService {
     }
     for (DRG_CAL drgCal : list) {
       if (drgCal.getIcdCM1().equals(icd)) {
-        ipd.setIcdCm1(icd);
-        ipd.setTwDrgCode(drgCal.getDrg());
-        ipd.setApplDot(drgCal.getDrgDot());
-        ipd.setUpdateAt(new java.util.Date());
-        mr.setDrgCode(drgCal.getDrg());
-        mr.setDrgFixed(drgCal.getDrgFix());
-        mr.setDrgSection(drgCal.getDrgSection());
-        mr.setApplDot(ipd.getApplDot());
-        mr.setUpdateAt(new java.util.Date());
+        updateDrg(drgCal, ipd, mr);
         return;
       }
     }
+  }
+  
+  public void updateDrg(DRG_CAL drgCal, IP_D ipd, MR mr) {
+    ipd.setIcdCm1(drgCal.getIcdCM1());
+    ipd.setTwDrgCode(drgCal.getDrg());
+    ipd.setApplDot(drgCal.getDrgDot());
+    ipd.setUpdateAt(new java.util.Date());
+    mr.setDrgCode(drgCal.getDrg());
+    mr.setDrgFixed(drgCal.getDrgFix());
+    mr.setDrgSection(drgCal.getDrgSection());
+    mr.setApplDot(ipd.getApplDot());
+    mr.setUpdateAt(new java.util.Date());
+    
+    if ("C".equals(drgCal.getError())) {
+      ipd.setTwDrgsSuitMark("C");
+      // 一般案件
+      ipd.setCaseType("1");
+      mr.setDrgSection(null);
+    } else if (drgCal.getError() == null) {
+      ipd.setTwDrgsSuitMark("0");
+      // DRG 案件
+      ipd.setCaseType("5");
+    }
+    ipdDao.save(ipd);
+    mrDao.save(mr);
+    reportService.calculatePointMR(ipd.getApplEndDate().substring(0, 5));
+    reportService.calculateDRGMonthly(ipd.getApplEndDate().substring(0, 5));
+    reportService.calculateDRGWeekly(mr.getMrEndDate());
+  }
+  
+  public void updateNonDrg(IP_D ipd, MR mr, String twDrgsSuitMark) {
+    ipd.setUpdateAt(new java.util.Date());
+    if (!"0".equals(twDrgsSuitMark)) {
+      ipd.setTwDrgsSuitMark(twDrgsSuitMark);
+      // 一般案件
+      ipd.setCaseType("1");
+    }
+    ipdDao.save(ipd);
+    reportService.calculatePointMR(ipd.getApplEndDate().substring(0, 5));
+    reportService.calculateDRGMonthly(ipd.getApplEndDate().substring(0, 5));
+    reportService.calculateDRGWeekly(mr.getMrEndDate());
   }
 
   public String generateNoticeEmailContent(List<MR> list, String username, String senderName,
@@ -6122,7 +6170,7 @@ public class NHIWidgetXMLService {
         mr = new MR(opd);
         mr.setStatus(MR_STATUS.NO_CHANGE.value());
       } else {
-        OP_D opdDB = findOpdById(opdList, mr.getdId());
+        OP_D opdDB = findOpdById(opdList, mr.getdId(), true);
         if (opdDB != null) {
           opd.setId(opdDB.getId());
           opd.setMrId(mr.getId());
@@ -6839,6 +6887,9 @@ public class NHIWidgetXMLService {
       MRDetail.updateIcdAllByAlphabet(mr);
       mr = mrDao.save(mr);
       opd.setMrId(mr.getId());
+      if (opd.getOwnExpense() == null) {
+        opd.setOwnExpense(0);
+      }
       opd = opdDao.save(opd);
       //mr.setdId(opd.getId());
     } else {
@@ -6963,8 +7014,17 @@ public class NHIWidgetXMLService {
     }
     return null;
   }
+  
+  private MR findMRByInhMrId(List<MR> list, String inhMrId) {
+    for (MR mr : list) {
+      if (mr.getInhMrId() != null && mr.getInhMrId().equals(inhMrId)) {
+        return mr;
+      }
+    }
+    return null;
+  }
 
-  private OP_D findOpdById(List<OP_D> opdList, long id) {
+  private OP_D findOpdById(List<OP_D> opdList, long id, boolean remove) {
     int index = -1;
     for (int i=opdList.size() - 1; i >=0 ; i--) {
       OP_D op_D = opdList.get(i);
@@ -6974,7 +7034,10 @@ public class NHIWidgetXMLService {
       }
     }
     if (index > -1) {
-      return opdList.remove(index);
+      if (remove) {
+        return opdList.remove(index);
+      }
+      return opdList.get(index);
     }
     return null;
   }
@@ -7020,7 +7083,7 @@ public class NHIWidgetXMLService {
         continue;
       }
       MR mr = mrList.remove(index);
-      OP_D opd = findOpdById(opdList, mr.getdId());
+      OP_D opd = findOpdById(opdList, mr.getdId(), true);
       if (opd == null) {
         System.out.println("opd is null, did=" + mr.getdId());
         continue;
@@ -7677,7 +7740,7 @@ public class NHIWidgetXMLService {
         continue;
       }
       MR mr = null;
-      OP_D opd = findOpdByTheseOpp(opdList, rocIdDateCount, values);
+      OP_D opd = findOpdByTheseOpp(mrList, opdList, rocIdDateCount, values);
       if (opd == null) {
         mr = initialMrAndOpdByOpp(values);
         mr.setApplYm(applYm);
@@ -7954,10 +8017,16 @@ public class NHIWidgetXMLService {
    * @param id
    * @return
    */
-  private OP_D findOpdByTheseOpp(List<OP_D> opdList, HashMap<String, Integer> countMap, 
+  private OP_D findOpdByTheseOpp(List<MR> mrList, List<OP_D> opdList, HashMap<String, Integer> countMap, 
       HashMap<String, String> values) {
     for (OP_D op_D : opdList) {
-      if (op_D.getRocId().equals(values.get("ROC_ID"))) {
+      if (op_D.getRocId() == null) {
+        MR mr = findMRByInhMrId(mrList, values.get("INH_MR"));
+        if (mr == null) {
+          return null;
+        }
+        return findOpdById(opdList, mr.getdId(), false);
+      } else if (op_D.getRocId().equals(values.get("ROC_ID"))) {
        // 先比對卡號，不一致再比其他欄位
         if (op_D.getCardNo() != null) {
           if (op_D.getCardNo().equals(values.get("CARD_NO"))) {
