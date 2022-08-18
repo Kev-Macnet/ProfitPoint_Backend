@@ -61,6 +61,14 @@ public class AchievePointQueryCondition extends BaseResponse implements Serializ
 	private Double emInhCodeDotPercent;
 	@ApiModelProperty(value = "內院碼百分比", required = false)
 	private Double ipInhCodeDotPercent;
+	@ApiModelProperty(value = "門急診點數占率", required = false)
+	private Double opAllDotPercent;
+	@ApiModelProperty(value = "門診點數占率", required = false)
+	private Double opDotPercent;
+	@ApiModelProperty(value = "急診點數占率", required = false)
+	private Double emDotPercent;
+	@ApiModelProperty(value = "住院點數占率", required = false)
+	private Double ipDotPercent;
 	@ApiModelProperty(value = "費用列表", required = false)
 	private List<AchievePointQueryConditionDetail> payCodeTypeList;
 	@ApiModelProperty(value = "輸入日期", required = false)
@@ -292,6 +300,38 @@ public class AchievePointQueryCondition extends BaseResponse implements Serializ
 
 	public void setDisplayName(String displayName) {
 		this.displayName = displayName;
+	}
+
+	public Double getOpAllDotPercent() {
+		return opAllDotPercent;
+	}
+
+	public void setOpAllDotPercent(Double opAllDotPercent) {
+		this.opAllDotPercent = opAllDotPercent;
+	}
+
+	public Double getOpDotPercent() {
+		return opDotPercent;
+	}
+
+	public void setOpDotPercent(Double opDotPercent) {
+		this.opDotPercent = opDotPercent;
+	}
+
+	public Double getEmDotPercent() {
+		return emDotPercent;
+	}
+
+	public void setEmDotPercent(Double emDotPercent) {
+		this.emDotPercent = emDotPercent;
+	}
+
+	public Double getIpDotPercent() {
+		return ipDotPercent;
+	}
+
+	public void setIpDotPercent(Double ipDotPercent) {
+		this.ipDotPercent = ipDotPercent;
 	}
 	
 	

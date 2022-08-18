@@ -8,6 +8,8 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
+
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -88,6 +90,9 @@ public class UserController extends BaseController {
     }
     USER result = userService.newUser(request);
     if (result != null) {
+    	
+      httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{result.getId()}));
+      
       return returnIDResult(result.getId().toString());
     } else {
       return returnAPIResult("已有相同的名稱");
@@ -137,6 +142,9 @@ public class UserController extends BaseController {
       if (lid.longValue() != request.getId().longValue()) {
         return returnAPIResult("id 不符合");
       }
+      
+      httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{lid}));
+      
       return returnAPIResult(userService.updateUser(request));
     } catch (NumberFormatException e) {
       return returnAPIResult("id 有誤");
@@ -214,6 +222,7 @@ public class UserController extends BaseController {
       return returnAPIResult(loginResult);
     }
     if (userService.changePassword(authentication.getName(), cp.getNewPassword())) {
+    	
       return returnAPIResult(null);
     } else {
       return returnAPIResult("更換密碼出錯");
@@ -328,6 +337,7 @@ public class UserController extends BaseController {
     logger.info("/newDepartment:" + request.getName() + "," + request);
     DEPARTMENT result = userService.newDepartment(request);
     if (result != null) {
+      httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{result.getId()}));
       return returnIDResult(result.getId().toString());
     } else {
       return returnAPIResult("已有相同的名稱");
@@ -363,6 +373,9 @@ public class UserController extends BaseController {
       if (lid.longValue() != request.getId().longValue()) {
         return returnAPIResult("id 不符合");
       }
+      
+      httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{lid}));
+      
       return returnAPIResult(userService.updateDepartment(request));
     } catch (NumberFormatException e) {
       return returnAPIResult("id 有誤");
