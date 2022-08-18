@@ -42,6 +42,14 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
   public List<Object[]> findPointGroupByPayCodeType(Date startDate, Date endDate);
   
   /**
+   * 門診各醫令類別點數列表
+   * @return [醫令代碼, 加總點數, 件數]
+   */
+  @Query(value = "SELECT OP_P.PAY_CODE_TYPE, SUM(TOTAL_DOT), COUNT(MR.ID) FROM MR, OP_P " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND OP_P.MR_ID = MR.ID AND TOTAL_DOT > 0 AND MR.FUNC_TYPE = ?3 GROUP BY OP_P.PAY_CODE_TYPE", nativeQuery = true)
+  public List<Object[]> findPointAndFuncTypeGroupByPayCodeType(Date startDate, Date endDate, String funcType);
+  
+  /**
    * 門診各醫令類別自費點數
    * @return [醫令代碼, 加總點數, 件數]
    */
@@ -49,6 +57,15 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
       "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND OP_P.MR_ID = MR.ID AND TOTAL_DOT > 0 "
       + "AND MR.OWN_EXPENSE > 0 GROUP BY OP_P.PAY_CODE_TYPE", nativeQuery = true)
   public List<Object[]> findOwnExpensePointGroupByPayCodeType(Date startDate, Date endDate);
+  
+  /**
+   * 門診各醫令類別自費點數
+   * @return [醫令代碼, 加總點數, 件數]
+   */
+  @Query(value = "SELECT OP_P.PAY_CODE_TYPE, SUM(OWN_EXPENSE), COUNT(1) FROM MR, OP_P " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND OP_P.MR_ID = MR.ID AND TOTAL_DOT > 0 "
+      + "AND MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = ?3 GROUP BY OP_P.PAY_CODE_TYPE", nativeQuery = true)
+  public List<Object[]> findOwnExpensePointAndFuncTypeGroupByPayCodeType(Date startDate, Date endDate,String funcType);
   
   /**
    *  取得醫令碼與支付標準代碼相同的所有醫令
@@ -295,4 +312,63 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
     @Query(value = "SELECT DISTINCT (DRUG_NO), ORDER_TYPE FROM op_p WHERE ORDER_TYPE IS NOT NULL " + 
         "and ORDER_TYPE <> '4' and length (DRUG_NO) < 10 GROUP BY DRUG_NO , ORDER_TYPE", nativeQuery = true)
     public List<Map<String,Object>> getDrugNoAndOrderType();
+    
+    @Query(value = "SELECT MR_ID FROM OP_P WHERE ORDER_TYPE=?1 AND MR_ID IN ?2", nativeQuery = true)
+    public List<Long> getMrIdByOrderTypeAndMrId(String orderType, List<Long> mrIdList);
+    
+    /**
+     * 取得單一門診就醫紀錄應用數量,超過 max 次數的病歷id
+     * @param orderCode
+     * @param mrIdList
+     * @param max
+     * @return
+     */
+    @Query(value = "SELECT a.MR_ID FROM (" + 
+        "SELECT MR_ID, SUM(TOTAL_Q) AS total FROM op_p WHERE DRUG_NO =?1 AND mr_id IN ?2 " + 
+        "GROUP BY mr_id) A WHERE total > ?3", nativeQuery = true)
+    public List<Object[]> getMrIdByOrderCodeCount(String orderCode, List<Long> mrIdList, int max);
+    
+    /**
+     * 取得醫令的起始與結束時間，計算該筆醫令是否符合需滿n小時或超過n小時不能使用
+     * @param orderCode
+     * @param mrIdList
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, START_TIME, END_TIME, TOTAL_Q FROM op_p "
+        + "WHERE DRUG_NO = ?1 AND MR_ID IN ?2 ORDER BY MR_ID, START_TIME", nativeQuery = true)
+    public List<Object[]> getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(String orderCode, List<Long> mrIdList);
+    
+    /**
+     * 取得相差分鐘資料
+     * @param mrid
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, (END_TIME  - START_TIME ) AS DIFF FROM op_p "
+        + "WHERE DRUG_NO = ?1 AND MR_ID in ?2 ORDER BY MR_ID", nativeQuery = true)
+    public List<Object[]> getOrderCodeTimeDiffByMrid(String drugNo, List<Long> mrid);
+    
+    /**
+     * 取得drugNo1或drugNo2醫令的個數
+     * @param drugNo
+     * @param inhCode
+     * @param mrIdList
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, DRUG_NO, INH_CODE, TOTAL_Q FROM op_p "
+        + "WHERE (DRUG_NO = ?1 OR INH_CODE = ?2 ) AND MR_ID IN ?3 ORDER BY MR_ID", nativeQuery = true)
+    public List<Object[]> getMrIdAndDrugNoAndTotalQByMrIdList(String drugNo, String inhCode, List<Long> mrIdList);
+    
+    @Query(value = "SELECT * FROM op_p WHERE MR_ID IN ?1 ORDER BY MR_ID", nativeQuery = true)
+    public List<OP_P> getOppListByMrIdList(List<Long> mrIdList);
+    
+    /**
+     * 取得醫令的起始與結束時間
+     * @param orderCode
+     * @param mrIdList
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, DRUG_NO, START_TIME FROM op_p "
+        + "WHERE DRUG_NO IN ?1 AND MR_ID IN ?2 AND ORDER_TYPE <> '4' ORDER BY MR_ID, DRUG_NO", nativeQuery = true)
+    public List<Object[]> getMrIdAndOrderCodeAndStartTimeByMrIdAndOrderCode(List<String> orderCodes, List<Long> mrId);
+
 }

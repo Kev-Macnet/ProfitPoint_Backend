@@ -361,7 +361,6 @@ public class PAY_CODE implements Serializable {
     if (oc.getCode() != null) {
       result.setCode(oc.getCode().toUpperCase());
     }
-    //result.setInhCode(result.getCode());
     result.setCodeType(oc.getDetail());
     result.setEndDate(oc.geteDate());
     result.setStartDate(oc.getsDate());

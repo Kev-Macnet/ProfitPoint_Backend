@@ -193,6 +193,41 @@ public class POINT_MONTHLY {
   @Column(name = "UPDATE_AT")
   @JsonIgnore
   private Date updateAt;
+  
+  public POINT_MONTHLY() {
+    partOp = 0L;
+    partEm = 0L;
+    partOpAll = 0L;
+    partIp = 0L;
+    partAll = 0L;
+    applOp = 0L;
+    applEm = 0L;
+    applOpAll = 0L;
+    applIp = 0L;
+    applAll = 0L;
+    totalOp = 0L;
+    totalEm = 0L;
+    totalOpAll = 0L;
+    totalAll = 0L;
+    assignedOpAll = 0L;
+    assignedAll = 0L;
+    assignedIp = 0L;
+    rateIp = .0;
+    rateOpAll = .0;
+    rateAll = .0;
+    patientOp = 0L;
+    patientIp = 0L;
+    patientEm = 0L;
+    chronic = 0L;
+    remaining = 0L;
+    ipQuantity = 0L;
+    drgQuantity = 0L;
+    drgApplPoint = 0L;
+    drgActualPoint = 0L;
+    noApplAll = 0L;
+    noApplIp = 0L;
+    noApplOp = 0L;
+  }
 
   /**
    * 序號

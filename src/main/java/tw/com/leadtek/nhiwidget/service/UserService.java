@@ -16,14 +16,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.dao.DEPARTMENTDao;
 import tw.com.leadtek.nhiwidget.dao.USERDao;
@@ -83,13 +88,22 @@ public class UserService {
 
   @Autowired
   private JwtUtils jwtUtils;
+  
+  @Autowired
+  private ReportService reportService;
+  
+  @Autowired
+  private CodeTableService codeTableService; 
 
   @Value("${project.jwt.afk}")
   private long afkTime;
-
+  
   private HashMap<Long, DEPARTMENT> departmentHash;
 
-  private void retrieveData() {
+  @Autowired
+  private HttpServletRequest httpServletReq;
+  
+  public void retrieveData() {
     HashMap<Long, DEPARTMENT> newDepartments = new HashMap<Long, DEPARTMENT>();
     List<DEPARTMENT> departmentList = departmentDao.findAll();
     for (DEPARTMENT department : departmentList) {
@@ -105,7 +119,6 @@ public class UserService {
     }
     USER user = findUser(ur.getUsername());
     if (user != null) {
-      System.out.println("find user "+ user.getUsername());
       List<USER_DEPARTMENT> udList = userDepartmentDao.findByUserIdOrderByDepartmentId(user.getId());
         for (String department : departments) {
           DEPARTMENT dep = findDepartment(department);
@@ -117,7 +130,6 @@ public class UserService {
             }
           }
           if (isNewDepartment) {
-            System.out.println("add department " + department);
             USER_DEPARTMENT ud = new USER_DEPARTMENT();
             ud.setDepartmentId(dep.getId());
             ud.setUserId(user.getId());
@@ -134,10 +146,14 @@ public class UserService {
     if (user.getPassword() == null && user.getEmail() != null) {
       logger.info("sendEmail:" + user.getEmail());
       String newPassword = generateCommonLangPassword();
+      if (emailService.fromEmail == null || emailService.fromEmail.indexOf("@") < 0) {
+        newPassword = "test";
+      }
       emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
-          "系統隨機產生密碼:" + newPassword);
+          "系統產生密碼:" + newPassword);
+      
       user.setPassword(encoder.encode(newPassword));
-      user.setStatus(USER.STATUS_CHANGE_PASSWORD);
+      user.setStatus(USER.STATUS_ACTIVE);
     } else {
       user.setPassword(encoder.encode(user.getPassword()));
       user.setStatus(USER.STATUS_ACTIVE);
@@ -156,11 +172,15 @@ public class UserService {
     }
     USER existUser = optional.get();
     existUser.setDisplayName(ur.getDisplayName());
-    existUser.setEmail(ur.getEmail());
+    if (ur.getEmail() != null && ur.getEmail().indexOf("@") > 0) {
+      existUser.setEmail(ur.getEmail());
+    }
     existUser.setRole(ur.getRole());
     existUser.setStatus(ur.getStatus());
     existUser.setUpdateAt(new Date());
-    existUser.setRocId(ur.getRocId());
+    if (ur.getRocId() != null && ur.getRocId().length() > 0) {
+      existUser.setRocId(ur.getRocId());
+    }
     String[] departments = null;
     if (ur.getDepartments() != null && ur.getDepartments().length() > 0) {
       departments = ur.getDepartments().split(",");
@@ -306,6 +326,9 @@ public class UserService {
     existUser.setPassword(encoder.encode(password));
     existUser.setStatus(USER.STATUS_ACTIVE);
     userDao.save(existUser);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{existUser.getId()}));
+    
     return true;
   }
 
@@ -348,6 +371,18 @@ public class UserService {
     List<DEPARTMENT> departments = departmentDao.findByName(name);
     if (departments != null && departments.size() > 0) {
       return departments.get(0);
+    }
+    return null;
+  }
+  
+  public DEPARTMENT findDepartmentByName(String name) {
+    if (departmentHash == null) {
+      retrieveData();
+    }
+    for (DEPARTMENT department : departmentHash.values()) {
+      if (department.getName().equals(name) && department.getNhCode() != null) {
+        return department;
+      }
     }
     return null;
   }
@@ -474,13 +509,19 @@ public class UserService {
     return -1L;
   }
 
-  public List<DEPARTMENT> getAllDepartment(String code, String name) {
+  public List<DEPARTMENT> getAllDepartment(String code, String name, long loginTime) {
     if (departmentHash == null) {
       retrieveData();
     }
+//    System.out.println(System.currentTimeMillis());
+//    System.out.println(loginTime);
     List<DEPARTMENT> result = new ArrayList<DEPARTMENT>();
     List<DEPARTMENT> all = new ArrayList<DEPARTMENT>(departmentHash.values());
     if ((code == null || code.length() == 0) && (name == null || name.length() == 0)) {
+      result = getAllFuncTypeInMR();
+      if (result == null || result.size() ==0 || ((System.currentTimeMillis() - loginTime) < 2000)) {
+        return result;
+      }
       return all;
     }
     if (code != null && code.length() > 0) {
@@ -496,6 +537,22 @@ public class UserService {
           result.add(department);
         }
       }
+    }
+    return result;
+  }
+  
+  /**
+   * 取得病歷有的科別
+   * @return
+   */
+  private List<DEPARTMENT> getAllFuncTypeInMR(){
+    List<DEPARTMENT> result = new ArrayList<DEPARTMENT>();
+    List<String> funcTypes = reportService.findAllFuncTypes(true);
+    for (String string : funcTypes) {
+      DEPARTMENT department = new DEPARTMENT();
+      department.setCode(string);
+      department.setName(codeTableService.getDesc("FUNC_TYPE", string));
+      result.add(department);
     }
     return result;
   }
@@ -562,12 +619,16 @@ public class UserService {
     if (existUser.getStatus() == 0) {
       return "帳號停用中，無法申請新密碼";
     }
+
     String newPassword = generateCommonLangPassword();
     emailService.sendMail("忘記密碼-重設新密碼", existUser.getEmail(), "系統隨機產生密碼:" + newPassword);
     existUser.setPassword(encoder.encode(newPassword));
     existUser.setUpdateAt(new Date());
     existUser.setStatus(1);
     userDao.save(existUser);
+    
+    httpServletReq.setAttribute(LogType.FORGOT_PASSWORD.name()+"_ID", existUser.getId());
+    
     return null;
   }
 
@@ -717,7 +778,7 @@ public class UserService {
   }
 
   private List<Long> getDepartmentIds(String funcType, String funcTypeC) {
-    if ("不分科".equals(funcTypeC) || "00".equals(funcType)
+    if ("不分科".equals(funcTypeC) || "00".equals(funcType) || "0".equals(funcType)
         || (funcType == null && funcTypeC == null)) {
       return new ArrayList<Long>(departmentHash.keySet());
     }
@@ -803,5 +864,17 @@ public class UserService {
       }
     }
     return null;
+  }
+  
+  public void initialLeadtek() {
+    UserRequest user = new UserRequest();
+    user.setDepartments("ADM");
+    user.setPassword("test");
+    user.setRocId("leadtek");
+    user.setDisplayName("leadtek");
+    user.setUsername("leadtek");
+    user.setRole("A");
+    user.setStatus(1);
+    newUser(user);
   }
 }

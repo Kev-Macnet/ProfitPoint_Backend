@@ -3,6 +3,7 @@ package tw.com.leadtek.nhiwidget.controller;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.dto.PtAnesthesiaFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtAnesthesiaFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtBoneMarrowTransFeeDto;
@@ -30,13 +33,13 @@ import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtPsychiatricFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtSpecificMedicalFeeDto;
 import tw.com.leadtek.nhiwidget.dto.PtSpecificMedicalFeePl;
-import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
-import tw.com.leadtek.nhiwidget.service.PtAnesthesiaFeeService;
-import tw.com.leadtek.nhiwidget.service.PtBoneMarrowTransFeeService;
-import tw.com.leadtek.nhiwidget.service.PtOthersFeeService;
-import tw.com.leadtek.nhiwidget.service.PtPlasterBandageFeeService;
-import tw.com.leadtek.nhiwidget.service.PtPsychiatricFeeService;
-import tw.com.leadtek.nhiwidget.service.PtSpecificMedicalFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.pt.PtAnesthesiaFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtBoneMarrowTransFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtOthersFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtPlasterBandageFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtPsychiatricFeeService;
+import tw.com.leadtek.nhiwidget.service.pt.PtSpecificMedicalFeeService;
 
 
 @Api(value = "健保標準給付額 支付條件設定 API", tags = {"10-4 健保標準給付額 支付條件設定"})
@@ -58,6 +61,9 @@ public class E2101dControll {
     private PtSpecificMedicalFeeService ptSpecificMedicalFeeService;
     @Autowired
     private PtOthersFeeService ptOthersFeeService;
+    
+    @Autowired
+    private HttpServletRequest httpServletReq;
 
     //==== 精神醫療治療費 (Psychiatric Fee)
     @ApiOperation(value="10-4.01 精神醫療治療費設定(get)", notes="", position=1)
@@ -65,6 +71,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtPsychiatricFeeDto.class)
     })
     @RequestMapping(value = "/payment/psychiatricfee/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentRadiationfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -84,6 +91,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/psychiatricfee/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增精神醫療治療費設定")
     public ResponseEntity<?> addPaymentPsychiatricfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtPsychiatricFeePl params) throws Exception {
@@ -105,7 +113,11 @@ public class E2101dControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtPsychiatricFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -119,6 +131,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/psychiatricfee/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改精神醫療治療費設定")
     public ResponseEntity<?> updatePaymentPsychiatricfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -137,7 +150,11 @@ public class E2101dControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtPsychiatricFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -150,6 +167,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/psychiatricfee/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除精神醫療治療費設定")
     public ResponseEntity<?> deletePaymentPsychiatricfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -157,6 +175,7 @@ public class E2101dControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtPsychiatricFeeService.Category, 0, false);
             int status = ptPsychiatricFeeService.deletePsychiatricFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
@@ -175,6 +194,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtBoneMarrowTransFeeDto.class)
     })
     @RequestMapping(value = "/payment/bonemarrowtransfee/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentBoneMarrowTransFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -193,6 +213,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/bonemarrowtransfee/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增輸血及骨髓移植費設定")
     public ResponseEntity<?> addPaymentBoneMarrowTransFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtBoneMarrowTransFeePl params) throws Exception {
@@ -214,7 +235,11 @@ public class E2101dControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtBoneMarrowTransFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -227,6 +252,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/bonemarrowtransfee/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改輸血及骨髓移植費設定")
     public ResponseEntity<?> updatePaymentBoneMarrowTransFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -245,7 +271,11 @@ public class E2101dControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtBoneMarrowTransFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -258,6 +288,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/bonemarrowtransfee/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除輸血及骨髓移植費設定")
     public ResponseEntity<?> deletePaymentBoneMarrowTransFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -266,6 +297,7 @@ public class E2101dControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtBoneMarrowTransFeeService.Category, 0, false);
             int status = ptBoneMarrowTransFeeService.deleteBoneMarrowTransFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
@@ -285,6 +317,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtPlasterBandageFeeDto.class)
     })
     @RequestMapping(value = "/payment/plasterbandagefee/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentPlasterBandageFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -303,6 +336,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/plasterbandagefee/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增石膏繃帶費設定")
     public ResponseEntity<?> addPaymentPlasterBandageFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtPlasterBandageFeePl params) throws Exception {
@@ -324,7 +358,11 @@ public class E2101dControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtPlasterBandageFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -337,6 +375,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/plasterbandagefee/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改石膏繃帶費設定")
     public ResponseEntity<?> updatePaymentPlasterBandageFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -355,7 +394,11 @@ public class E2101dControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtPlasterBandageFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -368,6 +411,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/plasterbandagefee/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除石膏繃帶費設定")
     public ResponseEntity<?> deletePaymentPlasterBandageFee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -376,6 +420,7 @@ public class E2101dControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtPlasterBandageFeeService.Category, 0, false);
             int status = ptPlasterBandageFeeService.deletePlasterBandageFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
@@ -395,6 +440,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtAnesthesiaFeeDto.class)
     })
     @RequestMapping(value = "/payment/anesthesiafee/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentAnesthesiafee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -413,6 +459,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/anesthesiafee/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增麻醉費設定")
     public ResponseEntity<?> addPaymentAnesthesiafee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtAnesthesiaFeePl params) throws Exception {
@@ -434,7 +481,11 @@ public class E2101dControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtAnesthesiaFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -447,6 +498,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/anesthesiafee/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改麻醉費設定")
     public ResponseEntity<?> updatePaymentAnesthesiafee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -465,7 +517,11 @@ public class E2101dControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtAnesthesiaFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -478,6 +534,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/anesthesiafee/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除麻醉費設定")
     public ResponseEntity<?> deletePaymentAnesthesiafee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -486,6 +543,7 @@ public class E2101dControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtAnesthesiaFeeService.Category, 0, false);
             int status = ptAnesthesiaFeeService.deleteAnesthesiaFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
@@ -505,6 +563,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtSpecificMedicalFeeDto.class)
     })
     @RequestMapping(value = "/payment/specificmedicalfee/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentSpecificMedicalfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -523,6 +582,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/specificmedicalfee/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增特定診療檢查費設定")
     public ResponseEntity<?> addPaymentSpecificMedicalfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtSpecificMedicalFeePl params) throws Exception {
@@ -544,7 +604,11 @@ public class E2101dControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtSpecificMedicalFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -557,6 +621,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/specificmedicalfee/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改特定診療檢查費設定")
     public ResponseEntity<?> updatePaymentSpecificMedicalfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -575,7 +640,11 @@ public class E2101dControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtSpecificMedicalFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -588,6 +657,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/specificmedicalfee/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除特定診療檢查費設定")
     public ResponseEntity<?> deletePaymentSpecificMedicalfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -596,6 +666,7 @@ public class E2101dControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtSpecificMedicalFeeService.Category, 0, false);
             int status = ptSpecificMedicalFeeService.deleteSpecificMedicalFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
@@ -615,6 +686,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ ... }", response=PtOthersFeeDto.class)
     })
     @RequestMapping(value = "/payment/othersfee/{pt_id}", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN})
     public ResponseEntity<?> getPaymentOthersfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -633,6 +705,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/othersfee/add", method = RequestMethod.POST)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增不分類設定")
     public ResponseEntity<?> addPaymentOthersfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @Valid @RequestBody PtOthersFeePl params) throws Exception {
@@ -654,7 +727,11 @@ public class E2101dControll {
             if (status==0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(ptId, PtOthersFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -667,6 +744,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/othersfee/{pt_id}", method = RequestMethod.PUT)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改不分類設定")
     public ResponseEntity<?> updatePaymentWardfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id,
@@ -685,7 +763,11 @@ public class E2101dControll {
             if (status>0) {
 //                paymentTermsService.correctEndDate(params.getCategory());
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
+                paymentTermsService.updateActiveByThread(pt_id, PtOthersFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -698,6 +780,7 @@ public class E2101dControll {
         @ApiResponse(code = 200, message="{ status:0 }")
     })
     @RequestMapping(value = "/payment/othersfee/{pt_id}", method = RequestMethod.DELETE)
+    @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除不分類設定")
     public ResponseEntity<?> deletePaymentOthersfee(HttpServletRequest request,
         @RequestHeader("Authorization") String jwt,
         @PathVariable long pt_id) throws Exception {
@@ -706,6 +789,7 @@ public class E2101dControll {
         if ((int)jwtValidation.get("status") != 200) {
             return new ResponseEntity<>(jwtValidation, HttpStatus.UNAUTHORIZED);
         } else {
+            paymentTermsService.updateActiveByThread(pt_id, PtOthersFeeService.Category, 0, false);
             int status = ptOthersFeeService.deleteOthersFee(pt_id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);

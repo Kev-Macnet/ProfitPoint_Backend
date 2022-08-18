@@ -280,7 +280,7 @@ V:虛醫令,交付調劑之藥品空針
   /**
    * 更新時間
    */
-  @Column(name = "UPDATE_AT", nullable = false)
+  @Column(name = "UPDATE_AT")
   @JsonIgnore
   private Date updateAt;
   
@@ -311,6 +311,13 @@ V:虛醫令,交付調劑之藥品空針
   @JsonIgnore
   @Transient
   private String rocId;
+  
+  /**
+   * true: 全新資料或有異動過，false: 資料和之前一樣
+   */
+  @JsonIgnore
+  @Transient
+  private boolean isDirty = false;
   
   /**
    * 序號
@@ -752,6 +759,14 @@ V:虛醫令,交付調劑之藥品空針
 
   public void setRocId(String rocId) {
     this.rocId = rocId;
+  }
+
+  public boolean isDirty() {
+    return isDirty;
+  }
+
+  public void setDirty(boolean isDirty) {
+    this.isDirty = isDirty;
   }
 
 }

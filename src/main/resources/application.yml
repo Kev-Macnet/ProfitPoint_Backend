@@ -2,8 +2,11 @@ spring:
   profiles:
     active: leadtek-office-hana
 #    active: localhost
-#    active: leadtek-office-maria
+#    active: leadtek-aws-maria
 #    active: ms
 #    active: pohai
 #    active: sql-server
 #    active: linyuan
+#    active: 806
+#    active: package
+#    active: leadtek-office-demo

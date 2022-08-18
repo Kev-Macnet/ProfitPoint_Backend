@@ -25,7 +25,7 @@ public class PtTreatmentFeeDao {
                 + "From PT_TREATMENT_FEE\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -39,7 +39,7 @@ public class PtTreatmentFeeDao {
         sql = "Delete from PT_TREATMENT_FEE\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -55,7 +55,7 @@ public class PtTreatmentFeeDao {
                 + "PT_TREATMENT_FEE(PT_ID, EXCLUDE_NHI_NO_ENABLE, COEXIST_NHI_NO_ENABLE, MAX_INPATIENT_ENABLE, MAX_INPATIENT, MAX_DAILY_ENABLE, MAX_DAILY, EVERY_NDAY_ENABLE, EVERY_NDAY_DAYS, EVERY_NDAY_TIMES, PATIENT_NDAY_ENABLE, PATIENT_NDAY_DAYS, PATIENT_NDAY_TIMES, MAX_PATIENT_ENABLE, MAX_PATIENT, INCLUDE_ICD_NO_ENABLE, MAX_MONTH_ENABLE, MAX_MONTH_PERCENTAGE, MAX_AGE_ENABLE, MAX_AGE, LIM_DIVISION_ENABLE)\n"
                 + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)";
         sql = String.format(sql, ptId, exclude_nhi_no_enable, coexist_nhi_no_enable, max_inpatient_enable, max_inpatient, max_daily_enable, max_daily, every_nday_enable, every_nday_days, every_nday_times, patient_nday_enable, patient_nday_days, patient_nday_times, max_patient_enable, max_patient, include_icd_no_enable, max_month_enable, max_month_percentage, max_age_enable, max_age, lim_division_enable);
-        logger.info(sql);
+        logger.debug(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -93,7 +93,7 @@ public class PtTreatmentFeeDao {
                 + "    LIM_DIVISION_ENABLE=%d\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, exclude_nhi_no_enable, coexist_nhi_no_enable, max_inpatient_enable, max_inpatient, max_daily_enable, max_daily, every_nday_enable, every_nday_days, every_nday_times, patient_nday_enable, patient_nday_days, patient_nday_times, max_patient_enable, max_patient, include_icd_no_enable, max_month_enable, max_month_percentage, max_age_enable, max_age, lim_division_enable, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

@@ -13,6 +13,7 @@ import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
 import tw.com.leadtek.nhiwidget.model.CodeBase;
 import tw.com.leadtek.nhiwidget.model.JsonSuggestion;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
+import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.tools.StringUtility;
 
@@ -35,6 +36,9 @@ public class CodeTableService {
   
   @Autowired
   private RedisService redis;
+  
+  @Autowired
+  private UserService userService;
 
   private HashMap<String, HashMap<String, CODE_TABLE>> codes;
 
@@ -146,6 +150,21 @@ public class CodeTableService {
     return code + "-" + ct.getDescChi();
   }
   
+  public static String getInhCodeDesc(CodeTableService cts, String cat, String inhCode) {
+    if (inhCode == null) { 
+      return null;
+    }
+    String c = inhCode.trim();
+    if (c.length() == 0) {
+      return null; 
+    }
+    List<PAY_CODE> list = cts.getPayCodeDao().findByInhCode(c);
+    if (list != null && list.size() > 0) {
+      return list.get(0).getName();
+    }
+    return null;
+  }
+  
   public String getCodeByDesc(String cat, String desc) {
 	if (codes == null) {
 	  refreshCodes();
@@ -162,16 +181,53 @@ public class CodeTableService {
     return "unknown";
   }
   
+  public String getFuncTypeCodeByName(String desc) {
+    if (codes == null) {
+      refreshCodes();
+    }
+    HashMap<String, CODE_TABLE> codeMap = codes.get("FUNC_TYPE");
+    if (codeMap == null) {
+      return getFuncTypeCodeByDepartment(desc);
+    }
+    for (CODE_TABLE ct : codeMap.values()) {
+      if (ct.getDescChi() != null && ct.getDescChi().equals(desc)) {
+        return ct.getCode();
+      }
+    }
+    return getFuncTypeCodeByDepartment(desc);
+  }
+  
+  private String getFuncTypeCodeByDepartment(String funcName) {
+    DEPARTMENT department =  userService.findDepartmentByName(funcName);
+    if (department == null || department.getNhCode() == null) {
+      return "unknown";
+    } else {
+      return department.getNhCode();
+    }
+  }
+  
   public List<CODE_TABLE> getInfectious(){
     return ctDao.findByCatOrderByCode("INFECTIOUS");
   }
   
-  public List<String> convertFuncTypeToName(List<String> funcTypes) {
+  public List<String> convertFuncTypeToNameList(List<String> funcTypes) {
     List<String> result = new ArrayList<String>();
     for (int i = 0; i < funcTypes.size(); i++) {
       result.add(getDesc("FUNC_TYPE", funcTypes.get(i)));
     }
     return result;
+  }
+  
+  public String convertFuncTypeToName(List<String> funcTypes) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < funcTypes.size(); i++) {
+      sb.append(getDesc("FUNC_TYPE", funcTypes.get(i)));
+      sb.append("、");
+    }
+    if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '、') {
+      sb.deleteCharAt(sb.length() - 1);
+    }
+    return sb.toString();
   }
   
   public String convertFuncTypecToFuncType(String funcTypec) {
@@ -182,7 +238,7 @@ public class CodeTableService {
       String[] ss = funcTypec.split(" ");
       StringBuffer sb = new StringBuffer();
       for (String s : ss) {
-        sb.append(getCodeByDesc("FUNC_TYPE", s));
+        sb.append(getFuncTypeCodeByName(s));
         sb.append(' ');
       }
       if (sb.charAt(sb.length() - 1) == ' ') {
@@ -190,7 +246,7 @@ public class CodeTableService {
       }
       return sb.toString();
     }
-    return getCodeByDesc("FUNC_TYPE", funcTypec);
+    return getFuncTypeCodeByName(funcTypec);
   }
   
   public String[] convertFuncTypecToFuncTypeArray(String funcTypec) {
@@ -201,12 +257,12 @@ public class CodeTableService {
       String[] ss = funcTypec.split(" ");
       String[] result = new String[ss.length];
       for (int i=0; i< ss.length; i++) {
-        result[i] = getCodeByDesc("FUNC_TYPE", ss[i]);
+        result[i] = getFuncTypeCodeByName(ss[i]);
       }
       return result;
     }
     String[] result = new String[1];
-    result[0] = getCodeByDesc("FUNC_TYPE", funcTypec);
+    result[0] = getFuncTypeCodeByName(funcTypec);
     return result;
   }
   

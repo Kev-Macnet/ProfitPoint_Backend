@@ -3,6 +3,8 @@
  */
 package tw.com.leadtek.tools;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -16,14 +18,21 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DecimalStyle;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
+
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 
 public class ExcelUtil {
@@ -324,6 +333,89 @@ public class ExcelUtil {
     }
     return result;
   }
+  
+  public static HashMap<Integer, String> readTitleRowHSSFRow(HSSFRow row,
+      List<PARAMETERS> parameterList) {
+    HashMap<Integer, String> result = new HashMap<Integer, String>();
+    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+      if (row.getCell(i) == null) {
+        continue;
+      }
+      String cellValue = row.getCell(i).getStringCellValue();
+      if (cellValue != null && cellValue.length() > 1) {
+        if (cellValue.indexOf(',') > -1) {
+          cellValue = cellValue.split(",")[0];
+        }
+        if (cellValue.indexOf(' ') > -1) {
+          cellValue = removeSpace(cellValue);
+        }
+        if (parameterList != null && parameterList.size() > 0) {
+          boolean isFound = false;
+          for (int j = 0; j < parameterList.size(); j++) {
+            if (parameterList.get(j).getValue() == null) {
+              continue;
+            }
+            if (cellValue.equals(parameterList.get(j).getValue().trim())) {
+              result.put(new Integer(i), parameterList.get(j).getName());
+              isFound = true;
+              break;
+            }
+          }
+          if (!isFound) {
+            result.put(new Integer(i), cellValue);
+          }
+        } else {
+          result.put(new Integer(i), cellValue);
+        }
+      }
+    }
+    return result;
+  }
+  
+  public static HashMap<Integer, String> readTitleRow(Row row) {
+	    HashMap<Integer, String> result = new HashMap<Integer, String>();
+	    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+	      if (row.getCell(i) == null) {
+	        continue;
+	      }
+	      String cellValue = row.getCell(i).getStringCellValue();
+	      if (cellValue != null && cellValue.length() > 1) {
+	        if (cellValue.indexOf(',') > -1) {
+	          cellValue = cellValue.split(",")[0];
+	        }
+	        result.put(new Integer(i), cellValue);
+	      }
+	    }
+	    return result;
+  }
+  
+  public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
+	      Row row) {
+	    HashMap<String, String> result = new HashMap<String, String>();
+	    // for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+	    for (int i = 0; i < 100; i++) {
+	      String cellValue = null;
+	      if (row.getCell(i) == null) {
+	        continue;
+	      }
+	      if (row.getCell(i).getCellType() == CellType.NUMERIC) {
+	        cellValue = String.valueOf(row.getCell(i).getNumericCellValue());
+	        // System.out.println("cell numeric before:" + cellValue);
+	        if (cellValue.endsWith(".0")) {
+	          cellValue = cellValue.substring(0, cellValue.length() - 2);
+	        }
+	        // System.out.println("cell numeric after:" + cellValue);
+	      } else {
+	        cellValue = row.getCell(i).getStringCellValue().trim();
+	      }
+	      if (cellValue != null && cellValue.length() > 0) {
+	        if (columnMap.get(new Integer(i)) != null) {
+	          result.put(columnMap.get(new Integer(i)), cellValue);
+	        }
+	      }
+	    }
+	    return result;
+	  }
 
   public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
       XSSFRow row) {
@@ -377,6 +469,11 @@ public class ExcelUtil {
           cellValue = cellValue.substring(0, cellValue.length() - 2);
         }
         // System.out.println("cell numeric after:" + cellValue);
+      } else if (row.getCell(i).getCellType() == CellType.FORMULA) {
+        cellValue = row.getCell(i).getCellFormula();
+        if (cellValue.startsWith("-")) {
+          cellValue = cellValue.substring(1).trim();
+        }
       } else {
         cellValue = row.getCell(i).getStringCellValue().trim();
       }
@@ -398,14 +495,14 @@ public class ExcelUtil {
   public static HashMap<String, String> readCellValue(HashMap<Integer, String> columnMap,
       HSSFRow row) {
     HashMap<String, String> result = new HashMap<String, String>();
-    // for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
       String cellValue = null;
       if (row.getCell(i) == null) {
         continue;
       }
       if (row.getCell(i).getCellType() == CellType.NUMERIC) {
-        if (DateUtil.isCellDateFormatted(row.getCell(i)) || row.getCell(i).getCellStyle().getDataFormatString().indexOf("yy") > -1) {
+        if (DateUtil.isCellDateFormatted(row.getCell(i))
+            || row.getCell(i).getCellStyle().getDataFormatString().indexOf("yy") > -1) {
           cellValue = ExcelUtil.SDF_DATETIME.format(row.getCell(i).getDateCellValue());
         } else {
           cellValue = String.valueOf(row.getCell(i).getNumericCellValue());
@@ -417,7 +514,7 @@ public class ExcelUtil {
       } else {
         cellValue = row.getCell(i).getStringCellValue().trim();
       }
-      if (cellValue != null && cellValue.length() > 0) {
+      if (cellValue != null && cellValue.length() > 0 && columnMap.get(new Integer(i)) != null) {
         result.put(columnMap.get(new Integer(i)), cellValue);
       }
     }
@@ -431,11 +528,11 @@ public class ExcelUtil {
    */
   public static HashMap<Integer, String> readTitleRow(XSSFRow row, List<PARAMETERS> parameterList) {
     HashMap<Integer, String> result = new HashMap<Integer, String>();
-    for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+    for (int i = 0; i < 130; i++) {
       if (row.getCell(i) == null) {
         continue;
       }
-      String cellValue = row.getCell(i).getStringCellValue();
+      String cellValue = getCellStringValue(row.getCell(i));
       if (cellValue != null && cellValue.length() > 1) {
         if (cellValue.indexOf(',') > -1) {
           cellValue = cellValue.split(",")[0];
@@ -444,14 +541,19 @@ public class ExcelUtil {
           cellValue = removeSpace(cellValue);
         }
         if (parameterList != null && parameterList.size() > 0) {
+          boolean isFound = false;
           for(int j=0; j<parameterList.size(); j++) {
             if (parameterList.get(j).getValue() == null) {
               continue;
             }
             if (cellValue.equals(parameterList.get(j).getValue().trim())) {
               result.put(new Integer(i), parameterList.get(j).getName());
+              isFound = true;
               break;
             }
+          }
+          if (!isFound) {
+            result.put(new Integer(i), cellValue);
           }
         } else {
           result.put(new Integer(i), cellValue);
@@ -470,5 +572,45 @@ public class ExcelUtil {
     }
     return sb.toString();
   }
+  
+
+  public static String toCSV(List<Map<String, Object>> list) {
+	    List<String> headers = list.stream().flatMap(map -> map.keySet().stream()).distinct().collect(Collectors.toList());
+	    final StringBuffer sb = new StringBuffer();
+	    for (int i = 0; i < headers.size(); i++) {
+	        sb.append(headers.get(i));
+	        sb.append(i == headers.size()-1 ? "\n" : ",");
+	    }
+	    for (Map<String, Object> map : list) {
+	        for (int i = 0; i < headers.size(); i++) {
+	            sb.append(map.get(headers.get(i)));
+	            sb.append(i == headers.size()-1 ? "\n" : ",");
+	        }
+	    }
+	    return sb.toString();
+	}
+  
+  public static String createCSV(List<LinkedHashMap<String, Object>> list, String filePath) throws IOException{
+	    List<String> headers = list.stream().flatMap(map -> map.keySet().stream()).distinct().collect(Collectors.toList());
+	    System.out.println(headers);
+	    try(FileWriter writer= new FileWriter(filePath, true);){
+	           for (String string : headers) {
+	                 writer.write(string);
+	                 writer.write(",");
+	           }
+	           writer.write("\r\n");
+
+	           for (LinkedHashMap<String, Object> lmap : list) {
+	                 for (Entry<String, Object> string2 : lmap.entrySet()) {
+	                        writer.write(string2.getValue() == null ? "" : string2.getValue().toString());
+	                        writer.write(",");
+	                 }
+	                 writer.write("\r\n");
+	           }
+	    }catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	    return filePath;
+	}
 
 }

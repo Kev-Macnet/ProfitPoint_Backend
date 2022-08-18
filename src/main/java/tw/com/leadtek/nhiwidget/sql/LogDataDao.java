@@ -15,7 +15,7 @@ import tw.com.leadtek.tools.Utility;
 
 
 @Repository
-public class LogDataDao {
+public class LogDataDao extends BaseSqlDao{
 
   private Logger logger = LogManager.getLogger();
 
@@ -34,7 +34,7 @@ public class LogDataDao {
             + "From IP_D a left Join IP_T b on (b.ID= a.IPT_ID)\r\n" + "Where (a.ROC_ID='%s')\r\n"
             + "  and (a.IN_DATE='%s')\r\n" + "Order by OUT_DATE DESC";
     sql = String.format(sql, idCard, in_date);
-    logger.info(sql);
+    logger.debug(sql);
     java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
     return lst;
   }
@@ -47,7 +47,7 @@ public class LogDataDao {
             + "From IP_D a left Join IP_T b on (b.ID= a.IPT_ID)\r\n" + "Where (a.MR_ID=%s) "
             + "Order by OUT_DATE DESC";
     sql = String.format(sql, mrId);
-    logger.info(sql);
+    logger.debug(sql);
     java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
     return lst;
   }
@@ -65,7 +65,7 @@ public class LogDataDao {
 
     java.util.Map<String, Object> retMap = null;
     if (whereCnt > 0) {
-      logger.info(sql);
+      logger.debug(sql);
       java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
       if (lst.size() > 0) {
         retMap = lst.get(0);
@@ -86,7 +86,7 @@ public class LogDataDao {
         + "Values(%d, '%s', '%s', '%s', %d, '%s', '%s', '%s', %d, %d)";
     sql = String.format(sql, mr_id, icd_cm, icd_op, drg, med_dot, cc, error, drg_section, drg_fix,
         drg_dots);
-    logger.info(sql);
+    logger.debug(sql);
     int ret = jdbcTemplate.update(sql);
     return ret;
   }
@@ -99,7 +99,7 @@ public class LogDataDao {
     String sql;
     sql = "Delete from DRG_CAL\r\n" + "Where (MR_ID=%d)";
     sql = String.format(sql, mr_id);
-    logger.info(sql);
+    logger.debug(sql);
     int ret = jdbcTemplate.update(sql);
     return ret;
   }
@@ -112,7 +112,7 @@ public class LogDataDao {
       sql = "Select RW \r\n" + "From DRG_CODE \r\n" + "Where (CODE='%s')\r\n"
           + "  and ('%s' >= START_DATE)\r\n" + "  and ('%s' <= END_DATE)";
       sql = String.format(sql, drg_code, transDateStr(in_date), transDateStr(out_date));
-      logger.info(sql);
+      logger.debug(sql);
       java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
       if (lst.size() > 0) {
         java.util.Map<String, Object> map = lst.get(0);
@@ -208,10 +208,10 @@ public class LogDataDao {
   }
 
 
-  public int addSignin(String uid, String jwt) {
+  public int addSignin(String uid, Long userId,String jwt) {
     String sql;
-    sql = "Insert into \r\n" + "LOG_SIGNIN(USERNAME, JWT)\r\n" + "Values ('%s', '%s')";
-    sql = String.format(sql, uid, jwt);
+    sql = "Insert into \r\n" + "LOG_SIGNIN(USERNAME, USER_ID, JWT)\r\n" + "Values ('%s', '%d','%s')";
+    sql = String.format(sql, uid, userId, jwt);
     try {
       int ret = jdbcTemplate.update(sql);
       return ret;
@@ -223,7 +223,7 @@ public class LogDataDao {
   public int updateSignout(String jwt) {
     String sql;
     sql = "Update LOG_SIGNIN\r\n" + "Set LOGOUT_TM=CURRENT_TIMESTAMP\r\n"
-        + "Where (JWT='%s')and(LOGOUT_TM is null)";
+        + "Where (JWT='%s')";
     sql = String.format(sql, jwt);
     //System.out.println("updateSignout:" + sql);
     try {
@@ -237,7 +237,7 @@ public class LogDataDao {
   public int updateSignout(String jwt, String logoutTime) {
     String sql;
     sql = "Update LOG_SIGNIN\r\n" + "Set LOGOUT_TM='%s'\r\n"
-        + "Where (JWT='%s')and(LOGOUT_TM is null)";
+        + "Where (JWT='%s')";
     sql = String.format(sql, logoutTime, jwt);
     try {
       int ret = jdbcTemplate.update(sql);
@@ -252,7 +252,7 @@ public class LogDataDao {
   public long addLogSearch(String user) {
     long newId = 0;
     String sql, s1;
-    sql = "Insert into \r\n" + "LOG_SEARCH1(USERNAME, UPDATE_TM)\r\n"
+    sql = "Insert into \r\n" + "log_search1(USERNAME, UPDATE_TM)\r\n"
         + "Values('%s', CURRENT_TIMESTAMP)";
     for (int a = 0; a < 50; a++) {
       newId = newTableId_l("LOG_SEARCH1", "ID");
@@ -274,7 +274,7 @@ public class LogDataDao {
     int ret = -1;
     String sql;
     if (keyword != null && keyword.length() > 0) {
-      sql = "Insert into \r\n" + "LOG_SEARCH2(M_ID, FIELD, KEYWORD)\r\n" + "Values(%d, '%s', '%s')";
+      sql = "Insert into " + "log_search2(M_ID, FIELD, KEYWORD) " + "Values(%d, '%s', '%s')";
       sql = String.format(sql, mid, field, keyword);
       try {
         ret = jdbcTemplate.update(sql);
@@ -300,6 +300,58 @@ public class LogDataDao {
    * return ret; } catch(DataAccessException ex) { return 0; } }
    */
 
+  public int addForgotPassword(Long userId) {
+	  String sql;
+	  sql = "Insert into \r\n" + "LOG_FORGOT_PASSWORD(USER_ID)\r\n" + "Values (%d)";
+	  sql = String.format(sql, userId);
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+  }
+  
+  public int addMedicalRecordStatus(Long inhClinicId, Long userId, Integer status) {
+	  String sql;
+	  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, STATUS)\r\n" + "Values (%d, %d, %s)";
+	  sql = String.format(sql, inhClinicId, userId, status);
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+  }
+  
+  public int addMedicalRecordNotifyed(String inhClinicId, String userId) {
+	  String sql;
+	  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(INH_CLINIC_ID, USER_ID)\r\n" + "Values (%d, %d)";
+	  sql = String.format(sql, inhClinicId, userId);
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+  }
+  
+  public int addLogAction(Long userId, String crud, String functionName, String pk) {
+	  String sql;
+	  sql = "Insert into \r\n" + "LOG_ACTION(USER_ID, CRUD, FUNCTION_NAME, PK)\r\n" + "Values (%d, '%s', '%s', '%s')";
+	  sql = String.format(sql, userId, noInjection(crud), noInjection(functionName),noInjection(pk));
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+	}
+  
   /**
    * 取得IP_D 的申報點數、不申報點數及部份負擔點數，修正MR table 的 T_DOT 欄位值
    * 
@@ -309,7 +361,7 @@ public class LogDataDao {
    */
   public List<Map<String, Object>> find_IPD_Dot() {
     String sql = "SELECT APPL_DOT, NON_APPL_DOT, PART_DOT, MR_ID FROM IP_D ORDER BY MR_ID";
-    // logger.info(sql);
+    // logger.debug(sql);
     java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
     return lst;
   }

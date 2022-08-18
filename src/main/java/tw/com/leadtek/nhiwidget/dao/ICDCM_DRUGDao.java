@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import tw.com.leadtek.nhiwidget.model.rdb.ICDCM_DRUG;
 import tw.com.leadtek.nhiwidget.model.rdb.ICDCM_DRUG_KEYS;
 
-public interface ICDCM_DRUGDao  extends JpaRepository<ICDCM_DRUG, ICDCM_DRUG_KEYS>{
+public interface ICDCM_DRUGDao extends JpaRepository<ICDCM_DRUG, ICDCM_DRUG_KEYS>{
 	
 	/**
 	* @return

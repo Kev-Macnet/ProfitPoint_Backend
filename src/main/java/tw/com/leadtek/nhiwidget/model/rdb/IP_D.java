@@ -104,6 +104,14 @@ public class IP_D {
   @JsonProperty("PAY_TYPE")
   @JacksonXmlProperty(localName = "d7")
   private String payType;
+  
+  /**
+   * 給付類別
+   */
+  @JsonProperty("d8")
+  @JacksonXmlProperty(localName = "d8")
+  @Transient
+  private String d8;
 
   /**
    * 就醫科別
@@ -2552,6 +2560,14 @@ public class IP_D {
 
   public void setBedNo(String bedNo) {
     this.bedNo = bedNo;
+  }
+
+  public String getD8() {
+    return d8;
+  }
+
+  public void setD8(String d8) {
+    this.d8 = d8;
   }
  
 }

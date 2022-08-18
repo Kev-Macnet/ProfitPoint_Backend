@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.sql.Date;
 import java.text.ParseException;
@@ -17,10 +18,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
@@ -31,16 +36,22 @@ import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.ExampleMatcher.GenericPropertyMatchers;
@@ -49,20 +60,23 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.mchange.v1.util.CollectionUtils;
+
 import io.jsonwebtoken.Claims;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
+import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.constant.ORDER_TYPE;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
-import tw.com.leadtek.nhiwidget.dao.CODE_THRESHOLDDao;
 import tw.com.leadtek.nhiwidget.dao.DEDUCTED_NOTEDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_CALDao;
 import tw.com.leadtek.nhiwidget.dao.FILE_DIFFDao;
@@ -73,6 +87,7 @@ import tw.com.leadtek.nhiwidget.dao.MODao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.MR_NOTEDao;
 import tw.com.leadtek.nhiwidget.dao.MR_NOTICEDao;
+import tw.com.leadtek.nhiwidget.dao.MR_SODao;
 import tw.com.leadtek.nhiwidget.dao.MY_MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
@@ -94,6 +109,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.IP_T;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.MR_NOTICE;
+import tw.com.leadtek.nhiwidget.model.rdb.MR_SO;
 import tw.com.leadtek.nhiwidget.model.rdb.MY_MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
@@ -130,9 +146,10 @@ import tw.com.leadtek.nhiwidget.payload.my.WarningOrder;
 import tw.com.leadtek.nhiwidget.payload.my.WarningOrderResponse;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtUtils;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
+import tw.com.leadtek.nhiwidget.service.pt.ViolatePaymentTermsService;
+import tw.com.leadtek.nhiwidget.sql.ExportCSVDao;
 import tw.com.leadtek.tools.DateTool;
 import tw.com.leadtek.tools.ExcelUtil;
-import tw.com.leadtek.tools.SendHTTP;
 import tw.com.leadtek.tools.StringUtility;
 import tw.com.leadtek.tools.Utility;
 
@@ -162,11 +179,27 @@ public class NHIWidgetXMLService {
   public final static String THESE_IPD = "病 床 號 碼";
   
   /**
+   * 健保不計價申報 (費用轉為部份負擔)
+   */
+  public final static String PAY_BY_H = "H";
+  
+  /**
+   * 健保病人額外自費，如用較好的藥或衛材
+   */
+  public final static String PAY_BY_Y = "Y";
+  
+  /**
+   * 自費病人自費,不申報
+   */
+  public final static String PAY_BY_Z = "Z";
+  
+  /**
    * 自費院內碼列為部分負擔，而不算自費
    */
   public final static String[] OWN_EXPENSE_TO_PART = new String[] {"REG1", "REGEMG"};
   
-  private final int IGNORE_STATUS = 100;
+  // 有新申報檔匯入後最快 3 分鐘開始跑檢查條件及報表 
+  private final int CHECK_ALL_AFTER_UPLOAD_WAIT_SECOND = 180;
 
   /**
    * 針對姓名、證號是否隱碼
@@ -253,14 +286,30 @@ public class NHIWidgetXMLService {
   private PAY_CODEDao payCodeDao;
   
   @Autowired
-  private CODE_THRESHOLDDao codeThresholdDao;
-
+  private ViolatePaymentTermsService vpts;
+  
+  @Autowired
+  private ExportCSVDao exportCSVDao;
+  
+  @Autowired
+  private MR_SODao mrSoDao;
+  
+  @Autowired
+  private ReportService reportService;
+  
+  protected HttpServletRequest request;
+  
   @Value("${project.serverUrl}")
   private String serverUrl;
 
   @Value("${project.hospId}")
   private String hospId;
+  
+  public final static String FILE_PATH = "download";
 
+  @Autowired
+  private HttpServletRequest httpServletReq;
+  
   public void saveOPBatch(OP op) {
     OP_T opt = saveOPT(op.getTdata());
     // 避免重複insert
@@ -457,6 +506,9 @@ public class NHIWidgetXMLService {
         mr.setInfectious((ct == null) ? 0 : 1);
         mr = mrDao.save(mr);
         ipd.setMrId(mr.getId());
+        if (ipd.getOwnExpense() == null) {
+          ipd.setOwnExpense(0);
+        }
         ipd = ipdDao.save(ipd);
       } else {
         if (!mr.getIcdcm1().equals(ipd.getIcdCm1())) {
@@ -501,6 +553,11 @@ public class NHIWidgetXMLService {
           // E:自費特材項目-未支付
           if ("E".equals(ipp.getOrderType())) {
             ownExpense += ipp.getTotalDot();
+            // Y:自費計價
+            ipp.setPayBy("Y");
+          } else {
+            // N:健保計價申報 
+            ipp.setPayBy("N");
           }
           ippBatch.add(ipp);
           if (ippBatch.size() > XMLConstant.BATCH) {
@@ -580,10 +637,8 @@ public class NHIWidgetXMLService {
         mr.setTotalDot(totalDot); 
       }
       mr.setOwnExpense(ownExpense);
-      if (ownExpense > 0) {
-        ipd.setOwnExpense(ownExpense);
-        ipdDao.save(ipd);
-      }
+      ipd.setOwnExpense(ownExpense);
+      ipdDao.save(ipd);
       mrDao.save(mr);
     }
     if (ippBatch.size() > 0) {
@@ -814,7 +869,6 @@ public class NHIWidgetXMLService {
     }
   }
 
-
   private boolean compareOPP(Long mrId, OP_P oppOld, OP_P oppNew, List<FILE_DIFF> diffList,
       List<MO> moList) {
     boolean result = false;
@@ -953,12 +1007,7 @@ public class NHIWidgetXMLService {
       opd.setPharId(StringUtility.maskString(opd.getPharId(), StringUtility.MASK_MOBILE));
       opd.setPrsnId(StringUtility.maskString(opd.getPrsnId(), StringUtility.MASK_MOBILE));
     }
-    if (opd.getCareMark() != null) {
-      String careMark = opd.getCareMark().trim();
-      if (careMark.length() == 0) {
-        opd.setCareMark(null);
-      }
-    }
+     opd.setCareMark(checkEmptyString(opd.getCareMark()));
     if (opd.getCasePayCode() != null) {
       String casePayCode = opd.getCasePayCode().trim();
       if (casePayCode.length() == 0) {
@@ -971,23 +1020,25 @@ public class NHIWidgetXMLService {
         opd.setShareMark(null);
       }
     }
-    if (" ".equals(opd.getCureItemNo1())) {
-      opd.setCureItemNo1(null);
-    }
-    if (" ".equals(opd.getCureItemNo2())) {
-      opd.setCureItemNo2(null);
-    }
-    if (" ".equals(opd.getCureItemNo3())) {
-      opd.setCureItemNo3(null);
-    }
-    if (" ".equals(opd.getCureItemNo4())) {
-      opd.setCureItemNo4(null);
-    }
+    opd.setCureItemNo1(checkEmptyString(opd.getCureItemNo1()));
+    opd.setCureItemNo2(checkEmptyString(opd.getCureItemNo2()));
+    opd.setCureItemNo3(checkEmptyString(opd.getCureItemNo2()));
+    opd.setCureItemNo4(checkEmptyString(opd.getCureItemNo4()));
     opd.setIcdCm1(StringUtility.formatICDtoUpperCase(opd.getIcdCm1()));
     opd.setIcdCm2(StringUtility.formatICDtoUpperCase(opd.getIcdCm2()));
     opd.setIcdCm3(StringUtility.formatICDtoUpperCase(opd.getIcdCm3()));
     opd.setIcdCm4(StringUtility.formatICDtoUpperCase(opd.getIcdCm4()));
     opd.setIcdCm5(StringUtility.formatICDtoUpperCase(opd.getIcdCm5()));
+    if (opd.getOwnExpense() == null) {
+      opd.setOwnExpense(0);
+    }
+  }
+  
+  private String checkEmptyString(String s) {
+    if (s == null || s.trim().length() == 0) {
+      return null;
+    }
+    return s;
   }
 
   private void maskOPP(OP_P opp, String caseType) {
@@ -1004,11 +1055,20 @@ public class NHIWidgetXMLService {
     if (ISMASK) {
       ipp.setPrsnId(StringUtility.maskString(ipp.getPrsnId(), StringUtility.MASK_MOBILE));
     }
-    ipp.setPayBy("N");
-    ipp.setApplStatus(1);
+    if (ipp.getPayBy() == null) {
+      ipp.setPayBy("N");
+    }
+    if (ipp.getApplStatus() == null) {
+      ipp.setApplStatus(1);  
+    }
   }
 
   private void maskIPD(IP_D ipd) {
+    if (ISMASK) {
+      ipd.setRocId(StringUtility.maskString(ipd.getRocId(), StringUtility.MASK_MOBILE));
+      ipd.setName(StringUtility.maskString(ipd.getName(), StringUtility.MASK_NAME));
+      ipd.setPrsnId(StringUtility.maskString(ipd.getPrsnId(), StringUtility.MASK_MOBILE));
+    }
     ipd.setIcdCm1(StringUtility.formatICDtoUpperCase(ipd.getIcdCm1()));
     ipd.setIcdCm2(StringUtility.formatICDtoUpperCase(ipd.getIcdCm2()));
     ipd.setIcdCm3(StringUtility.formatICDtoUpperCase(ipd.getIcdCm3()));
@@ -1029,6 +1089,9 @@ public class NHIWidgetXMLService {
     ipd.setIcdCm18(StringUtility.formatICDtoUpperCase(ipd.getIcdCm18()));
     ipd.setIcdCm19(StringUtility.formatICDtoUpperCase(ipd.getIcdCm19()));
     ipd.setIcdCm20(StringUtility.formatICDtoUpperCase(ipd.getIcdCm20()));
+    if (ipd.getOwnExpense() == null) {
+      ipd.setOwnExpense(0);
+    }
   }
 
   /**
@@ -1067,6 +1130,20 @@ public class NHIWidgetXMLService {
       result.add(map);
     }
     start = System.currentTimeMillis() - start;
+    return result;
+  }
+  
+  private HashMap<Long, List<OP_P>> getOPPByMrIdList(List<Long> mrIdList) {
+    HashMap<Long, List<OP_P>> result = new HashMap<Long, List<OP_P>>();
+    List<OP_P> list = oppDao.getOppListByMrIdList(mrIdList);
+    for (OP_P op_P : list) {
+      List<OP_P> oppList = result.get(op_P.getMrId());
+      if (oppList == null) {
+        oppList = new ArrayList<OP_P>();
+        result.put(op_P.getMrId(), oppList);
+      }
+      oppList.add(op_P);
+    }
     return result;
   }
 
@@ -1120,6 +1197,9 @@ public class NHIWidgetXMLService {
         index = i;
         opd.setId(((BigInteger) map.get("id")).longValue());
         opd.setMrId(((BigInteger) map.get("mrId")).longValue());
+        if (opd.getOwnExpense() == null) {
+          opd.setOwnExpense(0);
+        }
         break;
       }
     }
@@ -1427,22 +1507,23 @@ public class NHIWidgetXMLService {
     if (list == null || list.size() == 0) {
       return new ArrayList<CODE_TABLE>();
     }
-    filterCat(list, cat);
-    return list;
+    return filterCat(list, cat);
   }
 
-  private void filterCat(List<CODE_TABLE> list, String cat) {
+  private List<CODE_TABLE> filterCat(List<CODE_TABLE> list, String cat) {
+    List<CODE_TABLE> result = new ArrayList<CODE_TABLE>();
     for (CODE_TABLE code_TABLE : list) {
-      if (code_TABLE.getRemark() != null && code_TABLE.getRemark().length() == 0) {
-        code_TABLE.setRemark(null);
-      }
+      CODE_TABLE ct = new CODE_TABLE();
+      ct.clone(code_TABLE);
+      result.add(ct);
     }
     if ("ALL".equals(cat)) {
-      return;
+      return result;
     }
-    for (CODE_TABLE code_TABLE : list) {
+    for (CODE_TABLE code_TABLE : result) {
       code_TABLE.setCat(null);
     }
+    return result;
   }
 
   public String search(SearchReq req) {
@@ -1872,6 +1953,7 @@ public class NHIWidgetXMLService {
     }
     if (smrp.getOnlyDRG() != null && smrp.getOnlyDRG().booleanValue()) {
       predicate.add(cb.isNotNull(root.get("drgSection")));
+      predicate.add(cb.equal(root.get("dataFormat"), "20"));
     }
     boolean notOrderCode =
         smrp.getNotOrderCode() == null ? false : smrp.getNotOrderCode().booleanValue();
@@ -2071,8 +2153,9 @@ public class NHIWidgetXMLService {
     result.setWaitConfirm(getMRStatusCount(smrp));
     smrp.setStatus(String.valueOf(MR_STATUS.WAIT_PROCESS.value()));
     result.setWaitProcess(getMRStatusCount(smrp));
-    smrp.setStatus(originalStatus);
+    smrp.setStatus(null);
     result.setDrg(getMRDRGCount(smrp));
+    smrp.setStatus(originalStatus);
   }
 
   private int getMRStatusCount(SearchMRParameters smrp) {
@@ -2123,7 +2206,7 @@ public class NHIWidgetXMLService {
         List<Predicate> predicate = searchMRPredicate(root, query, cb, smrp);
         // if (smrp.getOnlyDRG() == null || !smrp.getOnlyDRG().booleanValue()) {
         predicate.add(cb.isNotNull(root.get("drgSection")));
-        // }
+        predicate.add(cb.equal(root.get("dataFormat"), "20"));
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
         return query.getRestriction();
@@ -2179,7 +2262,6 @@ public class NHIWidgetXMLService {
       String paramName, String params, boolean isNot) {
     if ((paramName.equals("icdAll") || paramName.equals("icdcmOthers")
         || paramName.equals("icdpcs") || paramName.equals("codeAll") || paramName.equals("inhCode"))) {
-      System.out.println("paramName:" + paramName + ", like " +  "%," + params + "%");
       if (isNot) {
         predicate.add(cb.notLike(root.get(paramName), "%," + params + "%"));
       } else {
@@ -2753,6 +2835,11 @@ public class NHIWidgetXMLService {
     mr.setApplName(user.getDisplayName());
     mr.setApplId(userService.findUserById(user.getId()).getInhId());
     mrDao.save(mr);
+    
+    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID", mr.getInhClinicId());
+    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID"      , userService.getUserIdByName(mr.getPrsnName()));
+    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS"       , status);
+    
     return null;
   }
 
@@ -2805,6 +2892,15 @@ public class NHIWidgetXMLService {
       }
     }
     mrDetail.setNotes(notes);
+    
+    if (mrDetail.getInhClinicId() != null) {
+      MR_SO so = mrSoDao.findByInhNo(mrDetail.getInhClinicId());
+      if (so != null) {
+        mrDetail.setSubjective(so.getSubjectText());
+        mrDetail.setObjective(so.getObjectText());
+        mrDetail.setDischarge(so.getDischargeText());
+      }
+    }
   }
 
   public long getTId(java.util.Date date, boolean isIP) {
@@ -2986,6 +3082,16 @@ public class NHIWidgetXMLService {
       // System.out.println("ipD.indate=" + ipD.getInDate());
       ipD.setApplDot(mrDetail.getApplDot());
       // ipD.setNonApplDot(mrDetail.getOwnExpense());
+      if (ipD.getTwDrgsSuitMark() != null
+          && !ipD.getTwDrgsSuitMark().equals(mrDetail.getTwDrgsSuitMark())) {
+        if ("0".equals(ipD.getTwDrgsSuitMark()) && !"0".equals(mrDetail.getTwDrgsSuitMark())) {
+          updateNonDrg(ipD, mr, mrDetail.getTwDrgsSuitMark()); 
+          mr.setDrgSection(null);
+        } else if (!"0".equals(ipD.getTwDrgsSuitMark()) && "0".equals(mrDetail.getTwDrgsSuitMark())) {
+          ipD.setTwDrgsSuitMark(mrDetail.getTwDrgsSuitMark());
+          updateDrgList(mrDetail.getIcdCM().get(0).getCode(), ipD, mr);
+        }
+      }
       ipD.setTwDrgsSuitMark(mrDetail.getTwDrgsSuitMark());
       ipD.setTwDrgCode(mrDetail.getDrgCode());
       if (updateIPPByMrDetail(mr, ipD, mrDetail, true)) {
@@ -3393,7 +3499,10 @@ public class NHIWidgetXMLService {
         ipD.setIcdOpCode20(mrDetail.getIcdOP().get(19).getCode());
       }
     }
-    ipD.setApplCauseMark(mrDetail.getApplCauseMark());
+    if (mrDetail.getApplCauseMark() != null && mrDetail.getApplCauseMark().length() == 1) {
+      ipD.setApplCauseMark(mrDetail.getApplCauseMark());
+    }
+   
     if (mrDetail.getFuncType() != null && mrDetail.getFuncType().length() > 0) {
       if (mrDetail.getFuncType().indexOf('-') > -1) {
         ipD.setFuncType(mrDetail.getFuncType().substring(0, mrDetail.getFuncType().indexOf('-')));
@@ -3421,40 +3530,40 @@ public class NHIWidgetXMLService {
     // 醫令總數
     int orderQty = 0;
     // 診察費點數
-    int diagDot = ipd.getDiagDot().intValue();
+    int diagDot = (ipd.getDiagDot() == null) ? 0 : ipd.getDiagDot().intValue();
     // System.out.println("initial diagDot=" + diagDot);
     // 病房費點數
-    int roomDot = ipd.getRoomDot().intValue();
+    int roomDot = (ipd.getRoomDot() == null) ? 0 : ipd.getRoomDot().intValue();
     // 管灌膳食費點數
-    int mealDot = ipd.getMealDot().intValue();
+    int mealDot = (ipd.getMealDot() == null) ? 0 : ipd.getMealDot().intValue();
     // 檢查費點數
-    int aminDot = ipd.getAminDot().intValue();
+    int aminDot = (ipd.getAminDot() == null) ? 0 : ipd.getAminDot().intValue();
     // 放射線診療費點數
-    int radoDot = ipd.getRadoDot().intValue();
+    int radoDot = (ipd.getRadoDot() == null) ? 0 : ipd.getRadoDot().intValue();
     // 治療處置費點數
-    int thrpDot = ipd.getThrpDot().intValue();
+    int thrpDot = (ipd.getThrpDot() == null) ? 0 : ipd.getThrpDot().intValue();
     // 手術費點數
-    int sgryDot = ipd.getSgryDot().intValue();
+    int sgryDot = (ipd.getSgryDot() == null) ? 0 : ipd.getSgryDot().intValue();
     // 復健治療費點數
-    int phscDot = ipd.getPhscDot().intValue();
+    int phscDot = (ipd.getPhscDot() == null) ? 0 : ipd.getPhscDot().intValue();
     // 血液血漿費點數
-    int blodDot = ipd.getBlodDot().intValue();
+    int blodDot = (ipd.getBlodDot() == null) ? 0 : ipd.getBlodDot().intValue();
     // 血液透析費點數
-    int hdDot = ipd.getHdDot().intValue();
+    int hdDot = (ipd.getHdDot() == null) ? 0 : ipd.getHdDot().intValue();
     // 麻醉費點數
-    int aneDot = ipd.getAneDot().intValue();
+    int aneDot = (ipd.getAneDot() == null) ? 0 : ipd.getAneDot().intValue();
     // 特殊材料費點數
-    int metrDot = ipd.getMetrDot().intValue();
+    int metrDot = (ipd.getMetrDot() == null) ? 0 : ipd.getMetrDot().intValue();
     // 藥費點數
-    int drugDot = ipd.getDrugDot().intValue();
+    int drugDot = (ipd.getDrugDot() == null) ? 0 : ipd.getDrugDot().intValue();
     // 藥事服務費點數
-    int dsvcDot = ipd.getDsvcDot().intValue();
+    int dsvcDot = (ipd.getDsvcDot() == null) ? 0 : ipd.getDsvcDot().intValue();
     // 精神科治療費點數
-    int nrtpDot = ipd.getNrtpDot().intValue();
+    int nrtpDot = (ipd.getNrtpDot() == null) ? 0 : ipd.getNrtpDot().intValue();
     // 注射技術費點數
-    int injtDot = ipd.getInjtDot().intValue();
+    int injtDot = (ipd.getInjtDot() == null) ? 0 : ipd.getInjtDot().intValue();
     // 嬰兒費點數
-    int babyDot = ipd.getBabyDot().intValue();
+    int babyDot = (ipd.getBabyDot() == null) ? 0 : ipd.getBabyDot().intValue();
     int applDot = 0;
 
     List<IP_P> notFoundList = new ArrayList<IP_P>();
@@ -3558,7 +3667,7 @@ public class NHIWidgetXMLService {
             // 藥費點數
             drugDot -= ipp.getTotalDot().intValue();
           } else if (ipp.getOrderCode().length() == 10) {
-            // 支付代碼為10碼列為藥費
+            // 支付代碼為10碼列為西藥藥品
             drugDot -= ipp.getTotalDot();
           } else if ("6".equals(ipp.getPayCodeType())) {
             // 6 為調劑費(藥事服務費)
@@ -3720,7 +3829,9 @@ public class NHIWidgetXMLService {
     ipD.setAgencyId(mrDetail.getAgencyId());
     ipD.setAminDot(mrDetail.getAminDot());
     ipD.setAneDot(mrDetail.getAneDot());
-    ipD.setApplCauseMark(mrDetail.getApplCauseMark());
+    if (mrDetail.getApplCauseMark() != null && mrDetail.getApplCauseMark().length() == 1) {
+      ipD.setApplCauseMark(mrDetail.getApplCauseMark());
+    }
     ipD.setApplDot(mrDetail.getApplDot());
     ipD.setApplStartDate(DateTool.removeSlashForChineseYear(mrDetail.getApplSDate()));
     ipD.setApplEndDate(DateTool.removeSlashForChineseYear(mrDetail.getApplEDate()));
@@ -4025,6 +4136,9 @@ public class NHIWidgetXMLService {
       mn.setStatus(0);
     }
     mrNoteDao.save(mn);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{mn.getId()}));
+    
     return null;
   }
 
@@ -4479,6 +4593,7 @@ public class NHIWidgetXMLService {
     if (ids == null || ids.length == 0) {
       return "接收人員id有誤";
     }
+    
     List<MR> mrList = new ArrayList<MR>();
     // <MR_ID, noticeTime>
     HashMap<Long, Integer> noticeTimes = new HashMap<Long, Integer>();
@@ -4520,11 +4635,21 @@ public class NHIWidgetXMLService {
 
     String[] receiverName = receiver.split(",");
     List<String> receiverList = getAllUserEmail(ids);
+
     String sender = user.getDisplayName() == null ? user.getUsername() : user.getDisplayName();
     for (int i = 0; i < receiverList.size(); i++) {
+      if (receiverList.get(i) == null || receiverList.get(i).indexOf("@") < 0) {
+        continue;
+      }
       sendNotic("病歷狀態確認通知", receiverList.get(i),
           generateNoticeEmailContent(mrList, receiverName[i + 1], sender, noticeTimes));
     }
+    
+    List<String> inhClinicIds = mrList.stream().map(m-> m.getInhClinicId()).collect(Collectors.toList());
+    
+    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS", inhClinicIds          );
+    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS"    , Arrays.asList(doctorId));
+    
     return null;
   }
 
@@ -4973,96 +5098,96 @@ public class NHIWidgetXMLService {
     };
   }
 
-  public MRDetail addMRDetail(MRDetail mrDetail) {
-    MRDetail result = null;
-
-    // Optional<MR> optional = mrDao.findById(mrDetail.getId());
-    // if (optional.isPresent()) {
-    // result = new MRDetail(optional.get());
-    // result.setError("id:" + mrDetail.getId() + " 已存在");
-    // return result;
-    // }
-    MRDetail old = getExistMRFromOtherServer(mrDetail.getId().toString());
-    mrDetail.setFuncType(codeTableService.getCodeByDesc("FUNC_TYPE", mrDetail.getFuncType()));
-    MR mr = new MR();
-    result = updateMrDetail(old, mrDetail);
-
-    if ("住院".equals(mrDetail.getDataFormat())) {
-      mrDetail.setDataFormat(XMLConstant.DATA_FORMAT_IP);
-    } else if ("門診".equals(mrDetail.getDataFormat())) {
-      mrDetail.setDataFormat(XMLConstant.DATA_FORMAT_OP);
-    }
-    mr.updateMR(result);
-    if (result.getMrEndDate() != null) {
-      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMM");
-      String ym = sdf.format(result.getMrEndDate());
-      mr.setApplYm(DateTool.convertToChineseYear(ym));
-    }
-
-    mr = mrDao.save(mr);
-    if (mrDetail.getMos() == null || mrDetail.getMos().size() == 0) {
-      mrDetail.setMos(old.getMos());
-    }
-
-    StringBuffer sb = new StringBuffer(",");
-    if (XMLConstant.DATA_FORMAT_OP.equals(mrDetail.getDataFormat())) {
-      // OP_D opD = opdDao.getOne(mr.getdId());
-      OP_D opD = new OP_D();
-      opD.setMrId(mr.getId());
-      opD.setOptId(getTId(mrDetail.getMrDate(), false));
-      updateOPDByMrDetail(opD, result);
-      opD = opdDao.save(opD);
-      mr.setdId(opD.getId());
-      mr.setDataFormat(XMLConstant.DATA_FORMAT_OP);
-      mr.setIcdcm1(opD.getIcdCm1());
-      MRDetail.updateIcdcmOtherOP(mr, opD);
-      MRDetail.updateIcdpcsOP(mr, opD);
-      MRDetail.updateIcdAllByAlphabet(mr);
-
-      if (mrDetail.getMos() != null) {
-        for (int i = 0; i < mrDetail.getMos().size(); i++) {
-          OP_P opp = mrDetail.getMos().get(i).toOpp(codeTableService);
-          opp.setMrId(mr.getId());
-          opp.setOpdId(opD.getId());
-          oppDao.save(opp);
-
-          if (opp.getDrugNo() != null) {
-            sb.append(opp.getDrugNo());
-            sb.append(",");
-          }
-        }
-        if (sb.length() > 1) {
-          mr.setCodeAll(sb.toString());
-        }
-      }
-    } else if (XMLConstant.DATA_FORMAT_IP.equals(mrDetail.getDataFormat())) {
-      IP_D ipD = new IP_D();
-      updateIPDByMrDetail(ipD, result);
-      ipD.setMrId(mr.getId());
-      ipD = ipdDao.save(ipD);
-      mr.setDataFormat(XMLConstant.DATA_FORMAT_IP);
-      mr.setdId(ipD.getId());
-      if (mrDetail.getMos() != null) {
-        for (int i = 0; i < mrDetail.getMos().size(); i++) {
-          IP_P ipp = mrDetail.getMos().get(i).toIpp(codeTableService);
-          ipp.setMrId(mr.getId());
-          ipp.setIpdId(ipD.getId());
-          ippDao.save(ipp);
-
-          if (ipp.getOrderCode() != null) {
-            sb.append(ipp.getOrderCode());
-            sb.append(",");
-          }
-        }
-        if (sb.length() > 1) {
-          mr.setCodeAll(sb.toString());
-        }
-      }
-    }
-    mr = mrDao.save(mr);
-    result = new MRDetail(mr);
-    return result;
-  }
+//  public MRDetail addMRDetail(MRDetail mrDetail) {
+//    MRDetail result = null;
+//
+//    // Optional<MR> optional = mrDao.findById(mrDetail.getId());
+//    // if (optional.isPresent()) {
+//    // result = new MRDetail(optional.get());
+//    // result.setError("id:" + mrDetail.getId() + " 已存在");
+//    // return result;
+//    // }
+//    MRDetail old = getExistMRFromOtherServer(mrDetail.getId().toString());
+//    mrDetail.setFuncType(codeTableService.getCodeByDesc("FUNC_TYPE", mrDetail.getFuncType()));
+//    MR mr = new MR();
+//    result = updateMrDetail(old, mrDetail);
+//
+//    if ("住院".equals(mrDetail.getDataFormat())) {
+//      mrDetail.setDataFormat(XMLConstant.DATA_FORMAT_IP);
+//    } else if ("門診".equals(mrDetail.getDataFormat())) {
+//      mrDetail.setDataFormat(XMLConstant.DATA_FORMAT_OP);
+//    }
+//    mr.updateMR(result);
+//    if (result.getMrEndDate() != null) {
+//      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMM");
+//      String ym = sdf.format(result.getMrEndDate());
+//      mr.setApplYm(DateTool.convertToChineseYear(ym));
+//    }
+//
+//    mr = mrDao.save(mr);
+//    if (mrDetail.getMos() == null || mrDetail.getMos().size() == 0) {
+//      mrDetail.setMos(old.getMos());
+//    }
+//
+//    StringBuffer sb = new StringBuffer(",");
+//    if (XMLConstant.DATA_FORMAT_OP.equals(mrDetail.getDataFormat())) {
+//      // OP_D opD = opdDao.getOne(mr.getdId());
+//      OP_D opD = new OP_D();
+//      opD.setMrId(mr.getId());
+//      opD.setOptId(getTId(mrDetail.getMrDate(), false));
+//      updateOPDByMrDetail(opD, result);
+//      opD = opdDao.save(opD);
+//      mr.setdId(opD.getId());
+//      mr.setDataFormat(XMLConstant.DATA_FORMAT_OP);
+//      mr.setIcdcm1(opD.getIcdCm1());
+//      MRDetail.updateIcdcmOtherOP(mr, opD);
+//      MRDetail.updateIcdpcsOP(mr, opD);
+//      MRDetail.updateIcdAllByAlphabet(mr);
+//
+//      if (mrDetail.getMos() != null) {
+//        for (int i = 0; i < mrDetail.getMos().size(); i++) {
+//          OP_P opp = mrDetail.getMos().get(i).toOpp(codeTableService);
+//          opp.setMrId(mr.getId());
+//          opp.setOpdId(opD.getId());
+//          oppDao.save(opp);
+//
+//          if (opp.getDrugNo() != null) {
+//            sb.append(opp.getDrugNo());
+//            sb.append(",");
+//          }
+//        }
+//        if (sb.length() > 1) {
+//          mr.setCodeAll(sb.toString());
+//        }
+//      }
+//    } else if (XMLConstant.DATA_FORMAT_IP.equals(mrDetail.getDataFormat())) {
+//      IP_D ipD = new IP_D();
+//      updateIPDByMrDetail(ipD, result);
+//      ipD.setMrId(mr.getId());
+//      ipD = ipdDao.save(ipD);
+//      mr.setDataFormat(XMLConstant.DATA_FORMAT_IP);
+//      mr.setdId(ipD.getId());
+//      if (mrDetail.getMos() != null) {
+//        for (int i = 0; i < mrDetail.getMos().size(); i++) {
+//          IP_P ipp = mrDetail.getMos().get(i).toIpp(codeTableService);
+//          ipp.setMrId(mr.getId());
+//          ipp.setIpdId(ipD.getId());
+//          ippDao.save(ipp);
+//
+//          if (ipp.getOrderCode() != null) {
+//            sb.append(ipp.getOrderCode());
+//            sb.append(",");
+//          }
+//        }
+//        if (sb.length() > 1) {
+//          mr.setCodeAll(sb.toString());
+//        }
+//      }
+//    }
+//    mr = mrDao.save(mr);
+//    result = new MRDetail(mr);
+//    return result;
+//  }
 
   public OP_P convertMoToOpp(MO mo) {
     OP_P result = new OP_P();
@@ -5070,22 +5195,22 @@ public class NHIWidgetXMLService {
     return result;
   }
 
-  public MRDetail getExistMRFromOtherServer(String mrId) {
-    SendHTTP send = new SendHTTP();
-    send.setServerIP("10.10.5.30");
-    send.setPort("8081");
-    String token = send.loginUser("applc", "leadtek");
-    String response = send.getAPI(token, "/nhixml/mr/" + mrId);
-    ObjectMapper objectMapper = new ObjectMapper();
-    try {
-      return objectMapper.readValue(response, MRDetail.class);
-    } catch (JsonMappingException e) {
-      e.printStackTrace();
-    } catch (JsonProcessingException e) {
-      e.printStackTrace();
-    }
-    return null;
-  }
+//  public MRDetail getExistMRFromOtherServer(String mrId) {
+//    SendHTTP send = new SendHTTP();
+//    send.setServerIP("10.10.5.30");
+//    send.setPort("8081");
+//    String token = send.loginUser("applc", "leadtek");
+//    String response = send.getAPI(token, "/nhixml/mr/" + mrId);
+//    ObjectMapper objectMapper = new ObjectMapper();
+//    try {
+//      return objectMapper.readValue(response, MRDetail.class);
+//    } catch (JsonMappingException e) {
+//      e.printStackTrace();
+//    } catch (JsonProcessingException e) {
+//      e.printStackTrace();
+//    }
+//    return null;
+//  }
 
   private MRDetail updateMrDetail(MRDetail old, MRDetail newMR) {
     MRDetail result = old;
@@ -5292,6 +5417,15 @@ public class NHIWidgetXMLService {
       isDirty = true;
     }
     update.setSubCat(newNote.getSubCat());
+    if (!checkIfEquals(old.getDeductedDate(), newNote.getDeductedDate())) {
+      isDirty = true;
+    }
+    if (!checkIfEquals(old.getRollbackDate(), newNote.getRollbackDate())) {
+      isDirty = true;
+    }
+    if (!checkIfEquals(old.getDisputeDate(), newNote.getDisputeDate())) {
+      isDirty = true;
+    }
     update.setUpdateAt(new java.util.Date());
     if (isDirty) {
       return update;
@@ -5327,6 +5461,8 @@ public class NHIWidgetXMLService {
       return ((Integer) a).intValue() == ((Integer) b).intValue();
     } else if (a instanceof String) {
       return a.equals(b);
+    } else if (a instanceof Date) {
+      return ((Date) a).getTime() == ((Date) b).getTime();
     }
     return true;
   }
@@ -5354,7 +5490,6 @@ public class NHIWidgetXMLService {
 
   public String newDeductedNote(String mrId, DEDUCTED_NOTE note) {
     changeEmptyToNull(note);
-    System.out.println("newDeductedNote id=" + note.getId());
     MR mr = null;
     try {
       mr = mrDao.findById(Long.parseLong(mrId)).orElse(null);
@@ -5364,12 +5499,28 @@ public class NHIWidgetXMLService {
     } catch (NumberFormatException e) {
       return "病歷id" + mrId + "有誤";
     }
+    note.setId(null);
     note.setMrId(Long.parseLong(mrId));
     note.setStatus(1);
     note.setUpdateAt(new java.util.Date());
     deductedNoteDao.save(note);
     parameters.upsertCodeConflictForHighRisk(mr.getIcdcm1(), note.getDeductedOrder(),
         mr.getDataFormat());
+    
+    final String requestKey = LogType.ACTION_C.name()+"_PKS";
+    
+    List<Object> requestPKs = (List<Object>) httpServletReq.getAttribute(requestKey);
+    
+    if( null == requestPKs) {
+    	
+    	httpServletReq.setAttribute(requestKey, Arrays.asList(new Long[]{note.getId()}));
+    	
+    }else {
+    	
+    	requestPKs.add(note.getId());
+    }
+    
+    
     return null;
   }
 
@@ -5475,7 +5626,8 @@ public class NHIWidgetXMLService {
     mc.setDayCount(getCountingDays(cb, query, root, predicates, hp));
     mc.setTotalMr(getMRCount(cb, query, root, predicates, hp));
 
-    // predicates.add(cb.greaterThan(root.get("applDot"), 0));
+    // 5 為自費案件
+    predicates.add(cb.or(cb.notEqual(root.get("applStatus"), 5), cb.isNull(root.get("applStatus"))));
     retrieveMRApplyCount(cb, query, root, predicates, hp, mc);
   }
 
@@ -5654,7 +5806,7 @@ public class NHIWidgetXMLService {
   private void retrieveMRApplyCount(CriteriaBuilder cb, CriteriaQuery<Tuple> query, Root<MR> root,
       List<Predicate> predicate, HomepageParameters hp, MRCount mrCount) {
     // SELECT COUNT(ID), SUM(APPL_DOT) FROM MR WHERE ...
-    query.select(cb.tuple(cb.count(root.get("id")), cb.sumAsLong(root.get("totalDot"))));
+    query.select(cb.tuple(cb.count(root.get("id")), cb.sumAsLong(root.get("reportDot"))));
     Predicate[] pre = new Predicate[predicate.size()];
     query.where(predicate.toArray(pre));
 
@@ -5685,14 +5837,19 @@ public class NHIWidgetXMLService {
     if (ipd == null || ipd.size() == 0) {
       result.setMessage("病歷 id:" + idL + " 不存在");
       result.setResult(BaseResponse.ERROR);
+      return result;
     }
-    List<DRG_CAL> list = drgCalDao.findByMrIdAndErrorIsNull(idL);
+    List<DRG_CAL> list = drgCalDao.findByMrId(idL);
     if (list == null || list.size() == 0) {
       result.setMessage("無drg記錄");
       return result;
     }
     List<DrgCalPayload> data = new ArrayList<DrgCalPayload>();
     for (DRG_CAL drgCal : list) {
+      if (drgCal.getError() != null && !"C".equals(drgCal.getError())) {
+        // "C" : DRG代碼尚未導入
+        continue;
+      }
       DrgCalPayload drg = new DrgCalPayload(drgCal);
 
       if (drg.getIcdCM1().equals(ipd.get(0).getIcdCm1())) {
@@ -5700,7 +5857,39 @@ public class NHIWidgetXMLService {
       } else {
         drg.setSelected(false);
       }
-      data.add(drg);
+      // 設定病歷點數
+      if (ipd.get(0).getOwnExpense() == null) {
+        ipd.get(0).setOwnExpense(0);
+      }
+      if (ipd.get(0).getNonApplDot() == null) {
+        ipd.get(0).setNonApplDot(0);
+      }
+      drg.setMedDot(ipd.get(0).getMedDot().intValue() + ipd.get(0).getNonApplDot() + ipd.get(0).getOwnExpense().intValue());
+      drg.setMedDotNoOwnExp(ipd.get(0).getMedDot().intValue() + ipd.get(0).getNonApplDot());
+      if (drg.getDrgDot() == null || data.size() == 0) {
+        data.add(drg);
+      } else {
+        int index = Integer.MAX_VALUE;
+        for (int i=0; i<data.size(); i++) {
+          DrgCalPayload drgCalPayload = data.get(i);
+          if (drgCalPayload.getDrgDot() == null || drgCalPayload.getDrgDot().intValue() < drg.getDrgDot().intValue()) {
+            index = i;
+            break;
+          }
+          if (drgCalPayload.getDrgDot() != null && drgCalPayload.getDrgDot().intValue() == drg.getDrgDot().intValue()) {
+            if (drg.getSelected().booleanValue()) {
+              // 將目前使用的DRG優先放在前面
+              index = i;
+              break;
+            }
+          }
+        }
+        if (index == Integer.MAX_VALUE) {
+          data.add(drg);
+        } else {
+          data.add(index, drg);
+        }
+      }
     }
     result.setData(data);
     return result;
@@ -5721,14 +5910,13 @@ public class NHIWidgetXMLService {
       // 主診斷未變，不處理
       return null;
     }
-    List<DRG_CAL> list = drgCalDao.findByMrIdAndErrorIsNull(idL);
+    List<DRG_CAL> list = drgCalDao.findByMrId(idL);
     if (list == null || list.size() == 0) {
       return "無drg記錄";
     }
     for (DRG_CAL drgCal : list) {
       if (drgCal.getIcdCM1().equals(icd)) {
         String tmp = ipd.getIcdCm1();
-        ipd.setIcdCm1(icd);
         if (ipd.getIcdCm2().equals(icd)) {
           ipd.setIcdCm2(tmp);
         } else if (ipd.getIcdCm3().equals(icd)) {
@@ -5748,16 +5936,7 @@ public class NHIWidgetXMLService {
         } else if (ipd.getIcdCm10().equals(icd)) {
           ipd.setIcdCm10(tmp);
         }
-        ipd.setTwDrgCode(drgCal.getDrg());
-        ipd.setApplDot(drgCal.getDrgDot());
-        ipd.setUpdateAt(new java.util.Date());
-        mr.setDrgCode(drgCal.getDrg());
-        mr.setDrgFixed(drgCal.getDrgFix());
-        mr.setDrgSection(drgCal.getDrgSection());
-        mr.setApplDot(ipd.getApplDot());
-        mr.setUpdateAt(new java.util.Date());
-        ipdDao.save(ipd);
-        mrDao.save(mr);
+        updateDrg(drgCal, ipd, mr);
         break;
       }
     }
@@ -5765,24 +5944,57 @@ public class NHIWidgetXMLService {
   }
 
   public void updateDrgList(String icd, IP_D ipd, MR mr) {
-    List<DRG_CAL> list = drgCalDao.findByMrIdAndErrorIsNull(mr.getId());
+    List<DRG_CAL> list = drgCalDao.findByMrId(mr.getId());
     if (list == null || list.size() == 0) {
       return;
     }
     for (DRG_CAL drgCal : list) {
       if (drgCal.getIcdCM1().equals(icd)) {
-        ipd.setIcdCm1(icd);
-        ipd.setTwDrgCode(drgCal.getDrg());
-        ipd.setApplDot(drgCal.getDrgDot());
-        ipd.setUpdateAt(new java.util.Date());
-        mr.setDrgCode(drgCal.getDrg());
-        mr.setDrgFixed(drgCal.getDrgFix());
-        mr.setDrgSection(drgCal.getDrgSection());
-        mr.setApplDot(ipd.getApplDot());
-        mr.setUpdateAt(new java.util.Date());
+        updateDrg(drgCal, ipd, mr);
         return;
       }
     }
+  }
+  
+  public void updateDrg(DRG_CAL drgCal, IP_D ipd, MR mr) {
+    ipd.setIcdCm1(drgCal.getIcdCM1());
+    ipd.setTwDrgCode(drgCal.getDrg());
+    ipd.setApplDot(drgCal.getDrgDot());
+    ipd.setUpdateAt(new java.util.Date());
+    mr.setDrgCode(drgCal.getDrg());
+    mr.setDrgFixed(drgCal.getDrgFix());
+    mr.setDrgSection(drgCal.getDrgSection());
+    mr.setApplDot(ipd.getApplDot());
+    mr.setUpdateAt(new java.util.Date());
+    
+    if ("C".equals(drgCal.getError())) {
+      ipd.setTwDrgsSuitMark("C");
+      // 一般案件
+      ipd.setCaseType("1");
+      mr.setDrgSection(null);
+    } else if (drgCal.getError() == null) {
+      ipd.setTwDrgsSuitMark("0");
+      // DRG 案件
+      ipd.setCaseType("5");
+    }
+    ipdDao.save(ipd);
+    mrDao.save(mr);
+    reportService.calculatePointMR(ipd.getApplEndDate().substring(0, 5));
+    reportService.calculateDRGMonthly(ipd.getApplEndDate().substring(0, 5));
+    reportService.calculateDRGWeekly(mr.getMrEndDate());
+  }
+  
+  public void updateNonDrg(IP_D ipd, MR mr, String twDrgsSuitMark) {
+    ipd.setUpdateAt(new java.util.Date());
+    if (!"0".equals(twDrgsSuitMark)) {
+      ipd.setTwDrgsSuitMark(twDrgsSuitMark);
+      // 一般案件
+      ipd.setCaseType("1");
+    }
+    ipdDao.save(ipd);
+    reportService.calculatePointMR(ipd.getApplEndDate().substring(0, 5));
+    reportService.calculateDRGMonthly(ipd.getApplEndDate().substring(0, 5));
+    reportService.calculateDRGWeekly(mr.getMrEndDate());
   }
 
   public String generateNoticeEmailContent(List<MR> list, String username, String senderName,
@@ -5891,7 +6103,7 @@ public class NHIWidgetXMLService {
    * 
    * @return
    */
-  private HashMap<String, String> getPayCodeType() {
+  public HashMap<String, String> getPayCodeType() {
     List<CODE_TABLE> codeTable = getCodeTable("PAY_CODE_TYPE");
     // 費用分類名稱, 費用分類代碼
     HashMap<String, String> payCodeType = new HashMap<String, String>();
@@ -5918,16 +6130,25 @@ public class NHIWidgetXMLService {
   }
 
   public void readOpdSheet(HSSFSheet sheet) {
+    long start = System.currentTimeMillis();
+    int titleRowIndex = 0;
     // 取得各欄位名稱的位置
-    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRowIndex));
     // 第一筆資料
-    HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(1));
-    String applYm = getApplYm(values);
+    HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(titleRowIndex + 1));
+    // testColumnMap(columnMap);
+    String[] orderDateString = getOrderDateFromSheet(sheet, titleRowIndex + 1, getColumnIndex(columnMap, "FUNC_END_DATE"));
+    java.util.Date[] orderDate = new java.util.Date[2];
+    orderDate[0] = DateTool.convertChineseToYear(orderDateString[0]);
+    orderDate[1] = DateTool.convertChineseToYear(orderDateString[1]);
+    String applYm = orderDateString[0].substring(0, 5);
     OP_T opt = getOpt(applYm);
-    System.out.println("opt id=" + opt.getId());
-    // 避免重複insertf
-    List<MR> mrList = mrDao.findByApplYmAndDataFormatOrderById(applYm, XMLConstant.DATA_FORMAT_OP);
-
+    
+    // 避免重複insert
+    List<MR> mrList = mrDao.findByMrEndDateAndDataFormatOrderById(XMLConstant.DATA_FORMAT_OP, orderDate[0], orderDate[1]);
+    //System.out.println("mrList:" + mrList.size() + "," +  orderDate[0] + " , " +  orderDate[1]);
+    List<OP_D> opdList = opdDao.findByIDFromMR(orderDate[0], orderDate[1]);
+    //System.out.println("opdList:" + opdList.size());
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
    
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
@@ -5946,6 +6167,15 @@ public class NHIWidgetXMLService {
         mr = new MR(opd);
         mr.setStatus(MR_STATUS.NO_CHANGE.value());
       } else {
+        OP_D opdDB = findOpdById(opdList, mr.getdId(), true);
+        if (opdDB != null) {
+          opd.setId(opdDB.getId());
+          opd.setMrId(mr.getId());
+        } else {
+          // 博愛醫院給的OP_D INH_NO有重複
+          logger.info("op_d not found:" + mr.getId() + "," +mr.getdId() + ", inhClinicId=" + values.get("INH_NO"));
+          continue;
+        }
         if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value()
             && shouldCompareWarning(mr, cw, opd.getFuncType())) {
           diffList = new ArrayList<FILE_DIFF>();
@@ -5963,6 +6193,9 @@ public class NHIWidgetXMLService {
       saveDiffList(diffList, mr);
       mr = mrDao.save(mr);
     }
+    long usedTime = System.currentTimeMillis() - start;
+    logger.info("readOpdSheet used " + usedTime + "ms.");
+    System.out.println("readOpdSheet used " + usedTime + "ms.");
   }
 
   private MR findMR(List<MR> mrList, String inhNo) {
@@ -6072,7 +6305,6 @@ public class NHIWidgetXMLService {
    */
   private String getApplYmByInhNo(HashMap<String, String> values) {
     String inhNo = values.get("INH_NO");
-    System.out.println("inhNo=" + inhNo);
     if (inhNo == null || inhNo.length() == 0) {
       return null;
     }
@@ -6223,7 +6455,13 @@ public class NHIWidgetXMLService {
     if (values.get("CHR_DAYS") != null && values.get("CHR_DAYS").length() > 0) {
       result.setChrDays(Integer.parseInt(values.get("CHR_DAYS")));
     }
-    result.setNbBirthday(values.get("NB_BIRTHDAY"));
+    if (values.get("NB_BIRTHDAY") != null && values.get("NB_BIRTHDAY").length() > 0) {
+      if (values.get("NB_BIRTHDAY").length() == 7) {
+        result.setNbBirthday(values.get("NB_BIRTHDAY"));  
+      } else if (values.get("NB_BIRTHDAY").indexOf("/") > 0) {
+        result.setNbBirthday(DateTool.convertExcelDateTimeToChinese(values.get("NB_BIRTHDAY"), false));
+      }
+    }
     result.setOutSvcPlanCode(values.get("OUT_SVC_PLAN_CODE"));
     result.setName(values.get("NAME"));
     result.setAgencyId(values.get("AGENCY_ID"));
@@ -6246,24 +6484,16 @@ public class NHIWidgetXMLService {
    * @param values
    * @return
    */
-  private OP_P getOpp(HashMap<String, String> values) {
+  private OP_P getOpp(HashMap<String, String> values, String format) {
     OP_P result = new OP_P();
     result.setInhCode(values.get("INH_CODE"));
     if (values.get("PAY_STATUS") != null && values.get("PAY_STATUS").length() > 0) {
       result.setPayBy(values.get("PAY_STATUS"));      
     }
-    if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
-      if (values.get("APPL_STATUS").indexOf('.') > 0) {
-        updateOppOwnExpense(result, values.get("APPL_STATUS"), values.get("CARD_NO"));
-        if (values.get("TOTAL_OW") != null && Double.parseDouble(values.get("TOTAL_OW")) == 0) {
-          // 減免
-          result.setUnitP(0f);
-        } else {
-          result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
-        }
-      } else {
-        int applStatus = Integer.parseInt(values.get("APPL_STATUS"));
-        if (applStatus > 0) {
+    if ("THESE".equals(format)) {
+      // 杏翔
+      if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
+        if (values.get("APPL_STATUS").indexOf('.') > 0) {
           updateOppOwnExpense(result, values.get("APPL_STATUS"), values.get("CARD_NO"));
           if (values.get("TOTAL_OW") != null && Double.parseDouble(values.get("TOTAL_OW")) == 0) {
             // 減免
@@ -6272,11 +6502,26 @@ public class NHIWidgetXMLService {
             result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
           }
         } else {
-          // = 0 走健保
-          result.setApplStatus(APPL_STATUS_THIS_MONTH);
-          result.setPayBy("N");
+          int applStatus = Integer.parseInt(values.get("APPL_STATUS"));
+          if (applStatus > 0) {
+            updateOppOwnExpense(result, values.get("APPL_STATUS"), values.get("CARD_NO"));
+            if (values.get("TOTAL_OW") != null && Double.parseDouble(values.get("TOTAL_OW")) == 0) {
+              // 減免
+              result.setUnitP(0f);
+            } else {
+              result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
+            }
+          } else {
+            // = 0 走健保
+            result.setApplStatus(APPL_STATUS_THIS_MONTH);
+            result.setPayBy("N");
+          }
         }
       }
+    } else  if ("LEADTEK".equals(format)) {
+      // 麗臺格式
+      result.setApplStatus("1".equals((String)values.get("APPL_STATUS")) ? APPL_STATUS_THIS_MONTH : 5);
+      result.setPayBy((String)values.get("PAY_STATUS"));
     }
   
     if (values.get("DRUG_DAY") != null && values.get("DRUG_DAY").length() > 0) {
@@ -6333,6 +6578,7 @@ public class NHIWidgetXMLService {
     result.setDrugSerialNo(values.get("DRUG_SERIAL_NO"));
     result.setReceiveNo(values.get("RECEIVE_NO"));
     result.setRocId(values.get("ROC_ID"));
+    result.setDirty(true);
     return result;
   }
 
@@ -6349,7 +6595,9 @@ public class NHIWidgetXMLService {
     }
     result.setRocId(values.get("ROC_ID"));
     result.setPartNo(values.get("PART_NO"));
-    result.setApplCauseMark(values.get("APPL_CAUSE_MARK"));
+    if (values.get("APPL_CAUSE_MARK") != null && values.get("APPL_CAUSE_MARK").length() == 1) {
+      result.setApplCauseMark(values.get("APPL_CAUSE_MARK"));
+    }
     result.setIdBirthYmd(removeSlash(values.get("ID_BIRTH_YMD")));
     result.setPayType(values.get("PAY_TYPE"));
     if (values.get("FUNC_TYPE") != null) {
@@ -6424,112 +6672,49 @@ public class NHIWidgetXMLService {
     result.setIcdOpCode18(values.get("ICD_OP_CODE18"));
     result.setIcdOpCode19(values.get("ICD_OP_CODE19"));
     result.setIcdOpCode20(values.get("ICD_OP_CODE20"));
-    if (values.get("ORDER_QTY") != null && values.get("ORDER_QTY").length() > 0) {
-      result.setOrderQty(Integer.parseInt(values.get("ORDER_QTY")));
+    result.setOrderQty(getIntegerDefault0(values.get("ORDER_QTY")));
+    result.setDiagDot(getIntegerDefault0(values.get("DIAG_DOT")));
+    result.setRoomDot(getIntegerDefault0(values.get("ROOM_DOT")));
+    result.setMealDot(getIntegerDefault0(values.get("MEAL_DOT")));
+    result.setAminDot(getIntegerDefault0(values.get("AMIN_DOT")));
+    result.setRadoDot(getIntegerDefault0(values.get("RADO_DOT")));
+    result.setThrpDot(getIntegerDefault0(values.get("THRP_DOT")));
+    result.setSgryDot(getIntegerDefault0(values.get("SGRY_DOT")));
+    result.setPhscDot(getIntegerDefault0(values.get("PHSC_DOT")));
+    result.setBlodDot(getIntegerDefault0(values.get("BLOD_DOT")));
+    result.setHdDot(getIntegerDefault0(values.get("HD_DOT")));
+    result.setAneDot(getIntegerDefault0(values.get("ANE_DOT")));
+    result.setMetrDot(getIntegerDefault0(values.get("METR_DOT")));
+    result.setDrugDot(getIntegerDefault0(values.get("DRUG_DOT")));
+    result.setDsvcDot(getIntegerDefault0(values.get("DSVC_DOT")));
+    result.setNrtpDot(getIntegerDefault0(values.get("NRTP_DOT")));
+    result.setInjtDot(getIntegerDefault0(values.get("INJT_DOT")));
+    result.setBabyDot(getIntegerDefault0(values.get("BABY_DOT")));
+    result.setMedDot(getIntegerDefault0(values.get("MED_DOT")));
+    result.setPartDot(getIntegerDefault0(values.get("PART_DOT")));
+    result.setApplDot(getIntegerDefault0(values.get("APPL_DOT")));
+    result.setEbAppl30Dot(getIntegerDefault0(values.get("EB_APPL30_DOT")));
+    result.setEbPart30Dot(getIntegerDefault0(values.get("EB_PART30_DOT")));
+    result.setEbAppl60Dot(getIntegerDefault0(values.get("EB_APPL60_DOT")));
+    result.setEbPart60Dot(getIntegerDefault0(values.get("EB_PART60_DOT")));
+    result.setEbAppl61Dot(getIntegerDefault0(values.get("EB_APPL61_DOT")));
+    result.setEbPart61Dot(getIntegerDefault0(values.get("EB_PART61_DOT")));
+    result.setSbAppl30Dot(getIntegerDefault0(values.get("SB_APPL30_DOT")));
+    result.setSbPart30Dot(getIntegerDefault0(values.get("SB_PART30_DOT")));
+    result.setSbAppl90Dot(getIntegerDefault0(values.get("SB_APPL90_DOT")));
+    result.setSbPart90Dot(getIntegerDefault0(values.get("SB_PART90_DOT")));
+    result.setSbAppl180Dot(getIntegerDefault0(values.get("SB_APPL180_DOT")));
+    result.setSbPart180Dot(getIntegerDefault0(values.get("SB_PART180_DOT")));
+    result.setSbAppl181Dot(getIntegerDefault0(values.get("SB_APPL181_DOT")));
+    result.setSbPart181Dot(getIntegerDefault0(values.get("SB_PART181_DOT")));
+    if (values.get("NB_BIRTHDAY") != null && values.get("NB_BIRTHDAY").length() > 0) {
+      if (values.get("NB_BIRTHDAY").length() == 7) {
+        result.setNbBirthday(values.get("NB_BIRTHDAY"));
+      } else if (values.get("NB_BIRTHDAY").indexOf("/") > 0) {
+        result.setNbBirthday(
+            DateTool.convertExcelDateTimeToChinese(values.get("NB_BIRTHDAY"), false));
+      }
     }
-    if (values.get("DIAG_DOT") != null && values.get("DIAG_DOT").length() > 0) {
-      result.setDiagDot(Integer.parseInt(values.get("DIAG_DOT")));
-    }
-    if (values.get("ROOM_DOT") != null && values.get("ROOM_DOT").length() > 0) {
-      result.setRoomDot(Integer.parseInt(values.get("ROOM_DOT")));
-    }
-    if (values.get("MEAL_DOT") != null && values.get("MEAL_DOT").length() > 0) {
-      result.setMealDot(Integer.parseInt(values.get("MEAL_DOT")));
-    }
-    if (values.get("AMIN_DOT") != null && values.get("AMIN_DOT").length() > 0) {
-      result.setAminDot(Integer.parseInt(values.get("AMIN_DOT")));
-    }
-    if (values.get("RADO_DOT") != null && values.get("RADO_DOT").length() > 0) {
-      result.setRadoDot(Integer.parseInt(values.get("RADO_DOT")));
-    }
-    if (values.get("THRP_DOT") != null && values.get("THRP_DOT").length() > 0) {
-      result.setThrpDot(Integer.parseInt(values.get("THRP_DOT")));
-    }
-    if (values.get("SGRY_DOT") != null && values.get("SGRY_DOT").length() > 0) {
-      result.setSgryDot(Integer.parseInt(values.get("SGRY_DOT")));
-    }
-    if (values.get("PHSC_DOT") != null && values.get("PHSC_DOT").length() > 0) {
-      result.setPhscDot(Integer.parseInt(values.get("PHSC_DOT")));
-    }
-    if (values.get("BLOD_DOT") != null && values.get("BLOD_DOT").length() > 0) {
-      result.setBlodDot(Integer.parseInt(values.get("BLOD_DOT")));
-    }
-    if (values.get("HD_DOT") != null && values.get("HD_DOT").length() > 0) {
-      result.setHdDot(Integer.parseInt(values.get("HD_DOT")));
-    }
-    if (values.get("ANE_DOT") != null && values.get("ANE_DOT").length() > 0) {
-      result.setAneDot(Integer.parseInt(values.get("ANE_DOT")));
-    }
-    if (values.get("METR_DOT") != null && values.get("METR_DOT").length() > 0) {
-      result.setMetrDot(Integer.parseInt(values.get("METR_DOT")));
-    }
-    if (values.get("DRUG_DOT") != null && values.get("DRUG_DOT").length() > 0) {
-      result.setDrugDot(Integer.parseInt(values.get("DRUG_DOT")));
-    }
-    if (values.get("DSVC_DOT") != null && values.get("DSVC_DOT").length() > 0) {
-      result.setDsvcDot(Integer.parseInt(values.get("DSVC_DOT")));
-    }
-    if (values.get("NRTP_DOT") != null && values.get("NRTP_DOT").length() > 0) {
-      result.setNrtpDot(Integer.parseInt(values.get("NRTP_DOT")));
-    }
-    if (values.get("INJT_DOT") != null && values.get("INJT_DOT").length() > 0) {
-      result.setInjtDot(Integer.parseInt(values.get("INJT_DOT")));
-    }
-    if (values.get("BABY_DOT") != null && values.get("BABY_DOT").length() > 0) {
-      result.setBabyDot(Integer.parseInt(values.get("BABY_DOT")));
-    }
-    if (values.get("MED_DOT") != null && values.get("MED_DOT").length() > 0) {
-      result.setMedDot(Integer.parseInt(values.get("MED_DOT")));
-    }
-    if (values.get("PART_DOT") != null && values.get("PART_DOT").length() > 0) {
-      result.setPartDot(Integer.parseInt(values.get("PART_DOT")));
-    }
-    if (values.get("APPL_DOT") != null && values.get("APPL_DOT").length() > 0) {
-      result.setApplDot(Integer.parseInt(values.get("APPL_DOT")));
-    }
-    if (values.get("EB_APPL30_DOT") != null && values.get("EB_APPL30_DOT").length() > 0) {
-      result.setEbAppl30Dot(Integer.parseInt(values.get("EB_APPL30_DOT")));
-    }
-    if (values.get("EB_PART30_DOT") != null && values.get("EB_PART30_DOT").length() > 0) {
-      result.setEbPart30Dot(Integer.parseInt(values.get("EB_PART30_DOT")));
-    }
-    if (values.get("EB_APPL60_DOT") != null && values.get("EB_APPL60_DOT").length() > 0) {
-      result.setEbAppl60Dot(Integer.parseInt(values.get("EB_APPL60_DOT")));
-    }
-    if (values.get("EB_PART60_DOT") != null && values.get("EB_PART60_DOT").length() > 0) {
-      result.setEbPart60Dot(Integer.parseInt(values.get("EB_PART60_DOT")));
-    }
-    if (values.get("EB_APPL61_DOT") != null && values.get("EB_APPL61_DOT").length() > 0) {
-      result.setEbAppl61Dot(Integer.parseInt(values.get("EB_APPL61_DOT")));
-    }
-    if (values.get("EB_PART61_DOT") != null && values.get("EB_PART61_DOT").length() > 0) {
-      result.setEbPart61Dot(Integer.parseInt(values.get("EB_PART61_DOT")));
-    }
-    if (values.get("SB_APPL30_DOT") != null && values.get("SB_APPL30_DOT").length() > 0) {
-      result.setSbAppl30Dot(Integer.parseInt(values.get("SB_APPL30_DOT")));
-    }
-    if (values.get("SB_PART30_DOT") != null && values.get("SB_PART30_DOT").length() > 0) {
-      result.setSbPart30Dot(Integer.parseInt(values.get("SB_PART30_DOT")));
-    }
-    if (values.get("SB_APPL90_DOT") != null && values.get("SB_APPL90_DOT").length() > 0) {
-      result.setSbAppl90Dot(Integer.parseInt(values.get("SB_APPL90_DOT")));
-    }
-    if (values.get("SB_PART90_DOT") != null && values.get("SB_PART90_DOT").length() > 0) {
-      result.setSbPart90Dot(Integer.parseInt(values.get("SB_PART90_DOT")));
-    }
-    if (values.get("SB_APPL180_DOT") != null && values.get("SB_APPL180_DOT").length() > 0) {
-      result.setSbAppl180Dot(Integer.parseInt(values.get("SB_APPL180_DOT")));
-    }
-    if (values.get("SB_PART180_DOT") != null && values.get("SB_PART180_DOT").length() > 0) {
-      result.setSbPart180Dot(Integer.parseInt(values.get("SB_PART180_DOT")));
-    }
-    if (values.get("SB_APPL181_DOT") != null && values.get("SB_APPL181_DOT").length() > 0) {
-      result.setSbAppl181Dot(Integer.parseInt(values.get("SB_APPL181_DOT")));
-    }
-    if (values.get("SB_PART181_DOT") != null && values.get("SB_PART181_DOT").length() > 0) {
-      result.setSbPart181Dot(Integer.parseInt(values.get("SB_PART181_DOT")));
-    }
-    result.setNbBirthday(values.get("NB_BIRTHDAY"));
     result.setChildMark(values.get("CHILD_MARK"));
     result.setTwDrgsSuitMark(values.get("TW_DRGS_SUIT_MARK"));
     result.setName(values.get("NAME"));
@@ -6539,14 +6724,27 @@ public class NHIWidgetXMLService {
     result.setHospId(values.get("HOSP_ID"));
     result.setSvcPlan(values.get("SVC_PLAN"));
     result.setPilotProject(values.get("PILOT_PROJECT"));
-    if (values.get("NON_APPL_DOT") != null && values.get("NON_APPL_DOT").length() > 0) {
-      result.setNonApplDot(Integer.parseInt(values.get("NON_APPL_DOT")));
-    }
+    result.setNonApplDot(getIntegerDefault0(values.get("NON_APPL_DOT")));
     if (values.get("PRSN_NAME") != null) {
       result.setPrsnName(values.get("PRSN_NAME"));
     }
     result.setBedNo(values.get("BED_NO"));
     result.setUpdateAt(new java.util.Date());
+    if (values.get("APPL_DOT_DRG") != null && values.get("APPL_DOT_DRG").length() > 0) {
+      int drgDot = Integer.parseInt(values.get("APPL_DOT_DRG"));
+      if (drgDot > 0) {
+        result.setApplDot(drgDot);
+      }
+    }
+    result.setOwnExpense(0);
+  }
+  
+  private Integer getIntegerDefault0(String s) {
+    if (s != null && s.length() > 0) {
+      return Integer.parseInt(s);
+    } else {
+      return 0;
+    }
   }
   
   /**
@@ -6568,34 +6766,42 @@ public class NHIWidgetXMLService {
    * @param values
    * @return
    */
-  private IP_P getIpp(HashMap<String, String> values) {
+  private IP_P getIpp(HashMap<String, String> values, String format) {
     IP_P result = new IP_P();
     result.setInhCode(values.get("INH_CODE"));
     if (values.get("PAY_STATUS") != null && values.get("PAY_STATUS").length() > 0) {
       result.setPayBy(values.get("PAY_STATUS"));      
     }
-    if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
-      if (values.get("APPL_STATUS").indexOf('.') > 0) {
-        // 自費
-        result.setApplStatus(APPL_STATUS_OE);
-        result.setPayBy("Y");
-        result.setTotalQ(Double.parseDouble(values.get("APPL_STATUS")));
-      } else {
-        int applStatus = Integer.parseInt(values.get("APPL_STATUS"));
-        if (applStatus > 0) {
+    if ("THESE".equals(format)) {
+      // 杏翔
+      if (values.get("APPL_STATUS") != null && values.get("APPL_STATUS").length() > 0) {
+        if (values.get("APPL_STATUS").indexOf('.') > 0) {
           // 自費
           result.setApplStatus(APPL_STATUS_OE);
           result.setPayBy("Y");
           result.setTotalQ(Double.parseDouble(values.get("APPL_STATUS")));
         } else {
-          // = 0 走健保
-          result.setApplStatus(APPL_STATUS_THIS_MONTH);
-          result.setPayBy("N");
+          int applStatus = Integer.parseInt(values.get("APPL_STATUS"));
+          if (applStatus > 0) {
+            // 自費
+            result.setApplStatus(APPL_STATUS_OE);
+            result.setPayBy("Y");
+            result.setTotalQ(Double.parseDouble(values.get("APPL_STATUS")));
+          } else {
+            // = 0 走健保
+            result.setApplStatus(APPL_STATUS_THIS_MONTH);
+            result.setPayBy("N");
+          }
         }
+      } else {
+        result.setApplStatus(APPL_STATUS_THIS_MONTH);
+        result.setPayBy("N");
       }
-    } else {
-      result.setApplStatus(APPL_STATUS_THIS_MONTH);
-      result.setPayBy("N");
+    } else  if ("LEADTEK".equals(format)) {
+      // 麗臺格式
+      result.setApplStatus("1".equals((String)values.get("APPL_STATUS")) ? APPL_STATUS_THIS_MONTH : 5);
+      result.setPayBy((String)values.get("PAY_STATUS"));
+      result.setInhClinicId(values.get("INH_NO"));
     }
     if (values.get("ORDER_SEQ_NO") != null && values.get("ORDER_SEQ_NO").length() > 0) {
       result.setOrderSeqNo(Integer.parseInt(values.get("ORDER_SEQ_NO")));
@@ -6624,7 +6830,7 @@ public class NHIWidgetXMLService {
     if (values.get("END_TIME") != null && values.get("END_TIME").length() > 0) {
       result.setEndTime(DateTool.convertExcelDateTimeToChinese(values.get("END_TIME"), true));
     }
-    if (result.getApplStatus() == APPL_STATUS_OE) {
+    if ("THESE".equals(format) && result.getApplStatus() == APPL_STATUS_OE) {
       // 杏翔格式，自費
       result.setTotalQ(Double.parseDouble(values.get("APPL_STATUS")));
       result.setUnitP(Float.parseFloat(values.get("UNIT_P_OW")));
@@ -6649,7 +6855,13 @@ public class NHIWidgetXMLService {
     result.setImgSource(values.get("IMG_SOURCE"));
     result.setFuncType(values.get("FUNC_TYPE"));
     result.setOwnExpMtrNo(values.get("OWN_EXP_MTR_NO"));
-    result.setNonListMark(values.get("NON_LIST_MARK"));
+    if (values.get("NON_LIST_MARK") != null &&  values.get("NON_LIST_MARK").length() > 0) {
+      if (values.get("NON_LIST_MARK").length() == 1) {
+        result.setNonListMark(values.get("NON_LIST_MARK"));
+      } else {
+        result.setNonListMark("1");
+      }
+    }
     result.setNonListName(values.get("NON_LIST_NAME"));
     result.setCommHospId(values.get("COMM_HOSP_ID"));
     result.setDrugSerialNo(values.get("DRUG_SERIAL_NO"));
@@ -6672,6 +6884,9 @@ public class NHIWidgetXMLService {
       MRDetail.updateIcdAllByAlphabet(mr);
       mr = mrDao.save(mr);
       opd.setMrId(mr.getId());
+      if (opd.getOwnExpense() == null) {
+        opd.setOwnExpense(0);
+      }
       opd = opdDao.save(opd);
       //mr.setdId(opd.getId());
     } else {
@@ -6796,12 +7011,30 @@ public class NHIWidgetXMLService {
     }
     return null;
   }
-
-  private OP_D findOpdById(List<OP_D> opdList, long id) {
-    for (OP_D op_D : opdList) {
-      if (op_D.getId().longValue() == id) {
-        return op_D;
+  
+  private MR findMRByInhMrId(List<MR> list, String inhMrId) {
+    for (MR mr : list) {
+      if (mr.getInhMrId() != null && mr.getInhMrId().equals(inhMrId)) {
+        return mr;
       }
+    }
+    return null;
+  }
+
+  private OP_D findOpdById(List<OP_D> opdList, long id, boolean remove) {
+    int index = -1;
+    for (int i=opdList.size() - 1; i >=0 ; i--) {
+      OP_D op_D = opdList.get(i);
+      if (op_D.getId().longValue() == id) {
+        index = i;
+        break;
+      }
+    }
+    if (index > -1) {
+      if (remove) {
+        return opdList.remove(index);
+      }
+      return opdList.get(index);
     }
     return null;
   }
@@ -6818,38 +7051,36 @@ public class NHIWidgetXMLService {
   public boolean readOppHSSFSheet(HSSFSheet sheet) {
     // 由標題列取得各欄位名稱的位置
     HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
-    // 第一筆資料
-    HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(1));
-
-    String applYm = getApplYmByInhNo(values);
-    if (applYm == null) {
-      return false;
-    }
-    OP_T opt = getOpt(applYm);
+    long start = System.currentTimeMillis();
+    HashMap<String, List<OP_P>> opps = aggregateLeadtekOPP(sheet, 1, columnMap);
+    //OP_T opt = getOpt(applYm);
 
     // 避免重複insert
-    List<MR> mrList = mrDao.findByApplYmAndDataFormatOrderById(applYm, XMLConstant.DATA_FORMAT_OP);
-    List<OP_D> opdList = opdDao.findByApplYM(applYm);
-    List<HashMap<String, Object>> oppList = getOPPByOPTID(opt.getId());
+    List<MR> mrList = mrDao.getMrByInhClinicId(new ArrayList<String>(opps.keySet()));
+    List<Long> mrIdList = vpts.getMrId(mrList, null);
+    List<OP_D> opdList = opdDao.getOpdListByMrId(mrIdList);
+    HashMap<Long, List<OP_P>> oppListDB = getOPPByMrIdList(mrIdList);
     // 要存到 DB 的 batch
     List<OP_P> oppBatch = new ArrayList<OP_P>();
 
     HashMap<String, String> payCodeType = getPayCodeType();
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
-    for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
-      HSSFRow row = sheet.getRow(i);
-      if (row == null) {
-        // System.out.println("sheet:" + i + ", row=" + j + " is null");
+    for (String inhNo : opps.keySet()) {
+      List<OP_P> oppList = opps.get(inhNo);
+      int index = -1;
+      for (int i = mrList.size() - 1; i >= 0; i--) {
+        MR mr = mrList.get(i);
+        if (mr.getInhClinicId() != null && mr.getInhClinicId().equals(inhNo)) {
+          index = i;
+          break;
+        }
+      }
+      if (index == -1) {
+        System.out.println("mr not found, inhNo=" + inhNo);
         continue;
       }
-      values = ExcelUtil.readCellValue(columnMap, row);
-
-      MR mr = findMRByInhClinicId(mrList, values.get("INH_NO"));
-      if (mr == null) {
-        System.out.println("mr not , inhNo=" + values.get("INH_NO"));
-        continue;
-      }
-      OP_D opd = findOpdById(opdList, mr.getdId());
+      MR mr = mrList.remove(index);
+      OP_D opd = findOpdById(opdList, mr.getdId(), true);
       if (opd == null) {
         System.out.println("opd is null, did=" + mr.getdId());
         continue;
@@ -6863,31 +7094,8 @@ public class NHIWidgetXMLService {
         moDao.deleteByMrId(mr.getId());
       }
 
-      // 存放所有醫令
-      StringBuffer sb = new StringBuffer((mr.getCodeAll() == null) ? "," : mr.getCodeAll());
-      StringBuffer sbInhCode = new StringBuffer((mr.getInhCode() == null) ? "," : mr.getInhCode());
-      OP_P opp = getOpp(values);
-      if (diffList == null) {
-        if (opp.getDrugNo() != null) {
-          sb.append(opp.getDrugNo());
-          sb.append(",");
-          opp.setPayCodeType(payCodeType.get(opp.getDrugNo()));
-        }
-        if (opp.getInhCode() != null && opp.getInhCode().length() > 0) {
-          sbInhCode.append(opp.getInhCode());
-          sbInhCode.append(",");
-        }
-        opp.setOpdId(opd.getId());
-        // updateOPPID(oppList, opp);
-        opp.setMrId(mr.getId());
-        maskOPP(opp, opd.getCaseType());
-        opp.setUpdateAt(new java.util.Date());
-        oppBatch.add(opp);
-        if (oppBatch.size() > XMLConstant.BATCH) {
-          oppDao.saveAll(oppBatch);
-          oppBatch.clear();
-        }
-      }
+      saveMrAndOpd(mr, opd, oppList, payCodeType, oppBatch);
+    
       // } else {
       // // 需比對有無差異
       // List<OP_P> opps = oppDao.findByOpdIdOrderByOrderSeqNo(opd.getId());
@@ -6921,40 +7129,38 @@ public class NHIWidgetXMLService {
       // }
       // }
       // }
-      if (sb.length() > 1) {
-        mr.setCodeAll(sb.toString());
-      } else {
-        if (mr.getCodeAll() != null) {
-          mr.setCodeAll(null);
-        }
-      }
-      if (sbInhCode.length() > 1) {
-        mr.setInhCode(sbInhCode.toString());
-      } else if (mr.getInhCode() != null) {
-        mr.setInhCode(null);
-      }
-      // saveDiffList(diffList, mr);
-      mr.setUpdateAt(new java.util.Date());
-      mrDao.save(mr);
     }
     if (oppBatch.size() > 0) {
       oppDao.saveAll(oppBatch);
     }
-
+    long usedTime = System.currentTimeMillis() - start;
+    logger.info("readOppHSSFSheet used " + usedTime + " ms.");
+    System.out.println("readOppHSSFSheet used " + usedTime + " ms.");
     return true;
   }
   
   public void readIpdSheet(HSSFSheet sheet) {
+    int titleRowIndex = 0;
     // 由標題列取得各欄位名稱的位置
     HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
+
     // 第一筆資料
-    HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(1));
-
-    String applYm = getApplYm(values);
-    IP_T ipt = getIpt(values, applYm);
+    HashMap<String, String> values = null;
+    
+    String[] orderDateString = getOrderDateFromSheet(sheet, titleRowIndex + 1, getColumnIndex(columnMap, "APPL_END_DATE"));
+    java.util.Date[] orderDate = new java.util.Date[2];
+    orderDate[0] = DateTool.convertChineseToYear(orderDateString[0]);
+    orderDate[1] = DateTool.convertChineseToYear(orderDateString[1]);
+    
+    String applYm = orderDateString[0].substring(0, 5);
+    IP_T ipt = getIpt(applYm);
+    
+    java.util.Date[] orderDateMore = add1Month(orderDate);
     // 避免重複insert
-    List<MR> mrList = mrDao.findByApplYmAndDataFormatOrderById(applYm, XMLConstant.DATA_FORMAT_IP);
-
+    List<MR> mrList = mrDao.findByMrEndDateAndDataFormatOrderById(XMLConstant.DATA_FORMAT_IP, orderDateMore[0], orderDateMore[1]);
+ // 避免重複insert
+    List<IP_D> ipdList = ipdDao.findByIDFromMR(orderDateMore[0], orderDateMore[1]);
+    System.out.println("db mr count=" + mrList.size() + ",ip_D count=" + ipdList.size());
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       HSSFRow row = sheet.getRow(i);
@@ -6963,6 +7169,9 @@ public class NHIWidgetXMLService {
         continue;
       }
       values = ExcelUtil.readCellValue(columnMap, row);
+      if (values.get("ICD_CM_1") == null || values.get("ICD_CM_1").length() == 0) {
+        continue;
+      }
       // 存放有差異的欄位
       List<FILE_DIFF> diffList = null;
       IP_D ipd = getIpd(values);
@@ -6977,6 +7186,10 @@ public class NHIWidgetXMLService {
             shouldCompareWarning(mr, cw, ipd.getFuncType())) {
           diffList = new ArrayList<FILE_DIFF>();
           clearFileDiff(mr.getId());
+        }
+        IP_D ipdDB = findIpdById(ipdList, mr.getdId());
+        if (ipdDB != null) {
+          ipd.setId(ipdDB.getId());
         }
         mr.updateMR(ipd, diffList, codeTableService);
         if (diffList != null && diffList.size() > 0) {
@@ -7026,15 +7239,16 @@ public class NHIWidgetXMLService {
     }
   }
   
-  public boolean readIppHSSFSheet(HSSFSheet sheet) {
+  public void readIppHSSFSheet(HSSFSheet sheet) {
     // 由標題列取得各欄位名稱的位置
-    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
+    int titleRowIndex = 0;
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRowHSSFRow(sheet.getRow(titleRowIndex), parameters.getByCat("IP_P"));
     // 第一筆資料
     HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(1));
 
     String applYm = getApplYmByInhNo(values);
     if (applYm == null) {
-      return false;
+      return;
     }
     logger.info("readIppHSSFSheet applYm=" + applYm);
     IP_T ipt = getIpt(values, applYm);
@@ -7042,24 +7256,26 @@ public class NHIWidgetXMLService {
     // 避免重複insert
     List<MR> mrList = mrDao.findByApplYmAndDataFormatOrderById(applYm, XMLConstant.DATA_FORMAT_IP);
     List<IP_D> ipdList = ipdDao.findByApplYM(applYm);
+    HashMap<String, List<IP_P>> ippMap = aggregateLeadtekIPP(sheet, titleRowIndex + 1, columnMap);
     List<HashMap<String, Object>> ippList = getIPPByIPTID(ipt.getId());
     // 要存到 DB 的 batch
     List<IP_P> ippBatch = new ArrayList<IP_P>();
+    // 有異動或新增的IP_D list
+    List<IP_D> dirtyIPD = new ArrayList<IP_D>(); 
+    // 有異動或新增的病歷
+    List<MR> dirtyMR = new ArrayList<MR>();
+    // 有異動或新增的IPP
+    List<IP_P> ippListDB = new ArrayList<>();
 
     HashMap<String, String> payCodeType = getPayCodeType();
     CompareWarning cw =
         new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
-    for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
-      HSSFRow row = sheet.getRow(i);
-      if (row == null) {
-        // System.out.println("sheet:" + i + ", row=" + j + " is null");
-        continue;
-      }
-      values = ExcelUtil.readCellValue(columnMap, row);
-
-      MR mr = findMRByInhClinicId(mrList, values.get("INH_NO"));
+    
+    for (String key : ippMap.keySet()) {
+      List<IP_P> newIppList = ippMap.get(key);
+      MR mr = findMRByInhClinicId(mrList, newIppList.get(0).getInhClinicId());
       if (mr == null) {
-        System.out.println("mr not found, inhNo=" + values.get("INH_NO"));
+        logger.info("mr not found, inhNo=" + newIppList.get(0).getInhClinicId());
         continue;
       }
       IP_D ipd = findIpdById(ipdList, mr.getdId());
@@ -7074,90 +7290,91 @@ public class NHIWidgetXMLService {
         moDao.deleteByMrId(mr.getId());
       }
 
-      StringBuffer sb = new StringBuffer((mr.getCodeAll() == null) ? "," : mr.getCodeAll());
-      IP_P ipp = getIpp(values);
-      // 自費金額
-      int ownExpense = 0;
-      if ("E".equals(ipp.getOrderType()) || "Y".equals(ipp.getPayBy()) || "Z".equals(ipp.getPayBy())) {
-        // E:自費特材項目-未支付
-        ownExpense += ipp.getTotalDot();
-      }
-      if (diffList == null) {
-        if (ipp.getOrderCode() != null) {
-          sb.append(ipp.getOrderCode());
-          sb.append(",");
-          ipp.setPayCodeType(payCodeType.get(ipp.getOrderCode()));
-        }
-        ipp.setIpdId(ipd.getId());
-        updateIPPID(ippList, ipp);
-        maskIPP(ipp);
+      boolean isIpdDirty = false;
+//      StringBuffer sb = new StringBuffer((mr.getCodeAll() == null) ? "," : mr.getCodeAll());
+//      StringBuffer sbInhCode = new StringBuffer((mr.getInhCode() == null) ? "," : mr.getInhCode());
+      for (int i = 0; i < newIppList.size(); i++) {
+        IP_P ipp = newIppList.get(i);
         ipp.setMrId(mr.getId());
+        ipp.setIpdId(ipd.getId());
+        
+     // 檢查該筆醫令是否已存在DB
+        boolean isFound = false;
+        for (int j = 0; j < ippList.size(); j++) {
+          HashMap<String, Object> ippDB = ippList.get(j);
+
+          if (((BigInteger) ippDB.get("ipdId")).longValue() != ipd.getId().longValue()) {
+            continue;
+          }
+          if (((Integer) ippDB.get("orderSeqNo")).intValue() != ipp.getOrderSeqNo().intValue()) {
+            continue;
+          }
+          isFound = true;
+          if (diffList == null) {
+            ipp.setId(((BigInteger) ippDB.get("id")).longValue());
+            if (ipp.getOrderCode() != null) {
+              ipp.setPayCodeType(payCodeType.get(ipp.getOrderCode()));
+            }
+            maskIPP(ipp);
+            ipp.setMrId(mr.getId());
+            ippBatch.add(ipp);
+            ippListDB.add(ipp);
+            if (ippBatch.size() > XMLConstant.BATCH) {
+              ippDao.saveAll(ippBatch);
+              ippBatch.clear();
+            }
+          } else {
+            // 需比對有無差異
+            List<IP_P> ipps = ippDao.findByIpdIdAndOrderSeqNo(ipd.getId(), ipp.getOrderSeqNo());
+            List<MO> moList = new ArrayList<MO>();
+            for (int k = 0; k < ipps.size(); j++) {
+              IP_P ippOld = ipps.get(k);
+              if (compareIPP(mr.getId(), ippOld, ipp, diffList, moList)) {
+                break;
+              }
+            }
+          }
+          break;
+        }
+        if (!isFound)  {
+          ippListDB.add(ipp);
+          if (ipp.getOrderCode() != null) {
+            if (mr.getCodeAll() == null) {
+              mr.setCodeAll("," + ipp.getOrderCode() + ",");
+              isIpdDirty = true;
+            } else if (mr.getCodeAll().indexOf("," + ipp.getOrderCode() + ",") < 0){
+              mr.setCodeAll(mr.getCodeAll() + ipp.getOrderCode() + ",");
+              isIpdDirty = true;
+            }
+          }
+          if (ipp.getInhCode() != null && ipp.getInhCode().length() > 0) {
+            if (mr.getInhCode() == null) {
+              mr.setInhCode("," + ipp.getInhCode() + ",");
+              isIpdDirty = true;
+            } else if (mr.getInhCode().indexOf("," + ipp.getInhCode() + ",") < 0){
+              mr.setInhCode(mr.getInhCode() + ipp.getInhCode() + ",");
+              isIpdDirty = true;
+            }
+          }
+        }
+
         ippBatch.add(ipp);
         if (ippBatch.size() > XMLConstant.BATCH) {
           ippDao.saveAll(ippBatch);
           ippBatch.clear();
         }
-        // Map<String, Object> condition3 =
-        // logService.makeCondition(new String[][] {{"ID", Long.toString(ipp.getId())}});
-        // Map<String, Object> row3 = logService.findOne("IP_P", condition3);
-        // logService.updateModification("system", "IP_P", condition3, new HashMap<String,
-        // Object>(),
-        // row3);
-      } else {
-        // 需比對有無差異
-        List<IP_P> ipps = ippDao.findByIpdIdOrderByOrderSeqNo(ipd.getId());
-        List<MO> moList = new ArrayList<MO>();
-        boolean isFound = false;
-        for (int j = 0; j < ipps.size(); j++) {
-          IP_P ippOld = ipps.get(j);
-          if (compareIPP(mr.getId(), ippOld, ipp, diffList, moList)) {
-            isFound = true;
-            break;
-          }
-        }
-        if (!isFound) {
-          mr.setChangeOrder(1);
-          addDiff(mr.getId(), ipp.getOrderCode(), ipp.getOrderSeqNo().intValue(), ipp, diffList,
-              moList);
-        }
-        // if (ippListXML.size() > ipps.size()) {
-        // for (int i = ipps.size(); i < ippListXML.size(); i++) {
-        // IP_P ipp = ippListXML.get(i);
-        // addDiff(mr.getId(), ipp.getOrderCode(), ipp.getOrderSeqNo().intValue(), ipp, diffList,
-        // moList);
-        // mr.setChangeOrder(1);
-        // // E:自費特材項目-未支付
-        // if ("E".equals(ipp.getOrderType())) {
-        // ownExpense += ipp.getTotalDot();
-        // }
-        // }
-        // }
-        if (moList.size() > 0) {
-          mr.setChangeOrder(1);
-          for (MO mo : moList) {
-            moDao.save(mo);
-          }
-        }
       }
-      if (sb.length() > 1) {
-        if (sb.toString().length() > 4000) {
-          mr.setCodeAll(sb.toString().substring(0, 3999));
-        } else {
-          mr.setCodeAll(sb.toString());
-        }
-      } else {
-        if (mr.getCodeAll() != null) {
-          mr.setCodeAll(null);
-        }
+      if (isIpdDirty) {
+        mr.setIcdcm1(null);
+        dirtyIPD.add(ipd);
+        dirtyMR.add(mr);
       }
-      saveDiffList(diffList, mr);
-      mr.setOwnExpense(ownExpense);
-      mrDao.save(mr);
     }
     if (ippBatch.size() > 0) {
       ippDao.saveAll(ippBatch);
+      ippBatch.clear();
     }
-    return true;
+    saveMrAndIpd(dirtyMR, dirtyIPD, ippListDB); 
   }
   
   public void readOpdSOPSheet(HSSFSheet sheet) {
@@ -7168,7 +7385,7 @@ public class NHIWidgetXMLService {
 
     String applYm = getApplYmByInhNo(values);
     if (applYm == null) {
-      //return;
+      return;
     }
   
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
@@ -7178,18 +7395,20 @@ public class NHIWidgetXMLService {
         continue;
       }
       values = ExcelUtil.readCellValue(columnMap, row);
-      String ot = values.get("OBJECT_TEXT");
-      for(int j=0;j<ot.length(); j++) {
-        if (ot.charAt(j) == '\r') {
-          System.out.println("is slash r \r");
-        } if (ot.charAt(j) == '\n') {
-          System.out.println("is slash n \n");
-        } 
+      List<Long> mrIdList = mrDao.getIdByInhClinicId((String) values.get("INH_NO"));
+      if (mrIdList == null || mrIdList.size() == 0) {
+        continue;
       }
-      System.out.println(values.get("OBJECT_TEXT"));
-      if (values != null) {
-        break;
+      MR_SO mrSo = mrSoDao.findByInhNo((String) values.get("INH_NO"));
+      if (mrSo == null) {
+        mrSo = new MR_SO();
+        mrSo.setInhNo((String) values.get("INH_NO"));
       }
+      mrSo.setMrId(mrIdList.get(0));
+      mrSo.setObjectText(values.get("OBJECT_TEXT"));
+      mrSo.setSubjectText(values.get("SUBJECT_TEXT"));
+      mrSo.setDischargeText(values.get("DISCHARGE_TEXT"));
+      mrSoDao.save(mrSo);
     }
   }
   
@@ -7278,12 +7497,80 @@ public class NHIWidgetXMLService {
     }
   }
   
-  private void recalculateRareICD(String chineseYm) {
+  /**
+   * 
+   * @param importUsedTime 匯入使用時間
+   * @param isImporting true:仍在匯入病歷，false:已匯入完成
+   */
+  public void checkAll(long importUsedTime, boolean isImporting) {
+    if (isImporting) {
+      is.setIntelligentRunningTime(INTELLIGENT_REASON.XML.value(), Long.MAX_VALUE);
+      return;
+    }
+    boolean waitCheckAllFinished = false;
+    long extendTime = CHECK_ALL_AFTER_UPLOAD_WAIT_SECOND * 1000;
+    long startRunningTime = is.getIntelligentRunningTime(INTELLIGENT_REASON.XML.value());
+    if (startRunningTime > 0) {
+      if (startRunningTime == Long.MAX_VALUE) {
+        is.setIntelligentRunningTime(INTELLIGENT_REASON.XML.value(),
+            System.currentTimeMillis() + extendTime);
+      } else {
+        // 已經在跑所有條件檢查，就不處理
+        if (startRunningTime > System.currentTimeMillis()) {
+          // 等待執行
+          is.extendIntelligentRunning(INTELLIGENT_REASON.XML.value(), extendTime);
+          return;
+        }
+        if (startRunningTime <= System.currentTimeMillis()) {
+          // 正在執行
+          waitCheckAllFinished = true;
+        }
+      }
+    } else {
+      // server 空閒，等待 extendTime後再跑，避免user又再上傳其他申報檔案
+      is.setIntelligentRunningTime(INTELLIGENT_REASON.XML.value(), System.currentTimeMillis() + extendTime);
+    }
+    
+    final boolean waitUntilFinished = waitCheckAllFinished;
     Thread thread = new Thread(new Runnable() {
 
       @Override
       public void run() {
-        is.calculateRareICD(chineseYm);
+        long startRunningTime = 0;
+        boolean needWaitUntilFinished = waitUntilFinished;
+        do {
+          try {
+            Thread.sleep(5000);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+          startRunningTime = is.getIntelligentRunningTime(INTELLIGENT_REASON.XML.value());
+          if (startRunningTime == Long.MAX_VALUE) {
+            // 又有新的申報檔進來
+            logger.info("new file coming, stop checkAll");
+            break;
+          }
+          if (needWaitUntilFinished) {
+            if (startRunningTime < 0) {
+              // 已完成
+              is.extendIntelligentRunning(INTELLIGENT_REASON.XML.value(), extendTime);
+              needWaitUntilFinished = false;
+            } else if (startRunningTime < System.currentTimeMillis()) {
+                // 等待時間已過，開始執行
+                break;
+            }
+          } else {
+            if (startRunningTime < System.currentTimeMillis()) {
+              // 等待時間已過，開始執行
+              break;
+            }
+          }
+          logger.info("wait to run checkAll:" + (startRunningTime - System.currentTimeMillis()));
+        } while(true);
+        if (startRunningTime < Long.MAX_VALUE) {
+          // 又有新的申報檔進來
+          is.checkAllIntelligentCondition();
+        }
       }
     });
     thread.start();
@@ -7294,24 +7581,19 @@ public class NHIWidgetXMLService {
    * @param sheet
    */
   public void readTheseSheet(XSSFSheet sheet) {
-    String rareIcd = parameters.getOneValueByName("INTELLIGENT_CONFIG", "RARE_ICD");
-    boolean runRareICD = (rareIcd != null && "1".equals(rareIcd));
+    long startImport = System.currentTimeMillis();
+    checkAll(0, true);
     if (THESE_OPP.equals(sheet.getRow(0).getCell(0).getStringCellValue())) {
       readTheseOPP(sheet);
     } else if (THESE_OPD.equals(sheet.getRow(0).getCell(0).getStringCellValue())) {
-      String chineseYm = readTheseOPD(sheet);
-      if (runRareICD) {
-        recalculateRareICD(chineseYm); 
-      }
+      readTheseOPD(sheet);
     } else if (THESE_IPD.equals(sheet.getRow(0).getCell(0).getStringCellValue())) {
-      String chineseYm = readTheseIPD(sheet);
-      if (runRareICD) {
-        recalculateRareICD(chineseYm); 
-      }
+      readTheseIPD(sheet);
     } else if (THESE_IPP.equals(sheet.getRow(0).getCell(0).getStringCellValue())) {
       readTheseIPP(sheet);
     }
-    
+    long usedTime = System.currentTimeMillis() - startImport;
+    checkAll(usedTime, false);
   }
   
   /**
@@ -7320,11 +7602,11 @@ public class NHIWidgetXMLService {
    * @return 病歷民國年月
    */
   private String readTheseOPD(XSSFSheet sheet) {
-    System.out.println("readTheseOPD, isMASK=" + ISMASK);
+    //System.out.println("readTheseOPD, isMASK=" + ISMASK);
     
     int titleRowIndex = 0;
     // 取得各欄位名稱的位置
-    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0), parameters.getByCat("OP_D"));
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRowIndex), parameters.getByCat("OP_D"));
     // 第一筆資料
     HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(titleRowIndex + 1));
     // testColumnMap(columnMap);
@@ -7405,33 +7687,36 @@ public class NHIWidgetXMLService {
    * @param sheet
    */
   private void readTheseOPP(XSSFSheet sheet) {
-    System.out.println("readTheseOPP, isMASK=" + ISMASK);
+    //System.out.println("readTheseOPP, isMASK=" + ISMASK);
     // 取得各欄位名稱的位置
     int titleRowIndex = 2;
     HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRowIndex), parameters.getByCat("OP_P"));
-    String[] orderDateString = getOrderDateFromSheet(sheet, titleRowIndex + 1, getColumnIndex(columnMap, "FUNC_DATE"));
+    HashMap<String, List<OP_P>> oppsNew = aggregateTheseOPP(sheet, titleRowIndex + 1, columnMap);
+    List<OP_P> minMax = oppsNew.get("MINMAX");
     java.util.Date[] orderDate = new java.util.Date[2];
-    orderDate[0] = DateTool.convertChineseToYear(orderDateString[0]);
-    orderDate[1] = DateTool.convertChineseToYear(orderDateString[1]);
+    orderDate[0] = DateTool.convertChineseToYear(minMax.get(0).getStartTime().substring(0, 7));
+    orderDate[1] = DateTool.convertChineseToYear(minMax.get(1).getEndTime().substring(0, 7));
 
     Date[] sqlDate = new Date[2];
     sqlDate[0] = new Date(orderDate[0].getTime());
     sqlDate[1] = new Date(orderDate[1].getTime());
 
-    String applYm = orderDateString[0].substring(0, 5);
+    String applYm = minMax.get(1).getEndTime().substring(0, 5);
+    //System.out.println("start:" + orderDate[0] + ", end:" + orderDate[1] + ", applYm=" + applYm);
     OP_T opt = getOpt(applYm);
-    // 避免重複insert
+    // 避免重複insert，現存在DB中的 MR
     List<MR> mrList = mrDao.getByDataFormatAndMrDateBetween(XMLConstant.DATA_FORMAT_OP,
         orderDate[0], orderDate[1]);
+    // 避免重複insert，現存在DB中的 OP_D
     List<OP_D> opdList = opdDao.findByIDFromMR(sqlDate[0], sqlDate[1]);
     HashMap<String, Integer> rocIdDateCount = rocIdDateCount(opdList);
+    // 避免重複insert，現存在DB中的 OP_P
     List<OP_P> oppList = oppDao.getByMrIdFromMR(orderDate[0], orderDate[1]);
     // 要存到 DB 的 batch
     List<OP_P> oppBatch = new ArrayList<OP_P>();
     CompareWarning cw =
         new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
     HashMap<String, String> values = null;
-    HashMap<String, List<OP_P>> oppsNew = aggregateTheseOPP(sheet, titleRowIndex + 1, columnMap);
     
     for (int i = titleRowIndex + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       XSSFRow row = sheet.getRow(i);
@@ -7440,13 +7725,19 @@ public class NHIWidgetXMLService {
       }
       values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
       OP_P oppNew = findOppByOppValues(oppsNew, values);
+//      if ("M221233913".equals(values.get("ROC_ID"))) {
+//        if (oppNew == null) {
+//          System.out.println("oppNew is null, cardNo=" + values.get("CARD_NO") + ", icd=" + values.get("ICD_CM_1"));
+//        } else {
+//          System.out.println("oppNew " + oppNew.getInhCode() + ", cardNo=" + values.get("CARD_NO") + ", icd=" + values.get("ICD_CM_1"));
+//        }
+//      }
       if (oppNew == null) {
         // 相同病歷相同醫令已處理過
-        continue; 
+        continue;
       }
       MR mr = null;
-      OP_D opd = findOpdByTheseOpp(opdList, rocIdDateCount, values);
-
+      OP_D opd = findOpdByTheseOpp(mrList, opdList, rocIdDateCount, values);
       if (opd == null) {
         mr = initialMrAndOpdByOpp(values);
         mr.setApplYm(applYm);
@@ -7474,6 +7765,7 @@ public class NHIWidgetXMLService {
           mr.setIcdcm1(null);  
         }
       }
+      // 調整OPD及MR的起訖時間
       if (!oppNew.getStartTime().equals(oppNew.getEndTime())) {
         if (!oppNew.getStartTime().substring(0, 7).equals(opd.getFuncDate()) ||
             !oppNew.getEndTime().substring(0, 7).equals(opd.getFuncEndDate())){
@@ -7494,14 +7786,22 @@ public class NHIWidgetXMLService {
       }
 
       OP_P opp = findOppByOppValues(oppList, oppNew, (mr == null) ? null : mr.getId());
-
       if (diffList == null) {
         if (opp == null) {
           // DB 尚未有該筆醫令
           opp = oppNew;
-        } else if (opp != null && !updateOpp(opp, oppNew)) {
-          // 資料未異動
-          continue;
+        } else {
+          boolean isDiff = updateOpp(opp, oppNew);
+          if (!isDiff) {
+            // 資料未異動
+            // System.out.println("資料未異動 " + opp.getId() + "," + opp.getDrugNo() + "," + opp.getInhCode() + "," +  oppNew.getRocId());
+            opp.setDirty(false);
+            continue;
+          } else {
+            opp.setDirty(true);
+         // 資料有異動
+            // System.out.println("資料有異動 " + opp.getId() + "," + opp.getDrugNo() + "," + opp.getInhCode() + "," +  oppNew.getRocId());
+          }
         }
         if (opp.getDrugNo() != null) {
           if (mr.getCodeAll() == null) {
@@ -7527,15 +7827,22 @@ public class NHIWidgetXMLService {
         opp.setOpdId(opd.getId());
         opp.setMrId(mr.getId());
         maskOPP(opp, opd.getCaseType());
-        opp.setUpdateAt(new java.util.Date());
+        if (opp.isDirty()) {
+          opp.setUpdateAt(new java.util.Date());
+        }
         if (opp.getId() == null) {
           // 還未存到DB
           oppList.add(opp);
         }
-        oppBatch.add(opp);
-        if (oppBatch.size() > XMLConstant.BATCH) {
-          oppDao.saveAll(oppBatch);
-          oppBatch.clear();
+        if (!opp.isDirty()) {
+//          System.out.println("add oppBatch id=" + opp.getId() + "," + opp.getInhCode() + ","
+//              + opp.getRocId() + ",updateAt=" + opp.getUpdateAt());
+        } else {
+          oppBatch.add(opp);
+          if (oppBatch.size() > XMLConstant.BATCH) {
+            oppDao.saveAll(oppBatch);
+            oppBatch.clear();
+          }
         }
       }
       // } else {
@@ -7572,6 +7879,7 @@ public class NHIWidgetXMLService {
       // }
       // }
     }
+   
     if (oppBatch.size() > 0) {
       oppDao.saveAll(oppBatch);
     }
@@ -7579,7 +7887,7 @@ public class NHIWidgetXMLService {
   }
   
   public static String addICDCMDot(String s) {
-    if (s == null || s.indexOf('.') > 0) {
+    if (s == null || s.indexOf('.') > 0 || s.length() == 0) {
       return s;
     }
     StringBuffer sb = new StringBuffer();
@@ -7653,18 +7961,78 @@ public class NHIWidgetXMLService {
   }
   
   /**
+   * 取出醫令清單中的最小、最大日期
+   * @param sheet
+   * @param columnIndex
+   * @return 民國年月日
+   */
+  private String[] getOrderDateFromSheet(HSSFSheet sheet, int startRowIndex, int columnIndex) {
+    String[] result = new String[2];
+    int min = Integer.MAX_VALUE;
+    int max = Integer.MIN_VALUE; 
+    for (int i = startRowIndex; i < sheet.getPhysicalNumberOfRows(); i++) {
+      HSSFRow row = sheet.getRow(i);
+      if (row == null) {
+        // System.out.println("sheet:" + i + ", row=" + j + " is null");
+        continue;
+      }
+      if (row.getCell(columnIndex) == null) {
+        continue;
+      }
+      
+      int dateInt = 0;
+      String date = null;
+      if (row.getCell(columnIndex).getCellType() == CellType.NUMERIC) {
+        date = String.valueOf(row.getCell(columnIndex).getNumericCellValue());
+        if (date.endsWith(".0")) {
+          date = date.substring(0, date.length() - 2);
+        }
+        dateInt = Integer.parseInt(date);
+      } else {
+        String cellValue = row.getCell(columnIndex).getStringCellValue().trim();
+        if (cellValue.length() == 0) {
+          continue;
+        }
+        date = removeSlash(cellValue);
+        dateInt = Integer.parseInt(date);
+      }
+      if (dateInt < min) {
+        min = dateInt;
+        result[0] = date;
+      }
+      if (dateInt > max) {
+        max = dateInt;
+        result[1] = date;
+      }
+    }
+    return result;
+  }
+  
+  /**
    * 杏翔格式由醫令取得醫療記錄
    * @param opdList
    * @param id
    * @return
    */
-  private OP_D findOpdByTheseOpp(List<OP_D> opdList, HashMap<String, Integer> countMap, 
+  private OP_D findOpdByTheseOpp(List<MR> mrList, List<OP_D> opdList, HashMap<String, Integer> countMap, 
       HashMap<String, String> values) {
     for (OP_D op_D : opdList) {
-      if (op_D.getRocId().equals(values.get("ROC_ID"))) {
+      if (op_D.getRocId() == null) {
+        MR mr = findMRByInhMrId(mrList, values.get("INH_MR"));
+        if (mr == null) {
+          return null;
+        }
+        return findOpdById(opdList, mr.getdId(), false);
+      } else if (op_D.getRocId().equals(values.get("ROC_ID"))) {
        // 先比對卡號，不一致再比其他欄位
-        if (op_D.getCardNo() != null && op_D.getCardNo().equals(values.get("CARD_NO"))) {
-          return op_D;
+        if (op_D.getCardNo() != null) {
+          if (op_D.getCardNo().equals(values.get("CARD_NO"))) {
+            return op_D;
+          }
+          if (values.get("CARD_NO") == null) {
+            // 自費病歷
+            continue;
+          }
         }
         if (op_D.getFuncEndDate().equals(values.get("FUNC_DATE"))) {
           // 先比對領藥號，比不到若當天只有一筆病歷，就回傳該筆病歷
@@ -7736,6 +8104,10 @@ public class NHIWidgetXMLService {
     result.setMrDate(DateTool.convertChineseToYear(values.get("FUNC_DATE")));
     result.setUpdateAt(new java.util.Date());
     result.setOwnExpense(0);
+    result.setReportDot(0L);
+    result.setApplDot(0);
+    result.setTotalDot(0);
+    result.setDeductedDot(0);
     result = mrDao.save(result);
     return result;
   }
@@ -7756,14 +8128,23 @@ public class NHIWidgetXMLService {
       int dsvcDot = 0;
       // 特殊材料明細點數小計, order type = 3
       int metrDot = 0;
-      
+      // 是否為自費案件
+      boolean isZ = true;
+      // 該筆病歷的所有醫令是否有新增或異動過
+      boolean isDirty = false;
       for(int i = oppList.size() - 1; i >=0 ; i--) {
         OP_P opp = oppList.get(i);
         if (opp.getMrId() != mr.getId()) {
           continue;
         }
+        if (opp.isDirty()) {
+          isDirty = true;
+        }
         total += opp.getTotalDot();
-        if ("Y".equals(opp.getPayBy()) || "Z".equals(opp.getPayBy()) ) {
+        if (!PAY_BY_Z.equals(opp.getPayBy())) {
+          isZ = false;
+        }
+        if (PAY_BY_Y.equals(opp.getPayBy()) || PAY_BY_Z.equals(opp.getPayBy()) ) {
           ownExpense += opp.getTotalDot();
         } else if (opp.getDrugNo() != null && opp.getDrugNo().length() == 10) {
           drugDot += opp.getTotalDot();
@@ -7779,6 +8160,9 @@ public class NHIWidgetXMLService {
         oppList.remove(i);
       }
 
+      if (!isDirty) {
+        continue;
+      }
       if (mr.getOwnExpense().intValue() != ownExpense) {
         mr.setIcdcm1(null);
         mr.setOwnExpense(ownExpense);
@@ -7821,11 +8205,114 @@ public class NHIWidgetXMLService {
       opdDao.updateFuncTypeById(opd.getFuncType(), opd.getDrugDot(), opd.getTreatDot(), opd.getMetrDot(),
         opd.getDiagDot(), opd.getDsvcDot(), opd.getId());
       //}
+      mr.setApplStatus(isZ ? 5 : 1);
       mr.setIcdcm1(opd.getIcdCm1());
       mr.setUpdateAt(new java.util.Date());
       mr.setdId(opd.getId());
       mrDao.save(mr);
     }
+  }
+  
+  private void saveMrAndOpd(MR mr, OP_D opd, List<OP_P> oppList, HashMap<String, String> payCodeType, List<OP_P> oppBatch) {
+    StringBuffer sb = new StringBuffer((mr.getCodeAll() == null) ? "," : mr.getCodeAll());
+    StringBuffer sbInhCode = new StringBuffer((mr.getInhCode() == null) ? "," : mr.getInhCode());
+    // 自費金額
+    int ownExpense = 0;
+    // 病歷點數
+    int total = 0;
+    // 用藥明細點數小計, drug_no length=10
+    int drugDot = 0;
+    // 診療明細點數小計, order type = 2
+    int treatDot = 0;
+    // 診察費點數, order type = 0
+    int diagDot = 0;
+    // 藥事服務費點數(調劑費), order type = 9
+    int dsvcDot = 0;
+    // 特殊材料明細點數小計, order type = 3
+    int metrDot = 0;
+    // 是否為自費案件
+    boolean isZ = true;
+    // 該筆病歷的所有醫令是否有新增或異動過
+    boolean isDirty = false;
+    for (int i = oppList.size() - 1; i >= 0; i--) {
+      OP_P opp = oppList.get(i);
+      opp.setMrId(mr.getId());
+      total += opp.getTotalDot();
+      if (!PAY_BY_Z.equals(opp.getPayBy())) {
+        isZ = false;
+      }
+      if (PAY_BY_Y.equals(opp.getPayBy()) || PAY_BY_Z.equals(opp.getPayBy())) {
+        ownExpense += opp.getTotalDot();
+      } else if (opp.getDrugNo() != null && opp.getDrugNo().length() == 10) {
+        drugDot += opp.getTotalDot();
+      } else if (opp.getDrugNo() != null && opp.getDrugNo().length() == 12) {
+        metrDot += opp.getTotalDot();
+      } else if ("2".equals(opp.getOrderType())) {
+        treatDot += opp.getTotalDot();
+      } else if ("0".equals(opp.getOrderType())) {
+        diagDot += opp.getTotalDot();
+      } else if ("9".equals(opp.getOrderType())) {
+        dsvcDot += opp.getTotalDot();
+      }
+      if (opp.getDrugNo() != null) {
+        sb.append(opp.getDrugNo());
+        sb.append(",");
+        opp.setPayCodeType(payCodeType.get(opp.getDrugNo()));
+      }
+      if (opp.getInhCode() != null && opp.getInhCode().length() > 0) {
+        sbInhCode.append(opp.getInhCode());
+        sbInhCode.append(",");
+      }
+      opp.setOpdId(opd.getId());
+      // updateOPPID(oppList, opp);
+      opp.setMrId(mr.getId());
+      maskOPP(opp, opd.getCaseType());
+      opp.setUpdateAt(new java.util.Date());
+      oppBatch.add(opp);
+      if (oppBatch.size() > XMLConstant.BATCH) {
+        oppDao.saveAll(oppBatch);
+        oppBatch.clear();
+      }
+      oppList.remove(i);
+    }
+
+    mr.setCodeAll(sb.toString());
+    mr.setInhCode(sbInhCode.toString());
+    if (mr.getOwnExpense().intValue() != ownExpense) {
+      mr.setOwnExpense(ownExpense);
+    }
+    if (opd.getDrugDot() == null) {
+      opd.setDrugDot(drugDot);
+    }
+    if (opd.getTreatDot() == null) {
+      opd.setTreatDot(treatDot);
+    }
+    if (opd.getMetrDot() == null) {
+      opd.setMetrDot(metrDot);
+    }
+    if (opd.getDiagDot() == null) {
+      opd.setDiagDot(diagDot);
+    }
+    if (opd.getDsvcDot() == null) {
+      opd.setDsvcDot(dsvcDot);
+    }
+    if (opd.getTotalDot() != null) {
+      mr.setTotalDot(opd.getTotalDot() + mr.getOwnExpense());
+    } else {
+      mr.setTotalDot(total);
+    }
+
+    // if (mr.getClinic() != null) {
+    // 該筆OP_D有讀過病歷檔，所以要更新科別，改以醫令科別為主
+    // if (opd.getRocId().equals("S101840488")) {
+    // System.out.println("new func type=" + opd.getFuncType() + ", id=" + opd.getId());
+    // }
+    opdDao.updateFuncTypeById(opd.getFuncType(), opd.getDrugDot(), opd.getTreatDot(),
+        opd.getMetrDot(), opd.getDiagDot(), opd.getDsvcDot(), opd.getId());
+    // }
+    mr.setApplStatus(isZ ? 5 : 1);
+    mr.setUpdateAt(new java.util.Date());
+    mrDao.save(mr);
   }
   
   private void saveMrAndIpd(List<MR> mrList, List<IP_D> ipdList, List<IP_P> ippList) {
@@ -7888,40 +8375,41 @@ public class NHIWidgetXMLService {
           ippList.remove(i);
         }
       }
-      if (ipd.getDiagDot().intValue() != diagDot) {
+      if (ipd.getDiagDot() == null || ipd.getDiagDot().intValue() != diagDot) {
         ipd.setDiagDot(diagDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getDrugDot().intValue() != drugDot) {
+      if (ipd.getDrugDot() == null || ipd.getDrugDot().intValue() != drugDot) {
         ipd.setDrugDot(drugDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getDsvcDot().intValue() != dsvcDot) {
+      if (ipd.getDsvcDot() == null || ipd.getDsvcDot().intValue() != dsvcDot) {
         ipd.setDsvcDot(dsvcDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getInjtDot().intValue() != injtDot) {
+      if (ipd.getInjtDot() == null || ipd.getInjtDot().intValue() != injtDot) {
         ipd.setInjtDot(injtDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getRoomDot().intValue() != roomDot) {
+      if (ipd.getRoomDot() == null || ipd.getRoomDot().intValue() != roomDot) {
         ipd.setRoomDot(roomDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getAneDot().intValue() != aneDot) {
+      if (ipd.getAneDot() == null || ipd.getAneDot().intValue() != aneDot) {
         ipd.setAneDot(aneDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getThrpDot().intValue() != thrpDot) {
+      if (ipd.getThrpDot() == null || ipd.getThrpDot().intValue() != thrpDot) {
         ipd.setThrpDot(thrpDot);
         mr.setIcdcm1(null);
       }
-      if (ipd.getAminDot().intValue() != aminDot) {
+      if (ipd.getAminDot() == null || ipd.getAminDot().intValue() != aminDot) {
         ipd.setAminDot(thrpDot);
         mr.setIcdcm1(null);
       }
-      if (mr.getOwnExpense().intValue() != ownExpense) {
+      if (mr.getOwnExpense() == null || mr.getOwnExpense().intValue() != ownExpense) {
         mr.setOwnExpense(ownExpense);
+        ipd.setOwnExpense(ownExpense);
         mr.setIcdcm1(null);
       }
       
@@ -7929,12 +8417,14 @@ public class NHIWidgetXMLService {
         // 該筆IP_D有讀過病歷檔，所以要更新科別，改以醫令科別為主
         // System.out.println("updateFuncTypeById:" + ipd.getId() + ",roomDot=" + roomDot + ",
         // diagDot=" + diagDot);
-        ipdDao.updateFuncTypeById(ipd.getFuncType(), aneDot, dsvcDot, diagDot, drugDot, injtDot,
-            roomDot, thrpDot, aminDot, ipd.getId());
+        ipdDao.updateFuncTypeById(ipd.getFuncType(), ipd.getApplStartDate(), 
+            ipd.getApplEndDate(), aneDot, dsvcDot, diagDot, drugDot, injtDot,
+            roomDot, thrpDot, aminDot, ownExpense, ipd.getId());
         mr.setTotalDot(total);
         mr.setIcdcm1(ipd.getIcdCm1());
         mr.setUpdateAt(new java.util.Date());
         mr.setdId(ipd.getId());
+        mr.setApplStatus(1);
         mrDao.save(mr);
       }
     }
@@ -7976,7 +8466,11 @@ public class NHIWidgetXMLService {
   
   private IP_D findIpdByIpdValues(List<IP_D> list, HashMap<String, String> values) {
     for (IP_D ipd : list) {
-      if (ipd.getApplEndDate().equals(values.get("APPL_END_DATE"))
+      if (ipd.getPrsnName() == null) {
+        continue;
+      }
+      if ((ipd.getApplEndDate().equals(values.get("APPL_END_DATE")) || 
+          ipd.getApplStartDate().equals(values.get("APPL_START_DATE")))
           && ipd.getRocId().equals(values.get("ROC_ID"))
           && ipd.getPrsnName().equals(values.get("PRSN_NAME"))) {
         return ipd;
@@ -7985,13 +8479,13 @@ public class NHIWidgetXMLService {
     return getIpd(values);
   }
 
-  /**
+   /**
    * 讀取杏翔格式的excel檔
    * @param sheet
    * @return 病歷檔的申報年月
    */
   private String readTheseIPD(XSSFSheet sheet) {
-    System.out.println("readTheseIPD");
+    //System.out.println("readTheseIPD");
     int titleRowIndex = 0;
     // 取得各欄位名稱的位置
     HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0), parameters.getByCat("IP_D"));
@@ -8005,22 +8499,25 @@ public class NHIWidgetXMLService {
     java.util.Date[] orderDate = new java.util.Date[2];
     orderDate[0] = DateTool.convertChineseToYear(orderDateString[0]);
     orderDate[1] = DateTool.convertChineseToYear(orderDateString[1]);
+    
     String result = orderDateString[0].substring(0, 5);
     IP_T ipt = getIpt(result);
     
+    java.util.Date[] orderDateMore = add1Month(orderDate);
     // 避免重複insert
-    List<MR> mrList = mrDao.findByMrEndDateAndDataFormatOrderById(XMLConstant.DATA_FORMAT_IP, orderDate[0], orderDate[1]);
+    List<MR> mrList = mrDao.findByMrEndDateAndDataFormatOrderById(XMLConstant.DATA_FORMAT_IP, orderDateMore[0], orderDateMore[1]);
     
-    List<IP_D> ipdList = ipdDao.findByIDFromMR(orderDate[0], orderDate[1]);
+    List<IP_D> ipdList = ipdDao.findByIDFromMR(orderDateMore[0], orderDateMore[1]);
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
     
+    //System.out.println("readTheseIPD select from " + orderDateMore[0] + " to " + orderDateMore[1]+", ipdList=" + ipdList.size() + ", mrList=" + mrList.size());
     for (int i = titleRowIndex + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       XSSFRow row = sheet.getRow(i);
       if (row == null || row.getCell(0) == null) {
         // System.out.println("sheet:" + i + ", row=" + j + " is null");
         continue;
       }
-      values = ExcelUtil.readCellValue(columnMap, row);
+      values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
       // 存放有差異的欄位
       List<FILE_DIFF> diffList = null;
       IP_D ipd = findIpdByIpdValues(ipdList, values); 
@@ -8104,12 +8601,13 @@ public class NHIWidgetXMLService {
   private IP_D findIpdByTheseIpp(List<IP_D> ipdList, IP_P ipp) {
     for (IP_D ipd : ipdList) {
       if (ipd.getRocId().equals(ipp.getRocid()) && ipd.getIcdCm1().equals(ipp.getIcdCm1())) {
-        if (ipp.getBedNo().equals(ipd.getBedNo())) {
+        //同一病患因換床，導致床號不同
+        //if (ipp.getBedNo().equals(ipd.getBedNo())) {
           if (ipd.getPrsnName() == null) {
             ipd.setPrsnName(ipp.getPrsnName());
           }
           return ipd;
-        }
+        //}
       }
     }
     return null;
@@ -8120,39 +8618,50 @@ public class NHIWidgetXMLService {
    * @param sheet
    */
   private void readTheseIPP(XSSFSheet sheet) {
-    System.out.println("readTheseIPP");
+    //System.out.println("readTheseIPP");
     // 取得各欄位名稱的位置
     int titleRowIndex = 2;
     HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRowIndex), parameters.getByCat("IP_P"));
     //testColumnMap(columnMap);
-    String[] orderDateString = getOrderDateFromSheet(sheet, titleRowIndex + 1, getColumnIndex(columnMap, "FUNC_DATE"));
+    HashMap<String, List<IP_P>> ippMap = aggregateTheseIPP(sheet, titleRowIndex + 1, columnMap);
+    List<IP_P> minMax = ippMap.get("MINMAX");
     java.util.Date[] orderDate = new java.util.Date[2];
-    orderDate[0] = DateTool.convertChineseToYear(orderDateString[0]);
-    orderDate[1] = DateTool.convertChineseToYear(orderDateString[1]);
+    orderDate[0] = DateTool.convertChineseToYear(minMax.get(0).getStartTime().substring(0, 7));
+    orderDate[1] = DateTool.convertChineseToYear(minMax.get(1).getEndTime().substring(0, 7));
     
-    String applYm = orderDateString[0].substring(0, 5);
+    String applYm = minMax.get(1).getEndTime().substring(0, 5);
     IP_T ipt = getIpt(applYm);
     // 避免重複insert
-    List<MR> mrList = mrDao.getByDataFormatAndMrDateBetween(XMLConstant.DATA_FORMAT_IP, orderDate[0], orderDate[1]);
-    List<IP_D> ipdList = ipdDao.findByIDFromMR(orderDate[0],  orderDate[1]);
-    
+    java.util.Date[] orderDateMore = add1Month(orderDate);
+    // 現存的病歷
+    List<MR> mrList = mrDao.getByDataFormatAndMrDateBetween(XMLConstant.DATA_FORMAT_IP, orderDateMore[0], orderDateMore[1]);
+    // 有異動或新增的病歷
+    List<MR> dirtyMR = new ArrayList<MR>();
+    // 現存的 IP_D list
+    List<IP_D> ipdList = ipdDao.findByIDFromMR(orderDateMore[0],  orderDateMore[1]);
+    // 有異動或新增的IP_D list
+    List<IP_D> dirtyIPD = new ArrayList<IP_D>(); 
     List<IP_P> ippListDB = ippDao.getByMrIdFromMR(orderDate[0],  orderDate[1]);
     // 要存到 DB 的 batch
     List<IP_P> ippBatch = new ArrayList<IP_P>();
+    
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
-    HashMap<String, List<IP_P>> ippMap = aggregateTheseIPP(sheet, titleRowIndex + 1, columnMap);
+   
+    // System.out.println("select from " + orderDateMore[0] + " to " + orderDateMore[1]+", ipdList=" + ipdList.size() + ", mrList=" + mrList.size());
     for (String key : ippMap.keySet()) {
-      //System.out.println(key + "(" + ippMap.get(key).size()+")");
+      if ("MINMAX".equals(key)) {
+        continue;
+      }
       List<IP_P> newIppList = ippMap.get(key);
       MR mr = null;
       IP_D ipd = findIpdByTheseIpp(ipdList, newIppList.get(0));
       if (ipd == null) {
         IP_P orderHasStartEndTime = null;
-        int maxEndTime = 0;
-        for (int i=0; i<newIppList.size(); i++) {
+        long maxEndTime = 0;
+        for (int i = 0; i < newIppList.size(); i++) {
           IP_P ipp = newIppList.get(i);
-          if (ipp.getEndTime() != null) {
-            Integer endTime = Integer.parseInt(ipp.getEndTime());
+          if (ipp.getStartTime() != null && ipp.getEndTime() != null) {
+            long endTime = Long.parseLong(ipp.getEndTime());
             if (endTime > maxEndTime) {
               maxEndTime = endTime;
               orderHasStartEndTime = ipp;
@@ -8168,41 +8677,94 @@ public class NHIWidgetXMLService {
         mr.setdId(ipd.getId());
         ipdList.add(ipd);
         mrList.add(mr);
+        dirtyIPD.add(ipd);
+        dirtyMR.add(mr);
       } else {
-        //System.out.println("found ipd:" + ipd.getRocId());
         mr = findMRByMrId(mrList, ipd.getMrId());
         IP_P ipp = newIppList.get(0);
         if (ipd.getFuncType() == null || !ipd.getFuncType().equals(ipp.getFuncType())) {
           // 用主診斷碼是否為 null 當做mr是否要更新的依據
           ipd.setFuncType(ipp.getFuncType());
           mr.setFuncType(ipp.getFuncType());
-          mr.setIcdcm1(null);  
+          mr.setIcdcm1(null);
         }
       }
-      
-      for (int i=0; i<newIppList.size(); i++) {
+
+      boolean isIpdDirty = false;
+      for (int i = 0; i < newIppList.size(); i++) {
         IP_P ipp = newIppList.get(i);
         ipp.setMrId(mr.getId());
         ipp.setIpdId(ipd.getId());
-        
+
         // 檢查該筆醫令是否已存在DB
         boolean isFound = false;
-        for (int j=0; j<ippListDB.size();j++) {
+        for (int j = 0; j < ippListDB.size(); j++) {
           IP_P ippDB = ippListDB.get(j);
-          if (ippDB.getMrId() == mr.getdId() && ippDB.getOrderCode().equals(ipp.getOrderCode())) {
-            isFound = true;
-            ipp.setId(ippDB.getId());
+
+          if (ippDB.getMrId().longValue() != mr.getId().longValue()) {
+            continue;
+          }
+          if (ippDB.getInhCode() != null && !ippDB.getInhCode().equals(ipp.getInhCode())) {
+            continue;
+          }
+          isFound = true;
+          ipp.setId(ippDB.getId());
+          // 整合起始、結束日及數量
+          if (ipp.getStartTime() != null && ipp.getEndTime() != null) {
+            long start = Long.parseLong(ippDB.getStartTime().substring(0, 7));
+            long end = Long.parseLong(ippDB.getEndTime().substring(0, 7));
+            long newIppStart = Long.parseLong(ipp.getStartTime().substring(0, 7));
+            long newIppEnd = Long.parseLong(ipp.getEndTime().substring(0, 7));
+
+            if (newIppStart < start || newIppEnd > end) {
+              ipp.setTotalQ(ippDB.getTotalQ().doubleValue() + ipp.getTotalQ().doubleValue());
+              ipp.setTotalDot((int) Math.round(ipp.getTotalQ() * ipp.getUnitP()));
+              if (Long.parseLong(ipd.getApplStartDate()) > newIppStart) {
+                ipd.setApplStartDate(ipp.getStartTime().substring(0, 7));
+                mr.setMrDate(DateTool.convertChineseToYear(ipp.getStartTime().substring(0, 7)));
+                isIpdDirty = true;
+              }
+              if (Long.parseLong(ipd.getApplEndDate()) < newIppEnd) {
+                ipd.setApplEndDate(ipp.getEndTime().substring(0, 7));
+                mr.setMrEndDate(DateTool.convertChineseToYear(ipp.getEndTime().substring(0, 7)));
+                isIpdDirty = true;
+              }
+            }
             break;
           }
         }
         if (!isFound) {
           ippListDB.add(ipp);
+          if (ipp.getOrderCode() != null) {
+            if (mr.getCodeAll() == null) {
+              mr.setCodeAll("," + ipp.getOrderCode() + ",");
+              isIpdDirty = true;
+            } else if (mr.getCodeAll().indexOf("," + ipp.getOrderCode() + ",") < 0){
+              mr.setCodeAll(mr.getCodeAll() + ipp.getOrderCode() + ",");
+              isIpdDirty = true;
+            }
+          }
+          if (ipp.getInhCode() != null && ipp.getInhCode().length() > 0) {
+            if (mr.getInhCode() == null) {
+              mr.setInhCode("," + ipp.getInhCode() + ",");
+              isIpdDirty = true;
+            } else if (mr.getInhCode().indexOf("," + ipp.getInhCode() + ",") < 0){
+              mr.setInhCode(mr.getInhCode() + ipp.getInhCode() + ",");
+              isIpdDirty = true;
+            }
+          }
         }
+
         ippBatch.add(ipp);
         if (ippBatch.size() > XMLConstant.BATCH) {
           ippDao.saveAll(ippBatch);
           ippBatch.clear();
         }
+      }
+      if (isIpdDirty) {
+        mr.setIcdcm1(null);
+        dirtyIPD.add(ipd);
+        dirtyMR.add(mr);
       }
     }
     
@@ -8210,7 +8772,7 @@ public class NHIWidgetXMLService {
       ippDao.saveAll(ippBatch);
       ippBatch.clear();
     }
-    saveMrAndIpd(mrList, ipdList, ippListDB);    
+    saveMrAndIpd(dirtyMR, dirtyIPD, ippListDB);    
   }
   
   /**
@@ -8223,20 +8785,24 @@ public class NHIWidgetXMLService {
   private HashMap<String, List<IP_P>> aggregateTheseIPP(XSSFSheet sheet, int startRow, HashMap<Integer, String> columnMap){
     HashMap<String, List<IP_P>> result = new HashMap<String, List<IP_P>>();
     HashMap<String, String> payCodeTypes = getPayCodeType();
+    long min = Long.MAX_VALUE;
+    long max = Long.MIN_VALUE;
+    IP_P ippMax = null;
+    IP_P ippMin = null;
     for (int i = startRow; i < sheet.getPhysicalNumberOfRows(); i++) {
       XSSFRow row = sheet.getRow(i);
       if (row == null || row.getCell(0) == null) {
         continue;
       }
-      HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, row);
-      values.put("FUNC_DATE", removeSlash(values.get("FUNC_DATE")));
-      values.put("ICD_CM_1", addICDCMDot(values.get("ICD_CM_1")));
-      if (ISMASK) {
-        values.put("ROC_ID", StringUtility.maskString(values.get("ROC_ID"), StringUtility.MASK_MOBILE));
-        values.put("NAME", StringUtility.maskString(values.get("NAME"), StringUtility.MASK_NAME));
-        values.put("PRSN_ID", StringUtility.maskString(values.get("PRSN_ID"), StringUtility.MASK_MOBILE));
+      HashMap<String, String> values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
+      if (values.get("ROC_ID") == null && values.get("ICD_CM_1") == null) {
+        continue;
       }
-      String key = values.get("ROC_ID") + values.get("ICD_CM_1") + values.get("BED_NO");
+      if (values.get("FUNC_DATE") != null) {
+        values.put("FUNC_DATE", values.get("FUNC_DATE") + "0000"); 
+      }
+      // 因病患可能換床，所以不抓床號
+      String key = values.get("ROC_ID") + values.get("ICD_CM_1"); //  + values.get("BED_NO");
       List<IP_P> ippList = result.get(key);
       if (ippList == null) {
         ippList = new ArrayList<IP_P>();
@@ -8247,34 +8813,52 @@ public class NHIWidgetXMLService {
         if (ipp.getInhCode().equals(values.get("INH_CODE"))) {
           // 院內碼
           isFound = true;
-          int start = Integer.parseInt(ipp.getStartTime());
-          int end = Integer.parseInt(ipp.getEndTime());
-          int funcDate = Integer.parseInt(values.get("FUNC_DATE"));
-          if (funcDate == end) {
-            if (ipp.getApplStatus().intValue() == APPL_STATUS_OE) {
-              ipp.setTotalQ(ipp.getTotalQ().doubleValue() + Double.parseDouble(values.get("APPL_STATUS")));  
-            } else {
-              ipp.setTotalQ(ipp.getTotalQ().doubleValue() + Double.parseDouble(values.get("TOTAL_Q")));  
-            }
-            ipp.setTotalDot((int) Math.round(ipp.getTotalQ() * ipp.getUnitP()));
-          } else if (funcDate < start) {
+          long start = Long.parseLong(ipp.getStartTime());
+          long end =  Long.parseLong(ipp.getEndTime());
+          long funcDate =  Long.parseLong(values.get("FUNC_DATE"));
+          
+          if (ipp.getApplStatus().intValue() == APPL_STATUS_OE) {
+            ipp.setTotalQ(ipp.getTotalQ().doubleValue() + Double.parseDouble(values.get("APPL_STATUS")));  
+          } else {
+            ipp.setTotalQ(ipp.getTotalQ().doubleValue() + Double.parseDouble(values.get("TOTAL_Q")));  
+          }
+          ipp.setTotalDot((int) Math.round(ipp.getTotalQ() * ipp.getUnitP()));
+          
+          if (funcDate < start) {
             ipp.setStartTime(values.get("FUNC_DATE"));
+            if (funcDate < min) {
+              min = funcDate;
+              ippMin = ipp;
+            }
           } else if (funcDate > end) {
             ipp.setEndTime(values.get("FUNC_DATE"));
+            if (funcDate > max) {
+              max = funcDate;
+              ippMax = ipp;
+            }
           }
           break;
         }
       }
       if (!isFound) {
-        IP_P ipp = getIpp(values);
+        IP_P ipp = getIpp(values, "THESE");
         ipp.setStartTime(values.get("FUNC_DATE"));
         ipp.setEndTime(values.get("FUNC_DATE"));
+        long dateInt = Long.parseLong(values.get("FUNC_DATE"));
+        if (dateInt < min) {
+          min = dateInt;
+          ippMin = ipp;
+        }
+        if (dateInt > max) {
+          max = dateInt;
+          ippMax = ipp;
+        }
         String payCodeType = payCodeTypes.get(ipp.getOrderCode());
         if ("20".equals(payCodeType) || payCodeType == null) {
           if (ipp.getOrderCode() != null) {
             if (ipp.getOrderCode().length() == 10) {
-              // 藥費
-              payCodeType = "7";
+              // 西藥藥品
+              payCodeType = "22";
             } else if (ipp.getOrderCode().length() == 10) {
               // 衛材品項費
               payCodeType = "23";
@@ -8286,7 +8870,10 @@ public class NHIWidgetXMLService {
         ippList.add(ipp);
       }
     }
-    
+    ArrayList<IP_P> minMax = new ArrayList<IP_P>();
+    minMax.add(ippMin);
+    minMax.add(ippMax);
+    result.put("MINMAX", minMax);
     return result;
   }
   
@@ -8300,13 +8887,17 @@ public class NHIWidgetXMLService {
   private HashMap<String, List<OP_P>> aggregateTheseOPP(XSSFSheet sheet, int startRow, HashMap<Integer, String> columnMap){
     HashMap<String, List<OP_P>> result = new HashMap<String, List<OP_P>>();
     HashMap<String, String> payCodeTypes = getPayCodeType();
+    long min = Long.MAX_VALUE;
+    long max = Long.MIN_VALUE;
+    OP_P oppMax = null;
+    OP_P oppMin = null;
     for (int i = startRow; i < sheet.getPhysicalNumberOfRows(); i++) {
       XSSFRow row = sheet.getRow(i);
       if (row == null || row.getCell(0) == null) {
         continue;
       }
       HashMap<String, String> values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
-      String key = values.get("ROC_ID") + values.get("CARD_NO") + values.get("FUNC_TYPE");
+      String key = values.get("ROC_ID") + values.get("CARD_NO");
       List<OP_P> oppList = result.get(key);
       if (oppList == null) {
         oppList = new ArrayList<OP_P>();
@@ -8331,19 +8922,37 @@ public class NHIWidgetXMLService {
             long newTime = Long.valueOf(values.get("FUNC_DATE") + "0000");
             if (newTime < startTime) {
               opp.setStartTime(String.valueOf(newTime));
+              if (newTime < min) {
+                min = newTime;
+                oppMin = opp;
+              }
             } else if (newTime > endTime) {
               opp.setEndTime(String.valueOf(newTime));
+              if (newTime > max) {
+                max = newTime;
+                oppMax = opp;
+              }
             }
           }
           break;
         }
       }
       if (!isFound) {
-        OP_P opp = getOpp(values);
+        OP_P opp = getOpp(values, "THESE");
+        long newTime = Long.parseLong(opp.getStartTime());
+        if (newTime < min) {
+          min = newTime;
+          oppMin = opp;
+        }
+        newTime = Long.parseLong(opp.getEndTime());
+        if (newTime > max) {
+          max = newTime;
+          oppMax = opp;
+        }
         if (opp.getDrugNo() != null) {
           if (opp.getDrugNo().length() == 10) {
             // 藥費
-            opp.setPayCodeType("7");
+            opp.setPayCodeType("22");
             // 醫令類別：用藥明細
             opp.setOrderType("1");
           } else if (opp.getDrugNo().length() == 12) {
@@ -8363,6 +8972,92 @@ public class NHIWidgetXMLService {
         oppList.add(opp);
       }
     }
+    ArrayList<OP_P> minMax = new ArrayList<OP_P>();
+    minMax.add(oppMin);
+    minMax.add(oppMax);
+    result.put("MINMAX", minMax);
+    return result;
+  }
+  
+  /**
+   * 將杏翔住院醫令清單中同一病患同科別同醫令的放在一起，如 一般病床住院診察費(天) 有6筆， 放成一筆，寫上START_TIME, END_TIME
+   * @param sheet
+   * @param startRow
+   * @param columnMap
+   * @return
+   */
+  private HashMap<String, List<IP_P>> aggregateLeadtekIPP(HSSFSheet sheet, int startRow, HashMap<Integer, String> columnMap){
+    HashMap<String, List<IP_P>> result = new HashMap<String, List<IP_P>>();
+    HashMap<String, String> payCodeTypes = getPayCodeType();
+    long min = Long.MAX_VALUE;
+    long max = Long.MIN_VALUE;
+    IP_P ippMax = null;
+    IP_P ippMin = null;
+    for (int i = startRow; i < sheet.getPhysicalNumberOfRows(); i++) {
+      HSSFRow row = sheet.getRow(i);
+      if (row == null || row.getCell(0) == null) {
+        continue;
+      }
+      HashMap<String, String> values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
+      if (values.get("INH_NO") == null) {
+        continue;
+      }
+      List<IP_P> ippList = result.get(values.get("INH_NO"));
+      if (ippList == null) {
+        ippList = new ArrayList<IP_P>();
+        result.put(values.get("INH_NO"), ippList);
+      }
+      boolean isFound = false;
+      for (IP_P ipp : ippList) {
+        if (ipp.getInhCode() == null) {
+          continue;
+        }
+        if (ipp.getInhCode().equals(values.get("INH_CODE"))) {
+          // 院內碼
+          isFound = true;
+          long start = Long.parseLong(ipp.getStartTime());
+          long end =  Long.parseLong(ipp.getEndTime());
+          long funcDate =  Long.parseLong(values.get("FUNC_DATE"));
+          ipp.setTotalQ(ipp.getTotalQ().doubleValue() + Double.parseDouble(values.get("TOTAL_Q")));  
+          ipp.setTotalDot(ipp.getTotalDot().intValue() + (int) Double.parseDouble(values.get("TOTAL_DOT")));
+
+          if (ipp.getStartTime() != null && ipp.getStartTime().length() == 11) {
+            if (funcDate < start) {
+              ipp.setStartTime(values.get("FUNC_DATE"));
+              if (funcDate < min) {
+                min = funcDate;
+                ippMin = ipp;
+              }
+            } else if (funcDate > end) {
+              ipp.setEndTime(values.get("FUNC_DATE"));
+              if (funcDate > max) {
+                max = funcDate;
+                ippMax = ipp;
+              }
+            }
+          }
+          break;
+        }
+      }
+      if (!isFound) {
+        IP_P ipp = getIpp(values, "LEADTEK");
+        String payCodeType = payCodeTypes.get(ipp.getOrderCode());
+        if ("20".equals(payCodeType) || payCodeType == null) {
+          if (ipp.getOrderCode() != null) {
+            if (ipp.getOrderCode().length() == 10) {
+              // 西藥藥品
+              payCodeType = "22";
+            } else if (ipp.getOrderCode().length() == 10) {
+              // 衛材品項費
+              payCodeType = "23";
+            }
+          }
+        }
+        ipp.setPayCodeType(payCodeType);
+        ipp.setUpdateAt(new java.util.Date());
+        ippList.add(ipp);
+      }
+    }
     return result;
   }
   
@@ -8373,8 +9068,12 @@ public class NHIWidgetXMLService {
     result.setName(ipp.getName());
     result.setPrsnName(ipp.getPrsnName());
     result.setIcdCm1(ipp.getIcdCm1());
-    result.setApplStartDate(ipp.getStartTime());
-    result.setApplEndDate(ipp.getEndTime());
+    if (ipp.getStartTime() != null) {
+      result.setApplStartDate(ipp.getStartTime().substring(0, 7));
+    }
+    if (ipp.getEndTime() != null) {
+      result.setApplEndDate(ipp.getEndTime().substring(0, 7));
+    }
     result.setUpdateAt(new java.util.Date());
     result.setBedNo(ipp.getBedNo());
     result.setIdBirthYmd(ipp.getBirthday());
@@ -8404,12 +9103,15 @@ public class NHIWidgetXMLService {
     result.setName(ipp.getName());
     result.setPrsnName(ipp.getPrsnName());
     result.setIcdcm1(ipp.getIcdCm1());
-    result.setMrDate(DateTool.convertChineseToYear(ipp.getStartTime()));
-    result.setMrEndDate(DateTool.convertChineseToYear(ipp.getEndTime()));
+    result.setMrDate(DateTool.convertChineseToYear(ipp.getStartTime().substring(0, 7)));
+    result.setMrEndDate(DateTool.convertChineseToYear(ipp.getEndTime().substring(0, 7)));
     result.setApplYm(ipp.getEndTime().substring(0, 5));
     result.setInhMrId(ipp.getInhMr());
     result.setTotalDot(0);
     result.setOwnExpense(0);
+    result.setReportDot(0L);
+    result.setApplDot(0);
+    result.setDeductedDot(0);
     result.setUpdateAt(new java.util.Date());
     if (ISMASK) {
       result.setRocId(StringUtility.maskString(result.getRocId(), StringUtility.MASK_MOBILE));
@@ -8445,6 +9147,10 @@ public class NHIWidgetXMLService {
     } else if (newOPP.getDrugFre() != null) {
       result = true;
       opp.setDrugFre(newOPP.getDrugFre());
+    }
+    if (opp.getTotalQ().doubleValue() != newOPP.getTotalQ().doubleValue()) {
+      result = true;
+      opp.setTotalQ(newOPP.getTotalQ());
     }
     return result;
   }
@@ -8552,7 +9258,7 @@ public class NHIWidgetXMLService {
   
   private OP_P findOppByOppValues(HashMap<String, List<OP_P>> map, HashMap<String, String> values) {
     for (String key : map.keySet()) {
-      String keyNew = values.get("ROC_ID") + values.get("CARD_NO") + values.get("FUNC_TYPE");
+      String keyNew = values.get("ROC_ID") + values.get("CARD_NO");
       if (!key.equals(keyNew)) {
         continue;
       }
@@ -8574,4 +9280,688 @@ public class NHIWidgetXMLService {
     }
     return null;
   }
+  
+  /**
+   * 住院病歷多抓前、後各1個月，避免抓不到跨月病歷
+   * @param old
+   * @return
+   */
+  private java.util.Date[] add1Month(java.util.Date[] old) {
+    java.util.Date[] result = new java.util.Date[2];
+    Calendar calStart = Calendar.getInstance();
+    calStart.setTime(old[0]);
+    Calendar calEnd = Calendar.getInstance();
+    calEnd.setTime(old[1]);
+    
+    calStart.add(Calendar.MONTH, -1);
+    calEnd.add(Calendar.MONTH, 1);
+    result[0] = calStart.getTime();
+    result[1] = calEnd.getTime();
+
+    return result;
+  }
+
+  /// 匯入核刪excel檔案
+  public List<DEDUCTED_NOTE> readDeductedNoteHSSFSheet(Sheet sheet, String mrid, String editorName)
+      throws ParseException {
+
+    // 取得最後一筆row位置作為資料size()
+    int lastRowNum = sheet.getLastRowNum();
+    // 由標題列取得各欄位名稱的位置
+    HashMap<Integer, String> columnMap = new HashMap<Integer, String>();
+    HashMap<String, String> values = new HashMap<String, String>();
+    List<HashMap<String, String>> valueList = new ArrayList<HashMap<String, String>>();
+    DEDUCTED_NOTE note = new DEDUCTED_NOTE();
+    List<DEDUCTED_NOTE> listNote = new ArrayList<DEDUCTED_NOTE>();
+    /// 先取欄位名稱
+    for (int v = 0; v < lastRowNum + 1; v++) {
+      try {
+        columnMap = ExcelUtil.readTitleRow(sheet.getRow(v));
+        if (columnMap.get(16).equals("備註"))
+          columnMap.replace(16, "核刪備註");
+        if (columnMap.get(26).equals("備註"))
+          columnMap.replace(26, "申復備註");
+        if (columnMap.get(34).equals("備註"))
+          columnMap.replace(34, "爭議備註");
+        System.out.println("columnMap -> " + columnMap.toString());
+        break;
+      } catch (Exception e) {
+        continue;
+      }
+
+    }
+    /// 再取值
+    for (int v = 0; v < lastRowNum + 1; v++) {
+      try {
+        values = ExcelUtil.readCellValue(columnMap, sheet.getRow(v));
+        System.out.println("values -> " + values.toString());
+        System.out.println("lastRowNum -> " + lastRowNum);
+        /// 如果是表頭就略過
+        if (values.get("病歷號").equals("病歷號")) {
+          values = new HashMap<String, String>();
+          continue;
+        }
+        valueList.add(values);
+        values = new HashMap<String, String>();
+      } catch (Exception e) {
+        continue;
+      }
+
+    }
+    System.out.println("valueList -> " + valueList.toString());
+
+    if (valueList.size() > 0) {
+      for (HashMap<String, String> map : valueList) {
+        note.setMrId(Long.valueOf(map.get("病歷號")));
+        note.setActionType(1);
+        note.setItem(map.get("項目"));
+        note.setCat(map.get("類別"));
+        note.setL1(map.get("大分類"));
+        note.setL2(map.get("中分類"));
+        note.setL3(map.get("小分類"));
+        note.setSubCat(map.get("次分類"));
+        note.setCode(map.get("核刪代碼"));
+        note.setDeductedOrder(map.get("核刪醫令"));
+        note.setDeductedQuantity(map.get("核刪數量") == null ? null : Integer.valueOf(map.get("核刪數量")));
+        note.setDeductedAmount(map.get("核刪總點數") == null ? null : Integer.valueOf(map.get("核刪總點數")));
+        note.setReason(map.get("核減理由"));
+        note.setNote(map.get("核刪備註"));
+        note.setRollbackM(
+            map.get("放大回推金額(月)") == null ? null : Integer.valueOf(map.get("放大回推金額(月)")));
+        note.setRollbackQ(
+            map.get("放大回推金額(季)") == null ? null : Integer.valueOf(map.get("放大回推金額(季)")));
+        note.setAfrQuantity(map.get("申復數量") == null ? null : Integer.valueOf(map.get("申復數量")));
+        note.setAfrAmount(map.get("申復金額") == null ? null : Integer.valueOf(map.get("申復金額")));
+        note.setAfrPayQuantity(
+            map.get("申復補付數量") == null ? null : Integer.valueOf(map.get("申復補付數量")));
+        note.setAfrAmount(map.get("申復補付金額") == null ? null : Integer.valueOf(map.get("申復補付金額")));
+        note.setAfrNoPayCode(map.get("申復不補付理由代碼"));
+        note.setAfrNoPayDesc(map.get("申復不補付理由說明"));
+        note.setAfrNote(map.get("申復備註"));
+        note.setDisputeQuantity(
+            map.get("核刪醫令爭議數量") == null ? null : Integer.valueOf(map.get("核刪醫令爭議數量")));
+        note.setDisputeAmount(map.get("爭議金額") == null ? null : Integer.valueOf(map.get("爭議金額")));
+        note.setDisputePayQuantity(
+            map.get("爭議補付數量") == null ? null : Integer.valueOf(map.get("爭議補付數量")));
+        note.setDisputePayAmount(
+            map.get("爭議補付金額") == null ? null : Integer.valueOf(map.get("爭議補付金額")));
+        note.setDisputeNoPayCode(map.get("爭議不補付理由代碼"));
+        note.setDisputeNoPayDesc(map.get("爭議不補付理由說明"));
+        note.setDisputeNote(map.get("爭議備註"));
+        note.setEditor(editorName);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+        if (map.get("核刪日期") != null && !map.get("核刪日期").isEmpty()) {
+
+          java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("核刪日期")));
+          String outputDate = sdf.format(d);
+          note.setDeductedDate(sdf.parse(outputDate));
+
+        }
+        if (map.get("放大回推日期") != null && !map.get("放大回推日期").isEmpty()) {
+          java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("放大回推日期")));
+          String outputDate = sdf.format(d);
+          note.setRollbackDate(sdf.parse(outputDate));
+        }
+        if (map.get("爭議日期") != null && !map.get("爭議日期").isEmpty()) {
+          java.util.Date d = DateUtil.getJavaDate(Double.valueOf(map.get("爭議日期")));
+          String outputDate = sdf.format(d);
+          note.setDisputeDate(sdf.parse(outputDate));
+        }
+
+        if (mrid.equals(map.get("病歷號"))) {
+          listNote.add(note);
+        }
+        /// 寫入資料庫
+        newDeductedNote(map.get("病歷號"), note);
+        note = new DEDUCTED_NOTE();
+      }
+      return listNote;
+    } else {
+      return listNote;
+    }
+  }
+
+  /**
+   * 將Leadtek門診醫令清單中同一INH_NO的醫令放在一起
+   * @param sheet
+   * @param startRow
+   * @param columnMap
+   * @return
+   */
+  private HashMap<String, List<OP_P>> aggregateLeadtekOPP(HSSFSheet sheet, int startRow,
+      HashMap<Integer, String> columnMap) {
+    HashMap<String, List<OP_P>> result = new HashMap<String, List<OP_P>>();
+    HashMap<String, String> payCodeTypes = getPayCodeType();
+    for (int i = startRow; i < sheet.getPhysicalNumberOfRows(); i++) {
+      HSSFRow row = sheet.getRow(i);
+      if (row == null || row.getCell(0) == null) {
+        continue;
+      }
+      HashMap<String, String> values = formatOPDValues(ExcelUtil.readCellValue(columnMap, row));
+      OP_P opp = getOpp(values, "LEADTEK");
+      List<OP_P> oppList = result.get(values.get("INH_NO"));
+      if (oppList == null) {
+        oppList = new ArrayList<OP_P>();
+        result.put(values.get("INH_NO"), oppList);
+      }
+
+      if (opp.getDrugNo() != null) {
+        if (opp.getDrugNo().length() == 10) {
+          // 藥費
+          opp.setPayCodeType("22");
+          // 醫令類別：用藥明細
+          opp.setOrderType("1");
+        } else if (opp.getDrugNo().length() == 12) {
+          // 衛材品項費
+          opp.setPayCodeType("23");
+          // 醫令類別：特殊材料
+          opp.setOrderType("3");
+        } else {
+          opp.setPayCodeType(payCodeTypes.get(opp.getDrugNo()));
+          if ("6".equals(opp.getPayCodeType())) {
+            // 6:調劑費 <-> order type 9:藥事服務費
+            opp.setOrderType("9");
+          }
+        }
+      }
+      opp.setUpdateAt(new java.util.Date());
+      oppList.add(opp);
+    }
+    return result;
+  }
+  
+  public void exportCSV(String exportType,String dataFormat,String dateType,String year,String month,String fnSdate,String fnEdate, String outSdate,String outEdate,String inhCode,HttpServletResponse response) throws IOException {
+	  ///申報日
+	  String applYM = "";
+	  ///治療結束日起
+	  String fsdate = "";
+	  ///治療結束日迄
+	  String fedate = "";
+	  ///出院日起
+	  String osdate = "";
+	  ///出院日迄
+	  String oedate = "";
+	  ///就醫類型
+	  String[] dateFormats = {};
+	  ///就醫紀錄編號
+	  String[] inhCodes = {};
+	  if(exportType.equals("fileExportTypeOne")) {
+		  dateFormats = StringUtility.splitBySpace(dataFormat);
+		  switch(dateType) {
+			  case "applyDate":
+				  if(year != null && !year.isEmpty()) {
+					  int yy = Integer.parseInt(year);
+					  int mm = Integer.parseInt(month);
+					  int ym = yy * 100 + mm;
+					  String d = DateTool.convertToChineseYear(String.valueOf(ym*100));
+					  applYM = d.substring(0,d.length()-2);
+				   }
+			  break;
+			  case "cureFinishRange":
+				  if(fnSdate != null && !fnSdate.isEmpty()) {
+					  String rs = fnSdate.replaceAll("-", "");
+					  String re = fnEdate.replaceAll("-", "");
+					  fsdate = DateTool.convertToChineseYear(rs);
+					  fedate = DateTool.convertToChineseYear(re);
+				  }
+			  break;
+			  case "lpRange":
+				  if(outSdate != null && !outSdate.isEmpty()) {
+					  String rs = outSdate.replaceAll("-", "");
+					  String re = outEdate.replaceAll("-", "");
+					  osdate = DateTool.convertToChineseYear(rs);
+					  oedate = DateTool.convertToChineseYear(re);
+				  }
+			  break;
+		  }
+	  }
+	  else {
+		  inhCodes = StringUtility.splitBySpace(inhCode);
+	  }
+	  
+	  
+	  List<LinkedHashMap<String, Object>> ipdList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> ippList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> ipsoList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> opdList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> oppList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> opsoList = new ArrayList<LinkedHashMap<String,Object>>();
+	  List<LinkedHashMap<String, Object>> deductedNoteList = new ArrayList<LinkedHashMap<String,Object>>();
+	  int ipdCount = 0;
+	  int ippCount = 0;
+	  int ipsoCount = 0;
+	  int opdCount = 0;
+	  int oppCount = 0;
+	  int opsoCount = 0;
+	  int deductedCount = 0;
+	  
+	  if(exportType.equals("fileExportTypeOne")) {
+		  if(dateFormats.length > 1) {
+			  
+			  ipdCount = exportCSVDao.ipdCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+			  ippCount = exportCSVDao.ippCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+			  ipsoCount = exportCSVDao.ipsoCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+			  opdCount = exportCSVDao.opdCount(applYM, fsdate, fedate, inhCodes);
+			  oppCount = exportCSVDao.oppCount(applYM, fsdate, fedate, inhCodes);
+			  opsoCount = exportCSVDao.opsoCount(applYM, fsdate, fedate, inhCodes);
+			  deductedCount = exportCSVDao.deductedNoteCount(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes);
+			  
+			  if(ipdCount > 2000) { 
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = ipdCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  ipdList = dataList;
+			  }
+			  else {
+				  ipdList = exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, null, null);
+			  }
+			  if(ippCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = ippCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  ippList = dataList;
+			  }
+			  else {
+				  ippList = exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+			  }
+			  if(ipsoCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = ipsoCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  ipsoList = dataList;
+			  }
+			  else {
+				  ipsoList = exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+			  }
+			  if(opdCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = opdCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  opdList = dataList;
+			  }
+			  else {
+				  opdList = exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes,null,null);
+			  }
+			  if(oppCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = oppCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  oppList = dataList;
+			  }
+			  else {
+				  oppList = exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes,null,null);
+			  }
+			  if(opsoCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = opsoCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  opsoList = dataList;
+			  }
+			  else {
+				  opsoList = exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes,null,null);
+			  }
+			  if(deductedCount > 2000) {
+				  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+				  double d = deductedCount;
+				  Long l =  Math.round(d / 1000.0);
+				  int c = 1000;
+				  for(int i=0; i<l; i++) {
+					  dataList.addAll(exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes, "1000", String.valueOf(c)));
+					  c += 1000;
+				  }
+				  deductedNoteList = dataList;
+			  }
+			  else {
+				  deductedNoteList = exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes,null,null);
+			  }
+		  }
+		  else {
+			 
+			  String dataformat = dateFormats[0];
+			  if(dataformat.equals("op")) {
+				  opdCount = exportCSVDao.opdCount(applYM, fsdate, fedate, inhCodes);
+				  oppCount = exportCSVDao.oppCount(applYM, fsdate, fedate, inhCodes);
+				  opsoCount = exportCSVDao.opsoCount(applYM, fsdate, fedate, inhCodes);
+				  deductedCount = exportCSVDao.deductedNoteCount(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes);
+				  
+				  if(opdCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = opdCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  opdList = dataList;
+				  }
+				  else {
+					  opdList = exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes,null,null);
+				  }
+				  if(oppCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = oppCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  oppList = dataList;
+				  }
+				  else {
+					  oppList = exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes,null,null);
+				  }
+				  if(opsoCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = opsoCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  opsoList = dataList;
+				  }
+				  else {
+					  opsoList = exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes,null,null);
+				  }
+				  if(deductedCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = deductedCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  deductedNoteList = dataList;
+				  }
+				  else {
+					  deductedNoteList = exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes,null,null);
+				  }
+			  }
+			  else {
+				  ipdCount = exportCSVDao.ipdCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+				  ippCount = exportCSVDao.ippCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+				  ipsoCount = exportCSVDao.ipsoCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+				  deductedCount = exportCSVDao.deductedNoteCount(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes);
+				  
+				  if(ipdCount > 2000) { 
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = ipdCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  ipdList = dataList;
+				  }
+				  else {
+					  ipdList = exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, null, null);
+				  }
+				  if(ippCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = ippCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  ippList = dataList;
+				  }
+				  else {
+					  ippList = exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+				  }
+				  if(ipsoCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = ipsoCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  ipsoList = dataList;
+				  }
+				  else {
+					  ipsoList = exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+				  }
+				  
+				  if(deductedCount > 2000) {
+					  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+					  double d = deductedCount;
+					  Long l =  Math.round(d / 1000.0);
+					  int c = 1000;
+					  for(int i=0; i<l; i++) {
+						  dataList.addAll(exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes, "1000", String.valueOf(c)));
+						  c += 1000;
+					  }
+					  deductedNoteList = dataList;
+				  }
+				  else {
+					  deductedNoteList = exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes,null,null);
+				  }
+			  }
+		  }
+	  }
+	  else {
+		  ipdCount = exportCSVDao.ipdCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+		  ippCount = exportCSVDao.ippCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+		  ipsoCount = exportCSVDao.ipsoCount(applYM, fsdate, fedate, osdate, oedate, inhCodes);
+		  opdCount = exportCSVDao.opdCount(applYM, fsdate, fedate, inhCodes);
+		  oppCount = exportCSVDao.oppCount(applYM, fsdate, fedate, inhCodes);
+		  opsoCount = exportCSVDao.opsoCount(applYM, fsdate, fedate, inhCodes);
+		  deductedCount = exportCSVDao.deductedNoteCount(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes);
+		  
+		  if(ipdCount > 2000) { 
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = ipdCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  ipdList = dataList;
+		  }
+		  else {
+			  ipdList = exportCSVDao.ipdData(applYM, fsdate, fedate, osdate, oedate, inhCodes, null, null);
+		  }
+		  if(ippCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = ippCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  ippList = dataList;
+		  }
+		  else {
+			  ippList = exportCSVDao.ippData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+		  }
+		  if(ipsoCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = ipsoCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  ipsoList = dataList;
+		  }
+		  else {
+			  ipsoList = exportCSVDao.ipsoData(applYM, fsdate, fedate, osdate, oedate, inhCodes,null,null);
+		  }
+		  if(opdCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = opdCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  opdList = dataList;
+		  }
+		  else {
+			  opdList = exportCSVDao.opdData(applYM, fsdate, fedate, inhCodes,null,null);
+		  }
+		  if(oppCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = oppCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  oppList = dataList;
+		  }
+		  else {
+			  oppList = exportCSVDao.oppData(applYM, fsdate, fedate, inhCodes,null,null);
+		  }
+		  if(opsoCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = opsoCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  opsoList = dataList;
+		  }
+		  else {
+			  opsoList = exportCSVDao.opsoData(applYM, fsdate, fedate, inhCodes,null,null);
+		  }
+		  if(deductedCount > 2000) {
+			  List<LinkedHashMap<String, Object>> dataList = new ArrayList<LinkedHashMap<String,Object>>();
+			  double d = deductedCount;
+			  Long l =  Math.round(d / 1000.0);
+			  int c = 1000;
+			  for(int i=0; i<l; i++) {
+				  dataList.addAll(exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes, "1000", String.valueOf(c)));
+				  c += 1000;
+			  }
+			  deductedNoteList = dataList;
+		  }
+		  else {
+			  deductedNoteList = exportCSVDao.deductedNoteData(applYM, fsdate, fedate, osdate, oedate, dateFormats, inhCodes,null,null);
+		  }
+	  }
+	  String timeStamp = new SimpleDateFormat("yyyyMMdd").format(Calendar.getInstance().getTime());
+	  String tempPath = getTemporaryPath();
+	  java.io.File fwork = new java.io.File(tempPath);
+      if (!fwork.exists()) { 
+          fwork.mkdirs();
+      }
+	  List<String> csvFilesPath = new ArrayList<String>();
+	  if(ipdList.size() > 0) {
+		  String filePath = tempPath + "/ipd_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(ipdList, filePath));
+	  }
+	  
+	  if(ippList.size() > 0) {
+		  String filePath = tempPath + "/ipp_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(ippList, filePath));
+	  }
+	  if(ipsoList.size() > 0) {
+		  String filePath = tempPath + "/ipd_sop_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(ipsoList, filePath));
+	  }
+	  if(opdList.size() > 0) {
+		  String filePath = tempPath + "/opd_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(opdList, filePath));
+	  }
+	  if(oppList.size() > 0) {
+		  String filePath = tempPath + "/opp_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(oppList, filePath));
+	  }
+	  if(opsoList.size() > 0) {
+		  String filePath = tempPath + "/opd_sop_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(opsoList, filePath));
+	  }
+	  if(deductedNoteList.size() > 0) {
+		  String filePath = tempPath + "/deducted_"+timeStamp+".csv";
+		  csvFilesPath.add(ExcelUtil.createCSV(deductedNoteList, filePath));
+	  }
+	  
+	    String fileNameStr = "病例資料";
+		String fileName = URLEncoder.encode(fileNameStr, "UTF-8");
+		String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+				? FILE_PATH + "\\" + fileName
+				: FILE_PATH + "/" + fileName;
+		File file = new File(filepath);
+		response.reset();
+		response.setHeader("Access-Control-Allow-Origin", "*");
+		response.setHeader("Access-Control-Allow-Methods", "*");
+		response.setHeader("Content-Disposition",
+				"attachment; filename=" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + ".zip");
+		response.setContentType("application/zip");
+		try(ZipOutputStream zipOutputStream = new ZipOutputStream(response.getOutputStream())) {
+            for(String fileNamePath : csvFilesPath) {
+                FileSystemResource fileSystemResource = new FileSystemResource(fileNamePath);
+                ZipEntry zipEntry = new ZipEntry(fileSystemResource.getFilename());
+                zipEntry.setSize(fileSystemResource.contentLength());
+                zipEntry.setTime(System.currentTimeMillis());
+
+                zipOutputStream.putNextEntry(zipEntry);
+
+                StreamUtils.copy(fileSystemResource.getInputStream(), zipOutputStream);
+                zipOutputStream.closeEntry();
+            }
+            zipOutputStream.finish();
+            for (String fname : csvFilesPath) {
+                Utility.deleteFile(fname);
+            }
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+		
+  }
+  
+  public String getTemporaryPath() {
+      java.io.File fcurrent = new java.io.File("");
+      String separator = (System.getProperty("os.name").toLowerCase().startsWith("windows")) ? "\\" : "/" ;
+      String currentPath = fcurrent.getAbsolutePath()+separator;
+      String backupPath = currentPath+"tempcsv";
+      return (backupPath);
+  }
+  
 }

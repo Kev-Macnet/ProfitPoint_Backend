@@ -25,7 +25,7 @@ public class PtBoneMarrowTransFeeDao {
                 + "From PT_BONE_MARROW_TRANS_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -39,7 +39,7 @@ public class PtBoneMarrowTransFeeDao {
         sql = "Delete from PT_BONE_MARROW_TRANS_FEE\r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -51,7 +51,7 @@ public class PtBoneMarrowTransFeeDao {
                 + "PT_BONE_MARROW_TRANS_FEE(PT_ID, COEXIST_NHI_NO_ENABLE, NOT_ALLOW_PLAN_ENABLE, LIM_DIVISION_ENABLE)\r\n"
                 + "Values(%d, %d, %d, %d)";
         sql = String.format(sql, ptId, coexist_nhi_no_enable, not_allow_plan_enable, lim_division_enable);
-        logger.info(sql);
+        logger.debug(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;
@@ -68,7 +68,7 @@ public class PtBoneMarrowTransFeeDao {
                 + "    LIM_DIVISION_ENABLE=%d \r\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, coexist_nhi_no_enable, not_allow_plan_enable, lim_division_enable, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }

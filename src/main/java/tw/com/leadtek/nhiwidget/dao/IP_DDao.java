@@ -24,6 +24,11 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   public List<IP_D> findByMrId(Long mrid);
   
+  //住院就醫紀錄編號
+  @Query(value="SELECT MR.STATUS AS STATUS, MR.INH_CLINIC_ID AS CLINIC_ID "
+  		+ "FROM IP_D INNER JOIN MR ON IP_D.MR_ID =MR.ID WHERE IP_D.OUT_DATE BETWEEN ?1 AND ?2", nativeQuery=true)
+  public List<Object[]> findIPPhysical(String smonth,String emonth);
+  
   //住院病例總點數
   @Query(value="SELECT IP.IP_DOT FROM "
   		+ "(SELECT (SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP", nativeQuery=true)
@@ -31,7 +36,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   //住院案件數
   @Query(value="SELECT IP.IP_DOT FROM "
-  		+ "(SELECT (COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP", nativeQuery=true)
+  		+ "(SELECT COUNT(ID) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?1)IP", nativeQuery=true)
   public String findIPCount(List<Integer>ids);
   
   //住院總藥費
@@ -44,21 +49,21 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   public List<Object[]> findClassIP_TDot(List<Integer>ids);
   
   //各科別住院案件數
-  @Query(value="SELECT FUNC_TYPE ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) FROM IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
+  @Query(value="SELECT FUNC_TYPE ,COUNT(ID) FROM IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
   public List<Object[]> findClassIPCount(List<Integer>ids);
   
-  //各科別住院總藥品點數or總藥費
+  //各科別住院總藥品點數(總藥費)
   @Query(value="SELECT FUNC_TYPE,SUM(DRUG_DOT) AS IP_DOT FROM "
   		+ "IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE",nativeQuery=true)
-  public List<Object[]> findByIptIdAndGroupByFuncType(List<Integer>ids);
+  public List<Object[]> findClassIPDrugDot(List<Integer>ids);
   
   //各科別各醫師住院案件數、病歷實際總點數、總藥品點數(總藥費)
-  @Query(value="SELECT FUNC_TYPE,PRSN_ID ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)),(SUM(MED_DOT)+SUM(NON_APPL_DOT))"
+  @Query(value="SELECT FUNC_TYPE,PRSN_ID ,COUNT(ID),(SUM(MED_DOT)+SUM(NON_APPL_DOT))"
   		+ ",SUM(DRUG_DOT) FROM IP_D WHERE IPT_ID IN ?1 GROUP BY FUNC_TYPE ,PRSN_ID ",nativeQuery=true)
   public List<Object[]>findIPClassDoctor(List<Integer>ids);
   
   //各科別各醫師每週住院案件數、病歷實際總點數、總藥品點數(總藥費)
-  @Query(value="SELECT FUNC_TYPE,PRSN_ID ,(COUNT(MED_DOT)+COUNT(NON_APPL_DOT)),(SUM(MED_DOT)+SUM(NON_APPL_DOT)),SUM(DRUG_DOT)"
+  @Query(value="SELECT FUNC_TYPE,PRSN_ID ,COUNT(ID),(SUM(MED_DOT)+SUM(NON_APPL_DOT)),SUM(DRUG_DOT)"
   		+ "FROM IP_D WHERE OUT_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID ORDER BY PRSN_ID",nativeQuery=true)
   public List<Object[]>findIPClassDoctorWeekly(String sdate,String edate);
   
@@ -207,7 +212,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   		+ "join ip_p ipp on ipd.id = ipp.ipd_id "
   		+ "join pt_payment_terms ppt on  ipp.order_code = ppt.nhi_no "
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
-  		+ "where pof.no_dentisit = 1   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "where pof.no_dentisit = 1   and ipd.case_type in  ('11','12','13','14','16','17','19','21','22','23','24','25','28') "
   		+ "and ipd.mr_id in (?1) ", nativeQuery = true)
   public List<Map<String, Object>> getValidByNoDentisit(List<String> mrId);
   
@@ -220,7 +225,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
 	  		+ "join ip_p ipp on ipd.id = ipp.ipd_id "
 	  		+ "join pt_payment_terms ppt on  ipp.order_code = ppt.nhi_no "
 	  		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
-	  		+ "where pof.no_chi_medicine = 1   and ipd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+	  		+ "where pof.no_chi_medicine = 1   and ipd.case_type in  ('11','12','13','14','16','17','19','21','22','23','24','25','28') "
 	  		+ "and ipd.mr_id in (?1) ", nativeQuery = true)
 	  public List<Map<String, Object>> getValidByNoChiMedicine(List<String> mrId);
   /**
@@ -250,6 +255,9 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   @Query(value = "select * from ip_d where mr_id in(?1) ", nativeQuery = true)
   public List<IP_D> getListByMrId(List<String> mrid);
   
+  @Query(value = "select * from ip_d where mr_id in(?1) ", nativeQuery = true)
+  public List<IP_D> getIpdListByMrId(List<Long> mrIdList);
+  
   /**
    * 每月醫療人員上限筆數比較
    * @param mrid
@@ -267,10 +275,12 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   
   @Transactional
   @Modifying
-  @Query(value = "UPDATE IP_D SET FUNC_TYPE=?1, ANE_DOT=?2, DSVC_DOT=?3, DIAG_DOT=?4,"
-      + "DRUG_DOT=?5, INJT_DOT=?6, ROOM_DOT=?7, THRP_DOT=?8, AMIN_DOT=?9 WHERE ID=?10", nativeQuery = true)
-  public void updateFuncTypeById(String funcType, int aneDot, int dsvcDot,
-      int diagDot, int drugDot, int injtDot, int roomDot, int thrpDot, int aminDot, Long id);  
+  @Query(value = "UPDATE IP_D SET FUNC_TYPE=?1, APPL_START_DATE=?2, APPL_END_DATE=?3, "
+      + "ANE_DOT=?4, DSVC_DOT=?5, DIAG_DOT=?6, DRUG_DOT=?7, INJT_DOT=?8, ROOM_DOT=?9, "
+      + "THRP_DOT=?10, AMIN_DOT=?11, OWN_EXPENSE=?12 WHERE ID=?13", nativeQuery = true)
+  public void updateFuncTypeById(String funcType, String startDate, String endDate, 
+      int aneDot, int dsvcDot, int diagDot, int drugDot, int injtDot, int roomDot, 
+      int thrpDot, int aminDot, int ownExpense, Long id);  
   
   /**
    * 取得申報日期總人數
@@ -356,4 +366,20 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
   @Query(value = "SELECT DISTINCT (ORDER_CODE), ORDER_TYPE FROM ip_p where ORDER_TYPE IS NOT NULL \r\n" + 
       "and ORDER_TYPE <> '4' and length (ORDER_CODE) <10 GROUP BY ORDER_CODE , ORDER_TYPE", nativeQuery = true)
   public List<Map<String,Object>> getOrderCodeAndOrderType();
+  
+  @Query(value = "SELECT MR_ID, APPL_END_DATE, APPL_START_DATE, ID_BIRTH_YMD, NB_BIRTHDAY FROM IP_D WHERE MR_ID IN ?1 ", nativeQuery = true)
+  public List<Object[]> getMrIdBirthdayByMrId(List<Long> mrId);
+  
+  /**
+   * 取得產生DRG試算程式所需的欄位
+   * @param mrId
+   * @return
+   */
+  @Query(value = "SELECT mr.APPL_YM, mr.ROC_ID, mr.ID, ip_d.IN_DATE,  ip_d.ID_BIRTH_YMD," + 
+      "ip_d.ICD_CM_1, ip_d.ICD_CM_2, ip_d.ICD_CM_3, ip_d.ICD_CM_4, ip_d.ICD_CM_5," + 
+      "ip_d.ICD_OP_CODE1, ip_d.ICD_OP_CODE2, ip_d.ICD_OP_CODE3, ip_d.ICD_OP_CODE4," + 
+      "ip_d.ICD_OP_CODE5, ip_d.TRAN_CODE , ip_d.OUT_DATE, ip_d.MED_DOT, ip_d.NB_BIRTHDAY," + 
+      "(ip_d.E_BED_DAY + ip_d.S_BED_DAY) AS BED_DAY, ip_d.APPL_DOT, ip_d.NON_APPL_DOT, ip_d.PART_DOT " + 
+      " FROM ip_d, mr WHERE mr.id IN ?1 and ip_d.MR_ID = mr.ID ", nativeQuery = true)
+  public List<Map<String, Object>> getDrgCalField(List<Long> mrId);
 }

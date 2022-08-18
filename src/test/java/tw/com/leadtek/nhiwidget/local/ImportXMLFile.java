@@ -32,7 +32,7 @@ public class ImportXMLFile {
         if (!files[i].getAbsolutePath().endsWith("xml")) {
           continue;
         }
-        systemService.importFile(files[i]);
+        systemService.importXMLFile(files[i]);
       }
     }
   }

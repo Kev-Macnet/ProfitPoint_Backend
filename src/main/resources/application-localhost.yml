@@ -17,13 +17,18 @@ server:
       force: true
       enabled: true
 spring:
+# avoid error log:Spring Data Redis - Could not safely identify store assignment for repository candidate interface
+  data:
+    redis:
+      repositories:
+        enabled: false
   servlet:
     multipart:
       max-file-size: 256MB
       max-request-size: 256MB
       enabled: true
-  jackson:
-    default-property-inclusion: NON_NULL
+#  jackson:
+#    default-property-inclusion: NON_NULL
   redis:
     host: 127.0.0.1
     port: 6379
@@ -89,7 +94,7 @@ project:
   serverUrl: "http://localhost:8081/#/login?redir=warehouse/"
   apiUrl: "http://localhost:8081/"
   hospId: 1532011154
-  isMask: true
+  isMask: false
 swagger:
   enable: true
   application-name: 健保申保最佳化系統 API

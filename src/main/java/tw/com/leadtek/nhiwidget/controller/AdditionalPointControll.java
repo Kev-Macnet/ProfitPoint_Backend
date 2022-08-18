@@ -26,7 +26,7 @@ import tw.com.leadtek.nhiwidget.dto.AdditionalSearchListDto;
 import tw.com.leadtek.nhiwidget.dto.AdditionalConditionPl;
 import tw.com.leadtek.nhiwidget.dto.AdditionalSearchPl;
 import tw.com.leadtek.nhiwidget.service.AdditionalPointService;
-import tw.com.leadtek.nhiwidget.service.PaymentTermsService;
+import tw.com.leadtek.nhiwidget.service.pt.PaymentTermsService;
 import tw.com.leadtek.tools.Utility;
 
 @Api(value = "參數設定-總額外點數條件 API", tags = {"14 參數設定-總額外點數條件"})

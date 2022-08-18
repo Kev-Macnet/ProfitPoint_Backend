@@ -19,7 +19,7 @@ public class ClassDoctorDto {
     @NotNull()
     private String code;
     
-    @ApiModelProperty(value="醫師列表", example="[王小明:{案件數:100,總點數:100,總藥費:100},李小明:{案件數:100,總點數:100,總藥費:100}]", required=true, position=3)
+    @ApiModelProperty(value="醫師列表", example="王小明 案件數:100 總點數:100 總藥費:100 李小明 案件數:100 總點數:100 總藥費:100", required=true, position=3)
     @NotNull()
     private Map<String,CaseDotFeeDto> doctors;
 

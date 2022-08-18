@@ -4,6 +4,7 @@
 package tw.com.leadtek.nhiwidget.dao;
 
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -96,43 +97,45 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   
   @Transactional
   @Modifying
-  @Query(value = "UPDATE MR SET DRG_CODE=?1 WHERE ID=?2", nativeQuery = true)
-  public void updateDRG(String drg, Long mrId);
+  @Query(value = "UPDATE MR SET DRG_CODE=?1, DRG_FIXED=?2, DRG_SECTION=?3 WHERE ID=?4", nativeQuery = true)
+  public void updateDRG(String drg, int drgFix, String drgSection, Long mrId);
   
   /**
-   * 取得DRG各科, 非DRG在指定日期區間的件數及點數
+   * 取得DRG各科, 非DRG在指定日期區間的件數及點數.
+   * 2022/7/28 因DRG和NODRG的科別可能會不一樣，因此拿掉WHERE條件。
    */
   @Query(value ="SELECT * FROM " + 
       "(SELECT MR.FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_ACTUAL_POINT "
       + "FROM MR, IP_D WHERE DRG_SECTION IS NOT NULL AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND "
-      + "IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) DRG," + 
+      + "IP_D.MR_ID = MR.ID AND IP_D.TW_DRGS_SUIT_MARK = '0' GROUP BY MR.FUNC_TYPE) DRG," + 
       "(SELECT MR.FUNC_TYPE AS NONDRG_FUNC_TYPE, COUNT(1) AS NONDRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) "
-      + "AS NONDRG_POINT FROM MR, IP_D WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_END_DATE >= ?3 AND "
-      + "MR_END_DATE <= ?4 AND MR.FUNC_TYPE IN (SELECT DISTINCT(FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL " +
-      " AND MR_END_DATE >= ?5 AND MR_END_DATE <= ?6) AND IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) NODRG " +
-      "WHERE DRG.FUNC_TYPE = NODRG.NONDRG_FUNC_TYPE", nativeQuery = true)
-  public List<Object[]> countDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1, Date startDate2, Date endDate2, 
-      Date startDate3, Date endDate3);
+      + "AS NONDRG_POINT FROM MR, IP_D WHERE IP_D.TW_DRGS_SUIT_MARK <> '0' AND DATA_FORMAT = '20' AND MR_END_DATE >= ?1 AND "
+      + "MR_END_DATE <= ?2 AND MR.FUNC_TYPE IN (SELECT DISTINCT(FUNC_TYPE) FROM MR WHERE DRG_SECTION IS NOT NULL " +
+      " AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) AND IP_D.MR_ID = MR.ID GROUP BY MR.FUNC_TYPE) NODRG", nativeQuery = true)
+  public List<Object[]> countAllDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
   
   /**
    * 取得DRG各科在指定日期區間的件數及點數
    */
-  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS DRG_QUANTITY, SUM(T_DOT) AS DRG_POINT FROM MR " + 
-      " WHERE DRG_SECTION IS NOT NULL AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 GROUP BY FUNC_TYPE", nativeQuery = true)
+  @Query(value ="SELECT MR.FUNC_TYPE, COUNT(1) AS DRG_QUANTITY, SUM(T_DOT) AS DRG_POINT FROM MR, IP_D " + 
+      " WHERE IP_D.TW_DRGS_SUIT_MARK = '0' AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 "
+      + "AND MR.ID = IP_D.MR_ID GROUP BY MR.FUNC_TYPE", nativeQuery = true)
   public List<Object[]> countDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
   
   /**
    * 取得非DRG各科在指定日期區間的件數及點數
    */
-  @Query(value ="SELECT FUNC_TYPE , COUNT(1) AS NONDRG_QUANTITY, SUM(T_DOT) AS NONDRG_POINT FROM MR " + 
-      " WHERE DRG_SECTION IS NULL AND DATA_FORMAT = '20' AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 GROUP BY FUNC_TYPE", nativeQuery = true)
+  @Query(value ="SELECT MR.FUNC_TYPE , COUNT(1) AS NONDRG_QUANTITY, SUM(T_DOT) AS NONDRG_POINT FROM MR, IP_D " + 
+      " WHERE IP_D.TW_DRGS_SUIT_MARK <> '0' AND DATA_FORMAT = '20' AND MR_END_DATE >= ?1 "
+      + "AND MR_END_DATE <= ?2 AND MR.ID = IP_D.MR_ID GROUP BY MR.FUNC_TYPE", nativeQuery = true)
   public List<Object[]> countNonDRGPointByStartDateAndEndDate(Date startDate1, Date endDate1);
   
   /**
    * 取得DRG指定科別在指定日期區間的不同區的件數及點數
    */
-  @Query(value="SELECT DRG_SECTION, COUNT(1) AS QUANTITY, SUM(T_DOT) AS POINT FROM MR " + 
-      "WHERE DRG_SECTION IS NOT NULL AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND FUNC_TYPE =?3 GROUP BY DRG_SECTION", nativeQuery = true)
+  @Query(value="SELECT DRG_SECTION, COUNT(1) AS QUANTITY, SUM(T_DOT) AS POINT FROM MR, IP_D " + 
+      "WHERE DRG_SECTION IS NOT NULL AND IP_D.TW_DRGS_SUIT_MARK = '0' AND MR_END_DATE >= ?1 "
+      + "AND MR_END_DATE <= ?2 AND MR.FUNC_TYPE =?3 AND MR.ID = IP_D.MR_ID GROUP BY DRG_SECTION", nativeQuery = true)
   public List<Object[]> countDRGPointByFuncTypeGroupByDRGSection(Date startDate1, Date endDate1, String funcType);
   
   /**
@@ -177,8 +180,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    * @return
    */
   @Query(value="SELECT DRG_SECTION , COUNT(1) AS DRG_COUNT, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS APPLY, "
-      + "SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS ACTUAL FROM MR, IP_D WHERE APPL_YM = ?1 AND "
-      + "DRG_SECTION IS NOT NULL AND MR.ID = IP_D.MR_ID AND MR.FUNC_TYPE = ?2 GROUP BY DRG_SECTION ", nativeQuery = true)
+      + "SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS ACTUAL FROM MR, IP_D WHERE MR.MR_END_DATE LIKE CONCAT(?1,'%') AND "
+      + "DRG_SECTION IS NOT NULL AND MR.ID = IP_D.MR_ID AND MR.FUNC_TYPE = ?2 AND IP_D.TW_DRGS_SUIT_MARK = '0' "
+      + "GROUP BY DRG_SECTION", nativeQuery = true)
   public List<Object[]> findDRGCountAndDotByApplYmGroupByDrgSection(String ym, String funcType);
   
   @Query(value = "SELECT MIN(APPL_YM) FROM MR", nativeQuery = true)
@@ -191,6 +195,11 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Modifying
   @Query(value = "UPDATE MR SET STATUS=?1 WHERE ID=?2", nativeQuery = true)
   public void updateMrStauts(Integer status, Long id);
+  
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE MR SET STATUS=?1 WHERE ID IN ?2", nativeQuery = true)
+  public void updateMultiMrStauts(Integer status, List<Long> idList);
   
   /**
    * 取得被智能提示助理標示需確認的病歷
@@ -270,18 +279,17 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   @Query(value = "UPDATE MR SET MR_END_DATE=?1 WHERE ID=?2 ", nativeQuery = true)
   public void updateMrEndDate(Date mrEndDate, long id);
   
-  @Query(value = "SELECT * FROM " + 
-      "(SELECT SUM(T_DOT) + SUM(OWN_EXPENSE) AS ALL_DOT FROM MR WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) MR_ALL," + 
-      "(SELECT SUM(T_DOT) + SUM(OWN_EXPENSE) AS OP_DOT FROM MR WHERE MR_END_DATE >= ?3 AND MR_END_DATE <= ?4 AND DATA_FORMAT='10') MR_OP," + 
-      "(SELECT SUM(T_DOT) + SUM(OWN_EXPENSE) AS EM_DOT FROM MR WHERE MR_END_DATE >= ?5 AND MR_END_DATE <= ?6 AND FUNC_TYPE='22') MR_EM," + 
-      "(SELECT SUM(IP_D.MED_DOT) + SUM(IP_D.NON_APPL_DOT) + SUM(IP_D.OWN_EXPENSE) AS IP_DOT FROM MR, IP_D WHERE MR_END_DATE >= ?7 AND MR_END_DATE <= ?8 "
-      + " AND MR.DATA_FORMAT='20' AND IP_D.MR_ID = MR.ID) MR_IP," + 
-      "(SELECT SUM(T_DOT) AS ALL_APPL FROM MR WHERE MR_END_DATE >= ?9 AND MR_END_DATE <= ?10) ALL_APPL," + 
-      "(SELECT SUM(T_DOT) AS OP_APPL FROM MR WHERE MR_END_DATE >= ?11 AND MR_END_DATE <= ?12 AND DATA_FORMAT='10') OP_APPL," + 
-      "(SELECT SUM(T_DOT) AS EM_APPL FROM MR WHERE MR_END_DATE >= ?13 AND MR_END_DATE <= ?14 AND DATA_FORMAT='10' AND FUNC_TYPE='22') EM_APPL," + 
-      "(SELECT SUM(T_DOT) AS IP_APPL FROM MR WHERE MR_END_DATE >= ?15 AND MR_END_DATE <= ?16 AND DATA_FORMAT='20') IP_APPL", nativeQuery = true)
-  public List<Object[]> getPointPeriod(Date s1, Date e1, Date s2, Date e2, Date s3, Date e3,
-      Date s4, Date e4, Date s5, Date e5, Date s6, Date e6, Date s7, Date e7, Date s8, Date e8);
+  @Query(value = "SELECT * FROM  "
+  		+ "(SELECT OP_DOT + IP_DOT AS ALL_DOT, OP_DOT, EM_DOT, IP_DOT, OP_APPL + PART_IP + IP_APPLDOT AS ALL_APPL, OP_APPL, EM_APPL, PART_IP + IP_APPLDOT AS IP_APPL FROM   "
+  		+ "(SELECT SUM(OP_D.T_APPL_DOT) + SUM(OP_D.PART_DOT) + SUM(OP_D.OWN_EXPENSE) AS OP_DOT FROM MR,OP_D WHERE MR.ID = OP_D.MR_ID AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND DATA_FORMAT='10') b,  "
+  		+ "(SELECT SUM(OP_D.T_APPL_DOT) + SUM(OP_D.PART_DOT) + SUM(OP_D.OWN_EXPENSE) AS EM_DOT FROM MR,OP_D WHERE MR.ID = OP_D.MR_ID AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND MR.FUNC_TYPE='22') c, "
+  		+ "(SELECT SUM(IP_D.MED_DOT) + SUM(IP_D.NON_APPL_DOT) + SUM(IP_D.OWN_EXPENSE) AS IP_DOT FROM MR, IP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND MR.DATA_FORMAT='20' AND IP_D.MR_ID = MR.ID) d,   "
+  		+ "(SELECT SUM(OP_D.T_APPL_DOT) + SUM(OP_D.PART_DOT) AS OP_APPL FROM MR,OP_D WHERE MR.ID = OP_D.MR_ID AND MR_END_DATE >=?1 AND MR_END_DATE <= ?2 AND DATA_FORMAT='10') e,  "
+  		+ "(SELECT SUM(OP_D.T_APPL_DOT) + SUM(OP_D.PART_DOT) AS EM_APPL FROM MR,OP_D WHERE MR.ID = OP_D.MR_ID AND MR_END_DATE >=?1 AND MR_END_DATE <= ?2 AND DATA_FORMAT='10' AND MR.FUNC_TYPE='22') f,  "
+  		+ "(SELECT SUM(IP_D.MED_DOT) + SUM(IP_D.NON_APPL_DOT) AS IP_APPL  FROM MR, IP_D WHERE MR.ID = IP_D.MR_ID AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) g, "
+  		+ "(SELECT SUM(IP_D.PART_DOT) AS PART_IP, SUM(MR.APPL_DOT) AS IP_APPLDOT FROM MR, IP_D WHERE MR_END_DATE >=?1 AND MR_END_DATE <= ?2  AND IP_D.MR_ID = MR.ID) i)temp"
+      , nativeQuery = true)
+  public List<Object[]> getPointPeriod(Date s1, Date e1);
   
   @Query(value = "SELECT * FROM " + 
       "(SELECT COUNT(1) AS VISITS_ALL FROM MR WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 ) VISIT_ALL," + 
@@ -512,6 +520,9 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   
   public List<MR> findByInhClinicId(String inhClinicId); 
   
+  @Query(value = "SELECT ID FROM MR WHERE INH_CLINIC_ID = ?1", nativeQuery = true)
+  public List<Long> getIdByInhClinicId(String inhClinicId); 
+  
   /**
    * 取得藥用碼出現次數 -門診
    * @param sDate
@@ -559,19 +570,19 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認
    */
-  @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') ", nativeQuery = true)
+  @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like ?3 ", nativeQuery = true)
  public List<MR> getIntelligentMR(String sDate, String eDate, String code);
   
   /**
    * 取得列在智能提示中的病歷，近一年違規且狀態為待確認，門診
    */
-   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') and data_format = '10' ", nativeQuery = true)
+   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like ?3 and data_format = '10' ", nativeQuery = true)
   public List<MR> getIntelligentMRO(String sDate, String eDate, String code);
    
    /**
     * 取得列在智能提示中的病歷，近一年違規且狀態為待確認，住院
     */
-   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like concat('%', ?3, '%') and data_format = '20' ", nativeQuery = true)
+   @Query(value = "select * from mr where mr_date between ?1 and ?2 and code_all like ?3 and data_format = '20' ", nativeQuery = true)
   public List<MR> getIntelligentMRH(String sDate, String eDate, String code);
   
   /**
@@ -642,8 +653,8 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
    */
   @Query(value = "select distinct temp.id from "
   		+ "(select mr.* from mr, op_p "
-  		+ "where mr.id = op_p.mr_id and mr.code_all like concat('%',op_p.drug_no, '%') and mr.id in (?1))temp, pay_code "
-  		+ "where temp.code_all like concat('%',pay_code.code, '%') and pay_code.code_type = ?2 ", nativeQuery = true)
+  		+ "where mr.id = op_p.mr_id and mr.code_all like concat(concat('%',op_p.drug_no), '%') and mr.id in (?1))temp, pay_code "
+  		+ "where temp.code_all like concat(concat('%',pay_code.code), '%') and pay_code.code_type = ?2 ", nativeQuery = true)
   public List<Map<String,Object>> getIdByOPandPaycode(List<String> mrid, String codeType);
   /**
    * 住院
@@ -681,4 +692,96 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   
   @Query(value = "SELECT * FROM mr WHERE DATA_FORMAT = ?1 AND MR_END_DATE >= ?2 AND MR_END_DATE <= ?3", nativeQuery = true)
   public List<MR> getByDataFormatAndMrDateBetween(String dataFormat, java.util.Date startDate, java.util.Date endDate);
+  
+  /**
+   * 取得所有使用該醫令的病歷數
+   * @param code
+   * @return
+   */
+  @Query(value = "SELECT COUNT(1) FROM mr WHERE CODE_ALL LIKE ?1", nativeQuery = true)
+  public List<Long> getCountByCodeLike(String code);
+  
+  /**
+   * 取得指定時間內所有使用該醫令的病歷
+   * @param code
+   * @return
+   */
+  public List<MR> findByCodeAllContaining(String code);
+
+  @Query(value = "SELECT * FROM mr WHERE CODE_ALL LIKE ?1 AND MR_END_DATE >= ?2 "
+      + " AND MR_END_DATE <= ?3", nativeQuery = true)
+  public List<MR> getMRByCodeLikeAndMrEndDate(String code, java.util.Date startDate, java.util.Date endDate);
+
+  @Query(value = "SELECT * FROM mr WHERE UPDATE_AT > ?1", nativeQuery = true)
+  public List<MR> getTodayUpdatedMR(Date date);
+  
+  /**
+   * 找出該病患使用該組醫令次數
+   * @param orderCode
+   * @return
+   */
+  @Query(value = "SELECT ROC_ID, COUNT(ROC_ID) FROM MR WHERE CODE_ALL LIKE ?1 "
+      + " AND ROC_ID IN ?2 GROUP BY ROC_ID", nativeQuery = true)
+  public List<Object[]> getRocIdByCodeTimes(String orderCode, List<String> rocIds);
+  
+  /**
+   * 找出在該院使用該組醫令次數超過max次的病患證號
+   * @param code
+   * @param max
+   * @return
+   */
+  @Query(value = "SELECT a.ROC_ID FROM (SELECT ROC_ID, COUNT(ROC_ID) AS total "
+      + "FROM MR WHERE CODE_ALL LIKE ?1 GROUP BY ROC_ID) A WHERE total > ?2", nativeQuery = true)
+  public List<String> getRocIdByCodeTimes(String code, int max);
+  
+  /**
+   * 取得該科含指定醫令的病歷數及該科的所有病歷數
+   * @param mrIdList
+   * @param funcType
+   * @param orderCode
+   * @return
+   */
+  @Query(value = "SELECT a.use_order_code, b.total_mr FROM " + 
+      "(SELECT count(id) AS use_order_code FROM mr WHERE APPL_YM = ?1 " + 
+      "AND FUNC_TYPE = ?2 AND CODE_ALL LIKE ?3) a," + 
+      "(SELECT count(id) AS total_mr FROM mr WHERE APPL_YM = ?1 " + 
+      "AND FUNC_TYPE = ?2) b", nativeQuery = true)
+  public List<Object[]> getMrCountByFuncTypeAndOrderCode(String applYm, String funcType, String orderCode);
+  
+  /**
+   * 取得同一病患使用該支付代碼(注射)的間隔日期
+   * @param orderCode
+   * @return
+   */
+  @Query(value = "SELECT ID, ROC_ID, MR_END_DATE FROM mr WHERE CODE_ALL LIKE ?1 ORDER BY ROC_ID , MR_END_DATE ", nativeQuery = true)
+  public List<Object[]> getMrEndDateByOrderCode(String orderCode);
+  
+  /**
+   * 取得同一病患使用該支付代碼(注射)的間隔日期
+   * @param orderCode
+   * @return
+   */
+  @Query(value = "SELECT ID, ROC_ID, MR_END_DATE FROM mr WHERE CODE_ALL LIKE ?1 AND "
+      + "MR_END_DATE >= ?2 AND MR_END_DATE <= ?3 ORDER BY ROC_ID, MR_END_DATE ", nativeQuery = true)
+  public List<Object[]> getMrEndDateByOrderCode(String orderCode, Date startDate, Date endDate);
+  
+  /**
+   * 取得同一病患使用該支付代碼年月。
+   * sample:SELECT ROC_ID, APPL_YM FROM mr WHERE CODE_ALL LIKE '%,P1409C,%' AND ROC_ID IS NOT NULL ORDER BY ROC_ID
+   * @param orderCode
+   * @param rocIdList
+   * @return
+   */
+  @Query(value = "SELECT ROC_ID, MR_END_DATE, APPL_YM, ID FROM mr WHERE CODE_ALL "
+      + "LIKE ?1 AND ROC_ID IN ?2 ORDER BY ROC_ID, MR_END_DATE ", nativeQuery = true)
+  public List<Object[]> getRocIdAndUseCountAndApplYm(String orderCode, List<String> rocIdList);
+
+  @Query(value = "SELECT * FROM mr WHERE UPDATE_AT  >= CURRENT_DATE", nativeQuery = true)
+  public List<MR> getTodayUpdatedMR();
+
+  @Query(value = "SELECT * FROM mr WHERE INH_CLINIC_ID IN ?1", nativeQuery = true)
+  public List<MR> getMrByInhClinicId(List<String> inhClinicId);
+
+  @Query(value = "SELECT * FROM mr WHERE ID IN ?1", nativeQuery = true)
+  public List<MR> getMrByIdList(List<Long> idList);
 }

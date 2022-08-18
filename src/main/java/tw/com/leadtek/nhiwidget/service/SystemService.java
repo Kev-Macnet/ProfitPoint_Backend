@@ -22,15 +22,21 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -47,6 +53,7 @@ import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.io.Files;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.controller.BaseController;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
@@ -101,32 +108,70 @@ public class SystemService {
 
   private Logger logger = LogManager.getLogger();
 
-  public final static String FILE_PATH = "download";
-  
+  public final static String INIT_FILE_PARAMETERS = "PARAMETER";
+
+  public final static String INIT_FILE_PAY_CODE = "醫療服務給付項目";
+
   /**
-   * 
+   * 高雄霖園醫院 藥品衛材xxxxxxx.xlsx
+   */
+  public final static String INIT_FILE_PAY_CODE_LINYUAN = "代碼品項_高雄霖園";
+
+  /**
+   * 羅東博愛醫院 基本檔_藥品衛材.xlsx
+   */
+  public final static String INIT_FILE_PAY_CODE_POHAI = "代碼品項_羅東博愛";
+
+  public final static String INIT_FILE_PAY_CODE_NAVY = "代碼品項_高雄海總";
+
+  public final static String INIT_FILE_PAY_CODE_MS = "代碼品項_桃園敏盛";
+
+  private final static String INIT_FILE_CODE_TABLE = "CODE_TABLE";
+
+  private final static String INIT_FILE_ICDCM = "ICD-10-CM";
+
+  private final static String INIT_FILE_ICDPCS = "ICD-10-PCS";
+
+  private final static String INIT_FILE_ATC = "ATC";
+
+  private final static String INIT_FILE_INFECTIOUS = "法定傳染病";
+
+  private final static String INIT_FILE_USER = "USER_";
+
+  private final static String INIT_FILE_DEPARTMENT = "DEPARTMENT_";
+
+  private final static String INIT_FILE_USER_DEPARTMENT = "UD_";
+
+  private final static String INIT_FILE_DEDUCTED_COMPUTER = "(行政審查)全民健康保險檔案分析審查異常不予支付";
+
+  private final static String INIT_FILE_DEDUCTED_ARTIFICIAL = "(專業審查)不予支付理由";
+
+  public final static String FILE_PATH = "download";
+
+  /**
+   * 違反支付準則
    */
   public final static String MENU_VIOLATE = "/violate";
-  
+
   public final static String MENU_PILOT_PROJECT = "/pilotProject";
-  
+
   /**
    * 臨床路徑差異 – AI提示
    */
   public final static String MENU_CLINCAL = "/intelligent?menu=clincal";
- 
+
   /**
    * 疑似職傷與異常就診紀錄 – AI提示
    */
   public final static String MENU_SUSPECTED = "/intelligent?menu=suspected";
-  
+
   /**
    * DRG申報建議 – AI提示
    */
   public final static String MENU_DRG_SUGGESTION = "/intelligent?menu=drgSuggestion";
 
   public final static String MENU_FILE_MANAGEMENT = "/fileManagement";
-  
+
   public final static String MENU_DB_MANAGEMENT = "/dbManagement";
 
   @Autowired
@@ -180,8 +225,17 @@ public class SystemService {
   @Autowired
   private ParametersService parametersService;
 
-  public ATCListResponse getATC(String code, String note, String orderBy,
-      Boolean asc, int perPage, int page) {
+  @Autowired
+  private IntelligentService is;
+
+  @Autowired
+  private InitialDataService initial;
+
+  @Autowired
+  private HttpServletRequest httpServletReq;
+  
+  public ATCListResponse getATC(String code, String note, String orderBy, Boolean asc, int perPage,
+      int page) {
     List<ATC> codes = new ArrayList<ATC>();
     Specification<ATC> spec = new Specification<ATC>() {
 
@@ -195,7 +249,7 @@ public class SystemService {
         if (note != null && note.length() > 0) {
           predicate.add(cb.like(cb.upper(root.get("note")), "%" + note.toUpperCase() + "%"));
         }
-        
+
         Predicate[] pre = new Predicate[predicate.size()];
         query.where(predicate.toArray(pre));
         if (orderBy != null && asc != null) {
@@ -323,7 +377,7 @@ public class SystemService {
           predicate.add(cb.or(
               cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sd),
                   cb.lessThanOrEqualTo(root.get("startDate"), ed)),
-          cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sd),
+              cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sd),
                   cb.lessThanOrEqualTo(root.get("endDate"), ed))));
         } else {
           if (sd != null) {
@@ -457,7 +511,7 @@ public class SystemService {
       cb.setId((long) pc.getRedisId());
     }
     pc = payCodeDao.save(pc);
-  
+
     try {
       ObjectMapper objectMapper = new ObjectMapper();
       objectMapper.setSerializationInclusion(Include.NON_NULL);
@@ -795,7 +849,10 @@ public class SystemService {
   public String updateFileManagementPaylod(FileManagementPayload payload) {
     if ("0".equals(parametersService.getParameter(MENU_FILE_MANAGEMENT))) {
       return null;
-    } 
+    }
+    
+    List<Long> pks = new ArrayList<>();
+    
     List<PARAMETERS> list = parametersDao.findByCatOrderByName("FILE_MANAGEMENT");
     for (PARAMETERS p : list) {
       if (p.getName().equals("IS_DAILY_INPUT")) {
@@ -833,7 +890,12 @@ public class SystemService {
       }
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 
@@ -842,7 +904,10 @@ public class SystemService {
   }
 
   public String updateCompareWarningPayload(CompareWarningPayload payload) {
-    List<PARAMETERS> list = parametersDao.findByCatOrderByName("COMPARE_WARNING");
+   
+	List<Long> pks = new ArrayList<>();
+	  
+	List<PARAMETERS> list = parametersDao.findByCatOrderByName("COMPARE_WARNING");
     for (PARAMETERS p : list) {
       if (p.getName().equals("COMPARE_BY")) {
         if (payload.getCompareBy() != null) {
@@ -863,7 +928,12 @@ public class SystemService {
       }
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 
@@ -872,7 +942,10 @@ public class SystemService {
   }
 
   public String updateQuestionMarkPayload(QuestionMarkPayload payload) {
-    List<PARAMETERS> list = parametersDao.findByCatOrderByName("QUESTION_MARK");
+    
+	List<Long> pks = new ArrayList<>();
+	
+	List<PARAMETERS> list = parametersDao.findByCatOrderByName("QUESTION_MARK");
     for (PARAMETERS p : list) {
       if (p.getName().equals("MARK_BY")) {
         if (payload.getMarkBy() != null) {
@@ -889,15 +962,21 @@ public class SystemService {
       }
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 
   public IntelligentConfig getIntelligentConfig() {
-    IntelligentConfig result = new IntelligentConfig(parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG"));
+    IntelligentConfig result =
+        new IntelligentConfig(parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG"));
     if ("0".equals(parametersService.getParameter(MENU_PILOT_PROJECT))) {
       result.setPilotProject(false);
-    } 
+    }
     if ("0".equals(parametersService.getParameter(MENU_VIOLATE))) {
       result.setViolate(false);
     }
@@ -914,11 +993,15 @@ public class SystemService {
   }
 
   public String updateIntelligentConfig(IntelligentConfig payload) {
-    List<PARAMETERS> list = parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG");
+    
+	List<Long> pks = new ArrayList<>();
+	
+	List<PARAMETERS> list = parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG");
     HashMap<Integer, Boolean> needProcess = new HashMap<Integer, Boolean>();
     for (PARAMETERS p : list) {
       if (p.getName().equals("VIOLATE")) {
-        if (payload.getViolate() != null && !"0".equals(parametersService.getParameter(MENU_VIOLATE))) {
+        if (payload.getViolate() != null
+            && !"0".equals(parametersService.getParameter(MENU_VIOLATE))) {
           if ((payload.getViolate().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getViolate().booleanValue() && "0".equals(p.getValue()))) {
             continue;
@@ -993,7 +1076,8 @@ public class SystemService {
           }
         }
       } else if (p.getName().equals("PILOT_PROJECT")) {
-        if (payload.getPilotProject() != null && !"0".equals(parametersService.getParameter(MENU_PILOT_PROJECT))) {
+        if (payload.getPilotProject() != null
+            && !"0".equals(parametersService.getParameter(MENU_PILOT_PROJECT))) {
           if ((payload.getPilotProject().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getPilotProject().booleanValue() && "0".equals(p.getValue()))) {
             continue;
@@ -1006,12 +1090,13 @@ public class SystemService {
           if ((payload.getHighRisk().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getHighRisk().booleanValue() && "0".equals(p.getValue()))) {
             continue;
-            
+
           }
           p.setValue(payload.getHighRisk().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.HIGH_RISK.value(), payload.getHighRisk());
         }
-      } else if (p.getName().equals("CLINICAL_DIFF") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+      } else if (p.getName().equals("CLINICAL_DIFF")
+          && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getClinicalDiff() != null) {
           if ((payload.getClinicalDiff().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getClinicalDiff().booleanValue() && "0".equals(p.getValue()))) {
@@ -1023,7 +1108,8 @@ public class SystemService {
           needProcess.put(INTELLIGENT_REASON.ORDER_DRUG.value(), payload.getClinicalDiff());
           needProcess.put(INTELLIGENT_REASON.IP_DAYS.value(), payload.getClinicalDiff());
         }
-      } else if (p.getName().equals("COST_DIFF_UL") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+      } else if (p.getName().equals("COST_DIFF_UL")
+          && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getCostDiffUL() != null) {
           if (payload.getCostDiffUL().equals(p.getValue())) {
             continue;
@@ -1031,7 +1117,8 @@ public class SystemService {
           p.setValue(payload.getCostDiffUL());
           needProcess.put(INTELLIGENT_REASON.COST_DIFF.value(), true);
         }
-      } else if (p.getName().equals("COST_DIFF_LL") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+      } else if (p.getName().equals("COST_DIFF_LL")
+          && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getCostDiffLL() != null) {
           if (payload.getCostDiffLL().equals(p.getValue())) {
             continue;
@@ -1039,7 +1126,8 @@ public class SystemService {
           p.setValue(payload.getCostDiffLL());
           needProcess.put(INTELLIGENT_REASON.COST_DIFF.value(), true);
         }
-      } else if (p.getName().equals("ORDER_DIFF_UL") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+      } else if (p.getName().equals("ORDER_DIFF_UL")
+          && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getOrderUL() != null) {
           if (payload.getOrderUL().equals(p.getValue())) {
             continue;
@@ -1047,7 +1135,8 @@ public class SystemService {
           p.setValue(payload.getOrderUL());
           needProcess.put(INTELLIGENT_REASON.ORDER_DIFF.value(), true);
         }
-      } else if (p.getName().equals("ORDER_DIFF_LL") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+      } else if (p.getName().equals("ORDER_DIFF_LL")
+          && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getOrderLL() != null) {
           if (payload.getOrderLL().equals(p.getValue())) {
             continue;
@@ -1055,7 +1144,8 @@ public class SystemService {
           p.setValue(payload.getOrderLL());
           needProcess.put(INTELLIGENT_REASON.ORDER_DIFF.value(), true);
         }
-      } else if (p.getName().equals("IP_DAYS") && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+      } else if (p.getName().equals("IP_DAYS")
+          && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
         if (payload.getIpDays() != null) {
           if (payload.getIpDays().intValue() == Integer.parseInt(p.getValue())) {
             continue;
@@ -1064,7 +1154,8 @@ public class SystemService {
           p.setValue(payload.getIpDays().toString());
           needProcess.put(INTELLIGENT_REASON.IP_DAYS.value(), true);
         }
-      } else if (p.getName().equals("SUSPECTED") && !"0".equals(parametersService.getParameter(MENU_SUSPECTED))) {
+      } else if (p.getName().equals("SUSPECTED")
+          && !"0".equals(parametersService.getParameter(MENU_SUSPECTED))) {
         if (payload.getSuspected() != null) {
           if ((payload.getSuspected().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getSuspected().booleanValue() && "0".equals(p.getValue()))) {
@@ -1073,7 +1164,8 @@ public class SystemService {
           p.setValue(payload.getSuspected().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.SUSPECTED.value(), payload.getSuspected());
         }
-      } else if (p.getName().equals("DRG_SUGGESTION") && !"0".equals(parametersService.getParameter(MENU_DRG_SUGGESTION))) {
+      } else if (p.getName().equals("DRG_SUGGESTION")
+          && !"0".equals(parametersService.getParameter(MENU_DRG_SUGGESTION))) {
         if (payload.getDrgSuggestion() != null) {
           if ((payload.getDrgSuggestion().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getDrgSuggestion().booleanValue() && "0".equals(p.getValue()))) {
@@ -1082,12 +1174,17 @@ public class SystemService {
           p.setValue(payload.getDrgSuggestion().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.DRG_SUGGESTION.value(), payload.getSuspected());
         }
-      } 
+      }
 
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
     recalculateAll(needProcess);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 
@@ -1096,6 +1193,9 @@ public class SystemService {
   }
 
   public String updateDbManagement(DbManagement payload) {
+	  
+	List<Long> pks = new ArrayList<>();
+	
     if ("0".equals(parametersService.getParameter(MENU_DB_MANAGEMENT))) {
       return null;
     }
@@ -1116,7 +1216,12 @@ public class SystemService {
       }
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 
@@ -1192,8 +1297,8 @@ public class SystemService {
     return sb.toString();
   }
 
-  public String checkDownloadDir() {
-    File path = new File(FILE_PATH);
+  public String checkDownloadDir(String filePath) {
+    File path = new File(filePath);
     if (!path.exists() || !path.isDirectory()) {
       path.mkdir();
     }
@@ -1231,7 +1336,7 @@ public class SystemService {
   public int downloadXML(String dataFormat, String applY, String applM, String applDate,
       String applCategory, String applMethod, String applMedic, long userId,
       HttpServletResponse response) throws IOException {
-    checkDownloadDir();
+    checkDownloadDir(FILE_PATH);
     String applYM =
         String.valueOf((Integer.parseInt(applY) - 1911) * 100 + Integer.parseInt(applM));
     String filename = getDownloadXMLFilename(dataFormat, applY, applM);
@@ -1257,7 +1362,7 @@ public class SystemService {
         File file = new File(filepath);
 
         logger.info("downloadXML path:" + applYM + "," + filepath + "," + file.getAbsolutePath());
-        //response.reset();
+        // response.reset();
         response.setContentType("application/octet-stream; charset=BIG5");
         response.addHeader("Content-Disposition",
             "attachment;filename=" + URLEncoder.encode(filename, "BIG5"));
@@ -1425,14 +1530,19 @@ public class SystemService {
 
       @Override
       public void run() {
-        importFile(file);
-        logger.info("importFileThread " + file.getAbsolutePath() + " done");
+        xmlService.checkAll(0, true);
+        long startImport = System.currentTimeMillis();
+        importXMLFile(file);
+        long usedTime = System.currentTimeMillis() - startImport;
+        logger
+            .info("importFileThread " + file.getAbsolutePath() + " done, used " + usedTime + "ms.");
+        xmlService.checkAll((long) (usedTime), false);
       }
     });
     thread.start();
   }
 
-  public void importFile(File file) {
+  public void importXMLFile(File file) {
     ObjectMapper xmlMapper = new XmlMapper();
     try {
       if (readFile(file)) {
@@ -1510,23 +1620,89 @@ public class SystemService {
     });
     thread.start();
   }
-  
+
   public void refreshMRFromFolder(File[] files) {
     List<FILE_DOWNLOAD> oldFiles = downloadDao.findAllByUserIdOrderByUpdateAtDesc(0L);
+    List<FILE_DOWNLOAD> newFiles = new ArrayList<>();
+    ArrayList<File> needProcessFile = new ArrayList<>();
+    // System.out.println("oldFiles count:" + oldFiles.size());
     for (File file : files) {
-      if (!file.getName().endsWith(".xlsx") || file.getName().indexOf('~') > -1) {
+      if (file.getName().indexOf('~') > -1 || !(file.getName().endsWith(".xlsx")
+          || file.getName().endsWith(".xml") || file.getName().endsWith(".xls"))) {
         continue;
       }
       boolean isOldFile = false;
       for (FILE_DOWNLOAD oldFile : oldFiles) {
-        if (file.getName().equals(oldFile.getFilename())){
+        // System.out.println("folder:" + file.getName() + ", old:" + oldFile.getFilename());
+        if (file.getName().equals(oldFile.getFilename())) {
           isOldFile = true;
           break;
         }
       }
-      if(isOldFile) {
+      if (!isOldFile) {
+        needProcessFile.add(file);
+        FILE_DOWNLOAD fd = new FILE_DOWNLOAD();
+        fd.setFilename(file.getName());
+        fd.setProgress(0);
+        fd.setUpdateAt(new Date());
+        fd.setUserId(0L);
+        fd = downloadDao.save(fd);
+        newFiles.add(fd);
+      }
+    }
+    if (newFiles.size() == 0) {
+      return;
+    }
+
+    ArrayList<File> opdList = new ArrayList<File>();
+    ArrayList<File> ipdList = new ArrayList<File>();
+    ArrayList<File> oppList = new ArrayList<File>();
+    ArrayList<File> ippList = new ArrayList<File>();
+
+    for (File file : needProcessFile) {
+      if (processSettingFile(file, newFiles)) {
         continue;
       }
+      if (file.getName().endsWith(".xls")) {
+        if (file.getName().startsWith("OPD_SOP")) {
+          oppList.add(file);
+        } else if (file.getName().startsWith("OPD")) {
+          opdList.add(file);
+        } else if (file.getName().startsWith("OPP")) {
+          oppList.add(file);
+        } else if (file.getName().startsWith("IPD")) {
+          ipdList.add(file);
+        } else if (file.getName().startsWith("IPP")) {
+          ippList.add(file);
+        }
+      } else {
+        opdList.add(file);
+      }
+    }
+
+    if ((opdList.size() + oppList.size() + ippList.size() + ipdList.size()) > 0) {
+      long startImport = System.currentTimeMillis();
+      xmlService.checkAll(0, true);
+      // 病歷相關檔案
+      int mrFile = 0;
+      mrFile += importMRFile(opdList, newFiles);
+      mrFile += importMRFile(oppList, newFiles);
+      mrFile += importMRFile(ipdList, newFiles);
+      mrFile += importMRFile(ippList, newFiles);
+      long usedTime = System.currentTimeMillis() - startImport;
+      logger.info("import " + mrFile + " files used " + usedTime + " ms.");
+      xmlService.checkAll(usedTime, false);
+    }
+  }
+
+  private int importMRFile(List<File> files, List<FILE_DOWNLOAD> newFiles) {
+    int result = 0;
+    for (File file : files) {
+      if (file.getName().indexOf('~') > -1 || !(file.getName().endsWith(".xlsx")
+          || file.getName().endsWith(".xml") || file.getName().endsWith(".xls"))) {
+        continue;
+      }
+
       int count = 0;
       long filesize1 = 0;
       long filesize2 = 0;
@@ -1540,31 +1716,151 @@ public class SystemService {
         }
         filesize2 = file.length();
       } while ((filesize1 == 0 || filesize1 != filesize2) && count < 1800);
-      
-      FILE_DOWNLOAD fd = new FILE_DOWNLOAD();
-      fd.setFilename(file.getName());
-      fd.setProgress(100);
-      fd.setUpdateAt(new Date());
-      fd.setUserId(0L);
-      downloadDao.save(fd);
-      logger.info("process " + fd.getFilename());
-      XSSFWorkbook workbook = null;
-      try {
-        workbook = new XSSFWorkbook(new FileInputStream(file));
-        xmlService.readTheseSheet(workbook.getSheetAt(0));
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
-      } catch (IOException e) {
-        e.printStackTrace();
-      } finally {
-        if (workbook != null) {
-          try {
-            workbook.close();
-          } catch (IOException e) {
-            e.printStackTrace();
+
+      logger.info("process " + file.getName());
+     
+      if (file.getName().endsWith(".xlsx")) {
+        XSSFWorkbook workbook = null;
+        try {
+          workbook = new XSSFWorkbook(new FileInputStream(file));
+          xmlService.readTheseSheet(workbook.getSheetAt(0));
+          result++;
+        } catch (FileNotFoundException e) {
+          logger.error("importMRFile:" + file.getAbsolutePath(), e);
+        } catch (IOException e) {
+          logger.error("importMRFile:" + file.getAbsolutePath(), e);
+        } catch (Exception e) {
+          logger.error("importMRFile:" + file.getAbsolutePath(), e);
+        } finally {
+          if (workbook != null) {
+            try {
+              workbook.close();
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
           }
+        }
+      } else if (file.getName().endsWith(".xml")) {
+        importXMLFile(file);
+        result++;
+      } else if (file.getName().endsWith(".xls")) {
+        processLeadtekXLS(file);
+        result++;
+      }
+      updateFileDownloadFinished(file, newFiles);
+    }
+    return result;
+  }
+
+  private void updateFileDownloadFinished(File file, List<FILE_DOWNLOAD> newFiles) {
+    for (FILE_DOWNLOAD fd : newFiles) {
+      if (file.getName().equals(fd.getFilename())) {
+        fd.setProgress(100);
+        fd.setUpdateAt(new Date());
+        downloadDao.save(fd);
+        break;
+      }
+    }
+  }
+
+  public boolean processSettingFile(File file, List<FILE_DOWNLOAD> newFiles) {
+    long start = System.currentTimeMillis();
+    if (file.getName().indexOf(INIT_FILE_PARAMETERS) == 0) {
+      initial.importParametersFromExcel(file, "參數設定", 1);
+    } else if (file.getName().indexOf(INIT_FILE_PAY_CODE) > -1) {
+      initial.importPayCode(file, INIT_FILE_PAY_CODE, 0);
+    } else if (file.getName().indexOf(INIT_FILE_PAY_CODE_LINYUAN) == 0) {
+      initial.importPayCode(file, INIT_FILE_PAY_CODE_LINYUAN, 0);
+    } else if (file.getName().indexOf(INIT_FILE_PAY_CODE_POHAI) == 0) {
+      initial.importPayCode(file, INIT_FILE_PAY_CODE_POHAI, 0);
+    } else if (file.getName().startsWith(INIT_FILE_PAY_CODE_NAVY)) {
+      initial.importPayCode(file, INIT_FILE_PAY_CODE_NAVY, 0);
+    } else if (file.getName().startsWith(INIT_FILE_PAY_CODE_MS)) {
+      initial.importPayCode(file, INIT_FILE_PAY_CODE_MS, 0);
+    } else if (file.getName().indexOf(INIT_FILE_CODE_TABLE) > -1) {
+      initial.importCODE_TABLEToRDB(file, "CODE_TABLE");
+    } else if (file.getName().indexOf(INIT_FILE_ICDCM) > 0) {
+      initial.importICD10ToRedis(file, "ICD10-CM");
+    } else if (file.getName().indexOf(INIT_FILE_ICDPCS) > 0) {
+      initial.importICD10ToRedis(file, "ICD10-PCS");
+    } else if (file.getName().indexOf(INIT_FILE_ATC) > -1) {
+      initial.importATC(file);
+    } else if (file.getName().indexOf(INIT_FILE_INFECTIOUS) > -1) {
+      initial.importInfectious(file);
+    } else if (file.getName().startsWith(INIT_FILE_USER)) {
+      initial.importUserFile(file, 0);
+    } else if (file.getName().startsWith(INIT_FILE_DEPARTMENT)) {
+      initial.importDepartmentFile(file, 0);
+    } else if (file.getName().startsWith(INIT_FILE_USER_DEPARTMENT)) {
+      initial.importUserDepartmentFile(file, 0);
+    } else if (file.getName().startsWith(INIT_FILE_DEDUCTED_COMPUTER)) {
+      initial.importDeductedFile(file, false);
+    } else if (file.getName().startsWith(INIT_FILE_DEDUCTED_ARTIFICIAL)) {
+      initial.importDeductedFile(file, true);
+    } else {
+      return false;
+    }
+    updateFileDownloadFinished(file, newFiles);
+    long usedTime = System.currentTimeMillis() - start;
+    logger.info("import " + file.getName() + " used " + usedTime + " ms.");
+    return true;
+  }
+
+  public void processLeadtekXLS(File file) {
+    xmlService.checkAll(0, true);
+    long startImport = System.currentTimeMillis();
+    HSSFWorkbook workbook = null;
+    try {
+      if (file.getName().toUpperCase().indexOf("OPD_SOP") > -1) {
+        workbook = new HSSFWorkbook(new FileInputStream(file));
+        xmlService.readOpdSOPSheet(workbook.getSheetAt(0));
+      } else if (file.getName().toUpperCase().indexOf("OPD") > -1) {
+        workbook = new HSSFWorkbook(new FileInputStream(file));
+        if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+          xmlService.readOpdSheet(workbook.getSheetAt(0));
+        }
+      } else if (file.getName().toUpperCase().indexOf("IPD") > -1) {
+        workbook = new HSSFWorkbook(new FileInputStream(file));
+        if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+          xmlService.readIpdSheet(workbook.getSheetAt(0));
+        }
+      } else if (file.getName().toUpperCase().indexOf("OPP") > -1) {
+        workbook = new HSSFWorkbook(new FileInputStream(file));
+        if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+          xmlService.readOppHSSFSheet(workbook.getSheetAt(0));
+        }
+      } else if (file.getName().toUpperCase().indexOf("IPP") > -1) {
+        workbook = new HSSFWorkbook(new FileInputStream(file));
+        if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
+          xmlService.readIppHSSFSheet(workbook.getSheetAt(0));
+        }
+      }
+    } catch (FileNotFoundException e) {
+      logger.error("processLeadtekXLS", e);
+    } catch (IOException e) {
+      logger.error("processLeadtekXLS", e);
+    } catch (Exception e) {
+      logger.error("processLeadtekXLS", e);
+    } finally {
+      if (workbook != null) {
+        try {
+          workbook.close();
+        } catch (IOException e) {
+          logger.error("processLeadtekXLS", e);
         }
       }
     }
+    long usedTime = System.currentTimeMillis() - startImport;
+    logger.info("import xls:" + file.getName() + " used " + usedTime + " ms.");
+  }
+  
+  public void deleteInFileDownload(String filename) {
+    List<FILE_DOWNLOAD> list = downloadDao.findByFilename(filename);
+    if (list == null || list.size() == 0) {
+      return;
+    }
+    for (FILE_DOWNLOAD fd : list) {
+      downloadDao.deleteById(fd.getId());
+    }    
   }
 }

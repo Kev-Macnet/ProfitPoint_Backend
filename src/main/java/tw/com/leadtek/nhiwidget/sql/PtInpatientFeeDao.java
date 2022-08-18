@@ -26,7 +26,7 @@ public class PtInpatientFeeDao {
                 + "From PT_INPATIENT_FEE\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         if (lst.size()>0) {
             return Utility.mapLowerCase(lst.get(0));
@@ -40,7 +40,7 @@ public class PtInpatientFeeDao {
         sql = "Delete from PT_INPATIENT_FEE\n"
                 + "Where (PT_ID=%d)";
         sql = String.format(sql, ptId);
-        logger.info(sql);
+        logger.debug(sql);
         int ret =  jdbcTemplate.update(sql);
         return ret;
     }
@@ -54,7 +54,7 @@ public class PtInpatientFeeDao {
                 + "PT_INPATIENT_FEE(PT_ID, MAX_INPATIENT_ENABLE, MAX_INPATIENT, MAX_EMERGENCY_ENABLE, MAX_EMERGENCY, MAX_PATIENT_NO_ENABLE, MAX_PATIENT_NO, EXCLUDE_NHI_NO_ENABLE, NOT_ALLOW_PLAN_ENABLE, COEXIST_NHI_NO_ENABLE, NO_COEXIST_ENABLE)\n"
                 + "Values(%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)";
         sql = String.format(sql, ptId, max_inpatient_enable, max_inpatient, max_emergency_enable, max_emergency, max_patient_no_enable, max_patient_no, exclude_nhi_no_enable, not_allow_plan_enable, coexist_nhi_no_enable, no_coexist_enable);
-        logger.info(sql);
+        logger.debug(sql);
         try {
             int ret =  jdbcTemplate.update(sql);
             return ret;

@@ -1,28 +1,35 @@
 # 敏盛醫院設定檔
+# Replace localhost:8081 to 192.168.2.172
 server:
-  port: ${port:80}
+  port: ${port:8080}
   tomcat:
     uri-encoding: UTF-8
     max-connections: 3000
-    max-http-post-size: 124857600
-    max-threads: 1000
+    max-http-form-post-size: 124857600
+    threads:
+      max: 1000
   max-http-header-size: 40KB
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
 spring:
+# avoid error log:Spring Data Redis - Could not safely identify store assignment for repository candidate interface
+  data:
+    redis:
+      repositories:
+        enabled: false
   servlet:
     multipart:
       max-file-size: 256MB
       max-request-size: 256MB
       enabled: true
-  jackson:
-    default-property-inclusion: non_null
-  http:
-    encoding:
-      charset: UTF-8
-      force: true
-      enabled: true
+#  jackson:
+#    default-property-inclusion: non_null
   redis:
     host: localhost
     port: 6379
@@ -33,19 +40,21 @@ spring:
         max-active: 8
         max-wait: -1
         max-idle: 4
-        min-wait: 1
-#  datasource:
-#    hikari:
-#      data-source-class-name: com.zaxxer.hikari.HikariDataSource
-#      driver-class-name: com.sap.db.jdbc.Driver
-#      url: 
-#      username: NWUSER
-#      password: Leadtek21191
-#      connection-test-query: SELECT '1' FROM DUMMY
+  quartz:
+    job-store-type: memory
+    scheduler-name: leadtek-scheduler
+    properties:
+      org:
+        quartz:
+          jobStore:
+          threadPool:
+            threadCount: 5
   datasource:
-    url: jdbc:sap://192.168.2.171:30041/LEADTEK_AI
+    url: jdbc:sap://192.168.2.171:30041/NWUSER
     username: NWUSER
     password: Leadtek2021
+    testOnBorrow: true
+    validationQuery: SELECT '1' FROM DUMMY
   jpa:
     show-sql: false
     hibernate:
@@ -59,7 +68,7 @@ spring:
         new_generator_mappings: false
         connection:
           pool_size: 10
-        format_sql: true
+        format_sql: false
         order_inserts: true
         order_updates: true
         jdbc:
@@ -71,11 +80,9 @@ spring:
         batch_size: 1000
         lob:
           non_contextual_creation: true
-      default-schema: NHIWIDGET
+      default-schema: NWUSER
       connection:
-        pool_size: 5
-      show_sql: false
-      format_sql: true
+        pool_size: 40
       bytecode: 
         provider: javassist
         use_reflection_optimizer: true
@@ -85,15 +92,22 @@ spring:
 #    username: sa
 #    password: "!si7966"
 #    connection-test-query: SELECT '1' FROM DUMMY
-jwt:
-  secret: leadtek_NHIWidget
-  expiration: 360000000
-mail:
-  host: 59.120.139.196
-  port: 25
-  fromEmail: monitor@leadtek.com.tw
-  password: z5z8tah5
-serverUrl: "http://192.168.2.171:80/#/warehouse/"
+project:
+  jwt:
+    secret: leadtek_NHIWidget
+  # jwt expire time: 8 hours
+    expiration: 28800000
+  # away from keyboard 時間，超過30分則刪除 jwt
+    afk: 2800000
+  mail:
+    host: mail.e-ms.com.tw
+    port: 25
+    fromEmail: monitor@leadtek.com.tw
+    password:
+  serverUrl: "http://192.168.2.172:8080/#/warehouse/"
+  apiUrl: "http://192.168.2.172:8080/"
+  hospId: 1532011154
+  isMask: false
 swagger:
   enable: false
   application-name: 健保申保最佳化系統 API

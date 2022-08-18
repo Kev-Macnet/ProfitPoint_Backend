@@ -4,10 +4,12 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import java.text.DecimalFormat;
-import java.util.Calendar;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
+
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +36,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
 import tw.com.leadtek.nhiwidget.model.rdb.USER;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -70,6 +74,7 @@ public class UserController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),
       @ApiResponse(responseCode = "400", description = "已有相同的名稱")})
   @PostMapping("/auth/user")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增帳號")
   public ResponseEntity<BaseResponse> newUser(
       @ApiParam(value = "帳號內容") @RequestBody(required = true) UserRequest request) {
 
@@ -85,6 +90,9 @@ public class UserController extends BaseController {
     }
     USER result = userService.newUser(request);
     if (result != null) {
+    	
+      httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{result.getId()}));
+      
       return returnIDResult(result.getId().toString());
     } else {
       return returnAPIResult("已有相同的名稱");
@@ -95,6 +103,7 @@ public class UserController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "舊密碼有誤")})
   @PutMapping("/auth/forgetPassword")
+  @LogDefender(value = {LogType.FORGOT_PASSWORD})
   public ResponseEntity<BaseResponse> forgetPassword(@ApiParam(name = "username", value = "登入帳號",
       example = "test") @RequestParam(required = true) String username) {
     String result = userService.forgetPassword(username, null);
@@ -107,6 +116,7 @@ public class UserController extends BaseController {
   @ApiOperation(value = "刪除帳號", notes = "刪除帳號")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @DeleteMapping("/user/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除帳號")
   public ResponseEntity<?> deleteUser(
       @ApiParam(name = "id", value = "帳號id", example = "1") @PathVariable String id) {
     logger.info("/user/{id}: delete:" + id);
@@ -122,6 +132,7 @@ public class UserController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "未找到帳號")})
   @PutMapping("/user/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新帳號")
   public ResponseEntity<BaseResponse> updateUser(
       @ApiParam(name = "id", value = "帳號id", example = "1") @PathVariable String id,
       @RequestBody UserRequest request) {
@@ -131,6 +142,9 @@ public class UserController extends BaseController {
       if (lid.longValue() != request.getId().longValue()) {
         return returnAPIResult("id 不符合");
       }
+      
+      httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{lid}));
+      
       return returnAPIResult(userService.updateUser(request));
     } catch (NumberFormatException e) {
       return returnAPIResult("id 有誤");
@@ -140,6 +154,7 @@ public class UserController extends BaseController {
   @ApiOperation(value = "取得指定id帳號資訊", notes = "取得指定id帳號資訊")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/user/{id}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<UserRequest> getUserById(
       @ApiParam(name = "id", value = "user id", example = "1") @PathVariable String id) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -159,6 +174,7 @@ public class UserController extends BaseController {
   @ApiOperation(value = "取得所有帳號", notes = "取得所有帳號")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/user")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<List<UserRequest>> getAllUser(
       @ApiParam(name = "funcType", value = "科別代碼",
           example = "00") @RequestParam(required = false) String funcType,
@@ -189,6 +205,7 @@ public class UserController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "舊密碼有誤")})
   @PutMapping("/user/changePassword")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更換密碼")
   public ResponseEntity<BaseResponse> changePassword(@Valid @RequestBody ChangePassword cp) {
     if (cp.getOldPassword() == null || cp.getNewPassword() == null) {
       return returnAPIResult("新舊密碼不可為空值");
@@ -205,6 +222,7 @@ public class UserController extends BaseController {
       return returnAPIResult(loginResult);
     }
     if (userService.changePassword(authentication.getName(), cp.getNewPassword())) {
+    	
       return returnAPIResult(null);
     } else {
       return returnAPIResult("更換密碼出錯");
@@ -213,7 +231,7 @@ public class UserController extends BaseController {
 
   @ApiOperation(value = "登出", notes = "登出，將 session 清空")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "登出成功")})
-  @ApiImplicitParams({@ApiImplicitParam(name = "Authorization", dataType = "string",
+  @ApiImplicitParams({@ApiImplicitParam(name = "Authorization", dataType = "String",
       paramType = "header", required = true)})
   @PostMapping("/user/logout")
   public ResponseEntity<BaseResponse> logout(HttpServletRequest request,
@@ -237,17 +255,20 @@ public class UserController extends BaseController {
   @PostMapping("/auth/login")
   public ResponseEntity<JwtResponse> authenticateUser(
       @Valid @RequestBody LoginRequest loginRequest) {
-    Authentication authentication =
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-            loginRequest.getUsername(), loginRequest.getPassword()));
 
     USER user = userService.findUser(loginRequest.getUsername());
     if (user == null) {
-      JwtResponse jwt = new JwtResponse();
-      jwt.setResult("error");
-      jwt.setMessage("帳號不存在");
-      return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
-    }
+      if ("leadtek".equals(loginRequest.getUsername())) {
+        // create user
+        userService.initialLeadtek();
+        user = userService.findUser(loginRequest.getUsername());
+      } else {
+        JwtResponse jwt = new JwtResponse();
+        jwt.setResult("error");
+        jwt.setMessage("帳號不存在");
+        return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
+      }
+    } 
     if (user.getStatus() != null && user.getStatus().intValue() == 0) {
       JwtResponse jwt = new JwtResponse();
       jwt.setResult("error");
@@ -267,9 +288,12 @@ public class UserController extends BaseController {
         return new ResponseEntity<JwtResponse>(jwt, HttpStatus.FORBIDDEN);
       }
     }
+    Authentication authentication =
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+            loginRequest.getUsername(), loginRequest.getPassword()));
     SecurityContextHolder.getContext().setAuthentication(authentication);
     String jwt = jwtUtils.generateJwtToken(authentication);
-    logService.setLogin(loginRequest.getUsername(), jwt);
+    logService.setLogin(loginRequest.getUsername(), user.getId() ,jwt);
     UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
     userService.loginLog(loginRequest.getUsername(), jwt);
     // List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())
@@ -281,7 +305,7 @@ public class UserController extends BaseController {
   }
 
   /**
-   * 取得同義詞/代碼表資料
+   * 取得所有部門。因前端會抓此結果當做報表的科別，因此改讀所有病歷科別。2022/7/28.
    * 
    * @param name
    * @param model
@@ -290,26 +314,30 @@ public class UserController extends BaseController {
   @ApiOperation(value = "取得所有部門", notes = "取得所有部門")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/department")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<List<DEPARTMENT>> getAllDepartments(
       @ApiParam(name = "funcType", value = "科別代碼",
           example = "00") @RequestParam(required = false) String funcType,
       @ApiParam(name = "funcTypec", value = "科別中文名，如不分科、家醫科、內科...",
           example = "家醫科") @RequestParam(required = false) String funcTypec,
       @ApiParam(name = "funcTypeC", value = "科別中文名，如不分科、家醫科、內科...",
-          example = "家醫科") @RequestParam(required = false) String funcTypeC) {
+          example = "家醫科") @RequestParam(required = false) String funcTypeC, 
+      HttpSession session) {
     String funcTypeChinese = (funcTypec != null) ? funcTypec : funcTypeC;
-    return ResponseEntity.ok(userService.getAllDepartment(funcType, funcTypeChinese));
+    return ResponseEntity.ok(userService.getAllDepartment(funcType, funcTypeChinese, session.getCreationTime()));
   }
 
   @ApiOperation(value = "新增部門", notes = "新增部門")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),
       @ApiResponse(responseCode = "400", description = "已有相同的名稱")})
   @PostMapping("/department")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name= "新增部門")
   public ResponseEntity<BaseResponse> newDepartment(@RequestBody DEPARTMENT request) {
     // public boolean addSynonym(Synonym synonym, List<SynonymField> details) {
     logger.info("/newDepartment:" + request.getName() + "," + request);
     DEPARTMENT result = userService.newDepartment(request);
     if (result != null) {
+      httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{result.getId()}));
       return returnIDResult(result.getId().toString());
     } else {
       return returnAPIResult("已有相同的名稱");
@@ -320,6 +348,7 @@ public class UserController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "刪除成功"),
       @ApiResponse(responseCode = "400", description = "找不到該id部門")})
   @DeleteMapping("/department/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除部門")
   public ResponseEntity<BaseResponse> deleteDepartment(
       @ApiParam(name = "id", value = "部門id", example = "1") @PathVariable String id) {
     String deleteId = HtmlUtils.htmlEscape(id, "UTF-8");
@@ -334,6 +363,7 @@ public class UserController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "未找到部門id")})
   @PutMapping("/department/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新部門")
   public ResponseEntity<BaseResponse> updateDepartment(
       @ApiParam(name = "id", value = "部門id", example = "1") @PathVariable String id,
       @RequestBody DEPARTMENT request) {
@@ -343,6 +373,9 @@ public class UserController extends BaseController {
       if (lid.longValue() != request.getId().longValue()) {
         return returnAPIResult("id 不符合");
       }
+      
+      httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{lid}));
+      
       return returnAPIResult(userService.updateDepartment(request));
     } catch (NumberFormatException e) {
       return returnAPIResult("id 有誤");
@@ -350,6 +383,7 @@ public class UserController extends BaseController {
   }
 
   @GetMapping("ms")
+  @LogDefender(value = {LogType.SIGNIN})
   public MemoryStatus getMemoryStatistics() {
     MemoryStatus stats = new MemoryStatus();
     DecimalFormat df = new DecimalFormat(",###.###");

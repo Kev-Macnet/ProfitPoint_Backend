@@ -4,17 +4,18 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,10 +39,14 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
 import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
+import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
 import tw.com.leadtek.nhiwidget.payload.ATCListResponse;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -58,7 +63,6 @@ import tw.com.leadtek.nhiwidget.payload.system.IntelligentConfig;
 import tw.com.leadtek.nhiwidget.payload.system.QuestionMarkPayload;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.service.DrgCalService;
-import tw.com.leadtek.nhiwidget.service.InitialDataService;
 import tw.com.leadtek.nhiwidget.service.IntelligentService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
@@ -72,17 +76,6 @@ import tw.com.leadtek.tools.DateTool;
 @RequestMapping(value = "/sys", produces = "application/json; charset=utf-8")
 public class SystemController extends BaseController {
 
-  private final static String INIT_FILE_PARAMETERS = "PARAMETER";
-  
-  public final static String INIT_FILE_PAY_CODE = "醫療服務給付項目";
-  
-  /**
-   * 高雄霖園醫院藥品衛材xxxxxxx.xlsx
-   */
-  public final static String INIT_FILE_PAY_CODE_LINYUAN = "藥品衛材";
-  
-  private final static String INIT_FILE_CODE_TABLE = "CODE_TABLE";
-  
   @Autowired
   private DrgCalService drgCalService;
 
@@ -101,12 +94,10 @@ public class SystemController extends BaseController {
   @Autowired
   private ParametersService parametersService;
   
-  @Autowired
-  private InitialDataService initial;
-
   @ApiOperation(value = "取得DRG列表", notes = "取得DRG列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/drg")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<DrgCodeListResponse> getDRG(
       @ApiParam(name = "startDay", value = "生效日期，格式 yyyy/MM/dd",
           example = "2021/03/15") @RequestParam(required = false) String startDay,
@@ -178,6 +169,7 @@ public class SystemController extends BaseController {
 
   @ApiOperation(value = "新增一組DRG code", notes = "新增一組DRG code")
   @PostMapping("/drg")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增一組DRG code")
   public ResponseEntity<BaseResponse> newDRG(@RequestBody DrgCodePayload request) {
     if (request.getStartDay() == null || request.getStartDay().length() == 0) {
       
@@ -205,11 +197,15 @@ public class SystemController extends BaseController {
     }
 
     drgCalService.saveDrgCode(drgCode);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{drgCode.getId()}));
+    
     return returnAPIResult(null);
   }
 
   @ApiOperation(value = "修改DRG code", notes = "更改DRG code")
   @PutMapping("/drg")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改DRG code")
   public ResponseEntity<BaseResponse> updateDRG(@RequestBody DrgCodePayload request) {
     if (request.getId() == null || request.getId().intValue() == 0) {
       return returnAPIResult("DRG id 不可為空值或0");
@@ -227,11 +223,15 @@ public class SystemController extends BaseController {
       return returnAPIResult("DRG code " + request.getCode() + ",id:" + request.getId() + "不存在");
     }
     drgCalService.saveDrgCode(drgCode);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(null);
   }
 
   @ApiOperation(value = "刪除DRG code", notes = "刪除DRG code")
   @DeleteMapping("/drg/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除DRG code")
   public ResponseEntity<?> deleteDRG(@PathVariable String id) {
     logger.info("/drg/{id}: delete:" + id);
     DRG_CODE drg = drgCalService.getDrgCode(Long.parseLong(id));
@@ -245,6 +245,7 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "取得ATC代碼", notes = "取得ATC代碼")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/atc")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<ATCListResponse> getATC(
       @ApiParam(name = "code", value = "ATC代碼",
           example = "A01") @RequestParam(required = false) String code,
@@ -277,6 +278,7 @@ public class SystemController extends BaseController {
 
   @ApiOperation(value = "新增一組ATC分類代碼", notes = "新增一組ATC分類代碼")
   @PostMapping("/atc")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增一組ATC分類代碼")
   public ResponseEntity<BaseResponse> newATC(@RequestBody ATC request) {
     logger.info("/atc new:" + request.getCode());
     request.setCode(HtmlUtils.htmlEscape(request.getCode()));
@@ -291,11 +293,15 @@ public class SystemController extends BaseController {
     }
 
     systemService.saveATC(request, true);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new String[]{request.getCode()}));
+    
     return returnAPIResult(null);
   }
 
   @ApiOperation(value = "修改ATC分類代碼", notes = "修改ATC分類代碼")
   @PutMapping("/atc")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改ATC分類代碼")
   public ResponseEntity<BaseResponse> updateATC(@RequestBody ATC request) {
     if (request.getCode() == null) {
       return returnAPIResult("ATC code 不可為空值");
@@ -308,11 +314,15 @@ public class SystemController extends BaseController {
     }
     request.setRedisId(atc.getRedisId());
     systemService.saveATC(request, false);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new String[]{request.getCode()}));
+    
     return returnAPIResult(null);
   }
 
   @ApiOperation(value = "刪除ATC code", notes = "刪除ATC code")
   @DeleteMapping("/atc/{code}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除ATC code")
   public ResponseEntity<?> deleteATC(@PathVariable String code) {
     logger.info("/atc/{code}: delete:" + code);
     ATC atc = systemService.getATC(code);
@@ -326,6 +336,7 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "取得醫院層級", notes = "取得醫院層級")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/hospLevel")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<List<String>> getHospitalLevel() {
     return ResponseEntity.ok(parametersService.getHospitalLevel());
   }
@@ -333,6 +344,7 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "取得費用分類", notes = "取得費用分類")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/payCodeCat")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<List<String>> getPayCodeCategory() {
     return ResponseEntity.ok(parametersService.getPayCodeCategory());
   }
@@ -340,6 +352,7 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "取得代碼品項列表", notes = "取得代碼品項列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/payCode")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<PayCodeListResponse> getPayCode(
       @ApiParam(name = "startDay", value = "生效日，格式 yyyy/MM/dd",
           example = "2021/03/15") @RequestParam(required = false) String startDay,
@@ -397,6 +410,7 @@ public class SystemController extends BaseController {
 
   @ApiOperation(value = "新增一組代碼品項", notes = "新增一組代碼品項")
   @PostMapping("/payCode")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增一組代碼品項")
   public ResponseEntity<BaseResponse> newPayCode(@RequestBody PayCodePayload request) {
     logger.info("/payCode new:" + request.getCode());
     logger.info(request.toString());
@@ -412,11 +426,15 @@ public class SystemController extends BaseController {
       return returnAPIResult("代碼品項 code " + request.getCode() + " 已存在且生效日、終止日一致");
     }
     systemService.savePayCode(pc, true);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{pc.getId()}));
+    
     return returnAPIResult(null);
   }
 
   @ApiOperation(value = "修改代碼品項資料", notes = "修改代碼品項資料")
   @PutMapping("/payCode")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改代碼品項資料")
   public ResponseEntity<BaseResponse> updatePayCode(@RequestBody PayCodePayload request) {
     if (request.getId() == null) {
       return returnAPIResult("id 不可為空值");
@@ -439,11 +457,15 @@ public class SystemController extends BaseController {
     }
     pc.setRedisId(oldPayCode.getRedisId());
     systemService.savePayCode(pc, false);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(null);
   }
 
   @ApiOperation(value = "刪除代碼品項資料", notes = "刪除代碼品項資料")
   @DeleteMapping("/payCode/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除代碼品項資料")
   public ResponseEntity<?> deletePayCode(@PathVariable String id) {
     logger.info("/payCode/{id}: delete:" + id);
     PAY_CODE pc = new PAY_CODE();
@@ -463,6 +485,7 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "取得核刪代碼大分類", notes = "取得減核代碼大分類")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/deductedCat")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<List<String>> getDeductedCat() {
     return ResponseEntity.ok(systemService.getDeductedCat());
   }
@@ -470,6 +493,7 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "取得核刪代碼中分類", notes = "取得減核代碼中分類")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/deductedCat/{l1}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<List<String>> getDeductedCat(@PathVariable String l1) {
     return ResponseEntity.ok(systemService.getDeductedCat(l1));
   }
@@ -477,6 +501,7 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "取得核刪代碼小分類", notes = "取得減核代碼小分類")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/deductedCat/{l1}/{l2}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<List<String>> getDeductedCat(@PathVariable String l1,
       @PathVariable String l2) {
     return ResponseEntity.ok(systemService.getDeductedCat(l1, l2));
@@ -485,6 +510,7 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "取得核刪代碼列表", notes = "取得核減代碼列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/deducted")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<DeductedListResponse> getDuductedList(
       @ApiParam(name = "l1", value = "核減代碼大分類",
           example = "專業審查不予支付代碼") @RequestParam(required = false) String l1,
@@ -521,15 +547,22 @@ public class SystemController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/deducted")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增核減代碼")
   public ResponseEntity<BaseResponse> newDeducted(@RequestBody DEDUCTED request) {
     if (request.getCode() == null || request.getCode().length() < 1) {
       return returnAPIResult("code值不可為空");
     }
-    return returnAPIResult(systemService.newDeducted(request));
+    
+    String result = systemService.newDeducted(request);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
+    return returnAPIResult(result);
   }
 
   @ApiOperation(value = "取得指定id核減代碼", notes = "取得指定id核減代碼")
   @GetMapping("/deducted/{id}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<DEDUCTED> getDeducted(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return ResponseEntity.badRequest().body(new DEDUCTED());
@@ -547,15 +580,20 @@ public class SystemController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/deducted")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改核減代碼")
   public ResponseEntity<BaseResponse> updateRareICD(@RequestBody DEDUCTED request) {
     if (request == null || request.getId() == null) {
       return returnAPIResult("id未帶入");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(systemService.updateDeducted(request));
   }
 
   @ApiOperation(value = "刪除核減代碼", notes = "刪除核減代碼")
   @DeleteMapping("/deducted/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除核減代碼")
   public ResponseEntity<BaseResponse> deleteRareICDById(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
@@ -572,6 +610,7 @@ public class SystemController extends BaseController {
   @ApiOperation(value = "取得ICD代碼列表", notes = "取得ICD代碼列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/icd10")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<ICD10ListResponse> getICD10List(
       @ApiParam(value = "是否為法定傳染病",
           example = "true") @RequestParam(required = false) Boolean infectious,
@@ -620,15 +659,22 @@ public class SystemController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/icd10")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增ICD10代碼")
   public ResponseEntity<BaseResponse> newICD10(@RequestBody ICD10 request) {
     if (request.getCode() == null || request.getCode().length() < 1) {
       return returnAPIResult("code值不可為空");
     }
-    return returnAPIResult(systemService.saveIcd10(request, true));
+    
+    String result = systemService.saveIcd10(request, true);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
+    return returnAPIResult(result);
   }
 
   @ApiOperation(value = "取得指定ICD10代碼", notes = "取得指定ICD10代碼")
   @GetMapping("/icd10/{id}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<ICD10> getICD10(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return ResponseEntity.badRequest().body(new ICD10());
@@ -646,15 +692,20 @@ public class SystemController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/icd10")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改ICD10代碼")
   public ResponseEntity<BaseResponse> updateIcd10(@RequestBody ICD10 request) {
     if (request == null || request.getId() == null) {
       return returnAPIResult("id未帶入");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(systemService.saveIcd10(request, false));
   }
 
   @ApiOperation(value = "刪除ICD10代碼", notes = "刪除ICD10代碼")
   @DeleteMapping("/icd10/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除ICD10代碼")
   public ResponseEntity<BaseResponse> deleteICD10(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
@@ -670,72 +721,88 @@ public class SystemController extends BaseController {
   
   @ApiOperation(value = "取得檔案管理功能設定", notes = "取得檔案管理功能設定")
   @GetMapping("/config/fileManagement")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<FileManagementPayload> getFileManagement() {
     return ResponseEntity.ok(systemService.getFileManagementPaylod());
   }
   
   @ApiOperation(value = "更新檔案管理功能設定", notes = "更新檔案管理功能設定")
   @PostMapping("/config/fileManagement")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新檔案管理功能設定")
   public ResponseEntity<BaseResponse> updateFileManagement(
       @RequestBody FileManagementPayload request) {
+	  
     return returnAPIResult(systemService.updateFileManagementPaylod(request));
   }
   
   @ApiOperation(value = "取得比對警示功能設定", notes = "取得比對警示功能設定")
   @GetMapping("/config/compareWarning")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<CompareWarningPayload> getCompareWarning() {
     return ResponseEntity.ok(systemService.getCompareWarningPayload());
   }
   
   @ApiOperation(value = "更新比對警示功能設定", notes = "更新比對警示功能設定")
   @PostMapping("/config/compareWarning")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新比對警示功能設定")
   public ResponseEntity<BaseResponse> updateCompareWarning(
       @RequestBody CompareWarningPayload request) {
+	  
     return returnAPIResult(systemService.updateCompareWarningPayload(request));
   }
   
   @ApiOperation(value = "取得疑問提示通知功能設定", notes = "取得疑問提示通知功能設定")
   @GetMapping("/config/questionMark")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<QuestionMarkPayload> getQuestionMarkPayload() {
     return ResponseEntity.ok(systemService.getQuestionMarkPayload());
   }
   
   @ApiOperation(value = "更新疑問提示通知功能設定", notes = "更新疑問提示通知功能設定")
   @PostMapping("/config/questionMark")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新疑問提示通知功能設定")
   public ResponseEntity<BaseResponse> updateQuestionMarkPayload(
       @RequestBody QuestionMarkPayload request) {
+	  
     return returnAPIResult(systemService.updateQuestionMarkPayload(request));
   }
   
   @ApiOperation(value = "取得智能提示助理功能設定", notes = "取得智能提示助理功能設定")
   @GetMapping("/config/intelligent")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<IntelligentConfig> getIntelligentConfig() {
     return ResponseEntity.ok(systemService.getIntelligentConfig());
   }
   
   @ApiOperation(value = "更新智能提示助理功能設定", notes = "更新智能提示助理功能設定")
   @PostMapping("/config/intelligent")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新智能提示助理功能設定")
   public ResponseEntity<BaseResponse> updateIntelligentConfig(
       @RequestBody IntelligentConfig request) {
+	  
     return returnAPIResult(systemService.updateIntelligentConfig(request));
   }
   
   @ApiOperation(value = "取得資料庫串接管理設定", notes = "取得資料庫串接管理設定")
   @GetMapping("/config/dbManagement")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<DbManagement> getDbManagement() {
     return ResponseEntity.ok(systemService.getDbManagement());
   }
   
   @ApiOperation(value = "更新資料庫串接管理設定", notes = "更新資料庫串接管理設定")
   @PostMapping("/config/dbManagement")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新資料庫串接管理設定")
   public ResponseEntity<BaseResponse> updateDbManagement(
       @RequestBody DbManagement request) {
+	  
     return returnAPIResult(systemService.updateDbManagement(request));
   }
   
   @ApiOperation(value = "重跑job", notes = "重跑job")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/run")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<BaseResponse> runReport(
       @ApiParam(value = "job name", example = "PointMR") 
       @RequestParam(required = false) String name, 
@@ -754,11 +821,17 @@ public class SystemController extends BaseController {
       is.calculateOverAmount(param);
     } else if ("DRG".equals(name)) {
       reportService.calculateDRGMonthly(param);
+    } else if ("DRGCal".equalsIgnoreCase(name)) {
+      is.runDrgCalculate(param);
+    } else if ("DRGData".equals(name)) {
+      drgCalService.processDrgCalResultFile(
+          new File(DrgCalService.DRG_DATA_FILE_PATH + "\\" + param), new ArrayList<MR>(),
+          new ArrayList<Long>(), new HashMap<Long, IP_D>());
     } else if ("Weekly".equals(name)) {
       Calendar cal = Calendar.getInstance();
       cal.add(Calendar.YEAR, -4);
       cal = parametersService.getMinMaxCalendar(cal.getTime(), true);
-      reportService.calculatePointWeekly(cal);
+      reportService.calculatePointWeekly(cal, true);
     } else if ("CostDiff".equals(name)) {
       is.recalculateAICostThread();
     } else if ("IpDays".equals(name)) {
@@ -771,6 +844,7 @@ public class SystemController extends BaseController {
   
   @ApiOperation(value = "取得申報檔匯出進度", notes = "取得申報檔匯出進度")
   @GetMapping("/filesStatus")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<BaseResponse> downloadFiles(){
     UserDetailsImpl user = getUserDetails();
     if (user == null) {
@@ -788,6 +862,7 @@ public class SystemController extends BaseController {
   
   @ApiOperation(value = "匯出申報檔", notes = "匯出申報檔")
   @GetMapping("/downloadXML")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<BaseResponse> downloadXML(@ApiParam(value = "資料格式，10:門急診，20:住院",
         example = "10") @RequestParam(required = false) String dataFormat,
       @ApiParam(value = "申報年，格式西元年 yyyy",
@@ -841,6 +916,7 @@ public class SystemController extends BaseController {
   @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "自定義表單檔案",
       dataType = "file", required = true, example = "111-0.xml")})
   @PostMapping(value = "/uploadXML")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<BaseResponse> uploadXML(
       @ApiParam(name = "file", value = "自定義表單檔案", example = "111-0.xml") @RequestPart("file") MultipartFile file) {
     logger.info("/uploadXML:" + file.getOriginalFilename() + "," + file.getSize());
@@ -850,55 +926,32 @@ public class SystemController extends BaseController {
 
     String result = null;
     try {
-      String dirPath = systemService.checkDownloadDir();
-      String filepath =  (System.getProperty("os.name").toLowerCase().startsWith("windows")) ? dirPath + "\\" + file.getOriginalFilename() :
-        dirPath + "/" + file.getOriginalFilename();
+      String dirPath =
+          systemService.checkDownloadDir((parametersService.getParameter("MR_PATH") != null)
+              ? parametersService.getParameter("MR_PATH")
+              : SystemService.FILE_PATH);
+      String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+          ? dirPath + "\\" + file.getOriginalFilename()
+          : dirPath + "/" + file.getOriginalFilename();
       File saveFile = new File(filepath);
+      if (saveFile.exists() && saveFile.length() > 0) {
+        try {
+          saveFile.delete();
+        } catch (Exception e) {
+          logger.error("delete exist file", e);
+          return returnAPIResult("檔案已存在");
+        }
+      } else if (file != null && file.getSize() == 0) {
+        return returnAPIResult(file.getOriginalFilename()  + " 檔案資料為0筆！");
+      }
       try {
+        systemService.deleteInFileDownload(file.getOriginalFilename());
         file.transferTo(saveFile);
+        //systemService.processUploadFile(saveFile);
       } catch (IllegalStateException e) {
         e.printStackTrace();
       }
-      if (saveFile.getName().indexOf(INIT_FILE_PARAMETERS) == 0) {
-        initial.importParametersFromExcel(saveFile, "參數設定", 1);
-      } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE) > -1) {
-        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE, 0);
-      } else if (saveFile.getName().indexOf(INIT_FILE_PAY_CODE_LINYUAN) == 0) {
-        initial.importPayCode(saveFile, INIT_FILE_PAY_CODE_LINYUAN, 0);
-      } else if (saveFile.getName().indexOf(INIT_FILE_CODE_TABLE) > -1) {
-        initial.importCODE_TABLEToRDB(saveFile, "CODE_TABLE");
-      }  else if (saveFile.getName().endsWith(".xls")) {
-        HSSFWorkbook workbook = null;
-        if (saveFile.getName().toUpperCase().indexOf("OPD") > -1) {
-          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
-          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
-            xmlService.readOpdSheet(workbook.getSheetAt(0));
-          }
-        } else if (saveFile.getName().toUpperCase().indexOf("IPD") > -1) {
-          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
-          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
-            xmlService.readIpdSheet(workbook.getSheetAt(0));
-          }
-        } else if (saveFile.getName().toUpperCase().indexOf("OPP") > -1) {
-          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
-          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
-            xmlService.readOppHSSFSheet(workbook.getSheetAt(0));
-          }
-        } else if (saveFile.getName().toUpperCase().indexOf("IPP") > -1) {
-          workbook = new HSSFWorkbook(new FileInputStream(saveFile));
-          if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {
-            xmlService.readIppHSSFSheet(workbook.getSheetAt(0));
-          }
-        }
-        if (workbook != null) {
-          workbook.close();
-        }
-      } else if (saveFile.getName().endsWith(".xlsx")) {
-        XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(saveFile));
-        xmlService.readTheseSheet(workbook.getSheetAt(0));
-      } else {
-        systemService.importFileThread(saveFile);
-      }
+
     } catch (IOException e) {
       logger.error("uploadXML-", e);
     }

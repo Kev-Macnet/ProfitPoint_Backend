@@ -17,13 +17,18 @@ server:
       force: true
       enabled: true
 spring:
+# avoid error log:Spring Data Redis - Could not safely identify store assignment for repository candidate interface
+  data:
+    redis:
+      repositories:
+        enabled: false
   servlet:
     multipart:
       max-file-size: 256MB
       max-request-size: 256MB
       enabled: true
-  jackson:
-    default-property-inclusion: NON_NULL
+#  jackson:
+#    default-property-inclusion: NON_NULL
   redis:
     host: 127.0.0.1
     port: 6379
@@ -52,7 +57,7 @@ spring:
           new_generator_mappings: false
           connection:
           pool_size: 100
-        format_sql: false
+        format_sql: true
         order_inserts: true
         order_updates: true
         jdbc:
@@ -67,8 +72,6 @@ spring:
       default-schema: NHIWIDGET
       connection:
         pool_size: 100
-      show_sql: false
-      format_sql: false
       bytecode: 
         provider: javassist
         use_reflection_optimizer: true
@@ -84,9 +87,9 @@ project:
   # away from keyboard 時間，超過30分則刪除 jwt
     afk: 1800000
   mail:
-    host: 10.0.0.6
+    host:
     port: 25
-    fromEmail: profitpoint@mail.pohai.org.tw
+    fromEmail: 
     password:
   serverUrl: "http://192.168.1.137:8080/#/login?redir=warehouse/"
   apiUrl: "http://192.168.1.137:8080/"

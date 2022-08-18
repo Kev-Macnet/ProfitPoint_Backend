@@ -70,8 +70,18 @@ public class ICDCM_ICDOP_KEYS implements Serializable{
 		this.dataFormat = dataFormat;
 	}
 
+    @Override
+    public int hashCode() {
+      return icdcm.hashCode() + icdop.hashCode() + dataFormat.hashCode();
+    }
 
-	
-	
-
+    @Override
+    public boolean equals(Object object) {
+      if (object instanceof ICDCM_ICDOP_KEYS) {
+        ICDCM_ICDOP_KEYS pk = (ICDCM_ICDOP_KEYS) object;
+        return icdcm.equals(pk.getIcdcm()) && icdop.equals(pk.getIcdop())
+            && dataFormat.equals(pk.getDataFormat());
+      }
+      return false;
+    }
 }

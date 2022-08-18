@@ -12,7 +12,10 @@ public interface DRG_WEEKLYDao extends JpaRepository<DRG_WEEKLY, Long> {
 
   public DRG_WEEKLY findByPyearAndPweek(int year, int week);
   
+  public List<DRG_WEEKLY> findByFuncTypeAndPyearAndPweek(String funcType, int year, int week);
+  
   public DRG_WEEKLY findByFuncTypeAndStartDateAndEndDate(String funcType, Date sdate, Date edate);
   
   public List<DRG_WEEKLY> findByFuncTypeAndEndDateLessThanEqualOrderByEndDateDesc(String funcType, Date edate);
+  
 }

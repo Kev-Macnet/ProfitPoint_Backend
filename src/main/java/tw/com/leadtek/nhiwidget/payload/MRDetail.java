@@ -59,6 +59,9 @@ public class MRDetail extends MR {
   @ApiModelProperty(value = "藥師代號", required = false)
   protected String pharID;
   
+  @ApiModelProperty(value = "藥師姓名", required = false)
+  protected String pharName;
+  
   @ApiModelProperty(value = "給藥天數", required = false)
   protected Integer drugDay;
   
@@ -313,6 +316,9 @@ public class MRDetail extends MR {
   
   @ApiModelProperty(value = "有差異的醫令位置，起始為0", required = false)
   protected List<Integer> diffMos;
+  
+  @ApiModelProperty(value = "出院摘要", required = false)
+  protected String discharge;
   
   public MRDetail() {
     
@@ -1125,6 +1131,22 @@ public class MRDetail extends MR {
   public void setDiffMos(List<Integer> diffMos) {
     this.diffMos = diffMos;
   }
+  
+  public String getPharName() {
+    return pharName;
+  }
+
+  public void setPharName(String pharName) {
+    this.pharName = pharName;
+  }
+  
+  public String getDischarge() {
+    return discharge;
+  }
+
+  public void setDischarge(String discharge) {
+    this.discharge = discharge;
+  }
 
   /**
    * 將table OP_D 的資料寫到MRDetail object
@@ -1202,6 +1224,7 @@ public class MRDetail extends MR {
     this.oriCardSeqNo = opd.getOriCardSeqNo();
     this.funcDate = opd.getFuncDate();
     this.funcEndDate = opd.getFuncEndDate();
+    this.pharName = opd.getPharName();
   }
   
   /**
@@ -1426,6 +1449,8 @@ public class MRDetail extends MR {
       System.arraycopy(pcs, 1, all, startIndex, pcs.length - 1);
     }
     all[size - 1] = mr.getIcdcm1();
+    //test(all, mr.getRocId());
+    //all = checkNull(all);
     if (all.length > 1) {
       Arrays.sort(all);
       for (String string : all) {
@@ -1452,10 +1477,20 @@ public class MRDetail extends MR {
     return true;
   }
   
-  public static void test(String[] a) {
+  public static String[] checkNull(String[] array) {
+    ArrayList<String> list = new ArrayList<String>();
+    for (String string : array) {
+      if (string != null && string.length() > 0) {
+        list.add(string);
+      }
+    }
+    return (String[]) list.toArray();
+  }
+  
+  public static void test(String[] a, String note) {
     for(int i=0;i<a.length; i++) {
       if (a[i] != null && a[i].length() > 0) {
-        System.out.println("i=" +  i + "," + a[i]);
+        System.out.println(note + ": i=" +  i + "," + a[i]);
       }
     }
   }
@@ -1524,7 +1559,7 @@ public class MRDetail extends MR {
   }
   
   public static void appendString(StringBuffer sb, String s) {
-    if (s != null) {
+    if (s != null && s.length() > 0) {
       sb.append(s);
       sb.append(",");
     }

@@ -608,7 +608,7 @@ public class GenerateSqlByClass {
     //testSub();
     //gen.testNormalDistribution();
     //testPercent();
-   // testDateTool();
+    //testDateTool();
     testSystemInformation();
     // gen.generateSQL();
 
@@ -629,7 +629,8 @@ public class GenerateSqlByClass {
     try {
       Class<?> c = Class.forName(className);
       String functionName = field.substring(0, 1).toUpperCase() + field.substring(1);
-      c.getDeclaredMethod("get" + functionName, null);
+      //c.getDeclaredMethod("get" + functionName, null);
+      c.getDeclaredMethod("get" + functionName);
       return true;
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
@@ -711,9 +712,20 @@ public class GenerateSqlByClass {
     System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
     s = "2021/10/8 AM 09:32:00";
     System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, true));
+    s= "1975/6/22";
+    System.out.println(s + " -> " + DateTool.removeSlashForChineseYear(s));
+    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, false));
+    s= "1110426";
+    System.out.println(s + " -> " + DateTool.convertExcelDateTimeToChinese(s, false));
   }
   
   public static void testSystemInformation() {
     System.out.println("PROCESSOR_IDENTIFIER=" + System.getenv("PROCESSOR_IDENTIFIER"));
+    String s = "\r\n"
+        + "  ";
+      if (s == null || s.trim().length() == 0) {
+        System.out.println("null");
+      }
+      System.out.println("s=" + s);
   }
 }

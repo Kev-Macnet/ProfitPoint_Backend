@@ -12,7 +12,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
-import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
 
 public interface IP_PDao extends JpaRepository<IP_P, Long> {
 
@@ -21,6 +20,8 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
   public List<IP_P> findByMrId(Long mrId);
   
   public List<IP_P> findByIpdIdOrderByOrderSeqNo(Long ipdId);
+  
+  public List<IP_P> findByIpdIdAndOrderSeqNo(Long ipdId, int orderSeqNo);
   
   @Query(value = "SELECT * FROM IP_P WHERE IPD_ID IN (SELECT D_ID FROM MR WHERE DATA_FORMAT = ?1 AND MR_DATE BETWEEN ?2 AND ?3) ", nativeQuery = true)
   public List<IP_P> findByIpdIDFromMR(String dataFormat, Date sDate, Date eDate);
@@ -54,6 +55,16 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
   public List<Object[]> findPointGroupByPayCodeType(Date sdate, Date edate);
   
   /**
+   * 住院各醫令類別點數列表
+   * @param sdate
+   * @param edate
+   * @return [醫令代碼, 加總點數, 件數]
+   */
+  @Query(value = "SELECT IP_P.PAY_CODE_TYPE , SUM(TOTAL_DOT), COUNT(MR.ID) FROM MR, IP_P " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_P.MR_ID = MR.ID AND TOTAL_DOT > 0 AND MR.FUNC_TYPE = ?3 GROUP BY IP_P.PAY_CODE_TYPE", nativeQuery = true)
+  public List<Object[]> findPointAndFuncTypeGroupByPayCodeType(Date sdate, Date edate, String funcType);
+  
+  /**
    * 住院各醫令類別自費點數
    * @param sdate
    * @param edate
@@ -63,6 +74,17 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
       "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_P.MR_ID = MR.ID AND IP_P.TOTAL_DOT > 0 "
       + "AND IP_P.ORDER_TYPE='E' GROUP BY IP_P.PAY_CODE_TYPE", nativeQuery = true)
   public List<Object[]> findOwnExpenseGroupByPayCodeType(Date sdate, Date edate);
+  
+  /**
+   * 住院各醫令類別自費點數列表
+   * @param sdate
+   * @param edate
+   * @return [醫令代碼, 加總點數, 件數]
+   */
+  @Query(value = "SELECT IP_P.PAY_CODE_TYPE , SUM(IP_P.TOTAL_DOT), COUNT(MR.ID) FROM MR, IP_P " + 
+      "WHERE MR_END_DATE >= ?1 AND MR_END_DATE <= ?2 AND IP_P.MR_ID = MR.ID AND IP_P.TOTAL_DOT > 0 "
+      + "AND IP_P.ORDER_TYPE='E' AND MR.FUNC_TYPE = ?3 GROUP BY IP_P.PAY_CODE_TYPE", nativeQuery = true)
+  public List<Object[]> findOwnExpenseAndFuncTypeGroupByPayCodeType(Date sdate, Date edate,String funcType);
   
   /**
    *  取得醫令碼與支付標準代碼相同的所有醫令
@@ -266,4 +288,67 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	@Query(value = "SELECT * FROM IP_P WHERE MR_ID IN (SELECT ID FROM MR "
  	    + "WHERE DATA_FORMAT = '20' AND MR_END_DATE >= ?1 AND MR_END_DATE <= ?2) ", nativeQuery = true)
  	public List<IP_P> getByMrIdFromMR(java.util.Date sDate, java.util.Date eDate);
+ 	
+ 	/**
+ 	 * 取得單一住院就醫紀錄應用數量,超過 max 次數的病歷id
+ 	 * @param orderCode
+ 	 * @param mrIdList
+ 	 * @param max
+ 	 * @return
+ 	 */
+ 	@Query(value = "SELECT a.MR_ID FROM (" + 
+ 	    "SELECT MR_ID, SUM(TOTAL_Q) AS total FROM IP_P WHERE ORDER_CODE =?1 AND mr_id IN ?2 " + 
+ 	    "GROUP BY mr_id) A WHERE total > ?3", nativeQuery = true)
+ 	public List<Object[]> getMrIdByOrderCodeCount(String orderCode, List<Long> mrIdList, int max);
+ 	
+ 	/**
+ 	 * 檢查住院診察費病歷內是否有門診診察費
+ 	 * @param orderCode
+ 	 * @param mrIdList
+ 	 * @return
+ 	 */
+ 	@Query(value = "SELECT MR_ID FROM ip_p WHERE PAY_CODE_TYPE ='1' AND ORDER_CODE LIKE '00%' "
+ 	    + "AND MR_ID IN ?1", nativeQuery = true)
+ 	public List<Object[]> getMrIdByOrderPayTypeAndOrderCode(List<Long> mrIdList);
+ 	
+ 	/**
+ 	 * 取得醫令的起始與結束時間，計算該筆醫令是否符合需滿n小時或超過n小時不能使用
+ 	 * @param orderCode
+ 	 * @param mrIdList
+ 	 * @return
+ 	 */
+ 	@Query(value = "SELECT MR_ID, START_TIME, END_TIME, TOTAL_Q FROM ip_p "
+ 	    + "WHERE ORDER_CODE = ?1 AND MR_ID IN ?2 ORDER BY MR_ID, START_TIME", nativeQuery = true)
+    public List<Object[]> getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(String orderCode, List<Long> mrIdList);
+    
+    /**
+     * 取得住院日期及醫令的起始與結束時間，計算該筆醫令是否符合需滿n小時或超過n小時不能使用
+     * @param orderCode
+     * @param mrIdList
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, MR.MR_DATE, START_TIME, END_TIME, TOTAL_Q FROM ip_p, mr "
+        + "WHERE ORDER_CODE = ?1 AND MR_ID IN ?2 AND ip_p.MR_ID = mr.ID ORDER BY MR_ID, START_TIME", nativeQuery = true)
+    public List<Object[]> getMrDateAndMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(String orderCode, List<Long> mrIdList);
+    
+    /**
+     * 取得醫令的起始與結束時間
+     * @param orderCode
+     * @param mrIdList
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, ORDER_CODE, START_TIME FROM ip_p "
+        + "WHERE ORDER_CODE IN ?1 AND MR_ID IN ?2 AND ORDER_TYPE <> '4' ORDER BY MR_ID, ORDER_CODE", nativeQuery = true)
+    public List<Object[]> getMrIdAndOrderCodeAndStartTimeByMrIdAndOrderCode(List<String> orderCodes, List<Long> mrId);
+    
+    /**
+     * 取得orderCode1或orderCode2醫令的個數
+     * @param orderCode1
+     * @param orderCode2
+     * @param mrIdList
+     * @return
+     */
+    @Query(value = "SELECT MR_ID, ORDER_CODE, INH_CODE, TOTAL_Q FROM ip_p "
+        + "WHERE (ORDER_CODE = ?1 OR INH_CODE = ?2 ) AND MR_ID IN ?3 ORDER BY MR_ID", nativeQuery = true)
+    public List<Object[]> getMrIdAndOrderCodeAndTotalQByMrIdList(String orderCode1, String orderCode2, List<Long> mrIdList);
 }

@@ -144,6 +144,7 @@ public class DbBackupService {
     public java.util.List<Map<String, Object>> findAll(long id, String userName) {
         BasicJsonParser linkJsonParser = new BasicJsonParser();
         java.util.List<Map<String, Object>> lst = dbBakupLogDao.findAllById(id, userName);
+        //System.out.println("query :" + lst.size());
         for (Map<String, Object> item: lst) {
 //            item.remove("filename");
             String description = item.get("description").toString();

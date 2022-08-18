@@ -194,6 +194,10 @@ public class MR {
   @ApiModelProperty(value = "申請點數", example = "1234", required = false)
   @Column(name = "APPL_DOT")
   protected Integer applDot;
+  
+  @ApiModelProperty(value = "申報點數", example = "1234", required = false)
+  @Column(name = "REPORT_DOT")
+  protected Long reportDot;
 
   /**
    * 核刪點數
@@ -259,6 +263,10 @@ public class MR {
   @Column(name = "CLINIC")
   protected String clinic;
 
+  @ApiModelProperty(value = "申報狀態,1:本月申報,2:下月申報,3:放棄申報,4:內含,5:自費", required = false)
+  @Column(name = "APPL_STATUS")
+  protected Integer applStatus;
+  
   /**
    * 更新時間
    */
@@ -302,6 +310,7 @@ public class MR {
     this.drgCode = ipd.getTwDrgCode();
     this.icdAll = "," + ipd.getIcdCm1() + ",";
     this.applDot = ipd.getApplDot();
+    this.reportDot = ipd.getApplDot().longValue() + ipd.getPartDot().longValue();
     this.ownExpense = ipd.getOwnExpense();
     this.updateAt = new Date();
   }
@@ -329,6 +338,7 @@ public class MR {
     }
     this.icdAll = "," + opd.getIcdCm1() + ",";
     this.applDot = opd.getTotalApplDot();
+    this.reportDot = opd.getTotalApplDot().longValue() + opd.getPartDot().longValue();
     this.ownExpense = 0;
     this.updateAt = new Date();
   }
@@ -625,7 +635,11 @@ public class MR {
   }
 
   public void setDrgSection(String drgSection) {
-    this.drgSection = drgSection;
+    if (drgSection != null && drgSection.length() > 0) {
+      this.drgSection = drgSection;
+    } else {
+      this.drgSection = null;
+    }
   }
 
   public Integer getApplDot() {
@@ -839,6 +853,10 @@ public class MR {
     this.codeAll = codeAll;
   }
 
+  /**
+   * 院內碼
+   * @return
+   */
   public String getInhCode() {
     return inhCode;
   }
@@ -923,12 +941,16 @@ public class MR {
     } else {
       this.applDot = ipd.getApplDot();
     }
+    this.reportDot = ipd.getApplDot().longValue() + ipd.getPartDot().longValue();
     
+    if (ipd.getMedDot() != null) {
+      this.totalDot = ipd.getMedDot();
+    }
     if (ipd.getNonApplDot() != null) {
       this.totalDot += ipd.getNonApplDot();
     }
-    if (ipd.getPartDot() != null) {
-      this.totalDot += ipd.getPartDot();
+    if (ipd.getOwnExpense() != null) {
+      this.totalDot += ipd.getOwnExpense();
     }
     
     if (diffList != null && ipd.getTwDrgCode() != null && !ipd.getTwDrgCode().equals(drgCode)) {
@@ -1021,6 +1043,10 @@ public class MR {
     } else {
       this.applDot = opd.getTotalApplDot();
     }
+    if (opd.getPartDot() == null) {
+      opd.setPartDot(0);
+    }
+    this.reportDot = this.applDot.longValue() + opd.getPartDot().longValue();
     
 //    if (diffList != null && (opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()) != this.ownExpense) {
 //      FILE_DIFF fd = new FILE_DIFF(id, "ownExpense", String.valueOf(opd.getTotalDot().intValue() - opd.getTotalApplDot().intValue()));
@@ -1043,5 +1069,21 @@ public class MR {
   public void setClinic(String clinic) {
     this.clinic = clinic;
   }
-  
+
+  public Integer getApplStatus() {
+    return applStatus;
+  }
+
+  public void setApplStatus(Integer applStatus) {
+    this.applStatus = applStatus;
+  }
+
+  public Long getReportDot() {
+    return reportDot;
+  }
+
+  public void setReportDot(Long reportDot) {
+    this.reportDot = reportDot;
+  }
+
 }

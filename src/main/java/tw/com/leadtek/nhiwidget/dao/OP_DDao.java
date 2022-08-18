@@ -3,7 +3,7 @@
  */
 package tw.com.leadtek.nhiwidget.dao;
 
-import java.sql.Date;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -28,8 +28,8 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   
   //門急診/住院案件數
   @Query(value="SELECT OP.OP_DOT + IP.IP_DOT FROM "
-  		+ "(SELECT COUNT(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
-  		+ "(SELECT (COUNT(MED_DOT)+COUNT(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP", nativeQuery=true)
+  		+ "(SELECT COUNT(ID) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
+  		+ "(SELECT COUNT(ID) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP", nativeQuery=true)
   public String findTCount(List<Integer>ids,List<Integer>ids2);
   
   //門急診/住院總藥費
@@ -38,6 +38,34 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "(SELECT SUM(DRUG_DOT) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP",nativeQuery=true)
   public String findTDrugFee(List<Integer>ids,List<Integer>ids2);
   
+  //門急診/住院各案件狀態與數量(時間範圍用OP_D、IP_D的FUNC_END_DATE、OUT_DATE)
+  @Query(value="SELECT OP.STATUS , OP.STATUS_COUNT + IP.STATUS_COUNT FROM "
+  		+ "(SELECT NEW_MR.STATUS AS STATUS , IFNULL(NEW_MR.STATUS_COUNT + OP.OP_COUNT,0) AS STATUS_COUNT FROM (SELECT DISTINCT MR.STATUS AS STATUS,0 AS STATUS_COUNT FROM MR) AS NEW_MR LEFT JOIN "
+  		+ "(SELECT MR.STATUS AS STATUS,IFNULL(COUNT(MR.STATUS),0) AS OP_COUNT FROM OP_D INNER JOIN MR ON OP_D.MR_ID =MR.ID WHERE OP_D.FUNC_END_DATE BETWEEN ?1 AND ?2 GROUP BY MR.STATUS) OP "
+  		+ "ON NEW_MR.STATUS = OP.STATUS) OP "
+  		+ "INNER JOIN "
+  		+ "(SELECT NEW_MR.STATUS AS STATUS, IFNULL(NEW_MR.STATUS_COUNT + IP.IP_COUNT,0) AS STATUS_COUNT FROM (SELECT DISTINCT MR.STATUS AS STATUS,0 AS STATUS_COUNT FROM MR) AS NEW_MR LEFT JOIN "
+  		+ "(SELECT MR.STATUS AS STATUS,IFNULL(COUNT(MR.STATUS),0) AS IP_COUNT FROM IP_D INNER JOIN MR ON IP_D.MR_ID =MR.ID WHERE IP_D.OUT_DATE BETWEEN ?1 AND ?2 GROUP BY MR.STATUS) IP "
+  		+ "ON NEW_MR.STATUS = IP.STATUS) IP "
+  		+ "ON OP.STATUS = IP.STATUS ORDER BY OP.STATUS",nativeQuery=true)
+  public List<Object[]>findTStatusCount(String smonth,String emonth);
+  
+  //門急診/住院各案件狀態與數量(時間範圍用MR的MR_END_DATE)
+  @Query(value="SELECT NEW_MR.STATUS AS STATUS , IFNULL(NEW_MR.STATUS_COUNT + MR.MR_STATUS_COUNT,0) AS STATUS_COUNT FROM (SELECT DISTINCT STATUS,0 AS STATUS_COUNT FROM MR) AS NEW_MR LEFT JOIN "
+  		+ "(SELECT STATUS,IFNULL(COUNT(STATUS),0) AS MR_STATUS_COUNT FROM MR WHERE MR_END_DATE BETWEEN ?1 AND ?2 GROUP BY STATUS) MR "
+  		+ "ON NEW_MR.STATUS = MR.STATUS",nativeQuery=true)
+  public List<Object[]>findAllStatusCount(Date sDate,Date eDate);
+  
+  //門急診就醫紀錄編號
+  @Query(value="SELECT MR.STATUS AS STATUS, MR.INH_CLINIC_ID AS CLINIC_ID "
+  		+ "FROM OP_D INNER JOIN MR ON OP_D.MR_ID =MR.ID WHERE OP_D.FUNC_END_DATE BETWEEN ?1 AND ?2", nativeQuery=true)
+  public List<Object[]> findOPPhysical(String smonth,String emonth);
+  
+  //門急診/住院就醫紀錄編號(時間範圍用MR的MR_END_DATE)
+  @Query(value="SELECT STATUS,INH_CLINIC_ID "
+  		+ "FROM MR WHERE MR_END_DATE BETWEEN ?1 AND ?2", nativeQuery=true)
+  public List<Object[]> findAllPhysical(Date sDate,Date eDate);
+  
   //門急診病例總點數
   @Query(value="SELECT OP.OP_DOT FROM "
 	  		+ "(SELECT SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
@@ -45,7 +73,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   
   //門急診案件數
   @Query(value="SELECT OP.OP_DOT FROM "
-  		+ "(SELECT COUNT(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
+  		+ "(SELECT COUNT(ID) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
   public String findOPCount(List<Integer>ids);
   
   //門急診總藥費
@@ -57,24 +85,110 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   @Query(value="SELECT FUNC_TYPE ,SUM(T_DOT) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
   public List<Object[]> findClassOP_TDot(List<Integer>ids);
   
+  //各科別門急診/住院病例總點數
+  @Query(value="SELECT OP.OP_FT,IP.IP_FT, IFNULL(OP.OP_DOT,0) + IFNULL(IP.IP_DOT,0) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT,SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
+  		+ "LEFT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "ON OP.OP_FT=IP.IP_FT"
+  		+ "UNION "
+  		+ "SELECT OP.OP_FT,IP.IP_FT, IFNULL(OP.OP_DOT,0) + IFNULL(IP.IP_DOT,0) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT,SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
+  		+ "RIGHT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "ON OP.OP_FT=IP.IP_FT", nativeQuery=true)
+  public List<Object[]> findClassAll_TDot(List<Integer>ids,List<Integer>ids2);
+  
   //各科別門急診案件數
-  @Query(value="SELECT FUNC_TYPE, COUNT(T_DOT) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
+  @Query(value="SELECT FUNC_TYPE, COUNT(ID) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE", nativeQuery=true)
   public List<Object[]> findClassOPCount(List<Integer>ids);
   
-  //各科別門急診總藥品點數or總藥費
+  //各科別門急診/住院案件數
+  @Query(value="SELECT OP.OP_FT,IP.IP_FT, IFNULL(OP.OP_CASE,0) + IFNULL(IP.IP_CASE,0) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT, COUNT(ID) AS OP_CASE FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
+  		+ "LEFT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT ,COUNT(ID) AS IP_CASE FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "ON OP.OP_FT=IP.IP_FT"
+  		+ "UNION "
+  		+ "SELECT OP.OP_FT,IP.IP_FT, IFNULL(OP.OP_CASE,0) + IFNULL(IP.IP_CASE,0) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT, COUNT(ID) AS OP_CASE FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
+  		+ "RIGHT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT ,COUNT(ID) AS IP_CASE FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "ON OP.OP_FT=IP.IP_FT", nativeQuery=true)
+  public List<Object[]> findClassAllCount(List<Integer>ids,List<Integer>ids2);
+  
+  //各科別門急診總藥品點數(總藥費)
   @Query(value="SELECT FUNC_TYPE,SUM(DRUG_DOT) AS OP_DOT FROM "
   		+ "OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE",nativeQuery=true)
-  public List<Object[]> findByOptIdAndGroupByFuncType(List<Integer>ids);
+  public List<Object[]> findClassOPDrugDot(List<Integer>ids);
+  
+  //各科別門急診/住院總藥品點數(總藥費)
+  @Query(value="SELECT OP.OP_FT,IP.IP_FT, IFNULL(OP.OP_DOT,0) + IFNULL(IP.IP_DOT,0) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT,SUM(DRUG_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
+  		+ "LEFT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT,SUM(DRUG_DOT) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "ON OP.OP_FT=IP.IP_FT"
+  		+ "UNION "
+  		+ "SELECT OP.OP_FT,IP.IP_FT, IFNULL(OP.OP_DOT,0) + IFNULL(IP.IP_DOT,0) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT,SUM(DRUG_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE) OP "
+  		+ "RIGHT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT,SUM(DRUG_DOT) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE) IP "
+  		+ "ON OP.OP_FT=IP.IP_FT",nativeQuery=true)
+  public List<Object[]> findClassAllDrugDot(List<Integer>ids,List<Integer>ids2);
   
   //各科別各醫師門急診案件數、病歷實際總點數、總藥品點數(總藥費)
-  @Query(value="SELECT FUNC_TYPE, PRSN_ID ,COUNT(T_DOT),SUM(T_DOT),"
+  @Query(value="SELECT FUNC_TYPE, PRSN_ID ,COUNT(ID),SUM(T_DOT),"
   		+ "SUM(DRUG_DOT) FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE ,PRSN_ID ",nativeQuery=true)
   public List<Object[]>findOPClassDoctor(List<Integer>ids);
   
+  //各科別各醫師門急診/住院案件數、病歷實際總點數、總藥品點數(總藥費)
+  @Query(value="SELECT OP.OP_FT,IP.IP_FT,OP.OP_PI,IP.IP_PI,"
+  		+ "IFNULL(OP.OP_CASE,0) + IFNULL(IP.IP_CASE,0) , IFNULL(OP.OP_DOT,0) + IFNULL(IP.IP_DOT,0) , IFNULL(OP.OP_DRUG,0) + IFNULL(IP.IP_DRUG,0)"
+  		+ " FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT,PRSN_ID AS OP_PI,COUNT(ID) AS OP_CASE,SUM(T_DOT) AS OP_DOT,"
+  		+ " SUM(DRUG_DOT) AS OP_DRUG FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE ,PRSN_ID ) OP"
+  		+ " LEFT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT,PRSN_ID AS IP_PI,COUNT(ID) AS IP_CASE ,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT,"
+  		+ " SUM(DRUG_DOT) AS IP_DRUG FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE ,PRSN_ID ) IP"
+  		+ " ON OP.OP_FT=IP.IP_FT AND OP.OP_PI=IP.IP_PI"
+  		+ "UNION "
+  		+ "SELECT OP.OP_FT,IP.IP_FT,OP.OP_PI,IP.IP_PI,"
+  		+ "IFNULL(OP.OP_CASE,0) + IFNULL(IP.IP_CASE,0) , IFNULL(OP.OP_DOT,0) + IFNULL(IP.IP_DOT,0) , IFNULL(OP.OP_DRUG,0) + IFNULL(IP.IP_DRUG,0)"
+  		+ " FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT,PRSN_ID AS OP_PI,COUNT(ID) AS OP_CASE,SUM(T_DOT) AS OP_DOT,"
+  		+ " SUM(DRUG_DOT) AS OP_DRUG FROM OP_D WHERE OPT_ID IN ?1 GROUP BY FUNC_TYPE ,PRSN_ID ) OP"
+  		+ " RIGHT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT,PRSN_ID AS IP_PI,COUNT(ID) AS IP_CASE ,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT,"
+  		+ " SUM(DRUG_DOT) AS IP_DRUG FROM IP_D WHERE IPT_ID IN ?2 GROUP BY FUNC_TYPE ,PRSN_ID ) IP"
+  		+ " ON OP.OP_FT=IP.IP_FT AND OP.OP_PI=IP.IP_PI",nativeQuery=true)
+  public List<Object[]>findAllClassDoctor(List<Integer>ids,List<Integer>ids2);
+  
   //各科別各醫師每週門急診案件數、病歷實際總點數、總藥品點數(總藥費)
-  @Query(value="SELECT FUNC_TYPE, PRSN_ID,COUNT(T_DOT) ,SUM(T_DOT), SUM(DRUG_DOT) "
+  @Query(value="SELECT FUNC_TYPE, PRSN_ID,COUNT(ID) ,SUM(T_DOT), SUM(DRUG_DOT) "
   		+ "FROM OP_D WHERE FUNC_END_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID ORDER BY PRSN_ID",nativeQuery=true)
   public List<Object[]>findOPClassDoctorWeekly(String sdate,String edate);
+  
+  //各科別各醫師每週門急診/住院案件數、病歷實際總點數、總藥品點數(總藥費)
+  @Query(value="SELECT OP.OP_FT , OP.OP_PI ,IP.IP_FT , IP.IP_PI , ( IFNULL(OP.C,0) +  IFNULL(IP.C,0) ) , ( IFNULL(OP.DOT,0) +  IFNULL(IP.DOT,0) ) , ( IFNULL(OP.DRUG,0) + IFNULL(IP.DRUG,0) ) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT, PRSN_ID AS OP_PI,COUNT(ID) AS C,SUM(T_DOT) AS DOT, SUM(DRUG_DOT) AS DRUG FROM OP_D WHERE FUNC_END_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID) OP "
+  		+ "LEFT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT, PRSN_ID AS IP_PI,COUNT(ID) AS C,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS DOT,SUM(DRUG_DOT) AS DRUG FROM IP_D WHERE OUT_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID) IP "
+  		+ "ON OP.OP_FT = IP.IP_FT AND OP.OP_PI = IP.IP_PI"
+  		+ "UNION"
+  		+ "SELECT OP.OP_FT , OP.OP_PI ,IP.IP_FT , IP.IP_PI , ( IFNULL(OP.C,0) +  IFNULL(IP.C,0) ) , ( IFNULL(OP.DOT,0) +  IFNULL(IP.DOT,0) ) , ( IFNULL(OP.DRUG,0) + IFNULL(IP.DRUG,0) ) "
+  		+ "FROM "
+  		+ "(SELECT FUNC_TYPE AS OP_FT, PRSN_ID AS OP_PI,COUNT(ID) AS C,SUM(T_DOT) AS DOT, SUM(DRUG_DOT) AS DRUG FROM OP_D WHERE FUNC_END_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID) OP "
+  		+ "RIGHT JOIN "
+  		+ "(SELECT FUNC_TYPE AS IP_FT, PRSN_ID AS IP_PI,COUNT(ID) AS C,(SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS DOT,SUM(DRUG_DOT) AS DRUG FROM IP_D WHERE OUT_DATE BETWEEN ?1 AND ?2 GROUP BY FUNC_TYPE ,PRSN_ID) IP "
+  		+ "ON OP.OP_FT = IP.IP_FT AND OP.OP_PI = IP.IP_PI",nativeQuery=true)
+	  public List<Object[]>findAllClassDoctorWeekly(String sdate,String edate);
   
   @Query(value = "SELECT SEQ_NO, ID, ROC_ID, FUNC_DATE, MR_ID, ID_BIRTH_YMD FROM OP_D WHERE OPT_ID= ?1 ", nativeQuery = true)
   public List<Object[]> findByOptIdSimple(Long optId);
@@ -100,14 +214,35 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       + "(SELECT COUNT(1) AS PATIENT_OP FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.APPL_YM=?1 AND MR.FUNC_TYPE <> '22') g,"
       + "(SELECT COUNT(1) AS PATIENT_EM FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.APPL_YM=?1 AND MR.FUNC_TYPE = '22') h ,"
       + "(SELECT COUNT(1) AS PATIENT_IP FROM IP_D, MR WHERE IP_D.MR_ID = MR.ID AND MR.APPL_YM=?1 AND IP_D.OUT_DATE IS NOT NULL) i,"
-      + "(SELECT 0 AS CHRONIC FROM OP_D LIMIT 1) j,"
+      //+ "(SELECT 0 AS CHRONIC FROM OP_D LIMIT 1) j,"
       + "(SELECT COUNT(1) AS IP_QUANTITY FROM MR WHERE APPL_YM =?1 AND DATA_FORMAT ='20') k,"
-      + "(SELECT COUNT(1) AS DRG_QUANTITY FROM MR WHERE DRG_SECTION IS NOT NULL AND APPL_YM=?1) l,"
+      + "(SELECT COUNT(MR.ID) AS DRG_QUANTITY FROM MR, IP_D WHERE DRG_SECTION IS NOT NULL AND IP_D.TW_DRGS_SUIT_MARK = '0' AND MR.DATA_FORMAT='20' AND APPL_YM=?1 AND MR.ID = IP_D.MR_ID) l,"
       + "(SELECT SUM(MR.T_DOT) AS DRG_APPLDOT, SUM(IP_D.MED_DOT) AS DRG_ACTUAL_POINT FROM MR, IP_D WHERE "
-      + "MR.DRG_SECTION IS NOT NULL AND MR.APPL_YM=?1 AND MR.ID = IP_D.MR_ID) m,"
+      + "MR.DRG_SECTION IS NOT NULL AND IP_D.TW_DRGS_SUIT_MARK = '0' AND MR.DATA_FORMAT='20' AND MR.APPL_YM=?1 AND MR.ID = IP_D.MR_ID) m,"
       + "(SELECT SUM(IP_D.OWN_EXPENSE) AS OWN_EXPENSE_IP FROM IP_D, MR WHERE IP_D.MR_ID = MR.ID AND MR.APPL_YM =?1 AND IP_D.OWN_EXPENSE > 0) n,"
       + "(SELECT SUM(OP_D.OWN_EXPENSE) AS OWN_EXPENSE_OP FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.APPL_YM =?1 AND OP_D.OWN_EXPENSE > 0) o", nativeQuery = true)
   public List<Object[]> findMonthlyPoint(String applYm);
+  
+  /**
+   * 取得單月門診、急診、住院部份負擔點數
+   */
+  @Query(value = "SELECT * FROM " + 
+      "(SELECT SUM(PART_DOT) AS PART_OP FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.MR_END_DATE LIKE CONCAT(?1,'%') AND MR.FUNC_TYPE <> '22') a,"
+      + "(SELECT SUM(PART_DOT) AS PART_EM FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.MR_END_DATE LIKE CONCAT(?1,'%') AND MR.FUNC_TYPE = '22') b,"
+      + "(SELECT SUM(PART_DOT) AS PART_IP FROM IP_D, MR WHERE IP_D.MR_ID = MR.ID AND MR.MR_END_DATE LIKE CONCAT(?1,'%') ) c,"
+      + "(SELECT SUM(T_APPL_DOT) AS APPL_OP FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.MR_END_DATE LIKE CONCAT(?1,'%') AND MR.FUNC_TYPE <> '22') d,"
+      + "(SELECT SUM(T_APPL_DOT) AS APPL_EM FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.MR_END_DATE LIKE CONCAT(?1,'%') AND MR.FUNC_TYPE = '22') e,"
+      + "(SELECT SUM(APPL_DOT) AS APPL_IP FROM MR WHERE DATA_FORMAT ='20' AND MR_END_DATE  LIKE CONCAT(?1,'%')) f,"
+      + "(SELECT COUNT(1) AS PATIENT_OP FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.MR_END_DATE LIKE CONCAT(?1,'%') AND MR.FUNC_TYPE <> '22') g,"
+      + "(SELECT COUNT(1) AS PATIENT_EM FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.MR_END_DATE LIKE CONCAT(?1,'%') AND MR.FUNC_TYPE = '22') h ,"
+      + "(SELECT COUNT(1) AS PATIENT_IP FROM IP_D, MR WHERE IP_D.MR_ID = MR.ID AND MR.MR_END_DATE LIKE CONCAT(?1,'%') AND IP_D.OUT_DATE IS NOT NULL) i,"
+      + "(SELECT COUNT(1) AS IP_QUANTITY FROM MR WHERE MR_END_DATE  LIKE CONCAT(?1,'%') AND DATA_FORMAT ='20') k,"
+      + "(SELECT COUNT(MR.ID) AS DRG_QUANTITY FROM MR, IP_D WHERE IP_D.TW_DRGS_SUIT_MARK = '0' AND MR.DRG_SECTION IS NOT NULL AND MR.DATA_FORMAT='20' AND MR_END_DATE LIKE CONCAT(?1,'%') AND MR.ID = IP_D.MR_ID) l,"
+      + "(SELECT SUM(MR.T_DOT) AS DRG_APPLDOT, SUM(IP_D.MED_DOT) AS DRG_ACTUAL_POINT FROM MR, IP_D WHERE "
+      + "MR.DRG_SECTION IS NOT NULL AND IP_D.TW_DRGS_SUIT_MARK = '0' AND MR.DATA_FORMAT='20' AND MR.MR_END_DATE LIKE CONCAT(?1,'%') AND MR.ID = IP_D.MR_ID) m,"
+      + "(SELECT SUM(IP_D.OWN_EXPENSE) AS OWN_EXPENSE_IP FROM IP_D, MR WHERE IP_D.MR_ID = MR.ID AND MR.MR_END_DATE  LIKE CONCAT(?1,'%') AND IP_D.OWN_EXPENSE > 0) n,"
+      + "(SELECT SUM(OP_D.OWN_EXPENSE) AS OWN_EXPENSE_OP FROM OP_D, MR WHERE OP_D.MR_ID = MR.ID AND MR.MR_END_DATE  LIKE CONCAT(?1,'%') AND OP_D.OWN_EXPENSE > 0) o", nativeQuery = true)
+  public List<Object[]> findMonthlyPointByEndDate(String edate);
   
   /**
    * 取得指定區間的病歷數、申報點數及部份負擔點數
@@ -133,7 +268,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       + "(SELECT SUM(NO_APPL) AS NO_APPL_OP_ALL FROM MR, OP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND OP_D.MR_ID = MR.ID) r,"
       + "(SELECT SUM(NO_APPL) AS NO_APPL_OP FROM MR, OP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE <> '22') s,"
       + "(SELECT SUM(NO_APPL) AS NO_APPL_EM FROM MR, OP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND OP_D.MR_ID = MR.ID AND OP_D.FUNC_TYPE = '22') t,"
-      + "(SELECT SUM(NON_APPL_DOT) AS NO_APPL_IP, SUM(MED_DOT) AS MED_DOT FROM MR, IP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND IP_D.MR_ID = MR.ID) u",
+      + "(SELECT SUM(NO_APPL) AS NO_APPL_IP, SUM(MED_DOT) AS MED_DOT, SUM(IP_D.NON_APPL_DOT) AS NON_APPL_IP FROM MR, IP_D WHERE MR_END_DATE >= ?1 AND MR_END_DATE <=?2 AND IP_D.MR_ID = MR.ID) u",
       nativeQuery = true)
   public List<Object[]> findPeriodPoint(Date sdate1, Date edate1);
   
@@ -252,7 +387,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "join op_p opp on opd.id = opp.opd_id  "
   		+ "join pt_payment_terms ppt on  opp.drug_no = ppt.nhi_no  "
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id  "
-  		+ "where pof.no_dentisit = 1   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "where pof.no_dentisit = 1   and opd.case_type in  ('11','12','13','14','16','17','19','21','22','23','24','25','28') "
   		+ "and opd.mr_id in (?1) ", nativeQuery = true)
   public List<Map<String, Object>> getValidByNoDentisit(List<String> mrId);
   
@@ -265,7 +400,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "join op_p opp on opd.id = opp.opd_id  "
   		+ "join pt_payment_terms ppt on  opp.drug_no = ppt.nhi_no  "
   		+ "join pt_outpatient_fee pof on ppt.id = pof.pt_id "
-  		+ "where pof.no_chi_medicine = 1   and opd.case_type in  ('09','11','12','13','14','16','17','19','21','22','23','24','25','28') "
+  		+ "where pof.no_chi_medicine = 1   and opd.case_type in  ('11','12','13','14','16','17','19','21','22','23','24','25','28') "
 	  	+ "and opd.mr_id in (?1) ", nativeQuery = true)
 	  public List<Map<String, Object>> getValidByNoChiMedicine(List<String> mrId);
   
@@ -325,10 +460,10 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "SELECT COUNT, ROUND(COUNT / (SELECT sum(COUNT) FROM "
-  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND ct.CAT = 'FUNC_TYPE' "
   		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%'))  AND ct.CAT ='FUNC_TYPE' "
   		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp) * 100,2) AS PERCENT, FUNC_TYPE, DESC_CHI FROM  "
-  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND ct.CAT = 'FUNC_TYPE' "
   		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE' "
   		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp", nativeQuery = true)
   public List<Map<String,Object>> getOPPieCountData(String date);
@@ -339,7 +474,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
    * @return
    */
   @Query(value = "SELECT sum(COUNT) as TOTAL FROM "
-  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE "
+  		+ "(SELECT COUNT(opd.FUNC_TYPE) AS COUNT, opd.FUNC_TYPE, ct.DESC_CHI  FROM OP_D opd, CODE_TABLE ct WHERE opd.FUNC_TYPE  = ct.CODE AND ct.CAT = 'FUNC_TYPE' "
   		+ "AND  opd.OPT_ID in (SELECT ID FROM OP_T WHERE  FEE_YM  LIKE CONCAT(?1,'%')) AND ct.CAT ='FUNC_TYPE'  "
   		+ "GROUP BY opd.FUNC_TYPE, ct.DESC_CHI) temp", nativeQuery = true)
   public int getOPPieCountTotal(String date);
@@ -381,4 +516,37 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
       "UNION (" + 
       "SELECT mr_id FROM IP_P WHERE INH_CODE =?1 AND TOTAL_Q > ?2 AND MR_ID IN ?3)", nativeQuery=true)
   public List<Long> getMrIdByInhCodeCount(String orderCode, int quantity, List<Long>ids);
+  
+  /**
+   * 取得符合指定 CASE_TYPE及MR_ID的MR_ID
+   * @param mrId
+   * @return
+   */
+  @Query(value = "SELECT MR_ID FROM OP_D WHERE MR_ID IN ?1 AND case_type IN ?2", nativeQuery = true)
+  public List<Long> getMrIdByCaseTypeAndByMrId(List<Long> mrId, List<String> caseType);
+  
+  /**
+   * 取得不符合指定 PART_NO及MR_ID的MR_ID，用來找出限定山地離島的病歷id
+   * @param mrId
+   * @return
+   */
+  @Query(value = "SELECT MR_ID FROM OP_D WHERE MR_ID IN ?1 AND PART_NO <> ?2", nativeQuery = true)
+  public List<Long> getMrIdByPartNoAndByMrId(List<Long> mrId, String partNo);
+
+  @Query(value = "SELECT MR_ID, FUNC_DATE, FUNC_END_DATE, ID_BIRTH_YMD, NB_BIRTHDAY FROM OP_D WHERE MR_ID IN ?1 ", nativeQuery = true)
+  public List<Object[]> getMrIdBirthdayByMrId(List<Long> mrId);
+
+  @Query(value = "SELECT PRSN_ID, COUNT(PRSN_ID) FROM OP_D WHERE MR_ID IN ?1 GROUP BY PRSN_ID", nativeQuery = true)
+  public List<Object[]> getPrsnIdCountByMrId(List<Long> mrId);
+
+  @Query(value = "SELECT PHAR_ID, COUNT(PHAR_ID) FROM OP_D WHERE MR_ID IN ?1 GROUP BY PHAR_ID", nativeQuery = true)
+  public List<Object[]> getPharIdCountByMrId(List<Long> mrId);
+  
+  /**
+   * 由mrid取得op_d 列表
+   * @param mrid
+   * @return
+   */
+  @Query(value = "select * from op_d where mr_id in ?1", nativeQuery = true)
+  public List<OP_D> getOpdListByMrId(List<Long> mrid);
 }

@@ -53,8 +53,8 @@ public class PtWardFeeServiceTask extends BasicIntelligentService{
 			List<Map<String, Object>> ippData = ippDao.getTimeListByMrid(mrIdListStr);
 			String print = mrIdListStr.toString();
 			for (Map<String, Object> map : ippData) {
-				Date sDate = DateTool.convertChineseToYears(map.get("START_TIME").toString());
-				Date eDate = DateTool.convertChineseToYears(map.get("END_TIME").toString());
+				Date sDate = DateTool.convertChineseToYears(map.get("START_TIME").toString(), null);
+				Date eDate = DateTool.convertChineseToYears(map.get("END_TIME").toString(), null);
 
 				long diff = this.hourBetween(sDate, eDate);
 				if (params.getMin_stay() > diff) {
@@ -72,8 +72,8 @@ public class PtWardFeeServiceTask extends BasicIntelligentService{
 		if (params.getMax_stay_enable() == 1) {
 			List<Map<String, Object>> ippData = ippDao.getTimeListByMrid(mrIdListStr);
 			for (Map<String, Object> map : ippData) {
-				Date sDate = DateTool.convertChineseToYears(map.get("START_TIME").toString());
-				Date eDate = DateTool.convertChineseToYears(map.get("END_TIME").toString());
+				Date sDate = DateTool.convertChineseToYears(map.get("START_TIME").toString(), null);
+				Date eDate = DateTool.convertChineseToYears(map.get("END_TIME").toString(), null);
 				long diff = this.hourBetween(sDate, eDate);
 				if (params.getMax_stay() < diff) {
 					MR mr = mrDao.getMrByID(map.get("MR_ID").toString());

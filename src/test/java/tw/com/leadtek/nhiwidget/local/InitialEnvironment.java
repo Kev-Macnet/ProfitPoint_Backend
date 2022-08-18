@@ -70,7 +70,7 @@ public class InitialEnvironment {
   
   // 最後要有 \\
   //public final static String FILE_PATH = "D:\\Documents\\Projects\\Leadtek\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\";
-  public final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\資料匯入用\\Job\\";
+  public final static String FILE_PATH = "D:\\Users\\2268\\2020\\健保點數申報\\docs_健保點數申報\\Install\\";
   
   @Autowired
   private PARAMETERSDao pDao;
@@ -287,8 +287,8 @@ public class InitialEnvironment {
         }
       }
       System.out.println(ct.getCat() + "," + ct.getCode() + "," + ct.getDescChi());
-      CODE_TABLE ctInDB = ctDao.findByCodeAndCat(ct.getCode(), groupName);
-      if (ctInDB == null || ctInDB.getDescChi() == null) {
+      List<CODE_TABLE> ctList = ctDao.findByCodeAndCat(ct.getCode(), groupName);
+      if (ctList == null || ctList.size() == 0) {
         ctDao.save(ct);
       }
     }

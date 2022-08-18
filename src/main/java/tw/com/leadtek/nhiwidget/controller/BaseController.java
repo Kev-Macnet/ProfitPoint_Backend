@@ -4,6 +4,8 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,9 @@ public class BaseController {
 
   @Autowired
   protected ParametersService parametersService;
+  
+  @Autowired
+  protected HttpServletRequest httpServletReq;
 
   protected Logger logger = LogManager.getLogger();
 

@@ -32,7 +32,7 @@ public interface PARAMETERSDao extends JpaRepository<PARAMETERS, Long>, JpaSpeci
   
   public List<PARAMETERS> findByCatAndStartDateEquals(String cat, Date sDate);
   
-  public List<PARAMETERS> findByNameAndStartDateLessThanAndEndDateGreaterThan(String name, Date sDate, Date eDate);
+  public List<PARAMETERS> findByNameAndStartDateLessThanEqualAndEndDateGreaterThanEqual(String name, Date sDate, Date eDate);
   
   public List<PARAMETERS> findByNameInAndStartDateOrderByStartDateDesc(Collection<String> names, Date startDate);
   

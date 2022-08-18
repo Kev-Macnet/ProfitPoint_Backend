@@ -6,6 +6,8 @@ package tw.com.leadtek.nhiwidget.controller;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
 import tw.com.leadtek.nhiwidget.payload.AssignedPoints;
 import tw.com.leadtek.nhiwidget.payload.AssignedPointsListResponse;
@@ -59,6 +63,7 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得是否使用西醫、牙醫總額度支配點數設定", notes = "取得是否使用西醫、牙醫總額度支配點數設定")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/assignedPoints")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<AssignedPointsListResponse> getAssignedPoints(
       @ApiParam(name = "sdate", value = "起始日期",
           example = "2021/01/01") @RequestParam(required = false) String sdate,
@@ -124,6 +129,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "新增成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/assignedPoints")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增分配點數")
   public ResponseEntity<BaseResponse> newAssignedPoints(@RequestBody AssignedPoints ap) {
     if (ap.getEdate() == null) {
       SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
@@ -139,12 +145,17 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/assignedPoints")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改分配總點數設定")
   public ResponseEntity<BaseResponse> updateAssignedPoints(@RequestBody AssignedPoints ap) {
+	  
+	httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{ap.getId()}));
+	  
     return returnAPIResult(parameterService.updateAssignedPoints(ap));
   }
 
   @ApiOperation(value = "刪除分配總點數", notes = "刪除分配總點數")
   @DeleteMapping("/assignedPoints/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除分配總點數")
   public ResponseEntity<BaseResponse> deleteAssignedPoints(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
@@ -162,6 +173,7 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得分配總點數", notes = "取得分配總點數")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/assignedPoints/{id}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<AssignedPoints> getAssignedPoints(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return ResponseEntity.badRequest().body(new AssignedPoints());
@@ -198,7 +210,11 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/pointsValue")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改支配總點數")
   public ResponseEntity<BaseResponse> updatePointsValue(@RequestBody PointsValue pv) {
+	  
+	  httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pv.getId()}));
+	  
     return returnAPIResult(parameterService.updatePointsValue(pv));
   }
 
@@ -206,6 +222,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/pointsValue")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增分配總點數")
   public ResponseEntity<BaseResponse> newPointsValue(@RequestBody PointsValue pv) {
     if (pv.getEdate() == null) {
       SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
@@ -220,6 +237,7 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得參數值", notes = "取得參數值")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/value")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<ParameterListPayload> getValue(
       @ApiParam(name = "name", value = "參數值名稱，如抽件數(SAMPLING),標準給付額(SPR)",
           example = "SPR") @RequestParam(required = true) String name,
@@ -283,6 +301,7 @@ public class ParameterController extends BaseController {
 
   @ApiOperation(value = "取得指定id參數值", notes = "取得指定id參數值")
   @GetMapping("/value/{id}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<ParameterValue> getValue(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       ParameterValue result = new ParameterValue();
@@ -296,6 +315,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/value")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增參數值")
   public ResponseEntity<BaseResponse> newValue(
       @ApiParam(name = "name", value = "參數值名稱，如抽件數(SAMPLING),標準給付額(SPR)",
           example = "SPR") @RequestParam(required = true) String name,
@@ -332,16 +352,21 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/value")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改參數值")
   public ResponseEntity<BaseResponse> updateValue(@RequestBody ParameterValue pv) {
     if (pv.getValue() == null || pv.getValue().toString().length() == 0
         || "null".equals(pv.getValue())) {
       return returnAPIResult("value值不可為空");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pv.getId()}));
+    
     return returnAPIResult(parameterService.updateValue(pv));
   }
 
   @ApiOperation(value = "刪除參數值", notes = "刪除參數值")
   @DeleteMapping("/value/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除參數值")
   public ResponseEntity<BaseResponse> deleteValue(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
@@ -352,6 +377,7 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得DRG相關參數值", notes = "取得DRG相關參數值")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/drg")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<DRGRelatedValues> getDRGValues(
       @ApiParam(name = "sdate", value = "生效日",
           example = "2021/07/01") @RequestParam(required = false) String sdate,
@@ -392,6 +418,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/drg")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增DRG參數值")
   public ResponseEntity<BaseResponse> newDRGValues(@RequestBody DRGRelatedValues request) {
 
     BaseResponse result = new BaseResponse();
@@ -415,13 +442,18 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/drg")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改DRG參數值")
   public ResponseEntity<BaseResponse> updateDRGValue(@RequestBody DRGRelatedValues request) {
+	  
+	  httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+	  
     return returnAPIResult(parameterService.updateDRGValue(request));
   }
 
   @ApiOperation(value = "取得法定傳染病列表", notes = "取得法定傳染病列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/infectious")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<InfectiousListResponse> getInfectious(
       @ApiParam(name = "icd", value = "ICD代碼",
           example = "J10.01") @RequestParam(required = false) String icd,
@@ -463,17 +495,20 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/infectious")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改法定傳染病啟用狀態")
   public ResponseEntity<BaseResponse> updateInfectiousStatus(
       @ApiParam(name = "icd", value = "ICD代碼",
           example = "J10.01") @RequestParam(required = true) String icd,
       @ApiParam(name = "enable", value = "是否啟用，true/false",
           example = "true") @RequestParam(required = true) Boolean enable) {
+	  
     return returnAPIResult(parameterService.updateInfectiousStatus(icd, enable.booleanValue()));
   }
 
   @ApiOperation(value = "取得罕見ICD代碼列表", notes = "取得罕見ICD代碼列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/rareICD")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<RareICDListResponse> getRareICD(
       @ApiParam(name = "icd", value = "ICD代碼",
           example = "J10.01") @RequestParam(required = false) String icd,
@@ -513,6 +548,7 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得指定的罕見ICD應用參數", notes = "取得指定的罕見ICD應用參數")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/rareICD/{id}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<RareICDPayload> getRareICDById(@PathVariable String id) {
     RareICDPayload response = new RareICDPayload();
     if (id == null || id.length() == 0) {
@@ -531,6 +567,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/rareICD")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增罕見ICD代碼")
   public ResponseEntity<BaseResponse> newRareICD(@RequestBody RareICDPayload request) {
     if (request.getCode() == null || request.getCode().length() < 1) {
       return returnAPIResult("code值不可為空");
@@ -556,6 +593,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/rareICDStatus")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改罕見ICD代碼啟用狀態")
   public ResponseEntity<BaseResponse> updateRareICDStatus(
       @ApiParam(name = "id", value = "ICD代碼",
           example = "1") @RequestParam(required = true) String id,
@@ -567,6 +605,9 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id值有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(parameterService.updateRareICDStatus(idL, enable.booleanValue()));
   }
 
@@ -574,15 +615,20 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/rareICD")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改罕見ICD代碼參數")
   public ResponseEntity<BaseResponse> updateRareICD(@RequestBody RareICDPayload request) {
     if (request == null || request.getId() == null) {
       return returnAPIResult("id未帶入");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+
     return returnAPIResult(parameterService.updateRareICD(request));
   }
 
   @ApiOperation(value = "刪除罕見ICD資料", notes = "刪除罕見ICD資料")
   @DeleteMapping("/rareICD/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除罕見ICD資料")
   public ResponseEntity<BaseResponse> deleteRareICDById(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
@@ -593,6 +639,7 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得應用比例偏高醫令/特別用量藥品、衛材列表", notes = "取得應用比例偏高醫令/特別用量藥品、衛材列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/highRatioOrder")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<HighRatioOrderListResponse> getHighRatioOrder(
       @ApiParam(name = "code", value = "支付標準代碼",
           example = "J10.01") @RequestParam(required = false) String code,
@@ -648,6 +695,7 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得應用比例偏高醫令/特別用量藥品、衛材", notes = "取得應用比例偏高醫令/特別用量藥品、衛材")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/highRatioOrder/{id}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<HighRatioOrder> getHighRatioOrder(@PathVariable String id) {
     HighRatioOrder response = new HighRatioOrder();
     if (id == null || id.length() == 0) {
@@ -666,6 +714,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/highRatioOrder")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增應用比例偏高醫令/特別用量藥品、衛材")
   public ResponseEntity<BaseResponse> newHighRatioOrder(
       @ApiParam(name = "isOrder", value = "是否為應用比例偏高醫令，true:是，false:否，為特別用量藥品、衛材",
           example = "true") @RequestParam(required = false, defaultValue = "true") Boolean isOrder,
@@ -685,11 +734,15 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/highRatioOrder")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改應用比例偏高醫令或特別用量藥材、衛品")
   public ResponseEntity<BaseResponse> updateHighRatioOrder(@RequestBody HighRatioOrder request) {
     if (request == null || request.getId() == null) {
       return returnAPIResult("id未帶入");
     }
     boolean isOrder = (request.getCodeType() == null) ? true : (request.getCodeType().intValue() == RareICDPayload.CODE_TYPE_ORDER);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(parameterService.updateHighRatioOrder(request, isOrder));
   }
   
@@ -697,6 +750,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/highRatioOrder/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改應用比例偏高醫令狀態")
   public ResponseEntity<BaseResponse> updateHighRatioOrderStatus(@PathVariable String id,
       @ApiParam(name = "enable", value = "是否啟用，true/false",
           example = "true") @RequestParam(required = true) Boolean enable) {
@@ -706,6 +760,9 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(parameterService.updateHighRatioOrder(idL, enable.booleanValue()));
   }
 
@@ -717,6 +774,7 @@ public class ParameterController extends BaseController {
    */
   @ApiOperation(value = "刪除應用比例偏高醫令", notes = "刪除應用比例偏高醫令")
   @DeleteMapping("/highRatioOrder/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除應用比例偏高醫令")
   public ResponseEntity<BaseResponse> deleteHighRatioOrder(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
@@ -727,6 +785,7 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得同性質藥物列表", notes = "取得同性質藥物列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/sameATC")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<SameATCListResponse> getSameATC(
       @ApiParam(name = "code", value = "搜尋支付標準代碼",
           example = "") @RequestParam(required = false) String code,
@@ -767,6 +826,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/sameATC")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改同性質藥物狀態")
   public ResponseEntity<BaseResponse> updateSameATCStatus(
       @ApiParam(name = "id", value = "id", example = "1") @RequestParam(required = true) String id,
       @ApiParam(name = "enable", value = "是否啟用，true/false",
@@ -777,12 +837,16 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(parameterService.updateSameATC(idL, enable.booleanValue()));
   }
 
   @ApiOperation(value = "取得健保項目對應自費項目並存列表", notes = "取得健保項目對應自費項目並存列表")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/codeConflict")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<CodeConflictListResponse> getCodeConflict(
       @ApiParam(name = "code", value = "搜尋支付標準代碼",
           example = "") @RequestParam(required = false) String code,
@@ -828,6 +892,7 @@ public class ParameterController extends BaseController {
   @ApiOperation(value = "取得健保項目對應自費項目並存詳細資料", notes = "取得健保項目對應自費項目並存詳細資料")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @GetMapping("/codeConflict/{id}")
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<CodeConflictPayload> getCodeConflict(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       CodeConflictPayload result = new CodeConflictPayload();
@@ -848,6 +913,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PostMapping("/codeConflict")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_C}, name = "新增健保項目對應自費項目並存資料")
   public ResponseEntity<BaseResponse> newCodeConflict(@RequestBody CodeConflictPayload request) {
     if (request.getEdate() == null) {
       SimpleDateFormat sdf = new SimpleDateFormat(DateTool.SDF);
@@ -869,6 +935,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/codeConflict")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改健保項目對應自費項目並存資料")
   public ResponseEntity<BaseResponse> updateCodeConflict(@RequestBody CodeConflictPayload request) {
     if (request.getId() == null || request.getId().longValue() == 0) {
       return returnAPIResult("id有誤");
@@ -880,6 +947,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/codeConflict/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改健保項目對應自費項目並存資料狀態")
   public ResponseEntity<BaseResponse> updateCodeConflictStatus(@PathVariable String id,
       @ApiParam(name = "enable", value = "是否啟用，true/false",
           example = "true") @RequestParam(required = true) Boolean enable) {
@@ -889,12 +957,16 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(parameterService.updateCodeConflict(idL, enable.booleanValue()));
   }
 
   @ApiOperation(value = "刪除健保項目對應自費項目並存資料", notes = "刪除健保項目對應自費項目並存資料")
   @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
   @DeleteMapping("/codeConflict/{id}")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "刪除健保項目對應自費項目並存資料")
   public ResponseEntity<BaseResponse> deleteCodeConflict(@PathVariable String id) {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id 未帶入");

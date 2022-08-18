@@ -94,7 +94,8 @@ public class SendHTTP {
   public static String login(String serverIP, String port) {
     LoginRequest login = new LoginRequest();
     login.setUsername("leadtekadmin");
-    login.setPassword("test");
+    // 弱掃要 mark 掉
+    //login.setPassword("test");
 
     ObjectMapper objectMapper = new ObjectMapper();
     try {

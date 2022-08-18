@@ -93,8 +93,8 @@ public class PaymentTermsDao extends BaseSqlDao {
         if (strEnd.length()>0) {
           sql=sql.replace("-- and (END_DATE=", " and (END_DATE=");
         }
-//        System.out.println("sql-95="+sql);
-        logger.trace(sql);
+        // System.out.println("sql-95="+sql);
+        logger.debug(sql);
         java.util.List<Map<String, Object>> lst = jdbcTemplate.query(sql, new ColumnMapRowMapper());
         lst = Utility.listLowerCase(lst);
         for (Map<String, Object> item : lst) {
@@ -242,8 +242,8 @@ public class PaymentTermsDao extends BaseSqlDao {
     public int updatePaymentTerms(long id, String fee_no, String fee_name, String nhi_no, String nhi_name, 
             java.util.Date start_date, java.util.Date end_date, 
             String category, java.util.List<String> hospital_type, int outpatient_type, int hospitalized_type) {
-        String strStart = Utility.dateFormat(start_date, "yyyy/MM/dd");
-        String strEnd = Utility.dateFormat(end_date, "yyyy/MM/dd");
+        String strStart = Utility.dateFormat(start_date, "yyyy-MM-dd");
+        String strEnd = Utility.dateFormat(end_date, "yyyy-MM-dd");
         String sql;
         sql = "Update PT_PAYMENT_TERMS\n"
                 + "Set FEE_NO=%s, \n"
@@ -254,7 +254,7 @@ public class PaymentTermsDao extends BaseSqlDao {
                 + "    END_DATE='%s', \n"
                 + "    OUTPATIENT_TYPE=%d, \n"
                 + "    HOSPITALIZED_TYPE=%d\n"
-                + "Where (ID=%d)and(CATEGORY='%s')";
+                + "Where (ID=%d) and (CATEGORY='%s')";
         sql = String.format(sql, quotedNotNull(fee_no), quotedNotNull(fee_name), 
                 quotedNotNull(nhi_no), quotedNotNull(nhi_name), strStart, strEnd, 
                 outpatient_type, hospitalized_type, id, noInjection(category));

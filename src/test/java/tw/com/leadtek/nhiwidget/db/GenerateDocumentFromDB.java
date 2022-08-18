@@ -111,6 +111,7 @@ public class GenerateDocumentFromDB {
 
   public List<GenClassFieldXMLTag> convertDDLToDocument(String tableName, String ddl,
       BufferedWriter bw) throws IOException {
+    System.out.println("ddl=" + ddl);
     String primaryKey = getPrimaryKeyFromDDL(ddl);
     List<GenClassFieldXMLTag> result = new ArrayList<GenClassFieldXMLTag>();
     String s = ddl.substring(ddl.indexOf(tableName.toUpperCase()) + tableName.length() + 1);
@@ -199,8 +200,10 @@ public class GenerateDocumentFromDB {
       bw.write(String.valueOf(field.getLength()));
     }
     bw.write("\t");
-    writeString(field.getXmlTag(), bw, true);
-    bw.write(" ");
+    if (field.getXmlTag() != null && field.getXmlTag().length() > 0) {
+      writeString(field.getXmlTag(), bw, true);
+      bw.write(" ");
+    }
     writeString(field.getComment(), bw, false);
     bw.newLine();
   }
@@ -221,9 +224,16 @@ public class GenerateDocumentFromDB {
     // HANA DB IP : 10.10.5.55:30041
     // username : NWUSER
     // password : Leadtek2021
+
     GenerateDocumentFromDB gen = new GenerateDocumentFromDB(HANA, "NWUSER");
-    gen.connect("10.10.5.55", 30041, "NWUSER", "Leadtek");
-    gen.gen("NWUSER.csv");
+    //gen.connect("10.10.5.31", 30041, "NWUSER", "Leadtek2021");
+    gen.connect("192.168.2.171", 30041, "NWUSER", "Leadtek2021");
+    gen.gen("NWUSER-ms.csv");
+//    String date = "1421217";  
+//    int funcEndYear = Integer.parseInt(date.substring(0, 3));
+//    int funcEndMonth = Integer.parseInt(date.substring(3, 5));
+//    System.out.println("year=" + funcEndYear);
+//    System.out.println("month=" + funcEndMonth);
   }
 
 }

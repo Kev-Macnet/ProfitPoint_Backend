@@ -1,4 +1,4 @@
-# 59.120.139.60 -> ec2-54-168-152-76.ap-northeast-1.compute.amazonaws.com
+# Replace 59.120.139.60:8081 to localhost:8081 
 server:
   port: ${port:8081}
   tomcat:
@@ -17,6 +17,11 @@ server:
       force: true
       enabled: true
 spring:
+# avoid error log:Spring Data Redis - Could not safely identify store assignment for repository candidate interface
+  data:
+    redis:
+      repositories:
+        enabled: false
   servlet:
     multipart:
       max-file-size: 256MB
@@ -25,8 +30,7 @@ spring:
   jackson:
     default-property-inclusion: NON_NULL
   redis:
-    host: 59.120.139.62
-#    host: 10.10.5.30
+    host: 127.0.0.1
     port: 6379
     database: 0
     password: Leadtek
@@ -36,15 +40,9 @@ spring:
         max-wait: -1
         max-idle: 4
   datasource:
-    url: jdbc:mariadb://${dbip:leadtek-aws-db.cdw1dvedcf5w.ap-northeast-1.rds.amazonaws.com}:${dbport:3306}/nwuser
+    url: jdbc:mariadb://${dbip:database-1.cdw1dvedcf5w.ap-northeast-1.rds.amazonaws.com}:${dbport:3306}/NWUSER
     username: admin
-    password: AWSLeadtek23850!
-#  datasource:
-#    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#    url: jdbc:sqlserver://${dbip:140.127.232.81}:${dbport:1433}; databaseName=ProjectData
-#    username: sa
-#    password: "!si7966"
-#    connection-test-query: SELECT '1' FROM DUMMY
+    password: '!Qaz2wSX#eDc'
   jpa:
 #    orm:
     mapping-resources: orm.xml
@@ -59,7 +57,7 @@ spring:
           new_generator_mappings: false
           connection:
           pool_size: 100
-        format_sql: false
+        format_sql: true
         order_inserts: true
         order_updates: true
         jdbc:
@@ -71,27 +69,34 @@ spring:
         batch_size: 1000
         lob:
           non_contextual_creation: true
-      default-schema: nwuser
+      default-schema: NHIWIDGET
       connection:
-        pool_size: 10
-      show_sql: false
-      format_sql: false
+        pool_size: 100
       bytecode: 
         provider: javassist
         use_reflection_optimizer: true
-jwt:
-  secret: leadtek_NHIWidget
-# jwt expire time: 8 hours
-  expiration: 28800000
-# away from keyboard 時間，超過30分則刪除 jwt
-  afk: 1800000
-mail:
-  host: 59.120.139.196
-  port: 25
-  fromEmail: monitor@leadtek.com.tw
-  password: z5z8tah5
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+project:
+  jwt:
+    secret: leadtek_NHIWidget
+  # jwt expire time: 8 hours
+    expiration: 28800000
+  # away from keyboard 時間，超過30分則刪除 jwt
+    afk: 1800000
+  mail:
+    host: 59.120.139.196
+    port: 25
+    fromEmail: monitor@leadtek.com.tw
+    password: z5z8tah5
+  serverUrl: "http://35.77.119.147:8081/#/login?redir=warehouse/"
+  apiUrl: "http://35.77.119.147:8081/"
+  hospId: 1532011154
+  isMask: true
 swagger:
-  enable: true
+  enable: false
   application-name: 健保申保最佳化系統 API
   application-version: 2.0
   application-description: 健保申保最佳化系統 API

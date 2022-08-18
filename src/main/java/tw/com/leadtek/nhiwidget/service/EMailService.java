@@ -35,7 +35,7 @@ public class EMailService {
   private String mailPort;
   
   @Value("${project.mail.fromEmail}")
-  private String fromEmail;
+  public String fromEmail;
   
   @Value("${project.mail.password}")
   private String password;
@@ -43,7 +43,10 @@ public class EMailService {
   private MailContent mail;
   
   public void sendMail(String mailSubject, String mailToList, String content) {
-    logger.info("mailHost:" + mailHost + ",fromEmail:" + fromEmail);
+    //logger.info("mailHost:" + mailHost + ",fromEmail:" + fromEmail);
+    if (fromEmail == null || fromEmail.indexOf("@") < 0) {
+      return;
+    }
     if (password == null || password.length() < 2) {
       sendMailNoAuth(mailSubject, mailToList, content);
       return;

@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.ASSIGNED_POINTDao;
+import tw.com.leadtek.nhiwidget.dao.DEDUCTED_NOTEDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_MONTHLYDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_WEEKLYDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
@@ -48,6 +49,7 @@ import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlyPayload;
 import tw.com.leadtek.nhiwidget.payload.report.DRGMonthlySectionPayload;
+import tw.com.leadtek.nhiwidget.payload.report.DeductedPayload;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePoint;
 import tw.com.leadtek.nhiwidget.payload.report.NameCodePointQuantity;
 import tw.com.leadtek.nhiwidget.payload.report.NameValueList;
@@ -116,6 +118,9 @@ public class ReportService {
 
 	@Autowired
 	private ParametersService parametersService;
+	
+	@Autowired
+	private DEDUCTED_NOTEDao deductedNoteDao;
 
 	public final static String FILE_PATH = "download";
 
@@ -179,23 +184,26 @@ public class ReportService {
 		}
 		pm.setYm(Integer.parseInt(adYM));
 
-		long optId = 0;
-		long iptId = 0;
-		List<OP_T> listOPT = optDao.findByFeeYmOrderById(chineseYM);
-		if (listOPT != null && listOPT.size() > 0) {
-			optId = listOPT.get(0).getId();
-		} else {
-			return;
-		}
-
-		List<IP_T> listIPT = iptDao.findByFeeYmOrderById(chineseYM);
-		if (listIPT != null && listIPT.size() > 0) {
-			iptId = listIPT.get(0).getId();
-		} else {
-			return;
-		}
-
-		List<Object[]> list = opdDao.findMonthlyPoint(chineseYM);
+//		long optId = 0;
+//		long iptId = 0;
+//		List<OP_T> listOPT = optDao.findByFeeYmOrderById(chineseYM);
+//		if (listOPT != null && listOPT.size() > 0) {
+//			optId = listOPT.get(0).getId();
+//		} else {
+//			return;
+//		}
+//
+//		List<IP_T> listIPT = iptDao.findByFeeYmOrderById(chineseYM);
+//		if (listIPT != null && listIPT.size() > 0) {
+//			iptId = listIPT.get(0).getId();
+//		} else {
+//			return;
+//		}
+		String year = adYM.substring(0,4);
+		String month = adYM.substring(adYM.length() - 2, adYM.length());
+		String append = year + "-" + month;
+//		List<Object[]> list = opdDao.findMonthlyPoint(chineseYM);
+		List<Object[]> list = opdDao.findMonthlyPointByEndDate(append);
 		if (list != null && list.size() > 0) {
 			Object[] obj = list.get(0);
 			pm.setPartOp(getLongValue(obj[0]));
@@ -219,14 +227,14 @@ public class ReportService {
 			pm.setPatientOp(((BigInteger) obj[6]).longValue());
 			pm.setPatientEm(((BigInteger) obj[7]).longValue());
 			pm.setPatientIp(((BigInteger) obj[8]).longValue());
-			pm.setChronic(getLongValue(obj[9]));
+			pm.setChronic(0L);
 
-			pm.setIpQuantity(((BigInteger) obj[10]).longValue());
-			pm.setDrgQuantity(((BigInteger) obj[11]).longValue());
-			pm.setDrgApplPoint(getLongValue(obj[12]));
-			pm.setDrgActualPoint(getLongValue(obj[13]));
-			pm.setNoApplIp(getLongValue(obj[14]));
-			pm.setNoApplOp(getLongValue(obj[15]));
+			pm.setIpQuantity(((BigInteger) obj[9]).longValue());
+			pm.setDrgQuantity(((BigInteger) obj[10]).longValue());
+			pm.setDrgApplPoint(getLongValue(obj[11]));
+			pm.setDrgActualPoint(getLongValue(obj[12]));
+			pm.setNoApplIp(getLongValue(obj[13]));
+			pm.setNoApplOp(getLongValue(obj[14]));
 			pm.setNoApplAll(pm.getNoApplIp() + pm.getNoApplOp());
 			pm.setUpdateAt(new Date());
 
@@ -288,10 +296,21 @@ public class ReportService {
 		pm.setAssignedIp(ap.getWmIpPoints());
 		pm.setAssignedAll(ap.getWmp());
 
-		pm.setRateAll(cutPointNumber(((double) pm.getTotalAll() * (double) 100) / (double) pm.getAssignedAll()));
-		pm.setRateOpAll(cutPointNumber(((double) pm.getTotalOpAll() * (double) 100) / (double) pm.getAssignedOpAll()));
-		pm.setRateIp(cutPointNumber(((double) pm.getTotalIp() * (double) 100) / (double) pm.getAssignedIp()));
-		pm.setRemaining(pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll());
+        if (pm.getAssignedAll() == null) {
+          pm.setRateAll(0.0);
+          pm.setRateOpAll(0.0);
+          pm.setRateIp(0.0);
+          pm.setRemaining(0L);
+        } else {
+          pm.setRateAll(cutPointNumber(
+              ((double) pm.getTotalAll() * (double) 100) / (double) pm.getAssignedAll()));
+          pm.setRateOpAll(cutPointNumber(
+              ((double) pm.getTotalOpAll() * (double) 100) / (double) pm.getAssignedOpAll()));
+          pm.setRateIp(cutPointNumber(
+              ((double) pm.getTotalIp() * (double) 100) / (double) pm.getAssignedIp()));
+          pm.setRemaining(
+              pm.getAssignedAll().longValue() - pm.getApplAll().longValue() - pm.getPartAll());
+        }
 		pointMonthlyDao.save(pm);
 	}
 
@@ -405,19 +424,32 @@ public class ReportService {
 			result.setApplPointAll(result.getApplPointOpAll() + result.getApplPointIp());
 
 			// 原始總點數
-			result.setPointAll(result.getApplPointAll() + result.getOwnExpAll());
 			result.setPointEm(result.getApplPointEm() + result.getOwnExpEm());
 			// 住院: 醫療費用+不計入醫療費用點數合計+自費
-			result.setPointIp(getLongValue(obj[21]) + result.getNoApplIp() + result.getOwnExpIp());
+			result.setPointIp(getLongValue(obj[21]) + getLongValue(obj[22]) + result.getOwnExpIp());
 			result.setPointOp(result.getApplPointOp() + result.getOwnExpOp());
 			result.setPointOpAll(result.getPointOp() + result.getPointEm());
+			result.setPointAll(result.getPointOpAll() + result.getPointIp());
 		}
 
 		result.setApplByFuncType(getApplPointGroupByFuncType(s, e));
 		result.setPartByFuncType(getPartPointGroupByFuncType(s, e));
-		result.setPayByOrderType(getPointGroupByOrderType(s, e));
+		result.setPayByOrderType(getPointGroupByOrderType(s, e, ""));
 		result.setOwnExpByFuncType(getOwnExpenseGroupByFuncType(s, e));
-		result.setOwnExpByOrderType(getOwnExpenseGroupByOrderType(s, e));
+		result.setOwnExpByOrderType(getOwnExpenseGroupByOrderType(s, e, ""));
+//		result.setPayByOrderTypeList(getPointGroupByOrderTypeList(s, e));
+//		result.setOwnExpByOrderTypeList(getOwnExpenseGroupByOrderTypeList(s, e));
+		return result;
+	}
+	
+	public PeriodPointPayload getPeriodPointByFunctype(Date sdate, Date edate, String funcType) {
+		PeriodPointPayload result = new PeriodPointPayload();
+		java.sql.Date s = new java.sql.Date(sdate.getTime());
+		java.sql.Date e = new java.sql.Date(edate.getTime());
+
+
+		result.setPayByOrderType(getPointGroupByOrderType(s, e, funcType));
+		result.setOwnExpByOrderType(getOwnExpenseGroupByOrderType(s, e, funcType));
 		return result;
 	}
 
@@ -547,10 +579,20 @@ public class ReportService {
 		return result;
 	}
 
-	public PointQuantityList getPointGroupByOrderType(java.sql.Date s, java.sql.Date e) {
+	public PointQuantityList getPointGroupByOrderType(java.sql.Date s, java.sql.Date e, String funcType) {
 		PointQuantityList result = new PointQuantityList();
 		// 門急診各科申報總數
-		List<Object[]> list = oppDao.findPointGroupByPayCodeType(s, e);
+		List<Object[]> list = new ArrayList<Object[]>();
+		if(funcType == null || (!funcType.isEmpty() && funcType.equals("00"))) {
+			funcType = "";
+		}
+		if(funcType.isEmpty()) {
+			list = oppDao.findPointGroupByPayCodeType(s, e);
+		}
+		else {
+			
+			list = oppDao.findPointAndFuncTypeGroupByPayCodeType(s, e, funcType);
+		}
 		if (list != null && list.size() > 0) {
 			for (Object[] objects : list) {
 				NameCodePointQuantity npq = new NameCodePointQuantity();
@@ -572,7 +614,13 @@ public class ReportService {
 				result.addOp(npq);
 			}
 		}
-		list = ippDao.findPointGroupByPayCodeType(s, e);
+		if(funcType.isEmpty()) {
+			list = ippDao.findPointGroupByPayCodeType(s, e);
+		}
+		else {
+			
+			list = ippDao.findPointAndFuncTypeGroupByPayCodeType(s, e, funcType);
+		}
 		if (list != null && list.size() > 0) {
 			for (Object[] objects : list) {
 				NameCodePointQuantity npq = new NameCodePointQuantity();
@@ -597,10 +645,19 @@ public class ReportService {
 		return result;
 	}
 
-	public PointQuantityList getOwnExpenseGroupByOrderType(java.sql.Date s, java.sql.Date e) {
+	public PointQuantityList getOwnExpenseGroupByOrderType(java.sql.Date s, java.sql.Date e, String funcType) {
 		PointQuantityList result = new PointQuantityList();
+		List<Object[]> list = new ArrayList<Object[]>();
+		if(funcType == null || (!funcType.isEmpty() && funcType.equals("00"))) {
+			funcType = "";
+		}
 		// 門急診各科申報總數
-		List<Object[]> list = oppDao.findOwnExpensePointGroupByPayCodeType(s, e);
+		if(funcType.isEmpty()) {
+			list = oppDao.findOwnExpensePointGroupByPayCodeType(s, e);
+		}
+		else {
+			list = oppDao.findOwnExpensePointAndFuncTypeGroupByPayCodeType(s, e, funcType);
+		}
 		if (list != null && list.size() > 0) {
 			for (Object[] objects : list) {
 				NameCodePointQuantity npq = new NameCodePointQuantity();
@@ -622,7 +679,14 @@ public class ReportService {
 				result.addOp(npq);
 			}
 		}
-		list = ippDao.findOwnExpenseGroupByPayCodeType(s, e);
+		if(funcType.isEmpty()) {
+			
+			list = ippDao.findOwnExpenseGroupByPayCodeType(s, e);
+		}
+		else {
+			list = ippDao.findOwnExpenseAndFuncTypeGroupByPayCodeType(s, e, funcType);
+
+		}
 		if (list != null && list.size() > 0) {
 			for (Object[] objects : list) {
 				NameCodePointQuantity npq = new NameCodePointQuantity();
@@ -646,13 +710,9 @@ public class ReportService {
 		}
 		return result;
 	}
+	
 
 	public POINT_WEEKLY calculatePointByWeek(Date sdate, Date edate, List<String> funcTypes) {
-		if (!checkWeekday(sdate, Calendar.SUNDAY) || !checkWeekday(edate, Calendar.SATURDAY)) {
-			logger.error("calculatePointByWeek failed");
-			return null;
-		}
-
 		java.sql.Date s = new java.sql.Date(sdate.getTime());
 		java.sql.Date e = new java.sql.Date(edate.getTime());
 		POINT_WEEKLY pw = calculatePointByWeek(s, e, XMLConstant.FUNC_TYPE_ALL);
@@ -674,14 +734,15 @@ public class ReportService {
 
 		java.sql.Date s = new java.sql.Date(sdate.getTime());
 		java.sql.Date e = new java.sql.Date(edate.getTime());
-		POINT_WEEKLY pw = pointWeeklyDao.findByStartDateAndEndDateAndFuncType(s, e, funcType);
-		if (pw == null) {
-			pw = new POINT_WEEKLY();
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(edate);
+		List<POINT_WEEKLY> pwList = pointWeeklyDao.findByPyearAndPweekAndFuncType(cal.get(Calendar.YEAR), cal.get(Calendar.WEEK_OF_YEAR), funcType);
+		POINT_WEEKLY pw = null;
+		if (pwList == null || pwList.size() == 0) {
+		  pw = new POINT_WEEKLY();
 			pw.setFuncType(funcType);
 			pw.setStartDate(sdate);
 			pw.setEndDate(edate);
-			Calendar cal = Calendar.getInstance();
-			cal.setTime(edate);
 			pw.setPyear(cal.get(Calendar.YEAR));
 			int week = cal.get(Calendar.WEEK_OF_YEAR);
 			// if (isFirstDaySunday(pw.getPyear())) {
@@ -689,6 +750,11 @@ public class ReportService {
 			// week--;
 			// }
 			pw.setPweek(week);
+		} else {
+		  pw = pwList.get(0);
+		  for (int i=1; i<pwList.size(); i++) {
+	        pointWeeklyDao.deleteById(pwList.get(i).getId());    
+	      }
 		}
 		List<Object[]> list = null;
 		if (XMLConstant.FUNC_TYPE_ALL.equals(funcType)) {
@@ -711,47 +777,86 @@ public class ReportService {
 		pw.setUpdateAt(new Date());
 		return pointWeeklyDao.save(pw);
 	}
+	
+    public List<String> getDRGFuncTypes() {
+      List<Object[]> list = mrDao.findDRGAllFuncType();
+      List<String> result = new ArrayList<String>();
+      for (Object[] obj : list) {
+        result.add((String) obj[0]);
+      }
+      return result;
+    }
 
-	public void calculatePointWeekly(Calendar startCal) {
-		Calendar cal = Calendar.getInstance();
-		cal.set(Calendar.YEAR, startCal.get(Calendar.YEAR));
-		cal.set(Calendar.MONTH, startCal.get(Calendar.MONTH));
-		cal.set(Calendar.DAY_OF_YEAR, startCal.get(Calendar.DAY_OF_YEAR));
+    /**
+     * 跑週報表資料，POINT_WEEKLY (每週點數合計), DRG_WEEKLY (每週點數合計)
+     * 
+     * @param startCal 起始日期
+     */
+    public void calculatePointWeekly(Calendar startCal, boolean checkOldDataExists) {
+    
+      List<String> funcTypesDRG = getDRGFuncTypes();
+      List<String> funcTypes = findAllFuncTypes(false);
+      if (checkOldDataExists) {
+        initialPointWeekly(funcTypes);
+      }
+      Calendar cal = Calendar.getInstance();
+      cal.set(Calendar.YEAR, startCal.get(Calendar.YEAR));
+      cal.set(Calendar.MONTH, startCal.get(Calendar.MONTH));
+      cal.set(Calendar.DAY_OF_YEAR, startCal.get(Calendar.DAY_OF_YEAR));
 
-		if (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
-			cal.add(Calendar.DAY_OF_YEAR, Calendar.SUNDAY - cal.get(Calendar.DAY_OF_WEEK));
-		}
-		Calendar calMax = parametersService.getMinMaxCalendar(new Date(), false);
-		List<Object[]> list = mrDao.findDRGAllFuncType();
-		List<String> funcTypesDRG = new ArrayList<String>();
-		for (Object[] obj : list) {
-			funcTypesDRG.add((String) obj[0]);
-		}
-		// funcTypes.add(0, ReportService.FUNC_TYPE_ALL);
-		List<String> funcTypes = findAllFuncTypes(false);
-		do {
-			Date start = cal.getTime();
-			cal.add(Calendar.DAY_OF_YEAR, 6);
-			Date end = cal.getTime();
+      if (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
+        cal.add(Calendar.DAY_OF_YEAR, Calendar.SUNDAY - cal.get(Calendar.DAY_OF_WEEK));
+      }
+      Calendar calMax = parametersService.getMinMaxCalendar(new Date(), false);
 
-			calculatePointByWeek(start, end, funcTypes);
-			calculateDRGPointByWeek(start, end, funcTypesDRG);
-			cal.add(Calendar.DAY_OF_YEAR, 1);
-		} while (cal.before(calMax));
-		logger.info("calculatePointWeekly done");
+      do {
+        Date start = cal.getTime();
+        cal.add(Calendar.DAY_OF_YEAR, 6);
+        Date end = cal.getTime();
+
+        if (!checkWeekday(start, Calendar.SUNDAY) || !checkWeekday(end, Calendar.SATURDAY)) {
+          logger.error("calculatePointByWeek failed");
+          continue;
+        }
+        calculatePointByWeek(start, end, funcTypes);
+        calculateDRGPointByWeek(start, end, funcTypesDRG);
+        cal.add(Calendar.DAY_OF_YEAR, 1);
+      } while (cal.before(calMax));
+    }
+    
+	public void initialPointWeekly(List<String> funcTypes) {
+	  Calendar cal = Calendar.getInstance();
+	  cal.add(Calendar.YEAR, -10);
+	  boolean allFuncTypeReady = true;
+	  for (String funcType : funcTypes) {
+	    if(pointWeeklyDao.countByEndDateLessThanEqualAndFuncType(new java.sql.Date(cal.getTimeInMillis()), funcType) == 0) {
+	      // 該科別無10年內的週報表資料
+	      allFuncTypeReady = false;
+	      break;
+	    }
+      }
+	
+	  if (!allFuncTypeReady) {
+        // 將10年前的週報表資料補 0
+	    cal.add(Calendar.DATE, -7);
+	    calculatePointWeekly(cal, false);
+	  }
 	}
 
-	private List<String> findAllFuncTypes(boolean includeAll) {
-		List<String> result = new ArrayList<String>();
-		List<Object[]> list = mrDao.findAllFuncType();
-		for (Object[] objects : list) {
-			result.add((String) objects[0]);
-		}
-		if (includeAll) {
-			result.add(XMLConstant.FUNC_TYPE_ALL);
-		}
-		return result;
-	}
+    public List<String> findAllFuncTypes(boolean includeAll) {
+      List<String> result = new ArrayList<String>();
+      List<Object[]> list = mrDao.findAllFuncType();
+      for (Object[] objects : list) {
+        if (objects == null || objects[0] == null) {
+          continue;
+        }
+        result.add((String) objects[0]);
+      }
+      if (includeAll) {
+        result.add(XMLConstant.FUNC_TYPE_ALL);
+      }
+      return result;
+    }
 
 	private List<String> findAllFuncTypesName(boolean includeAll) {
 		List<String> result = new ArrayList<String>();
@@ -773,30 +878,36 @@ public class ReportService {
 		List<String> funcCodes = findAllFuncTypes(includeAll);
 		for (String funcCode : funcCodes) {
 			result.put(funcCode, codeTableService.getDesc("FUNC_TYPE", funcCode));
+			System.out.println("put " + funcCode + "," + result.get(funcCode));
 		}
 		return result;
 	}
 
 	public void calculateDRGPointByWeek(Date sdate, Date edate, List<String> funcTypes) {
-		if (!checkWeekday(sdate, Calendar.SUNDAY) || !checkWeekday(edate, Calendar.SATURDAY)) {
-			logger.error("calculatePointByWeek failed");
-			return;
-		}
-
 		java.sql.Date s = new java.sql.Date(sdate.getTime());
 		java.sql.Date e = new java.sql.Date(edate.getTime());
 
+		// 存放未抓到DRG的科別，最後補0
 		HashMap<String, String> elapseFuncType = new HashMap<String, String>();
 		for (String string : funcTypes) {
 			elapseFuncType.put(string, "");
 		}
-
-		DRG_WEEKLY drgWeeklyAll = selectOrCreateDrgWeekly(s, e, XMLConstant.FUNC_TYPE_ALL);
-		List<Object[]> list = mrDao.countDRGPointByStartDateAndEndDate(s, e, s, e, s, e);
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTime(sdate);
+        DRG_WEEKLY drgWeeklyAll = selectOrCreateDrgWeekly(XMLConstant.FUNC_TYPE_ALL, s, e,
+            startCal.get(Calendar.YEAR), startCal.get(Calendar.WEEK_OF_YEAR));
+		List<Object[]> list = mrDao.countAllDRGPointByStartDateAndEndDate(s, e);
+		// 記錄有出現過的科別代碼，有出現就不處理
+		HashMap<String, String> funcTypeSelect = new HashMap<String, String>();
 		for (Object[] obj : list) {
 			String funcType = (String) obj[0];
+			if (funcTypeSelect.containsKey(funcType)) {
+			  continue;
+			}
+			funcTypeSelect.put(funcType, "");
 			elapseFuncType.remove(funcType);
-			DRG_WEEKLY drgWeekly = selectOrCreateDrgWeekly(s, e, funcType);
+            DRG_WEEKLY drgWeekly = selectOrCreateDrgWeekly(funcType, s, e,
+                startCal.get(Calendar.YEAR), startCal.get(Calendar.WEEK_OF_YEAR));
 			drgWeekly.setDrgQuantity(((BigInteger) obj[1]).longValue());
 			drgWeekly.setDrgPoint(getLongValue(obj[2]));
 			drgWeekly.setNondrgQuantity(((BigInteger) obj[4]).longValue());
@@ -808,8 +919,7 @@ public class ReportService {
 
 			List<Object[]> sectionList = mrDao.countDRGPointByFuncTypeGroupByDRGSection(s, e, funcType);
 			for (Object[] obj2 : sectionList) {
-				long point = (obj2[2] instanceof Integer) ? ((Integer) obj2[2]).longValue()
-						: ((BigInteger) obj2[2]).longValue();
+				long point = getLongValue(obj2[2]);
 				if ("A".equals((String) obj2[0])) {
 					drgWeekly.setSectionA(((BigInteger) obj2[1]).longValue());
 					drgWeeklyAll.setSectionA(drgWeeklyAll.getSectionA() + drgWeekly.getSectionA());
@@ -835,18 +945,19 @@ public class ReportService {
 			drgWeeklyDao.save(drgWeekly);
 		}
 		drgWeeklyDao.save(drgWeeklyAll);
-		processElapseFuncTypeWeekly(s, e, elapseFuncType.keySet());
+		processElapseFuncTypeWeekly(s, e, elapseFuncType.keySet(), startCal);
 	}
 
 	private void processElapseFuncTypeWeekly(java.sql.Date startDate, java.sql.Date endDate,
-			Set<String> elapseFuncTypes) {
+			Set<String> elapseFuncTypes, Calendar startCal) {
 		List<Object[]> list = mrDao.countNonDRGPointByStartDateAndEndDate(startDate, endDate);
 		for (Object[] obj : list) {
 			String funcType = (String) obj[0];
 			if (!elapseFuncTypes.contains(funcType)) {
 				continue;
 			}
-			DRG_WEEKLY drgWeekly = selectOrCreateDrgWeekly(startDate, endDate, funcType);
+			elapseFuncTypes.remove(funcType);
+			DRG_WEEKLY drgWeekly = selectOrCreateDrgWeekly(funcType, startDate, endDate, startCal.get(Calendar.YEAR), startCal.get(Calendar.WEEK_OF_YEAR));
 			drgWeekly.setDrgQuantity(0L);
 			drgWeekly.setDrgPoint(0L);
 			drgWeekly.setNondrgQuantity(((BigInteger) obj[1]).longValue());
@@ -857,20 +968,36 @@ public class ReportService {
 			drgWeekly.setSectionC(0L);
 			drgWeeklyDao.save(drgWeekly);
 		}
+		for (String funcType : elapseFuncTypes) {
+		  DRG_WEEKLY drgWeekly = selectOrCreateDrgWeekly(funcType, startDate, endDate, startCal.get(Calendar.YEAR), startCal.get(Calendar.WEEK_OF_YEAR));
+          drgWeekly.setDrgQuantity(0L);
+          drgWeekly.setDrgPoint(0L);
+          drgWeekly.setNondrgQuantity(0L);
+          drgWeekly.setNondrgPoint(0L);
+          drgWeekly.setSectionA(0L);
+          drgWeekly.setSectionB1(0L);
+          drgWeekly.setSectionB2(0L);
+          drgWeekly.setSectionC(0L);
+          drgWeeklyDao.save(drgWeekly);
+        }
 	}
 
-	private DRG_WEEKLY selectOrCreateDrgWeekly(java.sql.Date startDate, java.sql.Date endDate, String funcType) {
-		DRG_WEEKLY result = drgWeeklyDao.findByFuncTypeAndStartDateAndEndDate(funcType, startDate, endDate);
-		if (result == null) {
+    private DRG_WEEKLY selectOrCreateDrgWeekly(String funcType, java.sql.Date startDate,
+        java.sql.Date endDate, int year, int week) {
+      List<DRG_WEEKLY> list = drgWeeklyDao.findByFuncTypeAndPyearAndPweek(funcType, year, week);
+      DRG_WEEKLY result = null;
+		if (list == null || list.size() == 0) {
 			result = new DRG_WEEKLY();
 			result.setFuncType(funcType);
 			result.setStartDate(startDate);
 			result.setEndDate(endDate);
-			Calendar cal = Calendar.getInstance();
-			cal.setTime(endDate);
-			result.setPyear(cal.get(Calendar.YEAR));
-			int week = cal.get(Calendar.WEEK_OF_YEAR);
+			result.setPyear(year);
 			result.setPweek(week);
+		} else {
+		  result = list.get(0);
+          for (int i = 1; i < list.size(); i++) {
+            drgWeeklyDao.deleteById(list.get(i).getId());
+          }
 		}
 		if (XMLConstant.FUNC_TYPE_ALL.equals(funcType)) {
 			result.setDrgQuantity(0L);
@@ -888,6 +1015,21 @@ public class ReportService {
 		}
 		return result;
 	}
+    
+    public void calculateDRGWeekly(Date mrEndDate) {
+      Calendar calSunday = Calendar.getInstance();
+      calSunday.setTime(mrEndDate);
+
+      if (calSunday.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
+        calSunday.add(Calendar.DAY_OF_YEAR, Calendar.SUNDAY - calSunday.get(Calendar.DAY_OF_WEEK));
+      }
+      
+      Calendar calSaturday = Calendar.getInstance();
+      calSaturday.setTime(calSunday.getTime());
+      calSaturday.add(Calendar.DAY_OF_YEAR, 6);
+      
+      calculateDRGPointByWeek(calSunday.getTime(), calSaturday.getTime(), getDRGFuncTypes());
+    }
 
 	private boolean checkWeekday(Date date, int weekday) {
 		Calendar cal = Calendar.getInstance();
@@ -922,6 +1064,36 @@ public class ReportService {
 		}
 		return result;
 	}
+	
+	public PeriodPointWeeklyPayload getPeroidPointWeeklyByFunctype(Date edate, String funcType) {
+		PeriodPointWeeklyPayload result = new PeriodPointWeeklyPayload();
+		java.sql.Date e = new java.sql.Date(edate.getTime());
+		List<POINT_WEEKLY> list = new ArrayList<POINT_WEEKLY>();
+		if(funcType != null && funcType.equals("00")) {
+			funcType = "";
+		}
+		if(funcType.isEmpty()) {
+			list = pointWeeklyDao.findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e,
+					XMLConstant.FUNC_TYPE_ALL);
+		}
+		else {
+			list = pointWeeklyDao.findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e,
+					funcType);
+		}
+		int count = 0;
+		for (POINT_WEEKLY pw : list) {
+			String name = pw.getPyear() + " w" + pw.getPweek();
+			result.getIp().add(name, pw.getIp());
+			result.getOp().add(name, pw.getOp());
+			result.getOwnExpIp().add(name, pw.getOwnExpIp());
+			result.getOwnExpOp().add(name, pw.getOwnExpOp());
+			count++;
+			if (count >= 52) {
+				break;
+			}
+		}
+		return result;
+	}
 
 	public List<String> getAllDRGFuncTypes(java.sql.Date startDate, java.sql.Date endDate) {
 		List<String> result = new ArrayList<String>();
@@ -941,12 +1113,15 @@ public class ReportService {
 		return result;
 	}
 
+	/**
+	 * 計算DRG月報表
+	 * @param ym
+	 */
 	public void calculateDRGMonthly(String ym) {
 		if ("ALL".equals(ym.toUpperCase())) {
 			List<Map<String, Object>> list = mrDao.getAllApplYm();
 			for (Map<String, Object> map : list) {
 				String applYm = (String) map.get("APPL_YM");
-				System.out.println("calculateDRGMonthly " + ym);
 				calculateDRGMonthly(applYm);
 			}
 			return;
@@ -954,27 +1129,44 @@ public class ReportService {
 
 		String chineseYM = ymToROCYM(ym);
 		String adYM = ymToADYM(ym);
-
-		DRG_MONTHLY drgMonthlyAll = drgMonthlyDao.findByYmAndFuncType(Integer.parseInt(adYM),
-				XMLConstant.FUNC_TYPE_ALL);
-		if (drgMonthlyAll == null) {
-			drgMonthlyAll = new DRG_MONTHLY();
-		}
+		///2020-01格式
+		String formatAdYM = adYM.substring(0, adYM.length() - 2) + "-" + adYM.substring(4, adYM.length());
+        DRG_MONTHLY drgMonthlyAll = new DRG_MONTHLY();
+        DRG_MONTHLY old =
+            drgMonthlyDao.findByYmAndFuncType(Integer.parseInt(adYM), XMLConstant.FUNC_TYPE_ALL);
+        if (old != null) {
+          drgMonthlyAll.setId(old.getId());
+        }
 		drgMonthlyAll.setYm(Integer.parseInt(adYM));
 		drgMonthlyAll.setFuncType(XMLConstant.FUNC_TYPE_ALL);
+        if (drgMonthlyAll.getSectionA() != null && drgMonthlyAll.getSectionA() > 0) {
+          /// 初始化functype 00資料，不然跑下面回圈會疊加重複
+          drgMonthlyAll.setSectionA(0L);
+          drgMonthlyAll.setSectionB1(0L);
+          drgMonthlyAll.setSectionB2(0L);
+          drgMonthlyAll.setSectionC(0L);
 
+          drgMonthlyAll.setSectionAAppl(0L);
+          drgMonthlyAll.setSectionB1Appl(0L);
+          drgMonthlyAll.setSectionB2Appl(0L);
+          drgMonthlyAll.setSectionCAppl(0L);
+
+          drgMonthlyAll.setSectionAActual(0L);
+          drgMonthlyAll.setSectionB1Actual(0L);
+          drgMonthlyAll.setSectionB2Actual(0L);
+          drgMonthlyAll.setSectionCActual(0L);
+        }
+		
 		List<String> funcTypes = getAllDRGFuncTypes(chineseYM);
 		for (String funcType : funcTypes) {
-			DRG_MONTHLY pm = null;
-			DRG_MONTHLY old = drgMonthlyDao.findByYmAndFuncType(Integer.parseInt(adYM), funcType);
-			if (old == null) {
-				pm = new DRG_MONTHLY();
-			} else {
-				pm = old;
+			DRG_MONTHLY pm = new DRG_MONTHLY();
+			old = drgMonthlyDao.findByYmAndFuncType(Integer.parseInt(adYM), funcType);
+			if (old != null) {
+				pm.setId(old.getId());
 			}
 			pm.setYm(Integer.parseInt(adYM));
 			pm.setFuncType(funcType);
-			List<Object[]> list = mrDao.findDRGCountAndDotByApplYmGroupByDrgSection(chineseYM, funcType);
+			List<Object[]> list = mrDao.findDRGCountAndDotByApplYmGroupByDrgSection(formatAdYM, funcType);
 			if (list != null && list.size() > 0) {
 				for (Object[] obj : list) {
 					String section = (String) obj[0];
@@ -1029,6 +1221,9 @@ public class ReportService {
 			cal.set(Calendar.DAY_OF_MONTH, 1);
 			cal.add(Calendar.MONTH, 1);
 			cal.add(Calendar.DAY_OF_YEAR, -1);
+			while(cal.get(Calendar.DAY_OF_WEEK) != Calendar.SATURDAY) {
+			  cal.add(Calendar.DAY_OF_YEAR, 1);
+			}
 			return new java.sql.Date(cal.getTimeInMillis());
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -1038,7 +1233,23 @@ public class ReportService {
 
 	public DRGMonthlyPayload getDrgMonthly(int year, int month) {
 		DRGMonthlyPayload result = new DRGMonthlyPayload(pointMonthlyDao.findByYm(year * 100 + month));
-
+		String mStr = String.valueOf(month);
+		if(month < 10) {
+			mStr = "0"+ String.valueOf(month);
+		}
+		String ym = String.valueOf(year) + "-" + mStr;
+		///取得病例總點數
+		Map<String,Object> pMap =  pointMonthlyDao.getIpPointByDate(ym);
+		if (pMap.get("IP_DOT") != null) {
+		  result.setMedPointIp(Long.valueOf(pMap.get("IP_DOT").toString()));
+		} else {
+		  result.setMedPointIp(0L);
+		}
+		if (pMap.get("IP_DOT_NOOWN") != null) {
+		  result.setMedNoOwnPointIp(Long.valueOf(pMap.get("IP_DOT_NOOWN").toString()));
+		} else {
+		  result.setMedNoOwnPointIp(0L);
+		}
 		result.getFuncTypes().add(FUNC_TYPE_ALL_NAME);
 		java.sql.Date lastDay = getLastDayOfMonth(year, month);
 		addQuantityAndPoint(result, XMLConstant.FUNC_TYPE_ALL, FUNC_TYPE_ALL_NAME, lastDay);
@@ -1048,9 +1259,25 @@ public class ReportService {
 	public DRGMonthlyPayload getDrgMonthlyAllFuncType(int year, int month) {
 		DRGMonthlyPayload result = new DRGMonthlyPayload(pointMonthlyDao.findByYm(year * 100 + month));
 		List<String> funcTypes = getAllDRGFuncTypes(String.valueOf((year - 1911) * 100 + month));
+		for (String string : funcTypes) {
+          System.out.println("funcTypes=" + string);
+        }
 		funcTypes.add(0, XMLConstant.FUNC_TYPE_ALL);
-		List<String> funcTypeName = codeTableService.convertFuncTypeToName(funcTypes);
+		List<String> funcTypeName = codeTableService.convertFuncTypeToNameList(funcTypes);
+		for (String string : funcTypeName) {
+          System.out.println("funcTypeName=" + string);
+        }
 		result.setFuncTypes(funcTypeName);
+		String mStr = String.valueOf(month);
+		if(month < 10) {
+			mStr = "0"+ String.valueOf(month);
+		}
+		String ym = String.valueOf(year) + "-" + mStr;
+		///取得病例總點數
+		Map<String,Object> pMap =  pointMonthlyDao.getIpPointByDate(ym);
+		result.setMedPointIp(Long.valueOf(pMap.get("IP_DOT").toString()));
+		result.setMedNoOwnPointIp(Long.valueOf(pMap.get("IP_DOT_NOOWN").toString()));
+		
 		java.sql.Date lastDay = getLastDayOfMonth(year, month);
 
 		for (int i = 0; i < funcTypes.size(); i++) {
@@ -1080,9 +1307,18 @@ public class ReportService {
 
 	public DRGMonthlySectionPayload getDrgMonthlySection(int year, int month) {
 		DRGMonthlySectionPayload result = new DRGMonthlySectionPayload(pointMonthlyDao.findByYm(year * 100 + month));
+		String mStr = String.valueOf(month);
+		if(month < 10) {
+			mStr = "0"+ String.valueOf(month);
+		}
+		String ym = String.valueOf(year) + "-" + mStr;
+		///取得病例總點數
+		Map<String,Object> pMap =  pointMonthlyDao.getIpPointByDate(ym);
+		result.setMedPointIp(Long.valueOf(pMap.get("IP_DOT").toString()));
+		result.setMedNoOwnPointIp(Long.valueOf(pMap.get("IP_DOT_NOOWN").toString()));
 		List<String> funcTypes = getAllDRGFuncTypes(String.valueOf((year - 1911) * 100 + month));
 		funcTypes.add(0, XMLConstant.FUNC_TYPE_ALL);
-		List<String> funcTypeNames = codeTableService.convertFuncTypeToName(funcTypes);
+		List<String> funcTypeNames = codeTableService.convertFuncTypeToNameList(funcTypes);
 		result.setFuncTypes(funcTypeNames);
 
 		java.sql.Date lastDay = getLastDayOfMonth(year, month);
@@ -1227,7 +1463,7 @@ public class ReportService {
 			result.getAll().add(name, pw.getIp() + pw.getOp());
 			result.getEm().add(name, pw.getEm());
 			result.getOpAll().add(name, pw.getOp());
-			;
+
 			count++;
 			if (count >= 52) {
 				break;
@@ -1238,6 +1474,7 @@ public class ReportService {
 	}
 
 	private void addMonthlyData(AchievementWeekly aw, Calendar cal) {
+	    Calendar thisMonth = Calendar.getInstance();
 		Calendar lastMonth = Calendar.getInstance();
 		lastMonth.setTime(cal.getTime());
 
@@ -1252,14 +1489,21 @@ public class ReportService {
 		Calendar temp = Calendar.getInstance();
 		for (int i = 0; i < list.size(); i++) {
 			POINT_MONTHLY pm = list.get(i);
-			if (i == list.size() - 1) {
-				aw.setMonthTotal(pm.getTotalAll());
-				aw.setMonthAssigned(pm.getAssignedAll());
-				DecimalFormat df = new DecimalFormat("#.##");
-				aw.setAchievementRate(
-						df.format(((double) aw.getMonthTotal() * (double) 100) / (double) aw.getMonthAssigned()) + "%");
-			}
-
+            if (i == list.size() - 1) {
+              if (pm.getYm() == (thisMonth.get(Calendar.YEAR) * 100 + thisMonth.get(Calendar.MONTH)
+                  + 1)) {
+                aw.setMonthTotal(pm.getTotalAll());
+                aw.setMonthAssigned(pm.getAssignedAll());
+                DecimalFormat df = new DecimalFormat("#.##");
+                aw.setAchievementRate(df.format(
+                    ((double) aw.getMonthTotal() * (double) 100) / (double) aw.getMonthAssigned())
+                    + "%");
+              } else {
+                aw.setMonthTotal(0L);
+                aw.setMonthAssigned(pm.getAssignedAll());
+                aw.setAchievementRate("0%");
+              }
+            }
 			temp.set(Calendar.YEAR, pm.getYm() / 100);
 			temp.set(Calendar.MONTH, (pm.getYm() % 100) - 1);
 			// temp.set(Calendar.DAY_OF_MONTH,
@@ -1346,6 +1590,52 @@ public class ReportService {
 		}
 		return new int[] { min, max };
 	}
+	
+	/**
+	 * 
+	 * @param years
+	 * @param quarters
+	 * @return formate 2020-01-01 , 2020-03-31
+	 */
+	private Map<String,Object> findOldestAndNewestYearMonthDay(String[] years, String[] quarters) {
+		int min = Integer.MAX_VALUE;
+		int max = 0;
+		List<String> minList = new ArrayList<String>();
+		List<String> maxList = new ArrayList<String>();
+		Map<String,Object> map = new HashMap<String,Object>();
+		for (int i = 0; i < years.length; i++) {
+			int[] yearMonth = getYearMonthByQuarter(years[i], quarters[i]);
+			// System.out.println(yearMonth[0] + "," + yearMonth[1] + "," + yearMonth[2]);
+			if (max < yearMonth[2]) {
+				max = yearMonth[2];
+			}
+			min = yearMonth[0];
+			String minStr = String.valueOf(min);
+			String maxStr = String.valueOf(max);
+			String maxSub = maxStr.substring(maxStr.length() - 2, maxStr.length());
+			String fianlMin = minStr.substring(0,4) + "-" + minStr.substring(minStr.length() - 2,minStr.length()) + "-01";
+			String fianlMax = maxStr.substring(0,4) + "-" + maxStr.substring(maxStr.length() - 2,maxStr.length());
+			switch(maxSub) {
+			case "03":
+				fianlMax += "-31";
+				break;
+			case "06":
+				fianlMax += "-30";
+				break;
+			case "09":
+				fianlMax += "-30";
+				break;
+			case "12":
+				fianlMax += "-31";
+				break;
+			}
+			minList.add(fianlMin);
+			maxList.add(fianlMax);
+		}
+		map.put("min", minList);
+		map.put("max", maxList);
+		return map;
+	}
 
 	/**
 	 * 計算健保總額累積達成率
@@ -1427,24 +1717,24 @@ public class ReportService {
 		VisitsVarietyPayload result = new VisitsVarietyPayload();
 
 		result.setFuncTypes(findAllFuncTypesName(true));
-		List<Object[]> list = mrDao.getPointPeriod(sdate, edate, sdate, edate, sdate, edate, sdate, edate, sdate, edate,
-				sdate, edate, sdate, edate, sdate, edate);
+		List<Object[]> list = mrDao.getPointPeriod(sdate, edate);
 
 		if (list != null && list.size() > 0) {
 			Object[] obj = list.get(0);
 
 			PointPeriod actual = new PointPeriod();
-			actual.setAll(getLongValue(obj[0]));
 			actual.setOpem(getLongValue(obj[1]));
 			actual.setEm(getLongValue(obj[2]));
 			actual.setIp(getLongValue(obj[3]));
+			///病歷總點數(含自費)門急診 + 病歷總點數(含自費)住院
+			actual.setAll(actual.getOpem() + actual.getIp());
 			result.setActual(actual);
 
 			PointPeriod appl = new PointPeriod();
-			appl.setAll(getLongValue(obj[4]));
 			appl.setOpem(getLongValue(obj[5]));
 			appl.setEm(getLongValue(obj[6]));
 			appl.setIp(getLongValue(obj[7]));
+			appl.setAll(appl.getOpem() + appl.getIp());
 			result.setAppl(appl);
 		}
 
@@ -1452,15 +1742,28 @@ public class ReportService {
 		java.sql.Date lastEdate = null;
 		int daysDiff = (int) ((edate.getTime() - sdate.getTime()) / 86400000L);
 		Calendar cal = Calendar.getInstance();
+		Calendar calDiif = Calendar.getInstance();
 		cal.setTimeInMillis(sdate.getTime());
+		calDiif.setTimeInMillis(sdate.getTime());
 		if (daysDiff <= 30) {
 			// 30天抓上個月同區間
 			cal.add(Calendar.MONTH, -1);
 			lastSdate = new java.sql.Date(cal.getTimeInMillis());
-
-			cal.setTimeInMillis(edate.getTime());
-			cal.add(Calendar.MONTH, -1);
-			lastEdate = new java.sql.Date(cal.getTimeInMillis());
+			///取得輸入起始日之月底日，做比對用
+			calDiif.set(Calendar.DAY_OF_MONTH, calDiif.getActualMaximum(Calendar.DAY_OF_MONTH));
+			Date thisEdate = new java.sql.Date(calDiif.getTimeInMillis());
+		    ///如果輸入的結束日為月底，走這裡，抓月底資料
+			if(thisEdate.equals(edate)) {
+				cal.add(Calendar.MONTH, 1);
+				cal.set(Calendar.DAY_OF_MONTH, 0);
+				lastEdate = new java.sql.Date(cal.getTimeInMillis());
+			}
+			else {
+			    ///如果輸入的結束日為月底，走這裡，不抓月底資料
+				cal.setTimeInMillis(edate.getTime());
+				cal.add(Calendar.MONTH, -1);
+				lastEdate = new java.sql.Date(cal.getTimeInMillis());
+			}
 		} else {
 			cal.add(Calendar.DAY_OF_YEAR, -1);
 			lastEdate = new java.sql.Date(cal.getTimeInMillis());
@@ -1544,7 +1847,7 @@ public class ReportService {
 		cal.set(Calendar.DAY_OF_WEEK, Calendar.SATURDAY);
 
 		Map<String, String> funcMap = findAllFuncTypesMap(true);
-
+	
 		Map<String, NameValueList> opemMap = vvp.getOpemMap();
 		Map<String, NameValueList> ipMap = vvp.getIpMap();
 		Map<String, NameValueList> leaveMap = vvp.getLeaveMap();
@@ -1554,6 +1857,9 @@ public class ReportService {
 		// 記錄抓了幾週的資料
 		Map<String, String> weeks = new HashMap<String, String>();
 		for (POINT_WEEKLY pw : list) {
+		    if (funcMap.get(pw.getFuncType()) == null) {
+		      continue;
+		    }
 			String name = pw.getPyear() + " w" + pw.getPweek();
 			if (weeks.get(name) == null) {
 				weeks.put(name, "");
@@ -1637,7 +1943,9 @@ public class ReportService {
 			if (weeks.get(name) == null) {
 				weeks.put(name, "");
 			}
-	
+	        if (funcMap.get(pw.getFuncType()) == null) {
+	          continue;
+	        }
 			try {
 
 				NameValueList3 nvlOpem3 = opemMap3.get(funcMap.get(pw.getFuncType()));
@@ -1712,212 +2020,375 @@ public class ReportService {
 		String inputDate = DateTool.convertToChineseYear(year + monthStr + "00");
 		/// 轉成民國年月
 		String endDate = inputDate.substring(0, inputDate.length() - 2);
+		try {
+			POINT_MONTHLY pmModel =	pointMonthlyDao.findByYm(year * 100 + month);
+			/// 取得門急診人數
+			int patient_op = oppDao.getFuncEndDateCount(endDate);
+			patient_op = pmModel.getPatientOp().intValue() + pmModel.getPatientEm().intValue();
+			List<IP_D> ipdList = ipdDao.getApplCountByApplYM(endDate);
+			/// 住院人數
+			int patient_ip = ipdList.size();
+			patient_ip = pmModel.getIpQuantity().intValue();
+
+			List<Map<String, Object>> mrList = ipdDao.getMrDataByApplYMNull();
+			int out_count = 0;
+			int in_count = 0;
+			/// 如果病例無申報日
+			if (mrList.size() > 0) {
+				for (Map<String, Object> map : mrList) {
+					/// 先以出院日為主
+					if (map.get("OUT_DATE") != null && map.get("OUT_DATE").toString().contains(endDate)) {
+						out_count++;
+					}
+					if (map.get("OUT_DATE") == null) {
+						/// 再以住院日為主
+						if (map.get("IN_DATE").toString().contains(endDate)) {
+							in_count++;
+						}
+					}
+
+				}
+			}
+			/// 最終住院人數
+			int finalPatient_ip = patient_ip + out_count + in_count;
+			finalPatient_ip = patient_ip;
+			/// 取得門急診圓餅圖資料 人
+			List<Map<String, Object>> opPieCountData = opdDao.getOPPieCountData(endDate);
+
+			/// 取得住院圓餅圖資料 人
+			List<Map<String, Object>> ipPieCountData = ipdDao.getIPPieCountData(endDate);
+			List<Map<String, Object>> collectionList = new ArrayList<Map<String, Object>>();
+			List<Map<String, Object>> collectionList2 = new ArrayList<Map<String, Object>>();
+			List<Map<String, Object>> peoplePie = new ArrayList<Map<String, Object>>();
+			Map<String, Object> ojectMap = new HashMap<String, Object>();
+			/// 將門診和急診list加一起
+			collectionList.addAll(opPieCountData);
+			collectionList.addAll(ipPieCountData);
+			collectionList2.addAll(collectionList);
+			if (opPieCountData.size() > 0) {
+				/// 將門急診和住院資料+在一起
+				int opPieCountTotal = opdDao.getOPPieCountTotal(endDate);
+				int ipPieCountTotal = ipdDao.getIPPieCountTotal(endDate);
+				for (Map<String, Object> op : opPieCountData) {
+					String opFt = op.get("FUNC_TYPE").toString();
+					String opDC = op.get("DESC_CHI").toString();
+					int opC = Integer.parseInt(op.get("COUNT").toString());
+					for (Map<String, Object> ip : ipPieCountData) {
+						String ipFt = ip.get("FUNC_TYPE").toString();
+						String ipDC = ip.get("DESC_CHI").toString();
+						int ipC = Integer.parseInt(ip.get("COUNT").toString());
+						///將相同科別+在一起
+						if (opFt.equals(ipFt)) {
+							ojectMap.put("FUNC_TYPE", ipFt);
+							ojectMap.put("DESC_CHI", ipDC);
+							ojectMap.put("COUNT", String.valueOf(opC + ipC));
+							float fp = Float.valueOf(ojectMap.get("COUNT").toString());
+							String tt = String.valueOf(opPieCountTotal + ipPieCountTotal);
+							float m = (fp / Float.valueOf(tt)) * 100;
+							String str = String.format("%.02f", m);
+							ojectMap.put("PERCENT", str);
+							peoplePie.add(ojectMap);
+							ojectMap = new HashMap<String, Object>();
+						}
+					}
+				}
+				
+				///將所有的物件一一減掉
+				for(int x=0; x < 2; x++) {
+					for(int i=0; i< peoplePie.size(); i++) {
+						String pFt = peoplePie.get(i).get("FUNC_TYPE").toString();
+						for(int y=0; y < collectionList.size(); y++) {
+							String cFt = collectionList.get(y).get("FUNC_TYPE").toString();
+							if(pFt.equals(cFt)) {
+								collectionList2.remove(y);
+								break;
+							}
+						}
+						collectionList.clear();
+						collectionList.addAll(collectionList2);
+					}
+				}
+			}
+			
+			/// 將最後結果add倒要顯示集合
+			peoplePie.addAll(collectionList2);
+
+			SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
+			Calendar cal_s = DateTool.chineseYmToCalendar2(endDate);
+			System.out.print(cal_s.getTime());
+			cal_s.add(Calendar.MONTH, -1);
+			cal_s.set(Calendar.DAY_OF_MONTH, 1);
+			System.out.print(cal_s.getTime());
+			String firstDate = format.format(cal_s.getTime());
+
+			Calendar cal_e = DateTool.chineseYmToCalendar2(endDate);
+			cal_e.add(Calendar.MONTH, -1);
+			cal_e.set(Calendar.DAY_OF_MONTH, cal_e.getActualMaximum(Calendar.DAY_OF_MONTH));
+			String lastDate = format.format(cal_e.getTime());
+
+			/// 取得出院圓餅圖資料
+			List<Map<String, Object>> ipPieOutCountData = ipdDao.getIPPieOutCountData(firstDate, lastDate);
+
+			/// 取得門急診圓餅圖資料 點數
+			List<Map<String, Object>> opPieDotData = opdDao.getOPPieDotData(endDate);
+			/// 取得住院圓餅圖資料 點數
+			List<Map<String, Object>> ipPieDotData = ipdDao.getIPPieDotData(endDate);
+			List<Map<String, Object>> dotPie = new ArrayList<Map<String, Object>>();
+			collectionList.clear();
+			collectionList2.clear();
+			collectionList.addAll(opPieDotData);
+			collectionList.addAll(ipPieDotData);
+			collectionList2.addAll(collectionList);
+			if (opPieDotData.size() > 0) {
+				/// 將門急診和住院資料+在一起
+				int opPieDotTotal = opdDao.getOPPieDotTotal(endDate);
+				int ipPieDoTotal = ipdDao.getIPPieDotTotal(endDate);
+				for (Map<String, Object> op : opPieDotData) {
+					String opFt = op.get("FUNC_TYPE").toString();
+					String opDC = op.get("DESC_CHI").toString();
+					int opC = Integer.parseInt(op.get("SUM").toString());
+					for (Map<String, Object> ip : ipPieDotData) {
+						String ipFt = ip.get("FUNC_TYPE").toString();
+						String ipDC = ip.get("DESC_CHI").toString();
+						int ipC = Integer.parseInt(ip.get("SUM").toString());
+						if (opFt.equals(ipFt)) {
+							ojectMap.put("FUNC_TYPE", ipFt);
+							ojectMap.put("DESC_CHI", ipDC);
+							ojectMap.put("SUM", String.valueOf(opC + ipC));
+							float fp = Float.valueOf(ojectMap.get("SUM").toString());
+							String tt = String.valueOf(opPieDotTotal + ipPieDoTotal);
+							float m = (fp / Float.valueOf(tt)) * 100;
+							String str = String.format("%.02f", m);
+							ojectMap.put("PERCENT", str);
+							dotPie.add(ojectMap);
+							ojectMap = new HashMap<String, Object>();
+						}
+					}
+				}
+
+				for(int x=0; x < 2; x++) {
+					for(int i=0; i<dotPie.size(); i++) {
+						String pFt = dotPie.get(i).get("FUNC_TYPE").toString();
+						for(int y=0; y<collectionList.size(); y++) {
+							String cFt = collectionList.get(y).get("FUNC_TYPE").toString();
+							if (pFt.equals(cFt)) {
+								collectionList2.remove(y);
+								break;
+							}
+						}
+						collectionList.clear();
+						collectionList.addAll(collectionList2);
+					}
+				}
+				
+			}
+			/// 將最後結果add倒要顯示集合
+			dotPie.addAll(collectionList2);
+
+			PointMRPayload result = new PointMRPayload();
+
+			result.setFuncTypes(findAllFuncTypesName(false));
+			/// 取得返回當月資料
+			result.setCurrent(pointMonthlyDao.findByYm(year * 100 + month));
+			/// 返回門急診人數
+			result.setPatient_op_count(patient_op);
+			/// 返回住院人數
+			result.setPatient_ip_count(finalPatient_ip);
+			/// 返回門急診/住院人數
+			result.setPatient_total_count(patient_op + finalPatient_ip);
+			/// 返回門急診人數圓餅
+			Collections.sort(opPieCountData, mapComparator);
+			result.setOpPieCountData(opPieCountData);
+			/// 返回出院人數圓餅
+			Collections.sort(ipPieOutCountData, mapComparator);
+			result.setIpPieOutCountData(ipPieOutCountData);
+			/// 返回住院人數圓餅
+			Collections.sort(ipPieCountData, mapComparator);
+			result.setIpPieCountData(ipPieCountData);
+			/// 返回 門急診＋住院人數園餅
+			Collections.sort(peoplePie, mapComparator);
+			result.setTotalPieCountData(peoplePie);
+			/// 返回門急診點數圓餅
+			Collections.sort(opPieDotData, mapComparator);
+			result.setOpPieDotData(opPieDotData);
+			/// 返回住院點數圓餅
+			Collections.sort(ipPieDotData, mapComparator);
+			result.setIpPieDotData(ipPieDotData);
+			/// 返回 門急診＋住院點數園餅
+			Collections.sort(dotPie, mapComparator);
+			result.setTotalPieDotData(dotPie);
+			/// 返回趨勢圖資料
+			VisitsVarietyPayload res = new VisitsVarietyPayload();
+			result.setVisitsVarietyPayload(getVistAndPointWeekly(res, String.valueOf(year), monthStr));
+
+			return result;
+		}catch(Exception e) {
+			PointMRPayload result = new PointMRPayload();
+			
+			result.setFuncTypes(findAllFuncTypesName(false));
+			/// 取得返回當月資料
+			result.setCurrent(pointMonthlyDao.findByYm(year * 100 + month));
+			/// 返回門急診人數
+			result.setPatient_op_count(0);
+			/// 返回住院人數
+			result.setPatient_ip_count(0);
+			/// 返回門急診/住院人數
+			result.setPatient_total_count(0);
+			result.setOpPieCountData(null);
+			
+			result.setIpPieOutCountData(null);
 		
-		POINT_MONTHLY pmModel =	pointMonthlyDao.findByYm(year * 100 + month);
-		/// 取得門急診人數
-		int patient_op = oppDao.getFuncEndDateCount(endDate);
-		patient_op = pmModel.getPatientOp().intValue() + pmModel.getPatientEm().intValue();
-		List<IP_D> ipdList = ipdDao.getApplCountByApplYM(endDate);
-		/// 住院人數
-		int patient_ip = ipdList.size();
-		patient_ip = pmModel.getIpQuantity().intValue();
+			result.setIpPieCountData(null);
+		
+			result.setTotalPieCountData(null);
 
-		List<Map<String, Object>> mrList = ipdDao.getMrDataByApplYMNull();
-		int out_count = 0;
-		int in_count = 0;
-		/// 如果病例無申報日
-		if (mrList.size() > 0) {
-			for (Map<String, Object> map : mrList) {
-				/// 先以出院日為主
-				if (map.get("OUT_DATE") != null && map.get("OUT_DATE").toString().contains(endDate)) {
-					out_count++;
-				}
-				if (map.get("OUT_DATE") == null) {
-					/// 再以住院日為主
-					if (map.get("IN_DATE").toString().contains(endDate)) {
-						in_count++;
-					}
-				}
-
-			}
+			result.setOpPieDotData(null);
+	
+			result.setIpPieDotData(null);
+		
+			result.setTotalPieDotData(null);
+			
+			result.setVisitsVarietyPayload(null);
+			
+			result.setResult("error");
+			result.setMessage("查無該期間資料");
+			return result;
 		}
-		/// 最終住院人數
-		int finalPatient_ip = patient_ip + out_count + in_count;
-		finalPatient_ip = patient_ip;
-		/// 取得門急診圓餅圖資料 人
-		List<Map<String, Object>> opPieCountData = opdDao.getOPPieCountData(endDate);
-
-		/// 取得住院圓餅圖資料 人
-		List<Map<String, Object>> ipPieCountData = ipdDao.getIPPieCountData(endDate);
-		List<Map<String, Object>> collectionList = new ArrayList<Map<String, Object>>();
-		List<Map<String, Object>> collectionList2 = new ArrayList<Map<String, Object>>();
-		List<Map<String, Object>> peoplePie = new ArrayList<Map<String, Object>>();
-		Map<String, Object> ojectMap = new HashMap<String, Object>();
-		/// 將門診和急診list加一起
-		collectionList.addAll(opPieCountData);
-		collectionList.addAll(ipPieCountData);
-		collectionList2.addAll(collectionList);
-
-		if (opPieCountData.size() > 0) {
-			/// 將門急診和住院資料+在一起
-			int opPieCountTotal = opdDao.getOPPieCountTotal(endDate);
-			int ipPieCountTotal = ipdDao.getIPPieCountTotal(endDate);
-			for (Map<String, Object> op : opPieCountData) {
-				String opFt = op.get("FUNC_TYPE").toString();
-				String opDC = op.get("DESC_CHI").toString();
-				int opC = Integer.parseInt(op.get("COUNT").toString());
-				for (Map<String, Object> ip : ipPieCountData) {
-					String ipFt = ip.get("FUNC_TYPE").toString();
-					String ipDC = ip.get("DESC_CHI").toString();
-					int ipC = Integer.parseInt(ip.get("COUNT").toString());
-					if (opFt.equals(ipFt)) {
-						ojectMap.put("FUNC_TYPE", ipFt);
-						ojectMap.put("DESC_CHI", ipDC);
-						ojectMap.put("COUNT", String.valueOf(opC + ipC));
-						float fp = Float.valueOf(ojectMap.get("COUNT").toString());
-						String tt = String.valueOf(opPieCountTotal + ipPieCountTotal);
-						float m = (fp / Float.valueOf(tt)) * 100;
-						String str = String.format("%.02f", m);
-						ojectMap.put("PERCENT", str);
-						peoplePie.add(ojectMap);
-						ojectMap = new HashMap<String, Object>();
-					}
-				}
-			}
-			int del = 0;
-			for (Map<String, Object> p : peoplePie) {
-				String pFt = p.get("FUNC_TYPE").toString();
-				for (Map<String, Object> col : collectionList) {
-					String colFt = col.get("FUNC_TYPE").toString();
-					if (colFt.equals(pFt)) {
-						if (del == collectionList2.size()) {
-							collectionList2.remove(del - 1);
-						} else {
-							collectionList2.remove(del);
-						}
-					}
-					del++;
-				}
-				collectionList.clear();
-				collectionList.addAll(collectionList2);
-				del = 0;
-			}
+		
+	}
+	
+	/**
+	 * 核刪資料
+	 * @param year
+	 * @param quarter
+	 * @return
+	 */
+	public List<DeductedPayload> getDeductedNote(String year, String quarter) {
+		Map<String,Object> result = new HashMap<String,Object>();
+		String[] years = StringUtility.splitBySpace(year);
+		String[] quarters = StringUtility.splitBySpace(quarter);
+		Map<String, Object> mapData = findOldestAndNewestYearMonthDay(years, quarters);
+		@SuppressWarnings("unchecked")
+		List<String> minList = (List<String>) mapData.get("min");
+		@SuppressWarnings("unchecked")
+		List<String> maxList = (List<String>) mapData.get("max");
+		DeductedPayload model = new DeductedPayload();
+		List<DeductedPayload> modelList = new ArrayList<DeductedPayload>();
+		for(int i=0; i < minList.size(); i++) {
+			Map<String,Object> data = deductedNoteDao.getAmountDataByDate(minList.get(i), maxList.get(i));
+			List<Map<String,Object>> deductList = deductedNoteDao.getDeductedOrderAmountByDate(minList.get(i),  maxList.get(i));
+			List<Map<String,Object>> rollbackList = deductedNoteDao.getRollbackOrderAmountByDate(minList.get(i),  maxList.get(i));
+			List<Map<String,Object>> disputeList = deductedNoteDao.getDisputeOrderAmountByDate(minList.get(i),  maxList.get(i));
+			calculateDeducted(model, data, 
+					deductList,
+					rollbackList,
+					disputeList,
+					minList.get(i)
+					);
+			modelList.add(model);
+			model =  new DeductedPayload();
 		}
-		/// 將最後結果add倒要顯示集合
-		peoplePie.addAll(collectionList2);
 
-		SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
-		Calendar cal_s = DateTool.chineseYmToCalendar2(endDate);
-		System.out.print(cal_s.getTime());
-		cal_s.add(Calendar.MONTH, -1);
-		cal_s.set(Calendar.DAY_OF_MONTH, 1);
-		System.out.print(cal_s.getTime());
-		String firstDate = format.format(cal_s.getTime());
-
-		Calendar cal_e = DateTool.chineseYmToCalendar2(endDate);
-		cal_e.add(Calendar.MONTH, -1);
-		cal_e.set(Calendar.DAY_OF_MONTH, cal_e.getActualMaximum(Calendar.DAY_OF_MONTH));
-		String lastDate = format.format(cal_e.getTime());
-
-		/// 取得出院圓餅圖資料
-		List<Map<String, Object>> ipPieOutCountData = ipdDao.getIPPieOutCountData(firstDate, lastDate);
-
-		/// 取得門急診圓餅圖資料 點數
-		List<Map<String, Object>> opPieDotData = opdDao.getOPPieDotData(endDate);
-		/// 取得住院圓餅圖資料 點數
-		List<Map<String, Object>> ipPieDotData = ipdDao.getIPPieDotData(endDate);
-		List<Map<String, Object>> dotPie = new ArrayList<Map<String, Object>>();
-		collectionList.clear();
-		collectionList2.clear();
-		collectionList.addAll(opPieDotData);
-		collectionList.addAll(ipPieDotData);
-		collectionList2.addAll(collectionList);
-		if (opPieDotData.size() > 0) {
-			/// 將門急診和住院資料+在一起
-			int opPieDotTotal = opdDao.getOPPieDotTotal(endDate);
-			int ipPieDoTotal = ipdDao.getIPPieDotTotal(endDate);
-			for (Map<String, Object> op : opPieDotData) {
-				String opFt = op.get("FUNC_TYPE").toString();
-				String opDC = op.get("DESC_CHI").toString();
-				int opC = Integer.parseInt(op.get("SUM").toString());
-				for (Map<String, Object> ip : ipPieDotData) {
-					String ipFt = ip.get("FUNC_TYPE").toString();
-					String ipDC = ip.get("DESC_CHI").toString();
-					int ipC = Integer.parseInt(ip.get("SUM").toString());
-					if (opFt.equals(ipFt)) {
-						ojectMap.put("FUNC_TYPE", ipFt);
-						ojectMap.put("DESC_CHI", ipDC);
-						ojectMap.put("SUM", String.valueOf(opC + ipC));
-						float fp = Float.valueOf(ojectMap.get("SUM").toString());
-						String tt = String.valueOf(opPieDotTotal + ipPieDoTotal);
-						float m = (fp / Float.valueOf(tt)) * 100;
-						String str = String.format("%.02f", m);
-						ojectMap.put("PERCENT", str);
-						dotPie.add(ojectMap);
-						ojectMap = new HashMap<String, Object>();
-					}
-				}
-			}
-
-			int del = 0;
-			for (Map<String, Object> p : dotPie) {
-				String pFt = p.get("FUNC_TYPE").toString();
-				for (Map<String, Object> col : collectionList) {
-					String colFt = col.get("FUNC_TYPE").toString();
-					if (colFt.equals(pFt)) {
-						if (del == collectionList2.size()) {
-							collectionList2.remove(del - 1);
-						} else {
-							collectionList2.remove(del);
-						}
-					}
-					del++;
-				}
-				collectionList.clear();
-				collectionList.addAll(collectionList2);
-				del = 0;
-			}
+		
+		result.put("result", "success");
+		result.put("msg", "");
+		result.put("data", modelList);
+		
+		
+		
+		return modelList;
+	}
+	
+	public void calculateDeducted(DeductedPayload model, Map<String,Object> mapData, List<Map<String,Object>> deductList,List<Map<String,Object>> rollbackList,List<Map<String,Object>> disputeList, String minDate) {
+		String month = minDate.substring(5,7);
+		String year = minDate.substring(0,4);
+		String displayName = "";
+		switch(month) {
+		case "01":
+			displayName = year + "/Q1" ;
+			break;
+		case "04":
+			displayName = year + "/Q2" ;
+			break;
+		case "07":
+			displayName = year + "/Q3" ;
+			break;
+		case "10":
+			displayName = year + "/Q4" ;
+			break;
 		}
-		/// 將最後結果add倒要顯示集合
-		dotPie.addAll(collectionList2);
-
-		PointMRPayload result = new PointMRPayload();
-
-		result.setFuncTypes(findAllFuncTypesName(true));
-		/// 取得返回當月資料
-		result.setCurrent(pointMonthlyDao.findByYm(year * 100 + month));
-		/// 返回門急診人數
-		result.setPatient_op_count(patient_op);
-		/// 返回住院人數
-		result.setPatient_ip_count(finalPatient_ip);
-		/// 返回門急診/住院人數
-		result.setPatient_total_count(patient_op + finalPatient_ip);
-		/// 返回門急診人數圓餅
-		Collections.sort(opPieCountData, mapComparator);
-		result.setOpPieCountData(opPieCountData);
-		/// 返回出院人數圓餅
-		Collections.sort(ipPieOutCountData, mapComparator);
-		result.setIpPieOutCountData(ipPieOutCountData);
-		/// 返回住院人數圓餅
-		Collections.sort(ipPieCountData, mapComparator);
-		result.setIpPieCountData(ipPieCountData);
-		/// 返回 門急診＋住院人數園餅
-		Collections.sort(peoplePie, mapComparator);
-		result.setTotalPieCountData(peoplePie);
-		/// 返回門急診點數圓餅
-		Collections.sort(opPieDotData, mapComparator);
-		result.setOpPieDotData(opPieDotData);
-		/// 返回住院點數圓餅
-		Collections.sort(ipPieDotData, mapComparator);
-		result.setIpPieDotData(ipPieDotData);
-		/// 返回 門急診＋住院點數園餅
-		Collections.sort(dotPie, mapComparator);
-		result.setTotalPieDotData(dotPie);
-		/// 返回趨勢圖資料
-		VisitsVarietyPayload res = new VisitsVarietyPayload();
-		result.setVisitsVarietyPayload(getVistAndPointWeekly(res, String.valueOf(year), monthStr));
-
-		return result;
+		model.setDisplayName(displayName);
+		model.setNoprojectAmountAll(Long.valueOf(mapData.get("NOPROJCET_AMOUNT_OP").toString()) + Long.valueOf(mapData.get("NOPROJCET_AMOUNT_IP").toString()));
+		model.setProjectAmountAll(Long.valueOf(mapData.get("PROJCET_AMOUNT_OP").toString()) + Long.valueOf(mapData.get("PROJCET_AMOUNT_IP").toString()));
+		model.setMedAmountAll((Long.valueOf(mapData.get("MED_AMOUNT_OP").toString()) + Long.valueOf(mapData.get("MED_AMOUNT_IP").toString())));
+		model.setNoprojectQuantityAll((Long.valueOf(mapData.get("NOPROJCET_QUANTITY_OP").toString()) + Long.valueOf(mapData.get("NOPROJCET_QUANTITY_IP").toString())));
+		model.setProjectQuantityAll((Long.valueOf(mapData.get("PROJCET_QUANTITY_OP").toString()) + Long.valueOf(mapData.get("PROJCET_QUANTITY_IP").toString())));
+		model.setMedQuantityAll((Long.valueOf(mapData.get("MED_QUANTITY_OP").toString()) + Long.valueOf(mapData.get("MED_QUANTITY_IP").toString())));
+		
+		model.setNoprojectAmountOp(Long.valueOf(mapData.get("NOPROJCET_AMOUNT_OP").toString()));
+		model.setProjectAmountOp(Long.valueOf(mapData.get("PROJCET_AMOUNT_OP").toString()));
+		model.setMedAmountOp(Long.valueOf(mapData.get("MED_AMOUNT_OP").toString()));
+		model.setNoprojectQuantityOp(Long.valueOf(mapData.get("NOPROJCET_QUANTITY_OP").toString()));
+		model.setProjectQuantityOp(Long.valueOf(mapData.get("PROJCET_QUANTITY_OP").toString()));
+		model.setMedQuantityOp(Long.valueOf(mapData.get("MED_QUANTITY_OP").toString()));
+		
+		model.setNoprojectAmountIp(Long.valueOf(mapData.get("NOPROJCET_AMOUNT_IP").toString()));
+		model.setProjectAmountIp(Long.valueOf(mapData.get("PROJCET_AMOUNT_IP").toString()));
+		model.setMedAmountIp(Long.valueOf(mapData.get("MED_AMOUNT_IP").toString()));
+		model.setNoprojectQuantityIp(Long.valueOf(mapData.get("NOPROJCET_QUANTITY_IP").toString()));
+		model.setProjectQuantityIp(Long.valueOf(mapData.get("PROJCET_QUANTITY_IP").toString()));
+		model.setMedQuantityIp(Long.valueOf(mapData.get("MED_QUANTITY_IP").toString()));
+		
+		model.setQuatity(Long.valueOf(mapData.get("QUANTITY").toString()));
+		model.setExtractCase(Long.valueOf(mapData.get("EXTRACTCASE").toString()));
+		
+		Map<String,Object> map = new HashMap<String,Object>();
+		List<Map<String,Object>> mapList = new ArrayList<Map<String,Object>>();
+		if(deductList.size() > 0) {
+			for(Map<String,Object> m : deductList) {
+				map.put("dataFormat", m.get("DATA_FORMAT").toString());
+				map.put("name", m.get("NAME").toString());
+				map.put("amount", Long.valueOf(m.get("AMOUNT").toString()));
+				map.put("reason", m.get("REASON").toString());
+				mapList.add(map);
+				map = new HashMap<String,Object>();
+			}
+			model.setDeductedList(mapList);
+		}
+		if(rollbackList.size() > 0) {
+			mapList = new ArrayList<Map<String,Object>>();
+			map = new HashMap<String,Object>();
+			for(Map<String,Object> m : rollbackList) {
+				map.put("dataFormat", m.get("DATA_FORMAT").toString());
+				map.put("name", m.get("NAME").toString());
+				map.put("amount", Long.valueOf(m.get("AMOUNT") == null ? "0" : m.get("AMOUNT").toString()));
+				map.put("afrQuantity", Long.valueOf(m.get("AFR_QUANTITY") == null ? "0" : m.get("AFR_QUANTITY").toString()));
+				map.put("afrAmount", Long.valueOf(m.get("AFR_AMOUNT") == null ? "0" : m.get("AFR_AMOUNT").toString()));
+				map.put("afrPayQuantity", Long.valueOf(m.get("AFR_PAY_QUANTITY") == null ? "0" : m.get("AFR_PAY_QUANTITY").toString()));
+				map.put("afrPayAmount", Long.valueOf(m.get("AFR_PAY_AMOUNT") == null ? "0" : m.get("AFR_PAY_AMOUNT").toString()));
+				mapList.add(map);
+				map = new HashMap<String,Object>();
+			}
+			model.setRollbackList(mapList);
+		}
+		if(disputeList.size() > 0) {
+			mapList = new ArrayList<Map<String,Object>>();
+			map = new HashMap<String,Object>();
+			for(Map<String,Object> m : disputeList) {
+				map.put("dataFormat", m.get("DATA_FORMAT").toString());
+				map.put("name", m.get("NAME").toString());
+				map.put("disputeQuantity", Long.valueOf(m.get("DISPUTE_QUANTITY") == null ? "0" : m.get("DISPUTE_QUANTITY").toString()));
+				map.put("disputeAmount", Long.valueOf(m.get("DISPUTE_AMOUNT") == null ? "0" : m.get("DISPUTE_AMOUNT").toString()));
+				map.put("disputePayQuantity", Long.valueOf(m.get("DISPUTE_PAY_QUANTITY") == null ? "0" : m.get("DISPUTE_PAY_QUANTITY").toString()));
+				map.put("disputePayAmount", Long.valueOf(m.get("DISPUTE_PAY_AMOUNT") == null ? "0" : m.get("DISPUTE_PAY_AMOUNT").toString()));
+				map.put("disputeNoPayCode",  m.get("DISPUTE_NO_PAY_CODE").toString());
+				mapList.add(map);
+				map = new HashMap<String,Object>();
+			}
+			model.setDisputeList(mapList);
+		}
+		
+		
 	}
 	
 	public Comparator<Map<String, Object>> mapComparator = new Comparator<Map<String, Object>>() {
