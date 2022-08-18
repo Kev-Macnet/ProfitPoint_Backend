@@ -150,6 +150,9 @@ public class PlanConditionControll {
             int status = planConditionService.deletePlanCondition(id);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
+            
+            httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{id}));
+            
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }

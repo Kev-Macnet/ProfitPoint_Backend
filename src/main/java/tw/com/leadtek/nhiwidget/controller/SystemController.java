@@ -239,6 +239,9 @@ public class SystemController extends BaseController {
       return returnAPIResult("DRG id:" + id + "不存在");
     }
     drgCalService.deleteDrgCode(drg);
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{Long.parseLong(id)}));
+    
     return returnAPIResult(null);
   }
 
@@ -330,6 +333,9 @@ public class SystemController extends BaseController {
       return returnAPIResult("ATC code " + code + "不存在");
     }
     systemService.deleteATC(atc);
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new String[]{code}));
+    
     return returnAPIResult(null);
   }
 
@@ -479,6 +485,9 @@ public class SystemController extends BaseController {
       return returnAPIResult("代碼品項 id:" + id + "不存在");
     }
     systemService.deletePayCode(oldPayCode);
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{pc.getId()}));
+    
     return returnAPIResult(null);
   }
 
@@ -604,6 +613,9 @@ public class SystemController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id不正確");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(systemService.deleteDeducted(idL));
   }
   
@@ -716,6 +728,9 @@ public class SystemController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id不正確");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(systemService.deleteIcd10(idL));
   }
   

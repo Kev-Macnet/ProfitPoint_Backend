@@ -326,7 +326,7 @@ public class LogDataDao extends BaseSqlDao{
 	  }
   }
   
-  public int addMedicalRecordNotifyed(String inhClinicId, String userId) {
+  public int addMedicalRecordNotifyed(Long inhClinicId, Long userId) {
 	  String sql;
 	  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(INH_CLINIC_ID, USER_ID)\r\n" + "Values (%d, %d)";
 	  sql = String.format(sql, inhClinicId, userId);

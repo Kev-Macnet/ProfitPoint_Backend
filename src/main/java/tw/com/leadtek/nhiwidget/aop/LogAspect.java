@@ -73,7 +73,7 @@ public class LogAspect {
 		UserDetailsImpl loginUser = takeLoginUserInfo();
 		
 		if(HttpStatus.OK.equals(((ResponseEntity<BaseResponse>)result).getStatusCode())) {
-			
+			//OK
 			if(logTypes.contains(LogType.FORGOT_PASSWORD)) {
 				
 				Long userId = (Long)request.getAttribute(LogType.FORGOT_PASSWORD.name()+"_ID");
@@ -81,23 +81,27 @@ public class LogAspect {
 				logDataService.createLogForgotPassword(userId);
 				
 			}
-			
+			//NOT OK
 			if(logTypes.contains(LogType.MEDICAL_RECORD_STATUS_CHANGE)) {
 				
 				Long inhClinicId = (Long)request.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID");
 				Long userId      = (Long)request.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID");
 				int status       = (Integer)request.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS");
 				
-				if(Arrays.asList(new int[]{-1, -2, 2, 3}).contains(status)) {
-
-					logDataService.createLogMedicalRecordStatus(inhClinicId , userId, status);
+				if(null != inhClinicId) {
+					
+					if(Arrays.asList(new int[]{-1, -2, 2, 3}).contains(status)) {
+						
+						logDataService.createLogMedicalRecordStatus(inhClinicId , userId, status);
+					}
+					
 				}
 			}
 			
 			if(logTypes.contains(LogType.MEDICAL_RECORD_NOTIFYED)) {
 				
-				List<String> inhClinicIds = (List<String>)request.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS");
-				List<String> doctorIds    = (List<String>)request.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS");
+				List<Long> inhClinicIds = (List<Long>)request.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS");
+				List<Long> doctorIds    = (List<Long>)request.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS");
 				
 				inhClinicIds.stream().forEach(inhClinicId -> {
 					
@@ -136,7 +140,7 @@ public class LogAspect {
 
 				pks.stream().forEach(pk ->{
 					
-					logDataService.createLogAction(userId, CRUD.U.name(), functionName, String.valueOf(pks));
+					logDataService.createLogAction(userId, CRUD.U.name(), functionName, String.valueOf(pk));
 				});
 				
 			}

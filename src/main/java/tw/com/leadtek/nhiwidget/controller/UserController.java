@@ -122,6 +122,9 @@ public class UserController extends BaseController {
     logger.info("/user/{id}: delete:" + id);
     String deleteId = HtmlUtils.htmlEscape(id, "UTF-8");
     try {
+      
+      httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new String[]{id}));
+      
       return returnAPIResult(userService.deleteUser(Long.parseLong(deleteId)));
     } catch (NumberFormatException e) {
       return returnAPIResult("id 有誤");
@@ -353,6 +356,9 @@ public class UserController extends BaseController {
       @ApiParam(name = "id", value = "部門id", example = "1") @PathVariable String id) {
     String deleteId = HtmlUtils.htmlEscape(id, "UTF-8");
     try {
+    	
+      httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new String[]{id}));
+    	
       return returnAPIResult(userService.deleteDepartment(Long.parseLong(deleteId)));
     } catch (NumberFormatException e) {
       return returnAPIResult("id 有誤");

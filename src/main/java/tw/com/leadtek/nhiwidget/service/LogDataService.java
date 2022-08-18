@@ -762,7 +762,7 @@ public class LogDataService {
 	  return logDataDao.addMedicalRecordStatus(inhClinicId, userId, status);
   }
   
-  public int createLogMedicalRecordNotifyed(String inhClinicId, String userId) {
+  public int createLogMedicalRecordNotifyed(Long inhClinicId, Long userId) {
 	  
 	  return logDataDao.addMedicalRecordNotifyed(inhClinicId, userId);
   }

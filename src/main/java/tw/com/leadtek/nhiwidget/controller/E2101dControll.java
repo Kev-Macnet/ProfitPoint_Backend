@@ -181,6 +181,9 @@ public class E2101dControll {
             retMap.put("status", status);
             if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "刪除失敗!");
             }
@@ -303,6 +306,9 @@ public class E2101dControll {
             retMap.put("status", status);
             if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "刪除失敗!");
             }
@@ -426,6 +432,9 @@ public class E2101dControll {
             retMap.put("status", status);
             if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "刪除失敗!");
             }
@@ -549,6 +558,9 @@ public class E2101dControll {
             retMap.put("status", status);
             if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "刪除失敗!");
             }
@@ -672,6 +684,9 @@ public class E2101dControll {
             retMap.put("status", status);
             if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "刪除失敗!");
             }
@@ -795,6 +810,9 @@ public class E2101dControll {
             retMap.put("status", status);
             if (status>0) {
                 retMap.put("message", "刪除成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "刪除失敗!");
             }

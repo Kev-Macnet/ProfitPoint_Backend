@@ -166,6 +166,8 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id格式有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{idL}));
 
     return returnAPIResult(parameterService.deleteAssignedPoints(idL));
   }
@@ -371,6 +373,9 @@ public class ParameterController extends BaseController {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new String[]{id}));
+    
     return returnAPIResult(parameterService.deleteParameterValue(id));
   }
 
@@ -633,6 +638,9 @@ public class ParameterController extends BaseController {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new String[]{id}));
+    
     return returnAPIResult(parameterService.deleteCodeThreshold(id));
   }
 
@@ -779,6 +787,9 @@ public class ParameterController extends BaseController {
     if (id == null || id.length() == 0) {
       return returnAPIResult("id未帶入");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new String[]{id}));
+    
     return returnAPIResult(parameterService.deleteCodeThreshold(id));
   }
 
@@ -973,6 +984,9 @@ public class ParameterController extends BaseController {
     }
 
     try {
+    	
+      httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new String[]{id}));
+    	
       return returnAPIResult(parameterService.deleteCodeConflict(Long.parseLong(id)));
     } catch (NumberFormatException e) {
       return returnAPIResult("id 值有誤");
