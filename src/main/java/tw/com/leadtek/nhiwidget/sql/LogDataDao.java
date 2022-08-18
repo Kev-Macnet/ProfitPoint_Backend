@@ -15,7 +15,7 @@ import tw.com.leadtek.tools.Utility;
 
 
 @Repository
-public class LogDataDao {
+public class LogDataDao extends BaseSqlDao{
 
   private Logger logger = LogManager.getLogger();
 
@@ -301,18 +301,56 @@ public class LogDataDao {
    */
 
   public int addForgotPassword(Long userId) {
-	    String sql;
-	    sql = "Insert into \r\n" + "LOG_FORGOT_PASSWORD(USER_ID)\r\n" + "Values ('%d')";
-	    sql = String.format(sql, userId);
-	    try {
-	      int ret = jdbcTemplate.update(sql);
-	      return ret;
-	    } catch (DataAccessException ex) {
-	    	ex.printStackTrace();
-	      return 0;
-	    }
+	  String sql;
+	  sql = "Insert into \r\n" + "LOG_FORGOT_PASSWORD(USER_ID)\r\n" + "Values (%d)";
+	  sql = String.format(sql, userId);
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
 	  }
-
+  }
+  
+  public int addMedicalRecordStatus(Long inhClinicId, Long userId, Integer status) {
+	  String sql;
+	  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, STATUS)\r\n" + "Values (%d, %d, %s)";
+	  sql = String.format(sql, inhClinicId, userId, status);
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+  }
+  
+  public int addMedicalRecordNotifyed(String inhClinicId, String userId) {
+	  String sql;
+	  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(INH_CLINIC_ID, USER_ID)\r\n" + "Values (%d, %d)";
+	  sql = String.format(sql, inhClinicId, userId);
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+  }
+  
+  public int addLogAction(Long userId, String crud, String functionName, String pk) {
+	  String sql;
+	  sql = "Insert into \r\n" + "LOG_ACTION(USER_ID, CRUD, FUNCTION_NAME, PK)\r\n" + "Values (%d, '%s', '%s', '%s')";
+	  sql = String.format(sql, userId, noInjection(crud), noInjection(functionName),noInjection(pk));
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+	}
   
   /**
    * 取得IP_D 的申報點數、不申報點數及部份負擔點數，修正MR table 的 T_DOT 欄位值

@@ -4,13 +4,7 @@ public enum LogType {
 	
 	FORGOT_PASSWORD("申請密碼清單"),
 
-	MEDICAL_RECORD_STATUS_$2("疑問標示案件數"),
-	
-	MEDICAL_RECORD_STATUS_$1("評估不調整案件數"),
-	
-	MEDICAL_RECORD_STATUS_2("優化完成案件數"),
-	
-	MEDICAL_RECORD_STATUS_3("比對警示待確認案件數"),
+	MEDICAL_RECORD_STATUS_CHANGE("-1:疑問標示案件數, -2:比對警示待確認案件數, 2:優化完成案件數, 3:評估不調整案件數"),
 	
 	MEDICAL_RECORD_NOTIFYED("被通知次數記錄"),
 	

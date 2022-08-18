@@ -3,6 +3,7 @@ package tw.com.leadtek.nhiwidget.controller;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,6 +57,9 @@ public class E2101bControll {
     @Autowired
     private PtMedicineFeeService ptMedicineFeeService;
 
+    @Autowired
+    private HttpServletRequest httpServletReq;
+    
     //==== 治療處置費設定 Treatment Fee
     @ApiOperation(value="10-2.01 治療處置費設定(get)", notes="")
     @ApiResponses({
@@ -105,6 +109,9 @@ public class E2101bControll {
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 paymentTermsService.updateActiveByThread(ptId, PtTreatmentFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -138,6 +145,9 @@ public class E2101bControll {
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 paymentTermsService.updateActiveByThread(pt_id, PtTreatmentFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -218,6 +228,9 @@ public class E2101bControll {
             retMap.put("status", status);
             if (status==0) {
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -249,6 +262,9 @@ public class E2101bControll {
             retMap.put("status", status);
             if (status>0) {
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -331,6 +347,9 @@ public class E2101bControll {
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 paymentTermsService.updateActiveByThread(ptId, PtNutritionalFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -364,6 +383,9 @@ public class E2101bControll {
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 paymentTermsService.updateActiveByThread(pt_id, PtNutritionalFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -447,6 +469,9 @@ public class E2101bControll {
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 paymentTermsService.updateActiveByThread(ptId, PtAdjustmentFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -480,6 +505,9 @@ public class E2101bControll {
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 paymentTermsService.updateActiveByThread(pt_id, PtAdjustmentFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }
@@ -563,6 +591,9 @@ public class E2101bControll {
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 paymentTermsService.updateActiveByThread(ptId, PtMedicineFeeService.Category, params.getActive(), true);
                 retMap.put("message", "新增成功。/id="+ptId);
+                
+                httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ptId}));
+                
             } else {
                 retMap.put("message", "新增失敗!");
             }
@@ -596,6 +627,9 @@ public class E2101bControll {
                 paymentTermsService.correctEndDateByNhiNo(params.getNhi_no(), "");
                 paymentTermsService.updateActiveByThread(pt_id, PtMedicineFeeService.Category, params.getActive(), true);
                 retMap.put("message", "修改成功。/id="+pt_id);
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pt_id}));
+                
             } else {
                 retMap.put("message", "修改失敗!");
             }

@@ -12,12 +12,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -620,6 +622,9 @@ public class NHIWidgetXMLController extends BaseController {
     String token = jwt.split(" ")[1];
     MRDetail result = xmlService.updateMRDetail(mrDetail, token, actionId);
     if (result.getError() == null) {
+    	
+    	httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{Long.parseLong(id)}));
+    	
       return ResponseEntity.ok(result);
     } else {
       return ResponseEntity.badRequest().body(result);
@@ -628,7 +633,7 @@ public class NHIWidgetXMLController extends BaseController {
 
   @ApiOperation(value = "更改指定病歷狀態", notes = "更改指定病歷狀態，參數 status 或 statusCode 二擇一帶入")
   @PutMapping("/nhixml/mr/status/{id}")
-  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更改指定病歷狀態")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U, LogType.MEDICAL_RECORD_STATUS_CHANGE}, name = "更改指定病歷狀態")
   public ResponseEntity<BaseResponse> editMRStatus(
       @ApiParam(name = "id", value = "病歷id", example = "146020") @PathVariable String id,
       @ApiParam(name = "status", value = "病歷狀態, 有：疾病分類完成、待確認、疑問標示、待處理、無需變更、優化完成、評估不調整",
@@ -659,6 +664,9 @@ public class NHIWidgetXMLController extends BaseController {
     if (statusInt == MR_STATUS.STATUS_ERROR) {
       return returnAPIResult("病歷狀態有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(xmlService.updateMRStatus(idL, user, statusInt));
   }
 
@@ -744,6 +752,9 @@ public class NHIWidgetXMLController extends BaseController {
     request.setNote(note);
     request.setEditor(user.getUsername());
     request.setActionType("修改");
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{Long.parseLong(id)}));
+    
     return returnAPIResult(xmlService.newMrNote(request, id, false));
   }
 
@@ -963,6 +974,9 @@ public class NHIWidgetXMLController extends BaseController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(br);
     }
     note.setEditor(user.getUsername());
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{note.getId()}));
+    
     return returnAPIResult(xmlService.updateDeductedNote(note, user.getDisplayName()));
   }
   
@@ -983,6 +997,11 @@ public class NHIWidgetXMLController extends BaseController {
       note.setEditor(user.getDisplayName());
       response = xmlService.updateDeductedNote(note, user.getDisplayName());
     }
+    
+    List<Long> noteIds = notes.stream().map(m -> m.getId()).collect(Collectors.toList());
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", noteIds);
+    
     return returnAPIResult(response);
   }
   
@@ -1063,6 +1082,9 @@ public class NHIWidgetXMLController extends BaseController {
     if (user == null) {
       return returnAPIResult("無法取得登入狀態");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(xmlService.updateDrgList(idL, icd));
   }
   

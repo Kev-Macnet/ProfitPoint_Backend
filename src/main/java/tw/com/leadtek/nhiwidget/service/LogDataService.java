@@ -757,6 +757,21 @@ public class LogDataService {
 	  return logDataDao.addForgotPassword(userId);
   }
   
+  public int createLogMedicalRecordStatus(Long inhClinicId, Long userId, Integer status) {
+	  
+	  return logDataDao.addMedicalRecordStatus(inhClinicId, userId, status);
+  }
+  
+  public int createLogMedicalRecordNotifyed(String inhClinicId, String userId) {
+	  
+	  return logDataDao.addMedicalRecordNotifyed(inhClinicId, userId);
+  }
+  
+  public int createLogAction(Long userId, String crud, String functionName, String pk) {
+
+	  return logDataDao.addLogAction(userId, crud, functionName, pk);
+	}
+  
   // http://127.0.0.1:8081/nhixml/mr?allMatch=Y&sdate=2021%2F07%2F23&edate=2021%2F07%2F23&minPoints=68&maxPoints=90&dataFormat=10,20&funcType=AC&prsnName=&drg=&drgSection=B1&icdAll=&status=3&page=0&perPage=20
   public long updateLogSearch(String user, String allMatch, String startDate, String endDate,
       Integer minPoints, Integer maxPoints, String dataFormat, String funcType, String prsnId,
@@ -816,4 +831,5 @@ public class LogDataService {
     }
     return false;
   }
+
 }

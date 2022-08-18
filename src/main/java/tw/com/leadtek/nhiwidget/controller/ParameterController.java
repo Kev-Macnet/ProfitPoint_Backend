@@ -6,6 +6,8 @@ package tw.com.leadtek.nhiwidget.controller;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -145,6 +147,9 @@ public class ParameterController extends BaseController {
   @PutMapping("/assignedPoints")
   @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改分配總點數設定")
   public ResponseEntity<BaseResponse> updateAssignedPoints(@RequestBody AssignedPoints ap) {
+	  
+	httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{ap.getId()}));
+	  
     return returnAPIResult(parameterService.updateAssignedPoints(ap));
   }
 
@@ -207,6 +212,9 @@ public class ParameterController extends BaseController {
   @PutMapping("/pointsValue")
   @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改支配總點數")
   public ResponseEntity<BaseResponse> updatePointsValue(@RequestBody PointsValue pv) {
+	  
+	  httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pv.getId()}));
+	  
     return returnAPIResult(parameterService.updatePointsValue(pv));
   }
 
@@ -350,6 +358,9 @@ public class ParameterController extends BaseController {
         || "null".equals(pv.getValue())) {
       return returnAPIResult("value值不可為空");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{pv.getId()}));
+    
     return returnAPIResult(parameterService.updateValue(pv));
   }
 
@@ -433,6 +444,9 @@ public class ParameterController extends BaseController {
   @PutMapping("/drg")
   @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改DRG參數值")
   public ResponseEntity<BaseResponse> updateDRGValue(@RequestBody DRGRelatedValues request) {
+	  
+	  httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+	  
     return returnAPIResult(parameterService.updateDRGValue(request));
   }
 
@@ -487,6 +501,7 @@ public class ParameterController extends BaseController {
           example = "J10.01") @RequestParam(required = true) String icd,
       @ApiParam(name = "enable", value = "是否啟用，true/false",
           example = "true") @RequestParam(required = true) Boolean enable) {
+	  
     return returnAPIResult(parameterService.updateInfectiousStatus(icd, enable.booleanValue()));
   }
 
@@ -590,6 +605,9 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id值有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(parameterService.updateRareICDStatus(idL, enable.booleanValue()));
   }
 
@@ -602,6 +620,9 @@ public class ParameterController extends BaseController {
     if (request == null || request.getId() == null) {
       return returnAPIResult("id未帶入");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+
     return returnAPIResult(parameterService.updateRareICD(request));
   }
 
@@ -719,6 +740,9 @@ public class ParameterController extends BaseController {
       return returnAPIResult("id未帶入");
     }
     boolean isOrder = (request.getCodeType() == null) ? true : (request.getCodeType().intValue() == RareICDPayload.CODE_TYPE_ORDER);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(parameterService.updateHighRatioOrder(request, isOrder));
   }
   
@@ -736,6 +760,9 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(parameterService.updateHighRatioOrder(idL, enable.booleanValue()));
   }
 
@@ -810,6 +837,9 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(parameterService.updateSameATC(idL, enable.booleanValue()));
   }
 
@@ -905,7 +935,7 @@ public class ParameterController extends BaseController {
   @ApiResponses({@ApiResponse(responseCode = "200", description = "更新成功"),
       @ApiResponse(responseCode = "400", description = "資料不存在")})
   @PutMapping("/codeConflict")
-  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_D}, name = "修改健保項目對應自費項目並存資料")
+  @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "修改健保項目對應自費項目並存資料")
   public ResponseEntity<BaseResponse> updateCodeConflict(@RequestBody CodeConflictPayload request) {
     if (request.getId() == null || request.getId().longValue() == 0) {
       return returnAPIResult("id有誤");
@@ -927,6 +957,9 @@ public class ParameterController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("id有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{idL}));
+    
     return returnAPIResult(parameterService.updateCodeConflict(idL, enable.booleanValue()));
   }
 

@@ -22,6 +22,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -97,11 +98,11 @@ public class UserService {
   @Value("${project.jwt.afk}")
   private long afkTime;
   
-  @Autowired
-  private HttpServletRequest request;
-  
   private HashMap<Long, DEPARTMENT> departmentHash;
 
+  @Autowired
+  private HttpServletRequest httpServletReq;
+  
   public void retrieveData() {
     HashMap<Long, DEPARTMENT> newDepartments = new HashMap<Long, DEPARTMENT>();
     List<DEPARTMENT> departmentList = departmentDao.findAll();
@@ -325,6 +326,9 @@ public class UserService {
     existUser.setPassword(encoder.encode(password));
     existUser.setStatus(USER.STATUS_ACTIVE);
     userDao.save(existUser);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{existUser.getId()}));
+    
     return true;
   }
 
@@ -623,7 +627,7 @@ public class UserService {
     existUser.setStatus(1);
     userDao.save(existUser);
     
-    request.setAttribute(LogType.FORGOT_PASSWORD.name(), existUser.getId());
+    httpServletReq.setAttribute(LogType.FORGOT_PASSWORD.name()+"_ID", existUser.getId());
     
     return null;
   }

@@ -22,16 +22,21 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -48,6 +53,7 @@ import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.io.Files;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.controller.BaseController;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
@@ -225,6 +231,9 @@ public class SystemService {
   @Autowired
   private InitialDataService initial;
 
+  @Autowired
+  private HttpServletRequest httpServletReq;
+  
   public ATCListResponse getATC(String code, String note, String orderBy, Boolean asc, int perPage,
       int page) {
     List<ATC> codes = new ArrayList<ATC>();
@@ -841,6 +850,9 @@ public class SystemService {
     if ("0".equals(parametersService.getParameter(MENU_FILE_MANAGEMENT))) {
       return null;
     }
+    
+    List<Long> pks = new ArrayList<>();
+    
     List<PARAMETERS> list = parametersDao.findByCatOrderByName("FILE_MANAGEMENT");
     for (PARAMETERS p : list) {
       if (p.getName().equals("IS_DAILY_INPUT")) {
@@ -878,7 +890,12 @@ public class SystemService {
       }
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 
@@ -887,7 +904,10 @@ public class SystemService {
   }
 
   public String updateCompareWarningPayload(CompareWarningPayload payload) {
-    List<PARAMETERS> list = parametersDao.findByCatOrderByName("COMPARE_WARNING");
+   
+	List<Long> pks = new ArrayList<>();
+	  
+	List<PARAMETERS> list = parametersDao.findByCatOrderByName("COMPARE_WARNING");
     for (PARAMETERS p : list) {
       if (p.getName().equals("COMPARE_BY")) {
         if (payload.getCompareBy() != null) {
@@ -908,7 +928,12 @@ public class SystemService {
       }
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 
@@ -917,7 +942,10 @@ public class SystemService {
   }
 
   public String updateQuestionMarkPayload(QuestionMarkPayload payload) {
-    List<PARAMETERS> list = parametersDao.findByCatOrderByName("QUESTION_MARK");
+    
+	List<Long> pks = new ArrayList<>();
+	
+	List<PARAMETERS> list = parametersDao.findByCatOrderByName("QUESTION_MARK");
     for (PARAMETERS p : list) {
       if (p.getName().equals("MARK_BY")) {
         if (payload.getMarkBy() != null) {
@@ -934,7 +962,12 @@ public class SystemService {
       }
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 
@@ -960,7 +993,10 @@ public class SystemService {
   }
 
   public String updateIntelligentConfig(IntelligentConfig payload) {
-    List<PARAMETERS> list = parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG");
+    
+	List<Long> pks = new ArrayList<>();
+	
+	List<PARAMETERS> list = parametersDao.findByCatOrderByName("INTELLIGENT_CONFIG");
     HashMap<Integer, Boolean> needProcess = new HashMap<Integer, Boolean>();
     for (PARAMETERS p : list) {
       if (p.getName().equals("VIOLATE")) {
@@ -1142,8 +1178,13 @@ public class SystemService {
 
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
     recalculateAll(needProcess);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 
@@ -1152,6 +1193,9 @@ public class SystemService {
   }
 
   public String updateDbManagement(DbManagement payload) {
+	  
+	List<Long> pks = new ArrayList<>();
+	
     if ("0".equals(parametersService.getParameter(MENU_DB_MANAGEMENT))) {
       return null;
     }
@@ -1172,7 +1216,12 @@ public class SystemService {
       }
       p.setUpdateAt(new Date());
       parametersDao.save(p);
+      
+      pks.add(p.getId());
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", pks);
+    
     return null;
   }
 

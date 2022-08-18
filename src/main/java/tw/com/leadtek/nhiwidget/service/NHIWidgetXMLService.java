@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.persistence.EntityManager;
@@ -35,6 +36,7 @@ import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,6 +48,7 @@ import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -63,9 +66,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.mchange.v1.util.CollectionUtils;
+
 import io.jsonwebtoken.Claims;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.constant.ORDER_TYPE;
 import tw.com.leadtek.nhiwidget.constant.ROLE_TYPE;
@@ -288,6 +294,9 @@ public class NHIWidgetXMLService {
   @Autowired
   private MR_SODao mrSoDao;
   
+  @Autowired
+  protected HttpServletRequest request;
+  
   @Value("${project.serverUrl}")
   private String serverUrl;
 
@@ -296,6 +305,9 @@ public class NHIWidgetXMLService {
   
   public final static String FILE_PATH = "download";
 
+  @Autowired
+  private HttpServletRequest httpServletReq;
+  
   public void saveOPBatch(OP op) {
     OP_T opt = saveOPT(op.getTdata());
     // 避免重複insert
@@ -2814,6 +2826,11 @@ public class NHIWidgetXMLService {
     mr.setApplName(user.getDisplayName());
     mr.setApplId(userService.findUserById(user.getId()).getInhId());
     mrDao.save(mr);
+    
+    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID", mr.getInhClinicId());
+    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID"      , userService.getUserIdByName(mr.getPrsnName()));
+    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS"       , status);
+    
     return null;
   }
 
@@ -4100,6 +4117,9 @@ public class NHIWidgetXMLService {
       mn.setStatus(0);
     }
     mrNoteDao.save(mn);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{mn.getId()}));
+    
     return null;
   }
 
@@ -4554,6 +4574,7 @@ public class NHIWidgetXMLService {
     if (ids == null || ids.length == 0) {
       return "接收人員id有誤";
     }
+    
     List<MR> mrList = new ArrayList<MR>();
     // <MR_ID, noticeTime>
     HashMap<Long, Integer> noticeTimes = new HashMap<Long, Integer>();
@@ -4604,6 +4625,12 @@ public class NHIWidgetXMLService {
       sendNotic("病歷狀態確認通知", receiverList.get(i),
           generateNoticeEmailContent(mrList, receiverName[i + 1], sender, noticeTimes));
     }
+    
+    List<String> inhClinicIds = mrList.stream().map(m-> m.getInhClinicId()).collect(Collectors.toList());
+    
+    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS", inhClinicIds          );
+    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS"    , Arrays.asList(doctorId));
+    
     return null;
   }
 
@@ -5460,6 +5487,21 @@ public class NHIWidgetXMLService {
     deductedNoteDao.save(note);
     parameters.upsertCodeConflictForHighRisk(mr.getIcdcm1(), note.getDeductedOrder(),
         mr.getDataFormat());
+    
+    final String requestKey = LogType.ACTION_C.name()+"_PKS";
+    
+    List<Object> requestPKs = (List<Object>) httpServletReq.getAttribute(requestKey);
+    
+    if( null == requestPKs) {
+    	
+    	httpServletReq.setAttribute(requestKey, Arrays.asList(new Long[]{note.getId()}));
+    	
+    }else {
+    	
+    	requestPKs.add(note.getId());
+    }
+    
+    
     return null;
   }
 

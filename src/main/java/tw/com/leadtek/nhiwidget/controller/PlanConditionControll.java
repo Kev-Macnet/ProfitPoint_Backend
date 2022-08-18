@@ -3,8 +3,10 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +45,9 @@ public class PlanConditionControll {
     private PaymentTermsService paymentTermsService;
     @Autowired
     private PlanConditionService planConditionService;
+    
+    @Autowired
+    private HttpServletRequest httpServletReq;
     
     //==== 
     @ApiOperation(value="13.01 計畫可收案病例條件清單", notes="", position=1)
@@ -98,6 +103,9 @@ public class PlanConditionControll {
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", 0);
             retMap.put("new_id", planId);
+            
+            httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{planId}));
+            
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
@@ -119,6 +127,9 @@ public class PlanConditionControll {
             int status = planConditionService.updatePlanCondition(id, params);
             java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
             retMap.put("status", status);
+            
+            httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{id}));
+            
             return new ResponseEntity<>(retMap, HttpStatus.OK);
         }
     }
@@ -184,6 +195,9 @@ public class PlanConditionControll {
             retMap.put("status", status);
             if (status>=1) {
                 retMap.put("message", "設定完成。");
+                
+                httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{id}));
+                
             } else {
                 retMap.put("message", "單號不存在。");
             }

@@ -12,6 +12,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -191,6 +193,9 @@ public class SystemController extends BaseController {
     }
 
     drgCalService.saveDrgCode(drgCode);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{drgCode.getId()}));
+    
     return returnAPIResult(null);
   }
 
@@ -214,6 +219,9 @@ public class SystemController extends BaseController {
       return returnAPIResult("DRG code " + request.getCode() + ",id:" + request.getId() + "不存在");
     }
     drgCalService.saveDrgCode(drgCode);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(null);
   }
 
@@ -281,6 +289,9 @@ public class SystemController extends BaseController {
     }
 
     systemService.saveATC(request, true);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new String[]{request.getCode()}));
+    
     return returnAPIResult(null);
   }
 
@@ -299,6 +310,9 @@ public class SystemController extends BaseController {
     }
     request.setRedisId(atc.getRedisId());
     systemService.saveATC(request, false);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new String[]{request.getCode()}));
+    
     return returnAPIResult(null);
   }
 
@@ -408,6 +422,9 @@ public class SystemController extends BaseController {
       return returnAPIResult("代碼品項 code " + request.getCode() + " 已存在且生效日、終止日一致");
     }
     systemService.savePayCode(pc, true);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{pc.getId()}));
+    
     return returnAPIResult(null);
   }
 
@@ -436,6 +453,9 @@ public class SystemController extends BaseController {
     }
     pc.setRedisId(oldPayCode.getRedisId());
     systemService.savePayCode(pc, false);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(null);
   }
 
@@ -528,7 +548,12 @@ public class SystemController extends BaseController {
     if (request.getCode() == null || request.getCode().length() < 1) {
       return returnAPIResult("code值不可為空");
     }
-    return returnAPIResult(systemService.newDeducted(request));
+    
+    String result = systemService.newDeducted(request);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
+    return returnAPIResult(result);
   }
 
   @ApiOperation(value = "取得指定id核減代碼", notes = "取得指定id核減代碼")
@@ -556,6 +581,9 @@ public class SystemController extends BaseController {
     if (request == null || request.getId() == null) {
       return returnAPIResult("id未帶入");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(systemService.updateDeducted(request));
   }
 
@@ -632,7 +660,12 @@ public class SystemController extends BaseController {
     if (request.getCode() == null || request.getCode().length() < 1) {
       return returnAPIResult("code值不可為空");
     }
-    return returnAPIResult(systemService.saveIcd10(request, true));
+    
+    String result = systemService.saveIcd10(request, true);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
+    return returnAPIResult(result);
   }
 
   @ApiOperation(value = "取得指定ICD10代碼", notes = "取得指定ICD10代碼")
@@ -660,6 +693,9 @@ public class SystemController extends BaseController {
     if (request == null || request.getId() == null) {
       return returnAPIResult("id未帶入");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{request.getId()}));
+    
     return returnAPIResult(systemService.saveIcd10(request, false));
   }
 
@@ -691,6 +727,7 @@ public class SystemController extends BaseController {
   @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新檔案管理功能設定")
   public ResponseEntity<BaseResponse> updateFileManagement(
       @RequestBody FileManagementPayload request) {
+	  
     return returnAPIResult(systemService.updateFileManagementPaylod(request));
   }
   
@@ -706,6 +743,7 @@ public class SystemController extends BaseController {
   @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新比對警示功能設定")
   public ResponseEntity<BaseResponse> updateCompareWarning(
       @RequestBody CompareWarningPayload request) {
+	  
     return returnAPIResult(systemService.updateCompareWarningPayload(request));
   }
   
@@ -721,6 +759,7 @@ public class SystemController extends BaseController {
   @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新疑問提示通知功能設定")
   public ResponseEntity<BaseResponse> updateQuestionMarkPayload(
       @RequestBody QuestionMarkPayload request) {
+	  
     return returnAPIResult(systemService.updateQuestionMarkPayload(request));
   }
   
@@ -736,6 +775,7 @@ public class SystemController extends BaseController {
   @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新智能提示助理功能設定")
   public ResponseEntity<BaseResponse> updateIntelligentConfig(
       @RequestBody IntelligentConfig request) {
+	  
     return returnAPIResult(systemService.updateIntelligentConfig(request));
   }
   
@@ -751,6 +791,7 @@ public class SystemController extends BaseController {
   @LogDefender(value = {LogType.SIGNIN, LogType.ACTION_U}, name = "更新資料庫串接管理設定")
   public ResponseEntity<BaseResponse> updateDbManagement(
       @RequestBody DbManagement request) {
+	  
     return returnAPIResult(systemService.updateDbManagement(request));
   }
   
