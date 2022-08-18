@@ -779,6 +779,9 @@ public class NHIWidgetXMLController extends BaseController {
     request.setId(Long.parseLong(noteId));
     request.setEditor(user.getUsername());
     request.setActionType("刪除");
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{Long.parseLong(id)}));
+    
     return returnAPIResult(xmlService.newMrNote(request, id, true));
   }
 
@@ -1026,6 +1029,8 @@ public class NHIWidgetXMLController extends BaseController {
     } catch (NumberFormatException e) {
       return returnAPIResult("noteId 格式有誤");
     }
+    
+    httpServletReq.setAttribute(LogType.ACTION_D.name()+"_PKS", Arrays.asList(new Long[]{Long.parseLong(noteId)}));
     
     return returnAPIResult(xmlService.deleteDeductedNote(user.getUsername(), noteIdL));
   }

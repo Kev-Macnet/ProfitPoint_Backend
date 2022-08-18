@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -67,7 +68,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.mchange.v1.util.CollectionUtils;
-
+import java.util.Objects;
 import io.jsonwebtoken.Claims;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
@@ -2828,7 +2829,7 @@ public class NHIWidgetXMLService {
     mrDao.save(mr);
     
     request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID", mr.getInhClinicId());
-    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID"      , userService.getUserIdByName(mr.getPrsnName()));
+    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID"      , userService.getUserIdByName(mr.getPrsnId()));
     request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS"       , status);
     
     return null;
@@ -4626,10 +4627,12 @@ public class NHIWidgetXMLService {
           generateNoticeEmailContent(mrList, receiverName[i + 1], sender, noticeTimes));
     }
     
-    List<String> inhClinicIds = mrList.stream().map(m-> m.getInhClinicId()).collect(Collectors.toList());
+    List<Long> inhClinicIds = mrList.stream().filter(Objects::isNull).map(m-> Long.parseLong(m.getInhClinicId())).collect(Collectors.toList());
     
-    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS", inhClinicIds          );
-    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS"    , Arrays.asList(doctorId));
+    List<Long> doctorIds = Arrays.asList(ids).stream().map(m-> Long.parseLong(m+"")).collect(Collectors.toList());
+    
+    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS", inhClinicIds);
+    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS"    , doctorIds);
     
     return null;
   }
