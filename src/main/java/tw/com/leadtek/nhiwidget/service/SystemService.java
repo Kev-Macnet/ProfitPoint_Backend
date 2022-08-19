@@ -58,6 +58,7 @@ import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.IP_TDao;
+import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.OP_DDao;
 import tw.com.leadtek.nhiwidget.dao.OP_PDao;
 import tw.com.leadtek.nhiwidget.dao.OP_TDao;
@@ -73,6 +74,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.IP;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_P;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_T;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.OP;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.OP_P;
@@ -206,6 +208,9 @@ public class SystemService {
 
   @Autowired
   private IP_PDao ippDao;
+  
+  @Autowired
+  private MRDao mrDao;
 
   @Autowired
   private NHIWidgetXMLService xmlService;
@@ -1258,8 +1263,7 @@ public class SystemService {
 
   public String getDownloadXMLFilename(String dataFormat, String applY, String applM) {
     String applYM = String.valueOf(Integer.parseInt(applY) * 100 + Integer.parseInt(applM));
-    String chineseYM = DateTool.convertToChineseYear(applYM);
-    return chineseYM + "-" + ("10".equals(dataFormat) ? "0" : "1") + ".xml";
+    return applYM + "-" + ("10".equals(dataFormat) ? "0" : "1") + ".xml";
   }
 
   public void downloadXML(String id, HttpServletResponse response) throws IOException {
@@ -1285,56 +1289,68 @@ public class SystemService {
   }
 
   public int downloadXML(String dataFormat, String applY, String applM, String applDate,
-      String applCategory, String applMethod, String applMedic, long userId,
+      String applCategory, String applMethod, String applMedic, long userId, String[] inhClinicIds,
       HttpServletResponse response) throws IOException {
     checkDownloadDir(FILE_PATH);
-    String applYM =
-        String.valueOf((Integer.parseInt(applY) - 1911) * 100 + Integer.parseInt(applM));
-    String filename = getDownloadXMLFilename(dataFormat, applY, applM);
-
-    List<FILE_DOWNLOAD> list = downloadDao.findByFilenameAndFileType(filename, dataFormat);
-    if (list == null || list.size() == 0) {
-      FILE_DOWNLOAD download = new FILE_DOWNLOAD();
-      download.setFilename(filename);
-      download.setFileType(dataFormat);
-      download.setProgress(0);
-      download.setUpdateAt(new Date());
-      download.setUserId(userId);
-      download = downloadDao.save(download);
-      logger.info("downloadXML generating:" + applYM + "," + filename);
-      outputXML(dataFormat, applYM, download);
-      return 0;
-    } else {
-      FILE_DOWNLOAD download = list.get(0);
-      if (download.getProgress().intValue() == 100) {
-        String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
-            ? FILE_PATH + "\\" + download.getFilename()
-            : FILE_PATH + "/" + download.getFilename();
-        File file = new File(filepath);
-
-        logger.info("downloadXML path:" + applYM + "," + filepath + "," + file.getAbsolutePath());
-        // response.reset();
-        response.setContentType("application/octet-stream; charset=BIG5");
-        response.addHeader("Content-Disposition",
-            "attachment;filename=" + URLEncoder.encode(filename, "BIG5"));
-        response.addHeader("Content-Length", String.valueOf(file.length()));
-        Files.copy(file, response.getOutputStream());
-        return 100;
-      } else {
-        return download.getProgress().intValue();
-      }
+    String applYM = null;
+    if (applY != null) {
+      applYM = String.valueOf(Integer.parseInt(applY) * 100 + Integer.parseInt(applM));
     }
+
+    String filename = (inhClinicIds != null && inhClinicIds.length > 0) ? inhClinicIds[0] + ".xml"
+        : getDownloadXMLFilename(dataFormat, applY, applM);
+    List<FILE_DOWNLOAD> list = downloadDao.findByFilenameAndFileType(filename, dataFormat);
+    FILE_DOWNLOAD download = null;
+    if (list == null || list.size() == 0) {
+      download = new FILE_DOWNLOAD();
+    } else {
+      download = list.get(0);
+    }
+    download.setFilename(filename);
+    download.setFileType(dataFormat);
+    download.setProgress(0);
+    download.setUpdateAt(new Date());
+    download.setUserId(userId);
+    download = downloadDao.save(download);
+    logger.info("downloadXML generating:" + filename);
+    outputXML(dataFormat, applYM, inhClinicIds, download);
+    downloadDao.deleteById(download.getId());
+
+    String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+        ? FILE_PATH + "\\" + download.getFilename()
+        : FILE_PATH + "/" + download.getFilename();
+    File file = new File(filepath);
+
+    logger.info("downloadXML path:" + filepath + "," + file.getAbsolutePath());
+    // response.reset();
+    response.setContentType("application/octet-stream; charset=BIG5");
+    response.addHeader("Content-Disposition",
+        "attachment;filename=" + URLEncoder.encode(filename, "BIG5"));
+    response.addHeader("Content-Length", String.valueOf(file.length()));
+    Files.copy(file, response.getOutputStream());
+    return 100;
+
   }
 
-  public void outputXML(String dataFormat, String applYm, FILE_DOWNLOAD download) {
+  public void outputXML(String dataFormat, String applYm, String[] inhClinicIds,
+      FILE_DOWNLOAD download) {
+    if (XMLConstant.DATA_FORMAT_OP.equals(dataFormat)) {
+      outputOPXML(applYm, inhClinicIds, download);
+    } else if (XMLConstant.DATA_FORMAT_IP.equals(dataFormat)) {
+      outputIPXML(applYm, inhClinicIds, download);
+    }
+    logger.info("outputXML " + download.getFilename() + " done");
+  }
+  
+  public void outputXMLWithThread(String dataFormat, String applYm, String[] inhClinicIds, FILE_DOWNLOAD download) {
     Thread thread = new Thread(new Runnable() {
 
       @Override
       public void run() {
         if (XMLConstant.DATA_FORMAT_OP.equals(dataFormat)) {
-          outputOPXML(applYm, download);
+          outputOPXML(applYm, inhClinicIds, download);
         } else if (XMLConstant.DATA_FORMAT_IP.equals(dataFormat)) {
-          outputIPXML(applYm, download);
+          outputIPXML(applYm, inhClinicIds, download);
         }
         logger.info("outputXML " + download.getFilename() + " done");
       }
@@ -1342,7 +1358,29 @@ public class SystemService {
     thread.start();
   }
 
-  public void outputOPXML(String applYm, FILE_DOWNLOAD download) {
+  public void outputOPXML(String applYm, String[] inhClinicIds, FILE_DOWNLOAD download) {
+    OutPatient op = new OutPatient();
+    List<MR> mrList = null;
+    List<Long> mrIdList = null;
+    if (inhClinicIds != null && inhClinicIds.length > 0) {
+      List<String> inhClinicIdList = new ArrayList<>();
+      for (String string : inhClinicIds) {
+        inhClinicIdList.add(string);
+      }
+      mrList = mrDao.findByInhClinicId((inhClinicIdList));
+      if (mrList == null || mrList.size() == 0) {
+        outputFileJAXB(op, download.getFilename());
+        download.setProgress(100);
+        download.setUpdateAt(new Date());
+        downloadDao.save(download);
+        return;
+      }
+      applYm = mrList.get(0).getApplYm();
+      mrIdList = new ArrayList<Long>();
+      for (MR mr : mrList) {
+        mrIdList.add(mr.getId());
+      }
+    }
     List<OP_T> optList = optDao.findByFeeYmOrderById(applYm);
     OP_T opt = null;
     if (optList == null || optList.size() == 0) {
@@ -1350,10 +1388,8 @@ public class SystemService {
     } else {
       opt = optList.get(0);
     }
-    List<OP_D> opdList = opdDao.findByApplYM(applYm);
-    List<OP_P> oppList = oppDao.findByApplYM(applYm);
-
-    OutPatient op = new OutPatient();
+    List<OP_D> opdList = (mrList == null) ? opdDao.findByApplYM(applYm) : opdDao.getOpdListByMrId(mrIdList);
+    List<OP_P> oppList = (mrList == null) ? oppDao.findByApplYM(applYm) : oppDao.getOppListByMrIdList(mrIdList);
     op.setTdata(opt);
 
     List<OutPatientDData> ddata = new ArrayList<OutPatientDData>();
@@ -1386,7 +1422,7 @@ public class SystemService {
     }
 
     op.setDdata(ddata);
-    outputFileJAXB(op, applYm + "-0.xml");
+    outputFileJAXB(op, download.getFilename());
     if (opdList.size() > 0 && oppList.size() > 0) {
       optDao.save(opt);
     }
@@ -1395,7 +1431,29 @@ public class SystemService {
     downloadDao.save(download);
   }
 
-  public void outputIPXML(String applYm, FILE_DOWNLOAD download) {
+  public void outputIPXML(String applYm, String[] inhClinicIds, FILE_DOWNLOAD download) {
+    InPatient ip = new InPatient();
+    List<MR> mrList = null;
+    List<Long> mrIdList = null;
+    if (inhClinicIds != null && inhClinicIds.length > 0) {
+      List<String> inhClinicIdList = new ArrayList<>();
+      for (String string : inhClinicIds) {
+        inhClinicIdList.add(string);
+      }
+      mrList = mrDao.findByInhClinicId((inhClinicIdList));
+      if (mrList == null || mrList.size() == 0) {
+        outputFileJAXB(ip, download.getFilename());
+        download.setProgress(100);
+        download.setUpdateAt(new Date());
+        downloadDao.save(download);
+        return;
+      }
+      applYm = mrList.get(0).getApplYm();
+      mrIdList = new ArrayList<Long>();
+      for (MR mr : mrList) {
+        mrIdList.add(mr.getId());
+      }
+    }
     List<IP_T> iptList = iptDao.findByFeeYmOrderById(applYm);
     IP_T ipt = null;
     if (iptList == null || iptList.size() == 0) {
@@ -1403,10 +1461,9 @@ public class SystemService {
     } else {
       ipt = iptList.get(0);
     }
-    List<IP_D> ipdList = ipdDao.findByApplYM(applYm);
-    List<IP_P> ippList = ippDao.findByApplYM(applYm);
-
-    InPatient ip = new InPatient();
+    List<IP_D> ipdList = (mrList == null) ? ipdDao.findByApplYM(applYm) : ipdDao.getIpdListByMrId(mrIdList);
+    List<IP_P> ippList = (mrList == null) ? ippDao.findByApplYM(applYm) : ippDao.getIppListByMrIdList(mrIdList);
+    
     ip.setTdata(ipt);
 
     double next = 0.1;
@@ -1431,15 +1488,15 @@ public class SystemService {
       ipData.setDbody(ipd);
       ddata.add(ipData);
 
-      if (((double) i / (double) ipdList.size()) > next) {
-        download.setProgress((int) (next * 100));
-        download.setUpdateAt(new Date());
-        downloadDao.save(download);
-        next += 0.1;
-      }
+//      if (((double) i / (double) ipdList.size()) > next) {
+//        download.setProgress((int) (next * 100));
+//        download.setUpdateAt(new Date());
+//        downloadDao.save(download);
+//        next += 0.1;
+//      }
     }
     ip.setDdata(ddata);
-    outputFileJAXB(ip, applYm + "-1.xml");
+    outputFileJAXB(ip, download.getFilename());
     if (ipdList.size() > 0 && ippList.size() > 0) {
       iptDao.save(ipt);
     }
