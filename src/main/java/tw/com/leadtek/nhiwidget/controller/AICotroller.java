@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.dto.PtAdjustmentFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtAnesthesiaFeePl;
 import tw.com.leadtek.nhiwidget.dto.PtBoneMarrowTransFeePl;
@@ -100,6 +102,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/getClinicCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public Object getClinicCostDiffData(@RequestParam(required = true) String sDate1, String eDate1, String sDate2,
 			String eDate2) {
 		return aiService.clinicCostDiff(sDate1, eDate1, sDate2, eDate2);
@@ -116,6 +119,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalCostDiffData", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public Object getHospitalCostDiffData(@RequestParam(required = true) String sDate1, String eDate1, String sDate2,
 			String eDate2) {
 		return aiService.hospitalCostDiff(sDate1, eDate1, sDate2, eDate2);
@@ -130,6 +134,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/getClinicMmedBehDiff", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public Object getClinicMmedBehDiff(@RequestParam(required = true) String sDate, String eDate) {
 		return aiService.clinicMmedBehDiff(sDate, eDate);
 	}
@@ -143,6 +148,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalMmedBehDiff", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public Object getHospitalMmedBehDiff(@RequestParam(required = true) String sDate, String eDate) {
 		return aiService.hospitalMmedBehDiff(sDate, eDate);
 	}
@@ -156,6 +162,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/getClinicOperation", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public Object getClinicOperation(@RequestParam(required = true) String sDate, String eDate) {
 		return aiService.clinicOperaiton(sDate, eDate);
 	}
@@ -169,6 +176,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalOperation", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public Object getHospitalOperation(@RequestParam(required = true) String sDate, String eDate) {
 		return aiService.hospitalOperaiton(sDate, eDate);
 	}
@@ -182,6 +190,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/getClinicMedicine", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public Object getClinicMedicine(@RequestParam(required = true) String sDate, String eDate) {
 		return aiService.clinicMedicine(sDate, eDate);
 	};
@@ -195,6 +204,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalMedicine", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public Object getHospitalMedicine(@RequestParam(required = true) String sDate, String eDate) {
 		return aiService.hospitalMedicine(sDate, eDate);
 	};
@@ -206,6 +216,7 @@ public class AICotroller {
      */
 	@ResponseBody
 	@RequestMapping(value = "/getHospitalDays", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public Object getHospitalDays(@RequestParam(required = true) String sDate, String eDate) {
 		return aiService.hospitalDays(sDate, eDate);
 	}
@@ -218,6 +229,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidOutpatientFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void vaidOutpatientFee(HttpServletRequest request, @RequestBody PtOutpatientFeePl params)
 			throws ParseException {
 		ptOutpatientFeeService.vaidOutpatientFee(params);
@@ -231,6 +243,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidInpatientFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void vaidInpatientFee(HttpServletRequest request, @RequestBody PtInpatientFeePl params)
 			throws ParseException {
 		ptInpatientFeeService.validInpatienFee(params);
@@ -245,6 +258,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidWardFeee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void vaidWardFeee(HttpServletRequest request, @RequestBody PtWardFeePl params) throws ParseException {
 		ptWardFeeService.validWardFee(params);
 	}
@@ -257,6 +271,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidSurgeryFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void vaidSurgeryFee(HttpServletRequest request, @RequestBody PtSurgeryFeePl params) throws ParseException {
 		ptSurgeryFeeService.validSurgeryFee(params);
 	}
@@ -268,6 +283,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidTreatmentFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void vaidTreatmentFee(HttpServletRequest request, @RequestBody PtTreatmentFeePl params)
 			throws ParseException {
 		ptTreatmentFeeService.validTreatmentFee(params);
@@ -280,6 +296,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidTubeFeedingFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void vaidTubeFeedingFee(HttpServletRequest request, @RequestBody PtNutritionalFeePl params)
 			throws ParseException {
 		ptTubeFeedingFeeService.validTubeFeedingFee(params);
@@ -292,6 +309,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/vaidAdjustmentFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void vaidAdjustmentFee(HttpServletRequest request, @RequestBody PtAdjustmentFeePl params)
 			throws ParseException {
 		ptAdjustmentFeeServic.validAdjustmentFee(params);
@@ -304,6 +322,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validMedicineFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validMedicineFee(HttpServletRequest request, @RequestBody PtMedicineFeePl params)
 			throws ParseException {
 		ptMedicineFeeService.validMedicineFee(params);
@@ -316,6 +335,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validRadiationFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validRadiationFee(HttpServletRequest request, @RequestBody PtRadiationFeePl params)
 			throws ParseException {
 		ptRadiationFeeService.validRadiationFee(params);
@@ -328,6 +348,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validInjectionFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validInjectionFee(HttpServletRequest request, @RequestBody PtInjectionFeePl params)
 			throws ParseException {
 		ptInjectionFeeService.validInjectionFee(params);
@@ -341,6 +362,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validQualityServic", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validQualityServic(HttpServletRequest request, @RequestBody PtQualityServicePl params)
 			throws ParseException {
 		ptQualityServiceService.validQualityServic(params);
@@ -353,6 +375,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validRehabilitationFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validRehabilitationFee(HttpServletRequest request, @RequestBody PtRehabilitationFeePl params)
 			throws ParseException {
 		ptRehabilitationFeeService.validRehabilitationFee(params);
@@ -365,6 +388,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validPsychiatricFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validPsychiatricFee(HttpServletRequest request, @RequestBody PtPsychiatricFeePl params)
 			throws ParseException {
 		PtPsychiatricFeeServic.validPsychiatricFee(params);
@@ -377,6 +401,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validBoneMarrowTransFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validBoneMarrowTransFee(HttpServletRequest request, @RequestBody PtBoneMarrowTransFeePl params)
 			throws ParseException {
 		ptBoneMarrowTransFeeService.validBoneMarrowTransFee(params);
@@ -389,6 +414,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validAnesthesiaFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validAnesthesiaFee(HttpServletRequest request, @RequestBody PtAnesthesiaFeePl params)
 			throws ParseException {
 		ptAnesthesiaFeeService.validAnesthesiaFee(params);
@@ -401,6 +427,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validSpecificMedicalFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validSpecificMedicalFee(HttpServletRequest request, @RequestBody PtSpecificMedicalFeePl params)
 			throws ParseException {
 		ptSpecificMedicalFeeService.validSpecificMedicalFee(params);
@@ -413,6 +440,7 @@ public class AICotroller {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/validOthersFee", method = { RequestMethod.GET, RequestMethod.POST })
+	@LogDefender(value = {LogType.SIGNIN})
 	public void validOthersFee(HttpServletRequest request, @RequestBody PtOthersFeePl params) throws ParseException {
 		ptOthersFeeService.validOthersFee(params);
 	}

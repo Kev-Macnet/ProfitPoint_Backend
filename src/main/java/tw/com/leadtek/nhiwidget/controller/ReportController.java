@@ -28,6 +28,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementQuarter;
 import tw.com.leadtek.nhiwidget.payload.report.AchievementWeekly;
@@ -62,6 +64,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得健保點數月報表", notes = "取得健保點數月報表")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/monthlyPoint")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<PointMRPayload> getMonthlyPoint(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
@@ -83,6 +86,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得費用業務-點數", notes = "取得費用業務-點數")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/periodPoint")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<PeriodPointPayload> getPeriodPoint(
 			@ApiParam(name = "sdate", value = "起始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate) {
@@ -104,6 +108,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得費用業務依照科別-點數", notes = "取得費用業務依照科別-點數")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/periodPointByFunctype")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<PeriodPointPayload> getPeriodPointByFunctype(
 			@ApiParam(name = "sdate", value = "起始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
@@ -131,6 +136,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得費用業務依照科別-每周趨勢資料", notes = "取得費用業務依照科別-每周趨勢資料")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/periodPointWeeklyByFunctype")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<PeriodPointWeeklyPayload> getPeriodPointWeekly(
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
 			@ApiParam(name = "funcType", value = "科別", example = "01") @RequestParam(required = false) String funcType) {
@@ -156,6 +162,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得費用業務-每周趨勢資料", notes = "取得費用業務-每周趨勢資料")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/periodPointWeekly")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<PeriodPointWeeklyPayload> getPeriodPointWeeklyByFunctype(
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate) {
 
@@ -175,6 +182,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得DRG分配比例月報表", notes = "取得DRG分配比例月報表")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgMonthly")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<DRGMonthlyPayload> getDrgMonthly(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
@@ -203,6 +211,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得DRG各科分配比例月報表", notes = "取得DRG分配比例月報表")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgMonthlyAllFuncType")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<DRGMonthlyPayload> getDrgMonthlyAllFuncType(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
@@ -224,6 +233,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得DRG各區分配比例月報表", notes = "取得DRG各區分配比例月報表")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgMonthlySection")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<DRGMonthlySectionPayload> getDrgMonthlySection(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
@@ -245,6 +255,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得健保申報總額達成趨勢資料", notes = "取得健保申報總額達成趨勢資料")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievementRate")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<AchievementWeekly> getAchievementRate(
 			@ApiParam(value = "西元年", example = "2021") @RequestParam(required = true) String year,
 			@ApiParam(value = "第幾週(week of year)", example = "16") @RequestParam(required = true) String week) {
@@ -261,6 +272,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得健保總額累積達成率", notes = "取得健保申報總額達成趨勢資料")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievementRateQuarter")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<AchievementQuarter> getAchievementRateQuarter(
 			@ApiParam(value = "西元年，若為多筆資料，用空格隔開", example = "2021 2021 2021") @RequestParam(required = true) String year,
 			@ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true) String quarter) {
@@ -271,6 +283,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得門急診/住院/出院人次變化", notes = "取得門急診/住院/出院人次變化")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/visitsVariety")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<VisitsVarietyPayload> getVisitsVariety(
 			@ApiParam(name = "sdate", value = "開始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
@@ -296,6 +309,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得門急診/住院/出院人次變化-匯出", notes = "取得門急診/住院/出院人次變化-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/visitsVarietyExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<VisitsVarietyPayload> getVisitsVarietyExport(
 			@ApiParam(name = "sdate", value = "開始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
@@ -326,6 +340,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得單月各科健保申報量與人次報表", notes = "取得單月各科健保申報量與人次報表")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/monthlyPointApplCount")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<PointMRPayload> getMonthlyPointApplCount(
 			@ApiParam(name = "year", value = "西元年", example = "2019") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
@@ -348,6 +363,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得單月各科健保申報量與人次報表-匯出", notes = "取得單月各科健保申報量與人次報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/monthlyPointApplCountExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getMonthlyPointApplCountExport(
 			@ApiParam(name = "year", value = "西元年", example = "2019") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
@@ -372,6 +388,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "健保藥費概況", notes = "健保藥費概況")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/healthCareCost")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<?> getHealthCareCost(
 			@ApiParam(name = "syear", value = "開始年份", example = "2022") @RequestParam(required = false) String syear,
 			@ApiParam(name = "season", value = "季度", example = "Q1") @RequestParam(required = false) String season) {
@@ -401,6 +418,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得健保點數月報表-匯出", notes = "取得健保點數月報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/monthlyPointExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getMonthlyPointExport(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
@@ -426,6 +444,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得健保申報總額達成趨勢資料-匯出", notes = "取得健保申報總額達成趨勢資料-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievementRateExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getAchievementRateExport(
 			@ApiParam(value = "西元年", example = "2021") @RequestParam(required = true) String year,
 			@ApiParam(value = "第幾週(week of year)", example = "16") @RequestParam(required = true) String week,
@@ -440,6 +459,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得健保總額累積達成率-匯出", notes = "取得健保申報總額達成趨勢資料-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievementRateQuarterExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getAchievementRateQuarterExport(
 			@ApiParam(value = "西元年，若為多筆資料，用空格隔開", example = "2021 2021 2021") @RequestParam(required = true) String year,
 			@ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true) String quarter,
@@ -453,6 +473,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得DRG分配比例月報表-匯出", notes = "取得DRG分配比例月報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgMonthlyExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getDrgMonthlyExport(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
@@ -478,6 +499,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得DRG各科分配比例月報表-匯出", notes = "取得DRG各科分配比例月報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgMonthlyAllFuncTypeExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<DRGMonthlyPayload> getDrgMonthlyAllFuncTypeExport(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
@@ -502,6 +524,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得DRG各區分配比例月報表-匯出", notes = "取得DRG各區分配比例月報表-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgMonthlySectionExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getDrgMonthlySectionExport(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
@@ -526,6 +549,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "健保藥費概況-匯出", notes = "健保藥費概況-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/healthCareCostExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getHealthCareCostExport(
 			@ApiParam(name = "syear", value = "開始年份", example = "2022") @RequestParam(required = false) String syear,
 			@ApiParam(name = "season", value = "季度", example = "Q1") @RequestParam(required = false) String season,
@@ -559,6 +583,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得費用業務-點數-匯出", notes = "取得費用業務-點數-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/periodPointExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getPeriodPointExport(
 			@ApiParam(name = "sdate", value = "起始日期", example = "2021/01/01") @RequestParam(required = false) String sdate,
 			@ApiParam(name = "edate", value = "結束日期", example = "2021/01/11") @RequestParam(required = false) String edate,
@@ -583,6 +608,7 @@ public class ReportController extends BaseController {
 	@ApiOperation(value = "取得核刪資訊", notes = "取得核刪資訊")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/deductedNote")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<DeductedPayloadResponse> getDeductedNote(
 			@ApiParam(value = "西元年，若為多筆資料，用空格隔開", example = "2022 2022 2022") @RequestParam(required = true) String year,
 			@ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true) String quarter) {
@@ -591,10 +617,12 @@ public class ReportController extends BaseController {
 		return ResponseEntity.ok(res);
 
 	}
+	
 	@CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
 	@ApiOperation(value = "取得核刪資訊-匯出", notes = "取得核刪資訊-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/deductedNoteExport")
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getDeductedNoteExport(
 			@ApiParam(value = "西元年，若為多筆資料，用空格隔開", example = "2022 2022 2022") @RequestParam(required = true) String year,
 			@ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true) String quarter,

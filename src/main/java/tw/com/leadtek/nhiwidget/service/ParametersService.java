@@ -20,8 +20,11 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +32,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tw.com.leadtek.nhiwidget.constant.DATA_TYPE;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
 import tw.com.leadtek.nhiwidget.dao.ASSIGNED_POINTDao;
@@ -141,6 +145,9 @@ public class ParametersService {
   private static HashMap<String, String> parameters;
   
   private static final Map<String, String> DRG_SETTING_NOTE;
+  
+  @Autowired
+  private HttpServletRequest httpServletReq;
   
   static {
     Map<String, String> map = new HashMap<String, String>();
@@ -311,6 +318,9 @@ public class ParametersService {
     }
     ASSIGNED_POINT newAP = assignedPointDao.save(ap.toDB());
     updatePointMonthlyTable(newAP);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ap.getId()}));
+    
     return null;
   }
   
@@ -361,6 +371,9 @@ public class ParametersService {
 
     ASSIGNED_POINT newAP = assignedPointDao.save(ap.toDB());
     updatePointMonthlyTable(newAP);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{ap.getId()}));
+    
     return null;
   }
 
@@ -484,10 +497,10 @@ public class ParametersService {
     }
   }
 
-  private void saveParameter(PARAMETERS p, Date startDate, Date endDate) {
+  private PARAMETERS saveParameter(PARAMETERS p, Date startDate, Date endDate) {
     p.setStartDate(startDate);
     p.setEndDate(endDate);
-    parametersDao.save(p);
+    return parametersDao.save(p);
   }
 
   public String newPointsValue(PointsValue pv) {
@@ -506,56 +519,62 @@ public class ParametersService {
     PARAMETERS p = new PARAMETERS("TOTAL_POINTS_STATUS", AssignedPointsListPayload.WM,
         (pv.getWmOpPoints() == null) ? "0" : "1", PARAMETERS.TYPE_INTEGER,
         "是否計算西醫(Western Medicine)總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter1 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS_STATUS", AssignedPointsListPayload.DENTIST,
         (pv.getDentistOpPoints() == null || pv.getDentistOpPoints().longValue() == 0) ? "0" : "1",
         PARAMETERS.TYPE_INTEGER, "是否計算牙醫總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter2 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS_STATUS", AssignedPointsListPayload.DENTIST,
         (pv.getDentistOpPoints() == null) ? "0" : "1", PARAMETERS.TYPE_INTEGER, "是否計算牙醫總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter3 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS", "WM_IP_POINTS",
         (pv.getWmIpPoints() == null) ? "0" : pv.getWmIpPoints().toString(), PARAMETERS.TYPE_LONG,
         "西醫住院分配總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter4 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS", "WM_OP_POINTS",
         (pv.getWmOpPoints() == null) ? "0" : pv.getWmOpPoints().toString(), PARAMETERS.TYPE_LONG,
         "西醫門診分配總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter5 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS", "WM_DRUG_POINTS",
         (pv.getWmDrugPoints() == null) ? "0" : pv.getWmDrugPoints().toString(),
         PARAMETERS.TYPE_LONG, "西醫藥品分配總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter6 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS", "DENTIST_OP_POINTS",
         (pv.getDentistOpPoints() == null) ? "0" : pv.getDentistOpPoints().toString(),
         PARAMETERS.TYPE_LONG, "牙醫門診分配總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter7 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS", "DENTIST_DRUG_POINTS",
         (pv.getDentistDrugPoints() == null) ? "0" : pv.getDentistDrugPoints().toString(),
         PARAMETERS.TYPE_LONG, "牙醫藥品分配總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter8 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS", "DENTIST_FUND_POINTS",
         (pv.getDentistFundPoints() == null) ? "0" : pv.getDentistFundPoints().toString(),
         PARAMETERS.TYPE_LONG, "牙醫專款分配總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter9 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS", "HEMODIALYSIS_POINTS",
         (pv.getHemodialysisPoints() == null) ? "0" : pv.getHemodialysisPoints().toString(),
         PARAMETERS.TYPE_LONG, "透析總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter10 = saveParameter(p, pv.getSdate(), pv.getEdate());
 
     p = new PARAMETERS("TOTAL_POINTS", "FUND_POINTS",
         (pv.getFundPoints() == null) ? "0" : pv.getFundPoints().toString(), PARAMETERS.TYPE_LONG,
         "專款總點數");
-    saveParameter(p, pv.getSdate(), pv.getEdate());
+    PARAMETERS parameter11 = saveParameter(p, pv.getSdate(), pv.getEdate());
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{parameter1.getId(), parameter2.getId(), parameter3.getId(),
+    		                                                                             parameter4.getId(), parameter5.getId(), parameter6.getId(),
+    		                                                                             parameter7.getId(), parameter8.getId(), parameter9.getId(),
+    		                                                                             parameter10.getId()}));
+    
     return null;
   }
 
@@ -746,6 +765,9 @@ public class ParametersService {
     // + ", end=" + endDate);
     PARAMETERS p = new PARAMETERS(cat, name, value, dataType, note);
     saveParameter(p, startDate, endDate);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{p.getId()}));
+    
     return null;
   }
 
@@ -928,42 +950,49 @@ public class ParametersService {
     if (list != null && list.size() > 0) {
       moveEndDateInAdvance(list, sDate);
     }
-    saveNewParameter("SPR", String.valueOf(values.getSpr()), sDate, eDate,
+    PARAMETERS parameter1 = saveNewParameter("SPR", String.valueOf(values.getSpr()), sDate, eDate,
         DATA_TYPE.INT.ordinal());
-    saveNewParameter("ADD_HOSP_LEVEL_1", values.getAddHospLevel1(), sDate, eDate,
+    PARAMETERS parameter2 = saveNewParameter("ADD_HOSP_LEVEL_1", values.getAddHospLevel1(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_HOSP_LEVEL_2", values.getAddHospLevel2(), sDate, eDate,
+    PARAMETERS parameter3 = saveNewParameter("ADD_HOSP_LEVEL_2", values.getAddHospLevel2(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_HOSP_LEVEL_3", values.getAddHospLevel3(), sDate, eDate,
+    PARAMETERS parameter4 = saveNewParameter("ADD_HOSP_LEVEL_3", values.getAddHospLevel3(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_15_6M", values.getAdd15Child6m(), sDate, eDate,
+    PARAMETERS parameter5 = saveNewParameter("ADD_CHILD_15_6M", values.getAdd15Child6m(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_15_2Y", values.getAdd15Child2y(), sDate,
+    PARAMETERS parameter6 = saveNewParameter("ADD_CHILD_15_2Y", values.getAdd15Child2y(), sDate,
         eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_15_6Y", values.getAdd15Child6y(), sDate,
+    PARAMETERS parameter7 = saveNewParameter("ADD_CHILD_15_6Y", values.getAdd15Child6y(), sDate,
         eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15M_6M", values.getAddN15MChild6m(), sDate,
+    PARAMETERS parameter8 = saveNewParameter("ADD_CHILD_N15M_6M", values.getAddN15MChild6m(), sDate,
         eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15M_2Y", values.getAddN15MChild2y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15M_6Y", values.getAddN15MChild6y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15P_6M", values.getAddN15PChild6m(), sDate,
+    PARAMETERS parameter9 = saveNewParameter("ADD_CHILD_N15M_2Y", values.getAddN15MChild2y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    PARAMETERS parameter10 = saveNewParameter("ADD_CHILD_N15M_6Y", values.getAddN15MChild6y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    PARAMETERS parameter11 = saveNewParameter("ADD_CHILD_N15P_6M", values.getAddN15PChild6m(), sDate,
         eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15P_2Y", values.getAddN15PChild2y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("ADD_CHILD_N15P_6Y", values.getAddN15PChild6y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("CMI", values.getCmi(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("CMI12", values.getCmi12(), sDate, eDate,
+    PARAMETERS parameter12 = saveNewParameter("ADD_CHILD_N15P_2Y", values.getAddN15PChild2y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    PARAMETERS parameter13 = saveNewParameter("ADD_CHILD_N15P_6Y", values.getAddN15PChild6y(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    PARAMETERS parameter14 = saveNewParameter("CMI", values.getCmi(), sDate, eDate, DATA_TYPE.FLOAT.ordinal());
+    PARAMETERS parameter15 = saveNewParameter("CMI12", values.getCmi12(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("CMI13", values.getCmi13(), sDate, eDate,
+    PARAMETERS parameter16 = saveNewParameter("CMI13", values.getCmi13(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("CMI14", values.getCmi14(), sDate, eDate,
+    PARAMETERS parameter17 = saveNewParameter("CMI14", values.getCmi14(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
-    saveNewParameter("OL", values.getOutlyingIslands(), sDate, eDate,
+    PARAMETERS parameter18 = saveNewParameter("OL", values.getOutlyingIslands(), sDate, eDate,
         DATA_TYPE.FLOAT.ordinal());
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{parameter1.getId() , parameter2.getId(), parameter3.getId()  ,
+    		                                                                             parameter4.getId() , parameter5.getId(), parameter6.getId()  ,
+    		                                                                             parameter7.getId() , parameter8.getId(), parameter9.getId()  ,
+    		                                                                             parameter10.getId(), parameter11.getId(), parameter12.getId(),
+    		                                                                             parameter13.getId(), parameter14.getId(), parameter15.getId(),
+    		                                                                             parameter16.getId(), parameter17.getId(), parameter18.getId()}));
 
     return null;
   }
 
-  private void saveNewParameter(String name, String value, Date sDate, Date eDate,
+  private PARAMETERS saveNewParameter(String name, String value, Date sDate, Date eDate,
       int dataType) {
     String newValue = value;
     if (dataType == DATA_TYPE.FLOAT.ordinal()) {
@@ -981,7 +1010,7 @@ public class ParametersService {
     p.setEndDate(eDate);
     p.setStartDate(sDate);
     p.setUpdateAt(new Date());
-    parametersDao.save(p);
+    return parametersDao.save(p);
   }
 
   /**
@@ -1288,6 +1317,9 @@ public class ParametersService {
       codeTableDao.save(ct);
     }
     recalculateInfectiousByThread(ct);
+    
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{ct.getId()}));
+    
     return null;
   }
 
@@ -1369,6 +1401,9 @@ public class ParametersService {
     ct.setUpdateAt(new Date());
     ct = codeThresholdDao.save(ct);
     recalculateRareICDByThread(ct);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ct.getId()}));
+    
     return null;
   }
 
@@ -1534,6 +1569,9 @@ public class ParametersService {
     ct.setUpdateAt(new Date());
     ct = codeThresholdDao.save(ct);
     recalculateHighRatioAndOverAmountByThread(ct, isOrder);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{ct.getId()}));
+    
     return null;
   }
 
@@ -1923,6 +1961,10 @@ public class ParametersService {
     
     CODE_CONFLICT cc = codeConflictDao.save(ccp.toDB());
     recalculateCodeConflictByThread(cc);
+    
+    httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{cc.getId()}));
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{cc.getId()}));
+    
     return null;
   }
 

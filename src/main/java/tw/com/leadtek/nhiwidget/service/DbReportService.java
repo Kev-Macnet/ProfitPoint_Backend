@@ -9968,6 +9968,29 @@ public class DbReportService {
 						/ (Long.valueOf(id.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 				model.setIpInhCodeDotPercent(d);
 			}
+			if (ad != null) {
+				if (oad != null) {
+					double d = Math.round((Long.valueOf(oad.toString())).doubleValue()
+							/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+					model.setOpAllDotPercent(d);
+				}
+				if (od != null) {
+					double d = Math.round((Long.valueOf(od.toString())).doubleValue()
+							/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+					model.setOpDotPercent(d);
+				}
+				if(ed != null) {
+					double d = Math.round((Long.valueOf(ed.toString())).doubleValue()
+							/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+					model.setOpDotPercent(d);
+				}
+				if(id != null) {
+					double d = Math.round((Long.valueOf(id.toString())).doubleValue()
+							/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+					model.setOpDotPercent(d);
+				}
+			}
+
 			int count = 0;
 			List<Integer> countList = new ArrayList<Integer>();
 			List<String> nameList = new ArrayList<String>();
