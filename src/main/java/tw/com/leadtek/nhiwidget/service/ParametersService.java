@@ -2652,7 +2652,7 @@ public class ParametersService {
   public void switchViolate(boolean isEnable) {
     deleteIntelligent(INTELLIGENT_REASON.VIOLATE.value(), null, null);
     if (isEnable) {
-      //is.recalculateAIOrderDrugThread();
+      is.checkAllViolation();
     }
   }
 }

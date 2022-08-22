@@ -324,8 +324,8 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
      * @return
      */
     @Query(value = "SELECT a.MR_ID FROM (" + 
-        "SELECT MR_ID, SUM(TOTAL_Q) AS total FROM op_p WHERE DRUG_NO =?1 AND mr_id IN ?2 " + 
-        "GROUP BY mr_id) A WHERE total > ?3", nativeQuery = true)
+        "SELECT MR_ID, SUM(TOTAL_Q) AS total FROM op_p WHERE DRUG_NO =?1 AND mr_id IN ?2 "
+        + "AND op_p.ORDER_TYPE NOT IN ('B', 'Z', '4') GROUP BY mr_id) A WHERE total > ?3", nativeQuery = true)
     public List<Object[]> getMrIdByOrderCodeCount(String orderCode, List<Long> mrIdList, int max);
     
     /**
@@ -335,7 +335,8 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
      * @return
      */
     @Query(value = "SELECT MR_ID, START_TIME, END_TIME, TOTAL_Q FROM op_p "
-        + "WHERE DRUG_NO = ?1 AND MR_ID IN ?2 ORDER BY MR_ID, START_TIME", nativeQuery = true)
+        + "WHERE DRUG_NO = ?1 AND MR_ID IN ?2 AND op_p.ORDER_TYPE NOT IN ('B', 'Z', '4') "
+        + "ORDER BY MR_ID, START_TIME", nativeQuery = true)
     public List<Object[]> getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(String orderCode, List<Long> mrIdList);
     
     /**
@@ -371,4 +372,14 @@ public interface OP_PDao extends JpaRepository<OP_P, Long> {
         + "WHERE DRUG_NO IN ?1 AND MR_ID IN ?2 AND ORDER_TYPE <> '4' ORDER BY MR_ID, DRUG_NO", nativeQuery = true)
     public List<Object[]> getMrIdAndOrderCodeAndStartTimeByMrIdAndOrderCode(List<String> orderCodes, List<Long> mrId);
 
+    /**
+     * 取得同一病患使用該支付代碼年月，用於每d日內限定應用不可超過n次
+     * @param orderCode
+     * @param rocIdList
+     * @return
+     */
+    @Query(value = "SELECT mr.ROC_ID, MR_END_DATE, APPL_YM, mr.ID FROM mr, op_p "
+        + "WHERE DRUG_NO = ?1 AND mr.ROC_ID IN ?2 AND mr.id = op_p.MR_ID "
+        + "AND op_p.ORDER_TYPE NOT IN ('B', 'Z', '4') ORDER BY mr.ROC_ID, MR_END_DATE", nativeQuery = true)
+    public List<Object[]> getRocIdAndUseCountAndApplYm(String orderCode, List<String> rocIdList);
 }

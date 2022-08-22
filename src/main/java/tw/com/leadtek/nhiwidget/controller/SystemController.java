@@ -896,6 +896,8 @@ public class SystemController extends BaseController {
         example = "2022-02-24") @RequestParam(required = false) String dateStart,
       @ApiParam(value = "結束日期，格式yyyy-MM-dd 或 yyyy/MM/dd",
         example = "2022-02-24") @RequestParam(required = false) String dateEnd,
+      @ApiParam(name = "inhClinicId", value = "就醫記錄編號，多筆請用空格隔開",
+        example = "O21100800257 O21100800212 E21100800016") @RequestParam(required = false) String inhClinicId,
       HttpServletResponse response) throws UnsupportedEncodingException {
 
     UserDetailsImpl user = getUserDetails();
@@ -905,15 +907,25 @@ public class SystemController extends BaseController {
       result.setResult("error");
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
     }
-    
     if (dateStart != null && dateEnd != null || "0".equals(parametersService.getParameter("/sys/downloadXML"))) {
       applY = "2000";
       applM = "1";
     }
-    String filename = systemService.getDownloadXMLFilename(dataFormat, applY, applM);
+    if (applY != null && applY.length() == 4) {
+      // 西元年轉民國年
+      applY = String.valueOf(Integer.parseInt(applY) - 1911);
+    }
+    String filename = null;
+    String[] inhClinicIds = null;
+    if (inhClinicId != null && inhClinicId.length() > 0) {
+      inhClinicIds = inhClinicId.split(" ");
+      filename = inhClinicIds[0] + ".xml";
+    } else {
+      filename = systemService.getDownloadXMLFilename(dataFormat, applY, applM);
+    }
     try {
       int progress = systemService.downloadXML(dataFormat, applY, applM, applDate, applCategory,
-          applMethod, applMedic, user.getId(), response);
+          applMethod, applMedic, user.getId(), inhClinicIds, response);
      
       // 配置檔案下載
       logger.info("downloadXML/" + filename + ":" + progress);

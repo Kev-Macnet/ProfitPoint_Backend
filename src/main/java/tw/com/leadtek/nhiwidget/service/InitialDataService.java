@@ -902,7 +902,7 @@ public class InitialDataService {
   }
   
   public void importICD10ToRedis(File file, String category) {
-    System.out.println("importICD10ToRedis");
+    logger.info("importICD10ToRedis");
     long start = System.currentTimeMillis();
      importExcelToRedis("ICD10", file, category); // "ICD10-CM");
             // InitialEnvironment.FILE_PATH + "1.1 中文版ICD-10-CM(106.07.19更新)_Chapter.xlsx",
@@ -912,8 +912,7 @@ public class InitialDataService {
 //     "ICD10-PCS");
 
     long usedTime = System.currentTimeMillis() - start;
-    System.out.println("usedTime:" + usedTime);
-    System.out.println(String.format("use time: %.2f", (float) usedTime / (float) 1000));
+    logger.info(String.format("use time: %.2f", (float) usedTime / (float) 1000));
   }
   
   public void importExcelToRedis(String collectionName, File file, String category) {

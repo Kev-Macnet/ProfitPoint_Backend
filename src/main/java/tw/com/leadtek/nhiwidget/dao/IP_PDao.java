@@ -6,7 +6,6 @@ package tw.com.leadtek.nhiwidget.dao;
 import java.sql.Date;
 import java.util.List;
 import java.util.Map;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -298,7 +297,7 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	 */
  	@Query(value = "SELECT a.MR_ID FROM (" + 
  	    "SELECT MR_ID, SUM(TOTAL_Q) AS total FROM IP_P WHERE ORDER_CODE =?1 AND mr_id IN ?2 " + 
- 	    "GROUP BY mr_id) A WHERE total > ?3", nativeQuery = true)
+ 	    "AND ORDER_TYPE NOT IN ('B', 'Z', '4') GROUP BY mr_id) a WHERE total > ?3", nativeQuery = true)
  	public List<Object[]> getMrIdByOrderCodeCount(String orderCode, List<Long> mrIdList, int max);
  	
  	/**
@@ -318,7 +317,8 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
  	 * @return
  	 */
  	@Query(value = "SELECT MR_ID, START_TIME, END_TIME, TOTAL_Q FROM ip_p "
- 	    + "WHERE ORDER_CODE = ?1 AND MR_ID IN ?2 ORDER BY MR_ID, START_TIME", nativeQuery = true)
+ 	    + "WHERE ORDER_CODE = ?1 AND MR_ID IN ?2 AND ORDER_TYPE NOT IN ('B', 'Z', '4') "
+ 	    + "ORDER BY MR_ID, START_TIME", nativeQuery = true)
     public List<Object[]> getMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(String orderCode, List<Long> mrIdList);
     
     /**
@@ -328,7 +328,8 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
      * @return
      */
     @Query(value = "SELECT MR_ID, MR.MR_DATE, START_TIME, END_TIME, TOTAL_Q FROM ip_p, mr "
-        + "WHERE ORDER_CODE = ?1 AND MR_ID IN ?2 AND ip_p.MR_ID = mr.ID ORDER BY MR_ID, START_TIME", nativeQuery = true)
+        + "WHERE ORDER_CODE = ?1 AND MR_ID IN ?2 AND ip_p.MR_ID = mr.ID AND ORDER_TYPE NOT IN ('B', 'Z', '4') "
+        + "ORDER BY MR_ID, START_TIME", nativeQuery = true)
     public List<Object[]> getMrDateAndMrIdAndStartTimeAndEndTimeByOrderCodeAndMrIdList(String orderCode, List<Long> mrIdList);
     
     /**
@@ -351,4 +352,18 @@ public interface IP_PDao extends JpaRepository<IP_P, Long> {
     @Query(value = "SELECT MR_ID, ORDER_CODE, INH_CODE, TOTAL_Q FROM ip_p "
         + "WHERE (ORDER_CODE = ?1 OR INH_CODE = ?2 ) AND MR_ID IN ?3 ORDER BY MR_ID", nativeQuery = true)
     public List<Object[]> getMrIdAndOrderCodeAndTotalQByMrIdList(String orderCode1, String orderCode2, List<Long> mrIdList);
+    
+    /**
+     * 取得同一病患使用該支付代碼年月，用於每d日內限定應用不可超過n次
+     * @param orderCode
+     * @param rocIdList
+     * @return
+     */
+    @Query(value = "SELECT mr.ROC_ID, MR_END_DATE, APPL_YM, mr.ID FROM mr, ip_p "
+        + "WHERE ORDER_CODE = ?1 AND mr.ROC_ID IN ?2 AND mr.id = ip_p.MR_ID "
+        + "AND ip_p.ORDER_TYPE NOT IN ('B', 'Z', '4') ORDER BY mr.ROC_ID, MR_END_DATE", nativeQuery = true)
+    public List<Object[]> getRocIdAndUseCountAndApplYm(String orderCode, List<String> rocIdList);
+    
+    @Query(value = "SELECT * FROM ip_p WHERE MR_ID IN ?1 ORDER BY MR_ID", nativeQuery = true)
+    public List<IP_P> getIppListByMrIdList(List<Long> mrIdList);
 }
