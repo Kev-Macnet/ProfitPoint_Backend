@@ -563,7 +563,7 @@ public class ImportTestExcel {
         if (file.getName().toUpperCase().indexOf("SOP") > -1) {
            workbook = new HSSFWorkbook(new FileInputStream(file));
            if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() == 3) {
-             xmlService.readOpdSOPSheet(workbook.getSheetAt(0));
+             xmlService.readSOPSheet(workbook.getSheetAt(0));
            }
         } 
         if (workbook != null) {

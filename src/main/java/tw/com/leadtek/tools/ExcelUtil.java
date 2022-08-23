@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Logger;
+import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -299,6 +300,18 @@ public class ExcelUtil {
       return cell.getStringCellValue().trim();
     }
   }
+  
+  public static String getCellStringValue(HSSFCell cell) {
+    if (cell.getCellType() == CellType.NUMERIC) {
+      String number = String.valueOf(cell.getNumericCellValue());
+      if (number.endsWith(".0")) {
+        return number.substring(0, number.length() - 2);
+      }
+      return number;
+    } else {
+      return cell.getStringCellValue().trim();
+    }
+  }
 
   public static HashMap<Integer, String> readTitleRow(XSSFRow row) {
     HashMap<Integer, String> result = new HashMap<Integer, String>();
@@ -527,6 +540,48 @@ public class ExcelUtil {
    * @return
    */
   public static HashMap<Integer, String> readTitleRow(XSSFRow row, List<PARAMETERS> parameterList) {
+    HashMap<Integer, String> result = new HashMap<Integer, String>();
+    for (int i = 0; i < 130; i++) {
+      if (row.getCell(i) == null) {
+        continue;
+      }
+      String cellValue = getCellStringValue(row.getCell(i));
+      if (cellValue != null && cellValue.length() > 1) {
+        if (cellValue.indexOf(',') > -1) {
+          cellValue = cellValue.split(",")[0];
+        }
+        if (cellValue.indexOf(' ') > -1) {
+          cellValue = removeSpace(cellValue);
+        }
+        if (parameterList != null && parameterList.size() > 0) {
+          boolean isFound = false;
+          for(int j=0; j<parameterList.size(); j++) {
+            if (parameterList.get(j).getValue() == null) {
+              continue;
+            }
+            if (cellValue.equals(parameterList.get(j).getValue().trim())) {
+              result.put(new Integer(i), parameterList.get(j).getName());
+              isFound = true;
+              break;
+            }
+          }
+          if (!isFound) {
+            result.put(new Integer(i), cellValue);
+          }
+        } else {
+          result.put(new Integer(i), cellValue);
+        }
+      }
+    }
+    return result;
+  }
+  
+  /**
+   * 取得標題欄位名稱對應的位置
+   * @param row
+   * @return
+   */
+  public static HashMap<Integer, String> readTitleRow(HSSFRow row, List<PARAMETERS> parameterList) {
     HashMap<Integer, String> result = new HashMap<Integer, String>();
     for (int i = 0; i < 130; i++) {
       if (row.getCell(i) == null) {

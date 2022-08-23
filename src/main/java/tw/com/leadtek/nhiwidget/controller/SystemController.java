@@ -945,48 +945,44 @@ public class SystemController extends BaseController {
   @PostMapping(value = "/uploadXML")
   @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<BaseResponse> uploadXML(
-      @ApiParam(name = "file", value = "自定義表單檔案", example = "111-0.xml") @RequestPart("file") MultipartFile file) {
-    logger.info("/uploadXML:" + file.getOriginalFilename() + "," + file.getSize());
-    if (file.isEmpty()) {
+      @ApiParam(name = "file", value = "自定義表單檔案", example = "111-0.xml") @RequestPart("file") MultipartFile[] file) {
+    if (file.length == 0) {
       return ResponseEntity.ok(new BaseResponse("error", "error file"));
     }
-
     String result = null;
-    try {
-      String dirPath =
-          systemService.checkDownloadDir((parametersService.getParameter("MR_PATH") != null)
-              ? parametersService.getParameter("MR_PATH")
-              : SystemService.FILE_PATH);
-      String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
-          ? dirPath + "\\" + file.getOriginalFilename()
-          : dirPath + "/" + file.getOriginalFilename();
-      File saveFile = new File(filepath);
-      if (saveFile.exists() && saveFile.length() > 0) {
-        try {
-          saveFile.delete();
-        } catch (Exception e) {
-          logger.error("delete exist file", e);
-          return returnAPIResult("檔案已存在");
-        }
-      } else if (file != null && file.getSize() == 0) {
-        return returnAPIResult(file.getOriginalFilename()  + " 檔案資料為0筆！");
-      }
+    for (MultipartFile multipartFile : file) {
+      logger.info(
+          "/uploadXML:" + multipartFile.getOriginalFilename() + "," + multipartFile.getSize());
       try {
-        systemService.deleteInFileDownload(file.getOriginalFilename());
-        file.transferTo(saveFile);
-        //systemService.processUploadFile(saveFile);
-      } catch (IllegalStateException e) {
-        e.printStackTrace();
+        String dirPath =
+            systemService.checkDownloadDir((parametersService.getParameter("MR_PATH") != null)
+                ? parametersService.getParameter("MR_PATH")
+                : SystemService.FILE_PATH);
+        String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+            ? dirPath + "\\" + multipartFile.getOriginalFilename()
+            : dirPath + "/" + multipartFile.getOriginalFilename();
+        File saveFile = new File(filepath);
+        if (saveFile.exists() && saveFile.length() > 0) {
+          try {
+            saveFile.delete();
+          } catch (Exception e) {
+            logger.error("delete exist file", e);
+            return returnAPIResult("檔案已存在");
+          }
+        } else if (file != null && multipartFile.getSize() == 0) {
+          return returnAPIResult(multipartFile.getOriginalFilename() + " 檔案資料為0筆！");
+        }
+        try {
+          systemService.deleteInFileDownload(multipartFile.getOriginalFilename());
+          // 交由 SystemService.refreshMRFromFolder 去處理，速度較快
+          multipartFile.transferTo(saveFile);
+        } catch (IllegalStateException e) {
+          e.printStackTrace();
+        }
+      } catch (IOException e) {
+        logger.error("uploadXML-", e);
       }
-
-    } catch (IOException e) {
-      logger.error("uploadXML-", e);
     }
-//    if (result.get("success") != null) {
-//      return ResponseEntity.ok(result.get("success"));
-//    } else {
-//      return returnAPIResult(result.get("error"));
-//    }
     return returnAPIResult(result);
   }
 

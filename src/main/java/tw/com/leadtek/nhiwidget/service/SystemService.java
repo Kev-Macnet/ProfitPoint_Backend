@@ -36,7 +36,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -1605,11 +1604,15 @@ public class SystemService {
       if (readFile(file)) {
         IP ip =
             xmlMapper.readValue(new InputStreamReader(new FileInputStream(file), "BIG5"), IP.class);
-        xmlService.saveIP(ip);
+        if (ip != null) {
+          xmlService.saveIP(ip);
+        }
       } else {
         OP op =
             xmlMapper.readValue(new InputStreamReader(new FileInputStream(file), "BIG5"), OP.class);
-        xmlService.saveOPBatch(op);
+        if (op != null) { 
+          xmlService.saveOPBatch(op);
+        }
       }
     } catch (JsonMappingException e) {
       e.printStackTrace();
@@ -1721,7 +1724,7 @@ public class SystemService {
         continue;
       }
       if (file.getName().endsWith(".xls")) {
-        if (file.getName().startsWith("OPD_SOP")) {
+        if (file.getName().toUpperCase().startsWith("SOP")) {
           oppList.add(file);
         } else if (file.getName().startsWith("OPD")) {
           opdList.add(file);
@@ -1755,6 +1758,7 @@ public class SystemService {
   private int importMRFile(List<File> files, List<FILE_DOWNLOAD> newFiles) {
     int result = 0;
     for (File file : files) {
+      System.out.println("importMRFile " + file.getName());
       if (file.getName().indexOf('~') > -1 || !(file.getName().endsWith(".xlsx")
           || file.getName().endsWith(".xml") || file.getName().endsWith(".xls"))) {
         continue;
@@ -1864,13 +1868,15 @@ public class SystemService {
   }
 
   public void processLeadtekXLS(File file) {
+    System.out.println("processLeadtekXLS " + file.getAbsolutePath());
     xmlService.checkAll(0, true);
     long startImport = System.currentTimeMillis();
     HSSFWorkbook workbook = null;
     try {
-      if (file.getName().toUpperCase().indexOf("OPD_SOP") > -1) {
+      if (file.getName().toUpperCase().indexOf("SOP") == 0) {
+        System.out.println("process SOP");
         workbook = new HSSFWorkbook(new FileInputStream(file));
-        xmlService.readOpdSOPSheet(workbook.getSheetAt(0));
+        xmlService.readSOPSheet(workbook.getSheetAt(0));
       } else if (file.getName().toUpperCase().indexOf("OPD") > -1) {
         workbook = new HSSFWorkbook(new FileInputStream(file));
         if (workbook.getSheetAt(0).getRow(0).getPhysicalNumberOfCells() > 10) {

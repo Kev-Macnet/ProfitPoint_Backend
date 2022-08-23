@@ -7386,9 +7386,9 @@ public class NHIWidgetXMLService {
     saveMrAndIpd(dirtyMR, dirtyIPD, ippListDB); 
   }
   
-  public void readOpdSOPSheet(HSSFSheet sheet) {
+  public void readSOPSheet(HSSFSheet sheet) {
     // 由標題列取得各欄位名稱的位置
-    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0), parameters.getByCat("SOP"));
     // 第一筆資料
     HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(1));
 
