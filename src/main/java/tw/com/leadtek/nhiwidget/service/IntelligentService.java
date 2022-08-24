@@ -1771,7 +1771,7 @@ public class IntelligentService {
         if (mr.getCodeAll().indexOf("," + cc.getCode() + ",") < 0) {
           continue;
         }
-        if (mr.getInhCode() == null || mr.getInhCode().indexOf(cc.getOwnExpCode()) < 0) {
+        if (mr.getInhCode() == null || mr.getInhCode().indexOf("," + cc.getOwnExpCode() + ",") < 0) {
           continue;
         }
         if (mr.getMrEndDate().before(cc.getStartDate())) {
@@ -1784,7 +1784,7 @@ public class IntelligentService {
         if (mr.getIcdAll() == null || mr.getIcdAll().indexOf("," + cc.getCode() + ",") < 0) {
           continue;
         }
-        if (mr.getCodeAll() == null || mr.getCodeAll().indexOf(cc.getOwnExpCode()) < 0) {
+        if (mr.getCodeAll() == null || mr.getCodeAll().indexOf("," + cc.getOwnExpCode() + ",") < 0) {
           continue;
         }
       }
@@ -2509,7 +2509,7 @@ public class IntelligentService {
       int diff = count - up;
       String prsn = mr.getPrsnName() == null ? mr.getPrsnId() : mr.getPrsnName();
       String reason =
-          String.format(wording, mr.getId(), mr.getIcdcm1(), mr.getPrsnName(), up, diff);
+          String.format(wording, mr.getId(), mr.getIcdcm1(), prsn, up, diff);
       insertIntelligent(mr, INTELLIGENT_REASON.IP_DAYS.value(), mr.getIcdcm1().toString(), reason,
           true, null);
     }
@@ -2631,6 +2631,9 @@ public class IntelligentService {
     }
   }
 
+  /**
+   * 初始化ICDCM_DRUG_ATC table的記錄，儲存所有病歷中的診斷碼與搭配藥品的出現次數
+   */
   private void initialAIOrderDrug() {
     java.sql.Date endDate = getIcdcmDrugAtcDataEndDate(XMLConstant.DATA_FORMAT_OP);
     if (endDate != null) {
@@ -2716,7 +2719,16 @@ public class IntelligentService {
         idaList.add(ida);
         result.put(ida.getIcdcm(), idaList);
       } else {
-        result.get(ida.getIcdcm()).add(ida);
+        // 重複的藥品代碼不處理
+        boolean found = false;
+        for (ICDCM_DRUG_ATC old : result.get(ida.getIcdcm())) {
+          if (old.getDrug().equals(ida.getDrug())) {
+            found = true;
+          }
+        }
+        if (!found) {
+          result.get(ida.getIcdcm()).add(ida);
+        }
       }
     }
     return result;
@@ -2745,6 +2757,10 @@ public class IntelligentService {
           result.put(icdATC, ida.getDrug());
         } else if (drugno.indexOf("、") < 0) {
           // 已有一組
+          if (drugno.indexOf(ida.getDrug()) > -1) {
+            // 重複的藥品代碼不處理
+            continue;
+          }
           result.put(icdATC, drugno + "、" + ida.getDrug());
         }
       }

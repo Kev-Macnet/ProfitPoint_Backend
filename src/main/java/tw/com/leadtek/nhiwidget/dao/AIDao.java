@@ -56,6 +56,11 @@ public interface AIDao extends JpaRepository<MR, Long> {
       ") TEMP WHERE (COUNT - UP) > ?5", nativeQuery = true)
   public List<Map<String, Object>> ipDays(Date lastYearSDate, Date lastYearEDate, Date sDate, Date eDate, int days);
   
+  /**
+   * 撈出病歷最新日期及ICDCM_DRUG_ATC的最新日期
+   * @param dataFormat
+   * @return
+   */
   @Query(value = "SELECT mr.MAX_MR_DATE, ida.MAX_DATE FROM " + 
       "(SELECT max(MR_END_DATE) AS MAX_MR_DATE FROM mr WHERE DATA_FORMAT = ?1) mr," + 
       "(SELECT max(LATEST_DATE) AS MAX_DATE FROM icdcm_drug_atc WHERE DATA_FORMAT= ?1) ida", 
