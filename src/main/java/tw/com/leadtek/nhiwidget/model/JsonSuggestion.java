@@ -29,7 +29,7 @@ public class JsonSuggestion {
     if (cb.getCategory() != null) {
       this.id = cb.getCategory() + ":" + cb.getCode().toUpperCase();
     } else {
-      this.id = cb.getCode();
+      this.id = cb.getCode().toUpperCase();
     }
     this.label = cb.getDescEn();
     this.value = cb.getDesc();
