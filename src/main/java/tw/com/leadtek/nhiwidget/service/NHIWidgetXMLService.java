@@ -251,6 +251,9 @@ public class NHIWidgetXMLService {
   private LogDataService logService;
 
   @Autowired
+  private LogOperateService logOperateService;
+  
+  @Autowired
   private MR_NOTEDao mrNoteDao;
 
   @Autowired
@@ -297,8 +300,6 @@ public class NHIWidgetXMLService {
   
   @Autowired
   private ReportService reportService;
-  
-  protected HttpServletRequest request;
   
   @Value("${project.serverUrl}")
   private String serverUrl;
@@ -2836,10 +2837,10 @@ public class NHIWidgetXMLService {
     mr.setApplName(user.getDisplayName());
     mr.setApplId(userService.findUserById(user.getId()).getInhId());
     mrDao.save(mr);
-    
-    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID", mr.getInhClinicId());
-    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID"      , userService.getUserIdByName(mr.getPrsnId()));
-    request.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS"       , status);
+
+    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID", mr.getInhClinicId());
+    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID"      , userService.getUserIdByName(mr.getPrsnId()));
+    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS"       , status);
     
     return null;
   }
@@ -2850,14 +2851,18 @@ public class NHIWidgetXMLService {
     if (myMr == null) {
       if (status == MR_STATUS.WAIT_PROCESS.value() || status == MR_STATUS.QUESTION_MARK.value()
           || status == MR_STATUS.WAIT_CONFIRM.value()) {
+    	  
+      	long prsnUserId = userService.getUserIdByName(mr.getPrsnName());
         myMr = new MY_MR(mr);
         myMr.setStatus(status);
         myMr.setApplId(username);
         myMr.setApplUserId(userId);
         myMr.setApplName(displayName);
-        myMr.setPrsnUserId(userService.getUserIdByName(mr.getPrsnName()));
+        myMr.setPrsnUserId(prsnUserId);
         myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
         myMrDao.save(myMr);
+        
+        logOperateService.handleMrUnread(mr.getInhClinicId(), prsnUserId);
       }
     } else {
       if (isAppl) {
@@ -4608,9 +4613,13 @@ public class NHIWidgetXMLService {
       mrList.add(mr);
       MY_MR myMr = myMrDao.findByMrId(mrId);
       if (myMr == null) {
+    	  
+    	long prsnUserId = userService.getUserIdByName(mr.getPrsnName());
         myMr = new MY_MR(mr);
-        myMr.setPrsnUserId(userService.getUserIdByName(mr.getPrsnName()));
+        myMr.setPrsnUserId(prsnUserId);
         myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
+        
+        logOperateService.handleMrUnread(myMr.getInhClinicId(), prsnUserId);
       }
       myMr.setApplUserId(user.getId());
       myMr.setNoticeName(receiver);
@@ -4646,12 +4655,12 @@ public class NHIWidgetXMLService {
           generateNoticeEmailContent(mrList, receiverName[i + 1], sender, noticeTimes));
     }
     
-    List<Long> inhClinicIds = mrList.stream().filter(Objects::isNull).map(m-> Long.parseLong(m.getInhClinicId())).collect(Collectors.toList());
+    List<String> inhClinicIds = mrList.stream().filter(Objects::isNull).map(m-> m.getInhClinicId()).collect(Collectors.toList());
     
     List<Long> doctorIds = Arrays.asList(ids).stream().map(m-> Long.parseLong(m+"")).collect(Collectors.toList());
     
-    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS", inhClinicIds);
-    request.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS"    , doctorIds);
+    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS", inhClinicIds);
+    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS"    , doctorIds);
     
     return null;
   }
