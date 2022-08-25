@@ -49,6 +49,16 @@ public class GenerateDocumentFromDB {
         System.err.println(e);
         return;
       }
+    } else if (dbType == MYSQL) {
+      try { // encrypt and validateCertificate should be true for HANA Cloud connections
+        connection = DriverManager.getConnection(String.format("jdbc:mariadb://%s:%d/%s", IP, port, schema),
+            username, password);
+        System.out.println("connected !");
+      } catch (SQLException e) {
+        System.err.println("Connection Failed:");
+        System.err.println(e);
+        return;
+      }
     }
   }
 
@@ -225,10 +235,11 @@ public class GenerateDocumentFromDB {
     // username : NWUSER
     // password : Leadtek2021
 
-    GenerateDocumentFromDB gen = new GenerateDocumentFromDB(HANA, "NWUSER");
+    //GenerateDocumentFromDB gen = new GenerateDocumentFromDB(HANA, "NWUSER");
+    GenerateDocumentFromDB gen = new GenerateDocumentFromDB(MYSQL, "nwuser");
     //gen.connect("10.10.5.31", 30041, "NWUSER", "Leadtek2021");
-    gen.connect("192.168.2.171", 30041, "NWUSER", "Leadtek2021");
-    gen.gen("NWUSER-ms.csv");
+    gen.connect("10.10.5.23", 3306, "leadtek", "leadtek");
+    gen.gen("NWUSER-maria.csv");
 //    String date = "1421217";  
 //    int funcEndYear = Integer.parseInt(date.substring(0, 3));
 //    int funcEndMonth = Integer.parseInt(date.substring(3, 5));

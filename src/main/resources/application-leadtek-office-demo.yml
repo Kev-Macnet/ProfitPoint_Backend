@@ -1,4 +1,4 @@
-# Replace localhost to 59.120.139.62 
+# Replace localhost to 59.120.139.62
 server:
   port: ${port:8081}
   tomcat:
@@ -27,8 +27,8 @@ spring:
       max-file-size: 256MB
       max-request-size: 256MB
       enabled: true
-#  jackson:
-#    default-property-inclusion: NON_NULL
+  jackson:
+    default-property-inclusion: NON_NULL
   redis:
     host: 10.10.5.23
     port: 6379

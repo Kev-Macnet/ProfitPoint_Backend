@@ -5845,12 +5845,13 @@ public class NHIWidgetXMLService {
   public DrgListPayload getDrgList(long idL) {
     DrgListPayload result = new DrgListPayload();
 
-    List<IP_D> ipd = ipdDao.findByMrId(idL);
-    if (ipd == null || ipd.size() == 0) {
+    List<IP_D> ipdList = ipdDao.findByMrId(idL);
+    if (ipdList == null || ipdList.size() == 0) {
       result.setMessage("病歷 id:" + idL + " 不存在");
       result.setResult(BaseResponse.ERROR);
       return result;
     }
+    IP_D ipd = ipdList.get(0);
     List<DRG_CAL> list = drgCalDao.findByMrId(idL);
     if (list == null || list.size() == 0) {
       result.setMessage("無drg記錄");
@@ -5864,20 +5865,25 @@ public class NHIWidgetXMLService {
       }
       DrgCalPayload drg = new DrgCalPayload(drgCal);
 
-      if (drg.getIcdCM1().equals(ipd.get(0).getIcdCm1())) {
+      if (drg.getIcdCM1().equals(ipd.getIcdCm1())) {
         drg.setSelected(true);
       } else {
         drg.setSelected(false);
       }
       // 設定病歷點數
-      if (ipd.get(0).getOwnExpense() == null) {
-        ipd.get(0).setOwnExpense(0);
+      if (ipd.getOwnExpense() == null) {
+        ipd.setOwnExpense(0);
       }
-      if (ipd.get(0).getNonApplDot() == null) {
-        ipd.get(0).setNonApplDot(0);
+      if (ipd.getNonApplDot() == null) {
+        ipd.setNonApplDot(0);
       }
-      drg.setMedDot(ipd.get(0).getMedDot().intValue() + ipd.get(0).getNonApplDot() + ipd.get(0).getOwnExpense().intValue());
-      drg.setMedDotNoOwnExp(ipd.get(0).getMedDot().intValue() + ipd.get(0).getNonApplDot());
+      drg.setMedDot(ipd.getMedDot().intValue() + ipd.getNonApplDot() + ipd.getOwnExpense().intValue());
+      drg.setMedDotNoOwnExp(ipd.getMedDot().intValue() + ipd.getNonApplDot());
+      // 將申請點數改為申報點數
+      if (drg.getDrgDot() != null && ipd.getPartDot() != null) {
+        drg.setDrgDot(drg.getDrgDot().intValue() + ipd.getPartDot().intValue());
+      }
+      // 將DrgDot高的放在最前(上)面
       if (drg.getDrgDot() == null || data.size() == 0) {
         data.add(drg);
       } else {
@@ -7389,9 +7395,9 @@ public class NHIWidgetXMLService {
     saveMrAndIpd(dirtyMR, dirtyIPD, ippListDB); 
   }
   
-  public void readOpdSOPSheet(HSSFSheet sheet) {
+  public void readSOPSheet(HSSFSheet sheet) {
     // 由標題列取得各欄位名稱的位置
-    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0));
+    HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(0), parameters.getByCat("SOP"));
     // 第一筆資料
     HashMap<String, String> values = ExcelUtil.readCellValue(columnMap, sheet.getRow(1));
 
