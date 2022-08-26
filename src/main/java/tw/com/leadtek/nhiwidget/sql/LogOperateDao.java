@@ -36,8 +36,16 @@ public class LogOperateDao extends BaseSqlDao{
   
   public int addMedicalRecordStatus(String inhClinicId, Long userId, Integer status) {
 	  String sql;
-	  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, STATUS)\r\n" + "Values ('%s', %d, %s)";
-	  sql = String.format(sql, inhClinicId, userId, status);
+	  
+	  if(null == inhClinicId ) {
+		  
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(USER_ID, STATUS)\r\n" + "Values (%d, %s)";
+		  sql = String.format(sql, userId, status);
+	  }else {
+		  
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, STATUS)\r\n" + "Values ('%s', %d, %s)";
+		  sql = String.format(sql, inhClinicId, userId, status);
+	  }
 	  try {
 		  int ret = jdbcTemplate.update(sql);
 		  return ret;
@@ -49,8 +57,16 @@ public class LogOperateDao extends BaseSqlDao{
   
   public int addMedicalRecordNotifyed(String inhClinicId, Long userId) {
 	  String sql;
-	  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(INH_CLINIC_ID, USER_ID)\r\n" + "Values ('%s', %d)";
-	  sql = String.format(sql, inhClinicId, userId);
+	  
+	  if(null == inhClinicId ) {
+		  
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(USER_ID)\r\n" + "Values (%d)";
+		  sql = String.format(sql, userId);
+	  }else {
+		  
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(INH_CLINIC_ID, USER_ID)\r\n" + "Values ('%s', %d)";
+		  sql = String.format(sql, inhClinicId, userId);
+	  }
 	  try {
 		  int ret = jdbcTemplate.update(sql);
 		  return ret;
@@ -62,8 +78,16 @@ public class LogOperateDao extends BaseSqlDao{
   
   public int addMedicalRecordUnread(String inhClinicId, Long userId) {
 	  String sql;
-	  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_UNREAD(INH_CLINIC_ID, USER_ID)\r\n" + "Values ('%s', %d)";
-	  sql = String.format(sql, inhClinicId, userId);
+	  
+	  if(null == inhClinicId ) {
+		  
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_UNREAD(USER_ID)\r\n" + "Values (%d)";
+		  sql = String.format(sql, userId);
+	  }else {
+		  
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_UNREAD(INH_CLINIC_ID, USER_ID)\r\n" + "Values ('%s', %d)";
+		  sql = String.format(sql, inhClinicId, userId);
+	  }
 	  try {
 		  int ret = jdbcTemplate.update(sql);
 		  return ret;

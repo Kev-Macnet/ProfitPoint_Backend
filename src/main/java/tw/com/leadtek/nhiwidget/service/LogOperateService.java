@@ -99,14 +99,11 @@ public class LogOperateService {
 		Long userId        = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID");
 		int status         = (Integer)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS");
 		
-		if(StringUtils.isNotBlank(inhClinicId)) {
+		if(Arrays.asList(new int[]{-1, -2, 2, 3}).contains(status)) {
 			
-			if(Arrays.asList(new int[]{-1, -2, 2, 3}).contains(status)) {
-				
-				this.createLogMedicalRecordStatus(inhClinicId , userId, status);
-			}
-			
+			this.createLogMedicalRecordStatus(inhClinicId , userId, status);
 		}
+		
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -127,10 +124,7 @@ public class LogOperateService {
 	
 	public void handleMrUnread(String inhClinicId, Long userId) {
 		
-		if(StringUtils.isNotBlank(inhClinicId)) {
-			
-			this.createLogMedicalRecordUnread(inhClinicId, userId);
-		}
+		this.createLogMedicalRecordUnread(inhClinicId, userId);
 	}
 	
 	@SuppressWarnings("unchecked")

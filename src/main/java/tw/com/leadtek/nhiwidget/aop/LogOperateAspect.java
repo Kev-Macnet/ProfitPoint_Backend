@@ -41,7 +41,7 @@ public class LogOperateAspect {
 		
 		result = pjp.proceed(pjp.getArgs());
 		
-		if(HttpStatus.OK.equals(((ResponseEntity<BaseResponse>)result).getStatusCode())) {
+		if(null != result && HttpStatus.OK.equals(((ResponseEntity<BaseResponse>)result).getStatusCode())) {
 			
 			logOperateService.handleLog(logDefender);
 		}

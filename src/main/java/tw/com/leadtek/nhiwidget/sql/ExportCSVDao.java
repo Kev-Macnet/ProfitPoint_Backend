@@ -461,7 +461,7 @@ public class ExportCSVDao {
 				+ "IFNULL(IP_P.DRUG_SERIAL_NO,'') AS DRUG_SERIAL_NO "
 		 		;
 		 if(!applYM.isEmpty()) {
-			 sql += " FROM MR, IP_P WHERE MR.ID = IP_P.MR_ID"
+			 sql += " FROM MR, IP_P WHERE MR.ID = IP_P.MR_ID "
 			 		+ "AND MR.APPL_YM = '"+applYM+"'";
 		 }
 		 if(!fnSdate.isEmpty()) {
@@ -1123,7 +1123,7 @@ public class ExportCSVDao {
 				+ "IFNULL(IP_P.DRUG_SERIAL_NO,'') AS DRUG_SERIAL_NO "
 		 		;
 		 if(!applYM.isEmpty()) {
-			 sql += " FROM MR, IP_P WHERE MR.ID = IP_P.MR_ID"
+			 sql += " FROM MR, IP_P WHERE MR.ID = IP_P.MR_ID "
 			 		+ "AND MR.APPL_YM = '"+applYM+"'";
 		 }
 		 if(!fnSdate.isEmpty()) {
