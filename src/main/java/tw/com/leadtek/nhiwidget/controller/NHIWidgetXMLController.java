@@ -1173,6 +1173,6 @@ public class NHIWidgetXMLController extends BaseController {
 		  }
 	  }
 	  xmlService.exportCSV(exportType, dataFormat, dateType, year, month, fnSdate, fnEdate, outSdate, outEdate, inhCode, response);
-	  return ResponseEntity.ok(result);
+	  return null;
   }
 }
