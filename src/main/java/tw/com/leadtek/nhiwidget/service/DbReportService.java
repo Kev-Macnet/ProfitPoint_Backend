@@ -9915,26 +9915,26 @@ public class DbReportService {
 			if (oapd != null) {
 				model.setOpAllPayCodeDot(Long.valueOf(oapd.toString()));
 				double d = Math.round((Long.valueOf(oapd.toString())).doubleValue()
-						/ (Long.valueOf(oad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+						/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 				model.setOpAllPayCodeDotPercent(d);
 			}
 
 			if (opd != null) {
 				model.setOpPayCodeDot(Long.valueOf(opd.toString()));
 				double d = Math.round((Long.valueOf(opd.toString())).doubleValue()
-						/ (Long.valueOf(od.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+						/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 				model.setOpPayCodeDotPercent(d);
 			}
 			if (epd != null) {
 				model.setEmPayCodeDot(Long.valueOf(epd.toString()));
 				double d = Math.round((Long.valueOf(epd.toString())).doubleValue()
-						/ (Long.valueOf(ed.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+						/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 				model.setEmPayCodeDotPercent(d);
 			}
 			if (ipd != null) {
 				model.setIpPayCodeDot(Long.valueOf(ipd.toString()));
 				double d = Math.round((Long.valueOf(ipd.toString())).doubleValue()
-						/ (Long.valueOf(id.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+						/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 				model.setIpPayCodeDotPercent(d);
 			}
 
@@ -9947,25 +9947,25 @@ public class DbReportService {
 			if (oaid != null) {
 				model.setOpAllInhCodeDot(Long.valueOf(oaid.toString()));
 				double d = Math.round((Long.valueOf(oaid.toString())).doubleValue()
-						/ (Long.valueOf(oad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+						/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 				model.setOpAllInhCodeDotPercent(d);
 			}
 			if (oid != null) {
 				model.setOpInhCodeDot(Long.valueOf(oid.toString()));
 				double d = Math.round((Long.valueOf(oid.toString())).doubleValue()
-						/ (Long.valueOf(od.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+						/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 				model.setOpAllInhCodeDotPercent(d);
 			}
 			if (eid != null) {
 				model.setEmInhCodeDot(Long.valueOf(eid.toString()));
 				double d = Math.round((Long.valueOf(eid.toString())).doubleValue()
-						/ (Long.valueOf(ed.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+						/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 				model.setEmInhCodeDotPercent(d);
 			}
 			if (iid != null) {
 				model.setIpInhCodeDot(Long.valueOf(iid.toString()));
 				double d = Math.round((Long.valueOf(iid.toString())).doubleValue()
-						/ (Long.valueOf(id.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+						/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 				model.setIpInhCodeDotPercent(d);
 			}
 			if (ad != null) {
@@ -10044,7 +10044,7 @@ public class DbReportService {
 							if (v != null) {
 								detailList.get(count).setOpAllPayCodeTypeDot(Long.valueOf(v.toString()));
 								double d = Math.round((Long.valueOf(v.toString())).doubleValue()
-										/ (Long.valueOf(oad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+										/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 								detailList.get(count).setOpAllPayCodeTypeDotPercent(d);
 							} else {
 								detailList.get(count).setOpAllPayCodeTypeDot(0L);
@@ -10056,7 +10056,7 @@ public class DbReportService {
 							if (v != null) {
 								detailList.get(count).setOpPayCodeTypeDot(Long.valueOf(v.toString()));
 								double d = Math.round((Long.valueOf(v.toString())).doubleValue()
-										/ (Long.valueOf(od.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+										/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 								detailList.get(count).setOpPayCodeTypeDotPercent(d);
 							} else {
 								detailList.get(count).setOpPayCodeTypeDot(0L);
@@ -10068,7 +10068,7 @@ public class DbReportService {
 							if (v != null) {
 								detailList.get(count).setEmPayCodeTypeDot(Long.valueOf(v.toString()));
 								double d = Math.round((Long.valueOf(v.toString())).doubleValue()
-										/ (Long.valueOf(ed.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+										/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 								detailList.get(count).setEmPayCodeTypeDotPercent(d);
 							} else {
 								detailList.get(count).setEmPayCodeTypeDot(0L);
@@ -10079,7 +10079,7 @@ public class DbReportService {
 							if (v != null) {
 								detailList.get(count).setIpPayCodeTypeDot(Long.valueOf(v.toString()));
 								double d = Math.round((Long.valueOf(v.toString())).doubleValue()
-										/ (Long.valueOf(id.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
+										/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
 								detailList.get(count).setIpPayCodeTypeDotPercent(d);
 							} else {
 								detailList.get(count).setIpPayCodeTypeDot(0L);
