@@ -9,6 +9,7 @@ import java.util.TreeMap;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -221,8 +222,8 @@ public class DbReportController extends BaseController {
 				result=dbService.getMedicalOrder(feeApply,dateType,year,month,betweenSDate,betweenEDate,dataFormats,funcTypes,
 						medNames,icdAll,payCode,inhCode,isLastM,isLastY);
 			} catch (Exception e) {
-				// TODO: handle exception
-//				e.printStackTrace();
+				String error = ExceptionUtils.getStackTrace(e);
+				logger.error(error);
 			}
 			
 			return ResponseEntity.ok(result);
