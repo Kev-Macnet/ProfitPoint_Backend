@@ -7178,10 +7178,12 @@ public class DbReportService {
 		StringBuffer groupByIp = new StringBuffer("");
 
 		for (int i = 0; i < yearMonthBetweenStr.size(); i++) {
+			String yearMonthDateWithoutDash = yearMonthBetweenStr.get(i).replace("-", "");
 			selectColumn.append(" SELECT * FROM ");
 			selectColumn.append(
-					" (SELECT COALESCE(SUM(CAST(VAL AS INT)),0) AS EXTRACTCASE  FROM PARAMETERS WHERE NOTE = '核刪抽件數' AND END_DATE  LIKE  CONCAT('"
-							+ yearMonthBetweenStr.get(i) + "','%'))a, ");
+					" (SELECT COALESCE(SUM(CAST(VAL AS INT)),0) AS EXTRACTCASE  FROM PARAMETERS WHERE NOTE = '核刪抽件數' AND TO_CHAR(START_DATE,'YYYYMM') <= "
+							+ yearMonthDateWithoutDash + " AND TO_CHAR(END_DATE,'YYYYMM') >= "
+							+ yearMonthDateWithoutDash + " )a, ");
 			selectColumnOp.append(
 					" (SELECT COALESCE(SUM(DEDUCTED_AMOUNT),0) AS DEDUCTED_AMOUNT_OP, COALESCE(SUM(DEDUCTED_QUANTITY),0) AS DEDUCTED_QUANTITY_OP, COALESCE(SUM(ROLLBACK_M),0) AS ROLLBACK_M_OP FROM DEDUCTED_NOTE, MR WHERE MR.ID =  DEDUCTED_NOTE.MR_ID AND DATA_FORMAT = '10'  AND DEDUCTED_DATE LIKE  CONCAT('"
 							+ yearMonthBetweenStr.get(i) + "','%') ");
