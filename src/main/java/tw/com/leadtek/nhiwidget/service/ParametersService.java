@@ -40,6 +40,7 @@ import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_CONFLICTDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_THRESHOLDDao;
+import tw.com.leadtek.nhiwidget.dao.ICDCM_DRUG_ATCDao;
 import tw.com.leadtek.nhiwidget.dao.INTELLIGENTDao;
 import tw.com.leadtek.nhiwidget.dao.MRDao;
 import tw.com.leadtek.nhiwidget.dao.PARAMETERSDao;
@@ -52,6 +53,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.CODE_CONFLICT;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_THRESHOLD;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
+import tw.com.leadtek.nhiwidget.model.rdb.ICDCM_DRUG_ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
@@ -141,6 +143,9 @@ public class ParametersService {
   
   @Autowired
   private ViolatePaymentTermsService vpts;
+  
+  @Autowired
+  private ICDCM_DRUG_ATCDao idaDao;
   
   private static HashMap<String, String> parameters;
   
@@ -1303,6 +1308,7 @@ public class ParametersService {
       return "ICD代碼 " + icd + " 不存在";
     }
     CODE_TABLE ct = ctList.get(0);
+    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{ct.getId()}));
     if (ct.getRemark() == null && enable) {
       // 都是 enable 狀態，不處理
       return null;
@@ -1317,8 +1323,6 @@ public class ParametersService {
       codeTableDao.save(ct);
     }
     recalculateInfectiousByThread(ct);
-    
-    httpServletReq.setAttribute(LogType.ACTION_U.name()+"_PKS", Arrays.asList(new Long[]{ct.getId()}));
     
     return null;
   }
@@ -2620,7 +2624,8 @@ public class ParametersService {
   public void switchCostDiff(boolean isEnable) {
     deleteIntelligent(INTELLIGENT_REASON.COST_DIFF.value(), null, null);
     if (isEnable) {
-      is.recalculateAICostThread();
+      //is.recalculateAICostThread();
+      is.recalculateAICost();
     }
   }
   
@@ -2633,15 +2638,24 @@ public class ParametersService {
     logger.info("switchIpDays " + isEnable );
     deleteIntelligent(INTELLIGENT_REASON.IP_DAYS.value(), null, null);
     if (isEnable) {
-      is.recalculateAIIpDaysThread();
+      //is.recalculateAIIpDaysThread();
+      is.recalculateAIIpDays();
     }
   }
   
+  /**
+   * 開啟或關閉AI-用藥、衛品差異
+   * 
+   * @param isEnable
+   */
   public void switchOrderDrug(boolean isEnable) {
     logger.info("switchOrderDrug " + isEnable );
     deleteIntelligent(INTELLIGENT_REASON.ORDER_DRUG.value(), null, null);
     if (isEnable) {
-      is.recalculateAIOrderDrugThread();
+      //is.recalculateAIOrderDrugThread();
+      is.recalculateAIOrderDrug();
+    } else {
+      idaDao.deleteAll();
     }
   }
   

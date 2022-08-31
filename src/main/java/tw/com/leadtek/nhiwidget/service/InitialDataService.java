@@ -1316,7 +1316,6 @@ public class InitialDataService {
         }
         total++;
       }
-      System.out.println("finish total:" + total);
       workbook.close();
     } catch (InvalidFormatException e) {
       logger.error("import excel failed", e);

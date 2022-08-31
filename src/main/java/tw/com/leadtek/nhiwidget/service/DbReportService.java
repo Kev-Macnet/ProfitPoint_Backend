@@ -437,8 +437,8 @@ public class DbReportService {
 					switch (str) {
 					case "all":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS ALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 ");
-						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+								"SELECT * FROM (SELECT COUNT(ID) AS ALL_QUANTITY  FROM MR WHERE ");
+						where.append(" MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
@@ -471,8 +471,8 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) ALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0  ");
-						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) ALL_EXPENSE  FROM MR WHERE ");
+						where.append(" MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
@@ -504,8 +504,8 @@ public class DbReportService {
 						selectColumn.append(where);
 						where = new StringBuffer("");
 
-						selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS ALL_DOT FROM MR WHERE OWN_EXPENSE > 0  ");
-						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
+						selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS ALL_DOT FROM MR WHERE ");
+						where.append(" MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
@@ -559,7 +559,7 @@ public class DbReportService {
 
 					case "totalop":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS OPALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								"SELECT * FROM (SELECT COUNT(ID) AS OPALL_QUANTITY  FROM MR WHERE DATA_FORMAT = '10' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -593,7 +593,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) OPALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) OPALL_EXPENSE  FROM MR WHERE DATA_FORMAT = '10' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -627,7 +627,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(T_DOT),0) AS OPALL_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								" (SELECT IFNULL(SUM(T_DOT),0) AS OPALL_DOT  FROM MR WHERE DATA_FORMAT = '10' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -684,7 +684,7 @@ public class DbReportService {
 
 					case "op":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS OP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+								"SELECT * FROM (SELECT COUNT(ID) AS OP_QUANTITY  FROM MR WHERE DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -718,7 +718,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) OP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) OP_EXPENSE  FROM MR WHERE DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -752,7 +752,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(T_DOT),0) AS OP_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+								" (SELECT IFNULL(SUM(T_DOT),0) AS OP_DOT  FROM MR WHERE AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -809,7 +809,7 @@ public class DbReportService {
 
 					case "em":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS EM_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+								"SELECT * FROM (SELECT COUNT(ID) AS EM_QUANTITY  FROM MR WHERE FUNC_TYPE = '22' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -843,7 +843,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) EM_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) EM_EXPENSE  FROM MR WHERE FUNC_TYPE = '22' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -877,7 +877,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(T_DOT),0) AS EM_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+								" (SELECT IFNULL(SUM(T_DOT),0) AS EM_DOT  FROM MR WHERE FUNC_TYPE = '22' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -934,7 +934,7 @@ public class DbReportService {
 
 					case "ip":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS IP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								"SELECT * FROM (SELECT COUNT(ID) AS IP_QUANTITY  FROM MR WHERE DATA_FORMAT = '20' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -968,7 +968,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) IP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) IP_EXPENSE  FROM MR WHERE DATA_FORMAT = '20' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -1002,7 +1002,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(T_DOT),0) AS IP_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								" (SELECT IFNULL(SUM(T_DOT),0) AS IP_DOT  FROM MR WHERE DATA_FORMAT = '20' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -1081,7 +1081,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -1155,7 +1155,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -1228,7 +1228,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -1301,7 +1301,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND FUNC_TYPE = '22'  ");
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND FUNC_TYPE = '22'  ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -1374,7 +1374,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '20' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 						if (feeApplyList.size() == 1) {
@@ -1462,7 +1462,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID,  '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 								selectColumn.append(
-										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 								if (feeApplyList.size() == 1) {
@@ -1548,7 +1548,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
 								selectColumn.append(
-										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 								if (feeApplyList.size() == 1) {
@@ -1634,7 +1634,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 								selectColumn.append(
-										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 								if (feeApplyList.size() == 1) {
@@ -1720,7 +1720,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 								selectColumn.append(
-										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 								if (feeApplyList.size() == 1) {
@@ -1806,7 +1806,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
 								selectColumn.append(
-										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '20' ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
 
 								if (feeApplyList.size() == 1) {
@@ -1945,8 +1945,8 @@ public class DbReportService {
 					switch (str) {
 					case "all":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS ALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 ");
-						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								"SELECT * FROM (SELECT COUNT(ID) AS ALL_QUANTITY  FROM MR WHERE ");
+						where.append("MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
@@ -1979,8 +1979,8 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) ALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0  ");
-						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) ALL_EXPENSE  FROM MR WHERE ");
+						where.append(" MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
@@ -2012,8 +2012,8 @@ public class DbReportService {
 						selectColumn.append(where);
 						where = new StringBuffer("");
 
-						selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS ALL_DOT FROM MR WHERE OWN_EXPENSE > 0  ");
-						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+						selectColumn.append(" (SELECT IFNULL(SUM(T_DOT),0) AS ALL_DOT FROM MR WHERE ");
+						where.append("MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
@@ -2068,7 +2068,7 @@ public class DbReportService {
 
 					case "totalop":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS OPALL_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								"SELECT * FROM (SELECT COUNT(ID) AS OPALL_QUANTITY  FROM MR WHERE DATA_FORMAT = '10' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2102,7 +2102,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) OPALL_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) OPALL_EXPENSE  FROM MR WHERE DATA_FORMAT = '10' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2136,7 +2136,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(T_DOT),0) AS OPALL_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								" (SELECT IFNULL(SUM(T_DOT),0) AS OPALL_DOT  FROM MR WHERE DATA_FORMAT = '10' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2194,7 +2194,7 @@ public class DbReportService {
 
 					case "op":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS OP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+								"SELECT * FROM (SELECT COUNT(ID) AS OP_QUANTITY  FROM MR WHERE DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2228,7 +2228,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) OP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) OP_EXPENSE  FROM MR WHERE DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2262,7 +2262,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(T_DOT),0) AS OP_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
+								" (SELECT IFNULL(SUM(T_DOT),0) AS OP_DOT  FROM MR WHERE DATA_FORMAT = '10' AND FUNC_TYPE <> '22' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2320,7 +2320,7 @@ public class DbReportService {
 
 					case "em":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS EM_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+								"SELECT * FROM (SELECT COUNT(ID) AS EM_QUANTITY  FROM MR WHERE FUNC_TYPE = '22' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2354,7 +2354,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) EM_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE), 0) EM_EXPENSE  FROM MR WHERE FUNC_TYPE = '22' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2388,7 +2388,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(T_DOT),0) AS EM_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND FUNC_TYPE = '22' ");
+								" (SELECT IFNULL(SUM(T_DOT),0) AS EM_DOT  FROM MR WHERE FUNC_TYPE = '22' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2446,7 +2446,7 @@ public class DbReportService {
 
 					case "ip":
 						selectColumn.append(
-								"SELECT * FROM (SELECT COUNT(ID) AS IP_QUANTITY  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								"SELECT * FROM (SELECT COUNT(ID) AS IP_QUANTITY  FROM MR WHERE DATA_FORMAT = '20' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2480,7 +2480,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) IP_EXPENSE  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								" (SELECT IFNULL(SUM(OWN_EXPENSE),0) IP_EXPENSE  FROM MR WHERE DATA_FORMAT = '20' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2514,7 +2514,7 @@ public class DbReportService {
 						where = new StringBuffer("");
 
 						selectColumn.append(
-								" (SELECT IFNULL(SUM(T_DOT),0) AS IP_DOT  FROM MR WHERE OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								" (SELECT IFNULL(SUM(T_DOT),0) AS IP_DOT  FROM MR WHERE DATA_FORMAT = '20' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2594,7 +2594,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2663,7 +2663,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2730,7 +2730,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2797,7 +2797,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND FUNC_TYPE = '22'  ");
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND FUNC_TYPE = '22'  ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2864,7 +2864,7 @@ public class DbReportService {
 						selectColumn.append(
 								" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 						selectColumn.append(
-								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '20' ");
 						where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 						if (feeApplyList.size() == 1) {
@@ -2946,7 +2946,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID,  '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 								selectColumn.append(
-										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 ");
+										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' ");
 								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 								if (feeApplyList.size() == 1) {
@@ -3034,7 +3034,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
 								selectColumn.append(
-										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' ");
+										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' ");
 								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 								if (feeApplyList.size() == 1) {
@@ -3122,7 +3122,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 								selectColumn.append(
-										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
 								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 								if (feeApplyList.size() == 1) {
@@ -3210,7 +3210,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
 								selectColumn.append(
-										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
 								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 								if (feeApplyList.size() == 1) {
@@ -3298,7 +3298,7 @@ public class DbReportService {
 								selectColumn.append(" SELECT '" + medNameList.get(v)
 										+ "' AS PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
 								selectColumn.append(
-										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20' ");
+										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '20' ");
 								where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 
 								if (feeApplyList.size() == 1) {
@@ -4519,7 +4519,7 @@ public class DbReportService {
 					selectColumn
 							.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QIP, IFNULL(SUM(EXPENSE),0) AS EIP FROM ");
 					selectColumn.append(
-							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') ");
 
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
@@ -4545,7 +4545,7 @@ public class DbReportService {
 					selectColumn
 							.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QOP, IFNULL(SUM(EXPENSE),0) AS EOP FROM ");
 					selectColumn.append(
-							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') ");
 					selectColumn.append(where);
 					groupBy = new StringBuffer("");
 					groupBy.append(" GROUP BY OP_P.DRUG_NO ))b)a, ");
@@ -4558,7 +4558,7 @@ public class DbReportService {
 					selectColumn.append(
 							" (SELECT IFNULL(SUM(QUANTITY),0) AS  OPALL_QUANTITY, IFNULL(SUM(EXPENSE),0) AS OPALL_EXPENSE FROM ");
 					selectColumn.append(
-							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4587,7 +4587,7 @@ public class DbReportService {
 					selectColumn.append(
 							" (SELECT IFNULL(SUM(QUANTITY),0) AS  OP_QUANTITY, IFNULL(SUM(EXPENSE),0) AS OP_EXPENSE FROM  ");
 					selectColumn.append(
-							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND MR.FUNC_TYPE <> '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4616,7 +4616,7 @@ public class DbReportService {
 					selectColumn.append(
 							" (SELECT IFNULL(SUM(QUANTITY),0) AS  EM_QUANTITY, IFNULL(SUM(EXPENSE),0) AS EM_EXPENSE FROM  ");
 					selectColumn.append(
-							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND MR.FUNC_TYPE = '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4645,7 +4645,7 @@ public class DbReportService {
 					selectColumn.append(
 							" (SELECT IFNULL(SUM(QUANTITY),0) AS  IP_QUANTITY, IFNULL(SUM(EXPENSE),0) AS IP_EXPENSE FROM ");
 					selectColumn.append(
-							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') ");
 					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
@@ -4703,7 +4703,7 @@ public class DbReportService {
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT  FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
 					selectColumn.append(
-							" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+							" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') ");
 
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
@@ -4729,7 +4729,7 @@ public class DbReportService {
 					selectColumn.append(" UNION ALL ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
 					selectColumn.append(
-							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') ");
 					selectColumn.append(where);
 					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
 					selectColumn.append(groupBy);
@@ -4747,7 +4747,7 @@ public class DbReportService {
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
 					selectColumn.append(
-							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4783,7 +4783,7 @@ public class DbReportService {
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
 					selectColumn.append(
-							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
+							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND MR.FUNC_TYPE <> '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4820,7 +4820,7 @@ public class DbReportService {
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
 					selectColumn.append(
-							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
+							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND MR.FUNC_TYPE = '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4856,7 +4856,7 @@ public class DbReportService {
 					selectColumn.append(" (SELECT * FROM ( ");
 					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
 					selectColumn.append(
-							" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+							" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 					if (funcTypeList.size() > 0)
 						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -4911,7 +4911,7 @@ public class DbReportService {
 									" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
 
 							selectColumn.append(
-									" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+									" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') ");
 
 							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 							if (funcTypeList.size() > 0)
@@ -4943,7 +4943,7 @@ public class DbReportService {
 									" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM  ");
 
 							selectColumn.append(
-									" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+									" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') ");
 
 							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 							if (funcTypeList.size() > 0)
@@ -4983,7 +4983,7 @@ public class DbReportService {
 							selectColumn.append(
 									" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 							selectColumn.append(
-									" (SELECT MR.FUNC_TYPE , OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0   ");
+									" (SELECT MR.FUNC_TYPE , OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') ");
 
 							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 							if (funcTypeList.size() > 0)
@@ -5020,7 +5020,7 @@ public class DbReportService {
 							selectColumn.append(
 									" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE,  IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 							selectColumn.append(
-									" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
+									" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND MR.FUNC_TYPE <> '22' ");
 
 							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 							if (funcTypeList.size() > 0)
@@ -5060,7 +5060,7 @@ public class DbReportService {
 									" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 
 							selectColumn.append(
-									" (SELECT MR.FUNC_TYPE,  OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
+									" (SELECT MR.FUNC_TYPE,  OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND MR.FUNC_TYPE = '22' ");
 							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 							if (funcTypeList.size() > 0)
 								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5098,7 +5098,7 @@ public class DbReportService {
 									" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM   ");
 
 							selectColumn.append(
-									" (SELECT MR.FUNC_TYPE , IP_P.ORDER_CODE AS IHN_CODE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+									" (SELECT MR.FUNC_TYPE , IP_P.ORDER_CODE AS IHN_CODE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') ");
 
 							where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 							if (funcTypeList.size() > 0)
@@ -5162,7 +5162,7 @@ public class DbReportService {
 							selectColumn.append(" UNION ALL ");
 						}
 						selectColumn.append(
-								" (SELECT MR.PRSN_ID , '不分區' AS DATA_FORMAT,  MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0  ");
+								" (SELECT MR.PRSN_ID , '不分區' AS DATA_FORMAT,  MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE'  ");
 
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
@@ -5196,7 +5196,7 @@ public class DbReportService {
 							selectColumn.append(" UNION ALL ");
 						}
 						selectColumn.append(
-								" (SELECT  MR.PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10'  ");
+								" (SELECT  MR.PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10'  ");
 
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
@@ -5229,7 +5229,7 @@ public class DbReportService {
 							selectColumn.append(" UNION ALL ");
 						}
 						selectColumn.append(
-								" (SELECT MR.PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
+								" (SELECT MR.PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
 
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
@@ -5263,7 +5263,7 @@ public class DbReportService {
 							selectColumn.append(" UNION ALL ");
 						}
 						selectColumn.append(
-								" (SELECT MR.PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
+								" (SELECT MR.PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
 
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
@@ -5296,7 +5296,7 @@ public class DbReportService {
 							selectColumn.append(" UNION ALL ");
 						}
 						selectColumn.append(
-								" (SELECT MR.PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND  OWN_EXPENSE > 0 AND DATA_FORMAT = '20'  ");
+								" (SELECT MR.PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE  FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '20'  ");
 
 						where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 						if (funcTypeList.size() > 0)
@@ -5352,7 +5352,7 @@ public class DbReportService {
 										" SELECT PRSN_ID, '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
 
 								selectColumn.append(
-										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z')  ");
 
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
@@ -5384,7 +5384,7 @@ public class DbReportService {
 										" SELECT PRSN_ID, '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM  ");
 
 								selectColumn.append(
-										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z')  ");
 
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
@@ -5424,7 +5424,7 @@ public class DbReportService {
 								selectColumn.append(
 										" SELECT PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 								selectColumn.append(
-										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE , OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0   ");
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE , OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z')   ");
 
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
@@ -5461,7 +5461,7 @@ public class DbReportService {
 								selectColumn.append(
 										" SELECT PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE,  IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 								selectColumn.append(
-										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND MR.FUNC_TYPE <> '22' ");
 
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
@@ -5501,7 +5501,7 @@ public class DbReportService {
 										" SELECT PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
 
 								selectColumn.append(
-										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE,  OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE,  OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND MR.FUNC_TYPE = '22' ");
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)
 									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5539,7 +5539,7 @@ public class DbReportService {
 										" SELECT PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM   ");
 
 								selectColumn.append(
-										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE , IP_P.ORDER_CODE AS IHN_CODE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
+										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE , IP_P.ORDER_CODE AS IHN_CODE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') ");
 
 								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
 								if (funcTypeList.size() > 0)

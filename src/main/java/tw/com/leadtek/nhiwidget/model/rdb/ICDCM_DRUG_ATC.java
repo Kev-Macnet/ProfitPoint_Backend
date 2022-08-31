@@ -79,9 +79,9 @@ public class ICDCM_DRUG_ATC implements Serializable {
       
     }
     
-    public ICDCM_DRUG_ATC(String dataFormat, Map<String, Object> map, java.sql.Date endDate) {
+    public ICDCM_DRUG_ATC(String dataFormat, Map<String, Object> map, java.sql.Date endDate, boolean isDrug) {
       this.dataFormat = dataFormat;
-      this.atc = (String) map.get("ATC");
+      this.atc = isDrug ? (String) map.get("ATC") : "MATERIAL";
       this.drug = (String) map.get("DRUG_NO");
       this.icdcm = (String) map.get("ICDCM1");
       

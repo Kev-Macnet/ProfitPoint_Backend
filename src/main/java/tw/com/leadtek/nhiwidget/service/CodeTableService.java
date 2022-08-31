@@ -103,7 +103,8 @@ public class CodeTableService {
     if (code == null || code.length() == 0) {
       return;
     }
-    String codes = "ICD10-CM".equals(cat) ? StringUtility.formatICD(code) : code;
+    String codes = "ICD10-CM".equals(cat) ? formatICDForICD(code) : code;
+   
     CODE_TABLE ct = cts.getCodeTable(cat, codes);
     if (ct == null) {
       list.add(new CodeBase(code));
@@ -268,5 +269,22 @@ public class CodeTableService {
   
   public PAY_CODEDao getPayCodeDao() {
     return payCodeDao;
+  }
+  
+  public static String formatICDForICD(String code) {
+    if (code == null) {
+      return null;
+    }
+    if (code.length() > 7 && code.charAt(code.length() - 2) == '.') {
+      return code.substring(0, code.length() - 2) + code.charAt(code.length() - 1);
+    }
+    if (code.indexOf('.') > 0) {
+      return code.toLowerCase();
+    }
+    StringBuffer sb = new StringBuffer(code);
+    if (sb.length() > 3) {
+      sb.insert(3, '.');
+    }
+    return sb.toString().toLowerCase();
   }
 }

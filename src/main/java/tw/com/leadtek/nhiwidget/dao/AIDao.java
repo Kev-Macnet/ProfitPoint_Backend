@@ -94,4 +94,32 @@ public interface AIDao extends JpaRepository<MR, Long> {
       "        ) temp2 " + 
       "      WHERE temp1.ICDCM1 = temp2.ICDCM1 AND temp2.COUNT > 30 ORDER BY temp1.ICDCM1, temp1.atc", nativeQuery = true)
   public List<Map<String,Object>> icdcmDrugCountIP(Date endDate);
+  
+  // temp1 取得各診斷碼搭配的衛品的出現次數
+  // temp2 取得各診斷碼在的出現病歷數
+  @Query(value = "SELECT temp1.ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO, temp1.DRUG_COUNT FROM ( " + 
+      "        SELECT mr.ICDCM1, count(mr.ICDCM1) DRUG_COUNT, op.DRUG_NO FROM op_p op, mr " + 
+      "          WHERE op.mr_id = mr.id and length(op.drug_no) = 12 AND mr.MR_END_DATE <= ?1 " + 
+      "          group by mr.icdcm1, op.drug_no ORDER BY icdcm1 " + 
+      "        ) temp1," + 
+      "        (" + 
+      "         SELECT ICDCM1, count(ICDCM1) as COUNT FROM mr WHERE DATA_FORMAT ='10' AND mr.MR_END_DATE <= ?1" + 
+      "          group by ICDCM1 " + 
+      "        ) temp2 " + 
+      "      WHERE temp1.ICDCM1 = temp2.ICDCM1 AND temp2.COUNT > 30 ORDER BY temp1.ICDCM1", nativeQuery = true)
+  public List<Map<String,Object>> icdcmMaterialCountOP(Date endDate);
+  
+  // temp1 取得各診斷碼搭配的衛品的出現次數
+  // temp2 取得各診斷碼在的出現病歷數
+  @Query(value = "SELECT temp1.ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO, temp1.DRUG_COUNT FROM ( " + 
+      "             SELECT mr.ICDCM1, count(mr.ICDCM1) DRUG_COUNT, ip.ORDER_CODE AS DRUG_NO FROM ip_p ip, mr " + 
+      "               WHERE ip.mr_id = mr.id and length(ip.ORDER_CODE) = 12 AND mr.MR_END_DATE <= ?1 " + 
+      "               group by mr.icdcm1, ip.ORDER_CODE ORDER BY icdcm1 " + 
+      "           ) temp1," + 
+      "          (" + 
+      "             SELECT ICDCM1, count(ICDCM1) as COUNT FROM mr WHERE DATA_FORMAT ='20' AND mr.MR_END_DATE <= ?1" + 
+      "             group by ICDCM1 " + 
+      "           ) temp2 " + 
+      "      WHERE temp1.ICDCM1 = temp2.ICDCM1 AND temp2.COUNT > 30 ORDER BY temp1.ICDCM1", nativeQuery = true)
+  public List<Map<String,Object>> icdcmMaterialCountIP(Date endDate);
 }

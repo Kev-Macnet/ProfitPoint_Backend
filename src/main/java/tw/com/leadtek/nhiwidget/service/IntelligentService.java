@@ -2241,7 +2241,7 @@ public class IntelligentService {
   }
 
   public synchronized boolean isIntelligentRunning(int intelligentCode) {
-    Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
+    Long runningTime = runningIntelligent.get(Integer.valueOf(intelligentCode));
     if (runningTime == null) {
       return false;
     }
@@ -2297,7 +2297,7 @@ public class IntelligentService {
    * 計算費用差異
    */
   public void recalculateAICost() {
-    parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.INFECTIOUS.value());
+    parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
 
     Calendar cal = Calendar.getInstance();
@@ -2586,16 +2586,18 @@ public class IntelligentService {
     cal.add(Calendar.MONTH, 1);
     java.sql.Date endDate = new java.sql.Date(cal.getTimeInMillis());
 
-    getDrugDiff(wording, XMLConstant.DATA_FORMAT_OP, startDate, endDate);
-    getDrugDiff(wording, XMLConstant.DATA_FORMAT_IP, startDate, endDate);
+    getDrugDiff(wording, XMLConstant.DATA_FORMAT_OP, startDate, endDate, true);
+    getDrugDiff(wording, XMLConstant.DATA_FORMAT_OP, startDate, endDate, false);
+    getDrugDiff(wording, XMLConstant.DATA_FORMAT_IP, startDate, endDate, true);
+    getDrugDiff(wording, XMLConstant.DATA_FORMAT_IP, startDate, endDate, false);
     // List<Map<String, Object>> list = aiDao.icdcmDrugCountOP(endDate);
     // (startDate, endDate, XMLConstant.DATA_FORMAT_OP, applYm, costDiffUl, costDiffll);
     // insertIntelligentForIpDays(list, wording);
   }
 
   private void getDrugDiff(String wording, String dataFormat, java.sql.Date sdate,
-      java.sql.Date edate) {
-    List<ICDCM_DRUG_ATC> diff = idaDao.getDiffList(dataFormat, DRUG_DIFF_PERCENT);
+      java.sql.Date edate, boolean isDrug) {
+    List<ICDCM_DRUG_ATC> diff = idaDao.getDrugDiffList(dataFormat, isDrug ? 10 : 12, DRUG_DIFF_PERCENT);
     // System.out.println("dataFormat=" + dataFormat + " diff size=" + diff.size() + "," + sdate +
     // "," + edate);
     HashMap<String, String> icdAtcDrug = getIcdDiffTopMap(diff);
@@ -2611,11 +2613,11 @@ public class IntelligentService {
         }
         if (mr.getCodeAll().indexOf("," + ida.getDrug() + ",") > -1) {
           // 符合用藥比例偏低
-          // 病歷編號%s主診斷%s，醫師%s使用藥品%s與常態(%s)選擇有差異
+          // 病歷編號%s主診斷%s，醫師%s使用%s與常態(%s)選擇有差異
           String reason = String.format(wording,
               mr.getInhMrId() == null ? mr.getId().toString() : mr.getInhMrId().toString(),
               mr.getIcdcm1(), mr.getPrsnName() == null ? mr.getPrsnId() : mr.getPrsnName(),
-              ida.getDrug(), icdAtcDrug.get(mr.getIcdcm1() + ida.getAtc()));
+              (isDrug ? "藥品" : "衛品") + ida.getDrug(), icdAtcDrug.get(mr.getIcdcm1() + ida.getAtc()));
           insertIntelligent(mr, INTELLIGENT_REASON.ORDER_DRUG.value(), ida.getDrug(), reason, true,
               intelligentBatch);
           if (intelligentBatch.size() > XMLConstant.BATCH) {
@@ -2645,6 +2647,11 @@ public class IntelligentService {
     }
   }
 
+  /**
+   * 取得icdcm_drug_atc table和目前病歷的最新病歷日期
+   * @param dataFormat
+   * @return
+   */
   private java.sql.Date getIcdcmDrugAtcDataEndDate(String dataFormat) {
     List<Map<String, Object>> list = aiDao.getMaxMrEndDateAndIcdcmDrugAtcDate(dataFormat);
     if (list != null && list.size() > 0) {
@@ -2661,13 +2668,31 @@ public class IntelligentService {
     return null;
   }
 
+  /**
+   * 更新 ICDCM_DRUG_ATC table 值
+   * @param dataFormat
+   * @param endDate
+   */
   private void updateIcdcmDrugAtc(String dataFormat, java.sql.Date endDate) {
     idaDao.deleteByDataFormat(dataFormat);
+    updateIcdcmDrugAtc(dataFormat, endDate, true);
+    updateIcdcmDrugAtc(dataFormat, endDate, false);
+  }
+  
+  private void updateIcdcmDrugAtc(String dataFormat, java.sql.Date endDate, boolean isDrug) {
     List<Map<String, Object>> list = null;
     if (XMLConstant.DATA_FORMAT_OP.equals(dataFormat)) {
-      list = aiDao.icdcmDrugCountOP(endDate);
+      if (isDrug) {
+        list = aiDao.icdcmDrugCountOP(endDate);
+      } else {
+        list = aiDao.icdcmMaterialCountOP(endDate);
+      }
     } else if (XMLConstant.DATA_FORMAT_IP.equals(dataFormat)) {
-      list = aiDao.icdcmDrugCountIP(endDate);
+      if (isDrug) {
+        list = aiDao.icdcmDrugCountIP(endDate);
+      } else {
+        list = aiDao.icdcmMaterialCountIP(endDate);
+      }
     }
     List<ICDCM_DRUG_ATC> needSave = new ArrayList<ICDCM_DRUG_ATC>();
     List<ICDCM_DRUG_ATC> saveBatch = new ArrayList<ICDCM_DRUG_ATC>();
@@ -2676,7 +2701,8 @@ public class IntelligentService {
     int lastATCCount = 0;
     for (Map<String, Object> map : list) {
       // ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO as DRUGNO, temp1.DRUG_COUNT,temp1.atc
-      String icdAtc = (String) map.get("ICDCM1") + (String) map.get("ATC");
+      String atc = isDrug ? (String) map.get("ATC") : "MATERIAL";
+      String icdAtc = (String) map.get("ICDCM1") + atc;
       if (lastATC == null) {
         lastATC = icdAtc;
       } else if (!lastATC.equals(icdAtc)) {
@@ -2692,7 +2718,7 @@ public class IntelligentService {
         lastATCCount = 0;
         lastATC = icdAtc;
       }
-      ICDCM_DRUG_ATC ida = new ICDCM_DRUG_ATC(dataFormat, map, endDate);
+      ICDCM_DRUG_ATC ida = new ICDCM_DRUG_ATC(dataFormat, map, endDate, isDrug);
       needSave.add(ida);
       lastATCCount += ida.getDrugCount();
     }
