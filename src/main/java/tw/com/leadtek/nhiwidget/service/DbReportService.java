@@ -9506,7 +9506,7 @@ public class DbReportService {
 						if (!detailList.get(count).getName().equals(name)) {
 							/// 名稱沒有對應到就加array
 							if (!nameList.contains(name)) {
-								count++;
+								count = countList.size();
 								countList.add(count);
 								nameList.add(name);
 								detailList.add(detail);
