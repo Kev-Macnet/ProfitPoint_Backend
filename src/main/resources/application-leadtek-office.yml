@@ -17,6 +17,8 @@ spring:
       database: nhiwidget
       username: leadtek
       password: leadtek2020
+  jackson:
+    default-property-inclusion: NON_NULL
   servlet:
     multipart:
       max-file-size: 256MB
