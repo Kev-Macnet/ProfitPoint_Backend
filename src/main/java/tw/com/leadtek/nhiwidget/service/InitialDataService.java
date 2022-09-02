@@ -1457,7 +1457,7 @@ public class InitialDataService {
    */
   public void importUserFile(File file, int titleRow) {
     try {
-      System.out.println("importUserFile " + file.getAbsolutePath());
+      logger.info("importUserFile " + file.getAbsolutePath());
       List<DEPARTMENT> departments = departmentDao.findAll();
       List<USER> users = userDao.findAll();
       XSSFWorkbook workbook = new XSSFWorkbook(file);
@@ -1465,6 +1465,7 @@ public class InitialDataService {
       XSSFSheet sheet = workbook.getSheetAt(0);
       HashMap<Integer, String> columnMap = ExcelUtil.readTitleRow(sheet.getRow(titleRow),
           parametersService.getByCat("USER"));
+      
       HashMap<String, String> values = null;
       for (int i = titleRow + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
         XSSFRow row = sheet.getRow(i);

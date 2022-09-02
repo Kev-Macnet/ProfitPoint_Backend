@@ -815,7 +815,9 @@ public class DrgCalService {
         } else if (ss[24] != null && '0' != ss[24].charAt(0)) {
           dc.setError(String.valueOf(ss[24].charAt(0)));
         }
-        
+        if (dc.getError() != null && dc.getError().length() > 10) {
+          dc.setError(dc.getError().substring(0, 9));
+        }
         dc.setMrId(Long.parseLong(ss[3]));
         dc.setIcdCM1(NHIWidgetXMLService.addICDCMDot(ss[7]));
         dc.setIcdOPCode1(NHIWidgetXMLService.addICDCMDot(ss[12]));

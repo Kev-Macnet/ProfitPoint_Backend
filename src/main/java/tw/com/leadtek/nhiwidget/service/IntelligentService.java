@@ -2826,7 +2826,7 @@ public class IntelligentService {
     saveIntelligentBatch(batch);
     logger.info("start checkAllIntelligentCondition checkAllViolation finished");
     
-    logger.info("start check AI");
+    logger.info("start check AI Cost");
     // 臨床路徑差異
     for (String ym : applYm) {
       try {
@@ -2885,24 +2885,36 @@ public class IntelligentService {
     if (!System.getProperty("os.name").toLowerCase().startsWith("windows")) {
       return;
     }
-    Thread thread = new Thread(new Runnable() {
-
-      @Override
-      public void run() {
+    new Thread(() -> {
+      HashMap<String, List<MR>> ymList = groupByApplYM(mrList);
+      for (String ym : ymList.keySet()) {
         long start = System.currentTimeMillis();
-        List<Long> mrIdList = drgCalService.getMrIdByDataFormat(mrList, XMLConstant.DATA_FORMAT_IP);
+        List<MR> list = ymList.get(ym);
+        List<Long> mrIdList = drgCalService.getMrIdByDataFormat(list, XMLConstant.DATA_FORMAT_IP);
         if (mrIdList.size() == 0) {
           return;
         }
-        logger.info("runDrgCalculate start " + mrIdList.size());
+        logger.info("runDrgCalculate " + ym + " count:" + list.size());
         HashMap<Long, IP_D> ipdMap = new HashMap<Long, IP_D>();
-        File file = drgCalService.generateDrgCalFile(mrList, mrIdList, ipdMap);
-        drgCalService.callDrgCalProgram(file, mrList, mrIdList, ipdMap);
+        File file = drgCalService.generateDrgCalFile(list, mrIdList, ipdMap);
+        drgCalService.callDrgCalProgram(file, list, mrIdList, ipdMap);
         long usedTime = System.currentTimeMillis() - start;
-        logger.info("runDrgCalculate finished using " + usedTime);
+        logger.info("runDrgCalculate " + ym + " finished using " + usedTime);        
       }
-    });
-    thread.start();
+    }).start();
+  }
+  
+  private HashMap<String, List<MR>> groupByApplYM(List<MR> mrList) {
+    HashMap<String, List<MR>> result = new HashMap<>();
+    for (MR mr : mrList) {
+      List<MR> list = result.get(mr.getApplYm());
+      if (list == null) {
+        list = new ArrayList<>();
+        result.put(mr.getApplYm(), list);
+      }
+      list.add(mr);
+    }
+    return result;
   }
   
   private void checkIntelligentFixCondition(List<MR> mrList, List<String> applYm, List<INTELLIGENT> batch) {
