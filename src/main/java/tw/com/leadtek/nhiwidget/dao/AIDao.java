@@ -97,10 +97,10 @@ public interface AIDao extends JpaRepository<MR, Long> {
   
   // temp1 取得各診斷碼搭配的衛品的出現次數
   // temp2 取得各診斷碼在的出現病歷數
-  @Query(value = "SELECT temp1.ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO, temp1.DRUG_COUNT FROM ( " + 
-      "        SELECT mr.ICDCM1, count(mr.ICDCM1) DRUG_COUNT, op.DRUG_NO FROM op_p op, mr " + 
-      "          WHERE op.mr_id = mr.id and length(op.drug_no) = 12 AND mr.MR_END_DATE <= ?1 " + 
-      "          group by mr.icdcm1, op.drug_no ORDER BY icdcm1 " + 
+  @Query(value = "SELECT temp1.ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO, temp1.DRUG_COUNT, temp1.ATC FROM ( " + 
+      "           SELECT mr.ICDCM1, count(mr.ICDCM1) DRUG_COUNT, op.DRUG_NO, SUBSTR(op.DRUG_NO, 1, 5) AS ATC FROM op_p op, mr " + 
+      "           WHERE op.mr_id = mr.id and length(op.drug_no) = 12 AND mr.MR_END_DATE <= ?1 " + 
+      "           GROUP BY mr.icdcm1, op.DRUG_NO ORDER BY mr.icdcm1, op.DRUG_NO " + 
       "        ) temp1," + 
       "        (" + 
       "         SELECT ICDCM1, count(ICDCM1) as COUNT FROM mr WHERE DATA_FORMAT ='10' AND mr.MR_END_DATE <= ?1" + 
@@ -111,10 +111,10 @@ public interface AIDao extends JpaRepository<MR, Long> {
   
   // temp1 取得各診斷碼搭配的衛品的出現次數
   // temp2 取得各診斷碼在的出現病歷數
-  @Query(value = "SELECT temp1.ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO, temp1.DRUG_COUNT FROM ( " + 
-      "             SELECT mr.ICDCM1, count(mr.ICDCM1) DRUG_COUNT, ip.ORDER_CODE AS DRUG_NO FROM ip_p ip, mr " + 
-      "               WHERE ip.mr_id = mr.id and length(ip.ORDER_CODE) = 12 AND mr.MR_END_DATE <= ?1 " + 
-      "               group by mr.icdcm1, ip.ORDER_CODE ORDER BY icdcm1 " + 
+  @Query(value = "SELECT temp1.ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO, temp1.DRUG_COUNT, temp1.ATC FROM ( " + 
+      "           SELECT mr.ICDCM1, count(mr.ICDCM1) DRUG_COUNT, ip.ORDER_CODE AS DRUG_NO, SUBSTR(ip.ORDER_CODE, 1, 5) AS ATC FROM ip_p ip, mr " + 
+      "           WHERE ip.mr_id = mr.id and length(ip.ORDER_CODE) = 12 AND mr.MR_END_DATE <= ?1 " + 
+      "           GROUP BY mr.icdcm1, ip.ORDER_CODE ORDER BY icdcm1, ip.ORDER_CODE " + 
       "           ) temp1," + 
       "          (" + 
       "             SELECT ICDCM1, count(ICDCM1) as COUNT FROM mr WHERE DATA_FORMAT ='20' AND mr.MR_END_DATE <= ?1" + 

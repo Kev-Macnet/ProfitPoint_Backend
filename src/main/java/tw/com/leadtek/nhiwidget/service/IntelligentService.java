@@ -2701,7 +2701,7 @@ public class IntelligentService {
     int lastATCCount = 0;
     for (Map<String, Object> map : list) {
       // ICDCM1, temp2.COUNT as ICDCM_COUNT, temp1.DRUG_NO as DRUGNO, temp1.DRUG_COUNT,temp1.atc
-      String atc = isDrug ? (String) map.get("ATC") : "MATERIAL";
+      String atc =(String) map.get("ATC");
       String icdAtc = (String) map.get("ICDCM1") + atc;
       if (lastATC == null) {
         lastATC = icdAtc;
