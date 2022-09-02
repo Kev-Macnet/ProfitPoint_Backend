@@ -1,7 +1,13 @@
 package tw.com.leadtek.nhiwidget.sql;
 
+import java.util.List;
+import java.util.Map;
+
+import javax.persistence.EntityManager;
+
+import org.hibernate.query.internal.NativeQueryImpl;
+import org.hibernate.transform.Transformers;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +17,9 @@ public class BaseSqlDao {
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;
+    
+    @Autowired
+    protected EntityManager entityManager;
     
     public String noInjection(String str) {
         if (str!=null) {
@@ -49,6 +58,16 @@ public class BaseSqlDao {
         lst.toArray(params);
         return (params);
     }
-
+    
+    @SuppressWarnings("unchecked")
+	protected <E> List<E> getNativeQueryResult(String sql, Class<E> clazz, Map<String,Object> queryParaMap) {
+    	
+		NativeQueryImpl<E> nqi = entityManager.createNativeQuery(sql).unwrap(NativeQueryImpl.class);
+    	nqi.setResultTransformer(Transformers.aliasToBean(clazz));
+    	
+    	queryParaMap.forEach((k, v) -> nqi.setParameter(k, v));
+	  
+    	return nqi.getResultList();
+    }
 
 }

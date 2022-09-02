@@ -1,25 +1,339 @@
 package tw.com.leadtek.nhiwidget.sql;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import tw.com.leadtek.nhiwidget.dao.DRG_CALDao;
+import tw.com.leadtek.nhiwidget.dto.LogActionDto;
+import tw.com.leadtek.nhiwidget.dto.LogForgotPwdDto;
+import tw.com.leadtek.nhiwidget.dto.LogMrDto;
+import tw.com.leadtek.nhiwidget.dto.LogSigninDto;
 
 @Repository
 public class LogOperateDao extends BaseSqlDao{
 
   private Logger logger = LogManager.getLogger();
 
-  @Autowired
-  protected JdbcTemplate jdbcTemplate;
+  public List<LogSigninDto> querySignin(String sdate         , String edate      , String showType   , 
+		                            String actor         , String pCondition , List<?> pUserNames,
+		                            List<?> pDisplayNames, String msCondition, List<?> msDepts   , 
+		                            List<?> msDisplayNames) {
+	  
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(sdate      , edate     , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  String secondsBtw = "SECONDS_BETWEEN(TO_SECONDDATE(LOG.LOGIN_TM) , TO_SECONDDATE(LOG.LOGOUT_TM)) ";
+	  String sql;
+	 
+	  sql = "SELECT DISTINCT                                              "
+		  + "  U.DISPLAY_NAME                           AS \"displayName\""
+		  + ", U.USERNAME                               AS \"username\"   ";
+		  
+	  if("R".equalsIgnoreCase(showType)) {
+		  sql+= String.format(", SUM(%s)", secondsBtw);
+	  }else {
+		  sql+= ", TO_VARCHAR(LOG.CREATE_AT , 'YYYY-MM-DD') AS \"createDate\"   "
+			  + ", TO_VARCHAR(TO_TIME(LOG.LOGIN_TM))        AS \"loginTime\"    "
+			  + ", TO_VARCHAR(TO_TIME(LOG.LOGOUT_TM))       AS \"logoutTime\"   "
+		      + ", "+secondsBtw;
+	  }
+	  
+	  sql+= " AS \"secondsBetween\"                                       ";
+	  
+	  sql+= "FROM LOG_SIGNIN LOG                                          "
+		  + joinUserDepartmentOnUserName()
+		  + where
+	      + "AND LOG.LOGOUT_TM IS NOT NULL                                ";
+	  
+	  if("R".equalsIgnoreCase(showType)) {
+		  sql+= "GROUP BY U.DISPLAY_NAME, U.USERNAME";
+	  }
+	  
+	  return super.getNativeQueryResult(sql, LogSigninDto.class, queryParaMap);
+  }
   
-  @Autowired
-  protected DRG_CALDao drgCalDao;
+  public List<LogForgotPwdDto> queryForgotPwd(String sdate         , String edate      , String showType   , 
+		                                      String actor         , String pCondition , List<?> pUserNames,
+		                                      List<?> pDisplayNames, String msCondition, List<?> msDepts   , 
+		                                      List<?> msDisplayNames) {
+	  
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(sdate      , edate     , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  
+	  String sql;
+	  
+	  sql = "SELECT DISTINCT                                              "
+		  + "  U.DISPLAY_NAME                       AS \"displayName\"    "
+		  + ", U.USERNAME                           AS \"username\"       ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_VARCHAR(LOG.CREATE_AT,'YYYY-MM-DD' ) AS \"createDate\"";
+		  sql +=", TO_VARCHAR(TO_TIME(LOG.CREATE_AT))      AS \"createTime\"";
+	  }
+		    
+	  sql +=", TO_VARCHAR(to_Date(U.CREATE_AT))     AS \"createUserAt\"   "
+		  + ", COUNT(*)                             AS \"cnt\"            "
+		  + ", CASE U.ROLE                                                "
+		  + "     WHEN 'A' THEN 'MIS主管'                                  "
+		  + "     WHEN 'B' THEN '行政主管'                                  "
+		  + "     WHEN 'C' THEN '申報主管'                                  "
+		  + "     WHEN 'D' THEN '申報人員'                                  "
+		  + "     WHEN 'E' THEN '醫護人員'                                  "
+		  + "     WHEN 'Z' THEN '原廠開發者'                                 "
+		  + "   END                                 AS \"role\"          "
+		  + ", CASE U.STATUS                                             "
+		  + "     WHEN -1 THEN '忘記密碼'                                   "
+		  + "     WHEN 1 THEN '有效'                                      "
+		  + "     WHEN 0 THEN '無效'                                      "
+		  + "   END                                 AS \"status\"        "
+		  + "FROM LOG_FORGOT_PASSWORD LOG                                "
+		  + joinUserDepartmentOnUserId()
+		  + where
+	      + "GROUP BY U.DISPLAY_NAME, U.USERNAME,  U.STATUS, U.ROLE,U.CREATE_AT";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", LOG.CREATE_AT";
+	  }
+	  
+	  return super.getNativeQueryResult(sql, LogForgotPwdDto.class, queryParaMap);
+  }
+  
+  
+  public List<LogMrDto> queryStatus(String sdate          , String edate      , String showType   , 
+		                            String actor          , String pCondition , List<?> pUserNames,
+		                            List<?> pDisplayNames , String msCondition, List<?> msDepts   , 
+		                            List<?> msDisplayNames, int status) {
+	  
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(sdate      , edate     , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  
+	  queryParaMap.put("status", status);
+	  
+	  String sql;
+	  
+	  sql = "SELECT                                                                              "
+		  + "  U.DISPLAY_NAME                           AS \"displayName\"                       "
+		  + ", U.USERNAME                               AS \"username\"                          "
+		  + ", COUNT(*)                                 AS \"cnt\"                               "
+		  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                      ";
+//			  + ", STRING_AGG(LOG.INH_CLINIC_ID,','ORDER BY LOG.INH_CLINIC_ID)AS \"inhClinicIds\"";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+	  }
+	  sql+= "FROM LOG_MEDICAL_RECORD_STATUS LOG                                                  "
+			  + joinUserDepartmentOnUserId()
+			  + where
+			  +" AND LOG.STATUS = :status                                                        "
+			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.INH_CLINIC_ID                          ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_DATE(LOG.CREATE_AT) ";
+	  }
+	  
+	  return super.getNativeQueryResult(sql, LogMrDto.class, queryParaMap);
+  }
+  
+  public List<LogMrDto> queryUnread(String sdate          , String edate      , String showType   , 
+		                            String actor          , String pCondition , List<?> pUserNames,
+		                            List<?> pDisplayNames , String msCondition, List<?> msDepts   , 
+		                            List<?> msDisplayNames) {
+	  
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(sdate      , edate     , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  
+	  String sql;
+	  
+	  sql = "SELECT                                                                              "
+			  + "  U.DISPLAY_NAME                           AS \"displayName\"                   "
+			  + ", U.USERNAME                               AS \"username\"                      "
+			  + ", COUNT(*)                                 AS \"cnt\"                           "
+			  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                  ";
+//			  + ", STRING_AGG(LOG.INH_CLINIC_ID,','ORDER BY LOG.INH_CLINIC_ID)AS \"inhClinicIds\"";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+	  }
+	  sql+= "FROM LOG_MEDICAL_RECORD_UNREAD LOG                                                  "
+			  + joinUserDepartmentOnUserId()
+			  + where
+			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.INH_CLINIC_ID                          ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_DATE(LOG.CREATE_AT) ";
+	  }
+	  
+	  return super.getNativeQueryResult(sql, LogMrDto.class, queryParaMap);
+  }
+  
+  public List<LogMrDto> queryNotifyed(String sdate          , String edate      , String showType   , 
+		                              String actor          , String pCondition , List<?> pUserNames,
+		                              List<?> pDisplayNames , String msCondition, List<?> msDepts   , 
+		                              List<?> msDisplayNames) {
+	  
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(sdate      , edate     , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  
+	  String sql;
+	  
+	  sql = "SELECT                                                                              "
+			  + "  U.DISPLAY_NAME                           AS \"displayName\"                   "
+			  + ", U.USERNAME                               AS \"username\"                      "
+			  + ", COUNT(*)                                 AS \"cnt\"                           "
+			  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                  ";
+//			  + ", STRING_AGG(LOG.INH_CLINIC_ID,','ORDER BY LOG.INH_CLINIC_ID)AS \"inhClinicIds\"";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+	  }
+	  sql+= "FROM LOG_MEDICAL_RECORD_NOTIFYED LOG                                                "
+			  + joinUserDepartmentOnUserId()
+			  + where
+			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.INH_CLINIC_ID                          ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_DATE(LOG.CREATE_AT) ";
+	  }
+	  
+	  return super.getNativeQueryResult(sql, LogMrDto.class, queryParaMap);
+  }
+  
+  public List<LogActionDto> queryAction(String sdate          , String edate      , String showType   , 
+		                                String actor          , String pCondition , List<?> pUserNames,
+		                                List<?> pDisplayNames , String msCondition, List<?> msDepts   , 
+		                                List<?> msDisplayNames) {
+	  
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(sdate      , edate     , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  
+	  String sql;
+	  
+	  sql = "SELECT                                                                              "
+			  + "  U.DISPLAY_NAME                           AS \"displayName\"                   "
+			  + ", U.USERNAME                               AS \"username\"                      "
+			  + ", LOG.FUNCTION_NAME                        AS \"functionName\"                  "
+			  + ", LOG.CRUD                                 AS \"crud\"                          "
+			  + ", LOG.PK                                   AS \"pks\"                           ";
+//			  + ", STRING_AGG(LOG.PK,','ORDER BY LOG.PK)    AS \"pks\"                           ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_VARCHAR(LOG.CREATE_AT,'YYYY-MM-DD' ) AS \"createDate\"                     ";
+//		  sql +=", TO_VARCHAR(TO_TIME(LOG.CREATE_AT))      AS \"createTime\"                     ";
+	  }
+	  
+	  sql+= "FROM LOG_ACTION LOG                                                                 "
+			  + joinUserDepartmentOnUserId()
+			  + where;
+//			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.FUNCTION_NAME, LOG.CRUD , LOG.PK       ";
+	  
+//	  if("D".equalsIgnoreCase(showType)) {
+//		  sql +=", LOG.CREATE_AT ";
+//	  }
+	  
+	  return super.getNativeQueryResult(sql, LogActionDto.class, queryParaMap);
+  }
+  
+  
+  private String whereBy(String sdate          , String edate      ,  
+                         String actor          , String pCondition , List<?> pUserNames,
+                         List<?> pDisplayNames , String msCondition, List<?> msDepts   , 
+                         List<?> msDisplayNames, Map<String, Object> queryParaMap) {
+	  
+	  StringBuilder result = new StringBuilder("WHERE 1=1 ");
+	  
+	  if(StringUtils.isNotBlank(sdate)) {
+		  result.append("AND TO_DATE(LOG.CREATE_AT) >= :sdate ");
+		  queryParaMap.put("sdate", sdate);
+	  }
+	  
+	  if(StringUtils.isNotBlank(edate)) {
+		  result.append("AND TO_DATE(LOG.CREATE_AT) <= :edate ");
+		  queryParaMap.put("edate", edate);
+	  }
+	  
+	  if("P".equalsIgnoreCase(actor)) {
+		  //負責人
+//		  result.append("AND ROLE IN ('C', 'D') ");
 
+		  if("UN".equalsIgnoreCase(pCondition)) {
+			  result.append("AND U.USERNAME IN (:pUserNames) ");
+			  queryParaMap.put("pUserNames", pUserNames);
+		  }
+		  
+		  if("DN".equalsIgnoreCase(pCondition)) {
+			  result.append("AND U.DISPLAY_NAME IN (:pDisplayNames) ");
+			  queryParaMap.put("pDisplayNames", pDisplayNames);
+		  }
+		  
+	  }else if("D".equalsIgnoreCase(actor)){
+		  //醫護人員
+		  result.append("AND ROLE IN ('E') ");
+		  
+		  if("D".equalsIgnoreCase(msCondition)) {
+			  result.append("AND D.ID IN (:msDepts) ");
+			  queryParaMap.put("msDepts", msDepts);
+		  }
+		  
+		  if("DN".equalsIgnoreCase(msCondition)) {
+			  result.append("AND U.DISPLAY_NAME IN (:pDisplayNames) ");
+			  queryParaMap.put("pDisplayNames", pDisplayNames);
+		  }
+	  }
+	  
+	  return result.toString();
+  }
+  
+  private String joinUserDepartmentOnUserName() {
+	  
+	  StringBuilder result = new StringBuilder();
+	  result
+	  .append("INNER JOIN USER U ON LOG.USERNAME = U.USERNAME ")
+	  .append("INNER JOIN USER_DEPARTMENT UD ON U.ID  = UD.USER_ID ")
+	  .append("INNER JOIN DEPARTMENT D  ON UD.DEPARTMENT_ID  = D.ID ");
+	  
+	  return result.toString();
+  }
+  
+  private String joinUserDepartmentOnUserId() {
+	  
+	  StringBuilder result = new StringBuilder();
+	  result
+	  .append("INNER JOIN USER U ON LOG.USER_ID = U.ID ")
+	  .append("INNER JOIN USER_DEPARTMENT UD ON U.ID  = UD.USER_ID ")
+	  .append("INNER JOIN DEPARTMENT D  ON UD.DEPARTMENT_ID  = D.ID ");
+	  
+	  return result.toString();
+  }
+  
 
   public int addForgotPassword(Long userId) {
 	  String sql;
