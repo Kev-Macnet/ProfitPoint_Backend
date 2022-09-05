@@ -3512,7 +3512,8 @@ public class DbReportService {
 							+ "' AS DATE, DRG_CODE,DRG_SECTION,DRG_QUANTITY,DRG_APPL_POINT,DRG_ACTUAL_POINT FROM ");
 					selectColumn.append(
 							" (SELECT MR.DRG_CODE, MR.DRG_SECTION  AS DRG_SECTION, COUNT(1) AS DRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_APPL_POINT, SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS DRG_ACTUAL_POINT "
-									+ "FROM MR, IP_D WHERE DRG_SECTION IS NOT  NULL AND DATA_FORMAT = '20' AND MR_END_DATE LIKE CONCAT('2020-06','%') "
+									+ "FROM MR, IP_D WHERE DRG_SECTION IS NOT  NULL AND DATA_FORMAT = '20' AND MR_END_DATE LIKE CONCAT('"
+									+ yearMonthBetweenStr.get(i) + "','%') "							
 									+ "AND IP_D.MR_ID = MR.ID ");
 					if (drgCodeList.size() > 0)
 						where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
@@ -10044,7 +10045,6 @@ public class DbReportService {
 							if (drgCode.isEmpty()) {
 								detailModel.setPercent(100.0);
 							} else {
-
 								detailModel.setPercent(d);
 							}
 							sectionC.add(detailModel);
