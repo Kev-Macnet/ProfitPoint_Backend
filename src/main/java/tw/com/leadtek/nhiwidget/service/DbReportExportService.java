@@ -3286,9 +3286,7 @@ public class DbReportExportService {
 				String[] split = StringUtility.splitBySpace(payCodeType);
 				for (String str : split) {
 					cell = row.createCell(cellIndex);
-					codeTableList = code_TABLEDao.findByCodeAndCat(str, "PAY_CODE_TYPE");
-					String name = codeTableList.get(0).getDescChi();
-					cell.setCellValue(name);
+					cell.setCellValue(str);
 					cell.setCellStyle(cellStyle);
 					cellIndex++;
 				}
