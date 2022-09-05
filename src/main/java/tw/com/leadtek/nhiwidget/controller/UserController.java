@@ -240,7 +240,6 @@ public class UserController extends BaseController {
   public ResponseEntity<BaseResponse> logout(HttpServletRequest request,
       @RequestHeader("Authorization") String jwt) {
     UserDetailsImpl user = getUserDetails();
-    logger.info("logout user=" + user);
     if (user == null || (jwt == null || jwt.indexOf(' ') < 0 || jwt.split(" ").length != 2)) {
       return returnAPIResult(null);
     }

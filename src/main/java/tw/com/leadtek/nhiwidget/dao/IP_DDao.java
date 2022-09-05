@@ -375,7 +375,7 @@ public interface IP_DDao extends JpaRepository<IP_D, Long>, JpaSpecificationExec
    * @param mrId
    * @return
    */
-  @Query(value = "SELECT mr.APPL_YM, mr.ROC_ID, mr.ID, ip_d.IN_DATE,  ip_d.ID_BIRTH_YMD," + 
+  @Query(value = "SELECT mr.APPL_YM, mr.ROC_ID, mr.ID, ip_d.IN_DATE, ip_d.ID_BIRTH_YMD," + 
       "ip_d.ICD_CM_1, ip_d.ICD_CM_2, ip_d.ICD_CM_3, ip_d.ICD_CM_4, ip_d.ICD_CM_5," + 
       "ip_d.ICD_OP_CODE1, ip_d.ICD_OP_CODE2, ip_d.ICD_OP_CODE3, ip_d.ICD_OP_CODE4," + 
       "ip_d.ICD_OP_CODE5, ip_d.TRAN_CODE , ip_d.OUT_DATE, ip_d.MED_DOT, ip_d.NB_BIRTHDAY," + 

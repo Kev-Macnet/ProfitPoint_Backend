@@ -483,6 +483,8 @@ public class DbBackupService {
         return (retMap);
     }
     
+    //abort:  1.備份(或還原)被中斷, 0.未被中斷(持續備份(或還原)中...)
+    //status: 0.是在備份(還原)中
     public java.util.Map<String, Object> loadBackupProgress() {
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         String busy = webConfigDao.getConfigValue("backup_busy");
@@ -494,14 +496,21 @@ public class DbBackupService {
         retMap.put("abort", webConfigDao.getConfigValue("backup_abort"));
         String progress = webConfigDao.getConfigValue("backup_progress");
         if (progress.length()>0) {
-            retMap.put("progress", Double.parseDouble(progress));
+            double progressVal = Double.parseDouble(progress);
+            retMap.put("progress", progressVal);
+            if (progressVal==100f) {
+                retMap.put("status", -1);
+            }
         } else {
             retMap.put("progress", 0);
+            retMap.put("status", -1);
         }
         
         return (retMap);
     }
     
+    //abort:  1.備份(或還原)被中斷, 0.未被中斷(持續備份(或還原)中...)
+    //status: 0.是在備份(還原)中
     public java.util.Map<String, Object> loadRestoreProgress() {
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         String busy = webConfigDao.getConfigValue("restore_busy");
@@ -511,23 +520,35 @@ public class DbBackupService {
             retMap.put("status", -1);
         }
         retMap.put("abort", webConfigDao.getConfigValue("restore_abort"));
-        String progress = webConfigDao.getConfigValue("restore_progress");
+//        String progress = webConfigDao.getConfigValue("restore_progress");
+        java.util.Map<String, Object> progressMap = webConfigDao.getConfig("restore_progress");
+        String progress = progressMap.get("value").toString();
         if (progress.length()>0) {
-            retMap.put("progress", Double.parseDouble(progress));
+            double progressVal = Double.parseDouble(progress);
+            retMap.put("progress", progressVal);
+            if (progressVal==100f) {
+                retMap.put("status", -1);
+            }
+            BasicJsonParser linkJsonParser = new BasicJsonParser();
+            String infoValue = webConfigDao.getConfigValue("restore_info");
+            java.util.Map<String, Object> infoMap = linkJsonParser.parseMap(infoValue);
+            infoMap.put("progressTime", progressMap.get("update_tm"));
+            retMap.put("info", infoMap);
         } else {
             retMap.put("progress", 0);
+            retMap.put("status", -1);
         }
-        
         return (retMap);
     }
     
+    
 
     //=== Restore ------
-    public java.util.Map<String, Object> restore(long id) {
+    public java.util.Map<String, Object> restore(String user, long id) {
         java.util.Map<String, Object> retMap = new java.util.HashMap<String, Object>();
         java.util.Map<String, Object> mapBackup = dbBakupLogDao.findOne(id);
-        System.out.println("mapBackup.......");
-        System.out.println(mapBackup);
+//        System.out.println("mapBackup.......");
+//        System.out.println(mapBackup);
         String busy = webConfigDao.getConfigValue("restore_busy");
         if (mapBackup.isEmpty()) {
             retMap.put("status", "-1"); //busy
@@ -552,6 +573,15 @@ public class DbBackupService {
                             fwork.mkdirs();
                         }
                         String csvFullName, tableName;
+                        //---------
+                        java.util.Map<String, Object> restoreInfo = new java.util.HashMap<String, Object>();
+                        restoreInfo.put("user", user);
+                        restoreInfo.put("backupId", id);
+                        restoreInfo.put("fileName", mapBackup.get("filename"));
+                        restoreInfo.put("startTime", new java.util.Date().getTime());
+                        com.google.gson.Gson gson = new com.google.gson.Gson();
+                        webConfigDao.setConfig("restore_info", gson.toJson(restoreInfo), "");
+                        //---------
                         java.util.List<String> csvFiles = ZipLib.unzipFile(zipFileName, unzipPath);
                         String abort="0";
                         int progress = 0;
