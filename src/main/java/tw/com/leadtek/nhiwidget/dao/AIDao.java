@@ -106,7 +106,7 @@ public interface AIDao extends JpaRepository<MR, Long> {
       "         SELECT ICDCM1, count(ICDCM1) as COUNT FROM mr WHERE DATA_FORMAT ='10' AND mr.MR_END_DATE <= ?1" + 
       "          group by ICDCM1 " + 
       "        ) temp2 " + 
-      "      WHERE temp1.ICDCM1 = temp2.ICDCM1 AND temp2.COUNT > 30 ORDER BY temp1.ICDCM1", nativeQuery = true)
+      "      WHERE temp1.ICDCM1 = temp2.ICDCM1 AND temp2.COUNT > 30 ORDER BY temp1.ICDCM1, temp1.ATC", nativeQuery = true)
   public List<Map<String,Object>> icdcmMaterialCountOP(Date endDate);
   
   // temp1 取得各診斷碼搭配的衛品的出現次數
@@ -120,6 +120,6 @@ public interface AIDao extends JpaRepository<MR, Long> {
       "             SELECT ICDCM1, count(ICDCM1) as COUNT FROM mr WHERE DATA_FORMAT ='20' AND mr.MR_END_DATE <= ?1" + 
       "             group by ICDCM1 " + 
       "           ) temp2 " + 
-      "      WHERE temp1.ICDCM1 = temp2.ICDCM1 AND temp2.COUNT > 30 ORDER BY temp1.ICDCM1", nativeQuery = true)
+      "      WHERE temp1.ICDCM1 = temp2.ICDCM1 AND temp2.COUNT > 30 ORDER BY temp1.ICDCM1, temp1.ATC", nativeQuery = true)
   public List<Map<String,Object>> icdcmMaterialCountIP(Date endDate);
 }

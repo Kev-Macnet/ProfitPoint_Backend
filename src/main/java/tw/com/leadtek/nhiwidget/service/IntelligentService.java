@@ -2869,11 +2869,15 @@ public class IntelligentService {
     if (!System.getProperty("os.name").toLowerCase().startsWith("windows")) {
       return;
     }
-    if (applYm == null || applYm.length() != 5) {
+    List<MR> list = null;
+    if ("all".equals(applYm)) {
+      list = mrDao.findByDataFormat(XMLConstant.DATA_FORMAT_IP);
+    } else if (applYm == null || applYm.length() != 5) {
       logger.error("runDrgCalculate applYm format error:" + applYm);
       return;
+    } else {
+      list = mrDao.findByApplYmAndDataFormatOrderById(applYm, XMLConstant.DATA_FORMAT_IP);
     }
-    List<MR> list = mrDao.findByApplYmAndDataFormatOrderById(applYm, XMLConstant.DATA_FORMAT_IP);
     runDrgCalculate(list);
   }
   
