@@ -5466,14 +5466,19 @@ public class DbReportService {
 								/// 含勞保
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(OP_P.TOTAL_DOT),0) AS OP_DOT FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID AND OP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND OP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							} else {
 								/// 不含勞保
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(OP_P.TOTAL_DOT),0) AS OP_DOT FROM MR, OP_P, OP_D WHERE MR.ID = OP_D.MR_ID AND OP_D.ID = OP_P.OPD_ID AND OP_D.CASE_TYPE != 'B6' AND OP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND OP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
+							}
+							//藥品及衛品用醫令碼長度判斷
+							if ("22".equals(pcType) || "23".equals(pcType)) {
+								String drugNoLength = "22".equals(pcType) ? "10" : "12";
+								selectColumn.append("AND LENGTH(OP_P.DRUG_NO) = " + drugNoLength);
+							}else {
+								selectColumn.append("AND OP_P.PAY_CODE_TYPE = '" + pcType + "'");
 							}
 							if (funcTypeList.size() > 0)
 								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
@@ -5937,16 +5942,20 @@ public class DbReportService {
 								/// 含勞保
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(OP_P.TOTAL_DOT),0) AS OP_DOT FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID AND OP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND OP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							} else {
 								/// 不含勞保
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(OP_P.TOTAL_DOT),0) AS OP_DOT FROM MR, OP_P, OP_D WHERE MR.ID = OP_D.MR_ID AND OP_D.ID = OP_P.OPD_ID AND OP_D.CASE_TYPE != 'B6' AND OP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND OP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							}
-
+							//藥品及衛品用醫令碼長度判斷
+							if ("22".equals(pcType) || "23".equals(pcType)) {
+								String drugNoLength = "22".equals(pcType) ? "10" : "12";
+								selectColumn.append("AND LENGTH(OP_P.DRUG_NO) = " + drugNoLength);
+							}else {
+								selectColumn.append("AND OP_P.PAY_CODE_TYPE = '" + pcType + "'");
+							}
 							if (funcTypeList.size() > 0)
 								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 							if (medNameList.size() > 0)
@@ -6221,15 +6230,19 @@ public class DbReportService {
 								/// 含勞保
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(OP_P.TOTAL_DOT),0) AS OP_DOT FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE <> '22' AND OP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND OP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							} else {
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(OP_P.TOTAL_DOT),0) AS OP_DOT FROM MR, OP_P, OP_D WHERE MR.ID = OP_D.MR_ID AND OP_D.ID = OP_P.OPD_ID AND OP_D.CASE_TYPE != 'B6' AND MR.FUNC_TYPE <> '22' AND OP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND OP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							}
-
+							//藥品及衛品用醫令碼長度判斷
+							if ("22".equals(pcType) || "23".equals(pcType)) {
+								String drugNoLength = "22".equals(pcType) ? "10" : "12";
+								selectColumn.append("AND LENGTH(OP_P.DRUG_NO) = " + drugNoLength);
+							}else {
+								selectColumn.append("AND OP_P.PAY_CODE_TYPE = '" + pcType + "'");
+							}
 							if (funcTypeList.size() > 0)
 								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 							if (medNameList.size() > 0)
@@ -6499,15 +6512,21 @@ public class DbReportService {
 								/// 含勞保
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(OP_P.TOTAL_DOT),0) AS OP_DOT FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID AND MR.FUNC_TYPE = '22' AND OP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND OP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							} else {
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(OP_P.TOTAL_DOT),0) AS OP_DOT FROM MR, OP_P, OP_D WHERE MR.ID = OP_D.MR_ID AND OP_D.ID = OP_P.OPD_ID AND OP_D.CASE_TYPE != 'B6' AND MR.FUNC_TYPE = '22' AND OP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND OP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							}
 
+							//藥品及衛品用醫令碼長度判斷
+							if ("22".equals(pcType) || "23".equals(pcType)) {
+								String drugNoLength = "22".equals(pcType) ? "10" : "12";
+								selectColumn.append("AND LENGTH(OP_P.DRUG_NO) = " + drugNoLength);
+							}else {
+								selectColumn.append("AND OP_P.PAY_CODE_TYPE = '" + pcType + "'");
+							}
+							
 							if (funcTypeList.size() > 0)
 								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 							if (medNameList.size() > 0)
@@ -6788,6 +6807,14 @@ public class DbReportService {
 												+ pcType + "' ");
 							}
 
+							//藥品及衛品用醫令碼長度判斷
+							if ("22".equals(pcType) || "23".equals(pcType)) {
+								String orderCodeLength = "22".equals(pcType) ? "10" : "12";
+								selectColumn.append("AND LENGTH(IP_P.ORDER_CODE) = " + orderCodeLength);
+							}else {
+								selectColumn.append("AND IP_P.PAY_CODE_TYPE = '" + pcType + "'");
+							}
+							
 							if (funcTypeList.size() > 0)
 								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 							if (medNameList.size() > 0)
