@@ -324,7 +324,7 @@ public class ExcelUtil {
         if (cellValue.indexOf(',') > -1) {
           cellValue = cellValue.split(",")[0];
         }
-        result.put(new Integer(i), cellValue);
+        result.put(Integer.valueOf(i), cellValue);
       }
     }
     return result;
@@ -341,7 +341,7 @@ public class ExcelUtil {
         if (cellValue.indexOf(',') > -1) {
           cellValue = cellValue.split(",")[0];
         }
-        result.put(new Integer(i), cellValue);
+        result.put(Integer.valueOf(i), cellValue);
       }
     }
     return result;
@@ -369,16 +369,16 @@ public class ExcelUtil {
               continue;
             }
             if (cellValue.equals(parameterList.get(j).getValue().trim())) {
-              result.put(new Integer(i), parameterList.get(j).getName());
+              result.put(Integer.valueOf(i), parameterList.get(j).getName());
               isFound = true;
               break;
             }
           }
           if (!isFound) {
-            result.put(new Integer(i), cellValue);
+            result.put(Integer.valueOf(i), cellValue);
           }
         } else {
-          result.put(new Integer(i), cellValue);
+          result.put(Integer.valueOf(i), cellValue);
         }
       }
     }
@@ -396,7 +396,7 @@ public class ExcelUtil {
 	        if (cellValue.indexOf(',') > -1) {
 	          cellValue = cellValue.split(",")[0];
 	        }
-	        result.put(new Integer(i), cellValue);
+	        result.put(Integer.valueOf(i), cellValue);
 	      }
 	    }
 	    return result;
@@ -422,8 +422,8 @@ public class ExcelUtil {
 	        cellValue = row.getCell(i).getStringCellValue().trim();
 	      }
 	      if (cellValue != null && cellValue.length() > 0) {
-	        if (columnMap.get(new Integer(i)) != null) {
-	          result.put(columnMap.get(new Integer(i)), cellValue);
+	        if (columnMap.get(Integer.valueOf(i)) != null) {
+	          result.put(columnMap.get(Integer.valueOf(i)), cellValue);
 	        }
 	      }
 	    }
@@ -434,7 +434,7 @@ public class ExcelUtil {
       XSSFRow row) {
     HashMap<String, String> result = new HashMap<String, String>();
     // for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 130; i++) {
       String cellValue = null;
       if (row.getCell(i) == null) {
         continue;
@@ -450,8 +450,16 @@ public class ExcelUtil {
         cellValue = row.getCell(i).getStringCellValue().trim();
       }
       if (cellValue != null && cellValue.length() > 0) {
-        if (columnMap.get(new Integer(i)) != null) {
-          result.put(columnMap.get(new Integer(i)), cellValue);
+        String columnName = columnMap.get(Integer.valueOf(i));
+        if (columnName != null) {
+          if (columnName.indexOf(',') > 0) {
+            String[] columnNames = columnName.split(",");
+            for (String string : columnNames) {
+              result.put(string, cellValue);
+            }
+          } else {
+            result.put(columnName, cellValue);
+          }
         }
       }
     }
@@ -491,8 +499,8 @@ public class ExcelUtil {
         cellValue = row.getCell(i).getStringCellValue().trim();
       }
       if (cellValue != null && cellValue.length() > 0) {
-        if (columnMap.get(new Integer(i)) != null) {
-          result.put(columnMap.get(new Integer(i)), cellValue);
+        if (columnMap.get(Integer.valueOf(i)) != null) {
+          result.put(columnMap.get(Integer.valueOf(i)), cellValue);
         }
       }
     }
@@ -527,8 +535,8 @@ public class ExcelUtil {
       } else {
         cellValue = row.getCell(i).getStringCellValue().trim();
       }
-      if (cellValue != null && cellValue.length() > 0 && columnMap.get(new Integer(i)) != null) {
-        result.put(columnMap.get(new Integer(i)), cellValue);
+      if (cellValue != null && cellValue.length() > 0 && columnMap.get(Integer.valueOf(i)) != null) {
+        result.put(columnMap.get(Integer.valueOf(i)), cellValue);
       }
     }
     return result;
@@ -560,16 +568,20 @@ public class ExcelUtil {
               continue;
             }
             if (cellValue.equals(parameterList.get(j).getValue().trim())) {
-              result.put(new Integer(i), parameterList.get(j).getName());
+              String value = result.get(Integer.valueOf(i));
+              if (value == null) {
+                result.put(Integer.valueOf(i), parameterList.get(j).getName());
+              } else {
+                result.put(Integer.valueOf(i), value + "," + parameterList.get(j).getName());
+              }
               isFound = true;
-              break;
             }
           }
           if (!isFound) {
-            result.put(new Integer(i), cellValue);
+            result.put(Integer.valueOf(i), cellValue);
           }
         } else {
-          result.put(new Integer(i), cellValue);
+          result.put(Integer.valueOf(i), cellValue);
         }
       }
     }
@@ -602,16 +614,16 @@ public class ExcelUtil {
               continue;
             }
             if (cellValue.equals(parameterList.get(j).getValue().trim())) {
-              result.put(new Integer(i), parameterList.get(j).getName());
+              result.put(Integer.valueOf(i), parameterList.get(j).getName());
               isFound = true;
               break;
             }
           }
           if (!isFound) {
-            result.put(new Integer(i), cellValue);
+            result.put(Integer.valueOf(i), cellValue);
           }
         } else {
-          result.put(new Integer(i), cellValue);
+          result.put(Integer.valueOf(i), cellValue);
         }
       }
     }

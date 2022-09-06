@@ -253,7 +253,8 @@ public class DbBackupControll {
           if ("0".equals(parametersService.getParameter(MENU_DBBACKUP))) {
             return ResponseEntity.ok(new BaseResponse("success", null));
           } else {
-            java.util.Map<String, Object> retMap = dbBackupService.restore(backup_id);
+            String jwtAcc = jwtValidation.get("userName").toString();
+            java.util.Map<String, Object> retMap = dbBackupService.restore(jwtAcc, backup_id);
             return new ResponseEntity<>(retMap, HttpStatus.OK);
           }
         }

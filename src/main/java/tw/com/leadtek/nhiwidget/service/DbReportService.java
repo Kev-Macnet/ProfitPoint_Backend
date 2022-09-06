@@ -50,79 +50,79 @@ import tw.com.leadtek.tools.StringUtility;
 @Service
 public class DbReportService {
 
-	private Logger logger = LogManager.getLogger();
-	private final static int APPL_STATUS_SELF_FEE = 5;
-	private List<CODE_TABLE> codeTableList;
+    private Logger logger = LogManager.getLogger();
+    private final static int APPL_STATUS_SELF_FEE = 5;
+    private List<CODE_TABLE> codeTableList;
 
 	@Autowired
 	private POINT_MONTHLYDao pointMonthlyDao;
 
-	@Autowired
-	private EntityManager entityManager;
+    @Autowired
+    private EntityManager entityManager;
 
-	@Autowired
-	private MRDao mrDao;
+    @Autowired
+    private MRDao mrDao;
 
-	@Autowired
-	private CODE_TABLEDao code_TABLEDao;
+    @Autowired
+    private CODE_TABLEDao code_TABLEDao;
 
-	public BaseResponse test() {
-		BaseResponse res = new BaseResponse();
-		res.setMessage("isdone");
-		res.setResult("ok");
-		return res;
-	}
+    public BaseResponse test() {
+        BaseResponse res = new BaseResponse();
+        res.setMessage("isdone");
+        res.setResult("ok");
+        return res;
+    }
 
-	// 目錄
-	public DatabaseCalculateExportFactor getDatabaseCalculateContents(String dateType, String exportType,
-			Boolean withLaborProtection, String classFee, String feeApply, Boolean isShowSelfFeeList,
-			Boolean isShowPhysicalList, String caseStatus, String year, String month, String betweenSDate,
-			String betweenEDate, String sections, String drgCodes, String dataFormats, String funcTypes,
-			String medNames, String icdcms, String medLogCodes, Integer applMin, Integer applMax, String icdAll,
-			String payCode, String inhCode, Boolean isShowDRGList, Boolean isLastM, Boolean isLastY) {
+    // 目錄
+    public DatabaseCalculateExportFactor getDatabaseCalculateContents(String dateType, String exportType,
+            Boolean withLaborProtection, String classFee, String feeApply, Boolean isShowSelfFeeList,
+            Boolean isShowPhysicalList, String caseStatus, String year, String month, String betweenSDate,
+            String betweenEDate, String sections, String drgCodes, String dataFormats, String funcTypes,
+            String medNames, String icdcms, String medLogCodes, Integer applMin, Integer applMax, String icdAll,
+            String payCode, String inhCode, Boolean isShowDRGList, Boolean isLastM, Boolean isLastY) {
 
-		DatabaseCalculateExportFactor databaseCalculateExportFactor = new DatabaseCalculateExportFactor();
-		databaseCalculateExportFactor.setExportName(exportType);
+        DatabaseCalculateExportFactor databaseCalculateExportFactor = new DatabaseCalculateExportFactor();
+        databaseCalculateExportFactor.setExportName(exportType);
 
-		switch (exportType) {
-		case "達成率與超額數":
-			databaseCalculateExportFactor.setDateType("0");
-			databaseCalculateExportFactor.setYear(year);
-			databaseCalculateExportFactor.setMonth(month);
-			databaseCalculateExportFactor.setIsLastM(isLastM);
-			databaseCalculateExportFactor.setIsLastY(isLastY);
-			break;
-		case "DRG案件數分佈佔率與定額、實際點數":
-			if (isShowDRGList) {
-				drgCodes = "";
-				isLastM = false;
-				isLastY = false;
-			}
-			databaseCalculateExportFactor.setIsShowDRGList(isShowDRGList);
-			databaseCalculateExportFactor.setSections(sections);
-			databaseCalculateExportFactor.setDrgCodes(drgCodes);
+        switch (exportType) {
+        case "達成率與超額數":
+            databaseCalculateExportFactor.setDateType("0");
+            databaseCalculateExportFactor.setYear(year);
+            databaseCalculateExportFactor.setMonth(month);
+            databaseCalculateExportFactor.setIsLastM(isLastM);
+            databaseCalculateExportFactor.setIsLastY(isLastY);
+            break;
+        case "DRG案件數分佈佔率與定額、實際點數":
+            if (isShowDRGList) {
+                drgCodes = "";
+                isLastM = false;
+                isLastY = false;
+            }
+            databaseCalculateExportFactor.setIsShowDRGList(isShowDRGList);
+            databaseCalculateExportFactor.setSections(sections);
+            databaseCalculateExportFactor.setDrgCodes(drgCodes);
 
-			databaseCalculateExportFactor.setDateType(dateType);
-			databaseCalculateExportFactor.setYear(year);
-			databaseCalculateExportFactor.setMonth(month);
-			databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
-			databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
-			databaseCalculateExportFactor.setDataFormats(dataFormats);
-			databaseCalculateExportFactor.setFuncTypes(funcTypes);
-			databaseCalculateExportFactor.setMedNames(medNames);
-			databaseCalculateExportFactor.setIcdcms(icdcms);
-			databaseCalculateExportFactor.setMedLogCodes(medLogCodes);
-			databaseCalculateExportFactor.setApplMin(applMin);
-			databaseCalculateExportFactor.setApplMax(applMax);
-			databaseCalculateExportFactor.setIcdAll(icdAll);
-			databaseCalculateExportFactor.setPayCode(payCode);
-			databaseCalculateExportFactor.setInhCode(inhCode);
-			databaseCalculateExportFactor.setIsLastM(isLastM);
-			databaseCalculateExportFactor.setIsLastY(isLastY);
-			break;
-		case "申報分配佔率與點數、金額":
-			databaseCalculateExportFactor.setWithLaborProtection(withLaborProtection);
-			databaseCalculateExportFactor.setClassFee(classFee);
+            databaseCalculateExportFactor.setDateType(dateType);
+            databaseCalculateExportFactor.setYear(year);
+            databaseCalculateExportFactor.setMonth(month);
+            databaseCalculateExportFactor.setBetweenSDate(betweenSDate);
+            databaseCalculateExportFactor.setBetweenEDate(betweenEDate);
+            databaseCalculateExportFactor.setDataFormats(dataFormats);
+            databaseCalculateExportFactor.setFuncTypes(funcTypes);
+            databaseCalculateExportFactor.setMedNames(medNames);
+            databaseCalculateExportFactor.setIcdcms(icdcms);
+            databaseCalculateExportFactor.setMedLogCodes(medLogCodes);
+            databaseCalculateExportFactor.setApplMin(applMin);
+            databaseCalculateExportFactor.setApplMax(applMax);
+            databaseCalculateExportFactor.setIcdAll(icdAll);
+            databaseCalculateExportFactor.setPayCode(payCode);
+            databaseCalculateExportFactor.setInhCode(inhCode);
+            databaseCalculateExportFactor.setIsLastM(isLastM);
+            databaseCalculateExportFactor.setIsLastY(isLastY);
+            break;
+        case "申報分配佔率與點數、金額":
+            databaseCalculateExportFactor.setWithLaborProtection(withLaborProtection);
+            databaseCalculateExportFactor.setClassFee(classFee);
 
 			databaseCalculateExportFactor.setDateType("0");
 			databaseCalculateExportFactor.setYear(year);
@@ -3512,8 +3512,7 @@ public class DbReportService {
 							+ "' AS DATE, DRG_CODE,DRG_SECTION,DRG_QUANTITY,DRG_APPL_POINT,DRG_ACTUAL_POINT FROM ");
 					selectColumn.append(
 							" (SELECT MR.DRG_CODE, MR.DRG_SECTION  AS DRG_SECTION, COUNT(1) AS DRG_QUANTITY, SUM(IP_D.APPL_DOT + IP_D.PART_DOT) AS DRG_APPL_POINT, SUM(IP_D.MED_DOT + IP_D.NON_APPL_DOT) AS DRG_ACTUAL_POINT "
-									+ "FROM MR, IP_D WHERE DRG_SECTION IS NOT  NULL AND DATA_FORMAT = '20' AND MR_END_DATE LIKE CONCAT('"
-									+ yearMonthBetweenStr.get(i) + "','%') "							
+									+ "FROM MR, IP_D WHERE DRG_SECTION IS NOT  NULL AND DATA_FORMAT = '20' AND MR_END_DATE LIKE CONCAT('2020-06','%') "
 									+ "AND IP_D.MR_ID = MR.ID ");
 					if (drgCodeList.size() > 0)
 						where.append(" AND MR.DRG_CODE IN (" + drgCodeSql + ") ");
@@ -5034,192 +5033,192 @@ public class DbReportService {
 								selectColumn.append(
 										" (SELECT MR.PRSN_ID, MR.FUNC_TYPE , IP_P.ORDER_CODE AS IHN_CODE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 
-								where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
-								if (funcTypeList.size() > 0)
-									where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+                        where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
+                        if (funcTypeList.size() > 0)
+                            where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 
-								if (medNameList.size() > 0)
-									where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+                        if (medNameList.size() > 0)
+                            where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
 
-								if (icdAllList.size() > 0)
-									for (String s : icdAllList) {
-										where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
-									}
+                                if (icdAllList.size() > 0)
+                                    for (String s : icdAllList) {
+                                        where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + s + "'),'%') ");
+                                    }
 
-								if (payCode != null && payCode.length() > 0)
-									where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+                                if (payCode != null && payCode.length() > 0)
+                                    where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
 
-								if (inhCode != null && inhCode.length() > 0)
-									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+                                if (inhCode != null && inhCode.length() > 0)
+                                    where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
-								groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE, MR.PRSN_ID) ");
+                                groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE, MR.PRSN_ID) ");
 
-								selectColumn.append(where);
-								selectColumn.append(groupBy);
-								selectColumn.append(orderBy);
-								where = new StringBuffer("");
-								groupBy = new StringBuffer("");
-								orderBy = new StringBuffer("");
-							}
-							break;
-						default:
-							break;
-						}
-					}
+                                selectColumn.append(where);
+                                selectColumn.append(groupBy);
+                                selectColumn.append(orderBy);
+                                where = new StringBuffer("");
+                                groupBy = new StringBuffer("");
+                                orderBy = new StringBuffer("");
+                            }
+                            break;
+                        default:
+                            break;
+                        }
+                    }
 
-					/// 傳統sql語法組成資料
-					sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
-					sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
-					dataMap.clear();
-					@SuppressWarnings("unchecked")
-					List<Map<String, Object>> dataMap3_2 = sqlQuery.getResultList();
-					sqlMapList3_2.addAll(dataMap3_2);
-					selectColumn = new StringBuffer("");
-					entityManager.close();
+                    /// 傳統sql語法組成資料
+                    sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
+                    sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+                    dataMap.clear();
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> dataMap3_2 = sqlQuery.getResultList();
+                    sqlMapList3_2.addAll(dataMap3_2);
+                    selectColumn = new StringBuffer("");
+                    entityManager.close();
 
-					selectColumn = new StringBuffer("");
-					where = new StringBuffer("");
-					groupBy = new StringBuffer("");
-					orderBy = new StringBuffer("");
-				}
-			}
+                    selectColumn = new StringBuffer("");
+                    where = new StringBuffer("");
+                    groupBy = new StringBuffer("");
+                    orderBy = new StringBuffer("");
+                }
+            }
 
-			Map<String, Object> ret = new LinkedHashMap<String, Object>();
-			if (i == 0) {
-				sqlMapList.get(0).put("displayName", "");
-				sqlMapList.get(0).put("date", sd + "~" + ed);
-			} else {
-				sqlMapList.get(0).put("displayName", "去年同期時段相比");
-				sqlMapList.get(0).put("date", sd + "~" + ed);
-			}
-			ret.put("sqlMapList", sqlMapList);
-			ret.put("sqlMapList1", sqlMapList1);
-			ret.put("sqlMapList2", sqlMapList2);
-			ret.put("sqlMapList2_2", sqlMapList2_2);
-			ret.put("sqlMapList3", sqlMapList3);
-			ret.put("sqlMapList3_2", sqlMapList3_2);
-			retList.add(ret);
-			ret = new HashMap<String, Object>();
-			sqlMapList = new ArrayList<Map<String, Object>>();
-			sqlMapList1 = new ArrayList<Map<String, Object>>();
-			sqlMapList2 = new ArrayList<Map<String, Object>>();
-			sqlMapList2_2 = new ArrayList<Map<String, Object>>();
-			sqlMapList3 = new ArrayList<Map<String, Object>>();
-			sqlMapList3_2 = new ArrayList<Map<String, Object>>();
-		}
+            Map<String, Object> ret = new LinkedHashMap<String, Object>();
+            if (i == 0) {
+                sqlMapList.get(0).put("displayName", "");
+                sqlMapList.get(0).put("date", sd + "~" + ed);
+            } else {
+                sqlMapList.get(0).put("displayName", "去年同期時段相比");
+                sqlMapList.get(0).put("date", sd + "~" + ed);
+            }
+            ret.put("sqlMapList", sqlMapList);
+            ret.put("sqlMapList1", sqlMapList1);
+            ret.put("sqlMapList2", sqlMapList2);
+            ret.put("sqlMapList2_2", sqlMapList2_2);
+            ret.put("sqlMapList3", sqlMapList3);
+            ret.put("sqlMapList3_2", sqlMapList3_2);
+            retList.add(ret);
+            ret = new HashMap<String, Object>();
+            sqlMapList = new ArrayList<Map<String, Object>>();
+            sqlMapList1 = new ArrayList<Map<String, Object>>();
+            sqlMapList2 = new ArrayList<Map<String, Object>>();
+            sqlMapList2_2 = new ArrayList<Map<String, Object>>();
+            sqlMapList3 = new ArrayList<Map<String, Object>>();
+            sqlMapList3_2 = new ArrayList<Map<String, Object>>();
+        }
 
-		OwnExpenseQueryConditionResponse response = mapToObj(retList, isShowOwnExpense, funcTypes, medNames);
+        OwnExpenseQueryConditionResponse response = mapToObj(retList, isShowOwnExpense, funcTypes, medNames);
 
-		return response;
-	}
+        return response;
+    }
 
-	/**
-	 * 申報分配佔率與點數、金額
-	 * 
-	 * @param nhiStatus
-	 * @param payCodeType
-	 * @param year
-	 * @param month
-	 * @param dataFormats
-	 * @param funcTypes
-	 * @param medNames
-	 * @param icdcms
-	 * @param medLogCodes
-	 * @param applMin
-	 * @param applMax
-	 * @param icdAll
-	 * @param payCode
-	 * @param inhCode
-	 * @param isLastM
-	 * @param isLastY
-	 * @return
-	 */
-	public Map<String, Object> getAchievePointQueryCondition(String nhiStatus, String payCodeTypes, String year,
-			String month, String dataFormats, String funcTypes, String medNames, String icdcms, String medLogCodes,
-			Long applMin, Long applMax, String icdAll, String payCode, String inhCode, boolean isLastM,
-			boolean isLastY) {
+    /**
+     * 申報分配佔率與點數、金額
+     * 
+     * @param nhiStatus
+     * @param payCodeType
+     * @param year
+     * @param month
+     * @param dataFormats
+     * @param funcTypes
+     * @param medNames
+     * @param icdcms
+     * @param medLogCodes
+     * @param applMin
+     * @param applMax
+     * @param icdAll
+     * @param payCode
+     * @param inhCode
+     * @param isLastM
+     * @param isLastY
+     * @return
+     */
+    public Map<String, Object> getAchievePointQueryCondition(String nhiStatus, String payCodeTypes, String year,
+            String month, String dataFormats, String funcTypes, String medNames, String icdcms, String medLogCodes,
+            Long applMin, Long applMax, String icdAll, String payCode, String inhCode, boolean isLastM,
+            boolean isLastY) {
 
-		Map<String, Object> result = new HashMap<String, Object>();
-		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
+        Map<String, Object> result = new HashMap<String, Object>();
+        List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
 
-		/// 費用類別
-		List<String> payCodeTypeList = new ArrayList<String>();
-		/// 就醫類別
-		List<String> dataformatList = new ArrayList<String>();
-		String dateformatSql = "";
-		/// 科別
-		List<String> funcTypeList = new ArrayList<String>();
-		String funcTypeSql = "";
-		/// 醫護姓名
-		List<String> medNameList = new ArrayList<String>();
-		String medNameSql = "";
-		/// 病歷編號
-		List<String> icdcmList = new ArrayList<String>();
-		String icdcmSql = "";
-		/// 就醫紀錄編號
-		List<String> medLogCodeList = new ArrayList<String>();
-		String medLogCodeSql = "";
-		/// 不分區ICD碼
-		List<String> icdAllList = new ArrayList<String>();
+        /// 費用類別
+        List<String> payCodeTypeList = new ArrayList<String>();
+        /// 就醫類別
+        List<String> dataformatList = new ArrayList<String>();
+        String dateformatSql = "";
+        /// 科別
+        List<String> funcTypeList = new ArrayList<String>();
+        String funcTypeSql = "";
+        /// 醫護姓名
+        List<String> medNameList = new ArrayList<String>();
+        String medNameSql = "";
+        /// 病歷編號
+        List<String> icdcmList = new ArrayList<String>();
+        String icdcmSql = "";
+        /// 就醫紀錄編號
+        List<String> medLogCodeList = new ArrayList<String>();
+        String medLogCodeSql = "";
+        /// 不分區ICD碼
+        List<String> icdAllList = new ArrayList<String>();
 
-		/// 如果payCodeTypes有值
-		if (payCodeTypes != null && payCodeTypes.length() > 0) {
-			String[] pcTypeArr = StringUtility.splitBySpace(payCodeTypes);
-			for (String str : pcTypeArr) {
-				CODE_TABLE ct = code_TABLEDao.findByDescChiAndCat(str, "PAY_CODE_TYPE");
-				payCodeTypeList.add(ct.getCode());
-			}
-		}
-		/// 如果dataformat有值
-		if (dataFormats != null && dataFormats.length() > 0) {
-			String[] dataformatArr = StringUtility.splitBySpace(dataFormats);
-			for (String str : dataformatArr) {
-				dataformatList.add(str);
-			}
-		}
-		/// 如果functype有值
-		if (funcTypes != null && funcTypes.length() > 0) {
-			String[] funcTypeArr = StringUtility.splitBySpace(funcTypes);
-			for (String str : funcTypeArr) {
-				funcTypeList.add(str);
-				funcTypeSql += "'" + str + "',";
-			}
-			funcTypeSql = funcTypeSql.substring(0, funcTypeSql.length() - 1);
-		}
-		/// 如果medNames有值
-		if (medNames != null && medNames.length() > 0) {
-			String[] medNameArr = StringUtility.splitBySpace(medNames);
-			for (String str : medNameArr) {
-				medNameList.add(str);
-				medNameSql += "'" + str + "',";
-			}
-			medNameSql = medNameSql.substring(0, medNameSql.length() - 1);
-		}
-		/// 如果icdcm有值
-		if (icdcms != null && icdcms.length() > 0) {
-			String[] icdcmArr = StringUtility.splitBySpace(icdcms);
-			for (String str : icdcmArr) {
-				icdcmList.add(str);
-				icdcmSql += "'" + str + "',";
-			}
-			icdcmSql = icdcmSql.substring(0, icdcmSql.length() - 1);
-		}
-		/// 如果medLogCodes有值
-		if (medLogCodes != null && medLogCodes.length() > 0) {
-			String[] medLogCodesArr = StringUtility.splitBySpace(medLogCodes);
-			for (String str : medLogCodesArr) {
-				medLogCodeList.add(str);
-				medLogCodeSql += "'" + str + "',";
-			}
-			medLogCodeSql = medLogCodeSql.substring(0, medLogCodeSql.length() - 1);
-		}
-		/// 如果icdAll有值
-		if (icdAll != null && icdAll.length() > 0) {
-			String[] icdAllArr = StringUtility.splitBySpace(icdAll);
-			for (String str : icdAllArr) {
-				icdAllList.add(str);
-			}
-		}
+        /// 如果payCodeTypes有值
+        if (payCodeTypes != null && payCodeTypes.length() > 0) {
+            String[] pcTypeArr = StringUtility.splitBySpace(payCodeTypes);
+            for (String str : pcTypeArr) {
+                CODE_TABLE ct = code_TABLEDao.findByDescChiAndCat(str, "PAY_CODE_TYPE");
+                payCodeTypeList.add(ct.getCode());
+            }
+        }
+        /// 如果dataformat有值
+        if (dataFormats != null && dataFormats.length() > 0) {
+            String[] dataformatArr = StringUtility.splitBySpace(dataFormats);
+            for (String str : dataformatArr) {
+                dataformatList.add(str);
+            }
+        }
+        /// 如果functype有值
+        if (funcTypes != null && funcTypes.length() > 0) {
+            String[] funcTypeArr = StringUtility.splitBySpace(funcTypes);
+            for (String str : funcTypeArr) {
+                funcTypeList.add(str);
+                funcTypeSql += "'" + str + "',";
+            }
+            funcTypeSql = funcTypeSql.substring(0, funcTypeSql.length() - 1);
+        }
+        /// 如果medNames有值
+        if (medNames != null && medNames.length() > 0) {
+            String[] medNameArr = StringUtility.splitBySpace(medNames);
+            for (String str : medNameArr) {
+                medNameList.add(str);
+                medNameSql += "'" + str + "',";
+            }
+            medNameSql = medNameSql.substring(0, medNameSql.length() - 1);
+        }
+        /// 如果icdcm有值
+        if (icdcms != null && icdcms.length() > 0) {
+            String[] icdcmArr = StringUtility.splitBySpace(icdcms);
+            for (String str : icdcmArr) {
+                icdcmList.add(str);
+                icdcmSql += "'" + str + "',";
+            }
+            icdcmSql = icdcmSql.substring(0, icdcmSql.length() - 1);
+        }
+        /// 如果medLogCodes有值
+        if (medLogCodes != null && medLogCodes.length() > 0) {
+            String[] medLogCodesArr = StringUtility.splitBySpace(medLogCodes);
+            for (String str : medLogCodesArr) {
+                medLogCodeList.add(str);
+                medLogCodeSql += "'" + str + "',";
+            }
+            medLogCodeSql = medLogCodeSql.substring(0, medLogCodeSql.length() - 1);
+        }
+        /// 如果icdAll有值
+        if (icdAll != null && icdAll.length() > 0) {
+            String[] icdAllArr = StringUtility.splitBySpace(icdAll);
+            for (String str : icdAllArr) {
+                icdAllList.add(str);
+            }
+        }
 
 		String[] years = StringUtility.splitBySpace(year);
 		String[] months = StringUtility.splitBySpace(month);
@@ -10045,6 +10044,7 @@ public class DbReportService {
 							if (drgCode.isEmpty()) {
 								detailModel.setPercent(100.0);
 							} else {
+
 								detailModel.setPercent(d);
 							}
 							sectionC.add(detailModel);

@@ -789,4 +789,6 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
 
   @Query(value = "SELECT * FROM mr WHERE ID IN ?1", nativeQuery = true)
   public List<MR> getMrByIdList(List<Long> idList);
+  
+  public List<MR> findByDataFormat(String dataFormat);
 }

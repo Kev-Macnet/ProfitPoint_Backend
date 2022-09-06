@@ -19,14 +19,17 @@ public interface ICDCM_DRUG_ATCDao extends JpaRepository<ICDCM_DRUG_ATC, ICDCM_D
   public void deleteByDataFormat(String dataFormat);
   
   /**
-   * 取得用藥差異的ICD碼、藥品代碼及ATC代碼
+   * 取得用藥/衛品差異的ICD碼、藥品代碼及ATC代碼
    * @param dataFormat
    * @param percent
    * @return
    */
   @Query(value = "SELECT ICDCM_DRUG_ATC.* FROM ICDCM_DRUG_ATC, " + 
-      "(SELECT ICDCM, ATC FROM ICDCM_DRUG_ATC WHERE DATA_FORMAT = ?1 AND ATC_COUNT > 30 AND (DRUG_COUNT / ATC_COUNT) < ?2) DIFF " + 
-      "WHERE ICDCM_DRUG_ATC.DATA_FORMAT = ?1 AND ICDCM_DRUG_ATC.ICDCM = DIFF.ICDCM AND ICDCM_DRUG_ATC.ATC = DIFF.ATC " +
+      "(SELECT ICDCM, DRUG FROM ICDCM_DRUG_ATC WHERE DATA_FORMAT = ?1 AND length(drug) = ?2 " +
+      "AND ATC_COUNT > 30) DIFF " + 
+      "WHERE ICDCM_DRUG_ATC.DATA_FORMAT = ?1 AND length(ICDCM_DRUG_ATC.drug) = ?2 " +
+      "AND ICDCM_DRUG_ATC.ICDCM = DIFF.ICDCM AND ICDCM_DRUG_ATC.DRUG = DIFF.DRUG " +
       "ORDER BY ICDCM_DRUG_ATC.ICDCM, ICDCM_DRUG_ATC.ATC, ICDCM_DRUG_ATC.DRUG_COUNT DESC", nativeQuery = true)
-  public List<ICDCM_DRUG_ATC> getDiffList(String dataFormat, float percent);
+  public List<ICDCM_DRUG_ATC> getDrugDiffList(String dataFormat, int drugLength, float percent);
+  
 }

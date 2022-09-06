@@ -17,7 +17,7 @@ public enum INTELLIGENT_REASON {
   HIGH_RISK(10),      // 高風險診斷碼與健保碼組合(被核刪過的診斷碼與醫令組合)
   COST_DIFF(11),      // 臨床路徑差異–AI提示-費用差異
   ORDER_DIFF(12),     // 臨床路徑差異–AI提示-醫療行為差異
-  ORDER_DRUG(13),     // 臨床路徑差異–AI提示-用藥差異
+  ORDER_DRUG(13),     // 臨床路徑差異–AI提示-用藥、衛品差異
   IP_DAYS(14),        // 臨床路徑差異–AI提示-住院天數差異
   DRUG_DIFF(15),      // 用藥差異
   SUSPECTED(16),      // 疑似職傷與異常就診記錄判斷
@@ -47,7 +47,7 @@ public enum INTELLIGENT_REASON {
       case 10: return "高風險診斷碼與健保碼組合";
       case 11: return "費用差異";
       case 12: return "醫療行為差異";
-      case 13: return "用藥差異";
+      case 13: return "用藥、衛品差異";
       case 14: return "住院天數差異";
     }
     return "未知";
