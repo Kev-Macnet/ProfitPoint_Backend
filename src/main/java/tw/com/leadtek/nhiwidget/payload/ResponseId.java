@@ -15,6 +15,10 @@ public class ResponseId extends BaseResponse implements Serializable{
   @ApiModelProperty(value = "object id", example = "5fae0fb0cc451074a045fa69", required = true)
   private String id;
   
+  public ResponseId() {
+    
+  }
+  
   public ResponseId(String result, String message, String id) {
     setResult(result);
     setMessage(message);
