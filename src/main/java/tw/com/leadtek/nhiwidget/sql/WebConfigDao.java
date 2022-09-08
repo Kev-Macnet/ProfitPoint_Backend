@@ -54,18 +54,18 @@ public class WebConfigDao extends BaseSqlDao {
     
     
     public int setConfig(String id, String val, String desc) {
-        
         String sql;
         sql = "Update webconfig \n" + 
               "Set value='%s', \n" + 
-              "    description='%s' \n" + 
+              "    description='%s', \n" +
+              "    update_tm=CURRENT_TIMESTAMP\n"+
               "Where(id = '%s')";
         sql = String.format(sql, noInjection(val), noInjection(desc), noInjection(id));
         int ret = jdbcTemplate.update(sql);
         if (ret == 0) {
             sql = "Insert Into \n" + 
-                  "webconfig(id,value,description) \n"+
-                  "Values ('%s','%s','%s')";
+                  "webconfig(id,value,description,update_tm) \n"+
+                  "Values ('%s','%s','%s',CURRENT_TIMESTAMP)";
             sql = String.format(sql, noInjection(id), noInjection(val), noInjection(desc));
             ret = jdbcTemplate.update(sql);
         }

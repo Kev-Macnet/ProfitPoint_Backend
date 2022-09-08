@@ -45,6 +45,9 @@ public class LogOperateService {
 	private LogDataService logDataService;
 	
 	@Autowired
+	private UserService userService;
+	
+	@Autowired
 	protected HttpServletRequest httpServletReq;
 	
 	public Map<String, Object> query(String sdate         , String edate         , String showType  , 
@@ -266,10 +269,12 @@ public class LogOperateService {
 		
 		if(logTypes.contains(LogType.IMPORT)) {
 			
+			this.hendleImport();
 		}
 		
 		if(logTypes.contains(LogType.EXPORT)) {
 			
+			this.hendleExport();
 		}
 	}
 	
@@ -363,6 +368,22 @@ public class LogOperateService {
 		
 	}
 	
+	private void hendleExport() {
+		
+		Long   userId = takeLoginUserInfo().getId();
+		Integer count = (Integer)httpServletReq.getAttribute(LogType.EXPORT.name()+"_CNT");
+		
+		this.createLogExport(userId, count);
+	}
+	
+	private void hendleImport() {
+		
+		Long userId   = takeLoginUserInfo().getId();
+		Integer count = (Integer)httpServletReq.getAttribute(LogType.IMPORT.name()+"_CNT");
+		
+		this.createLogImport(userId, count);
+	}
+	
 	public int createLogMedicalRecordStatus(String inhClinicId, Long userId, Integer status) {
 		
 		return logOperateDao.addMedicalRecordStatus(inhClinicId, userId, status);
@@ -385,7 +406,17 @@ public class LogOperateService {
 	
 	public int createLogAction(Long userId, String crud, String functionName, String pk) {
 		
-		return logOperateDao.addLogAction(userId, crud, functionName, pk);
+		return logOperateDao.addAction(userId, crud, functionName, pk);
+	}
+	
+	private int createLogExport(Long userId, Integer count) {
+		
+		return logOperateDao.addExport(userId, count);
+	}
+	
+	private int createLogImport(Long userId, Integer count) {
+		
+		return logOperateDao.addImport(userId, count);
 	}
 	
 	private void calculateElapsedTime(List<LogSigninDto> list) {

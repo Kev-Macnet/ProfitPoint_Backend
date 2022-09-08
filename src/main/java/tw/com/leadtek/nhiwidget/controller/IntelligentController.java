@@ -145,7 +145,7 @@ public class IntelligentController extends BaseController {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
     }
     if ("clincal".equals(menu) && reason != null && reason.intValue() < 10) {
-      reason = new Integer(reason.intValue() + 10);
+      reason = Integer.valueOf(reason.intValue() + 10);
     }
     return ResponseEntity.ok(
         intelligentService.getIntelligent(user, menu, startDate, endDate, minPoints, maxPoints, funcType,

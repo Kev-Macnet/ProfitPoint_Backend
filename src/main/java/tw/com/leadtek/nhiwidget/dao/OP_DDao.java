@@ -22,7 +22,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   
   //門急診/住院病例總點數
   @Query(value="SELECT OP.OP_DOT + IP.IP_DOT FROM "
-  		+ "(SELECT SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
+  		+ "(SELECT (SUM(T_APPL_DOT) + SUM(PART_DOT)) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP,"
   		+ "(SELECT (SUM(MED_DOT)+SUM(NON_APPL_DOT)) AS IP_DOT FROM IP_D WHERE IPT_ID IN ?2)IP", nativeQuery=true)
   public String findTDot(List<Integer>ids,List<Integer>ids2);
   
@@ -68,7 +68,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   
   //門急診病例總點數
   @Query(value="SELECT OP.OP_DOT FROM "
-	  		+ "(SELECT SUM(T_DOT) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
+	  		+ "(SELECT (SUM(T_APPL_DOT) + SUM(PART_DOT)) AS OP_DOT FROM OP_D WHERE OPT_ID IN ?1)OP", nativeQuery=true)
   public String findOPDot(List<Integer>ids);
   
   //門急診案件數

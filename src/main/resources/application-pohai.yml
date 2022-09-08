@@ -26,8 +26,8 @@ spring:
       max-file-size: 256MB
       max-request-size: 256MB
       enabled: true
-#  jackson:
-#    default-property-inclusion: NON_NULL
+  jackson:
+    default-property-inclusion: NON_NULL
   redis:
     host: 10.0.0.111
     port: 6379
