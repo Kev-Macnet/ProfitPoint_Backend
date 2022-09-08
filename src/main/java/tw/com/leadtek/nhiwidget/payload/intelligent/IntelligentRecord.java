@@ -67,7 +67,11 @@ public class IntelligentRecord implements Serializable {
     funcTypeC = in.getFuncTypec();
     totalDot = in.getApplDot();
     detail = in.getReason();
-    reason = INTELLIGENT_REASON.toReasonString(in.getConditionCode());
+    if (in.getConditionCode().intValue() == INTELLIGENT_REASON.ORDER_DRUG.value() && in.getReasonCode() != null) {
+      reason = (in.getReasonCode().length() == 10) ? "用藥差異" : "衛品差異";
+    } else {
+      reason = INTELLIGENT_REASON.toReasonString(in.getConditionCode());
+    }
   }
 
   public Long getMrId() {

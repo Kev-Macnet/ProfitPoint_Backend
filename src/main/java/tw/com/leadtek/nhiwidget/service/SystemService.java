@@ -1765,7 +1765,6 @@ public class SystemService {
   private int importMRFile(List<File> files, List<FILE_DOWNLOAD> newFiles) {
     int result = 0;
     for (File file : files) {
-      System.out.println("importMRFile " + file.getName());
       if (file.getName().indexOf('~') > -1 || !(file.getName().endsWith(".xlsx")
           || file.getName().endsWith(".xml") || file.getName().endsWith(".xls"))) {
         continue;
