@@ -6,6 +6,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import tw.com.leadtek.nhiwidget.annotation.LogDefender;
+import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
 import tw.com.leadtek.nhiwidget.service.LogOperateService;
 
@@ -41,7 +43,8 @@ public class LogOperateAspect {
 		
 		result = pjp.proceed(pjp.getArgs());
 		
-		if(null != result && HttpStatus.OK.equals(((ResponseEntity<BaseResponse>)result).getStatusCode())) {
+		if((null != result && HttpStatus.OK.equals(((ResponseEntity<BaseResponse>)result).getStatusCode())) ||
+		   (null == result && Arrays.asList(logDefender.value()).contains(LogType.EXPORT))) {
 			
 			logOperateService.handleLog(logDefender);
 		}

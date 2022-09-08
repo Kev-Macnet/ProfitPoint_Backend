@@ -13,6 +13,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.assertj.core.util.Arrays;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -877,7 +879,7 @@ public class SystemController extends BaseController {
   
   @ApiOperation(value = "匯出申報檔", notes = "匯出申報檔")
   @GetMapping("/downloadXML")
-  @LogDefender(value = {LogType.SIGNIN})
+  @LogDefender(value = {LogType.SIGNIN, LogType.EXPORT})
   public ResponseEntity<BaseResponse> downloadXML(@ApiParam(value = "資料格式，10:門急診，20:住院",
         example = "10") @RequestParam(required = false) String dataFormat,
       @ApiParam(value = "申報年，格式西元年 yyyy",
@@ -943,7 +945,7 @@ public class SystemController extends BaseController {
   @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "自定義表單檔案",
       dataType = "file", required = true, example = "111-0.xml")})
   @PostMapping(value = "/uploadXML")
-  @LogDefender(value = {LogType.SIGNIN})
+  @LogDefender(value = {LogType.SIGNIN, LogType.IMPORT})
   public ResponseEntity<BaseResponse> uploadXML(
       @ApiParam(name = "file", value = "自定義表單檔案", example = "111-0.xml") @RequestPart("file") MultipartFile[] file) {
     if (file.length == 0) {
@@ -976,6 +978,9 @@ public class SystemController extends BaseController {
           systemService.deleteInFileDownload(multipartFile.getOriginalFilename());
           // 交由 SystemService.refreshMRFromFolder 去處理，速度較快
           multipartFile.transferTo(saveFile);
+          
+          httpServletReq.setAttribute(LogType.IMPORT.name()+"_CNT", file.length);
+          
         } catch (IllegalStateException e) {
           e.printStackTrace();
         }

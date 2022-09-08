@@ -9965,6 +9965,15 @@ public class NHIWidgetXMLService {
                 zipOutputStream.closeEntry();
             }
             zipOutputStream.finish();
+            
+            httpServletReq.setAttribute(LogType.EXPORT.name()+"_CNT", ipdList.size() + 
+            		                                                  ippList.size() + 
+            		                                                  ipsoList.size()+ 
+            		                                                  opdList.size() + 
+            		                                                  oppList.size() + 
+            		                                                  opsoList.size()+ 
+            		                                                  deductedNoteList.size());
+            
             for (String fname : csvFilesPath) {
                 Utility.deleteFile(fname);
             }

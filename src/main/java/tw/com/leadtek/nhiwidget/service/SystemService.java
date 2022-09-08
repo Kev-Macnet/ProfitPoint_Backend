@@ -36,6 +36,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -1471,6 +1472,9 @@ public class SystemService {
 
     op.setDdata(ddata);
     outputFileJAXB(op, download.getFilename());
+    
+    httpServletReq.setAttribute(LogType.EXPORT.name()+"_CNT", ddata.size());
+    
     if (opdList.size() > 0 && oppList.size() > 0) {
       optDao.save(opt);
     }
@@ -1544,6 +1548,9 @@ public class SystemService {
 //      }
     }
     ip.setDdata(ddata);
+    
+    httpServletReq.setAttribute(LogType.EXPORT.name()+"_CNT", ddata.size());
+    
     outputFileJAXB(ip, download.getFilename());
     if (ipdList.size() > 0 && ippList.size() > 0) {
       iptDao.save(ipt);
