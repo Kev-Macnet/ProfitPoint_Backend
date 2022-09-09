@@ -9499,12 +9499,12 @@ public class DbReportService {
 				if (ed != null) {
 					double d = Math.round((Long.valueOf(ed.toString())).doubleValue()
 							/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
-					model.setOpDotPercent(d);
+					model.setEmDotPercent(d);
 				}
 				if (id != null) {
 					double d = Math.round((Long.valueOf(id.toString())).doubleValue()
 							/ (Long.valueOf(ad.toString())).doubleValue() * 100.0 * 100.0) / 100.0;
-					model.setOpDotPercent(d);
+					model.setIpDotPercent(d);
 				}
 			}
 
