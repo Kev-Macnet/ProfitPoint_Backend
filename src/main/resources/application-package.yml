@@ -1,4 +1,4 @@
-# Replace 59.120.139.60:8081 to localhost:8080 
+# Replace 59.120.139.60:8081 to localhost:8081 
 server:
   port: ${port:8080}
   tomcat:
@@ -87,10 +87,10 @@ project:
   # away from keyboard 時間，超過30分則刪除 jwt
     afk: 1800000
   mail:
-    host: 59.120.139.196
+    host:
     port: 25
-    fromEmail: monitor@leadtek.com.tw
-    password: z5z8tah5
+    fromEmail:
+    password:
   serverUrl: "http://localhost:8080/#/login?redir=warehouse/"
   apiUrl: "http://localhost:8080/"
   hospId: 1532011154

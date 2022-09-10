@@ -18,3 +18,4 @@ gradlew*
 bin/
 drg_data/
 backup_data
+mr_data/

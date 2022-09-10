@@ -4618,8 +4618,9 @@ public class NHIWidgetXMLService {
         myMr = new MY_MR(mr);
         myMr.setPrsnUserId(prsnUserId);
         myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
-        
-        logOperateService.handleMrUnread(myMr.getInhClinicId(), prsnUserId);
+      }
+      for (String prsnUserId : ids) {
+        logOperateService.handleMrUnread(myMr.getInhClinicId(), Long.valueOf(prsnUserId));  
       }
       myMr.setApplUserId(user.getId());
       myMr.setNoticeName(receiver);
