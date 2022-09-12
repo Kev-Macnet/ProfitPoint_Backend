@@ -337,8 +337,8 @@ public class MR {
       this.totalDot = this.totalDot + opd.getPartDot();
     }
     this.icdAll = "," + opd.getIcdCm1() + ",";
-//    this.applDot = opd.getTotalApplDot();
-//    this.reportDot = opd.getTotalApplDot().longValue() + opd.getPartDot().longValue();
+    this.applDot = opd.getTotalApplDot();
+    this.reportDot = opd.getTotalApplDot().longValue() + opd.getPartDot().longValue();
     this.ownExpense = 0;
     this.updateAt = new Date();
   }
