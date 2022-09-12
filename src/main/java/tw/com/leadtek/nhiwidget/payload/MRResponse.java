@@ -69,7 +69,7 @@ public class MRResponse extends MR {
     status = mr.getStatus();
     subjective = mr.getSubjective();
     totalDot = mr.getTotalDot();
-    applDot = mr.getApplDot();
+    applDot = (mr.getReportDot() == null) ?  mr.getApplDot().intValue() : mr.getReportDot().intValue();
     updateAt = mr.getUpdateAt();
     drgFixed = mr.getDrgFixed();
     drgCode = mr.getDrgCode();

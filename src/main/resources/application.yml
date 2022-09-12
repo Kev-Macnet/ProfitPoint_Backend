@@ -1,7 +1,7 @@
 spring:
   profiles:
-    active: leadtek-office-hana
-#    active: localhost
+#    active: leadtek-office-hana
+    active: localhost
 #    active: leadtek-aws-maria
 #    active: ms
 #    active: pohai

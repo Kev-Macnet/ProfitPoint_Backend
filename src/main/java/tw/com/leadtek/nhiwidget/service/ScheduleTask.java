@@ -1,7 +1,8 @@
 package tw.com.leadtek.nhiwidget.service;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,10 +36,37 @@ public class ScheduleTask {
     public void runCurrentTimeEveryMinute() throws InterruptedException {
       String path = (paramerterService.getParameter("MR_PATH") == null) ? SystemService.FILE_PATH
           : paramerterService.getParameter("MR_PATH");
-      File[] files = new File(path).listFiles();
-      if (files != null && files.length > 0) {
+      ArrayList<File> files = new ArrayList<File>();
+      findAllFiles(new File(path), files);
+      if (files != null && files.size() > 0) {
         systemService.refreshMRFromFolder(files);
       }
     }
+    
+    private void findAllFiles(File file, ArrayList<File> files) {
+      if (files == null) {
+        return;
+      }
+      if (!file.isDirectory()) {
+        checkFileAndAdd(file, files);
+      } else if (file.isDirectory()) {
+        File[] fileInDir = file.listFiles();
+        for (File file2 : fileInDir) {
+          if (file2.isFile()) {
+            checkFileAndAdd(file2, files);
+          } else {
+            findAllFiles(file2, files);
+          }
+        }
+      }
+    }
 
+    private void checkFileAndAdd(File file, ArrayList<File> files) {
+      if (file.getName().indexOf('~') > -1 || !(file.getName().endsWith(".xlsx")
+          || file.getName().endsWith(".xml") || file.getName().endsWith(".xls"))) {
+        return;
+      }
+      files.add(file);
+    }
+    
 }
