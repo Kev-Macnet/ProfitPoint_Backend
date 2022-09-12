@@ -45,9 +45,6 @@ public class LogOperateService {
 	private LogDataService logDataService;
 	
 	@Autowired
-	private UserService userService;
-	
-	@Autowired
 	protected HttpServletRequest httpServletReq;
 	
 	public Map<String, Object> query(String sdate         , String edate         , String showType  , 
@@ -59,9 +56,9 @@ public class LogOperateService {
 		
 		for(String logType : StringUtility.splitBySpace(showLogTypes)) {
 			
-			List<Object> pUserNames_ = Arrays.asList(StringUtility.splitBySpace(pUserNames));
-			List<Object> pDisplayNames_ = Arrays.asList(StringUtility.splitBySpace(pDisplayNames));
-			List<Object> msDepts_ = Arrays.asList(StringUtility.splitBySpace(msDepts));
+			List<Object> pUserNames_     = Arrays.asList(StringUtility.splitBySpace(pUserNames));
+			List<Object> pDisplayNames_  = Arrays.asList(StringUtility.splitBySpace(pDisplayNames));
+			List<Object> msDepts_        = Arrays.asList(StringUtility.splitBySpace(msDepts));
 			List<Object> msDisplayNames_ = Arrays.asList(StringUtility.splitBySpace(msDisplayNames));
 			
 			List<?> dtoList = new ArrayList<>();
@@ -138,8 +135,19 @@ public class LogOperateService {
 				dtoList = extractActionDtoList(acList, showType);
 			}
 			
+			//資料匯入時間
+			if("IP".equalsIgnoreCase(logType)) {
+				
+				dtoList = logOperateDao.queryImport(sdate, edate, showType, actor, pCondition, pUserNames_, pDisplayNames_, msCondition, msDepts_, msDisplayNames_);
+			}
+			
+			//資料匯出筆數/時間
+			if("EP".equalsIgnoreCase(logType)) {
+				
+				dtoList = logOperateDao.queryExport(sdate, edate, showType, actor, pCondition, pUserNames_, pDisplayNames_, msCondition, msDepts_, msDisplayNames_);
+			}
+			
 //			System.out.println("XXXXXXXXXXXXXX");
-//			
 //			dtoList.forEach(System.out::println);
 			
 			result.put(logType, dtoList);
