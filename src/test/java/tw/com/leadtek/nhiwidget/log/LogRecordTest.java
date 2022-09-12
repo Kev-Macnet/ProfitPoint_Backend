@@ -1,0 +1,165 @@
+package tw.com.leadtek.nhiwidget.log;
+
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.client.DefaultResponseErrorHandler;
+import org.springframework.web.client.RestTemplate;
+import tw.com.leadtek.nhiwidget.model.rdb.USER;
+import tw.com.leadtek.nhiwidget.payload.BaseResponse;
+import tw.com.leadtek.nhiwidget.payload.ResponseId;
+import tw.com.leadtek.nhiwidget.security.jwt.JwtResponse;
+import tw.com.leadtek.nhiwidget.service.UserService;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class LogRecordTest {
+
+  private static String accessToken;
+  private static final String baseUrl = "http://localhost";
+  private static RestTemplate restTemplate = null;
+  @Autowired protected JdbcTemplate jdbcTemplate;
+  @LocalServerPort private int port;
+  
+  @Autowired
+  private UserService userService;
+
+  @BeforeAll
+  static void init() {
+    SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+    requestFactory.setOutputStreaming(false);
+    restTemplate = new RestTemplate(requestFactory);
+    restTemplate.setErrorHandler(
+        new DefaultResponseErrorHandler() {
+          @Override
+          public boolean hasError(HttpStatus statusCode) {
+            return false;
+          }
+        });
+  }
+
+  @BeforeEach
+  void fetchToken() {
+    // 參數
+    String username = "leadtek";
+    String password = "test";
+    String apiUrl = "/auth/login";
+    HttpMethod httpMethod = HttpMethod.POST;
+
+    // 調用目標 API
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("Accept", MediaType.APPLICATION_JSON_VALUE);
+    Map<String, String> uriParams = new HashMap<>();
+
+    uriParams.put("username", username);
+    uriParams.put("password", password);
+    HttpEntity<Map<String, String>> entity = new HttpEntity<>(uriParams, headers);
+    ResponseEntity<JwtResponse> result =
+        restTemplate.exchange(
+            baseUrl.concat(":").concat(port + "").concat(apiUrl),
+            httpMethod,
+            entity,
+            JwtResponse.class);
+    accessToken = Objects.requireNonNull(result.getBody()).getToken();
+    //System.out.println("port=" + port + ", token=" + accessToken); 
+  }
+
+  @Test
+  @Order(1)
+  void whileApplyForgotPasswordShouldBeRecord() {
+    // 參數
+    String username = "leadtek2";
+    int userId = addUser(username);
+    
+    String apiUrl = "/auth/forgetPassword?username=";
+    HttpMethod httpMethod = HttpMethod.PUT;
+
+    // 清空資料庫
+    cleanLogForgotPassword(userId);
+
+    // 調用目標 API
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("Accept", MediaType.APPLICATION_JSON_VALUE);
+    HttpEntity<Map<String, String>> entity = new HttpEntity<>(headers);
+    ResponseEntity<BaseResponse> result =
+        restTemplate.exchange(
+            baseUrl.concat(":").concat(port + "").concat(apiUrl).concat(username),
+            httpMethod,
+            entity,
+            BaseResponse.class);
+    assertAll(() -> assertEquals("success", result.getBody().getResult()));
+    // 檢查
+    String sql;
+    sql = "SELECT COUNT(*)  FROM log_forgot_password WHERE user_id = %d";
+    sql = String.format(sql, userId);
+    try {
+      int cout = jdbcTemplate.queryForObject(sql, Integer.class);
+      assertAll(() -> assertEquals(1, cout));
+      cleanLogForgotPassword(userId);
+      userService.deleteUser(Long.valueOf(userId));
+    } catch (DataAccessException ex) {
+      ex.printStackTrace();
+      assertAll(() -> fail());
+    }
+  }
+  
+  private void cleanLogForgotPassword(int userId) {
+    String sql_clean = "DELETE FROM log_forgot_password WHERE user_id = %d";
+    sql_clean = String.format(sql_clean, userId);
+    try {
+      jdbcTemplate.update(sql_clean);
+    } catch (DataAccessException ex) {
+      ex.printStackTrace();
+      assertAll(() -> fail());
+    }
+  }
+  
+  private int addUser(String username) {
+    USER user = userService.findUser(username);
+    if (user != null) {
+      return user.getId().intValue();
+    }
+    String apiUrl = "/auth/user";
+
+    // 調用目標 API
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("Accept", MediaType.APPLICATION_JSON_VALUE);
+    headers.add("Authorization", "Bearer " + accessToken);
+    Map<String, String> uriParams = new HashMap<>();
+
+    uriParams.put("username", username);
+    uriParams.put("password", "password");
+    uriParams.put("role", "E");
+    HttpEntity<Map<String, String>> entity = new HttpEntity<>(uriParams, headers);
+    ResponseEntity<ResponseId> result =
+        restTemplate.exchange(
+            baseUrl.concat(":").concat(port + "").concat(apiUrl),
+            HttpMethod.POST,
+            entity,
+            ResponseId.class);
+    String userId = Objects.requireNonNull(result.getBody()).getId();
+    
+    assertAll(() -> assertEquals("success", result.getBody().getResult()));
+    return Integer.parseInt(userId);
+  }
+  
+ 
+}
