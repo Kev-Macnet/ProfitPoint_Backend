@@ -148,6 +148,15 @@ public class SystemService {
   private final static String INIT_FILE_DEDUCTED_ARTIFICIAL = "(專業審查)不予支付理由";
 
   public final static String FILE_PATH = "download";
+  
+  public final static String FILE_TYPE_UPLOAD = "UPLOAD";
+  
+  public final static String FILE_TYPE_DOWNLOAD = "DOWNLOAD";
+  
+  /**
+   * 用戶上傳檔案另存新增時增加的分隔符號，避免用戶同時上傳多個同檔名檔案
+   */
+  public final static String SEPARATOR = "__";
 
   /**
    * 違反支付準則
@@ -221,7 +230,7 @@ public class SystemService {
   private NHIWidgetXMLService xmlService;
 
   @Autowired
-  private FILE_DOWNLOADDao downloadDao;
+  private FILE_DOWNLOADDao fdDao;
 
   @Value("${project.apiUrl}")
   private String apiUrl;
@@ -1252,53 +1261,62 @@ public class SystemService {
   }
 
   public String getDownloadFiles(long userId) {
-    List<FILE_DOWNLOAD> list = downloadDao.findAllByOrderByUpdateAtDesc();
+    long oneHourAgo = System.currentTimeMillis() - 3600000;
+    List<FILE_DOWNLOAD> list =
+        fdDao.findAllByUpdateAtGreaterThanOrderByUpdateAtDesc(new Date(oneHourAgo));
     if (list == null || list.size() == 0) {
       return "";
     }
     StringBuffer sb = new StringBuffer();
-    for (FILE_DOWNLOAD file : list) {
-      if (file.getUserId().longValue() != userId) {
-        continue;
-      }
-      if ((System.currentTimeMillis() - file.getUpdateAt().getTime()) > 3600000) {
-        // 超過一小時
-        continue;
-      }
-      if (file.getFileType().equals(XMLConstant.DATA_FORMAT_OP)
-          || file.getFileType().equals(XMLConstant.DATA_FORMAT_IP)) {
-        String chineseYM = file.getFilename().substring(0, 5);
-        String ym = DateTool.convertChineseToAD(chineseYM);
-        String year = ym.substring(0, 4);
-        String month = String.valueOf(Integer.parseInt(ym.substring(4)));
-        if (file.getProgress().intValue() < 100) {
-          sb.append("正在處理").append(year).append("年").append(month).append("月的");
-          if (file.getFileType().equals(XMLConstant.DATA_FORMAT_OP)) {
-            sb.append("門急診");
-          } else {
-            sb.append("住院");
-          }
-          sb.append("申報檔，已完成");
-          sb.append(file.getProgress());
-          sb.append("%");
-          return sb.toString();
+    FILE_DOWNLOAD file = list.get(0);
+    //      if (file.getUserId().longValue() != userId) {
+    //        continue;
+    //      }
+    //      if ((System.currentTimeMillis() - file.getUpdateAt().getTime()) > 3600000) {
+    //        // 超過一小時
+    //        continue;
+    //      }
+    if (file.getFileType().equals("DOWNLOAD")) {
+      String chineseYM = file.getFilename().substring(0, 5);
+      String ym = DateTool.convertChineseToAD(chineseYM);
+      String year = ym.substring(0, 4);
+      String month = String.valueOf(Integer.parseInt(ym.substring(4)));
+      if (file.getProgress().intValue() < 100) {
+        sb.append("正在處理").append(year).append("年").append(month).append("月的");
+        if (file.getFileType().equals(XMLConstant.DATA_FORMAT_OP)) {
+          sb.append("門急診");
         } else {
-          sb.append(year).append("年").append(month).append("月的");
-          if (file.getFileType().equals(XMLConstant.DATA_FORMAT_OP)) {
-            sb.append("門急診");
-          } else {
-            sb.append("住院");
-          }
-          sb.append("申報檔已完成，請點此<a href=\"");
-          sb.append(apiUrl);
-          sb.append("no/downloadXML/");
-          sb.append(file.getId());
-          sb.append("\">下載</a>");
-          return sb.toString();
+          sb.append("住院");
         }
+        sb.append("申報檔，已完成");
+        sb.append(file.getProgress());
+        sb.append("%");
+        return sb.toString();
+      } else {
+        sb.append(year).append("年").append(month).append("月的");
+        if (file.getFileType().equals(XMLConstant.DATA_FORMAT_OP)) {
+          sb.append("門急診");
+        } else {
+          sb.append("住院");
+        }
+        sb.append("申報檔已完成，請點此<a href=\"");
+        sb.append(apiUrl);
+        sb.append("no/downloadXML/");
+        sb.append(file.getId());
+        sb.append("\">下載</a>");
+        return sb.toString();
+      }
+    } else {
+      if (file.getProgress().intValue() < 100) {
+        sb.append("正在處理").append(file.getFilename()).append("，已完成");
+        sb.append(file.getProgress());
+        sb.append("%");
+        return sb.toString();
+      } else {
+        sb.append(file.getFilename()).append("已處理完成");
+        return sb.toString();
       }
     }
-    return sb.toString();
   }
 
   public String checkDownloadDir(String filePath) {
@@ -1315,7 +1333,7 @@ public class SystemService {
   }
 
   public void downloadXML(String id, HttpServletResponse response) throws IOException {
-    Optional<FILE_DOWNLOAD> optional = downloadDao.findById(Long.parseLong(id));
+    Optional<FILE_DOWNLOAD> optional = fdDao.findById(Long.parseLong(id));
     if (!optional.isPresent()) {
       return;
     }
@@ -1347,22 +1365,17 @@ public class SystemService {
 
     String filename = (inhClinicIds != null && inhClinicIds.length > 0) ? inhClinicIds[0] + ".xml"
         : getDownloadXMLFilename(dataFormat, applY, applM);
-    List<FILE_DOWNLOAD> list = downloadDao.findByFilenameAndFileType(filename, dataFormat);
+    List<FILE_DOWNLOAD> list = fdDao.findByFilenameAndFileType(filename, dataFormat);
     FILE_DOWNLOAD download = null;
     if (list == null || list.size() == 0) {
       download = new FILE_DOWNLOAD();
     } else {
       download = list.get(0);
     }
-    download.setFilename(filename);
-    download.setFileType(dataFormat);
-    download.setProgress(0);
-    download.setUpdateAt(new Date());
-    download.setUserId(userId);
-    download = downloadDao.save(download);
+    download = newFileDownload(userId, filename, false, true);
     logger.info("downloadXML generating:" + filename);
     outputXML(dataFormat, applYM, inhClinicIds, download);
-    downloadDao.deleteById(download.getId());
+    fdDao.deleteById(download.getId());
 
     String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
         ? FILE_PATH + "\\" + download.getFilename()
@@ -1418,9 +1431,7 @@ public class SystemService {
       mrList = mrDao.findByInhClinicId((inhClinicIdList));
       if (mrList == null || mrList.size() == 0) {
         outputFileJAXB(op, download.getFilename());
-        download.setProgress(100);
-        download.setUpdateAt(new Date());
-        downloadDao.save(download);
+        updateFileDownloadFinished(download);
         return;
       }
       applYm = mrList.get(0).getApplYm();
@@ -1464,8 +1475,8 @@ public class SystemService {
       if (((double) i / (double) opdList.size()) > next) {
         download.setProgress((int) (next * 100));
         download.setUpdateAt(new Date());
-        downloadDao.save(download);
-        next += 0.1;
+        fdDao.save(download);
+        next += 5;
       }
     }
 
@@ -1474,9 +1485,7 @@ public class SystemService {
     if (opdList.size() > 0 && oppList.size() > 0) {
       optDao.save(opt);
     }
-    download.setProgress(100);
-    download.setUpdateAt(new Date());
-    downloadDao.save(download);
+    updateFileDownloadFinished(download);
   }
 
   public void outputIPXML(String applYm, String[] inhClinicIds, FILE_DOWNLOAD download) {
@@ -1491,9 +1500,7 @@ public class SystemService {
       mrList = mrDao.findByInhClinicId((inhClinicIdList));
       if (mrList == null || mrList.size() == 0) {
         outputFileJAXB(ip, download.getFilename());
-        download.setProgress(100);
-        download.setUpdateAt(new Date());
-        downloadDao.save(download);
+        updateFileDownloadFinished(download);
         return;
       }
       applYm = mrList.get(0).getApplYm();
@@ -1548,9 +1555,7 @@ public class SystemService {
     if (ipdList.size() > 0 && ippList.size() > 0) {
       iptDao.save(ipt);
     }
-    download.setProgress(100);
-    download.setUpdateAt(new Date());
-    downloadDao.save(download);
+    updateFileDownloadFinished(download);
   }
 
   private void outputFileJAXB(Object obj, String filename) {
@@ -1587,8 +1592,10 @@ public class SystemService {
       @Override
       public void run() {
         xmlService.checkAll(0, true);
+        FILE_DOWNLOAD fd = new FILE_DOWNLOAD();
+        fd.setFilename(file.getAbsolutePath());
         long startImport = System.currentTimeMillis();
-        importXMLFile(file);
+        importXMLFile(file, fd);
         long usedTime = System.currentTimeMillis() - startImport;
         logger
             .info("importFileThread " + file.getAbsolutePath() + " done, used " + usedTime + "ms.");
@@ -1598,22 +1605,27 @@ public class SystemService {
     thread.start();
   }
 
-  public void importXMLFile(File file) {
+  public void importXMLFile(File file, FILE_DOWNLOAD fd) {
+    fd.setStartAt(new Date());
+    long start = System.currentTimeMillis();
     ObjectMapper xmlMapper = new XmlMapper();
     try {
       if (readFile(file)) {
         IP ip =
             xmlMapper.readValue(new InputStreamReader(new FileInputStream(file), "BIG5"), IP.class);
         if (ip != null) {
-          xmlService.saveIP(ip);
+          fd.setRecord(xmlService.saveIP(ip, fd));
         }
       } else {
         OP op =
             xmlMapper.readValue(new InputStreamReader(new FileInputStream(file), "BIG5"), OP.class);
         if (op != null) { 
-          xmlService.saveOPBatch(op);
+          fd.setRecord(xmlService.saveOP(op, fd));
         }
       }
+      long usedTime = System.currentTimeMillis() - start;
+      fd.setUsedTime((int)(usedTime / 1000));
+      updateFileDownloadFinished(fd);
     } catch (JsonMappingException e) {
       e.printStackTrace();
     } catch (JsonProcessingException e) {
@@ -1681,39 +1693,50 @@ public class SystemService {
     thread.start();
   }
 
-  public void refreshMRFromFolder(File[] files) {
-    List<FILE_DOWNLOAD> oldFiles = downloadDao.findAllByUserIdOrderByUpdateAtDesc(0L);
+  public void refreshMRFromFolder(ArrayList<File> files) {
+    List<FILE_DOWNLOAD> oldFiles = fdDao.findAllByFileTypeOrderByUpdateAtDesc(FILE_TYPE_UPLOAD);
     List<FILE_DOWNLOAD> newFiles = new ArrayList<>();
     ArrayList<File> needProcessFile = new ArrayList<>();
-    // System.out.println("oldFiles count:" + oldFiles.size());
     for (File file : files) {
-      if (file.getName().indexOf('~') > -1 || !(file.getName().endsWith(".xlsx")
-          || file.getName().endsWith(".xml") || file.getName().endsWith(".xls"))) {
-        continue;
-      }
       boolean isOldFile = false;
+      FILE_DOWNLOAD existFileDownload = null;
+      int id = getFileDownloadIdFromFileName(file);
       for (FILE_DOWNLOAD oldFile : oldFiles) {
-        // System.out.println("folder:" + file.getName() + ", old:" + oldFile.getFilename());
-        if (file.getName().equals(oldFile.getFilename())) {
+        if (id > -1 && oldFile.getId().intValue() == id) {
+          existFileDownload = oldFile;
+          isOldFile = oldFile.getStartAt() != null;
+          break;
+        } 
+        if (file.getAbsolutePath().equals(oldFile.getFilename())) {
           isOldFile = true;
           break;
         }
       }
       if (!isOldFile) {
         needProcessFile.add(file);
-        FILE_DOWNLOAD fd = new FILE_DOWNLOAD();
-        fd.setFilename(file.getName());
-        fd.setProgress(0);
-        fd.setUpdateAt(new Date());
-        fd.setUserId(0L);
-        fd = downloadDao.save(fd);
+        FILE_DOWNLOAD fd = null;
+        if (existFileDownload != null) {
+          existFileDownload.setStartAt(new Date());
+          existFileDownload.setUpdateAt(new Date());
+          fd = fdDao.save(existFileDownload);
+        } else {
+          fd = newFileDownload(0L, file.getAbsolutePath(), true, true);
+        }
         newFiles.add(fd);
       }
     }
     if (newFiles.size() == 0) {
       return;
     }
-
+    processFileByOrder(needProcessFile, newFiles);
+  }
+  
+  /**
+   * 將待處理的檔案分類後依序處理
+   * @param needProcessFile
+   * @param newFiles
+   */
+  private void processFileByOrder(ArrayList<File> needProcessFile, List<FILE_DOWNLOAD> newFiles) {
     ArrayList<File> opdList = new ArrayList<File>();
     ArrayList<File> ipdList = new ArrayList<File>();
     ArrayList<File> oppList = new ArrayList<File>();
@@ -1754,6 +1777,19 @@ public class SystemService {
       xmlService.checkAll(usedTime, false);
     }
   }
+  
+  private int getFileDownloadIdFromFileName(File file) {
+    String filename = file.getName().substring(0, file.getName().lastIndexOf('.'));
+    int index = filename.lastIndexOf(SEPARATOR);
+    if (index == -1) {
+      return -1;
+    }
+    try {
+      return Integer.parseInt(filename.substring(index + SEPARATOR.length()));
+    } catch (NumberFormatException e) {
+      return -1;
+    }
+  }
 
   private int importMRFile(List<File> files, List<FILE_DOWNLOAD> newFiles) {
     int result = 0;
@@ -1762,7 +1798,12 @@ public class SystemService {
           || file.getName().endsWith(".xml") || file.getName().endsWith(".xls"))) {
         continue;
       }
-
+      FILE_DOWNLOAD fd = getFILE_DOWNLOADFromList(file, newFiles);
+      if (fd != null) {
+        System.out.println(file.getName() + ", id=" + fd.getId() ); 
+      } else {
+        System.out.println(file.getName() + " not found in fd." ); 
+      }
       int count = 0;
       long filesize1 = 0;
       long filesize2 = 0;
@@ -1801,29 +1842,40 @@ public class SystemService {
           }
         }
       } else if (file.getName().endsWith(".xml")) {
-        importXMLFile(file);
+        importXMLFile(file, fd);
         result++;
       } else if (file.getName().endsWith(".xls")) {
         processLeadtekXLS(file);
         result++;
       }
-      updateFileDownloadFinished(file, newFiles);
+      updateFileDownloadFinished(fd);
     }
     return result;
   }
-
-  private void updateFileDownloadFinished(File file, List<FILE_DOWNLOAD> newFiles) {
+  
+  private FILE_DOWNLOAD getFILE_DOWNLOADFromList(File file, List<FILE_DOWNLOAD> newFiles) {
+    int id = getFileDownloadIdFromFileName(file);
     for (FILE_DOWNLOAD fd : newFiles) {
-      if (file.getName().equals(fd.getFilename())) {
-        fd.setProgress(100);
-        fd.setUpdateAt(new Date());
-        downloadDao.save(fd);
-        break;
+      if (id > 0 && fd.getId().intValue() == id) {
+        return fd;
+      }
+      if (file.getAbsolutePath().equals(fd.getFilename())) {
+        return fd;
       }
     }
+    return null;
+  }
+
+  private void updateFileDownloadFinished(FILE_DOWNLOAD fd) {
+    fd.setProgress(100);
+    fd.setEndAt(new Date());
+    fd.setUpdateAt(new Date());
+    fdDao.save(fd);
   }
 
   public boolean processSettingFile(File file, List<FILE_DOWNLOAD> newFiles) {
+    FILE_DOWNLOAD fd = getFILE_DOWNLOADFromList(file, newFiles);
+    fd.setStartAt(new Date());
     long start = System.currentTimeMillis();
     if (file.getName().indexOf(INIT_FILE_PARAMETERS) == 0) {
       initial.importParametersFromExcel(file, "參數設定", 1);
@@ -1860,9 +1912,10 @@ public class SystemService {
     } else {
       return false;
     }
-    updateFileDownloadFinished(file, newFiles);
     long usedTime = System.currentTimeMillis() - start;
     logger.info("import " + file.getName() + " used " + usedTime + " ms.");
+    fd.setUsedTime((int)(usedTime / 1000));
+    updateFileDownloadFinished(fd);
     return true;
   }
 
@@ -1917,12 +1970,32 @@ public class SystemService {
   }
   
   public void deleteInFileDownload(String filename) {
-    List<FILE_DOWNLOAD> list = downloadDao.findByFilename(filename);
+    List<FILE_DOWNLOAD> list = fdDao.findByFilename(filename);
     if (list == null || list.size() == 0) {
       return;
     }
     for (FILE_DOWNLOAD fd : list) {
-      downloadDao.deleteById(fd.getId());
+      fdDao.deleteById(fd.getId());
     }    
+  }
+  
+  public FILE_DOWNLOAD newFileDownload(Long userId, String filename, boolean isUpload, boolean save) {
+    FILE_DOWNLOAD result = new FILE_DOWNLOAD();
+    result.setFileType(isUpload ? FILE_TYPE_UPLOAD : FILE_TYPE_DOWNLOAD);
+    result.setFilename(filename);
+    result.setProgress(0);
+    result.setUpdateAt(new Date());
+    result.setUserId(userId);
+    if (save) {
+      return fdDao.save(result);
+    } else {
+      return result;
+    }
+  }
+  
+  public String addSeparator(String filename, long id) {
+    int dotIndex = filename.lastIndexOf('.');
+    String filenameNoExtention = filename.substring(0, dotIndex);
+    return filenameNoExtention.concat(SEPARATOR).concat(String.valueOf(id)).concat(filename.substring(dotIndex));
   }
 }
