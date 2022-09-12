@@ -67,8 +67,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.mchange.v1.util.CollectionUtils;
-import java.util.Objects;
 import io.jsonwebtoken.Claims;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
@@ -81,6 +79,7 @@ import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.DEDUCTED_NOTEDao;
 import tw.com.leadtek.nhiwidget.dao.DRG_CALDao;
 import tw.com.leadtek.nhiwidget.dao.FILE_DIFFDao;
+import tw.com.leadtek.nhiwidget.dao.FILE_DOWNLOADDao;
 import tw.com.leadtek.nhiwidget.dao.IP_DDao;
 import tw.com.leadtek.nhiwidget.dao.IP_PDao;
 import tw.com.leadtek.nhiwidget.dao.IP_TDao;
@@ -102,6 +101,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DHead;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CAL;
 import tw.com.leadtek.nhiwidget.model.rdb.FILE_DIFF;
+import tw.com.leadtek.nhiwidget.model.rdb.FILE_DOWNLOAD;
 import tw.com.leadtek.nhiwidget.model.rdb.IP;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_DData;
@@ -312,7 +312,10 @@ public class NHIWidgetXMLService {
   @Autowired
   private HttpServletRequest httpServletReq;
   
-  public void saveOPBatch(OP op) {
+  @Autowired
+  private FILE_DOWNLOADDao fdDao;
+  
+  public int saveOP(OP op, FILE_DOWNLOAD fd) {
     OP_T opt = saveOPT(op.getTdata());
     // 避免重複insert
     List<HashMap<String, Object>> opdList = getOPDByOPTID(opt.getId());
@@ -321,13 +324,21 @@ public class NHIWidgetXMLService {
     List<OP_P> oppBatch = new ArrayList<OP_P>();
 
     if (dDataList == null) {
-      return;
+      return 0;
     }
-
+    int result = dDataList.size();
+    fd.setRecord(result);
     HashMap<String, String> payCodeType = getPayCodeType();
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
 
+    int count = 0;
     for (OP_DData op_dData : dDataList) {
+      count++;
+      if (((count * 100) / result) % 5 == 0) {
+        fd.setProgress((count * 100) / result);
+        fd.setUpdateAt(new java.util.Date());
+        fdDao.save(fd);
+      }
       OP_D opd = op_dData.getDbody();
       maskOPD(opd);
       List<OP_P> oppListXML = opd.getPdataList();
@@ -435,9 +446,10 @@ public class NHIWidgetXMLService {
     if (oppBatch.size() > 0) {
       oppDao.saveAll(oppBatch);
     }
+    return result;
   }
 
-  public void saveIP(IP ip) {
+  public int saveIP(IP ip, FILE_DOWNLOAD fd) {
     IP_T ipt = saveIPT(ip.getTdata());
     // Map<String, Object> condition1 =
     // logService.makeCondition(new String[][] {{"ID", Long.toString(ipt.getId())}});
@@ -449,17 +461,24 @@ public class NHIWidgetXMLService {
 
     if (ip.getDdata() == null) {
       System.err.println("dataList is null");
-      return;
+      return 0;
     }
-
+    int result = ip.getDdata().size();
+    fd.setRecord(result);
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
 
     HashMap<String, String> payCodeType = getPayCodeType();
     List<IP_P> ippBatch = new ArrayList<IP_P>();
+    
+    int count = 0;
+      
     for (IP_DData ip_dData : ip.getDdata()) {
-      // if (count > 50) {
-      // break;
-      // }
+      count++;
+      if (((count * 100) / result) % 5 == 0) {
+        fd.setProgress((count * 100) / result);
+        fd.setUpdateAt(new java.util.Date());
+        fdDao.save(fd);
+      }
 
       IP_D ipd = ip_dData.getDbody();
       maskIPD(ipd);
@@ -514,9 +533,9 @@ public class NHIWidgetXMLService {
         ipd = ipdDao.save(ipd);
       } else {
         if (!mr.getIcdcm1().equals(ipd.getIcdCm1())) {
-          FILE_DIFF fd = new FILE_DIFF(mr.getId(), "icdCM", ipd.getIcdCm1());
-          fd.setArrayIndex(0);
-          diffList.add(fd);
+          FILE_DIFF fileDiff = new FILE_DIFF(mr.getId(), "icdCM", ipd.getIcdCm1());
+          fileDiff.setArrayIndex(0);
+          diffList.add(fileDiff);
           mr.setChangeICD(1);
         }
 
@@ -646,6 +665,7 @@ public class NHIWidgetXMLService {
     if (ippBatch.size() > 0) {
       ippDao.saveAll(ippBatch);
     }
+    return result;
   }
 
   private boolean compareDotStrings(Long mrId, String oldS, String newS, String columnName,
@@ -1002,6 +1022,10 @@ public class NHIWidgetXMLService {
     }
   }
 
+  /**
+   * 將病歷資料隱碼並處理空字串.
+   * @param opd
+   */
   private void maskOPD(OP_D opd) {
     if (ISMASK) {
       opd.setRocId(StringUtility.maskString(opd.getRocId(), StringUtility.MASK_MOBILE));
@@ -1022,10 +1046,15 @@ public class NHIWidgetXMLService {
         opd.setShareMark(null);
       }
     }
+    opd.setFuncDate(checkEmptyString(opd.getFuncDate()));
+    opd.setFuncEndDate(checkEmptyString(opd.getFuncEndDate()));
     opd.setCureItemNo1(checkEmptyString(opd.getCureItemNo1()));
     opd.setCureItemNo2(checkEmptyString(opd.getCureItemNo2()));
     opd.setCureItemNo3(checkEmptyString(opd.getCureItemNo2()));
     opd.setCureItemNo4(checkEmptyString(opd.getCureItemNo4()));
+    opd.setIcdOpCode1(checkEmptyString(opd.getIcdOpCode1()));
+    opd.setIcdOpCode2(checkEmptyString(opd.getIcdOpCode2()));
+    opd.setIcdOpCode3(checkEmptyString(opd.getIcdOpCode3()));
     opd.setIcdCm1(StringUtility.formatICDtoUpperCase(opd.getIcdCm1()));
     opd.setIcdCm2(StringUtility.formatICDtoUpperCase(opd.getIcdCm2()));
     opd.setIcdCm3(StringUtility.formatICDtoUpperCase(opd.getIcdCm3()));
@@ -9966,6 +9995,15 @@ public class NHIWidgetXMLService {
                 zipOutputStream.closeEntry();
             }
             zipOutputStream.finish();
+            
+            httpServletReq.setAttribute(LogType.EXPORT.name()+"_CNT", ipdList.size() + 
+            		                                                  ippList.size() + 
+            		                                                  ipsoList.size()+ 
+            		                                                  opdList.size() + 
+            		                                                  oppList.size() + 
+            		                                                  opsoList.size()+ 
+            		                                                  deductedNoteList.size());
+            
             for (String fname : csvFilesPath) {
                 Utility.deleteFile(fname);
             }

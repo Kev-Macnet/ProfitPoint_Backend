@@ -411,7 +411,7 @@ public class LogOperateDao extends BaseSqlDao{
 	  }
   }
   
-  public int addLogAction(Long userId, String crud, String functionName, String pk) {
+  public int addAction(Long userId, String crud, String functionName, String pk) {
 	  String sql;
 	  sql = "Insert into \r\n" + "LOG_ACTION(USER_ID, CRUD, FUNCTION_NAME, PK)\r\n" + "Values (%d, '%s', '%s', '%s')";
 	  sql = String.format(sql, userId, noInjection(crud), noInjection(functionName),noInjection(pk));
@@ -423,5 +423,34 @@ public class LogOperateDao extends BaseSqlDao{
 		  return 0;
 	  }
   }
-
+  
+  public int addImport(Long userId, Integer count) {
+	  String sql;
+	  
+	  sql = "Insert into \r\n" + "LOG_IMPORT(USER_ID, CNT)\r\n" + "Values (%d, %d)";
+	  sql = String.format(sql, userId, count);
+	  
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+  }
+  
+  public int addExport(Long userId, Integer count) {
+	  String sql;
+	  
+	  sql = "Insert into \r\n" + "LOG_EXPORT(USER_ID, CNT)\r\n" + "Values (%d, %d)";
+	  sql = String.format(sql, userId, count);
+	  
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+  }
 }

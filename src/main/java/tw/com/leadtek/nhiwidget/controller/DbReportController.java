@@ -233,7 +233,7 @@ public class DbReportController extends BaseController {
 	@ApiOperation(value = "醫令項目與執行量-匯出", notes = "醫令項目與執行量-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/medicalOrderExport")
-	@LogDefender(value = {LogType.SIGNIN, LogType.EXPORT})
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getMedicalOrderExport(
 			@ApiParam(name = "feeApply", value = "費用申報狀態(可複選)，多選用空格隔開，自費 健保", example = "自費 健保") @RequestParam(required = false) String feeApply,
 			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
@@ -324,7 +324,7 @@ public class DbReportController extends BaseController {
 	  @ApiOperation(value = "案件狀態與各別數量(可複選)-匯出", notes = "案件狀態與各別數量(可複選)-匯出")
 	  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
 	  @GetMapping("/caseStatusAndQuantityExport")
-	  @LogDefender(value = {LogType.SIGNIN, LogType.EXPORT})
+	  @LogDefender(value = {LogType.SIGNIN})
 	  public ResponseEntity<CaseStatusAndQuantity> getCaseStatusAndQuantityExport(
 		 @ApiParam(name = "status", value = "案件狀態與各別數量(可複選)", example = "無須變更 評估不調整 優化完成 待確認 待處理 疑問標示")
 		 @RequestParam(required = false) String status,
@@ -377,7 +377,7 @@ public class DbReportController extends BaseController {
 	@ApiOperation(value = "取得達成率與超額數-匯出", notes = "取得達成率與超額數-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievementRateAndExcessExport")
-	@LogDefender(value = {LogType.SIGNIN, LogType.EXPORT})
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<AchievementQuarter> getAchievementRateAndExcessExport(
 			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開", example = "2021 2021 2021") @RequestParam(required = true) String year,
 			@ApiParam(name = "quarter", value = "月份，若為多筆資料，用空格隔開", example = "1 2 3") @RequestParam(required = true) String quarter,
@@ -446,7 +446,7 @@ public class DbReportController extends BaseController {
 	@ApiOperation(value = "取得DRG案件數分佈佔率與定額、實際點數-匯出", notes = "取得DRG案件數分佈佔率與定額、實際點數-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/drgQueryConditionExport")
-	@LogDefender(value = {LogType.SIGNIN, LogType.EXPORT})
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<Map<String, Object>> getDrgQueryConditionExport(
 			@ApiParam(name = "dateType", value = "日期類型: 0=年月帶入，1=日期區間", example = "0") @RequestParam(required = true) String dateType,
 			@ApiParam(name = "year", value = "西元年，若為多筆資料，用空格隔開，dateType=0時必填", example = "2021 2021 2021") @RequestParam(required = false) String year,
@@ -546,7 +546,7 @@ public class DbReportController extends BaseController {
 	@ApiOperation(value = "取得自費項目清單-匯出", notes = "取得自費項目清單-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/ownExpenseQueryConditionExport")
-	@LogDefender(value = {LogType.SIGNIN, LogType.EXPORT})
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getOwnExpenseQueryConditionExport(
 			@ApiParam(name = "betweenSDate", value = "起始日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-01") @RequestParam(required = true) String betweenSDate,
 			@ApiParam(name = "betweenEDate", value = "迄日，格式為yyyy-MM-dd，dateType=1時必填", example = "2020-06-30") @RequestParam(required = true) String betweenEDate,
@@ -619,7 +619,7 @@ public class DbReportController extends BaseController {
 	@ApiOperation(value = "取得申報分配佔率與點數、金額-匯出", notes = "取得申報分配佔率與點數、金額-匯出")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
 	@GetMapping("/achievePointQueryConditionExport")
-	@LogDefender(value = {LogType.SIGNIN, LogType.EXPORT})
+	@LogDefender(value = {LogType.SIGNIN})
 	public ResponseEntity<BaseResponse> getAchievePointQueryConditionExport(
 			@ApiParam(name = "nhiStatus", value = "健保狀態，1=含勞保、2＝不含勞保，必填", example = "1") @RequestParam(required = true) String nhiStatus,
 			@ApiParam(name = "payCodeType", value = "費用分類，若為多筆資料，用空格隔開，", example = "1 2") @RequestParam(required = false) String payCodeType,

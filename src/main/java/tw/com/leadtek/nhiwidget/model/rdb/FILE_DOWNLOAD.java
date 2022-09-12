@@ -11,12 +11,10 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-@ApiModel("存放處理完後可供下載的檔案")
+@ApiModel("處理下載或上傳的檔案進度")
 @Table(name = "FILE_DOWNLOAD")
 @Entity
 public class FILE_DOWNLOAD {
@@ -43,7 +41,23 @@ public class FILE_DOWNLOAD {
   @ApiModelProperty(value = "完成進度百分比，0 ~ 100", required = false)
   @Column(name = "PROGRESS")
   private Integer progress;
-
+  
+  @ApiModelProperty(value = "筆數", required = false)
+  @Column(name = "RECORD")
+  private Integer record;
+  
+  @ApiModelProperty(value = "開始處理時間", required = false)
+  @Column(name = "START_AT")
+  private Date startAt;
+  
+  @ApiModelProperty(value = "處理結束時間", required = false)
+  @Column(name = "END_AT")
+  private Date endAt;
+  
+  @ApiModelProperty(value = "使用秒數", required = false)
+  @Column(name = "USED_TIME")
+  private Integer usedTime;
+  
   @ApiModelProperty(value = "更新日期", required = false)
   @Column(name = "UPDATE_AT")
   private Date updateAt;
@@ -132,4 +146,35 @@ public class FILE_DOWNLOAD {
     updateAt = UPDATE_AT;
   }
 
+  public Integer getRecord() {
+    return record;
+  }
+
+  public void setRecord(Integer record) {
+    this.record = record;
+  }
+
+  public Date getStartAt() {
+    return startAt;
+  }
+
+  public void setStartAt(Date startAt) {
+    this.startAt = startAt;
+  }
+
+  public Date getEndAt() {
+    return endAt;
+  }
+
+  public void setEndAt(Date endAt) {
+    this.endAt = endAt;
+  }
+
+  public Integer getUsedTime() {
+    return usedTime;
+  }
+
+  public void setUsedTime(Integer usedTime) {
+    this.usedTime = usedTime;
+  }
 }

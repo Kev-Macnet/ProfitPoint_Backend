@@ -1771,9 +1771,7 @@ public class ReportService {
 			cal.add(Calendar.DAY_OF_YEAR, -daysDiff);
 			lastSdate = new java.sql.Date(cal.getTimeInMillis());
 		}
-		list = mrDao.getVisitsPeriod(sdate, edate, sdate, edate, sdate, edate, sdate, edate, sdate, edate, sdate, edate,
-				sdate, edate, sdate, edate, sdate, edate, lastSdate, lastEdate, lastSdate, lastEdate, lastSdate,
-				lastEdate, lastSdate, lastEdate, lastSdate, lastEdate);
+		list = mrDao.getVisitsPeriod(sdate, edate);
 		if (list != null && list.size() > 0) {
 			Object[] obj = list.get(0);
 

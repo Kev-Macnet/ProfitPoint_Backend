@@ -94,7 +94,7 @@ project:
   serverUrl: "http://localhost:8080/#/login?redir=warehouse/"
   apiUrl: "http://localhost:8080/"
   hospId: 1532011154
-  isMask: true
+  isMask: false
 swagger:
   enable: false
   application-name: 健保申保最佳化系統 API
