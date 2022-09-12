@@ -33,11 +33,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.com.leadtek.nhiwidget.constant.XMLConstant;
-import tw.com.leadtek.nhiwidget.controller.SystemController;
 import tw.com.leadtek.nhiwidget.dao.ATCDao;
 import tw.com.leadtek.nhiwidget.dao.CODE_TABLEDao;
 import tw.com.leadtek.nhiwidget.dao.DEDUCTEDDao;
 import tw.com.leadtek.nhiwidget.dao.DEPARTMENTDao;
+import tw.com.leadtek.nhiwidget.dao.FILE_DOWNLOADDao;
 import tw.com.leadtek.nhiwidget.dao.ICD10Dao;
 import tw.com.leadtek.nhiwidget.dao.PARAMETERSDao;
 import tw.com.leadtek.nhiwidget.dao.PAY_CODEDao;
@@ -47,6 +47,7 @@ import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
+import tw.com.leadtek.nhiwidget.model.rdb.FILE_DOWNLOAD;
 import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
 import tw.com.leadtek.nhiwidget.model.rdb.PAY_CODE;
@@ -109,7 +110,10 @@ public class InitialDataService {
   
   @Autowired
   private DEDUCTEDDao deductedDao;
-  
+
+  @Autowired
+  private FILE_DOWNLOADDao fdDao;
+
   /**
    * 存放核刪代碼在 HashSet 的 id
    */
@@ -228,7 +232,7 @@ public class InitialDataService {
    * @param sheetName
    * @param titleRow
    */
-  public void importPayCode(File file, String fileFormat, int titleRow) {
+  public void importPayCode(File file, String fileFormat, int titleRow, FILE_DOWNLOAD fd) {
     int maxId = getMaxId() + 1;
     String collectionName = "ICD10";
     String category = "ORDER";
@@ -261,8 +265,8 @@ public class InitialDataService {
           : new SimpleDateFormat("yyyyMMdd");
       DecimalFormat df = new DecimalFormat("#");
       List<PAY_CODE> payCodeBatch = new ArrayList<PAY_CODE>();
+      fd.setRecord(sheet.getPhysicalNumberOfRows() - titleRow - 1);
       for (int j = titleRow + 1; j < sheet.getPhysicalNumberOfRows(); j++) {
-      //   for (int j = 1; j < 3; j++) {
         XSSFRow row = sheet.getRow(j);
         if (row == null || row.getCell(0) == null) {
           // System.out.println("sheet:" + i + ", row=" + j + " is null");
@@ -274,6 +278,11 @@ public class InitialDataService {
           break;
         }
         total++;
+        fd.setProgress((total * 100) / fd.getRecord());
+        if (fd.getProgress() % 5 == 0) {
+          fd.setUpdateAt(new java.util.Date());
+          fdDao.save(fd);
+        }
         OrderCode oc = getOrderCodyByMap(values, sdf, df, maxId, payCodeType);
         PAY_CODE pc = PAY_CODE.convertFromOrderCode(oc);
         if (pc.getHospLevel() != null && pc.getHospLevel().length() > 11) {
@@ -334,6 +343,7 @@ public class InitialDataService {
         payCodeBatch.clear();
       }
       logger.info("total:" + total + ", add:" + add + ", update=" + update +"," + file.getAbsolutePath());
+      SystemService.updateFileDownloadFinished(fd, fdDao);
     } catch (ParseException e) {
       logger.error("importPayCode failed", e);
       e.printStackTrace();

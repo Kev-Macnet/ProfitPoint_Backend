@@ -332,9 +332,13 @@ public class MR {
     }
     if (opd.getTotalApplDot() != null) {
       this.totalDot = opd.getTotalApplDot();  
+    } else {
+      opd.setTotalApplDot(0);
     }
     if (opd.getPartDot() != null) {
       this.totalDot = this.totalDot + opd.getPartDot();
+    } else {
+      opd.setPartDot(0);
     }
     this.icdAll = "," + opd.getIcdCm1() + ",";
     this.applDot = opd.getTotalApplDot();
