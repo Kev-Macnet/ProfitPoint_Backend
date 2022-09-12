@@ -46,6 +46,7 @@ import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.model.rdb.ATC;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED;
 import tw.com.leadtek.nhiwidget.model.rdb.DRG_CODE;
+import tw.com.leadtek.nhiwidget.model.rdb.FILE_DOWNLOAD;
 import tw.com.leadtek.nhiwidget.model.rdb.ICD10;
 import tw.com.leadtek.nhiwidget.model.rdb.IP_D;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
@@ -951,18 +952,28 @@ public class SystemController extends BaseController {
     if (file.length == 0) {
       return ResponseEntity.ok(new BaseResponse("error", "error file"));
     }
+    UserDetailsImpl user = getUserDetails();
+    if (user == null) {
+      BaseResponse result = new BaseResponse();
+      result.setMessage("無法取得登入狀態");
+      result.setResult("error");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    }
     String result = null;
     for (MultipartFile multipartFile : file) {
       logger.info(
           "/uploadXML:" + multipartFile.getOriginalFilename() + "," + multipartFile.getSize());
       try {
+        FILE_DOWNLOAD fd = systemService.newFileDownload(user.getId(), multipartFile.getOriginalFilename(), true, true);
         String dirPath =
             systemService.checkDownloadDir((parametersService.getParameter("MR_PATH") != null)
                 ? parametersService.getParameter("MR_PATH")
                 : SystemService.FILE_PATH);
-        String filepath = (System.getProperty("os.name").toLowerCase().startsWith("windows"))
-            ? dirPath + "\\" + multipartFile.getOriginalFilename()
-            : dirPath + "/" + multipartFile.getOriginalFilename();
+        String newFileName = systemService.addSeparator(multipartFile.getOriginalFilename(), fd.getId().longValue());
+        String filepath =
+            (System.getProperty("os.name").toLowerCase().startsWith("windows"))
+                ? dirPath + "\\" + newFileName
+                : dirPath + "/" + newFileName;
         File saveFile = new File(filepath);
         if (saveFile.exists() && saveFile.length() > 0) {
           try {
@@ -975,7 +986,7 @@ public class SystemController extends BaseController {
           return returnAPIResult(multipartFile.getOriginalFilename() + " 檔案資料為0筆！");
         }
         try {
-          systemService.deleteInFileDownload(multipartFile.getOriginalFilename());
+          // systemService.deleteInFileDownload(multipartFile.getOriginalFilename());
           // 交由 SystemService.refreshMRFromFolder 去處理，速度較快
           multipartFile.transferTo(saveFile);
           
