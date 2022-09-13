@@ -48,14 +48,18 @@ public class DateTool {
     if (date.length() == 5) {
       date = date + "01";
     }
-    int minguo = Integer.parseInt(date);
-    int dateInt = 19110000 + minguo;
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
     try {
-      return sdf.parse(String.valueOf(dateInt));
+      int minguo = Integer.parseInt(date);
+      int dateInt = 19110000 + minguo;
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+  
+        return sdf.parse(String.valueOf(dateInt));
+    } catch (NumberFormatException e) {
+      e.printStackTrace();
     } catch (ParseException e) {
       e.printStackTrace();
     }
+   
     return null;
   }
 
@@ -110,17 +114,23 @@ public class DateTool {
    * @return ex:2021/02/23
    */
   public static String convertChineseToADWithSlash(String date) {
-    int minguo = Integer.parseInt(date);
-    int dateInt = 0;
-    if (date.length() == 5 || date.length() == 6) {
-      dateInt = 191100 + minguo;
-    } else if (date.length() == 7) {
-      dateInt = 19110000 + minguo;
-    }
-    StringBuffer sb = new StringBuffer(String.valueOf(dateInt));
-    sb.insert(4, '/');
-    if (sb.length() > 6) {
-      sb.insert(7, '/');
+    StringBuffer sb;
+    try {
+      int minguo = Integer.parseInt(date);
+      int dateInt = 0;
+      if (date.length() == 5 || date.length() == 6) {
+        dateInt = 191100 + minguo;
+      } else if (date.length() == 7) {
+        dateInt = 19110000 + minguo;
+      }
+      sb = new StringBuffer(String.valueOf(dateInt));
+      sb.insert(4, '/');
+      if (sb.length() > 6) {
+        sb.insert(7, '/');
+      }
+    } catch (NumberFormatException e) {
+      e.printStackTrace();
+      return null;
     }
 
     return sb.toString();

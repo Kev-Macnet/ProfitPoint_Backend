@@ -1806,11 +1806,6 @@ public class SystemService {
         continue;
       }
       FILE_DOWNLOAD fd = getFILE_DOWNLOADFromList(file, newFiles);
-      if (fd != null) {
-        System.out.println(file.getName() + ", id=" + fd.getId() ); 
-      } else {
-        System.out.println(file.getName() + " not found in fd." ); 
-      }
       int count = 0;
       long filesize1 = 0;
       long filesize2 = 0;

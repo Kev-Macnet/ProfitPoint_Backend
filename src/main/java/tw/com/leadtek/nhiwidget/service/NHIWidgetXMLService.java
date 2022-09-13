@@ -377,67 +377,79 @@ public class NHIWidgetXMLService {
       mr.setApplYm(opt.getFeeYm());
 
       findDiffOpd(diffList, mr, opd);
-
       mr.setdId(opd.getId());
       mrDao.updateDid(opd.getId(), mr.getId());
       StringBuffer sb = new StringBuffer(",");
-      if (diffList == null) {
-        for (OP_P opp : oppListXML) {
-          if (opp.getDrugNo() != null) {
-            sb.append(opp.getDrugNo());
-            sb.append(",");
-            opp.setPayCodeType(payCodeType.get(opp.getDrugNo()));
-          }
-          opp.setOpdId(opd.getId());
-          updateOPPID(oppList, opp);
-          opp.setMrId(mr.getId());
-          maskOPP(opp, opd.getCaseType());
-          oppBatch.add(opp);
-          if (oppBatch.size() > XMLConstant.BATCH) {
-            oppDao.saveAll(oppBatch);
-            oppBatch.clear();
-          }
-        }
-      } else {
-        // 需比對有無差異
-        List<OP_P> opps = oppDao.findByOpdIdOrderByOrderSeqNo(opd.getId());
-        List<MO> moList = new ArrayList<MO>();
-        for (int i = 0; i < opps.size(); i++) {
-          OP_P oppOld = opps.get(i);
-          boolean isFound = false;
-          for (int j = 0; i < oppListXML.size(); j++) {
-            OP_P oppNew = oppListXML.get(j);
-            if (compareOPP(mr.getId(), oppOld, oppNew, diffList, moList)) {
-              isFound = true;
-              break;
+      if (oppListXML != null) {
+        if (diffList == null) {
+          for (OP_P opp : oppListXML) {
+            maskOPP(opp, opd.getCaseType());
+            if (opp.getDrugNo() != null) {
+              sb.append(opp.getDrugNo());
+              sb.append(",");
+              opp.setPayCodeType(payCodeType.get(opp.getDrugNo()));
+            }
+            opp.setOpdId(opd.getId());
+            updateOPPID(oppList, opp);
+            opp.setMrId(mr.getId());
+            oppBatch.add(opp);
+            if (oppBatch.size() > XMLConstant.BATCH) {
+              oppDao.saveAll(oppBatch);
+              oppBatch.clear();
             }
           }
-          if (!isFound) {
-            addDiff(mr.getId(), null, oppOld.getOrderSeqNo().intValue(), (OP_P) null, diffList,
-                moList);
+        } else {
+          // 需比對有無差異
+          List<OP_P> opps = oppDao.findByOpdIdOrderByOrderSeqNo(opd.getId());
+          List<MO> moList = new ArrayList<MO>();
+          for (int i = 0; i < opps.size(); i++) {
+            OP_P oppOld = opps.get(i);
+            boolean isFound = false;
+            for (int j = 0; i < oppListXML.size(); j++) {
+              OP_P oppNew = oppListXML.get(j);
+              maskOPP(oppNew, opd.getCaseType());
+              if (compareOPP(mr.getId(), oppOld, oppNew, diffList, moList)) {
+                isFound = true;
+                break;
+              }
+            }
+            if (!isFound) {
+              addDiff(
+                  mr.getId(),
+                  null,
+                  oppOld.getOrderSeqNo().intValue(),
+                  (OP_P) null,
+                  diffList,
+                  moList);
+            }
+          }
+          if (oppListXML.size() > opps.size()) {
+            for (int i = opps.size(); i < oppListXML.size(); i++) {
+              OP_P opp = oppListXML.get(i);
+              addDiff(
+                  mr.getId(),
+                  opp.getDrugNo(),
+                  opp.getOrderSeqNo().intValue(),
+                  opp,
+                  diffList,
+                  moList);
+            }
+          }
+          if (moList.size() > 0) {
+            mr.setChangeOrder(1);
+            for (MO mo : moList) {
+              moDao.save(mo);
+            }
           }
         }
-        if (oppListXML.size() > opps.size()) {
-          for (int i = opps.size(); i < oppListXML.size(); i++) {
-            OP_P opp = oppListXML.get(i);
-            addDiff(mr.getId(), opp.getDrugNo(), opp.getOrderSeqNo().intValue(), opp, diffList,
-                moList);
+        if (sb.length() > 1) {
+          if (!sb.toString().equals(mr.getCodeAll())) {
+            mr.setCodeAll(sb.toString());
           }
-        }
-        if (moList.size() > 0) {
-          mr.setChangeOrder(1);
-          for (MO mo : moList) {
-            moDao.save(mo);
+        } else {
+          if (mr.getCodeAll() != null) {
+            mr.setCodeAll(null);
           }
-        }
-      }
-      if (sb.length() > 1) {
-        if (!sb.toString().equals(mr.getCodeAll())) {
-          mr.setCodeAll(sb.toString());
-        }
-      } else {
-        if (mr.getCodeAll() != null) {
-          mr.setCodeAll(null);
         }
       }
       saveDiffList(diffList, mr);
@@ -562,6 +574,7 @@ public class NHIWidgetXMLService {
       int ownExpense = 0;
       if (diffList == null) {
         for (IP_P ipp : ippListXML) {
+          maskIPP(ipp);
           if (ipp.getOrderCode() != null) {
             sb.append(ipp.getOrderCode());
             sb.append(",");
@@ -569,7 +582,6 @@ public class NHIWidgetXMLService {
           }
           ipp.setIpdId(ipd.getId());
           updateIPPID(ippList, ipp);
-          maskIPP(ipp);
           ipp.setMrId(mr.getId());
           // E:自費特材項目-未支付
           if ("E".equals(ipp.getOrderType())) {
@@ -1027,51 +1039,53 @@ public class NHIWidgetXMLService {
    * @param opd
    */
   private void maskOPD(OP_D opd) {
+    opd.setRocId(trimString(opd.getRocId()));
+    opd.setName(trimString(opd.getName()));
+    opd.setPharId(trimString(opd.getPharId()));
+    opd.setPrsnId(trimString(opd.getPrsnId()));
     if (ISMASK) {
       opd.setRocId(StringUtility.maskString(opd.getRocId(), StringUtility.MASK_MOBILE));
       opd.setName(StringUtility.maskString(opd.getName(), StringUtility.MASK_NAME));
       opd.setPharId(StringUtility.maskString(opd.getPharId(), StringUtility.MASK_MOBILE));
       opd.setPrsnId(StringUtility.maskString(opd.getPrsnId(), StringUtility.MASK_MOBILE));
     }
-     opd.setCareMark(checkEmptyString(opd.getCareMark()));
-    if (opd.getCasePayCode() != null) {
-      String casePayCode = opd.getCasePayCode().trim();
-      if (casePayCode.length() == 0) {
-        opd.setCasePayCode(null);
-      }
-    }
-    if (opd.getShareMark() != null) {
-      String shareMark = opd.getShareMark().trim();
-      if (shareMark.length() == 0) {
-        opd.setShareMark(null);
-      }
-    }
-    opd.setFuncDate(checkEmptyString(opd.getFuncDate()));
-    opd.setFuncEndDate(checkEmptyString(opd.getFuncEndDate()));
-    opd.setCureItemNo1(checkEmptyString(opd.getCureItemNo1()));
-    opd.setCureItemNo2(checkEmptyString(opd.getCureItemNo2()));
-    opd.setCureItemNo3(checkEmptyString(opd.getCureItemNo2()));
-    opd.setCureItemNo4(checkEmptyString(opd.getCureItemNo4()));
-    opd.setIcdOpCode1(checkEmptyString(opd.getIcdOpCode1()));
-    opd.setIcdOpCode2(checkEmptyString(opd.getIcdOpCode2()));
-    opd.setIcdOpCode3(checkEmptyString(opd.getIcdOpCode3()));
+    opd.setApplCauseMark(trimString(opd.getApplCauseMark()));
+    opd.setCareMark(trimString(opd.getCareMark()));
+    opd.setCasePayCode(trimString(opd.getCasePayCode()));
+    opd.setShareMark(trimString(opd.getShareMark()));
+    opd.setFuncDate(trimString(opd.getFuncDate()));
+    opd.setFuncEndDate(trimString(opd.getFuncEndDate()));
+    opd.setIdBirthYmd(trimString(opd.getIdBirthYmd()));
+    opd.setNbBirthday(trimString(opd.getNbBirthday()));
+    opd.setCureItemNo1(trimString(opd.getCureItemNo1()));
+    opd.setCureItemNo2(trimString(opd.getCureItemNo2()));
+    opd.setCureItemNo3(trimString(opd.getCureItemNo2()));
+    opd.setCureItemNo4(trimString(opd.getCureItemNo4()));
+    opd.setIcdOpCode1(trimString(opd.getIcdOpCode1()));
+    opd.setIcdOpCode2(trimString(opd.getIcdOpCode2()));
+    opd.setIcdOpCode3(trimString(opd.getIcdOpCode3()));
     opd.setIcdCm1(StringUtility.formatICDtoUpperCase(opd.getIcdCm1()));
     opd.setIcdCm2(StringUtility.formatICDtoUpperCase(opd.getIcdCm2()));
     opd.setIcdCm3(StringUtility.formatICDtoUpperCase(opd.getIcdCm3()));
     opd.setIcdCm4(StringUtility.formatICDtoUpperCase(opd.getIcdCm4()));
     opd.setIcdCm5(StringUtility.formatICDtoUpperCase(opd.getIcdCm5()));
+    opd.setShareHospId(trimString(opd.getShareHospId()));
+    opd.setTreatCode(trimString(opd.getTreatCode()));
+    opd.setDsvcNo(trimString(opd.getDsvcNo()));
+    opd.setOutSvcPlanCode(trimString(opd.getOutSvcPlanCode()));
+    opd.setAgencyId(trimString(opd.getAgencyId()));
+    opd.setChildMark(trimString(opd.getChildMark()));
+    opd.setSpeAreaSvc(trimString(opd.getSpeAreaSvc()));
+    opd.setSupportArea(trimString(opd.getSupportArea()));
+    opd.setHospId(trimString(opd.getHospId()));
+    opd.setTranInHospId(trimString(opd.getTranInHospId()));
+    opd.setOriCardSeqNo(trimString(opd.getOriCardSeqNo()));
+    
     if (opd.getOwnExpense() == null) {
       opd.setOwnExpense(0);
     }
   }
   
-  private String checkEmptyString(String s) {
-    if (s == null || s.trim().length() == 0) {
-      return null;
-    }
-    return s;
-  }
-
   private void maskOPP(OP_P opp, String caseType) {
     if (ISMASK) {
       opp.setPrsnId(StringUtility.maskString(opp.getPrsnId(), StringUtility.MASK_MOBILE));
@@ -1080,6 +1094,26 @@ public class NHIWidgetXMLService {
       opp.setPayBy("N");
       opp.setApplStatus(1);
     }
+    opp.setDrugNo(trimString(opp.getDrugNo()));
+    opp.setCurePath(trimString(opp.getCurePath()));
+    opp.setChrMark(trimString(opp.getChrMark()));
+    opp.setCommHospId(trimString(opp.getCommHospId()));
+    opp.setDrugFre(trimString(opp.getDrugFre()));
+    opp.setDrugPath(trimString(opp.getDrugPath()));
+    opp.setDrugSerialNo(trimString(opp.getDrugSerialNo()));
+    opp.setEndTime(trimString(opp.getEndTime()));
+    opp.setImgSource(trimString(opp.getImgSource()));
+    opp.setMedType(trimString(opp.getMedType()));
+    opp.setNonListMark(trimString(opp.getNonListMark()));
+    opp.setNonListName(trimString(opp.getNonListName()));
+    opp.setOrderType(trimString(opp.getOrderType()));
+    opp.setOwnExpMtrNo(trimString(opp.getOwnExpMtrNo()));
+    opp.setPayBy(trimString(opp.getPayBy()));
+    opp.setPayCodeType(trimString(opp.getPayCodeType()));
+    opp.setPayRate(trimString(opp.getPayRate()));
+    opp.setPreNo(trimString(opp.getPreNo()));
+    opp.setReceiveNo(trimString(opp.getReceiveNo()));
+    opp.setStartTime(trimString(opp.getStartTime()));
   }
 
   private void maskIPP(IP_P ipp) {
@@ -1092,9 +1126,19 @@ public class NHIWidgetXMLService {
     if (ipp.getApplStatus() == null) {
       ipp.setApplStatus(1);  
     }
+    if (ipp.getOrderCode() != null) {
+      ipp.setOrderCode(ipp.getOrderCode().trim());
+    }
   }
 
+  /**
+   * 隱碼及欄位檢查
+   * @param ipd
+   */
   private void maskIPD(IP_D ipd) {
+    ipd.setRocId(trimString(ipd.getRocId()));
+    ipd.setName(trimString(ipd.getName()));
+    ipd.setPrsnId(trimString(ipd.getPrsnId()));
     if (ISMASK) {
       ipd.setRocId(StringUtility.maskString(ipd.getRocId(), StringUtility.MASK_MOBILE));
       ipd.setName(StringUtility.maskString(ipd.getName(), StringUtility.MASK_NAME));
@@ -1120,9 +1164,46 @@ public class NHIWidgetXMLService {
     ipd.setIcdCm18(StringUtility.formatICDtoUpperCase(ipd.getIcdCm18()));
     ipd.setIcdCm19(StringUtility.formatICDtoUpperCase(ipd.getIcdCm19()));
     ipd.setIcdCm20(StringUtility.formatICDtoUpperCase(ipd.getIcdCm20()));
+    
+    ipd.setIcdOpCode1(trimString(ipd.getIcdOpCode1()));
+    ipd.setIcdOpCode2(trimString(ipd.getIcdOpCode2()));
+    ipd.setIcdOpCode3(trimString(ipd.getIcdOpCode3()));
+    ipd.setIcdOpCode4(trimString(ipd.getIcdOpCode4()));
+    ipd.setIcdOpCode5(trimString(ipd.getIcdOpCode5()));
+    ipd.setIcdOpCode6(trimString(ipd.getIcdOpCode6()));
+    ipd.setIcdOpCode7(trimString(ipd.getIcdOpCode7()));
+    ipd.setIcdOpCode8(trimString(ipd.getIcdOpCode8()));
+    ipd.setIcdOpCode9(trimString(ipd.getIcdOpCode9()));
+    ipd.setIcdOpCode10(trimString(ipd.getIcdOpCode10()));
+    ipd.setIcdOpCode11(trimString(ipd.getIcdOpCode11()));
+    ipd.setIcdOpCode12(trimString(ipd.getIcdOpCode12()));
+    ipd.setIcdOpCode13(trimString(ipd.getIcdOpCode13()));
+    ipd.setIcdOpCode14(trimString(ipd.getIcdOpCode14()));
+    ipd.setIcdOpCode15(trimString(ipd.getIcdOpCode15()));
+    ipd.setIcdOpCode16(trimString(ipd.getIcdOpCode16()));
+    ipd.setIcdOpCode17(trimString(ipd.getIcdOpCode17()));
+    ipd.setIcdOpCode18(trimString(ipd.getIcdOpCode18()));
+    ipd.setIcdOpCode19(trimString(ipd.getIcdOpCode19()));
+    ipd.setIcdOpCode20(trimString(ipd.getIcdOpCode20()));
     if (ipd.getOwnExpense() == null) {
       ipd.setOwnExpense(0);
     }
+    ipd.setOutDate(trimString(ipd.getOutDate()));
+    ipd.setInDate(trimString(ipd.getInDate()));
+    ipd.setApplCauseMark(trimString(ipd.getApplCauseMark()));
+    ipd.setTwDrgPayType(trimString(ipd.getTwDrgPayType()));
+    ipd.setTwDrgCode(trimString(ipd.getTwDrgCode()));
+    ipd.setTwDrgsSuitMark(trimString(ipd.getTwDrgsSuitMark()));
+    ipd.setCaseDrgCode(trimString(ipd.getCaseDrgCode()));
+    ipd.setChildMark(trimString(ipd.getChildMark()));
+    ipd.setNbBirthday(trimString(ipd.getNbBirthday()));
+    ipd.setAgencyId(trimString(ipd.getAgencyId()));
+    ipd.setTranCode(trimString(ipd.getTranCode()));
+    ipd.setTranInHospId(trimString(ipd.getTranInHospId()));
+    ipd.setTranOutHospId(trimString(ipd.getTranOutHospId()));
+    ipd.setHospId(trimString(ipd.getHospId()));
+    ipd.setSvcPlan(trimString(ipd.getSvcPlan()));
+    ipd.setPilotProject(trimString(ipd.getPilotProject()));
   }
 
   /**
@@ -7345,6 +7426,7 @@ public class NHIWidgetXMLService {
         IP_P ipp = newIppList.get(i);
         ipp.setMrId(mr.getId());
         ipp.setIpdId(ipd.getId());
+        maskIPP(ipp);
         
      // 檢查該筆醫令是否已存在DB
         boolean isFound = false;
@@ -7363,7 +7445,6 @@ public class NHIWidgetXMLService {
             if (ipp.getOrderCode() != null) {
               ipp.setPayCodeType(payCodeType.get(ipp.getOrderCode()));
             }
-            maskIPP(ipp);
             ipp.setMrId(mr.getId());
             ippBatch.add(ipp);
             ippListDB.add(ipp);
@@ -7851,6 +7932,7 @@ public class NHIWidgetXMLService {
             // System.out.println("資料有異動 " + opp.getId() + "," + opp.getDrugNo() + "," + opp.getInhCode() + "," +  oppNew.getRocId());
           }
         }
+        maskOPP(opp, opd.getCaseType());
         if (opp.getDrugNo() != null) {
           if (mr.getCodeAll() == null) {
             mr.setCodeAll(",");
@@ -7874,7 +7956,6 @@ public class NHIWidgetXMLService {
         }
         opp.setOpdId(opd.getId());
         opp.setMrId(mr.getId());
-        maskOPP(opp, opd.getCaseType());
         if (opp.isDirty()) {
           opp.setUpdateAt(new java.util.Date());
         }
@@ -10019,6 +10100,17 @@ public class NHIWidgetXMLService {
       String currentPath = fcurrent.getAbsolutePath()+separator;
       String backupPath = currentPath+"tempcsv";
       return (backupPath);
+  }
+
+  private String trimString(String s) {
+    String result = s;
+    if (result != null) {
+      result = result.strip();
+      if (result.length() == 0) {
+        return null;
+      }
+    }
+    return result;
   }
   
 }
