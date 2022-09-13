@@ -5505,16 +5505,23 @@ public class DbReportService {
 								/// 含勞保
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(IP_P.TOTAL_DOT),0) AS IP_DOT FROM MR, IP_P WHERE MR.ID = IP_P.MR_ID AND IP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND IP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							} else {
 								/// 不含勞保
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(IP_P.TOTAL_DOT),0) AS IP_DOT FROM MR, IP_P, IP_D WHERE MR.ID = IP_D.MR_ID AND IP_D.ID = IP_P.IPD_ID AND IP_D.CASE_TYPE NOT IN  ('A1','A2','A3','A4','AZ') AND IP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND IP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 
 							}
+							
+							//藥品及衛品用醫令碼長度判斷
+							if ("22".equals(pcType) || "23".equals(pcType)) {
+								String orderCodeLength = "22".equals(pcType) ? "10" : "12";
+								selectColumn.append("AND LENGTH(IP_P.ORDER_CODE) = " + orderCodeLength);
+							}else {
+								selectColumn.append("AND IP_P.PAY_CODE_TYPE = '" + pcType + "'");
+							}
+							
 							if (funcTypeList.size() > 0)
 								where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
 							if (medNameList.size() > 0)
@@ -6795,13 +6802,11 @@ public class DbReportService {
 								/// 含勞保
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(IP_P.TOTAL_DOT),0) AS IP_DOT FROM MR, IP_P WHERE MR.ID = IP_P.MR_ID AND IP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND IP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							} else {
 								selectColumn.append(
 										" (SELECT COALESCE(SUM(IP_P.TOTAL_DOT),0) AS IP_DOT FROM MR, IP_P, IP_D WHERE MR.ID = IP_D.MR_ID AND IP_D.ID = IP_P.IPD_ID AND IP_D.CASE_TYPE NOT IN  ('A1','A2','A3','A4','AZ') AND IP_P.APPL_STATUS  = '1' AND MR_END_DATE LIKE CONCAT('"
-												+ yearMonthBetweenStr.get(i) + "','%')  AND IP_P.PAY_CODE_TYPE = '"
-												+ pcType + "' ");
+												+ yearMonthBetweenStr.get(i) + "','%') ");
 							}
 
 							//藥品及衛品用醫令碼長度判斷

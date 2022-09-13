@@ -21,7 +21,9 @@ import io.swagger.annotations.ApiParam;
 import tw.com.leadtek.nhiwidget.annotation.LogDefender;
 import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.dto.LogActionDto;
+import tw.com.leadtek.nhiwidget.dto.LogExportDto;
 import tw.com.leadtek.nhiwidget.dto.LogForgotPwdDto;
+import tw.com.leadtek.nhiwidget.dto.LogImportDto;
 import tw.com.leadtek.nhiwidget.dto.LogMrDto;
 import tw.com.leadtek.nhiwidget.dto.LogSigninDto;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -69,7 +71,7 @@ public class LogOperateController extends BaseController{
 			example = "王小明 蔡依依") @RequestParam(required = false) String msDisplayNames,
 			@ApiParam(name = "showLogTypes", value = "顯示列表，\nSG=登出入時間/系統登入總時數、"              + 
 			                                                "\nIP=資料匯入時間、       "                +
-			                                                "\nEP=匯出筆數/時間、      "                +
+			                                                "\nEP=資料匯出筆數/時間、      "              +
 			                                                "\nFG=申請密碼清單/累計次數、"                 +
 			                                                "\nAC=使用者操作紀錄log、"                   +
 			                                                "\nCW=比對警示待確認案件數、"                  +
@@ -271,6 +273,16 @@ public class LogOperateController extends BaseController{
 			 if("AC".equalsIgnoreCase(key)) {
 				 
 				 result.setAcList((List<LogActionDto>) value);
+			 }
+			 
+			 if("IP".equalsIgnoreCase(key)) {
+				 
+				 result.setIpList((List<LogImportDto>) value);
+			 }
+			 
+			 if("EP".equalsIgnoreCase(key)) {
+				 
+				 result.setEpList((List<LogExportDto>) value);
 			 }
 			 
 		 });

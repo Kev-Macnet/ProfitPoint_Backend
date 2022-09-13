@@ -11,7 +11,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import tw.com.leadtek.nhiwidget.dto.LogActionDto;
+import tw.com.leadtek.nhiwidget.dto.LogExportDto;
 import tw.com.leadtek.nhiwidget.dto.LogForgotPwdDto;
+import tw.com.leadtek.nhiwidget.dto.LogImportDto;
 import tw.com.leadtek.nhiwidget.dto.LogMrDto;
 import tw.com.leadtek.nhiwidget.dto.LogSigninDto;
 
@@ -133,7 +135,6 @@ public class LogOperateDao extends BaseSqlDao{
 		  + ", U.USERNAME                               AS \"username\"                          "
 		  + ", COUNT(*)                                 AS \"cnt\"                               "
 		  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                      ";
-//			  + ", STRING_AGG(LOG.INH_CLINIC_ID,','ORDER BY LOG.INH_CLINIC_ID)AS \"inhClinicIds\"";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
 		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
@@ -170,7 +171,6 @@ public class LogOperateDao extends BaseSqlDao{
 			  + ", U.USERNAME                               AS \"username\"                      "
 			  + ", COUNT(*)                                 AS \"cnt\"                           "
 			  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                  ";
-//			  + ", STRING_AGG(LOG.INH_CLINIC_ID,','ORDER BY LOG.INH_CLINIC_ID)AS \"inhClinicIds\"";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
 		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
@@ -206,7 +206,6 @@ public class LogOperateDao extends BaseSqlDao{
 			  + ", U.USERNAME                               AS \"username\"                      "
 			  + ", COUNT(*)                                 AS \"cnt\"                           "
 			  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                  ";
-//			  + ", STRING_AGG(LOG.INH_CLINIC_ID,','ORDER BY LOG.INH_CLINIC_ID)AS \"inhClinicIds\"";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
 		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
@@ -243,25 +242,88 @@ public class LogOperateDao extends BaseSqlDao{
 			  + ", LOG.FUNCTION_NAME                        AS \"functionName\"                  "
 			  + ", LOG.CRUD                                 AS \"crud\"                          "
 			  + ", LOG.PK                                   AS \"pks\"                           ";
-//			  + ", STRING_AGG(LOG.PK,','ORDER BY LOG.PK)    AS \"pks\"                           ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
 		  sql +=", TO_VARCHAR(LOG.CREATE_AT,'YYYY-MM-DD' ) AS \"createDate\"                     ";
-//		  sql +=", TO_VARCHAR(TO_TIME(LOG.CREATE_AT))      AS \"createTime\"                     ";
 	  }
 	  
 	  sql+= "FROM LOG_ACTION LOG                                                                 "
 			  + joinUserDepartmentOnUserId()
 			  + where;
-//			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.FUNCTION_NAME, LOG.CRUD , LOG.PK       ";
 	  
-//	  if("D".equalsIgnoreCase(showType)) {
-//		  sql +=", LOG.CREATE_AT ";
-//	  }
 	  
 	  return super.getNativeQueryResult(sql, LogActionDto.class, queryParaMap);
   }
   
+  public List<LogImportDto> queryImport(String sdate          , String edate      , String showType   , 
+		                                String actor          , String pCondition , List<?> pUserNames, 
+		                                List<?> pDisplayNames , String msCondition, List<?> msDepts   ,
+		                                List<?> msDisplayNames) {
+	  
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(sdate      , edate     , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  
+	  String sql;
+	  
+	  sql = "SELECT                                                                              "
+			  + "  U.DISPLAY_NAME                           AS \"displayName\"                   "
+			  + ", U.USERNAME                               AS \"username\"                      "
+			  + ", COUNT(*)                                 AS \"cnt\"                           ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+		  sql +=", TO_VARCHAR(TO_TIME(LOG.CREATE_AT)) AS \"createTime\"                          ";
+	  }
+	  sql+= "FROM LOG_IMPORT LOG                                                                 "
+			  + joinUserDepartmentOnUserId()
+			  + where
+			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME                                             ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", LOG.CREATE_AT";
+	  }
+	  
+	  return super.getNativeQueryResult(sql, LogImportDto.class, queryParaMap);
+  }
+  
+  public List<LogExportDto> queryExport(String sdate              , String edate      , String showType        , 
+		                                String actor              , String pCondition , List<Object> pUserNames, 
+		                                List<Object> pDisplayNames, String msCondition, List<Object> msDepts   ,
+			                            List<Object> msDisplayNames) {
+	  
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(sdate      , edate     , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  
+	  String sql;
+	  
+	  sql = "SELECT                                                                              "
+			  + "  U.DISPLAY_NAME                           AS \"displayName\"                   "
+			  + ", U.USERNAME                               AS \"username\"                      "
+			  + ", COUNT(*)                                 AS \"cnt\"                           ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+		  sql +=", TO_VARCHAR(TO_TIME(LOG.CREATE_AT)) AS \"createTime\"                          ";
+	  }
+	  sql+= "FROM LOG_EXPORT LOG                                                                 "
+			  + joinUserDepartmentOnUserId()
+			  + where
+			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME                                             ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", LOG.CREATE_AT";
+	  }
+	  
+	  return super.getNativeQueryResult(sql, LogExportDto.class, queryParaMap);
+	}
   
   private String whereBy(String sdate          , String edate      ,  
                          String actor          , String pCondition , List<?> pUserNames,
@@ -453,4 +515,5 @@ public class LogOperateDao extends BaseSqlDao{
 		  return 0;
 	  }
   }
+
 }

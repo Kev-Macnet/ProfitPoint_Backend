@@ -9,7 +9,9 @@ import java.util.List;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import tw.com.leadtek.nhiwidget.dto.LogActionDto;
+import tw.com.leadtek.nhiwidget.dto.LogExportDto;
 import tw.com.leadtek.nhiwidget.dto.LogForgotPwdDto;
+import tw.com.leadtek.nhiwidget.dto.LogImportDto;
 import tw.com.leadtek.nhiwidget.dto.LogMrDto;
 import tw.com.leadtek.nhiwidget.dto.LogSigninDto;
 import tw.com.leadtek.nhiwidget.payload.BasePageResponse;
@@ -47,6 +49,12 @@ public class LogOperateResponse extends BaseResponse implements Serializable {
 	@ApiModelProperty(value = "使用者操作List", required = false)
 	private List<LogActionDto> acList;
 
+	@ApiModelProperty(value = "資料匯入List", required = false)
+	private List<LogImportDto> ipList;
+	
+	@ApiModelProperty(value = "資料匯出List", required = false)
+	private List<LogExportDto> epList;
+	
 	public List<LogForgotPwdDto> getFgList() {
 		return fgList;
 	}
@@ -117,6 +125,22 @@ public class LogOperateResponse extends BaseResponse implements Serializable {
 
 	public void setAcList(List<LogActionDto> acList) {
 		this.acList = acList;
+	}
+
+	public List<LogImportDto> getIpList() {
+		return ipList;
+	}
+
+	public void setIpList(List<LogImportDto> ipList) {
+		this.ipList = ipList;
+	}
+
+	public List<LogExportDto> getEpList() {
+		return epList;
+	}
+
+	public void setEpList(List<LogExportDto> epList) {
+		this.epList = epList;
 	}
 
 }
