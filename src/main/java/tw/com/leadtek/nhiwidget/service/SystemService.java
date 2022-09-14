@@ -139,6 +139,8 @@ public class SystemService {
   private final static String INIT_FILE_INFECTIOUS = "法定傳染病";
 
   private final static String INIT_FILE_USER = "USER_";
+  
+  private final static String INIT_FILE_DR = "DR_";
 
   private final static String INIT_FILE_DEPARTMENT = "DEPARTMENT_";
 
@@ -1308,8 +1310,11 @@ public class SystemService {
         return sb.toString();
       }
     } else {
-      if (file.getProgress().intValue() < 100) {
-        sb.append("正在處理").append(file.getFilename()).append("，已完成");
+      if (file.getProgress().intValue() == 0) {
+        sb.append("準備處理 \"").append(file.getFilename()).append("\"");
+        return sb.toString();
+      } else if (file.getProgress().intValue() < 100) {
+        sb.append("正在處理 \"").append(file.getFilename()).append("\"，已完成");
         sb.append(file.getProgress());
         sb.append("%");
         return sb.toString();
@@ -1902,7 +1907,9 @@ public class SystemService {
     } else if (file.getName().indexOf(INIT_FILE_INFECTIOUS) > -1) {
       initial.importInfectious(file);
     } else if (file.getName().startsWith(INIT_FILE_USER)) {
-      initial.importUserFile(file, 0);
+      initial.importUserFile(file, 0, false);
+    } else if (file.getName().startsWith(INIT_FILE_DR)) {
+      initial.importUserFile(file, 0, true);
     } else if (file.getName().startsWith(INIT_FILE_DEPARTMENT)) {
       initial.importDepartmentFile(file, 0);
     } else if (file.getName().startsWith(INIT_FILE_USER_DEPARTMENT)) {

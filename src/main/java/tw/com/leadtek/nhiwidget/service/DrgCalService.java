@@ -764,7 +764,12 @@ public class DrgCalService {
     return result;
   }
   
-  private void generateDRGBAT(List<MR> mrList) {
+  /**
+   * 產生call DRG編審程式 .bat 檔案
+   * @param mrList
+   * @return true:成功，false:失敗
+   */
+  private boolean generateDRGBAT(List<MR> mrList) {
     Date maxDate = new Date(0);
     for (MR mr : mrList) {
       if (mr.getMrEndDate().after(maxDate)) {
@@ -772,15 +777,21 @@ public class DrgCalService {
       }
     }
     String drgPath = (String) parameters.getParameterValueBetween("DRGSERVICE_PATH", maxDate);
+    if (drgPath == null) {
+      return false;
+    }
     String drgEXE = (String) parameters.getParameterValueBetween("DRGSERVICE_NAME", maxDate);
     if (drgEXE == null) {
       drgEXE = "DRGICD10.exe";
     }
     logDataService.createDrgBatchFile(drgPath, drgEXE);
+    return true;
   }
   
   public void callDrgCalProgram(File file, List<MR> mrList, List<Long> mrIdList, HashMap<Long, IP_D> ipdMap) {
-    generateDRGBAT(mrList);
+    if (!generateDRGBAT(mrList)) {
+      return;
+    }
     String targetName = file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 4) + "B.txt";
     targetName = targetName.substring(targetName.lastIndexOf('\\') + 1);
     String pyCommand = DRG_DATA_FILE_PATH + "/DRG.BAT " + file.getName() + " " + targetName + " y";
