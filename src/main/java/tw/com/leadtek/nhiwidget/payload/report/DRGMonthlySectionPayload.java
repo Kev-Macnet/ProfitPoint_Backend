@@ -103,6 +103,11 @@ public class DRGMonthlySectionPayload extends DRGReportPayload implements Serial
     
   }
   
+  public DRGMonthlySectionPayload(String result, String message) {
+    this.result = result;
+    this.message = message;
+  }
+  
   public DRGMonthlySectionPayload(POINT_MONTHLY pm) {
     if (pm == null) {
       return;
