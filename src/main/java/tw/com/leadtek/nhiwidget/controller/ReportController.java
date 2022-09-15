@@ -272,7 +272,7 @@ public class ReportController extends BaseController {
       @ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true)
           String quarter) {
 
-    if (quarter != null && quarter.length() != 2) {
+    if (quarter != null && quarter.length() % 3 != 2) {
       AchievementQuarter result = new AchievementQuarter();
       result.setMessage("季度不得為空");
       result.setResult(BaseResponse.ERROR);
