@@ -172,12 +172,12 @@ public class GenerateSampleXML {
         }
         Integer count = funcCount.get(ip_D.getFuncType());
         if (count == null) {
-          count = new Integer(0);
+          count = Integer.valueOf(0);
         }
         if (count.intValue() >= MAX) {
           continue;
         }
-        funcCount.put(ip_D.getFuncType(), new Integer(count.intValue() + 1));
+        funcCount.put(ip_D.getFuncType(), Integer.valueOf(count.intValue() + 1));
         
         IP_DData ip_Ddata = new IP_DData();
         DHead dHead = new DHead();
@@ -221,12 +221,12 @@ public class GenerateSampleXML {
         }
         Integer count = funcCount.get(op_D.getFuncType());
         if (count == null) {
-          count = new Integer(0);
+          count = Integer.valueOf(0);
         }
         if (count.intValue() >= MAX) {
           continue;
         }
-        funcCount.put(op_D.getFuncType(), new Integer(count.intValue() + 1));
+        funcCount.put(op_D.getFuncType(), Integer.valueOf(count.intValue() + 1));
         OP_DData op_Ddata = new OP_DData();
         DHead dHead = new DHead();
         dHead.setCASE_TYPE(op_D.getCaseType());

@@ -519,7 +519,7 @@ public class SystemService {
     // redis 中 ICD10-data 的 id
     int id = redisService.getMaxId() + 1;
     if (isCreate) {
-      cb.setId(new Long(id));
+      cb.setId(Long.valueOf(id));
       pc.setRedisId(id);
       redisService.addIndexToRedisIndex(RedisService.INDEX_KEY, String.valueOf(cb.getId()),
           code.toLowerCase());

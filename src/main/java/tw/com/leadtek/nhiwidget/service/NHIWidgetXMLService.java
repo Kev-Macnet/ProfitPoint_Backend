@@ -7879,9 +7879,9 @@ public class NHIWidgetXMLService {
         mrList.add(mr);
         Integer rocIdDateCountValue = rocIdDateCount.get(values.get("ROC_ID") + opd.getFuncEndDate());
         if (rocIdDateCountValue == null) {
-          rocIdDateCount.put(values.get("ROC_ID") + opd.getFuncEndDate(), new Integer(1));
+          rocIdDateCount.put(values.get("ROC_ID") + opd.getFuncEndDate(), Integer.valueOf(1));
         } else {
-          rocIdDateCount.put(values.get("ROC_ID") + opd.getFuncEndDate(), new Integer(rocIdDateCountValue.intValue() + 1));
+          rocIdDateCount.put(values.get("ROC_ID") + opd.getFuncEndDate(), Integer.valueOf(rocIdDateCountValue.intValue() + 1));
         }
         //System.out.println("new opd=" + opd.getId() + " opd.MrId=" + opd.getMrId() + ",mr=" + mr.getId() + " did=" + mr.getdId());
       } else {
@@ -9308,9 +9308,9 @@ public class NHIWidgetXMLService {
     for (OP_D op_D : opdList) {
       Integer count = result.get(op_D.getRocId() + op_D.getFuncEndDate());
       if (count == null) {
-        result.put(op_D.getRocId() + op_D.getFuncEndDate(), new Integer(1));
+        result.put(op_D.getRocId() + op_D.getFuncEndDate(), Integer.valueOf(1));
       } else {
-        result.put(op_D.getRocId() + op_D.getFuncEndDate(), new Integer(count.intValue() + 1));
+        result.put(op_D.getRocId() + op_D.getFuncEndDate(), Integer.valueOf(count.intValue() + 1));
       }
     }
     

@@ -325,7 +325,7 @@ public class ImportSASData {
 
     // opD.setOptId(opT_id);
     int seqNo = (int) Float.parseFloat(ss[OPP_SEQ_NO]);
-    Long opDID = OP_DKeyID.get(new Integer(seqNo));
+    Long opDID = OP_DKeyID.get(Integer.valueOf(seqNo));
     if (opDID.longValue() <= 12000) {
       return;
     }

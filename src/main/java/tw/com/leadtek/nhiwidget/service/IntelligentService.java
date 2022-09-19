@@ -1174,7 +1174,7 @@ public class IntelligentService {
         String compare = ct.getCode() == null ? mr.getInhCode() : mr.getCodeAll();
         int appearCount = countStringAppear(compare, ct.getCode());
         if (count == null) {
-          patientCount.put(mr.getRocId() + mr.getName(), new Integer(appearCount));
+          patientCount.put(mr.getRocId() + mr.getName(), Integer.valueOf(appearCount));
           patientLastTime.put(mr.getRocId() + mr.getName(), mr.getMrEndDate().getTime());
           patientMR.put(mr.getRocId() + mr.getName(), mr);
         } else {
@@ -1184,7 +1184,7 @@ public class IntelligentService {
 
           if (lastTime.longValue() - mr.getMrEndDate().getTime() < maxDay) {
             int total = count.intValue() + appearCount;
-            patientCount.put(mr.getRocId() + mr.getName(), new Integer(total));
+            patientCount.put(mr.getRocId() + mr.getName(), Integer.valueOf(total));
             if (total > max) {
               INTELLIGENT intelligent = findIntelligentByMrId(mr.getId(), intelligentList);
               insertIntelligent(mr, intelligent, conditionCode, code, reason,
@@ -1823,7 +1823,7 @@ public class IntelligentService {
     int ownExpCodeCount = 0;
     for (Object[] obj : data) {
       long newMrId = ((BigInteger) obj[0]).longValue();
-      if (violateMrMap.containsKey((new Long(newMrId)))) {
+      if (violateMrMap.containsKey(Long.valueOf(newMrId))) {
         continue;
       }
       if (mrId != newMrId) {
@@ -2257,15 +2257,15 @@ public class IntelligentService {
   }
 
   public synchronized void extendIntelligentRunning(int intelligentCode, long ms) {
-    Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
+    Long runningTime = runningIntelligent.get(Integer.valueOf(intelligentCode));
     if (runningTime == null || runningTime < 0) {
       runningTime = System.currentTimeMillis();
     }
     if (runningTime < Long.MAX_VALUE) {
       if ((runningTime.longValue() - System.currentTimeMillis()) <= 0) {
-        runningIntelligent.put(new Integer(intelligentCode), -1L);  
+        runningIntelligent.put(Integer.valueOf(intelligentCode), -1L);  
       } else if ((runningTime.longValue() - System.currentTimeMillis()) < ms) {
-        runningIntelligent.put(new Integer(intelligentCode), new Long(System.currentTimeMillis() + ms));  
+        runningIntelligent.put(Integer.valueOf(intelligentCode), Long.valueOf(System.currentTimeMillis() + ms));  
       }
     }
   }

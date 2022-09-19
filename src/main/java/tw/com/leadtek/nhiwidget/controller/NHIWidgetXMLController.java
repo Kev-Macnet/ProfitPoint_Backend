@@ -473,7 +473,7 @@ public class NHIWidgetXMLController extends BaseController {
     MR mr = new MR();
     mr.setRemark(message);
     mrs.add(mr);
-    result.put("totalPage", new Integer(0));
+    result.put("totalPage", Integer.valueOf(0));
     result.put("mr", mrs);
     return result;
   }

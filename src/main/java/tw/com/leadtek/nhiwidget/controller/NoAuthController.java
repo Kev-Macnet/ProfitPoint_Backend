@@ -6,6 +6,7 @@ package tw.com.leadtek.nhiwidget.controller;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,4 +39,5 @@ public class NoAuthController extends BaseController {
     }
     return null;
   }
+  
 }
