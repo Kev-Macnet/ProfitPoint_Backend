@@ -1432,7 +1432,7 @@ public class SystemService {
       mrList = mrDao.findByInhClinicId((inhClinicIdList));
       if (mrList == null || mrList.size() == 0) {
         outputFileJAXB(op, download.getFilename());
-        updateFileDownloadFinished(download);
+        updateFileDownloadFinished(download, fdDao);
         return;
       }
       applYm = mrList.get(0).getApplYm();
@@ -1489,7 +1489,7 @@ public class SystemService {
     if (opdList.size() > 0 && oppList.size() > 0) {
       optDao.save(opt);
     }
-    updateFileDownloadFinished(download);
+    updateFileDownloadFinished(download, fdDao);
   }
 
   public void outputIPXML(String applYm, String[] inhClinicIds, FILE_DOWNLOAD download) {
@@ -1504,7 +1504,7 @@ public class SystemService {
       mrList = mrDao.findByInhClinicId((inhClinicIdList));
       if (mrList == null || mrList.size() == 0) {
         outputFileJAXB(ip, download.getFilename());
-        updateFileDownloadFinished(download);
+        updateFileDownloadFinished(download, fdDao);
         return;
       }
       applYm = mrList.get(0).getApplYm();
@@ -1562,7 +1562,7 @@ public class SystemService {
     if (ipdList.size() > 0 && ippList.size() > 0) {
       iptDao.save(ipt);
     }
-    updateFileDownloadFinished(download);
+    updateFileDownloadFinished(download, fdDao);
   }
 
   private void outputFileJAXB(Object obj, String filename) {
@@ -1632,7 +1632,7 @@ public class SystemService {
       }
       long usedTime = System.currentTimeMillis() - start;
       fd.setUsedTime((int)(usedTime / 1000));
-      updateFileDownloadFinished(fd);
+      updateFileDownloadFinished(fd, fdDao);
     } catch (JsonMappingException e) {
       e.printStackTrace();
     } catch (JsonProcessingException e) {
@@ -1806,11 +1806,6 @@ public class SystemService {
         continue;
       }
       FILE_DOWNLOAD fd = getFILE_DOWNLOADFromList(file, newFiles);
-      if (fd != null) {
-        System.out.println(file.getName() + ", id=" + fd.getId() ); 
-      } else {
-        System.out.println(file.getName() + " not found in fd." ); 
-      }
       int count = 0;
       long filesize1 = 0;
       long filesize2 = 0;
@@ -1855,7 +1850,7 @@ public class SystemService {
         processLeadtekXLS(file);
         result++;
       }
-      updateFileDownloadFinished(fd);
+      updateFileDownloadFinished(fd, fdDao);
     }
     return result;
   }
@@ -1873,7 +1868,7 @@ public class SystemService {
     return null;
   }
 
-  private void updateFileDownloadFinished(FILE_DOWNLOAD fd) {
+  public static void updateFileDownloadFinished(FILE_DOWNLOAD fd, FILE_DOWNLOADDao fdDao) {
     fd.setProgress(100);
     fd.setEndAt(new Date());
     fd.setUpdateAt(new Date());
@@ -1887,15 +1882,15 @@ public class SystemService {
     if (file.getName().indexOf(INIT_FILE_PARAMETERS) == 0) {
       initial.importParametersFromExcel(file, "參數設定", 1);
     } else if (file.getName().indexOf(INIT_FILE_PAY_CODE) > -1) {
-      initial.importPayCode(file, INIT_FILE_PAY_CODE, 0);
+      initial.importPayCode(file, INIT_FILE_PAY_CODE, 0, fd);
     } else if (file.getName().indexOf(INIT_FILE_PAY_CODE_LINYUAN) == 0) {
-      initial.importPayCode(file, INIT_FILE_PAY_CODE_LINYUAN, 0);
+      initial.importPayCode(file, INIT_FILE_PAY_CODE_LINYUAN, 0, fd);
     } else if (file.getName().indexOf(INIT_FILE_PAY_CODE_POHAI) == 0) {
-      initial.importPayCode(file, INIT_FILE_PAY_CODE_POHAI, 0);
+      initial.importPayCode(file, INIT_FILE_PAY_CODE_POHAI, 0, fd);
     } else if (file.getName().startsWith(INIT_FILE_PAY_CODE_NAVY)) {
-      initial.importPayCode(file, INIT_FILE_PAY_CODE_NAVY, 0);
+      initial.importPayCode(file, INIT_FILE_PAY_CODE_NAVY, 0, fd);
     } else if (file.getName().startsWith(INIT_FILE_PAY_CODE_MS)) {
-      initial.importPayCode(file, INIT_FILE_PAY_CODE_MS, 0);
+      initial.importPayCode(file, INIT_FILE_PAY_CODE_MS, 0, fd);
     } else if (file.getName().indexOf(INIT_FILE_CODE_TABLE) > -1) {
       initial.importCODE_TABLEToRDB(file, "CODE_TABLE");
     } else if (file.getName().indexOf(INIT_FILE_ICDCM) > 0) {
@@ -1922,7 +1917,7 @@ public class SystemService {
     long usedTime = System.currentTimeMillis() - start;
     logger.info("import " + file.getName() + " used " + usedTime + " ms.");
     fd.setUsedTime((int)(usedTime / 1000));
-    updateFileDownloadFinished(fd);
+    updateFileDownloadFinished(fd, fdDao);
     return true;
   }
 

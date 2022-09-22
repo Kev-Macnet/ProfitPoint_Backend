@@ -269,16 +269,25 @@ public class ReportController extends BaseController {
 		return ResponseEntity.ok(reportService.getAchievementWeekly(cal));
 	}
 
-	@ApiOperation(value = "取得健保總額累積達成率", notes = "取得健保申報總額達成趨勢資料")
-	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })
-	@GetMapping("/achievementRateQuarter")
-	@LogDefender(value = {LogType.SIGNIN})
-	public ResponseEntity<AchievementQuarter> getAchievementRateQuarter(
-			@ApiParam(value = "西元年，若為多筆資料，用空格隔開", example = "2021 2021 2021") @RequestParam(required = true) String year,
-			@ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true) String quarter) {
+  @ApiOperation(value = "取得健保總額累積達成率", notes = "取得健保申報總額達成趨勢資料")
+  @ApiResponses({@ApiResponse(responseCode = "200", description = "成功")})
+  @GetMapping("/achievementRateQuarter")
+  @LogDefender(value = {LogType.SIGNIN})
+  public ResponseEntity<AchievementQuarter> getAchievementRateQuarter(
+      @ApiParam(value = "西元年，若為多筆資料，用空格隔開", example = "2021 2021 2021")
+          @RequestParam(required = true)
+          String year,
+      @ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true)
+          String quarter) {
 
-		return ResponseEntity.ok(reportService.getAchievementQuarter(year, quarter));
-	}
+    if (quarter != null && quarter.length() != 2) {
+      AchievementQuarter result = new AchievementQuarter();
+      result.setMessage("季度不得為空");
+      result.setResult(BaseResponse.ERROR);
+      return ResponseEntity.badRequest().body(result);
+    }
+    return ResponseEntity.ok(reportService.getAchievementQuarter(year, quarter));
+  }
 
 	@ApiOperation(value = "取得門急診/住院/出院人次變化", notes = "取得門急診/住院/出院人次變化")
 	@ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })

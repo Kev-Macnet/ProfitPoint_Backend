@@ -47,7 +47,7 @@ public class LogOperateService {
 	
 	@Autowired
 	protected HttpServletRequest httpServletReq;
-	
+
 	public Map<String, Object> query(String sdate         , String edate         , String showType  , 
 			                         String actor         , String pCondition    , String pUserNames, 
 			                         String pDisplayNames , String msCondition   , String msDepts   , 

@@ -946,7 +946,7 @@ public class SystemController extends BaseController {
   @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "自定義表單檔案",
       dataType = "file", required = true, example = "111-0.xml")})
   @PostMapping(value = "/uploadXML")
-  @LogDefender(value = {LogType.SIGNIN, LogType.IMPORT})
+  //@LogDefender(value = {LogType.SIGNIN, LogType.IMPORT})
   public ResponseEntity<BaseResponse> uploadXML(
       @ApiParam(name = "file", value = "自定義表單檔案", example = "111-0.xml") @RequestPart("file") MultipartFile[] file) {
     if (file.length == 0) {

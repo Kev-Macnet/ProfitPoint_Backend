@@ -141,10 +141,10 @@ public class StringUtility {
     if (c.length() == 0 || "\r\n".equals(c)) {
       return null;
     }
-    if (code.indexOf('.') > 0) {
-      return code.toUpperCase();
+    if (c.indexOf('.') > 0) {
+      return c.toUpperCase();
     }
-    StringBuffer sb = new StringBuffer(code);
+    StringBuffer sb = new StringBuffer(c);
     if (sb.length() > 6) {
       sb.insert(6, '.');
     }
