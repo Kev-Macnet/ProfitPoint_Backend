@@ -2899,7 +2899,7 @@ public class IntelligentService {
         List<MR> list = ymList.get(ym);
         List<Long> mrIdList = drgCalService.getMrIdByDataFormat(list, XMLConstant.DATA_FORMAT_IP);
         if (mrIdList.size() == 0) {
-          return;
+          continue;
         }
         logger.info("runDrgCalculate " + ym + " count:" + list.size());
         HashMap<Long, IP_D> ipdMap = new HashMap<Long, IP_D>();

@@ -87,10 +87,10 @@ project:
   # away from keyboard 時間，超過30分則刪除 jwt
     afk: 1800000
   mail:
-    host: 59.120.139.196
-    port: 25
-    fromEmail: monitor@leadtek.com.tw
-    password: z5z8tah5
+    host:
+    port:
+    fromEmail: 
+    password:
   serverUrl: "http://172.16.50.24:8080/#/login?redir=warehouse/"
   apiUrl: "http://172.16.50.24:8080/"
   hospId: 1532011154

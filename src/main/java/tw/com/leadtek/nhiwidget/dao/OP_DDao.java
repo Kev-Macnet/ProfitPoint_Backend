@@ -190,7 +190,7 @@ public interface OP_DDao extends JpaRepository<OP_D, Long>, JpaSpecificationExec
   		+ "ON OP.OP_FT = IP.IP_FT AND OP.OP_PI = IP.IP_PI",nativeQuery=true)
 	  public List<Object[]>findAllClassDoctorWeekly(String sdate,String edate);
   
-  @Query(value = "SELECT SEQ_NO, ID, ROC_ID, FUNC_DATE, MR_ID, ID_BIRTH_YMD FROM OP_D WHERE OPT_ID= ?1 ", nativeQuery = true)
+  @Query(value = "SELECT SEQ_NO, ID, ROC_ID, FUNC_DATE, MR_ID, ID_BIRTH_YMD, CARD_SEQ_NO FROM OP_D WHERE OPT_ID= ?1 ", nativeQuery = true)
   public List<Object[]> findByOptIdSimple(Long optId);
   
   @Query(value = "SELECT * FROM OP_D WHERE MR_ID IN (SELECT ID FROM MR WHERE DATA_FORMAT = '10' "

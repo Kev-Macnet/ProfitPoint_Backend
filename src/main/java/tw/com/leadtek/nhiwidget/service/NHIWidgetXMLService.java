@@ -1224,6 +1224,7 @@ public class NHIWidgetXMLService {
       map.put("funcDate", (String) obj[3]);
       map.put("mrId", (BigInteger) obj[4]);
       map.put("birth", (String) obj[5]);
+      map.put("cardSeqNo", (String) obj[6]);
       result.add(map);
     }
     start = System.currentTimeMillis() - start;
@@ -1303,16 +1304,29 @@ public class NHIWidgetXMLService {
     int index = -1;
     for (int i = list.size() - 1; i >= 0; i--) {
       HashMap<String, Object> map = list.get(i);
+      // 比對生日、證號、就醫日期及就醫序號
       if (((String) map.get("birth")).equals(opd.getIdBirthYmd())
           && ((String) map.get("rocId")).equals(opd.getRocId())
           && ((String) map.get("funcDate")).equals(opd.getFuncDate())) {
-        index = i;
-        opd.setId(((BigInteger) map.get("id")).longValue());
-        opd.setMrId(((BigInteger) map.get("mrId")).longValue());
-        if (opd.getOwnExpense() == null) {
-          opd.setOwnExpense(0);
+        if (map.get("cardSeqNo") != null) {
+          if (((String) map.get("cardSeqNo")).equals(opd.getCardSeqNo())) {
+            index = i;
+            opd.setId(((BigInteger) map.get("id")).longValue());
+            opd.setMrId(((BigInteger) map.get("mrId")).longValue());
+            if (opd.getOwnExpense() == null) {
+              opd.setOwnExpense(0);
+            }
+            break;
+          }
+        } else if (opd.getCardSeqNo() == null){
+          index = i;
+          opd.setId(((BigInteger) map.get("id")).longValue());
+          opd.setMrId(((BigInteger) map.get("mrId")).longValue());
+          if (opd.getOwnExpense() == null) {
+            opd.setOwnExpense(0);
+          }
+          break;
         }
-        break;
       }
     }
     if (index > -1) {
@@ -2801,6 +2815,9 @@ public class NHIWidgetXMLService {
   }
 
   private boolean updateDiff(MRDetail mrDetail, int oldStatus) {
+    if (mrDetail.getStatus() == null) {
+      return false;
+    }
     if (mrDetail.getStatus().intValue() == MR_STATUS.WAIT_CONFIRM.value()
         || oldStatus == MR_STATUS.NO_CHANGE.value()) {
       return false;
