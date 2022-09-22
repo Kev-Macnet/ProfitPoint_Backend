@@ -2890,8 +2890,6 @@ public class NHIWidgetXMLService {
         myMr.setPrsnUserId(prsnUserId);
         myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
         myMrDao.save(myMr);
-        
-        logOperateService.handleMrUnread(mr.getInhClinicId(), prsnUserId);
       }
     } else {
       if (isAppl) {
@@ -4648,9 +4646,6 @@ public class NHIWidgetXMLService {
         myMr.setPrsnUserId(prsnUserId);
         myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
       }
-      for (String prsnUserId : ids) {
-        logOperateService.handleMrUnread(myMr.getInhClinicId(), Long.valueOf(prsnUserId));  
-      }
       myMr.setApplUserId(user.getId());
       myMr.setNoticeName(receiver);
       myMr.setNoticePpl(ids.length);
@@ -4685,12 +4680,12 @@ public class NHIWidgetXMLService {
           generateNoticeEmailContent(mrList, receiverName[i + 1], sender, noticeTimes));
     }
     
-    List<String> inhClinicIds = mrList.stream().filter(Objects::isNull).map(m-> m.getInhClinicId()).collect(Collectors.toList());
+    Map<Long, String> mrMap = mrList.stream().collect(HashMap::new, (map, item) -> map.put(item.getId(), item.getInhClinicId()), HashMap::putAll);
     
     List<Long> doctorIds = Arrays.asList(ids).stream().map(m-> Long.parseLong(m+"")).collect(Collectors.toList());
     
-    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS", inhClinicIds);
-    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS"    , doctorIds);
+    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_MR_MAP"    , mrMap);
+    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS", doctorIds);
     
     return null;
   }
@@ -4762,6 +4757,9 @@ public class NHIWidgetXMLService {
           myMr.setReadedName(mn.getReadedName());
           myMr.setReadedPpl(mn.getReadedPpl());
           myMrDao.save(myMr);
+          
+          httpServletReq.setAttribute(LogType.MEDICAL_RECORD_READ.name()+"_USER_ID" , user.getId());
+          httpServletReq.setAttribute(LogType.MEDICAL_RECORD_READ.name()+"_MR_ID"   , mrId);
         }
       }
     }

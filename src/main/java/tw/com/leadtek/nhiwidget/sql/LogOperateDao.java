@@ -175,9 +175,10 @@ public class LogOperateDao extends BaseSqlDao{
 	  if("D".equalsIgnoreCase(showType)) {
 		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
 	  }
-	  sql+= "FROM LOG_MEDICAL_RECORD_UNREAD LOG                                                  "
+	  sql+= "FROM LOG_MEDICAL_RECORD_READ LOG                                                    "
 			  + joinUserDepartmentOnUserId()
 			  + where
+			  +" AND LOG.READ_NY = 'N'                                                           "
 			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.INH_CLINIC_ID                          ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
@@ -452,18 +453,33 @@ public class LogOperateDao extends BaseSqlDao{
 	  }
   }
   
-  public int addMedicalRecordUnread(String inhClinicId, Long userId) {
+  public int addMedicalRecordRead(String inhClinicId, Long userId, Long mrId) {
 	  String sql;
 	  
 	  if(null == inhClinicId ) {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_UNREAD(USER_ID)\r\n" + "Values (%d)";
-		  sql = String.format(sql, userId);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_READ(USER_ID, MR_ID)\r\n" + "Values (%d, %d)";
+		  sql = String.format(sql, userId, mrId);
 	  }else {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_UNREAD(INH_CLINIC_ID, USER_ID)\r\n" + "Values ('%s', %d)";
-		  sql = String.format(sql, inhClinicId, userId);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_READ(INH_CLINIC_ID, USER_ID, MR_ID)\r\n" + "Values ('%s', %d, %d)";
+		  sql = String.format(sql, inhClinicId, userId, mrId);
 	  }
+	  try {
+		  int ret = jdbcTemplate.update(sql);
+		  return ret;
+	  } catch (DataAccessException ex) {
+		  ex.printStackTrace();
+		  return 0;
+	  }
+  }
+  
+  public int updateMedicalRecordRead(Long userId, Long mrId) {
+	  String sql;
+	  
+      sql = "Update LOG_MEDICAL_RECORD_READ SET READ_NY='Y' WHERE USER_ID=%d AND MR_ID=%d";
+      sql = String.format(sql, userId, mrId);
+      
 	  try {
 		  int ret = jdbcTemplate.update(sql);
 		  return ret;
