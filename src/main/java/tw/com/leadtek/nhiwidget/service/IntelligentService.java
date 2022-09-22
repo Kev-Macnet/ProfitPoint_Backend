@@ -2607,6 +2607,9 @@ public class IntelligentService {
     List<INTELLIGENT> intelligentBatch = new ArrayList<INTELLIGENT>();
     for (MR mr : mrList) {
       List<ICDCM_DRUG_ATC> list = icdMap.get(mr.getIcdcm1());
+      if (list == null) {
+        continue;
+      }
       for (ICDCM_DRUG_ATC ida : list) {
         if (mr.getCodeAll() == null) {
           continue;

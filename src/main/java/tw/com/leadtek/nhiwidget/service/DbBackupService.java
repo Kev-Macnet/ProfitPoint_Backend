@@ -522,7 +522,7 @@ public class DbBackupService {
         retMap.put("abort", webConfigDao.getConfigValue("restore_abort"));
 //        String progress = webConfigDao.getConfigValue("restore_progress");
         java.util.Map<String, Object> progressMap = webConfigDao.getConfig("restore_progress");
-        String progress = progressMap.get("value").toString();
+        String progress = progressMap.get("value") == null ? "" : progressMap.get("value").toString();
         if (progress.length()>0) {
             double progressVal = Double.parseDouble(progress);
             retMap.put("progress", progressVal);

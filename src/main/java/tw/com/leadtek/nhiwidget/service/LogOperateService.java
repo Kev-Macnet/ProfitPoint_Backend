@@ -2,6 +2,7 @@ package tw.com.leadtek.nhiwidget.service;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class LogOperateService {
 	
 	@Autowired
 	protected HttpServletRequest httpServletReq;
-	
+
 	public Map<String, Object> query(String sdate         , String edate         , String showType  , 
 			                         String actor         , String pCondition    , String pUserNames, 
 			                         String pDisplayNames , String msCondition   , String msDepts   , 
@@ -244,6 +245,7 @@ public class LogOperateService {
 	    return t -> seen.add(keyExtractor.apply(t));
 	}
 	
+	@SuppressWarnings("all")
 	public void handleLog(LogDefender logDefender) {
 		
 		List<Object> logTypes = Arrays.asList(logDefender.value());
@@ -260,7 +262,17 @@ public class LogOperateService {
 		
 		if(logTypes.contains(LogType.MEDICAL_RECORD_NOTIFYED)) {
 			
-			this.handleMrNotifyed();
+			Map<Long, String> mrMap = (Map<Long, String>)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_MR_MAP");
+			List<Long> doctorIds    = (List<Long>)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS");
+			Collection<String> inhClinicIds = mrMap.values();
+			
+			this.handleMrNotifyed(inhClinicIds, doctorIds);
+			this.handleMrUnread  (mrMap, doctorIds);
+		}
+		
+		if(logTypes.contains(LogType.MEDICAL_RECORD_READ)) {
+			
+			this.handleMrRead();
 		}
 		
 		if(logTypes.contains(LogType.ACTION_C) ||
@@ -319,25 +331,37 @@ public class LogOperateService {
 		
 	}
 	
-	@SuppressWarnings("unchecked")
-	public void handleMrNotifyed() {
-		
-		List<String> inhClinicIds = (List<String>)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_INH_CLINIC_IDS");
-		List<Long> doctorIds      = (List<Long>)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS");
+	public void handleMrNotifyed(Collection<String> inhClinicIds, List<Long> doctorIds) {
 		
 		inhClinicIds.stream().forEach(inhClinicId -> {
 			
 			doctorIds.stream().forEach(dortorId ->{
 				
-				this.createLogMedicalRecordNotifyed(inhClinicId , dortorId);
+				this.createLogMedicalRecordNotifyed(inhClinicId, dortorId);
+			});
+			
+		});
+			
+	}
+	
+	public void handleMrUnread(Map<Long, String> mrMap, List<Long> doctorIds) {
+		
+		mrMap.forEach((mrId, inhClinicId) -> {
+			
+			doctorIds.stream().forEach(dortorId ->{
+				
+				this.createLogMedicalRecordRead(inhClinicId, dortorId, mrId);
 			});
 			
 		});
 	}
 	
-	public void handleMrUnread(String inhClinicId, Long userId) {
+	private void handleMrRead() {
 		
-		this.createLogMedicalRecordUnread(inhClinicId, userId);
+		Long userId = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_READ.name()+"_USER_ID");
+		Long mrId   = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_READ.name()+"_MR_ID"  );
+		
+		this.updateMedicalRecordRead(userId, mrId);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -381,7 +405,9 @@ public class LogOperateService {
 		Long   userId = takeLoginUserInfo().getId();
 		Integer count = (Integer)httpServletReq.getAttribute(LogType.EXPORT.name()+"_CNT");
 		
-		this.createLogExport(userId, count);
+		if(null != count) {
+			this.createLogExport(userId, count);
+		}
 	}
 	
 	private void hendleImport() {
@@ -389,7 +415,9 @@ public class LogOperateService {
 		Long userId   = takeLoginUserInfo().getId();
 		Integer count = (Integer)httpServletReq.getAttribute(LogType.IMPORT.name()+"_CNT");
 		
-		this.createLogImport(userId, count);
+		if(null != count) {
+			this.createLogImport(userId, count);
+		}
 	}
 	
 	public int createLogMedicalRecordStatus(String inhClinicId, Long userId, Integer status) {
@@ -407,9 +435,9 @@ public class LogOperateService {
 		return logOperateDao.addMedicalRecordNotifyed(inhClinicId, userId);
 	}
 	
-	public int createLogMedicalRecordUnread(String inhClinicId, Long userId) {
+	public int createLogMedicalRecordRead(String inhClinicId, Long userId, Long mrId) {
 		
-		return logOperateDao.addMedicalRecordUnread(inhClinicId, userId);
+		return logOperateDao.addMedicalRecordRead(inhClinicId, userId, mrId);
 	}
 	
 	public int createLogAction(Long userId, String crud, String functionName, String pk) {
@@ -425,6 +453,11 @@ public class LogOperateService {
 	private int createLogImport(Long userId, Integer count) {
 		
 		return logOperateDao.addImport(userId, count);
+	}
+	
+	private int updateMedicalRecordRead(Long userId, Long mrId) {
+		
+		return logOperateDao.updateMedicalRecordRead(userId, mrId);
 	}
 	
 	private void calculateElapsedTime(List<LogSigninDto> list) {
