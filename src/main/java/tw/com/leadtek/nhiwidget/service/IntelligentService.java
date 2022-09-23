@@ -746,6 +746,8 @@ public class IntelligentService {
       ig.setRocId(mr.getRocId());
       ig.setApplYm(mr.getApplYm());
       ig.setUpdateAt(new Date());
+      ig.setReportDot(mr.getReportDot());
+      ig.setPartDot(mr.getTotalDot() - mr.getOwnExpense());
       if (batch != null) {
         batch.add(ig);
         if (batch.size() % XMLConstant.BATCH == 0) {

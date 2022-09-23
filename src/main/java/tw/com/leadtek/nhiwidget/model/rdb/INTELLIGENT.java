@@ -104,10 +104,10 @@ public class INTELLIGENT {
   @Column(name = "REASON", length = 100)
   @JsonIgnore
   private String reason;
-  
+
   @Column(name = "PRSN_NAME", length = 30)
   private String prsnName;
-  
+
   @Column(name = "PRSN_ID", length = 10)
   private String prsnId;
 
@@ -131,7 +131,7 @@ public class INTELLIGENT {
   @Column(name = "INH_CODE", length = 1600)
   @JsonIgnore
   private String inhCode;
-  
+
   /**
    * 資料格式，與IP_T, OP_T的DATA_FORMAT值一樣。10:門診，20:住院，30:特約藥局，40:特約物理(職能)治療所...
    */
@@ -140,14 +140,14 @@ public class INTELLIGENT {
   @Column(name = "DATA_FORMAT", length = 2)
   @JsonIgnore
   private String dataFormat;
-  
+
   /**
    * 院內碼
    */
   @Column(name = "ROC_ID", length = 12)
   @JsonIgnore
   private String rocId;
-  
+
   /**
    * 院內碼
    */
@@ -161,6 +161,20 @@ public class INTELLIGENT {
   @Column(name = "UPDATE_AT")
   @JsonIgnore
   private Date updateAt;
+
+  /**
+   * 申報點數
+   */
+  @Column(name = "REPORT_DOT", length = 5)
+  @JsonIgnore
+  private long reportDot;
+
+  /**
+   * 病歷點數（不含自費）
+   */
+  @Column(name = "PART_DOT", length = 5)
+  @JsonIgnore
+  private long partDot;
 
   /**
    * 序號
@@ -425,5 +439,33 @@ public class INTELLIGENT {
   public void setPrsnId(String prsnId) {
     this.prsnId = prsnId;
   }
-  
+
+  /**
+   * 申報點數
+   */
+  public long getReportDot() {
+    return reportDot;
+  }
+
+  /**
+   * 申報點數
+   */
+  public void setReportDot(long reportDot) {
+    this.reportDot = reportDot;
+  }
+
+  /**
+   * 病歷點數（不含自費）
+   */
+  public long getPartDot() {
+    return partDot;
+  }
+
+  /**
+   * 病歷點數（不含自費）
+   */
+  public void setPartDot(long partDot) {
+    this.partDot = partDot;
+  }
+
 }
