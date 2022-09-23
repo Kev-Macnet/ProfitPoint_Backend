@@ -2737,13 +2737,12 @@ public class NHIWidgetXMLService {
         if (isRaw && fd.getNewValue() != null) {
           MO newMO = null;
           for (MO mo : moList) {
-            if (mo.getOrderSeqNo().intValue() == fd.getArrayIndex().intValue()) {
+            if (mo.getOrderSeqNo().intValue() == (fd.getArrayIndex().intValue() + 1)) {
               newMO = mo;
               if (XMLConstant.DATA_FORMAT_IP.equals(mrDetail.getDataFormat())) {
-                IP_P ipp = newMO.toIpp(codeTableService);
-                newMO.setIPPData(ipp, codeTableService);
+                newMO.convertToIPP(codeTableService);
               } else {
-
+                newMO.convertToOPP(codeTableService);
               }
               break;
             }
@@ -2752,7 +2751,7 @@ public class NHIWidgetXMLService {
             if (mrDetail.getMos() == null) {
               mrDetail.setMos(new ArrayList<MO>());
             }
-            if (mrDetail.getMos().size() < (fd.getArrayIndex())) {
+            if (mrDetail.getMos().size() < (fd.getArrayIndex() + 1)) {
               mrDetail.getMos().add(newMO);
             } else {
               mrDetail.getMos().set(fd.getArrayIndex().intValue() - 1, newMO);
@@ -2997,6 +2996,11 @@ public class NHIWidgetXMLService {
         myMr.setApplUserId(userId);
         myMr.setApplName(displayName);
       }
+      myMr.setChangeIcd(mr.getChangeICD());
+      myMr.setChangeInh(mr.getChangeInh());
+      myMr.setChangeOrder(mr.getChangeOrder());
+      myMr.setChangeOther(mr.getChangeOther());
+      myMr.setChangeSo(mr.getChangeSo());
       myMr.setStatus(status);
       myMrDao.save(myMr);
     }

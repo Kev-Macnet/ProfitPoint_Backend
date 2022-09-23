@@ -1705,6 +1705,10 @@ public class SystemService {
     thread.start();
   }
 
+  /**
+   * 匯入 MR_PATH 路徑下的檔案
+   * @param files
+   */
   public void refreshMRFromFolder(ArrayList<File> files) {
     List<FILE_DOWNLOAD> oldFiles = fdDao.findAllByFileTypeOrderByUpdateAtDesc(FILE_TYPE_UPLOAD);
     List<FILE_DOWNLOAD> newFiles = new ArrayList<>();
@@ -1713,16 +1717,26 @@ public class SystemService {
       boolean isOldFile = false;
       FILE_DOWNLOAD existFileDownload = null;
       int id = getFileDownloadIdFromFileName(file);
+      // file 是否為其他server處理過的檔案
+      boolean isNotInThisServerFile = id > -1;
+      String originalFileName = getFileDownloadNameFromFileName(file);
       for (FILE_DOWNLOAD oldFile : oldFiles) {
-        if (id > -1 && oldFile.getId().intValue() == id) {
-          existFileDownload = oldFile;
-          isOldFile = oldFile.getStartAt() != null;
-          break;
-        } 
+        if (id > -1) {
+          if (oldFile.getId().intValue() == id && originalFileName.equals(oldFile.getFilename())) {
+            // id 相同且檔名一樣
+            isNotInThisServerFile = false;
+            existFileDownload = oldFile;
+            isOldFile = oldFile.getStartAt() != null;
+            break;
+          }
+        }
         if (file.getAbsolutePath().equals(oldFile.getFilename())) {
           isOldFile = true;
           break;
         }
+      }
+      if (isNotInThisServerFile) {
+        isOldFile = true;
       }
       if (!isOldFile) {
         needProcessFile.add(file);
@@ -1780,10 +1794,14 @@ public class SystemService {
       xmlService.checkAll(0, true);
       // 病歷相關檔案
       int mrFile = 0;
-      mrFile += importMRFile(opdList, newFiles);
-      mrFile += importMRFile(oppList, newFiles);
-      mrFile += importMRFile(ipdList, newFiles);
-      mrFile += importMRFile(ippList, newFiles);
+      try {
+        mrFile += importMRFile(opdList, newFiles);
+        mrFile += importMRFile(oppList, newFiles);
+        mrFile += importMRFile(ipdList, newFiles);
+        mrFile += importMRFile(ippList, newFiles);
+      } catch (Exception e) {
+        logger.error("processFileByOrder", e);
+      }
       long usedTime = System.currentTimeMillis() - startImport;
       logger.info("import " + mrFile + " files used " + usedTime + " ms.");
       xmlService.checkAll(usedTime, false);
@@ -1801,6 +1819,20 @@ public class SystemService {
     } catch (NumberFormatException e) {
       return -1;
     }
+  }
+  
+  private String getFileDownloadNameFromFileName(File file) {
+    int index = file.getName().lastIndexOf('.');
+    if (index == -1) {
+      return null;
+    }
+    String result = file.getName().substring(0, index);
+    String subFilename = file.getName().substring(index);
+    index = result.lastIndexOf(SEPARATOR);
+    if (index == -1) {
+      return null;
+    }
+    return result.substring(0, index) + subFilename;
   }
 
   private int importMRFile(List<File> files, List<FILE_DOWNLOAD> newFiles) {
