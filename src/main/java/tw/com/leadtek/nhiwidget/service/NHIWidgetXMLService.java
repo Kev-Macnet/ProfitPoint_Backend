@@ -359,7 +359,7 @@ public class NHIWidgetXMLService {
               && shouldCompareWarning(mr, cw, opd.getFuncType())) {
             diffList = new ArrayList<FILE_DIFF>();
             clearFileDiff(mr.getId());
-            checkDiffOpd(diffList, opd);
+            checkDiffOpdCureItem(diffList, opd);
           }
           mr.updateMR(opd, diffList, codeTableService);
           if (diffList != null && diffList.size() > 0) {
@@ -5426,7 +5426,6 @@ public class NHIWidgetXMLService {
     // 儲存核刪修改記錄
     DEDUCTED_NOTE update = checkIfDirty(db, note);
     if (update != null) {
-      System.out.println("update is not null " + update.getId());
       update.setEditor(username);
       deductedNoteDao.save(update);
       db.setStatus(0);
@@ -5438,7 +5437,7 @@ public class NHIWidgetXMLService {
   private DEDUCTED_NOTE checkIfDirty(DEDUCTED_NOTE old, DEDUCTED_NOTE newNote) {
     boolean isDirty = false;
     DEDUCTED_NOTE update = new DEDUCTED_NOTE();
-    update.setId(old.getId());
+    //update.setId(old.getId());
     if (!checkIfEquals(old.getAfrAmount(), newNote.getAfrAmount())) {
       isDirty = true; 
     }
@@ -5564,12 +5563,15 @@ public class NHIWidgetXMLService {
     if (!checkIfEquals(old.getDeductedDate(), newNote.getDeductedDate())) {
       isDirty = true;
     }
+    update.setDeductedDate(newNote.getDeductedDate());
     if (!checkIfEquals(old.getRollbackDate(), newNote.getRollbackDate())) {
       isDirty = true;
     }
+    update.setRollbackDate(newNote.getRollbackDate());
     if (!checkIfEquals(old.getDisputeDate(), newNote.getDisputeDate())) {
       isDirty = true;
     }
+    update.setDisputeDate(newNote.getDisputeDate());
     update.setUpdateAt(new java.util.Date());
     if (isDirty) {
       return update;
@@ -6330,7 +6332,7 @@ public class NHIWidgetXMLService {
             && shouldCompareWarning(mr, cw, opd.getFuncType())) {
           diffList = new ArrayList<FILE_DIFF>();
           clearFileDiff(mr.getId());
-          checkDiffOpd(diffList, opd);
+          checkDiffOpdCureItem(diffList, opd);
         }
         mr.updateMR(opd, diffList, codeTableService);
         if (diffList != null && diffList.size() > 0) {
@@ -7562,44 +7564,56 @@ public class NHIWidgetXMLService {
     }
   }
   
-  public void checkDiffOpd(List<FILE_DIFF> list, OP_D newOpd) {
+  /**
+   * 檢查特定治療項目是否有異動
+   * @param list
+   * @param newOpd
+   */
+  public void checkDiffOpdCureItem(List<FILE_DIFF> list, OP_D newOpd) {
     Optional<OP_D> optional = opdDao.findById(newOpd.getId());
     if (!optional.isPresent()) {
       return;
     }
     OP_D old = optional.get();
-    if (old.getCureItemNo1() == null && newOpd.getCureItemNo1() == null) {
+    if (checkDiffItem(
+        old.getCureItemNo1(), newOpd.getCureItemNo1(), list, newOpd.getMrId(), "cureItems", 0)) {
       return;
-    } else if (old.getCureItemNo1() == null && newOpd.getCureItemNo1() != null) {
-      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 0, newOpd.getCureItemNo1()));
-    } else if (old.getCureItemNo1() != null && !old.getCureItemNo1().equals(newOpd.getCureItemNo1())) {
-      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 0, newOpd.getCureItemNo1()));
     }
-    
-    if (old.getCureItemNo2() == null && newOpd.getCureItemNo2() == null) {
+    if (checkDiffItem(
+        old.getCureItemNo2(), newOpd.getCureItemNo2(), list, newOpd.getMrId(), "cureItems", 1)) {
       return;
-    } else if (old.getCureItemNo2() == null && newOpd.getCureItemNo2() != null) {
-      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 1, newOpd.getCureItemNo2()));
-    } else if (old.getCureItemNo2() != null && !old.getCureItemNo2().equals(newOpd.getCureItemNo2())) {
-      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 1, newOpd.getCureItemNo2()));
     }
-    
-    if (old.getCureItemNo3() == null && newOpd.getCureItemNo3() == null) {
+    if (checkDiffItem(
+        old.getCureItemNo3(), newOpd.getCureItemNo3(), list, newOpd.getMrId(), "cureItems", 2)) {
       return;
-    } else if (old.getCureItemNo3() == null && newOpd.getCureItemNo3() != null) {
-      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 2, newOpd.getCureItemNo3()));
-    } else if (old.getCureItemNo3() != null && !old.getCureItemNo3().equals(newOpd.getCureItemNo3())) {
-      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 2, newOpd.getCureItemNo3()));
     }
-    
-    if (old.getCureItemNo4() == null && newOpd.getCureItemNo4() == null) {
+    if (checkDiffItem(
+        old.getCureItemNo4(), newOpd.getCureItemNo4(), list, newOpd.getMrId(), "cureItems", 3)) {
       return;
-    } else if (old.getCureItemNo4() == null && newOpd.getCureItemNo4() != null) {
-      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 3, newOpd.getCureItemNo4()));
-    } else if (old.getCureItemNo4() != null && !old.getCureItemNo4().equals(newOpd.getCureItemNo4())) {
-      list.add(new FILE_DIFF(newOpd.getMrId(), "cureItems", 3, newOpd.getCureItemNo4()));
     }
-    
+  }
+  
+  /**
+   * 比對新舊申報檔的欄位是否有異
+   * @param oldItem
+   * @param newItem
+   * @param list
+   * @param mrId
+   * @param diffFieldName
+   * @param index
+   * @return true:該欄位有資料，false:該欄位無資料
+   */
+  private boolean checkDiffItem(String oldItem, String newItem, List<FILE_DIFF> list,
+     Long mrId, String diffFieldName, int index) {
+    if (oldItem == null && newItem == null) {
+      return true;
+    }
+    if (oldItem == null && newItem != null) {
+      list.add(new FILE_DIFF(mrId, diffFieldName, index, newItem));
+    } else if (oldItem != null && !oldItem.equals(newItem)) {
+      list.add(new FILE_DIFF(mrId, diffFieldName, index, newItem));
+    }
+    return false;
   }
   
   private void changeEmptyToNull(DEDUCTED_NOTE note) {
@@ -7816,7 +7830,7 @@ public class NHIWidgetXMLService {
             && shouldCompareWarning(mr, cw, opd.getFuncType())) {
           diffList = new ArrayList<FILE_DIFF>();
           clearFileDiff(mr.getId());
-          checkDiffOpd(diffList, opd);
+          checkDiffOpdCureItem(diffList, opd);
         }
         mr.updateMR(opd, diffList, codeTableService);
         if (diffList != null && diffList.size() > 0) {

@@ -2346,8 +2346,16 @@ public class ReportService {
 			for(Map<String,Object> m : deductList) {
 				map.put("dataFormat", m.get("DATA_FORMAT").toString());
 				map.put("name", m.get("NAME").toString());
-				map.put("amount", Long.valueOf(m.get("AMOUNT").toString()));
-				map.put("reason", m.get("REASON").toString());
+				if (m.get("AMOUNT") == null) {
+				  map.put("amount", 0L);
+				} else {
+				  map.put("amount", Long.valueOf(m.get("AMOUNT").toString()));
+				}
+				if (m.get("REASON") == null) {
+				  map.put("reason", "");
+				} else {
+				  map.put("reason", m.get("REASON").toString());
+				}
 				mapList.add(map);
 				map = new HashMap<String,Object>();
 			}

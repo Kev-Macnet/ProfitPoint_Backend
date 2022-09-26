@@ -902,12 +902,12 @@ public class UserService {
   public void initialLeadtek() {
     UserRequest user = new UserRequest();
     user.setDepartments("ADM");
-    user.setPassword("test");
+    user.setPassword(encoder.encode("test"));
     user.setRocId("leadtek");
     user.setDisplayName("leadtek");
     user.setUsername("leadtek");
     user.setRole("A");
-    user.setStatus(1);
+    user.setStatus(USER.STATUS_ACTIVE);
     newUser(user);
   }
 }
