@@ -487,7 +487,7 @@ public class NHIWidgetXMLController extends BaseController {
    */
   @ApiOperation(value = "取得指定病歷", notes = "取得指定病歷")
   @GetMapping("/nhixml/mr/{id}")
-  @LogDefender(value = {LogType.SIGNIN})
+  @LogDefender(value = {LogType.SIGNIN, LogType.MEDICAL_RECORD_READ})
   public ResponseEntity<MRDetail> getMRDetail(
       @ApiParam(name = "id", value = "病歷id", example = "146019") @PathVariable String id,
       @ApiParam(name = "isRaw", value = "是否取得最新資料", example = "true") 
@@ -1096,7 +1096,7 @@ public class NHIWidgetXMLController extends BaseController {
   @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
   @ApiOperation(value = "上傳excel核刪檔案", notes = "上傳excel核刪檔案")
   @PostMapping(value = "/nhixml/uploadExcel",consumes = {"multipart/form-data"})
-  @LogDefender(value = {LogType.SIGNIN, LogType.IMPORT})
+  @LogDefender(value = {LogType.SIGNIN})
   public ResponseEntity<Map<String,Object>> importDeductedNoteExcel(@ApiParam(name = "id", value = "病歷id", example = "31986") @RequestParam String id,
 		  @ApiParam(name = "inputFile") @RequestParam("file") MultipartFile file
 		  ) throws FileNotFoundException, IOException, ParseException {

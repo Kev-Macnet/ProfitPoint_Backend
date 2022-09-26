@@ -8,7 +8,7 @@ public enum LogType {
 	
 	MEDICAL_RECORD_NOTIFYED("被通知次數記錄"),
 	
-	MEDICAL_RECORD_UNREAD("未讀取次數記錄"),
+	MEDICAL_RECORD_READ("讀取次數記錄"),
 	
 	IMPORT("資料匯入次數"),
 	
