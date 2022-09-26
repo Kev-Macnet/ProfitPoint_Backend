@@ -236,7 +236,7 @@ public class NHIWidgetXMLService {
   private RedisService redis;
 
   @Autowired
-  private CodeTableService codeTableService;
+  private CodeTableService cts;
 
   @Autowired
   private MY_MRDao myMrDao;
@@ -329,7 +329,7 @@ public class NHIWidgetXMLService {
     int result = dDataList.size();
     fd.setRecord(result);
     HashMap<String, String> payCodeType = getPayCodeType();
-    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
 
     int count = 0;
     for (OP_DData op_dData : dDataList) {
@@ -361,7 +361,7 @@ public class NHIWidgetXMLService {
             clearFileDiff(mr.getId());
             checkDiffOpdCureItem(diffList, opd);
           }
-          mr.updateMR(opd, diffList, codeTableService);
+          mr.updateMR(opd, diffList, cts);
           if (diffList != null && diffList.size() > 0) {
             mr.setChangeOther(1);
           }
@@ -477,7 +477,7 @@ public class NHIWidgetXMLService {
     }
     int result = ip.getDdata().size();
     fd.setRecord(result);
-    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
 
     HashMap<String, String> payCodeType = getPayCodeType();
     List<IP_P> ippBatch = new ArrayList<IP_P>();
@@ -516,7 +516,7 @@ public class NHIWidgetXMLService {
             diffList = new ArrayList<FILE_DIFF>();
             clearFileDiff(mr.getId());
           }
-          mr.updateMR(ipd, diffList, codeTableService);
+          mr.updateMR(ipd, diffList, cts);
           if (diffList != null && diffList.size() > 0) {
             mr.setChangeOther(1);
           }
@@ -530,45 +530,8 @@ public class NHIWidgetXMLService {
         mr.setStatus(MR_STATUS.NO_CHANGE.value());
       }
       mr.setApplYm(ipt.getFeeYm());
-      if (diffList == null) {
-        mr.setIcdcm1(ipd.getIcdCm1());
-        MRDetail.updateIcdcmOtherIP(mr, ipd);
-        MRDetail.updateIcdpcsIP(mr, ipd);
-        MRDetail.updateIcdAllByAlphabet(mr);
-        CODE_TABLE ct = codeTableService.getCodeTable("INFECTIOUS", ipd.getIcdCm1());
-        mr.setInfectious((ct == null) ? 0 : 1);
-        mr = mrDao.save(mr);
-        ipd.setMrId(mr.getId());
-        if (ipd.getOwnExpense() == null) {
-          ipd.setOwnExpense(0);
-        }
-        ipd = ipdDao.save(ipd);
-      } else {
-        if (!mr.getIcdcm1().equals(ipd.getIcdCm1())) {
-          FILE_DIFF fileDiff = new FILE_DIFF(mr.getId(), "icdCM", ipd.getIcdCm1());
-          fileDiff.setArrayIndex(0);
-          diffList.add(fileDiff);
-          mr.setChangeICD(1);
-        }
+      findDiffIpd(diffList, mr, ipd);
 
-        String oldIcdcmOthers = mr.getIcdcmOthers();
-        MRDetail.updateIcdcmOtherIP(mr, ipd);
-        if (compareDotStrings(mr.getId(), oldIcdcmOthers, mr.getIcdcmOthers(), "icdCM", diffList,
-            0)) {
-          mr.setChangeICD(1);
-          mr.setIcdcmOthers(oldIcdcmOthers);
-        }
-
-        String oldIcdpcs = mr.getIcdpcs();
-        MRDetail.updateIcdpcsIP(mr, ipd);
-        if (compareDotStrings(mr.getId(), oldIcdpcs, mr.getIcdpcs(), "icdOP", diffList, -1)) {
-          mr.setChangeOther(1);
-          mr.setIcdpcs(oldIcdpcs);
-        }
-      }
-
-      mr.setdId(ipd.getId());
-      mrDao.updateDid(ipd.getId(), mr.getId());
       StringBuffer sb = new StringBuffer(",");
       // 自費金額
       int ownExpense = 0;
@@ -671,7 +634,6 @@ public class NHIWidgetXMLService {
       }
       mr.setOwnExpense(ownExpense);
       ipd.setOwnExpense(ownExpense);
-      ipdDao.save(ipd);
       mrDao.save(mr);
     }
     if (ippBatch.size() > 0) {
@@ -874,7 +836,7 @@ public class NHIWidgetXMLService {
     if (ippNew != null) {
       MO mo = new MO();
       mo.setMrId(mrId);
-      mo.setIPPData(ippNew, codeTableService);
+      mo.setIPPData(ippNew, cts);
       moList.add(mo);
     }
   }
@@ -898,7 +860,7 @@ public class NHIWidgetXMLService {
     if (oppNew != null) {
       MO mo = new MO();
       mo.setMrId(mrId);
-      mo.setOPPData(oppNew, codeTableService);
+      mo.setOPPData(oppNew, cts);
       moList.add(mo);
     }
   }
@@ -1780,7 +1742,7 @@ public class NHIWidgetXMLService {
         if (mrDb.getStatus() == null) {
           mrDb.setStatus(MR_STATUS.NO_CHANGE.value());
         }
-        mrList.add(new MRResponse(mrDb, codeTableService));
+        mrList.add(new MRResponse(mrDb, cts));
       }
     }
     updateMRStatusCountAll(mc, smrp.getAll());
@@ -1912,7 +1874,7 @@ public class NHIWidgetXMLService {
     if (pages != null && pages.getSize() > 0) {
       for (MR mrDb : pages) {
         updateMRStatusCount(mrDb, mc);
-        MRResponse mrr = new MRResponse(mrDb, codeTableService);
+        MRResponse mrr = new MRResponse(mrDb, cts);
         mrList.add(mrr);
         try {
           String json = objectMapper.writeValueAsString(mrr);
@@ -1996,7 +1958,7 @@ public class NHIWidgetXMLService {
     if (pages != null && pages.getSize() > 0) {
       for (MR mrDb : pages) {
         updateMRStatusCount(mrDb, mc);
-        MRResponse mrr = new MRResponse(mrDb, codeTableService);
+        MRResponse mrr = new MRResponse(mrDb, cts);
         mrList.add(mrr);
       }
     }
@@ -2638,7 +2600,7 @@ public class NHIWidgetXMLService {
       }
       if (XMLConstant.DATA_FORMAT_OP.equals(result.getDataFormat())) {
         OP_D opD = opdDao.getOne(result.getdId());
-        result.setOPDData(opD, codeTableService);
+        result.setOPDData(opD, cts);
 
         List<OP_P> oppList = oppDao.findByOpdIdOrderByOrderSeqNo(opD.getId());
         List<MO> moList = new ArrayList<MO>();
@@ -2648,13 +2610,13 @@ public class NHIWidgetXMLService {
             opp.setOrderSeqNo(i+1);
           }
           MO mo = new MO();
-          mo.setOPPData(opp, codeTableService);
+          mo.setOPPData(opp, cts);
           moList.add(mo);
         }
         result.setMos(moList);
       } else if (XMLConstant.DATA_FORMAT_IP.equals(result.getDataFormat())) {
         IP_D ipD = ipdDao.getOne(result.getdId());
-        result.setIPDData(ipD, codeTableService);
+        result.setIPDData(ipD, cts);
 
         List<IP_P> ippList = ippDao.findByIpdIdOrderByOrderSeqNo(ipD.getId());
         List<MO> moList = new ArrayList<MO>();
@@ -2664,7 +2626,7 @@ public class NHIWidgetXMLService {
             ipp.setOrderSeqNo(i+1);
           }
           MO mo = new MO();
-          mo.setIPPData(ipp, codeTableService);
+          mo.setIPPData(ipp, cts);
           moList.add(mo);
         }
         result.setMos(moList);
@@ -2705,10 +2667,10 @@ public class NHIWidgetXMLService {
         if (isRaw && fd.getNewValue() != null) {
           if (mrDetail.getIcdCM().size() <= fd.getArrayIndex().intValue()) {
             mrDetail.getIcdCM()
-                .add(CodeTableService.getCodeBase(codeTableService, "ICD10-CM", fd.getNewValue()));
+                .add(CodeTableService.getCodeBase(cts, "ICD10-CM", fd.getNewValue()));
           } else {
             mrDetail.getIcdCM().set(fd.getArrayIndex().intValue(),
-                CodeTableService.getCodeBase(codeTableService, "ICD10-CM", fd.getNewValue()));
+                CodeTableService.getCodeBase(cts, "ICD10-CM", fd.getNewValue()));
           }
         }
       } else if ("icdOP".equals(fd.getName())) {
@@ -2719,12 +2681,15 @@ public class NHIWidgetXMLService {
         diffIcdOPList.add(fd.getArrayIndex());
         mrDetail.setDiffIcdOP(diffIcdOPList);
         if (isRaw && fd.getNewValue() != null) {
-          if (mrDetail.getIcdCM().size() <= fd.getArrayIndex().intValue()) {
+          if (mrDetail.getIcdOP() == null) {
+            mrDetail.setIcdOP(new ArrayList<CodeBase>());
+          }
+          if (mrDetail.getIcdOP().size() <= fd.getArrayIndex().intValue()) {
             mrDetail.getIcdOP()
-                .add(CodeTableService.getCodeBase(codeTableService, "ICD10-PCS", fd.getNewValue()));
+                .add(CodeTableService.getCodeBase(cts, "ICD10-PCS", fd.getNewValue()));
           } else {
             mrDetail.getIcdOP().set(fd.getArrayIndex().intValue(),
-                CodeTableService.getCodeBase(codeTableService, "ICD10-PCS", fd.getNewValue()));
+                CodeTableService.getCodeBase(cts, "ICD10-PCS", fd.getNewValue()));
           }
         }
       } else if ("mos".equals(fd.getName())) {
@@ -2740,9 +2705,9 @@ public class NHIWidgetXMLService {
             if (mo.getOrderSeqNo().intValue() == (fd.getArrayIndex().intValue() + 1)) {
               newMO = mo;
               if (XMLConstant.DATA_FORMAT_IP.equals(mrDetail.getDataFormat())) {
-                newMO.convertToIPP(codeTableService);
+                newMO.convertToIPP(cts);
               } else {
-                newMO.convertToOPP(codeTableService);
+                newMO.convertToOPP(cts);
               }
               break;
             }
@@ -2767,10 +2732,10 @@ public class NHIWidgetXMLService {
         mrDetail.setDiffCureItems(diffCureItemsList);
         if (isRaw && fd.getNewValue() != null) {
           if (mrDetail.getCureItems().size() <= fd.getArrayIndex().intValue()) {
-            mrDetail.getCureItems().add(CodeTableService.getCodeBase(codeTableService, "OP_CURE_ITEM", fd.getNewValue()));
+            mrDetail.getCureItems().add(CodeTableService.getCodeBase(cts, "OP_CURE_ITEM", fd.getNewValue()));
           } else {
             mrDetail.getCureItems().set(fd.getArrayIndex().intValue(),
-                CodeTableService.getCodeBase(codeTableService, "OP_CURE_ITEM", fd.getNewValue()));
+                CodeTableService.getCodeBase(cts, "OP_CURE_ITEM", fd.getNewValue()));
           }
         }
       } else {
@@ -2793,7 +2758,7 @@ public class NHIWidgetXMLService {
   private void updateNewFieldValue(FILE_DIFF fd, MRDetail result, SimpleDateFormat sdf)
       throws ParseException {
     if ("funcType".equals(fd.getName())) {
-      result.setFuncType(CodeTableService.getDesc(codeTableService, "FUNC_TYPE", fd.getNewValue()));
+      result.setFuncType(CodeTableService.getDesc(cts, "FUNC_TYPE", fd.getNewValue()));
     } else if ("rocId".equals(fd.getName())) {
       result.setRocId(fd.getNewValue());
     } else if ("name".equals(fd.getName())) {
@@ -2807,10 +2772,9 @@ public class NHIWidgetXMLService {
     } else if ("drgCode".equals(fd.getName())) {
       result.setTwDrgCode(fd.getNewValue());
       result.setDrgCode(fd.getNewValue());
+    } else if ("partNo".equals(fd.getName())) {
+      result.setPartNo(CodeTableService.getDesc(cts, "PART_NO", fd.getNewValue()));
     }
-    // else if ("ownExpense".equals(fd.getName())) {
-    // result.setNonApplDot(Integer.parseInt(fd.getNewValue()));
-    // }
   }
 
   private boolean updateDiff(MRDetail mrDetail, int oldStatus) {
@@ -2985,7 +2949,7 @@ public class NHIWidgetXMLService {
         myMr.setApplUserId(userId);
         myMr.setApplName(displayName);
         myMr.setPrsnUserId(prsnUserId);
-        myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
+        myMr.setFuncTypec(cts.getDesc("FUNC_TYPE", myMr.getFuncType()));
         myMrDao.save(myMr);
         
         logOperateService.handleMrUnread(mr.getInhClinicId(), prsnUserId);
@@ -3839,7 +3803,7 @@ public class NHIWidgetXMLService {
     if (moList.size() > 0) {
       // 有新增的醫令
       for (MO mo : moList) {
-        IP_P newIPP = mo.toIpp(codeTableService);
+        IP_P newIPP = mo.toIpp(cts);
         if (saveIPP) {
           ippDao.save(newIPP);
           orderQty++;
@@ -4748,7 +4712,7 @@ public class NHIWidgetXMLService {
     	long prsnUserId = userService.getUserIdByName(mr.getPrsnName());
         myMr = new MY_MR(mr);
         myMr.setPrsnUserId(prsnUserId);
-        myMr.setFuncTypec(codeTableService.getDesc("FUNC_TYPE", myMr.getFuncType()));
+        myMr.setFuncTypec(cts.getDesc("FUNC_TYPE", myMr.getFuncType()));
       }
       for (String prsnUserId : ids) {
         logOperateService.handleMrUnread(myMr.getInhClinicId(), Long.valueOf(prsnUserId));  
@@ -6187,7 +6151,7 @@ public class NHIWidgetXMLService {
       sb.append("</a></td><td>");
       sb.append(mr.getFuncType());
       sb.append("</td><td>");
-      sb.append(codeTableService.getDesc("FUNC_TYPE", mr.getFuncType()));
+      sb.append(cts.getDesc("FUNC_TYPE", mr.getFuncType()));
       sb.append("</td><td>");
       sb.append(mr.getPrsnId());
       sb.append("</td><td>");
@@ -6301,7 +6265,7 @@ public class NHIWidgetXMLService {
     //System.out.println("mrList:" + mrList.size() + "," +  orderDate[0] + " , " +  orderDate[1]);
     List<OP_D> opdList = opdDao.findByIDFromMR(orderDate[0], orderDate[1]);
     //System.out.println("opdList:" + opdList.size());
-    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
    
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       HSSFRow row = sheet.getRow(i);
@@ -6334,7 +6298,7 @@ public class NHIWidgetXMLService {
           clearFileDiff(mr.getId());
           checkDiffOpdCureItem(diffList, opd);
         }
-        mr.updateMR(opd, diffList, codeTableService);
+        mr.updateMR(opd, diffList, cts);
         if (diffList != null && diffList.size() > 0) {
           mr.setChangeOther(1);
         }
@@ -6737,7 +6701,7 @@ public class NHIWidgetXMLService {
   private void updateIpd(IP_D result, HashMap<String, String> values) {
     if (values.get("CASE_TYPE") != null) {
       if (values.get("CASE_TYPE").length() > 2) {
-        result.setCaseType(codeTableService.getCodeByDesc("IP_CASE_TYPE", values.get("CASE_TYPE")));
+        result.setCaseType(cts.getCodeByDesc("IP_CASE_TYPE", values.get("CASE_TYPE")));
       }
     } else {
       result.setCaseType(values.get("CADE_TYPE"));
@@ -6754,7 +6718,7 @@ public class NHIWidgetXMLService {
     result.setPayType(values.get("PAY_TYPE"));
     if (values.get("FUNC_TYPE") != null) {
       if (values.get("FUNC_TYPE").indexOf("科") > -1 || values.get("FUNC_TYPE").indexOf("學") > -1) {
-        result.setFuncType(codeTableService.getCodeByDesc("FUNC_TYPE", values.get("FUNC_TYPE")));
+        result.setFuncType(cts.getCodeByDesc("FUNC_TYPE", values.get("FUNC_TYPE")));
       } else {
         result.setFuncType(values.get("FUNC_TYPE"));
       }
@@ -7028,7 +6992,7 @@ public class NHIWidgetXMLService {
 
   private void findDiffOpd(List<FILE_DIFF> diffList, MR mr, OP_D opd) {
     if (diffList == null) {
-      CODE_TABLE ct = codeTableService.getCodeTable("INFECTIOUS", opd.getIcdCm1());
+      CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", opd.getIcdCm1());
       mr.setInfectious((ct == null) ? 0 : 1);
       mr.setIcdcm1(opd.getIcdCm1());
       MRDetail.updateIcdcmOtherOP(mr, opd);
@@ -7067,6 +7031,47 @@ public class NHIWidgetXMLService {
 
     mr.setdId(opd.getId());
     mrDao.updateDid(opd.getId(), mr.getId());
+  }
+  
+  private void findDiffIpd(List<FILE_DIFF> diffList, MR mr, IP_D ipd) {
+    if (diffList == null) {
+      CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", ipd.getIcdCm1());
+      mr.setInfectious((ct == null) ? 0 : 1);
+      mr.setIcdcm1(ipd.getIcdCm1());
+      MRDetail.updateIcdcmOtherIP(mr, ipd);
+      MRDetail.updateIcdpcsIP(mr, ipd);
+      MRDetail.updateIcdAllByAlphabet(mr);
+      mr = mrDao.save(mr);
+      ipd.setMrId(mr.getId());
+      if (ipd.getOwnExpense() == null) {
+        ipd.setOwnExpense(0);
+      }
+      ipd = ipdDao.save(ipd);
+    } else {
+      if (!mr.getIcdcm1().equals(ipd.getIcdCm1())) {
+        FILE_DIFF fileDiff = new FILE_DIFF(mr.getId(), "icdCM", ipd.getIcdCm1());
+        fileDiff.setArrayIndex(0);
+        diffList.add(fileDiff);
+        mr.setChangeICD(1);
+      }
+
+      String oldIcdcmOthers = mr.getIcdcmOthers();
+      MRDetail.updateIcdcmOtherIP(mr, ipd);
+      if (compareDotStrings(mr.getId(), oldIcdcmOthers, mr.getIcdcmOthers(), "icdCM", diffList,
+          0)) {
+        mr.setChangeICD(1);
+        mr.setIcdcmOthers(oldIcdcmOthers);
+      }
+
+      String oldIcdpcs = mr.getIcdpcs();
+      MRDetail.updateIcdpcsIP(mr, ipd);
+      if (compareDotStrings(mr.getId(), oldIcdpcs, mr.getIcdpcs(), "icdOP", diffList, -1)) {
+        mr.setChangeOther(1);
+        mr.setIcdpcs(oldIcdpcs);
+      }
+    }
+    mr.setdId(ipd.getId());
+    mrDao.updateDid(ipd.getId(), mr.getId());
   }
 
   private void saveDiffList(List<FILE_DIFF> diffList, MR mr) {
@@ -7216,7 +7221,7 @@ public class NHIWidgetXMLService {
     List<OP_P> oppBatch = new ArrayList<OP_P>();
 
     HashMap<String, String> payCodeType = getPayCodeType();
-    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
     for (String inhNo : opps.keySet()) {
       List<OP_P> oppList = opps.get(inhNo);
       int index = -1;
@@ -7313,7 +7318,7 @@ public class NHIWidgetXMLService {
  // 避免重複insert
     List<IP_D> ipdList = ipdDao.findByIDFromMR(orderDateMore[0], orderDateMore[1]);
     System.out.println("db mr count=" + mrList.size() + ",ip_D count=" + ipdList.size());
-    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       HSSFRow row = sheet.getRow(i);
       if (row == null) {
@@ -7343,7 +7348,7 @@ public class NHIWidgetXMLService {
         if (ipdDB != null) {
           ipd.setId(ipdDB.getId());
         }
-        mr.updateMR(ipd, diffList, codeTableService);
+        mr.updateMR(ipd, diffList, cts);
         if (diffList != null && diffList.size() > 0) {
           mr.setChangeOther(1);
         }
@@ -7356,7 +7361,7 @@ public class NHIWidgetXMLService {
         MRDetail.updateIcdcmOtherIP(mr, ipd);
         MRDetail.updateIcdpcsIP(mr, ipd);
         MRDetail.updateIcdAllByAlphabet(mr);
-        CODE_TABLE ct = codeTableService.getCodeTable("INFECTIOUS", ipd.getIcdCm1());
+        CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", ipd.getIcdCm1());
         mr.setInfectious((ct == null) ? 0 : 1);
         mr = mrDao.save(mr);
         ipd.setMrId(mr.getId());
@@ -7421,7 +7426,7 @@ public class NHIWidgetXMLService {
 
     HashMap<String, String> payCodeType = getPayCodeType();
     CompareWarning cw =
-        new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+        new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
     
     for (String key : ippMap.keySet()) {
       List<IP_P> newIppList = ippMap.get(key);
@@ -7575,6 +7580,8 @@ public class NHIWidgetXMLService {
       return;
     }
     OP_D old = optional.get();
+    checkDiffItem(old.getPayType(), newOpd.getPayType(), list, newOpd.getMrId(), "payType", 0);
+    checkDiffItem(old.getPartNo(), newOpd.getPartNo(), list, newOpd.getMrId(), "partNo", 0);
     if (checkDiffItem(
         old.getCureItemNo1(), newOpd.getCureItemNo1(), list, newOpd.getMrId(), "cureItems", 0)) {
       return;
@@ -7786,7 +7793,7 @@ public class NHIWidgetXMLService {
     //System.out.println("mrList:" + mrList.size() + "," +  orderDate[0] + " , " +  orderDate[1]);
     List<OP_D> opdList = opdDao.findByIDFromMR(orderDate[0], orderDate[1]);
     //System.out.println("opdList:" + opdList.size());
-    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
     
     for (int i = titleRowIndex + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       XSSFRow row = sheet.getRow(i);
@@ -7832,7 +7839,7 @@ public class NHIWidgetXMLService {
           clearFileDiff(mr.getId());
           checkDiffOpdCureItem(diffList, opd);
         }
-        mr.updateMR(opd, diffList, codeTableService);
+        mr.updateMR(opd, diffList, cts);
         if (diffList != null && diffList.size() > 0) {
           mr.setChangeOther(1);
         }
@@ -7879,7 +7886,7 @@ public class NHIWidgetXMLService {
     // 要存到 DB 的 batch
     List<OP_P> oppBatch = new ArrayList<OP_P>();
     CompareWarning cw =
-        new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+        new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
     HashMap<String, String> values = null;
     
     for (int i = titleRowIndex + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
@@ -8672,7 +8679,7 @@ public class NHIWidgetXMLService {
     List<MR> mrList = mrDao.findByMrEndDateAndDataFormatOrderById(XMLConstant.DATA_FORMAT_IP, orderDateMore[0], orderDateMore[1]);
     
     List<IP_D> ipdList = ipdDao.findByIDFromMR(orderDateMore[0], orderDateMore[1]);
-    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
     
     //System.out.println("readTheseIPD select from " + orderDateMore[0] + " to " + orderDateMore[1]+", ipdList=" + ipdList.size() + ", mrList=" + mrList.size());
     for (int i = titleRowIndex + 1; i < sheet.getPhysicalNumberOfRows(); i++) {
@@ -8703,7 +8710,7 @@ public class NHIWidgetXMLService {
           diffList = new ArrayList<FILE_DIFF>();
           clearFileDiff(mr.getId());
         }
-        mr.updateMR(ipd, diffList, codeTableService);
+        mr.updateMR(ipd, diffList, cts);
         if (diffList != null && diffList.size() > 0) {
           mr.setChangeOther(1);
         }
@@ -8720,7 +8727,7 @@ public class NHIWidgetXMLService {
         MRDetail.updateIcdpcsIP(mr, ipd);
         //System.out.println(ipd.getRocId() + " icdcm1=" + ipd.getIcdCm1() + "," + mr.getIcdcmOthers() + "," + mr.getIcdpcs());
         MRDetail.updateIcdAllByAlphabet(mr);
-        CODE_TABLE ct = codeTableService.getCodeTable("INFECTIOUS", ipd.getIcdCm1());
+        CODE_TABLE ct = cts.getCodeTable("INFECTIOUS", ipd.getIcdCm1());
         mr.setInfectious((ct == null) ? 0 : 1);
         mr = mrDao.save(mr);
         ipd.setMrId(mr.getId());
@@ -8809,7 +8816,7 @@ public class NHIWidgetXMLService {
     // 要存到 DB 的 batch
     List<IP_P> ippBatch = new ArrayList<IP_P>();
     
-    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), codeTableService);
+    CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
    
     // System.out.println("select from " + orderDateMore[0] + " to " + orderDateMore[1]+", ipdList=" + ipdList.size() + ", mrList=" + mrList.size());
     for (String key : ippMap.keySet()) {
