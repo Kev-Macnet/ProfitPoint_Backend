@@ -2511,16 +2511,16 @@ public class ParametersService {
    * @param isEnable
    */
   public void switchOverAmount(boolean isEnable) {
+    if (!isEnable) {
+      deleteIntelligent(INTELLIGENT_REASON.OVER_AMOUNT.value(), null, null);   
+      return;
+    }
     List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeOrderByStartDateDesc(3);
     for (CODE_THRESHOLD ct : list) {
       if (ct.getStatus().intValue() == 0) {
         continue;
       }
-      if (isEnable) {
-        recalculateHighRatioAndOverAmount(ct, false);
-      } else {
-        deleteIntelligent(INTELLIGENT_REASON.OVER_AMOUNT.value(), null, null);       
-      }
+      recalculateHighRatioAndOverAmount(ct, false);
     }
   }
   
