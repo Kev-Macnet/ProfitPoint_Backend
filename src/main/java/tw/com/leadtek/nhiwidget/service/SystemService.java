@@ -597,9 +597,9 @@ public class SystemService {
     }
     if (l2.equals("西醫")) {
       codePrefix = codePrefix + "1";
-    } else if (l1.equals("中醫")) {
+    } else if (l2.equals("中醫")) {
       codePrefix = codePrefix + "2";
-    } else if (l1.equals("牙醫")) {
+    } else if (l2.equals("牙醫")) {
       codePrefix = codePrefix + "3";
     } else {
       return null;
