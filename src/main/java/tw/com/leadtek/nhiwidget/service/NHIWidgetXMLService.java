@@ -5113,8 +5113,12 @@ public class NHIWidgetXMLService {
       predicate.add(cb.greaterThan(root.get("changeOther"), 0));
     } else if ("notify".equals(sfp.getBlock())) {
       predicate.add(cb.greaterThan(root.get("noticeTimes"), 0));
+      addCompareWarningPredicate(predicate, cb, root);
     } else if ("nonnotify".equals(sfp.getBlock())) {
       predicate.add(cb.equal(root.get("noticeTimes"), 0));
+      addCompareWarningPredicate(predicate, cb, root);
+    } else {
+      addCompareWarningPredicate(predicate, cb, root);
     }
 
     if (isNoticeDateNotNull) {
@@ -5125,6 +5129,17 @@ public class NHIWidgetXMLService {
     }
     predicate.add(cb.equal(root.get("status"), status));
     return predicate;
+  }
+  
+  private void addCompareWarningPredicate(List<Predicate> predicate, CriteriaBuilder cb, Root<MY_MR> root) {
+    predicate.add(cb.or(
+        cb.greaterThan(root.get("changeIcd"), 0), 
+        cb.greaterThan(root.get("changeIcd"), 0), 
+        cb.greaterThan(root.get("changeOrder"), 0),
+        cb.greaterThan(root.get("changeInh"), 0),
+        cb.greaterThan(root.get("changeSo"), 0),
+        cb.greaterThan(root.get("changeOther"), 0)
+        ));
   }
 
   public Specification<MY_MR> getQuestionMarkSpec(boolean isAppl, UserDetailsImpl user,
