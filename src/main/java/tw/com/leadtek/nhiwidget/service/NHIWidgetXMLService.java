@@ -355,7 +355,8 @@ public class NHIWidgetXMLService {
         Optional<MR> optional = mrDao.findById(opd.getMrId());
         if (optional.isPresent()) {
           mr = optional.get();
-          if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value() 
+          if ((mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value() 
+              && mr.getStatus().intValue() != MR_STATUS.WAIT_CONFIRM.value())
               && shouldCompareWarning(mr, cw, opd.getFuncType())) {
             diffList = new ArrayList<FILE_DIFF>();
             clearFileDiff(mr.getId());
@@ -511,7 +512,8 @@ public class NHIWidgetXMLService {
         Optional<MR> optional = mrDao.findById(ipd.getMrId());
         if (optional.isPresent()) {
           mr = optional.get();
-          if (mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value()
+          if ((mr.getStatus().intValue() != MR_STATUS.NO_CHANGE.value() 
+              && mr.getStatus().intValue() != MR_STATUS.WAIT_CONFIRM.value())
               && shouldCompareWarning(mr, cw, ipd.getFuncType())) {
             diffList = new ArrayList<FILE_DIFF>();
             clearFileDiff(mr.getId());
@@ -5627,9 +5629,10 @@ public class NHIWidgetXMLService {
     note.setStatus(1);
     note.setUpdateAt(new java.util.Date());
     deductedNoteDao.save(note);
-    parameters.upsertCodeConflictForHighRisk(mr.getIcdcm1(), note.getDeductedOrder(),
-        mr.getDataFormat());
-    
+    if (note.getDeductedOrder() != null) {
+      parameters.upsertCodeConflictForHighRisk(
+          mr.getIcdcm1(), note.getDeductedOrder(), mr.getDataFormat());
+    }
     final String requestKey = LogType.ACTION_C.name()+"_PKS";
     
     List<Object> requestPKs = (List<Object>) httpServletReq.getAttribute(requestKey);

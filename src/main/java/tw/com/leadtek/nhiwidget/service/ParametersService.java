@@ -2564,16 +2564,16 @@ public class ParametersService {
    * @param isEnable
    */
   public void switchRareICD(boolean isEnable) {
+    if (!isEnable) {
+      deleteIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);
+      return;
+    }
     List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeOrderByStartDateDesc(1);
     for (CODE_THRESHOLD ct : list) {
       if (ct.getStatus().intValue() == 0) {
         continue;
       }
-      if (isEnable) {
-        recalculateRareICD(ct);
-      } else {
-        deleteIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);       
-      }
+      recalculateRareICD(ct);
     }
   }
 

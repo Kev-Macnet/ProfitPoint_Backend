@@ -274,16 +274,21 @@ public class IntelligentService {
 
   private void addSearchDateParameter(List<Predicate> predicate, CriteriaBuilder cb,
       Root<INTELLIGENT> root, Date sdate, Date edate) {
-    predicate.add(cb.or(
-        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP),
-            cb.or(
-                cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
-                    cb.lessThanOrEqualTo(root.get("startDate"), edate)),
-                cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
-                    cb.lessThanOrEqualTo(root.get("endDate"), edate)))),
-        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP),
-            cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
-            cb.lessThanOrEqualTo(root.get("endDate"), edate))));
+    predicate.add(
+        cb.or(
+            cb.and(
+                cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP),
+                cb.or(
+                    cb.and(
+                        cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+                        cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+                    cb.and(
+                        cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+                        cb.lessThanOrEqualTo(root.get("endDate"), edate)))),
+            cb.and(
+                cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP),
+                cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+                cb.lessThanOrEqualTo(root.get("endDate"), edate))));
   }
 
   private void addPredicate(Root<?> root, List<Predicate> predicate, CriteriaBuilder cb,
