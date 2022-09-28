@@ -5401,7 +5401,7 @@ public class LogRecordTest {
     }
 
     @Test
-    @DisplayName("更新指定病歷的核刪註記內容：問題點！ - 有兩個「更新指定病歷的核刪註記內容」 ")
+    @DisplayName("更新指定病歷的核刪註記內容")
     void _03() {
 
       // 參數
@@ -5481,7 +5481,7 @@ public class LogRecordTest {
     }
 
     @Test
-    @DisplayName("更新指定病歷的DRG：問題點！ - 缺少病歷ID無法測試。")
+    @DisplayName("更新指定病歷的DRG")
     void _05() {
 
       // 參數
