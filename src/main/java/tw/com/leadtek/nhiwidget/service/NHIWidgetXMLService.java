@@ -5588,6 +5588,8 @@ public class NHIWidgetXMLService {
       return a.equals(b);
     } else if (a instanceof Date) {
       return ((Date) a).getTime() == ((Date) b).getTime();
+    } else if (a instanceof java.util.Date) {
+      return ((java.util.Date) a).compareTo((java.util.Date) b)==0;
     }
     return true;
   }
