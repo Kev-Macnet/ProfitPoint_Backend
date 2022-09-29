@@ -470,7 +470,7 @@ public class LogRecordTest {
   @DisplayName("Tests for the method MEDICAL_RECORD_NOTIFYED_NHIWidgetXMLController")
   class MEDICAL_RECORD_NOTIFYED_NHIWidgetXMLController {
     @Test
-    @DisplayName("發送一筆病歷通知 : 問題點！ - handleMrNotifyed() 中 List<String> inhClinicIds 沒有值，編程判斷不寫入")
+    @DisplayName("發送一筆病歷通知")
     void _01() {
 
       String id = "2589";
@@ -503,6 +503,14 @@ public class LogRecordTest {
       try {
         int cout = jdbcTemplate.queryForObject(sql, Integer.class);
 
+        String sql_clean = "DELETE FROM "+ tableNameToLog +" limit 1;";
+        try {
+          jdbcTemplate.update(sql_clean);
+        } catch (DataAccessException ex) {
+          ex.printStackTrace();
+          assertAll(() -> fail());
+        }
+
         assertAll(() -> assertEquals(1, cout));
       } catch (DataAccessException ex) {
         ex.printStackTrace();
@@ -511,7 +519,7 @@ public class LogRecordTest {
     }
 
     @Test
-    @DisplayName("發送多筆病歷通知： 問題點！ - handleMrNotifyed() 中 List<String> inhClinicIds 沒有值，編程判斷不寫入 ")
+    @DisplayName("發送多筆病歷通知")
     void _02() {
       String tableNameToLog = "log_medical_record_notifyed";
 
@@ -535,12 +543,22 @@ public class LogRecordTest {
       ResponseEntity<BaseResponse> response = (ResponseEntity<BaseResponse>) profitClient.call();
       profitClient.showResult();
 
+
       // 檢查
       String sql;
       sql = "SELECT COUNT(*)  FROM " + tableNameToLog;
 
       try {
         int cout = jdbcTemplate.queryForObject(sql, Integer.class);
+
+
+        String sql_clean = "DELETE FROM "+ tableNameToLog +" limit 1;";
+        try {
+          jdbcTemplate.update(sql_clean);
+        } catch (DataAccessException ex) {
+          ex.printStackTrace();
+          assertAll(() -> fail());
+        }
 
         assertAll(() -> assertEquals(1, cout));
       } catch (DataAccessException ex) {
@@ -768,6 +786,7 @@ public class LogRecordTest {
       Builder builder = new ProfitClientBuilder();
       ApiClient profitClient =
           builder
+                  .setApiName("上傳XML申報檔")
               .setBaseUrl("http://localhost")
               .setPort(port)
               .setMediaType(MediaType.MULTIPART_FORM_DATA)
@@ -780,63 +799,9 @@ public class LogRecordTest {
               .setResponseClass(BaseResponse.class)
               .httpMethod(HttpMethod.POST)
               .getProfitApi();
+      profitClient.showProperties();
       ResponseEntity<BaseResponse> response = (ResponseEntity<BaseResponse>) profitClient.call();
-
-      System.out.println("===========================");
-
-      System.out.println("api message" + ": " + response.getBody().getMessage());
-      System.out.println("api statusCode" + ": " + response.getStatusCode());
-
-      // 檢查
-      String sql;
-      sql = "SELECT COUNT(*)  FROM " + tableNameToLog;
-
-      try {
-        int cout = jdbcTemplate.queryForObject(sql, Integer.class);
-        emptyLogTable(tableNameToLog);
-        assertAll(() -> assertEquals(1, cout));
-      } catch (DataAccessException ex) {
-        ex.printStackTrace();
-        assertAll(() -> fail());
-      }
-    }
-  }
-
-  // ---
-
-  @Nested
-  @DisplayName("Tests for the method IMPORT_NHIWidgetXMLController")
-  class IMPORT_NHIWidgetXMLController {
-
-    @Test
-    @DisplayName("上傳excel核刪檔案 : 問題點！ - 沒有紀錄「資料匯入匯出」的需求")
-    void _01() {
-
-      String tableNameToLog = "log_import";
-      FileSystemResource file;
-
-      // 調用目標 API
-      Builder builder = new ProfitClientBuilder();
-      ApiClient profitClient =
-          builder
-              .setBaseUrl("http://localhost")
-              .setPort(port)
-              .setMediaType(MediaType.APPLICATION_JSON)
-              .setAccessToken(accessToken)
-              .addApiUrl("/nhixml/uploadExcel")
-              .addPathVariable("")
-              .addUriParam(
-                  "?applCategory=1&applDate=2022-02-24&applM=1&applMedic=門診西醫"
-                      + "&applMethod=2&applY=2021&dataFormat=10&dateEnd=2022-02-24&dateStart=2022-02-24&inhClinicId=O21100800257")
-              .addJsonBody("")
-              .httpMethod(HttpMethod.GET)
-              .getProfitApi();
-      ResponseEntity<BaseResponse> response = (ResponseEntity<BaseResponse>) profitClient.call();
-
-      System.out.println("===========================");
-
-      System.out.println("api message" + ": " + response.getBody().getMessage());
-      System.out.println("api statusCode" + ": " + response.getStatusCode());
+      profitClient.showResult();
 
       // 檢查
       String sql;
@@ -4938,12 +4903,12 @@ public class LogRecordTest {
 
     @Test
     @DisplayName(
-        "新增多筆病歷核刪註記： 問題點： 在最後回傳 result = null ，Spring 框架處理會拋 500 ，代碼位置在NHIWidgetXMLController 的 newDeductedNotes 的  returnAPIResult(result);")
+        "新增多筆病歷核刪註記")
     void LOG_ACTION_C_NHIWidgetXMLController_3_新增多筆病歷核刪註記() {
 
       // 參數
       String tableNameToLog = "log_action";
-      String mrid = "2387";
+      String mrid = "2755";
 
       // 調用目標 API
       Builder builder = new ProfitClientBuilder();
@@ -4957,7 +4922,72 @@ public class LogRecordTest {
               .addPathVariable("")
               .addUriParam("?mrId=" + mrid)
               .addJsonListBody(
-                  "[{\"afrAmount\":null,\"afrNoPayCode\":\"\",\"afrNoPayDesc\":\"\",\"afrNote\":\"\",\"afrPayAmount\":null,\"afrPayQuantity\":null,\"afrQuantity\":null,\"cat\":\"有CIS\",\"code\":\"\",\"deductedAmount\":null,\"deductedDate\":\"2022-09-22\",\"deductedOrder\":\"\",\"deductedQuantity\":null,\"disputeAmount\":null,\"disputeNoPayCode\":\"\",\"disputeNoPayDesc\":\"\",\"disputeNote\":\"\",\"disputePayAmount\":null,\"disputePayQuantity\":null,\"disputeQuantity\":null,\"id\":0,\"item\":\"非專案\",\"l1\":\"專業審查不予支付代碼\",\"l2\":\"\",\"l3\":\"\",\"note\":\"\",\"reason\":\"\",\"rollbackM\":null,\"rollbackQ\":null,\"subCat\":\"\"}]")
+                  "[\n"
+                      + "  {\n"
+                      + "    \"afrAmount\": null,\n"
+                      + "    \"afrNoPayCode\": \"\",\n"
+                      + "    \"afrNoPayDesc\": \"\",\n"
+                      + "    \"afrNote\": \"\",\n"
+                      + "    \"afrPayAmount\": null,\n"
+                      + "    \"afrPayQuantity\": null,\n"
+                      + "    \"afrQuantity\": null,\n"
+                      + "    \"cat\": \"立意\",\n"
+                      + "    \"code\": \"0101C\",\n"
+                      + "    \"deductedAmount\": \"100\",\n"
+                      + "    \"deductedDate\": \"2022-09-27\",\n"
+                      + "    \"deductedOrder\": \"117\",\n"
+                      + "    \"deductedQuantity\": \"1\",\n"
+                      + "    \"disputeAmount\": null,\n"
+                      + "    \"disputeNoPayCode\": \"\",\n"
+                      + "    \"disputeNoPayDesc\": \"\",\n"
+                      + "    \"disputeNote\": \"\",\n"
+                      + "    \"disputePayAmount\": null,\n"
+                      + "    \"disputePayQuantity\": null,\n"
+                      + "    \"disputeQuantity\": null,\n"
+                      + "    \"id\": 0,\n"
+                      + "    \"item\": \"藥費\",\n"
+                      + "    \"l1\": \"專業審查不予支付代碼\",\n"
+                      + "    \"l2\": \"中醫\",\n"
+                      + "    \"l3\": \"\",\n"
+                      + "    \"note\": \"\",\n"
+                      + "    \"reason\": \"因為 C ...\",\n"
+                      + "    \"rollbackM\": null,\n"
+                      + "    \"rollbackQ\": null,\n"
+                      + "    \"subCat\": \"\"\n"
+                      + "  },\n"
+                      + "  {\n"
+                      + "    \"afrAmount\": null,\n"
+                      + "    \"afrNoPayCode\": \"\",\n"
+                      + "    \"afrNoPayDesc\": \"\",\n"
+                      + "    \"afrNote\": \"\",\n"
+                      + "    \"afrPayAmount\": null,\n"
+                      + "    \"afrPayQuantity\": null,\n"
+                      + "    \"afrQuantity\": null,\n"
+                      + "    \"cat\": \"立意\",\n"
+                      + "    \"code\": \"0101C\",\n"
+                      + "    \"deductedAmount\": \"100\",\n"
+                      + "    \"deductedDate\": \"2022-09-28\",\n"
+                      + "    \"deductedOrder\": \"118\",\n"
+                      + "    \"deductedQuantity\": \"1\",\n"
+                      + "    \"disputeAmount\": null,\n"
+                      + "    \"disputeNoPayCode\": \"\",\n"
+                      + "    \"disputeNoPayDesc\": \"\",\n"
+                      + "    \"disputeNote\": \"\",\n"
+                      + "    \"disputePayAmount\": null,\n"
+                      + "    \"disputePayQuantity\": null,\n"
+                      + "    \"disputeQuantity\": null,\n"
+                      + "    \"id\": 0,\n"
+                      + "    \"item\": \"藥費\",\n"
+                      + "    \"l1\": \"專業審查不予支付代碼\",\n"
+                      + "    \"l2\": \"中醫\",\n"
+                      + "    \"l3\": \"\",\n"
+                      + "    \"note\": \"\",\n"
+                      + "    \"reason\": \"因為 D ...\",\n"
+                      + "    \"rollbackM\": null,\n"
+                      + "    \"rollbackQ\": null,\n"
+                      + "    \"subCat\": \"\"\n"
+                      + "  }\n"
+                      + "]")
               .httpMethod(HttpMethod.POST)
               .setResponseClass(BaseResponse.class)
               .getProfitApi();
@@ -4982,11 +5012,11 @@ public class LogRecordTest {
   class LOG_ACTION_U_NHIWidgetXMLController {
     @Test
     @DisplayName(
-        "更新指定病歷： 問題點！ - 跑出錯誤 null point exception 相同的醫令在比對「有差異的醫令」對應編程「 for (int i = 0; i < moList.size(); i++) 」 {")
+        "更新指定病歷")
     void _01() {
 
       String tableNameToLog = "log_action";
-      String id = "2838";
+      String id = "2837";
 
       // 2551
 
@@ -5025,9 +5055,292 @@ public class LogRecordTest {
               .addPathVariable("/" + id)
               .addUriParam("?actionId=" + actionId)
               .addJsonBody(
-                  "{\"id\":"
-                      + id
-                      + ",\"inhMrId\":\"\",\"funcType\":\"22\",\"rocId\":\"H210******\",\"name\":\"陳*玉\",\"prsnId\":\"D01\",\"prsnName\":\"\",\"applId\":\"\",\"applName\":\"\",\"dataFormat\":\"10\",\"dId\":144,\"mrDate\":\"2022/01/29\",\"mrEndDate\":\"2022/01/29\",\"remark\":\"\",\"status\":1,\"readed\":0,\"notify\":0,\"inhClinicId\":\"\",\"changeICD\":0,\"changeInh\":0,\"changeSo\":0,\"changeOther\":0,\"changeOrder\":0,\"infectious\":0,\"totalDot\":427,\"deductedDot\":0,\"subjective\":\"\",\"objective\":\"\",\"ownExpense\":0,\"updateAt\":\"2022/09/22\"}")
+                  "{\n"
+                      + "  \"hint\": [],\n"
+                      + "  \"agencyId\": \"\",\n"
+                      + "  \"aminDot\": \"\",\n"
+                      + "  \"aneDot\": \"\",\n"
+                      + "  \"applCauseMark\": \"\",\n"
+                      + "  \"applDot\": \"\",\n"
+                      + "  \"applEDate\": \"\",\n"
+                      + "  \"applId\": \"leadtek\",\n"
+                      + "  \"applName\": \"leadtek\",\n"
+                      + "  \"applSDate\": \"\",\n"
+                      + "  \"assistPartDot\": \"\",\n"
+                      + "  \"babyDot\": \"\",\n"
+                      + "  \"birthday\": \"1936/06/08\",\n"
+                      + "  \"blodDot\": \"\",\n"
+                      + "  \"cardSeqNo\": \"\",\n"
+                      + "  \"careMark\": \"\",\n"
+                      + "  \"caseDrgCode\": \"\",\n"
+                      + "  \"casePayCode\": \"\",\n"
+                      + "  \"caseType\": \"\",\n"
+                      + "  \"changeICD\": 0,\n"
+                      + "  \"changeORDER\": 0,\n"
+                      + "  \"changeOther\": 1,\n"
+                      + "  \"childMark\": \"\",\n"
+                      + "  \"chrDays\": \"\",\n"
+                      + "  \"cureItems\": [],\n"
+                      + "  \"dId\": 144,\n"
+                      + "  \"dataFormat\": \"10\",\n"
+                      + "  \"deductedDot\": 0,\n"
+                      + "  \"diagDot\": 0,\n"
+                      + "  \"drgCode\": \"\",\n"
+                      + "  \"drgFixed\": \"\",\n"
+                      + "  \"drgSection\": \"\",\n"
+                      + "  \"drugDay\": 0,\n"
+                      + "  \"drugDot\": 0,\n"
+                      + "  \"dsvcDot\": 0,\n"
+                      + "  \"dsvcNo\": \"\",\n"
+                      + "  \"eBedDay\": \"\",\n"
+                      + "  \"ebAppl30Dot\": \"\",\n"
+                      + "  \"ebAppl60Dot\": \"\",\n"
+                      + "  \"ebAppl61Dot\": \"\",\n"
+                      + "  \"ebPart30Dot\": \"\",\n"
+                      + "  \"ebPart60Dot\": \"\",\n"
+                      + "  \"ebPart61Dot\": \"\",\n"
+                      + "  \"funcType\": \"22-急診醫學科\",\n"
+                      + "  \"funcDate\": \"2022/01/29\",\n"
+                      + "  \"funcEndDate\": \"\",\n"
+                      + "  \"hdDot\": \"\",\n"
+                      + "  \"hospId\": \"\",\n"
+                      + "  \"icdCM\": [\n"
+                      + "    {\n"
+                      + "      \"code\": \"S70.01X.A\",\n"
+                      + "      \"updateAt\": null\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"code\": \"W19.XXX.A\",\n"
+                      + "      \"updateAt\": null\n"
+                      + "    }\n"
+                      + "  ],\n"
+                      + "  \"icdOP\": [],\n"
+                      + "  \"id\": 2837,\n"
+                      + "  \"inDate\": \"\",\n"
+                      + "  \"infectious\": 0,\n"
+                      + "  \"inhClinicId\": \"\",\n"
+                      + "  \"inhMrId\": \"\",\n"
+                      + "  \"injtDot\": \"\",\n"
+                      + "  \"mealDot\": \"\",\n"
+                      + "  \"medDot\": \"\",\n"
+                      + "  \"medType\": \"\",\n"
+                      + "  \"metrDot\": 0,\n"
+                      + "  \"mos\": [\n"
+                      + "    {\n"
+                      + "      \"orderSeqNo\": 1,\n"
+                      + "      \"drugNo\": \"00203B\",\n"
+                      + "      \"drugNoCode\": \"00203B\",\n"
+                      + "      \"totalQ\": 1,\n"
+                      + "      \"unitP\": 606,\n"
+                      + "      \"totalDot\": 727,\n"
+                      + "      \"payBy\": \"N\",\n"
+                      + "      \"applStatus\": 1,\n"
+                      + "      \"drugSerialNo\": \"\\n        \",\n"
+                      + "      \"payRate\": \"120.00\"\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"orderSeqNo\": 2,\n"
+                      + "      \"drugNo\": \"ER\",\n"
+                      + "      \"drugNoCode\": \"ER\",\n"
+                      + "      \"totalQ\": null,\n"
+                      + "      \"unitP\": null,\n"
+                      + "      \"totalDot\": null,\n"
+                      + "      \"payBy\": \"N\",\n"
+                      + "      \"applStatus\": 1,\n"
+                      + "      \"payRate\": \" \",\n"
+                      + "      \"startTime\": \"110/01/01 17:07\",\n"
+                      + "      \"endTime\": \"110/01/01 18:18\"\n"
+                      + "    }\n"
+                      + "  ],\n"
+                      + "  \"_mosCount\": 2,\n"
+                      + "  \"mrCheckReason\": \"\",\n"
+                      + "  \"mrDate\": \"2022/01/29\",\n"
+                      + "  \"name\": \"陳*玉\",\n"
+                      + "  \"nbBirthday\": \"\",\n"
+                      + "  \"nonApplDot\": \"\",\n"
+                      + "  \"notify\": 0,\n"
+                      + "  \"nrtpDot\": \"\",\n"
+                      + "  \"objective\": \"\",\n"
+                      + "  \"oriCardSeqNo\": \"\",\n"
+                      + "  \"outDate\": \"\",\n"
+                      + "  \"outSvcPlanCode\": \"\",\n"
+                      + "  \"ownExpense\": 0,\n"
+                      + "  \"partDot\": 0,\n"
+                      + "  \"partNo\": \"\",\n"
+                      + "  \"patTranOut\": \"\",\n"
+                      + "  \"patientSource\": \"\",\n"
+                      + "  \"payType\": \"4-普通疾病\",\n"
+                      + "  \"pharID\": \"\",\n"
+                      + "  \"phscDot\": \"\",\n"
+                      + "  \"pilotProject\": \"\",\n"
+                      + "  \"prsnId\": \"D01\",\n"
+                      + "  \"prsnName\": \"\",\n"
+                      + "  \"radoDot\": \"\",\n"
+                      + "  \"readed\": 0,\n"
+                      + "  \"remark\": \"\",\n"
+                      + "  \"rocId\": \"H210******\",\n"
+                      + "  \"roomDot\": \"\",\n"
+                      + "  \"sBedDay\": \"\",\n"
+                      + "  \"sbAppl30Dot\": \"\",\n"
+                      + "  \"sbAppl90Dot\": \"\",\n"
+                      + "  \"sbAppl180Dot\": \"\",\n"
+                      + "  \"sbAppl181Dot\": \"\",\n"
+                      + "  \"sbPart30Dot\": \"\",\n"
+                      + "  \"sbPart90Dot\": \"\",\n"
+                      + "  \"sbPart180Dot\": \"\",\n"
+                      + "  \"sbPart181Dot\": \"\",\n"
+                      + "  \"seqNo\": \"1\",\n"
+                      + "  \"sgryDot\": \"\",\n"
+                      + "  \"shareHospId\": \"\",\n"
+                      + "  \"shareMark\": \"\",\n"
+                      + "  \"speAreaSvc\": \"\",\n"
+                      + "  \"status\": -2,\n"
+                      + "  \"subjective\": \"\",\n"
+                      + "  \"supportArea\": \"\",\n"
+                      + "  \"svcPlan\": \"\",\n"
+                      + "  \"tApplDot\": 0,\n"
+                      + "  \"tDot\": 427,\n"
+                      + "  \"thrpDot\": \"\",\n"
+                      + "  \"totalDot\": 427,\n"
+                      + "  \"tranCode\": \"\",\n"
+                      + "  \"tranInHospId\": \"\",\n"
+                      + "  \"tranOutHospId\": \"\",\n"
+                      + "  \"treatCode\": \"\",\n"
+                      + "  \"treatDot\": 0,\n"
+                      + "  \"twDrgCode\": \"\",\n"
+                      + "  \"twDrgPayType\": \"\",\n"
+                      + "  \"twDrgsSuitMark\": \"\",\n"
+                      + "  \"updateAt\": \"2022/09/22\",\n"
+                      + "  \"mrEndDate\": \"2022/01/29\",\n"
+                      + "  \"changeInh\": 0,\n"
+                      + "  \"changeSo\": 0,\n"
+                      + "  \"changeOrder\": 0,\n"
+                      + "  \"notes\": [\n"
+                      + "    {\n"
+                      + "      \"id\": 204,\n"
+                      + "      \"actionType\": \"新增\",\n"
+                      + "      \"note\": \"一切正常\",\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/22 11:41:16\"\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"id\": 205,\n"
+                      + "      \"actionType\": \"新增\",\n"
+                      + "      \"note\": \"非常好\",\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/22 11:47:33\"\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"id\": 208,\n"
+                      + "      \"actionType\": \"新增\",\n"
+                      + "      \"note\": \"優秀\",\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/22 12:20:39\"\n"
+                      + "    }\n"
+                      + "  ],\n"
+                      + "  \"deducted\": [\n"
+                      + "    {\n"
+                      + "      \"id\": 2,\n"
+                      + "      \"cat\": \"有CIS\",\n"
+                      + "      \"item\": \"非專案\",\n"
+                      + "      \"l1\": \"程序審查核減代碼\",\n"
+                      + "      \"l2\": \"支付標準醫令錯誤代碼\",\n"
+                      + "      \"code\": \"C1\",\n"
+                      + "      \"deductedOrder\": \"1234\",\n"
+                      + "      \"deductedQuantity\": 1,\n"
+                      + "      \"deductedAmount\": 10,\n"
+                      + "      \"reason\": \"dd\",\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/14 14:24:09\",\n"
+                      + "      \"record\": \"新增核刪代碼C1\",\n"
+                      + "      \"modifyStatus\": \"新增\",\n"
+                      + "      \"deductedDate\": \"2022-09-14\"\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"id\": 34,\n"
+                      + "      \"cat\": \"有CIS\",\n"
+                      + "      \"item\": \"非專案\",\n"
+                      + "      \"l1\": \"專業審查不予支付代碼\",\n"
+                      + "      \"code\": \"\",\n"
+                      + "      \"deductedOrder\": null,\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/22 12:53:02\",\n"
+                      + "      \"record\": \"新增核刪代碼\",\n"
+                      + "      \"modifyStatus\": \"新增\",\n"
+                      + "      \"deductedDate\": \"2022-09-22\"\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"id\": 36,\n"
+                      + "      \"cat\": \"有CIS\",\n"
+                      + "      \"item\": \"非專案\",\n"
+                      + "      \"l1\": \"專業審查不予支付代碼\",\n"
+                      + "      \"code\": \"\",\n"
+                      + "      \"deductedOrder\": null,\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/22 12:56:11\",\n"
+                      + "      \"record\": \"新增核刪代碼\",\n"
+                      + "      \"modifyStatus\": \"新增\",\n"
+                      + "      \"deductedDate\": \"2022-09-22\"\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"id\": 38,\n"
+                      + "      \"cat\": \"有CIS\",\n"
+                      + "      \"item\": \"非專案\",\n"
+                      + "      \"l1\": \"專業審查不予支付代碼\",\n"
+                      + "      \"code\": \"\",\n"
+                      + "      \"deductedOrder\": null,\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/22 13:18:52\",\n"
+                      + "      \"record\": \"新增核刪代碼\",\n"
+                      + "      \"modifyStatus\": \"新增\",\n"
+                      + "      \"deductedDate\": \"2022-09-22\"\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"id\": 40,\n"
+                      + "      \"cat\": \"有CIS\",\n"
+                      + "      \"item\": \"非專案\",\n"
+                      + "      \"l1\": \"專業審查不予支付代碼\",\n"
+                      + "      \"code\": \"\",\n"
+                      + "      \"deductedOrder\": null,\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/22 13:25:00\",\n"
+                      + "      \"record\": \"新增核刪代碼\",\n"
+                      + "      \"modifyStatus\": \"新增\",\n"
+                      + "      \"deductedDate\": \"2022-09-22\"\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"id\": 63,\n"
+                      + "      \"cat\": \"有CIS\",\n"
+                      + "      \"item\": \"非專案\",\n"
+                      + "      \"l1\": \"專業審查不予支付代碼\",\n"
+                      + "      \"code\": \"\",\n"
+                      + "      \"deductedOrder\": null,\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/27 12:02:49\",\n"
+                      + "      \"record\": \"新增核刪代碼\",\n"
+                      + "      \"modifyStatus\": \"新增\",\n"
+                      + "      \"deductedDate\": \"2022-09-22\"\n"
+                      + "    },\n"
+                      + "    {\n"
+                      + "      \"id\": 65,\n"
+                      + "      \"cat\": \"有CIS\",\n"
+                      + "      \"item\": \"非專案\",\n"
+                      + "      \"l1\": \"專業審查不予支付代碼\",\n"
+                      + "      \"code\": \"\",\n"
+                      + "      \"deductedOrder\": null,\n"
+                      + "      \"editor\": \"leadtek\",\n"
+                      + "      \"updateAt\": \"2022/09/27 14:00:26\",\n"
+                      + "      \"record\": \"新增核刪代碼\",\n"
+                      + "      \"modifyStatus\": \"新增\",\n"
+                      + "      \"deductedDate\": \"2022-09-22\"\n"
+                      + "    }\n"
+                      + "  ],\n"
+                      + "  \"isLastEditor\": true,\n"
+                      + "  \"diffFields\": [\n"
+                      + "    \"totalDot\"\n"
+                      + "  ],\n"
+                      + "  \"isRaw\": false\n"
+                      + "}")
               .httpMethod(HttpMethod.PUT)
               .setResponseClass(BaseResponse.class)
               .getProfitApi();
@@ -5088,7 +5401,7 @@ public class LogRecordTest {
     }
 
     @Test
-    @DisplayName("更新指定病歷的核刪註記內容：問題點！ - 有兩個「更新指定病歷的核刪註記內容」 ")
+    @DisplayName("更新指定病歷的核刪註記內容")
     void _03() {
 
       // 參數
@@ -5168,7 +5481,7 @@ public class LogRecordTest {
     }
 
     @Test
-    @DisplayName("更新指定病歷的DRG：問題點！ - 缺少病歷ID無法測試。")
+    @DisplayName("更新指定病歷的DRG")
     void _05() {
 
       // 參數
