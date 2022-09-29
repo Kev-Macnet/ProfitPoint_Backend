@@ -41,8 +41,7 @@ public class ExportCSVDao {
 		List<String> inhCodeList = new ArrayList<String>();
 		 String sql;
 		 sql = "SELECT  "
-		 		+ "MR.ID AS INH_MR, "
-		 		+ "IFNULL(MR.INH_CLINIC_ID,'') AS INH_NO, "
+		 		+ "IFNULL(MR.INH_CLINIC_ID,'') AS INH_NO "
 		 		+ "MR_SO.SUBJECT_TEXT  AS SUBJECTIVE, "
 		 		+ "MR_SO.OBJECT_TEXT  AS OBJECTIVE, "
 		 		+ "MR.OWN_EXPENSE AS INH_OWN_EXP, "
@@ -102,7 +101,8 @@ public class ExportCSVDao {
 		 		+ "IFNULL(OP_D.TRAN_IN_HOSP_ID,'') AS TRAN_IN_HOSP_ID, "
 		 		+ "IFNULL(OP_D.ORI_CARD_SEQ_NO,'') AS ORI_CARD_SEQ_NO, "
 		 		+ "IFNULL(OP_D.PRSN_NAME,'') AS PRSN_NAME, "
-		 		+ "IFNULL(OP_D.PHAR_NAME,'') AS PHAR_NAME "
+		 		+ "IFNULL(OP_D.PHAR_NAME,'') AS PHAR_NAME, "
+		 		+ "MR.ID AS INH_MR "
 		 		+ "FROM MR, OP_D, MR_SO WHERE MR.ID = OP_D.MR_ID  AND MR.ID = MR_SO.MR_ID "
 		 		;
 		 if(!applYM.isEmpty()) {
@@ -172,7 +172,8 @@ public class ExportCSVDao {
 		 		+ "IFNULL(OP_P.NON_LIST_MARK,'') AS NON_LIST_MARK, "
 		 		+ "IFNULL(OP_P.NON_LIST_NAME,'') AS NON_LIST_NAME, "
 		 		+ "IFNULL(OP_P.COMM_HOSP_ID,'') AS COMM_HOSP_ID, "
-		 		+ "IFNULL(OP_P.DRUG_SERIAL_NO,'') AS DRUG_SERIAL_NO "
+		 		+ "IFNULL(OP_P.DRUG_SERIAL_NO,'') AS DRUG_SERIAL_NO, "
+		 		+ "MR.ID AS MR_ID "
 		 		;
 		 if(!applYM.isEmpty()) {
 			 sql += " FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID "
@@ -219,7 +220,8 @@ public class ExportCSVDao {
 		 sql = "SELECT  "
 		 		+ "IFNULL(MR.INH_CLINIC_ID,'') AS INH_NO, "
 		 		+ "MR_SO.SUBJECT_TEXT, "
-		 		+ "MR_SO.OBJECT_TEXT "
+		 		+ "MR_SO.OBJECT_TEXT, "
+		 		+ "MR.ID AS MR_ID "
 		 		;
 		 if(!applYM.isEmpty()) {
 			 sql += " FROM MR, MR_SO WHERE MR.ID = MR_SO.MR_ID AND MR.DATA_FORMAT = '10' "
@@ -265,8 +267,7 @@ public class ExportCSVDao {
 		List<String> inhCodeList = new ArrayList<String>();
 		String sql;
 		sql = "SELECT    "
-				+ "MR.ID AS INH_MR, "
-				+ "IFNULL(MR.INH_CLINIC_ID,'') AS INH_NO, "
+				+ "IFNULL(MR.INH_CLINIC_ID,'') AS INH_NO "
 				+ "MR_SO.SUBJECT_TEXT  AS SUBJECTIVE, "
 				+ "MR_SO.OBJECT_TEXT  AS OBJECTIVE, "
 				+ "MR.OWN_EXPENSE AS INH_OWN_EXP, "
@@ -378,7 +379,8 @@ public class ExportCSVDao {
 				+ "IFNULL(IP_D.SVC_PLAN,'') AS SVC_PLAN, "
 				+ "IFNULL(IP_D.PILOT_PROJECT,'') AS PILOT_PROJECT, "
 				+ "IP_D.NON_APPL_DOT, "
-				+ "IFNULL(MR.PRSN_NAME,'') AS PRSN_NAME "
+				+ "IFNULL(MR.PRSN_NAME,'') AS PRSN_NAME, "
+				+ "MR.ID AS INH_MR "
 				+ "FROM MR, IP_D, MR_SO WHERE MR.ID = IP_D.MR_ID AND MR.ID = MR_SO.MR_ID "
 		 		;
 		 if(!applYM.isEmpty()) {
@@ -458,7 +460,8 @@ public class ExportCSVDao {
 				+ "IFNULL(IP_P.NON_LIST_MARK,'') AS NON_LIST_MARK, "
 				+ "IFNULL(IP_P.NON_LIST_NAME,'') AS NON_LIST_NAME, "
 				+ "IFNULL(IP_P.COMM_HOSP_ID,'') AS COMM_HOSP_ID, "
-				+ "IFNULL(IP_P.DRUG_SERIAL_NO,'') AS DRUG_SERIAL_NO "
+				+ "IFNULL(IP_P.DRUG_SERIAL_NO,'') AS DRUG_SERIAL_NO, "
+				+ "MR.ID AS MR_ID "
 		 		;
 		 if(!applYM.isEmpty()) {
 			 sql += " FROM MR, IP_P WHERE MR.ID = IP_P.MR_ID "
@@ -516,7 +519,8 @@ public class ExportCSVDao {
 		 		+ "IFNULL(MR.INH_CLINIC_ID,'') AS INH_NO, "
 		 		+ "MR_SO.SUBJECT_TEXT, "
 		 		+ "MR_SO.OBJECT_TEXT, "
-		 		+ "MR_SO.DISCHARGE_TEXT "
+		 		+ "MR_SO.DISCHARGE_TEXT, "
+		 		+ "MR.ID AS MR_ID "
 		 		;
 		 if(!applYM.isEmpty()) {
 			 sql += " FROM MR, MR_SO WHERE MR.ID = MR_SO.MR_ID AND MR.DATA_FORMAT = '20' "
@@ -588,7 +592,8 @@ public class ExportCSVDao {
 				+ "IFNULL(DEDUCTED_NOTE.DISPUTE_NOTE,'') AS DISPUTE_NOTE, "
 				+ "IFNULL(DEDUCTED_NOTE.DEDUCTED_DATE,'') AS DEDUCTED_DATE, "
 				+ "IFNULL(DEDUCTED_NOTE.ROLLBACK_DATE,'') AS ROLLBACK_DATE, "
-				+ "IFNULL(DEDUCTED_NOTE.DISPUTE_DATE,'') AS DISPUTE_DATE "
+				+ "IFNULL(DEDUCTED_NOTE.DISPUTE_DATE,'') AS DISPUTE_DATE, "
+				+ "MR.ID AS MR_ID "
 				;
 		
 		if(dataFormats.length > 0) {
