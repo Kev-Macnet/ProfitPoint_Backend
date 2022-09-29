@@ -591,7 +591,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -664,7 +664,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -736,7 +736,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -808,7 +808,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -880,7 +880,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -967,7 +967,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -1052,7 +1052,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -1137,7 +1137,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -1222,7 +1222,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -1307,7 +1307,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -1444,7 +1444,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1477,7 +1477,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1509,7 +1509,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1565,7 +1565,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1599,7 +1599,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1633,7 +1633,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1691,7 +1691,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1725,7 +1725,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1759,7 +1759,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1817,7 +1817,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1851,7 +1851,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1885,7 +1885,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1943,7 +1943,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -1977,7 +1977,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -2011,7 +2011,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -2091,7 +2091,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -2160,7 +2160,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -2227,7 +2227,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -2294,7 +2294,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -2361,7 +2361,7 @@ public class DbReportService {
 
 						if (feeApplyList.size() == 1) {
 							if (feeApplyList.get(0).equals("自費")) {
-								where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+								where.append(" AND OWN_EXPENSE > 0 ");
 							} else {
 								where.append(
 										" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
@@ -2443,7 +2443,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -2531,7 +2531,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -2619,7 +2619,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -2707,7 +2707,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -2795,7 +2795,7 @@ public class DbReportService {
 
 								if (feeApplyList.size() == 1) {
 									if (feeApplyList.get(0).equals("自費")) {
-										where.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+										where.append(" AND OWN_EXPENSE > 0 ");
 									} else {
 										where.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE
 												+ " OR APPL_STATUS IS NULL) ");
@@ -10133,7 +10133,7 @@ public class DbReportService {
 		sql.append(" AND MR_END_DATE LIKE CONCAT('" + dateInput + "','%') ");
 		if (feeApplyList.size() == 1) {
 			if (feeApplyList.get(0).equals("自費")) {
-				sql.append(" AND APPL_STATUS = " + APPL_STATUS_SELF_FEE + " ");
+				sql.append(" AND OWN_EXPENSE > 0 ");
 			} else {
 				sql.append(" AND (APPL_STATUS <> " + APPL_STATUS_SELF_FEE + " OR APPL_STATUS IS NULL) ");
 			}
