@@ -789,4 +789,11 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
   public List<MR> getMrByIdList(List<Long> idList);
   
   public List<MR> findByDataFormat(String dataFormat);
+  
+  @Query(value = "SELECT MR.* FROM  MR INNER JOIN OP_D ON MR.ID = OP_D.MR_ID WHERE MR.DATA_FORMAT = '10' AND MR.APPL_YM = ?1 AND OP_D.CASE_TYPE = ?2 AND OP_D.SEQ_NO = ?3", nativeQuery = true)
+  public List<MR> findByMrDataFormat10AndMrApplYmAndOpdCaseTypeAndOpdSeqNo(String applYm, String caseType, String seqNo);
+  
+  @Query(value = "SELECT MR.* FROM  MR INNER JOIN IP_D ON MR.ID = IP_D.MR_ID WHERE MR.DATA_FORMAT = '20' AND MR.APPL_YM = ?1 AND IP_D.CASE_TYPE = ?2 AND IP_D.SEQ_NO = ?3", nativeQuery = true)
+  public List<MR> findByMrDataFormat20AndMrApplYmAndIpdCaseTypeAndIpdSeqNo(String applYm, String caseType, String seqNo);
+  
 }
