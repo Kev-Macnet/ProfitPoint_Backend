@@ -1673,30 +1673,34 @@ public class SystemService {
       @Override
       public void run() {
         for (Integer intelligentType : needProcess.keySet()) {
-          if (intelligentType.intValue() == INTELLIGENT_REASON.VIOLATE.value()) {
-            parametersService.switchViolate(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.RARE_ICD.value()) {
-            parametersService.switchRareICD(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RATIO.value()) {
-            parametersService.switchHighRatio(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RISK.value()) {
-            parametersService.switchHighRisk(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.INFECTIOUS.value()) {
-            parametersService.switchInfections(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.INH_OWN_EXIST.value()) {
-            parametersService.switchInhOwnExist(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.OVER_AMOUNT.value()) {
-            parametersService.switchOverAmount(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.PILOT_PROJECT.value()) {
-            parametersService.switchPilotProject(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.SAME_ATC.value()) {
-            parametersService.switchSameATC(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.COST_DIFF.value()) {
-            parametersService.switchCostDiff(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.ORDER_DRUG.value()) {
-            parametersService.switchOrderDrug(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.IP_DAYS.value()) {
-            parametersService.switchIpDays(needProcess.get(intelligentType));
+          try {
+            if (intelligentType.intValue() == INTELLIGENT_REASON.VIOLATE.value()) {
+              parametersService.switchViolate(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.RARE_ICD.value()) {
+              parametersService.switchRareICD(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RATIO.value()) {
+              parametersService.switchHighRatio(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RISK.value()) {
+              parametersService.switchHighRisk(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.INFECTIOUS.value()) {
+              parametersService.switchInfections(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.INH_OWN_EXIST.value()) {
+              parametersService.switchInhOwnExist(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.OVER_AMOUNT.value()) {
+              parametersService.switchOverAmount(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.PILOT_PROJECT.value()) {
+              parametersService.switchPilotProject(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.SAME_ATC.value()) {
+              parametersService.switchSameATC(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.COST_DIFF.value()) {
+              parametersService.switchCostDiff(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.ORDER_DRUG.value()) {
+              parametersService.switchOrderDrug(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.IP_DAYS.value()) {
+              parametersService.switchIpDays(needProcess.get(intelligentType));
+            }
+          } catch (Exception e) {
+            logger.error("recalculateAll", e);
           }
         }
         logger.info("recalculateAll done");

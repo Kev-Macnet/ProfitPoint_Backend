@@ -752,7 +752,7 @@ public class IntelligentService {
       ig.setApplYm(mr.getApplYm());
       ig.setUpdateAt(new Date());
       ig.setReportDot(mr.getReportDot());
-      ig.setPartDot(mr.getTotalDot() - mr.getOwnExpense());
+      ig.setPartDot(Long.valueOf(mr.getTotalDot() - mr.getOwnExpense()));
       ig.setFuncEnable(1);
       if (batch != null) {
         batch.add(ig);
@@ -838,6 +838,8 @@ public class IntelligentService {
       ig.setStatus(MR_STATUS.WAIT_CONFIRM.value());
       ig.setRocId(mr.getRocId());
       ig.setApplYm(mr.getApplYm());
+      ig.setReportDot(mr.getReportDot());
+      ig.setPartDot(Long.valueOf(mr.getTotalDot() - mr.getOwnExpense()));
       ig.setUpdateAt(new Date());
       if (batch != null) {
         batch.add(ig);
