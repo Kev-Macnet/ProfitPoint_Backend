@@ -996,7 +996,7 @@ public class SystemService {
     if ("0".equals(parametersService.getParameter(MENU_VIOLATE))) {
       result.setViolate(false);
     }
-    if ("0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+    if ("0".equals(parametersService.getParameter("CLINICAL_DIFF"))) {
       result.setClinicalDiff(false);
     }
     if ("0".equals(parametersService.getParameter(MENU_SUSPECTED))) {
@@ -1112,7 +1112,7 @@ public class SystemService {
           needProcess.put(INTELLIGENT_REASON.HIGH_RISK.value(), payload.getHighRisk());
         }
       } else if (p.getName().equals("CLINICAL_DIFF")
-          && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+          && !"0".equals(parametersService.getParameter("CLINICAL_DIFF"))) {
         if (payload.getClinicalDiff() != null) {
           if ((payload.getClinicalDiff().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getClinicalDiff().booleanValue() && "0".equals(p.getValue()))) {

@@ -165,16 +165,23 @@ public class INTELLIGENT {
   /**
    * 申報點數
    */
-  @Column(name = "REPORT_DOT", length = 5)
+  @Column(name = "REPORT_DOT")
   @JsonIgnore
   private long reportDot;
 
   /**
    * 病歷點數（不含自費）
    */
-  @Column(name = "PART_DOT", length = 5)
+  @Column(name = "PART_DOT")
   @JsonIgnore
   private long partDot;
+  
+  /**
+   * 病歷點數（不含自費）
+   */
+  @Column(name = "FUNC_ENABLE")
+  @JsonIgnore
+  private Integer funcEnable;
 
   /**
    * 序號
@@ -468,4 +475,11 @@ public class INTELLIGENT {
     this.partDot = partDot;
   }
 
+  public int getFuncEnable() {
+    return funcEnable;
+  }
+
+  public void setFuncEnable(Integer funcEnable) {
+    this.funcEnable = funcEnable;
+  }
 }

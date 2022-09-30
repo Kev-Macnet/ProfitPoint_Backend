@@ -753,6 +753,7 @@ public class IntelligentService {
       ig.setUpdateAt(new Date());
       ig.setReportDot(mr.getReportDot());
       ig.setPartDot(mr.getTotalDot() - mr.getOwnExpense());
+      ig.setFuncEnable(1);
       if (batch != null) {
         batch.add(ig);
         if (batch.size() % XMLConstant.BATCH == 0) {

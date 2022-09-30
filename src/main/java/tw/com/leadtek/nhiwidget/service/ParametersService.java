@@ -2474,6 +2474,25 @@ public class ParametersService {
   }
   
   /**
+   * 關閉智能提示功能
+   * @param conditionCode
+   * @param reasonCode
+   * @param reason
+   */
+  public void disableIntelligent(int conditionCode, String reasonCode, String reason) {
+    if (reasonCode == null) {
+      mrDao.updateMrStautsForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode);
+      intelligentDao.deleteIntelligent(conditionCode);
+    } else if (reason == null){
+      mrDao.updateMrStatusForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode, reasonCode);
+      intelligentDao.deleteIntelligent(conditionCode, reasonCode);
+    } else {
+      mrDao.updateMrStatusForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode, reasonCode, reason);
+      intelligentDao.deleteIntelligent(conditionCode, reasonCode, reason);
+    }
+  }
+  
+  /**
    * 開啟或關閉法定傳染病計算功能
    * @param isEnable
    */

@@ -867,7 +867,7 @@ public class MO implements Serializable {
     this.conFuncType = CodeTableService.getDesc(cts, "FUNC_TYPE", conFuncTypeCode);
     this.medType = CodeTableService.getDesc(cts, "OP_MED_TYPE", medTypeCode);
     this.orderType = CodeTableService.getDesc(cts, "ORDER_TYPE", orderTypeCode);
-    this.drugNo = CodeTableService.getDesc(cts, "ORDER", orderCodeEn);
+    this.orderCode = CodeTableService.getDesc(cts, "ORDER", orderCodeEn);
     if (stime != null && stime.length() > 0) {
       startTime = DateTool.convertChineseTimeToFormatTime(stime);
     }

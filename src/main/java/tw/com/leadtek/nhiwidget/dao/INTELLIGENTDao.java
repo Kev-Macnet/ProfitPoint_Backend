@@ -39,6 +39,11 @@ public interface INTELLIGENTDao extends JpaRepository<INTELLIGENT, Long>, JpaSpe
   
   @Transactional
   @Modifying
+  @Query(value = "UPDATE intelligent SET FUNC_ENABLE = 0 WHERE CONDITION_CODE=?1", nativeQuery = true)
+  public void disableIntelligent(int conditionCode);
+  
+  @Transactional
+  @Modifying
   @Query(value = "DELETE FROM intelligent WHERE CONDITION_CODE=?1 AND REASON_CODE=?2", nativeQuery = true)
   public void deleteIntelligent(int conditionCode, String reasonCode);
   

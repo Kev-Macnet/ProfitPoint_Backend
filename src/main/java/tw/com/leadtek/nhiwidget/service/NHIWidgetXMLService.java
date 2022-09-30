@@ -17,6 +17,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -315,6 +316,12 @@ public class NHIWidgetXMLService {
   @Autowired
   private FILE_DOWNLOADDao fdDao;
   
+  /**
+   * 儲存xml申報檔-門診
+   * @param op
+   * @param fd
+   * @return 匯入筆數
+   */
   public int saveOP(OP op, FILE_DOWNLOAD fd) {
     OP_T opt = saveOPT(op.getTdata());
     // 避免重複insert
@@ -376,7 +383,6 @@ public class NHIWidgetXMLService {
         mr.setStatus(MR_STATUS.NO_CHANGE.value());
       }
       mr.setApplYm(opt.getFeeYm());
-
       findDiffOpd(diffList, mr, opd);
       mr.setdId(opd.getId());
       mrDao.updateDid(opd.getId(), mr.getId());
@@ -406,7 +412,7 @@ public class NHIWidgetXMLService {
           for (int i = 0; i < opps.size(); i++) {
             OP_P oppOld = opps.get(i);
             boolean isFound = false;
-            for (int j = 0; i < oppListXML.size(); j++) {
+            for (int j = 0; j < oppListXML.size(); j++) {
               OP_P oppNew = oppListXML.get(j);
               maskOPP(oppNew, opd.getCaseType());
               if (compareOPP(mr.getId(), oppOld, oppNew, diffList, moList)) {
@@ -462,6 +468,12 @@ public class NHIWidgetXMLService {
     return result;
   }
 
+  /**
+   * 儲存xml申報檔-住院
+   * @param ip
+   * @param fd
+   * @return 匯入筆數
+   */
   public int saveIP(IP ip, FILE_DOWNLOAD fd) {
     IP_T ipt = saveIPT(ip.getTdata());
     // Map<String, Object> condition1 =
@@ -517,6 +529,7 @@ public class NHIWidgetXMLService {
               && shouldCompareWarning(mr, cw, ipd.getFuncType())) {
             diffList = new ArrayList<FILE_DIFF>();
             clearFileDiff(mr.getId());
+            checkDiffIpdItem(diffList, ipd);
           }
           mr.updateMR(ipd, diffList, cts);
           if (diffList != null && diffList.size() > 0) {
@@ -696,127 +709,123 @@ public class NHIWidgetXMLService {
     return changeICD;
   }
 
-  private boolean compareIPP(Long mrId, IP_P ippOld, IP_P ippNew, List<FILE_DIFF> diffList,
-      List<MO> moList) {
-    boolean result = false;
-    if (ippOld.getOrderSeqNo().intValue() == ippNew.getOrderSeqNo().intValue()) {
-      result = true;
-      if (ippOld.getOrderCode() != null && !ippOld.getOrderCode().equals(ippNew.getOrderCode())
-          || (ippNew.getOrderCode() != null
-              && !ippNew.getOrderCode().equals(ippOld.getOrderCode()))) {
-        addDiff(mrId, "orderCode", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if ((ippOld.getBedNo() != null && !ippOld.getBedNo().equals(ippNew.getBedNo()))
-          || (ippNew.getBedNo() != null && !ippNew.getBedNo().equals(ippOld.getBedNo()))) {
-        addDiff(mrId, "bedNo", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getCommHospId() != null
-          && !ippOld.getCommHospId().equals(ippNew.getCommHospId())
-          || (ippNew.getCommHospId() != null
-              && !ippNew.getCommHospId().equals(ippOld.getCommHospId()))) {
-        addDiff(mrId, "commHospId", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getConFuncType() != null
-          && !ippOld.getConFuncType().equals(ippNew.getConFuncType())
-          || (ippNew.getConFuncType() != null
-              && !ippNew.getConFuncType().equals(ippOld.getConFuncType()))) {
-        addDiff(mrId, "conFuncType", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getCurePath() != null && !ippOld.getCurePath().equals(ippNew.getCurePath())
-          || (ippNew.getCurePath() != null && !ippNew.getCurePath().equals(ippOld.getCurePath()))) {
-        addDiff(mrId, "curePath", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getDonater() != null && !ippOld.getDonater().equals(ippNew.getDonater())
-          || (ippNew.getDonater() != null && !ippNew.getDonater().equals(ippOld.getDonater()))) {
-        addDiff(mrId, "donater", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getDrugFre() != null && !ippOld.getDrugFre().equals(ippNew.getDrugFre())
-          || (ippNew.getDrugFre() != null && !ippNew.getDrugFre().equals(ippOld.getDrugFre()))) {
-        addDiff(mrId, "drugFre", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getDrugPath() != null && !ippOld.getDrugPath().equals(ippNew.getDrugPath())
-          || (ippNew.getDrugPath() != null && !ippNew.getDrugPath().equals(ippOld.getDrugPath()))) {
-        addDiff(mrId, "drugPath", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getDrugSerialNo() != null
-          && !ippOld.getDrugSerialNo().equals(ippNew.getDrugSerialNo())
-          || (ippNew.getDrugSerialNo() != null
-              && !ippNew.getDrugSerialNo().equals(ippOld.getDrugSerialNo()))) {
-        addDiff(mrId, "drugSerialNo", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getDrugUse() != null && !ippOld.getDrugUse().equals(ippNew.getDrugUse())
-          || (ippNew.getDrugUse() != null && !ippNew.getDrugUse().equals(ippOld.getDrugUse()))) {
-        addDiff(mrId, "drugUse", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getEndTime() != null && !ippOld.getEndTime().equals(ippNew.getEndTime())
-          || (ippNew.getEndTime() != null && !ippNew.getEndTime().equals(ippOld.getEndTime()))) {
-        addDiff(mrId, "endTime", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getFuncType() != null && !ippOld.getFuncType().equals(ippNew.getFuncType())
-          || (ippNew.getFuncType() != null && !ippNew.getFuncType().equals(ippOld.getFuncType()))) {
-        addDiff(mrId, "funcType", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getImgSource() != null
-          && !ippOld.getImgSource().equals(ippNew.getImgSource())
-          || (ippNew.getImgSource() != null
-              && !ippNew.getImgSource().equals(ippOld.getImgSource()))) {
-        addDiff(mrId, "imgSource", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getInhCode() != null && !ippOld.getInhCode().equals(ippNew.getInhCode())
-          || (ippNew.getInhCode() != null && !ippNew.getInhCode().equals(ippOld.getInhCode()))) {
-        addDiff(mrId, "inhCode", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getNonListMark() != null
-          && !ippOld.getNonListMark().equals(ippNew.getNonListMark())
-          || (ippNew.getNonListMark() != null
-              && !ippNew.getNonListMark().equals(ippOld.getNonListMark()))) {
-        addDiff(mrId, "nonListMark", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getNonListName() != null
-          && !ippOld.getNonListName().equals(ippNew.getNonListName())
-          || (ippNew.getNonListName() != null
-              && !ippNew.getNonListName().equals(ippOld.getNonListName()))) {
-        addDiff(mrId, "nonListName", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getOrderType() != null
-          && !ippOld.getOrderType().equals(ippNew.getOrderType())
-          || (ippNew.getOrderType() != null
-              && !ippNew.getOrderType().equals(ippOld.getOrderType()))) {
-        addDiff(mrId, "orderType", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getOwnExpMtrNo() != null
-          && !ippOld.getOwnExpMtrNo().equals(ippNew.getOwnExpMtrNo())
-          || (ippNew.getOwnExpMtrNo() != null
-              && !ippNew.getOwnExpMtrNo().equals(ippOld.getOwnExpMtrNo()))) {
-        addDiff(mrId, "ownExpMtrNo", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getPartAccoData() != null
-          && !ippOld.getPartAccoData().equals(ippNew.getPartAccoData())
-          || (ippNew.getPartAccoData() != null
-              && !ippNew.getPartAccoData().equals(ippOld.getPartAccoData()))) {
-        addDiff(mrId, "partAccoData", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-        // }
-        // else if (ippOld.getPayBy() != null && !ippOld.getPayBy().equals(ippNew.getPayBy())
-        // || (ippNew.getPayBy() != null && !ippNew.getPayBy().equals(ippOld.getPayBy()))) {
-        // addDiff(mrId, "payBy", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-        // }
-        // else if (ippOld.getPayCodeType() != null
-        // && !ippOld.getPayCodeType().equals(ippNew.getPayCodeType())
-        // || (ippNew.getPayCodeType() != null
-        // && !ippNew.getPayCodeType().equals(ippOld.getPayCodeType()))) {
-        // addDiff(mrId, "payCodeType", ippOld.getOrderSeqNo().intValue(), ippNew, diffList,
-        // moList);
-      } else if (ippOld.getPayRate() != null && !ippOld.getPayRate().equals(ippNew.getPayRate())
-          || (ippNew.getPayRate() != null && !ippNew.getPayRate().equals(ippOld.getPayRate()))) {
-        addDiff(mrId, "payRate", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getPreNo() != null && !ippOld.getPreNo().equals(ippNew.getPreNo())
-          || (ippNew.getPreNo() != null && !ippNew.getPreNo().equals(ippOld.getPreNo()))) {
-        addDiff(mrId, "preNo", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getPrsnId() != null && !ippOld.getPrsnId().equals(ippNew.getPrsnId())
-          || (ippNew.getPrsnId() != null && !ippNew.getPrsnId().equals(ippOld.getPrsnId()))) {
-        addDiff(mrId, "prsnId", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if (ippOld.getStartTime() != null
-          && !ippOld.getStartTime().equals(ippNew.getStartTime())
-          || (ippNew.getStartTime() != null
-              && !ippNew.getStartTime().equals(ippOld.getStartTime()))) {
-        addDiff(mrId, "startTime", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if ((ippOld.getTotalQ() != null && ippNew.getTotalQ() != null)
-          && (ippOld.getTotalQ().doubleValue() != ippNew.getTotalQ().doubleValue())) {
-        addDiff(mrId, "totalQ", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if ((ippOld.getTotalDot() != null && ippNew.getTotalDot() != null)
-          && (ippOld.getTotalDot().intValue() != ippNew.getTotalDot().intValue())) {
-        addDiff(mrId, "totalDot", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if ((ippOld.getTwDrgsCalcu() != null && ippNew.getTwDrgsCalcu() != null)
-          && (ippOld.getTwDrgsCalcu().doubleValue() != ippNew.getTwDrgsCalcu().doubleValue())) {
-        addDiff(mrId, "twDrgsCalcu", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      } else if ((ippOld.getUnitP() != null && ippNew.getUnitP() != null)
-          && (ippOld.getUnitP().floatValue() != ippNew.getUnitP().floatValue())) {
-        addDiff(mrId, "unitP", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
-      }
+  private boolean compareIPP(
+      Long mrId, IP_P ippOld, IP_P ippNew, List<FILE_DIFF> diffList, List<MO> moList) {
+    if (ippOld.getOrderSeqNo().intValue() != ippNew.getOrderSeqNo().intValue()) {
+      return false;
     }
-    return result;
+    if (ippOld.getOrderCode() != null && !ippOld.getOrderCode().equals(ippNew.getOrderCode())
+        || (ippNew.getOrderCode() != null
+            && !ippNew.getOrderCode().equals(ippOld.getOrderCode()))) {
+      addDiff(mrId, "orderCode", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if ((ippOld.getBedNo() != null && !ippOld.getBedNo().equals(ippNew.getBedNo()))
+        || (ippNew.getBedNo() != null && !ippNew.getBedNo().equals(ippOld.getBedNo()))) {
+      addDiff(mrId, "bedNo", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getCommHospId() != null
+            && !ippOld.getCommHospId().equals(ippNew.getCommHospId())
+        || (ippNew.getCommHospId() != null
+            && !ippNew.getCommHospId().equals(ippOld.getCommHospId()))) {
+      addDiff(mrId, "commHospId", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getConFuncType() != null
+            && !ippOld.getConFuncType().equals(ippNew.getConFuncType())
+        || (ippNew.getConFuncType() != null
+            && !ippNew.getConFuncType().equals(ippOld.getConFuncType()))) {
+      addDiff(mrId, "conFuncType", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getCurePath() != null && !ippOld.getCurePath().equals(ippNew.getCurePath())
+        || (ippNew.getCurePath() != null && !ippNew.getCurePath().equals(ippOld.getCurePath()))) {
+      addDiff(mrId, "curePath", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getDonater() != null && !ippOld.getDonater().equals(ippNew.getDonater())
+        || (ippNew.getDonater() != null && !ippNew.getDonater().equals(ippOld.getDonater()))) {
+      addDiff(mrId, "donater", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getDrugFre() != null && !ippOld.getDrugFre().equals(ippNew.getDrugFre())
+        || (ippNew.getDrugFre() != null && !ippNew.getDrugFre().equals(ippOld.getDrugFre()))) {
+      addDiff(mrId, "drugFre", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getDrugPath() != null && !ippOld.getDrugPath().equals(ippNew.getDrugPath())
+        || (ippNew.getDrugPath() != null && !ippNew.getDrugPath().equals(ippOld.getDrugPath()))) {
+      addDiff(mrId, "drugPath", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getDrugSerialNo() != null
+            && !ippOld.getDrugSerialNo().equals(ippNew.getDrugSerialNo())
+        || (ippNew.getDrugSerialNo() != null
+            && !ippNew.getDrugSerialNo().equals(ippOld.getDrugSerialNo()))) {
+      addDiff(mrId, "drugSerialNo", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getDrugUse() != null && !ippOld.getDrugUse().equals(ippNew.getDrugUse())
+        || (ippNew.getDrugUse() != null && !ippNew.getDrugUse().equals(ippOld.getDrugUse()))) {
+      addDiff(mrId, "drugUse", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getEndTime() != null && !ippOld.getEndTime().equals(ippNew.getEndTime())
+        || (ippNew.getEndTime() != null && !ippNew.getEndTime().equals(ippOld.getEndTime()))) {
+      addDiff(mrId, "endTime", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getFuncType() != null && !ippOld.getFuncType().equals(ippNew.getFuncType())
+        || (ippNew.getFuncType() != null && !ippNew.getFuncType().equals(ippOld.getFuncType()))) {
+      addDiff(mrId, "funcType", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getImgSource() != null && !ippOld.getImgSource().equals(ippNew.getImgSource())
+        || (ippNew.getImgSource() != null
+            && !ippNew.getImgSource().equals(ippOld.getImgSource()))) {
+      addDiff(mrId, "imgSource", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getInhCode() != null && !ippOld.getInhCode().equals(ippNew.getInhCode())
+        || (ippNew.getInhCode() != null && !ippNew.getInhCode().equals(ippOld.getInhCode()))) {
+      addDiff(mrId, "inhCode", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getNonListMark() != null
+            && !ippOld.getNonListMark().equals(ippNew.getNonListMark())
+        || (ippNew.getNonListMark() != null
+            && !ippNew.getNonListMark().equals(ippOld.getNonListMark()))) {
+      addDiff(mrId, "nonListMark", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getNonListName() != null
+            && !ippOld.getNonListName().equals(ippNew.getNonListName())
+        || (ippNew.getNonListName() != null
+            && !ippNew.getNonListName().equals(ippOld.getNonListName()))) {
+      addDiff(mrId, "nonListName", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getOrderType() != null && !ippOld.getOrderType().equals(ippNew.getOrderType())
+        || (ippNew.getOrderType() != null
+            && !ippNew.getOrderType().equals(ippOld.getOrderType()))) {
+      addDiff(mrId, "orderType", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getOwnExpMtrNo() != null
+            && !ippOld.getOwnExpMtrNo().equals(ippNew.getOwnExpMtrNo())
+        || (ippNew.getOwnExpMtrNo() != null
+            && !ippNew.getOwnExpMtrNo().equals(ippOld.getOwnExpMtrNo()))) {
+      addDiff(mrId, "ownExpMtrNo", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getPartAccoData() != null
+            && !ippOld.getPartAccoData().equals(ippNew.getPartAccoData())
+        || (ippNew.getPartAccoData() != null
+            && !ippNew.getPartAccoData().equals(ippOld.getPartAccoData()))) {
+      addDiff(mrId, "partAccoData", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+      // }
+      // else if (ippOld.getPayBy() != null && !ippOld.getPayBy().equals(ippNew.getPayBy())
+      // || (ippNew.getPayBy() != null && !ippNew.getPayBy().equals(ippOld.getPayBy()))) {
+      // addDiff(mrId, "payBy", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+      // }
+      // else if (ippOld.getPayCodeType() != null
+      // && !ippOld.getPayCodeType().equals(ippNew.getPayCodeType())
+      // || (ippNew.getPayCodeType() != null
+      // && !ippNew.getPayCodeType().equals(ippOld.getPayCodeType()))) {
+      // addDiff(mrId, "payCodeType", ippOld.getOrderSeqNo().intValue(), ippNew, diffList,
+      // moList);
+    } else if (ippOld.getPayRate() != null && !ippOld.getPayRate().equals(ippNew.getPayRate())
+        || (ippNew.getPayRate() != null && !ippNew.getPayRate().equals(ippOld.getPayRate()))) {
+      addDiff(mrId, "payRate", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getPreNo() != null && !ippOld.getPreNo().equals(ippNew.getPreNo())
+        || (ippNew.getPreNo() != null && !ippNew.getPreNo().equals(ippOld.getPreNo()))) {
+      addDiff(mrId, "preNo", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getPrsnId() != null && !ippOld.getPrsnId().equals(ippNew.getPrsnId())
+        || (ippNew.getPrsnId() != null && !ippNew.getPrsnId().equals(ippOld.getPrsnId()))) {
+      addDiff(mrId, "prsnId", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if (ippOld.getStartTime() != null && !ippOld.getStartTime().equals(ippNew.getStartTime())
+        || (ippNew.getStartTime() != null
+            && !ippNew.getStartTime().equals(ippOld.getStartTime()))) {
+      addDiff(mrId, "startTime", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if ((ippOld.getTotalQ() != null && ippNew.getTotalQ() != null)
+        && (ippOld.getTotalQ().doubleValue() != ippNew.getTotalQ().doubleValue())) {
+      addDiff(mrId, "totalQ", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if ((ippOld.getTotalDot() != null && ippNew.getTotalDot() != null)
+        && (ippOld.getTotalDot().intValue() != ippNew.getTotalDot().intValue())) {
+      addDiff(mrId, "totalDot", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if ((ippOld.getTwDrgsCalcu() != null && ippNew.getTwDrgsCalcu() != null)
+        && (ippOld.getTwDrgsCalcu().doubleValue() != ippNew.getTwDrgsCalcu().doubleValue())) {
+      addDiff(mrId, "twDrgsCalcu", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    } else if ((ippOld.getUnitP() != null && ippNew.getUnitP() != null)
+        && (ippOld.getUnitP().floatValue() != ippNew.getUnitP().floatValue())) {
+      addDiff(mrId, "unitP", ippOld.getOrderSeqNo().intValue(), ippNew, diffList, moList);
+    }
+    return true;
   }
 
   /**
@@ -833,7 +842,7 @@ public class NHIWidgetXMLService {
       List<FILE_DIFF> diffList, List<MO> moList) {
     FILE_DIFF fd = new FILE_DIFF(mrId, "mos", columnName);
     // 因 seqNo 由 1 開始，所以要 - 1
-    fd.setArrayIndex(seqNo);
+    fd.setArrayIndex(seqNo - 1);
     diffList.add(fd);
     if (ippNew != null) {
       MO mo = new MO();
@@ -2658,50 +2667,25 @@ public class NHIWidgetXMLService {
     if (diffList == null || diffList.size() == 0) {
       return false;
     }
+    mrDetail.setDiffIcdCM(new ArrayList<Integer>());
+    mrDetail.setDiffIcdOP(new ArrayList<Integer>());
+    mrDetail.setDiffMos(new ArrayList<Integer>());
+    ArrayList<Integer> deleteIcdCM = new ArrayList<>();
+    ArrayList<Integer> deleteIcdOP = new ArrayList<>();
     for (FILE_DIFF fd : diffList) {
       if ("icdCM".equals(fd.getName())) {
-        List<Integer> diffIcdCMList = mrDetail.getDiffIcdCM();
-        if (diffIcdCMList == null) {
-          diffIcdCMList = new ArrayList<Integer>();
-        }
-        diffIcdCMList.add(fd.getArrayIndex());
-        mrDetail.setDiffIcdCM(diffIcdCMList);
-        if (isRaw && fd.getNewValue() != null) {
-          if (mrDetail.getIcdCM().size() <= fd.getArrayIndex().intValue()) {
-            mrDetail.getIcdCM()
-                .add(CodeTableService.getCodeBase(cts, "ICD10-CM", fd.getNewValue()));
-          } else {
-            mrDetail.getIcdCM().set(fd.getArrayIndex().intValue(),
-                CodeTableService.getCodeBase(cts, "ICD10-CM", fd.getNewValue()));
-          }
-        }
+        checkDiffIcdCM(mrDetail, fd, isRaw, deleteIcdCM);
       } else if ("icdOP".equals(fd.getName())) {
-        List<Integer> diffIcdOPList = mrDetail.getDiffIcdOP();
-        if (diffIcdOPList == null) {
-          diffIcdOPList = new ArrayList<Integer>();
-        }
-        diffIcdOPList.add(fd.getArrayIndex());
-        mrDetail.setDiffIcdOP(diffIcdOPList);
-        if (isRaw && fd.getNewValue() != null) {
-          if (mrDetail.getIcdOP() == null) {
-            mrDetail.setIcdOP(new ArrayList<CodeBase>());
-          }
-          if (mrDetail.getIcdOP().size() <= fd.getArrayIndex().intValue()) {
-            mrDetail.getIcdOP()
-                .add(CodeTableService.getCodeBase(cts, "ICD10-PCS", fd.getNewValue()));
-          } else {
-            mrDetail.getIcdOP().set(fd.getArrayIndex().intValue(),
-                CodeTableService.getCodeBase(cts, "ICD10-PCS", fd.getNewValue()));
-          }
-        }
+        checkDiffIcdOP(mrDetail, fd, isRaw, deleteIcdOP);
       } else if ("mos".equals(fd.getName())) {
-        List<Integer> diffMosList = mrDetail.getDiffMos();
-        if (diffMosList == null) {
-          diffMosList = new ArrayList<Integer>();
-        }
-        diffMosList.add(fd.getArrayIndex());
-        mrDetail.setDiffMos(diffMosList);
-        if (isRaw && fd.getNewValue() != null) {
+        mrDetail.getDiffMos().add(fd.getArrayIndex());
+        if (isRaw) {
+          if (fd.getNewValue() == null) {
+            if (fd.getArrayIndex().intValue() < mrDetail.getMos().size()) {
+              mrDetail.getMos().remove(fd.getArrayIndex().intValue());
+            }
+            continue;
+          }
           MO newMO = null;
           for (MO mo : moList) {
             if (mo.getOrderSeqNo().intValue() == (fd.getArrayIndex().intValue() + 1)) {
@@ -2721,7 +2705,7 @@ public class NHIWidgetXMLService {
             if (mrDetail.getMos().size() < (fd.getArrayIndex() + 1)) {
               mrDetail.getMos().add(newMO);
             } else {
-              mrDetail.getMos().set(fd.getArrayIndex().intValue() - 1, newMO);
+              mrDetail.getMos().set(fd.getArrayIndex().intValue(), newMO);
             }
           }
         }
@@ -2734,10 +2718,15 @@ public class NHIWidgetXMLService {
         mrDetail.setDiffCureItems(diffCureItemsList);
         if (isRaw && fd.getNewValue() != null) {
           if (mrDetail.getCureItems().size() <= fd.getArrayIndex().intValue()) {
-            mrDetail.getCureItems().add(CodeTableService.getCodeBase(cts, "OP_CURE_ITEM", fd.getNewValue()));
+            mrDetail
+                .getCureItems()
+                .add(CodeTableService.getCodeBase(cts, "OP_CURE_ITEM", fd.getNewValue()));
           } else {
-            mrDetail.getCureItems().set(fd.getArrayIndex().intValue(),
-                CodeTableService.getCodeBase(cts, "OP_CURE_ITEM", fd.getNewValue()));
+            mrDetail
+                .getCureItems()
+                .set(
+                    fd.getArrayIndex().intValue(),
+                    CodeTableService.getCodeBase(cts, "OP_CURE_ITEM", fd.getNewValue()));
           }
         }
       } else {
@@ -2754,7 +2743,69 @@ public class NHIWidgetXMLService {
         }
       }
     }
+    
+    if (deleteIcdCM.size() > 0) {
+      // 從後面往前刪除
+      Collections.sort(deleteIcdCM, Collections.reverseOrder());
+      for (Integer index : deleteIcdCM) {
+        if (mrDetail.getIcdCM().size() > index.intValue()) {
+          mrDetail.getIcdCM().remove(index.intValue());
+        }
+      }
+    }
+    if (deleteIcdOP.size() > 0) {
+      Collections.sort(deleteIcdOP, Collections.reverseOrder());
+      for (Integer index : deleteIcdOP) {
+        mrDetail.getIcdOP().remove(index.intValue());
+      }
+    }
     return true;
+  }
+
+  private void checkDiffIcdCM(
+      MRDetail mrDetail, FILE_DIFF fd, boolean isRaw, ArrayList<Integer> deleteArray) {
+    mrDetail.getDiffIcdCM().add(fd.getArrayIndex());
+    if (isRaw) {
+      if (fd.getNewValue() == null) {
+        // icdCM被刪除
+        deleteArray.add(fd.getArrayIndex());
+      } else {
+        if (mrDetail.getIcdCM().size() <= fd.getArrayIndex().intValue()) {
+          mrDetail.getIcdCM().add(CodeTableService.getCodeBase(cts, "ICD10-CM", fd.getNewValue()));
+        } else {
+          mrDetail
+              .getIcdCM()
+              .set(
+                  fd.getArrayIndex().intValue(),
+                  CodeTableService.getCodeBase(cts, "ICD10-CM", fd.getNewValue()));
+        }
+      }
+    }
+  }
+  
+  private void checkDiffIcdOP( MRDetail mrDetail, FILE_DIFF fd, boolean isRaw, ArrayList<Integer> deleteArray) {
+    mrDetail.getDiffIcdOP().add(fd.getArrayIndex());
+    if (isRaw) {
+      if (fd.getNewValue() == null) {
+        // icdOP被刪除
+        deleteArray.add(fd.getArrayIndex());
+      } else {
+        if (mrDetail.getIcdOP() == null) {
+          mrDetail.setIcdOP(new ArrayList<CodeBase>());
+        }
+        if (mrDetail.getIcdOP().size() <= fd.getArrayIndex().intValue()) {
+          mrDetail
+              .getIcdOP()
+              .add(CodeTableService.getCodeBase(cts, "ICD10-PCS", fd.getNewValue()));
+        } else {
+          mrDetail
+              .getIcdOP()
+              .set(
+                  fd.getArrayIndex().intValue(),
+                  CodeTableService.getCodeBase(cts, "ICD10-PCS", fd.getNewValue()));
+        }
+      }
+    }
   }
 
   private void updateNewFieldValue(FILE_DIFF fd, MRDetail result, SimpleDateFormat sdf)
@@ -2776,7 +2827,15 @@ public class NHIWidgetXMLService {
       result.setDrgCode(fd.getNewValue());
     } else if ("partNo".equals(fd.getName())) {
       result.setPartNo(CodeTableService.getDesc(cts, "PART_NO", fd.getNewValue()));
-    }
+    } else if ("payType".equals(fd.getName())) {
+      result.setPayType(CodeTableService.getDesc(cts, "PAY_TYPE", fd.getNewValue()));
+    } else if ("partDot".equals(fd.getName())) {
+      result.setPartDot(Integer.parseInt(fd.getNewValue()));
+    } else if ("totalDot".equals(fd.getName())) {
+      result.setTotalDot(Integer.parseInt(fd.getNewValue()));
+    } else if ("tDot".equals(fd.getName())) {
+      result.settDot(Integer.parseInt(fd.getNewValue()));
+    } 
   }
 
   private boolean updateDiff(MRDetail mrDetail, int oldStatus) {
@@ -7091,7 +7150,7 @@ public class NHIWidgetXMLService {
   }
 
   private void saveDiffList(List<FILE_DIFF> diffList, MR mr) {
-    if (diffList == null) {
+    if (diffList == null || diffList.size() == 0) {
       return;
     }
     for (FILE_DIFF diff : diffList) {
@@ -7598,6 +7657,8 @@ public class NHIWidgetXMLService {
     OP_D old = optional.get();
     checkDiffItem(old.getPayType(), newOpd.getPayType(), list, newOpd.getMrId(), "payType", 0);
     checkDiffItem(old.getPartNo(), newOpd.getPartNo(), list, newOpd.getMrId(), "partNo", 0);
+    checkDiffInteger(old.getPartDot(), newOpd.getPartDot(), list, newOpd.getMrId(), "partDot", 0);
+    
     if (checkDiffItem(
         old.getCureItemNo1(), newOpd.getCureItemNo1(), list, newOpd.getMrId(), "cureItems", 0)) {
       return;
@@ -7637,6 +7698,53 @@ public class NHIWidgetXMLService {
       list.add(new FILE_DIFF(mrId, diffFieldName, index, newItem));
     }
     return false;
+  }
+  
+  private boolean checkDiffInteger(Integer oldInt, Integer newInt, List<FILE_DIFF> list,
+      Long mrId, String diffFieldName, int index) {
+     if (oldInt == null && newInt == null) {
+       return true;
+     }
+     if (oldInt == null && newInt != null) {
+       list.add(new FILE_DIFF(mrId, diffFieldName, index, newInt.toString()));
+     } else if (oldInt != null && oldInt.intValue() != newInt.intValue()) {
+       list.add(new FILE_DIFF(mrId, diffFieldName, index, newInt.toString()));
+     }
+     return false;
+   }
+  
+  /**
+   * 檢查特定治療項目是否有異動
+   * @param list
+   * @param newOpd
+   */
+  public void checkDiffIpdItem(List<FILE_DIFF> list, IP_D newIpd) {
+    Optional<IP_D> optional = ipdDao.findById(newIpd.getId());
+    if (!optional.isPresent()) {
+      return;
+    }
+    IP_D old = optional.get();
+    checkDiffItem(old.getCaseType(), newIpd.getCaseType(), list, newIpd.getMrId(), "caseType", 0);
+    checkDiffItem(old.getPayType(), newIpd.getPayType(), list, newIpd.getMrId(), "payType", 0);
+    checkDiffItem(old.getPartNo(), newIpd.getPartNo(), list, newIpd.getMrId(), "partNo", 0);
+    checkDiffItem(old.getPatientSource(), newIpd.getPatientSource(), list, newIpd.getMrId(), "patientSource", 0);
+    checkDiffItem(old.getTwDrgsSuitMark() , newIpd.getTwDrgsSuitMark(), list, newIpd.getMrId(), "twDrgsSuitMark", 0);
+    checkDiffInteger(old.getAminDot(), newIpd.getAminDot(), list, newIpd.getMrId(), "aminDot", 0);
+    checkDiffInteger(old.getAneDot(), newIpd.getAneDot(), list, newIpd.getMrId(), "aneDot", 0);
+    checkDiffInteger(old.getDiagDot(), newIpd.getDiagDot(), list, newIpd.getMrId(), "diagDot", 0);
+    checkDiffInteger(old.getDrugDot(), newIpd.getDrugDot(), list, newIpd.getMrId(), "drugDot", 0);
+    checkDiffInteger(old.getDsvcDot(), newIpd.getDsvcDot(), list, newIpd.getMrId(), "dsvcDot", 0);
+    checkDiffInteger(old.getBabyDot(), newIpd.getBabyDot(), list, newIpd.getMrId(), "babyDot", 0);
+    checkDiffInteger(old.getBlodDot(), newIpd.getBlodDot(), list, newIpd.getMrId(), "blodDot", 0);
+    checkDiffInteger(old.getHdDot(), newIpd.getHdDot(), list, newIpd.getMrId(), "hdDot", 0);
+    checkDiffInteger(old.getInjtDot(), newIpd.getInjtDot(), list, newIpd.getMrId(), "injtDot", 0);
+    checkDiffInteger(old.getNrtpDot(), newIpd.getNrtpDot(), list, newIpd.getMrId(), "nrtpDot", 0);
+    checkDiffInteger(old.getNonApplDot(), newIpd.getNonApplDot(), list, newIpd.getMrId(), "nonApplDot", 0);
+    checkDiffInteger(old.getMealDot(), newIpd.getMealDot(), list, newIpd.getMrId(), "mealDot", 0);
+    checkDiffInteger(old.getMedDot(), newIpd.getMedDot(), list, newIpd.getMrId(), "medDot", 0);
+    checkDiffInteger(old.getMetrDot(), newIpd.getMetrDot(), list, newIpd.getMrId(), "metrDot", 0);
+    checkDiffInteger(old.getPartDot(), newIpd.getPartDot(), list, newIpd.getMrId(), "partDot", 0);
+    checkDiffInteger(old.getPhscDot() , newIpd.getPhscDot(), list, newIpd.getMrId(), "phscDot", 0);
   }
   
   private void changeEmptyToNull(DEDUCTED_NOTE note) {
