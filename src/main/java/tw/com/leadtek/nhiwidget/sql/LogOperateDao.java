@@ -345,7 +345,7 @@ public class LogOperateDao extends BaseSqlDao{
 	  
 	  if("P".equalsIgnoreCase(actor)) {
 		  //負責人
-//		  result.append("AND ROLE IN ('C', 'D') ");
+		  result.append("AND ROLE IN ('A', 'C', 'D') ");
 
 		  if("UN".equalsIgnoreCase(pCondition)) {
 			  result.append("AND U.USERNAME IN (:pUserNames) ");
@@ -359,7 +359,7 @@ public class LogOperateDao extends BaseSqlDao{
 		  
 	  }else if("D".equalsIgnoreCase(actor)){
 		  //醫護人員
-		  result.append("AND ROLE IN ('E') ");
+		  result.append("AND ROLE IN ('B', 'E') ");
 		  
 		  if("D".equalsIgnoreCase(msCondition)) {
 			  result.append("AND D.ID IN (:msDepts) ");

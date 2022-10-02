@@ -21,12 +21,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
@@ -39,6 +39,8 @@ import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFRow;
@@ -62,11 +64,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
 import io.jsonwebtoken.Claims;
 import tw.com.leadtek.nhiwidget.constant.ACTION_TYPE;
 import tw.com.leadtek.nhiwidget.constant.INTELLIGENT_REASON;
@@ -9486,12 +9490,12 @@ public class NHIWidgetXMLService {
     for (int v = 0; v < lastRowNum + 1; v++) {
       try {
         columnMap = ExcelUtil.readTitleRow(sheet.getRow(v));
-        if (columnMap.get(16).equals("備註"))
-          columnMap.replace(16, "核刪備註");
-        if (columnMap.get(26).equals("備註"))
-          columnMap.replace(26, "申復備註");
-        if (columnMap.get(34).equals("備註"))
-          columnMap.replace(34, "爭議備註");
+        if (columnMap.get(20).equals("備註"))
+          columnMap.replace(20, "核刪備註");
+        if (columnMap.get(30).equals("備註"))
+          columnMap.replace(30, "申復備註");
+        if (columnMap.get(38).equals("備註"))
+          columnMap.replace(38, "爭議備註");
         System.out.println("columnMap -> " + columnMap.toString());
         break;
       } catch (Exception e) {
@@ -9505,8 +9509,8 @@ public class NHIWidgetXMLService {
         values = ExcelUtil.readCellValue(columnMap, sheet.getRow(v));
         System.out.println("values -> " + values.toString());
         System.out.println("lastRowNum -> " + lastRowNum);
-        /// 如果是表頭就略過
-        if (values.get("病歷號").equals("病歷號")) {
+        // 如果是表頭就略過
+        if (values.get("診別(門急診10、住院20)").equals("診別(門急診10、住院20)")) {
           values = new HashMap<String, String>();
           continue;
         }
@@ -9521,7 +9525,16 @@ public class NHIWidgetXMLService {
 
     if (valueList.size() > 0) {
       for (HashMap<String, String> map : valueList) {
-        note.setMrId(Long.valueOf(map.get("病歷號")));
+    	  
+    	String caseType = map.get("案件分類");
+    	String seqNo = map.get(" 流水編號");
+    	String applYm = map.get("申報年月");
+    	String inhClinicId = map.get("就醫紀錄編號");
+    	String dataformat = map.get("診別(門急診10、住院20)");
+    	
+    	Long mrId = this.findDeductedNoteMrId(dataformat, caseType, seqNo, applYm, inhClinicId);
+    	
+    	note.setMrId(mrId);
         note.setActionType(1);
         note.setItem(map.get("項目"));
         note.setCat(map.get("類別"));
@@ -9577,11 +9590,11 @@ public class NHIWidgetXMLService {
           note.setDisputeDate(sdf.parse(outputDate));
         }
 
-        if (mrid.equals(map.get("病歷號"))) {
+        if (StringUtils.equals(mrid, mrId+"")) {
           listNote.add(note);
         }
         /// 寫入資料庫
-        newDeductedNote(map.get("病歷號"), note);
+        newDeductedNote(mrId+"" , note);
         note = new DEDUCTED_NOTE();
       }
       return listNote;
@@ -9590,6 +9603,31 @@ public class NHIWidgetXMLService {
     }
   }
 
+  private Long findDeductedNoteMrId(String dataformat, String caseType, String seqNo, String applYm, String inhClinicId) {
+	  
+	  List<Long> mrIdList = mrDao.getIdByInhClinicId(inhClinicId);
+	  
+	  if(!mrIdList.isEmpty()) {
+		  
+		  return mrIdList.get(0);
+  	
+	  }else {
+  		
+		List<MR> mrList = new ArrayList<>();
+		
+  		if("10".equals(dataformat)) {
+  			
+  			mrList = mrDao.findByMrDataFormat10AndMrApplYmAndOpdCaseTypeAndOpdSeqNo(applYm, caseType, seqNo);
+  		}else if("20".equals(dataformat)) {
+  			
+  			mrList = mrDao.findByMrDataFormat20AndMrApplYmAndIpdCaseTypeAndIpdSeqNo(applYm, caseType, seqNo);
+  		}
+  		
+  		return mrList.size() > 0 ? mrList.get(0).getId() : null;
+  	}
+	  
+  }
+  
   /**
    * 將Leadtek門診醫令清單中同一INH_NO的醫令放在一起
    * @param sheet
