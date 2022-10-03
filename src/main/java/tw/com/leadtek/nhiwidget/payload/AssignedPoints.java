@@ -141,28 +141,28 @@ public class AssignedPoints extends StartEndPayload implements Serializable {
   
   public void refreshValues() {
     if (wmOpPoints == null) {
-      wmOpPoints = new Long(0);
+      wmOpPoints = Long.valueOf(0L);
     }
     if (wmIpPoints == null) {
-      wmOpPoints = new Long(0);
+      wmOpPoints = Long.valueOf(0L);
     }
     if (wmDrugPoints == null) {
-      wmDrugPoints = new Long(0);
+      wmDrugPoints = Long.valueOf(0L);
     }
     if (hemodialysisPoints == null) {
-      hemodialysisPoints = new Long(0);
+      hemodialysisPoints = Long.valueOf(0L);
     }
     if (fundPoints == null) {
-      fundPoints = new Long(0);
+      fundPoints = Long.valueOf(0L);
     }
     if (dentistOpPoints == null) {
-      dentistOpPoints = new Long(0);
+      dentistOpPoints = Long.valueOf(0L);
     }
     if (dentistDrugPoints == null) {
-      dentistDrugPoints = new Long(0);
+      dentistDrugPoints = Long.valueOf(0L);
     }
     if (dentistFundPoints == null) {
-      dentistFundPoints = new Long(0);
+      dentistFundPoints = Long.valueOf(0L);
     }
   }
 }

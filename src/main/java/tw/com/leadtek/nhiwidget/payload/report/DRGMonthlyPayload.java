@@ -28,6 +28,11 @@ public class DRGMonthlyPayload extends DRGReportPayload implements Serializable 
   public DRGMonthlyPayload() {
     
   }
+  
+  public DRGMonthlyPayload(String result, String message) {
+    this.result = result;
+    this.message = message;
+  }
 
   public DRGMonthlyPayload(POINT_MONTHLY pm) {
     if (pm == null) {

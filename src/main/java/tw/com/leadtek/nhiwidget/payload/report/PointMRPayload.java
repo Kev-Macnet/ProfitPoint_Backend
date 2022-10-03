@@ -116,6 +116,11 @@ public class PointMRPayload extends BaseResponse implements Serializable {
 
 	}
 
+    public PointMRPayload(String result, String message) {
+        this.result = result;
+        this.message = message;
+    }
+
 	public POINT_MONTHLY getCurrent() {
 		return current;
 	}

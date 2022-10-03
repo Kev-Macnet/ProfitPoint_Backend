@@ -258,7 +258,7 @@ public class ImportTestExcel {
         if (cellValue.indexOf(',') > -1) {
           cellValue = cellValue.split(",")[0];
         }
-        result.put(cellValue, new Integer(i));
+        result.put(cellValue, Integer.valueOf(i));
       }
     }
     return result;

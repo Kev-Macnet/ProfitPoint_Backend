@@ -120,13 +120,16 @@ public class StringUtility {
     if (code == null) {
       return null;
     }
+    if (code.length() > 7 && code.charAt(code.length() - 2) == '.') {
+      return code.substring(0, code.length() - 2) + code.charAt(code.length() - 1);
+    }
     if (code.indexOf('.') > 0) {
       return code.toLowerCase();
     }
     StringBuffer sb = new StringBuffer(code);
-    if (sb.length() > 6) {
-      sb.insert(6, '.');
-    }
+//    if (sb.length() > 6) {
+//      sb.insert(6, '.');
+//    }
     if (sb.length() > 3) {
       sb.insert(3, '.');
     }

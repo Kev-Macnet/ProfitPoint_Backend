@@ -746,6 +746,8 @@ public class IntelligentService {
       ig.setRocId(mr.getRocId());
       ig.setApplYm(mr.getApplYm());
       ig.setUpdateAt(new Date());
+      ig.setReportDot(mr.getReportDot());
+      ig.setPartDot(mr.getTotalDot() - mr.getOwnExpense());
       if (batch != null) {
         batch.add(ig);
         if (batch.size() % XMLConstant.BATCH == 0) {
@@ -1174,7 +1176,7 @@ public class IntelligentService {
         String compare = ct.getCode() == null ? mr.getInhCode() : mr.getCodeAll();
         int appearCount = countStringAppear(compare, ct.getCode());
         if (count == null) {
-          patientCount.put(mr.getRocId() + mr.getName(), new Integer(appearCount));
+          patientCount.put(mr.getRocId() + mr.getName(), Integer.valueOf(appearCount));
           patientLastTime.put(mr.getRocId() + mr.getName(), mr.getMrEndDate().getTime());
           patientMR.put(mr.getRocId() + mr.getName(), mr);
         } else {
@@ -1184,7 +1186,7 @@ public class IntelligentService {
 
           if (lastTime.longValue() - mr.getMrEndDate().getTime() < maxDay) {
             int total = count.intValue() + appearCount;
-            patientCount.put(mr.getRocId() + mr.getName(), new Integer(total));
+            patientCount.put(mr.getRocId() + mr.getName(), Integer.valueOf(total));
             if (total > max) {
               INTELLIGENT intelligent = findIntelligentByMrId(mr.getId(), intelligentList);
               insertIntelligent(mr, intelligent, conditionCode, code, reason,
@@ -1823,7 +1825,7 @@ public class IntelligentService {
     int ownExpCodeCount = 0;
     for (Object[] obj : data) {
       long newMrId = ((BigInteger) obj[0]).longValue();
-      if (violateMrMap.containsKey((new Long(newMrId)))) {
+      if (violateMrMap.containsKey(Long.valueOf(newMrId))) {
         continue;
       }
       if (mrId != newMrId) {
@@ -2257,15 +2259,15 @@ public class IntelligentService {
   }
 
   public synchronized void extendIntelligentRunning(int intelligentCode, long ms) {
-    Long runningTime = runningIntelligent.get(new Integer(intelligentCode));
+    Long runningTime = runningIntelligent.get(Integer.valueOf(intelligentCode));
     if (runningTime == null || runningTime < 0) {
       runningTime = System.currentTimeMillis();
     }
     if (runningTime < Long.MAX_VALUE) {
       if ((runningTime.longValue() - System.currentTimeMillis()) <= 0) {
-        runningIntelligent.put(new Integer(intelligentCode), -1L);  
+        runningIntelligent.put(Integer.valueOf(intelligentCode), -1L);  
       } else if ((runningTime.longValue() - System.currentTimeMillis()) < ms) {
-        runningIntelligent.put(new Integer(intelligentCode), new Long(System.currentTimeMillis() + ms));  
+        runningIntelligent.put(Integer.valueOf(intelligentCode), Long.valueOf(System.currentTimeMillis() + ms));  
       }
     }
   }
@@ -2899,7 +2901,7 @@ public class IntelligentService {
         List<MR> list = ymList.get(ym);
         List<Long> mrIdList = drgCalService.getMrIdByDataFormat(list, XMLConstant.DATA_FORMAT_IP);
         if (mrIdList.size() == 0) {
-          return;
+          continue;
         }
         logger.info("runDrgCalculate " + ym + " count:" + list.size());
         HashMap<Long, IP_D> ipdMap = new HashMap<Long, IP_D>();

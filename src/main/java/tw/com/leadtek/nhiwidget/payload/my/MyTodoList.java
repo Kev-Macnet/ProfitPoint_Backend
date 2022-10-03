@@ -19,7 +19,13 @@ public class MyTodoList extends MyListBasePayload implements Serializable {
   
   @ApiModelProperty(value = "資料狀態", example = "待處理", required = true)
   protected String status;
-  
+
+  @ApiModelProperty(value = "申報點數", example = "400", required = false)
+  protected long reportDot;
+
+  @ApiModelProperty(value = "病歷點數(不含自費)", example = "500", required = false)
+  protected long partDot;
+
   public MyTodoList() {
     
   }
@@ -28,6 +34,8 @@ public class MyTodoList extends MyListBasePayload implements Serializable {
     super(mr);
     totalDot = mr.getTDot();
     status = MR_STATUS.toStatusString(mr.getStatus());
+    reportDot = mr.getReportDot();
+    partDot = mr.getPartDot();
   }
 
   public Integer getTotalDot() {
@@ -44,6 +52,22 @@ public class MyTodoList extends MyListBasePayload implements Serializable {
 
   public void setStatus(String status) {
     this.status = status;
+  }
+
+  public void setReportDot(long reportDot) {
+    this.reportDot = reportDot;
+  }
+
+  public long getReportDot() {
+    return reportDot;
+  }
+
+  public void setPartDot(long partDot) {
+    this.partDot = partDot;
+  }
+
+  public long getPartDot() {
+    return partDot;
   }
 
 }

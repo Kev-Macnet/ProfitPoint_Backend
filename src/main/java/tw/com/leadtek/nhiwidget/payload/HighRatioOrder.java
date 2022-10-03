@@ -110,7 +110,7 @@ public class HighRatioOrder extends RareICDPayload implements Serializable {
     if (id != null) {
       result.setId(id);
     }
-    result.setCodeType(new Integer(codeType));
+    result.setCodeType(Integer.valueOf(codeType));
     if (code != null) {
       result.setCode(code.toUpperCase());
     }

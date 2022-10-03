@@ -25,7 +25,7 @@ public class CodeBaseLongId extends CodeBase {
   }
 
   public CodeBaseLongId(long id, String code, String desc, String descEn) {
-    this.id = new Long(id);
+    this.id = Long.valueOf(id);
     setCode(code);
     setDesc(desc);
     setDescEn(descEn);

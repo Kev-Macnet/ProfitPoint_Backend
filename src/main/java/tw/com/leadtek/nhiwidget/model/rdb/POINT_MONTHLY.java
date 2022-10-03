@@ -717,76 +717,76 @@ public class POINT_MONTHLY {
 
   public void checkNull() {
     if (partOp == null) {
-      partOp = new Long(0);
+      partOp = Long.valueOf(0L);
     }
     if (partEm == null) {
-      partEm = new Long(0);
+      partEm = Long.valueOf(0L);
     }
     if (partOpAll == null) {
-      partOpAll = new Long(0);
+      partOpAll = Long.valueOf(0L);
     }
     if (partIp == null) {
-      partIp = new Long(0);
+      partIp = Long.valueOf(0L);
     }
     if (partAll == null) {
-      partAll = new Long(0);
+      partAll = Long.valueOf(0L);
     }
     if (applOp == null) {
-      applOp = new Long(0);
+      applOp = Long.valueOf(0L);
     }
     if (applEm == null) {
-      applEm = new Long(0);
+      applEm = Long.valueOf(0L);
     }
     if (applOpAll == null) {
-      applOpAll = new Long(0);
+      applOpAll = Long.valueOf(0L);
     }
     if (applIp == null) {
-      applIp = new Long(0);
+      applIp = Long.valueOf(0L);
     }
     if (applAll == null) {
-      applAll = new Long(0);
+      applAll = Long.valueOf(0L);
     }
     if (totalOp == null) {
-      totalOp = new Long(0);
+      totalOp = Long.valueOf(0L);
     }
     if (totalEm == null) {
-      totalEm = new Long(0);
+      totalEm = Long.valueOf(0L);
     }
     if (totalOpAll == null) {
-      totalOpAll = new Long(0);
+      totalOpAll = Long.valueOf(0L);
     }
     if (totalIp == null) {
-      totalIp = new Long(0);
+      totalIp = Long.valueOf(0L);
     }
     if (totalAll == null) {
-      totalAll = new Long(0);
+      totalAll = Long.valueOf(0L);
     }
     if (assignedOpAll == null) {
-      assignedOpAll = new Long(0);
+      assignedOpAll = Long.valueOf(0L);
     }
     if (assignedIp == null) {
-      assignedIp = new Long(0);
+      assignedIp = Long.valueOf(0L);
     }
     if (assignedAll == null) {
-      assignedAll = new Long(0);
+      assignedAll = Long.valueOf(0L);
     }
     if (patientOp == null) {
-      patientOp = new Long(0);
+      patientOp = Long.valueOf(0L);
     }
     if (patientIp == null) {
-      patientIp = new Long(0);
+      patientIp = Long.valueOf(0L);
     }
     if (patientEm == null) {
-      patientEm = new Long(0);
+      patientEm = Long.valueOf(0L);
     }
     if (chronic == null) {
-      chronic = new Long(0);
+      chronic = Long.valueOf(0L);
     }
     if (remaining == null) {
-      remaining = new Long(0);
+      remaining = Long.valueOf(0L);
     }
     if (ipQuantity == null) {
-      ipQuantity = new Long(0);
+      ipQuantity = Long.valueOf(0L);
     }
     if (rateIp == null) {
       rateIp = new Double(0);
@@ -798,22 +798,22 @@ public class POINT_MONTHLY {
       rateAll = new Double(0);
     }
     if (drgQuantity == null) {
-      drgQuantity = new Long(0);
+      drgQuantity = Long.valueOf(0L);
     }
     if (drgApplPoint == null) {
-      drgApplPoint = new Long(0);
+      drgApplPoint = Long.valueOf(0L);
     }
     if (drgActualPoint == null) {
-      drgActualPoint = new Long(0);
+      drgActualPoint = Long.valueOf(0L);
     }
     if (noApplAll == null) {
-      noApplAll = new Long(0);
+      noApplAll = Long.valueOf(0L);
     }
     if (noApplIp == null) {
-      noApplIp = new Long(0);
+      noApplIp = Long.valueOf(0L);
     }
     if (noApplOp == null) {
-      noApplOp = new Long(0);
+      noApplOp = Long.valueOf(0L);
     }
   }
 }
