@@ -4005,9 +4005,9 @@ public class DbReportService {
 			for (String str : dataformatList) {
 				switch (str) {
 				case "all":
-					selectColumn.append(" (SELECT (QIP + QOP) AS ALL_QUANTITY, (EIP + EOP) AS ALL_EXPENSE FROM ");
+					selectColumn.append(" (SELECT (a.QIP + b.QOP) AS ALL_QUANTITY, (a.EIP + b.EOP) AS ALL_EXPENSE FROM ");
 					selectColumn
-							.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QIP, IFNULL(SUM(EXPENSE),0) AS EIP FROM ");
+							.append(" (SELECT IFNULL(SUM(aa.QUANTITY),0) AS  QIP, IFNULL(SUM(aa.EXPENSE),0) AS EIP FROM ");
 					selectColumn.append(
 							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 
@@ -4028,17 +4028,17 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append("  GROUP BY IP_P.ORDER_CODE))a, ");
+					groupBy.append("  GROUP BY IP_P.ORDER_CODE)aa)a, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
 					selectColumn
-							.append(" (SELECT IFNULL(SUM(QUANTITY),0) AS  QOP, IFNULL(SUM(EXPENSE),0) AS EOP FROM ");
+							.append(" (SELECT IFNULL(SUM(bb.QUANTITY),0) AS  QOP, IFNULL(SUM(bb.EXPENSE),0) AS EOP FROM ");
 					selectColumn.append(
 							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					selectColumn.append(where);
 					groupBy = new StringBuffer("");
-					groupBy.append(" GROUP BY OP_P.DRUG_NO ))b)a, ");
+					groupBy.append(" GROUP BY OP_P.DRUG_NO )bb)b)a, ");
 					selectColumn.append(groupBy);
 
 					groupBy = new StringBuffer("");
@@ -4046,7 +4046,7 @@ public class DbReportService {
 					break;
 				case "totalop":
 					selectColumn.append(
-							" (SELECT IFNULL(SUM(QUANTITY),0) AS  OPALL_QUANTITY, IFNULL(SUM(EXPENSE),0) AS OPALL_EXPENSE FROM ");
+							" (SELECT IFNULL(SUM(cc.QUANTITY),0) AS  OPALL_QUANTITY, IFNULL(SUM(cc.EXPENSE),0) AS OPALL_EXPENSE FROM ");
 					selectColumn.append(
 							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
@@ -4066,7 +4066,7 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append("  GROUP BY OP_P.DRUG_NO))b, ");
+					groupBy.append("  GROUP BY OP_P.DRUG_NO)cc)b, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
@@ -4075,7 +4075,7 @@ public class DbReportService {
 					break;
 				case "op":
 					selectColumn.append(
-							" (SELECT IFNULL(SUM(QUANTITY),0) AS  OP_QUANTITY, IFNULL(SUM(EXPENSE),0) AS OP_EXPENSE FROM  ");
+							" (SELECT IFNULL(SUM(dd.QUANTITY),0) AS  OP_QUANTITY, IFNULL(SUM(dd.EXPENSE),0) AS OP_EXPENSE FROM  ");
 					selectColumn.append(
 							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
@@ -4095,7 +4095,7 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append("  GROUP BY OP_P.DRUG_NO))c, ");
+					groupBy.append("  GROUP BY OP_P.DRUG_NO)dd)c, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
@@ -4104,7 +4104,7 @@ public class DbReportService {
 					break;
 				case "em":
 					selectColumn.append(
-							" (SELECT IFNULL(SUM(QUANTITY),0) AS  EM_QUANTITY, IFNULL(SUM(EXPENSE),0) AS EM_EXPENSE FROM  ");
+							" (SELECT IFNULL(SUM(ee.QUANTITY),0) AS  EM_QUANTITY, IFNULL(SUM(ee.EXPENSE),0) AS EM_EXPENSE FROM  ");
 					selectColumn.append(
 							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE  FROM MR, OP_P WHERE  MR.ID = OP_P.MR_ID AND OP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
@@ -4124,7 +4124,7 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append("  GROUP BY OP_P.DRUG_NO))d, ");
+					groupBy.append("  GROUP BY OP_P.DRUG_NO)ee)d, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
@@ -4133,7 +4133,7 @@ public class DbReportService {
 					break;
 				case "ip":
 					selectColumn.append(
-							" (SELECT IFNULL(SUM(QUANTITY),0) AS  IP_QUANTITY, IFNULL(SUM(EXPENSE),0) AS IP_EXPENSE FROM ");
+							" (SELECT IFNULL(SUM(ff.QUANTITY),0) AS  IP_QUANTITY, IFNULL(SUM(ff.EXPENSE),0) AS IP_EXPENSE FROM ");
 					selectColumn.append(
 							" (SELECT COUNT(1) AS QUANTITY , SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					where.append(" AND MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
@@ -4154,7 +4154,7 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append("  GROUP BY IP_P.ORDER_CODE))e, ");
+					groupBy.append("  GROUP BY IP_P.ORDER_CODE)ff)e, ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 
@@ -4189,9 +4189,8 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" SELECT  '不分區' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE, ");
-					selectColumn.append(" (SELECT * FROM ( ");
-					selectColumn.append(" SELECT  FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+							" SELECT  '不分區' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE, ( ");
+					selectColumn.append(" SELECT a.FUNC_TYPE, a.IHN_CODE, a.DESC_CHI, a.QUANTITY, a.EXPENSE FROM ");
 					selectColumn.append(
 							" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 
@@ -4212,19 +4211,19 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) ");
+					groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) a ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 					groupBy = new StringBuffer("");
 					selectColumn.append(" UNION ALL ");
-					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+					selectColumn.append(" SELECT b.FUNC_TYPE, b.IHN_CODE, b.DESC_CHI, b.QUANTITY, b.EXPENSE FROM ");
 					selectColumn.append(
 							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					selectColumn.append(where);
-					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) b ");
 					selectColumn.append(groupBy);
 					selectColumn.append(
-							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+							" )t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
 					break;
@@ -4233,9 +4232,8 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" SELECT  '門急診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
-					selectColumn.append(" (SELECT * FROM ( ");
-					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+							" SELECT  '門急診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE, ( ");
+					selectColumn.append(" SELECT d.FUNC_TYPE, d.IHN_CODE, d.DESC_CHI, d.QUANTITY, d.EXPENSE FROM ");
 					selectColumn.append(
 							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
@@ -4255,11 +4253,11 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) d ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 					selectColumn.append(
-							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+							" )t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -4269,9 +4267,8 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" SELECT  '門診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
-					selectColumn.append(" (SELECT * FROM ( ");
-					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+							" SELECT  '門診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE, ( ");
+					selectColumn.append(" SELECT e.FUNC_TYPE, e.IHN_CODE, e.DESC_CHI, e.QUANTITY, e.EXPENSE FROM ");
 					selectColumn.append(
 							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
@@ -4291,11 +4288,11 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) e ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 					selectColumn.append(
-							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+							" )t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -4306,9 +4303,8 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" SELECT  '急診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
-					selectColumn.append(" (SELECT * FROM ( ");
-					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+							" SELECT  '急診' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE, ( ");
+					selectColumn.append(" SELECT f.FUNC_TYPE, f.IHN_CODE, f.DESC_CHI, f.QUANTITY, f.EXPENSE FROM ");
 					selectColumn.append(
 							" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  AND MR.FUNC_TYPE = '22' ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
@@ -4328,11 +4324,11 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+					groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) f ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 					selectColumn.append(
-							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+							" )t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -4342,9 +4338,8 @@ public class DbReportService {
 						selectColumn.append(" UNION ALL ");
 					}
 					selectColumn.append(
-							" SELECT  '住院' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE,  ");
-					selectColumn.append(" (SELECT * FROM ( ");
-					selectColumn.append(" SELECT FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+							" SELECT  '住院' AS DATA_FORMAT,  t.FUNC_TYPE, CODE_TABLE.DESC_CHI, SUM(t.QUANTITY) AS QUANTITY, SUM(t.EXPENSE) AS EXPENSE FROM CODE_TABLE, ( ");
+					selectColumn.append(" SELECT g.FUNC_TYPE, g.IHN_CODE, g.DESC_CHI, g.QUANTITY, g.EXPENSE FROM ");
 					selectColumn.append(
 							" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
 					where.append(" AND MR.MR_END_DATE BETWEEN '" + sd + "' AND '" + ed + "' ");
@@ -4364,11 +4359,11 @@ public class DbReportService {
 
 					if (inhCode != null && inhCode.length() > 0)
 						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) ");
+					groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) g ");
 					selectColumn.append(where);
 					selectColumn.append(groupBy);
 					selectColumn.append(
-							" ))t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
+							" )t WHERE CODE_TABLE.CODE = t.FUNC_TYPE AND CODE_TABLE.CAT = 'FUNC_TYPE' GROUP BY t.FUNC_TYPE, CODE_TABLE.DESC_CHI ");
 
 					where = new StringBuffer("");
 					groupBy = new StringBuffer("");
@@ -4398,7 +4393,7 @@ public class DbReportService {
 
 						if (isShowOwnExpense) {
 							selectColumn.append(
-									" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM ");
+									" SELECT '不分區' AS a.DATA_FORMAT, a.FUNC_TYPE, a.IHN_CODE, a.DESC_CHI, a.QUANTITY, a.EXPENSE FROM ");
 
 							selectColumn.append(
 									" (SELECT MR.FUNC_TYPE, IP_P.ORDER_CODE AS IHN_CODE, NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
@@ -4421,7 +4416,7 @@ public class DbReportService {
 							if (inhCode != null && inhCode.length() > 0)
 								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
-							groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) ");
+							groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) a ");
 
 							selectColumn.append(where);
 							selectColumn.append(groupBy);
@@ -4430,7 +4425,7 @@ public class DbReportService {
 							groupBy = new StringBuffer("");
 							selectColumn.append(" UNION ALL ");
 							selectColumn.append(
-									" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE, IHN_CODE, DESC_CHI, QUANTITY, EXPENSE FROM  ");
+									" SELECT '不分區' AS DATA_FORMAT, b.FUNC_TYPE, b.IHN_CODE, b.DESC_CHI, b.QUANTITY, b.EXPENSE FROM  ");
 
 							selectColumn.append(
 									" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0  ");
@@ -4453,7 +4448,7 @@ public class DbReportService {
 							if (inhCode != null && inhCode.length() > 0)
 								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
-							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) b ");
 
 							selectColumn.append(where);
 							selectColumn.append(groupBy);
@@ -4471,7 +4466,7 @@ public class DbReportService {
 
 						if (isShowOwnExpense) {
 							selectColumn.append(
-									" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+									" SELECT '門急診' AS DATA_FORMAT, c.FUNC_TYPE , c.IHN_CODE ,c.DESC_CHI, c.QUANTITY, c.EXPENSE FROM  ");
 							selectColumn.append(
 									" (SELECT MR.FUNC_TYPE , OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0   ");
 
@@ -4492,7 +4487,7 @@ public class DbReportService {
 
 							if (inhCode != null && inhCode.length() > 0)
 								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) c ");
 
 							selectColumn.append(where);
 							selectColumn.append(groupBy);
@@ -4508,7 +4503,7 @@ public class DbReportService {
 						}
 						if (isShowOwnExpense) {
 							selectColumn.append(
-									" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE,  IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+									" SELECT '門診' AS DATA_FORMAT, d.FUNC_TYPE,  d.IHN_CODE ,d.DESC_CHI, d.QUANTITY, d.EXPENSE FROM  ");
 							selectColumn.append(
 									" (SELECT MR.FUNC_TYPE, OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE <> '22' ");
 
@@ -4530,7 +4525,7 @@ public class DbReportService {
 							if (inhCode != null && inhCode.length() > 0)
 								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
-							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) d ");
 
 							selectColumn.append(where);
 							selectColumn.append(groupBy);
@@ -4547,7 +4542,7 @@ public class DbReportService {
 
 						if (isShowOwnExpense) {
 							selectColumn.append(
-									" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM  ");
+									" SELECT '急診' AS DATA_FORMAT, e.FUNC_TYPE , e.IHN_CODE ,e.DESC_CHI, e.QUANTITY, e.EXPENSE FROM  ");
 
 							selectColumn.append(
 									" (SELECT MR.FUNC_TYPE,  OP_P.DRUG_NO  AS IHN_CODE, NULL  AS DESC_CHI, COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID  AND OP_P.PAY_BY  IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 AND MR.FUNC_TYPE = '22' ");
@@ -4569,7 +4564,7 @@ public class DbReportService {
 							if (inhCode != null && inhCode.length() > 0)
 								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
-							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) ");
+							groupBy.append(" GROUP BY OP_P.DRUG_NO, MR.FUNC_TYPE) e ");
 
 							selectColumn.append(where);
 							selectColumn.append(groupBy);
@@ -4585,7 +4580,7 @@ public class DbReportService {
 						}
 						if (isShowOwnExpense) {
 							selectColumn.append(
-									" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE , IHN_CODE ,DESC_CHI, QUANTITY, EXPENSE FROM   ");
+									" SELECT '住院' AS DATA_FORMAT, f.FUNC_TYPE , f.IHN_CODE ,f.DESC_CHI, f.QUANTITY, f.EXPENSE FROM   ");
 
 							selectColumn.append(
 									" (SELECT MR.FUNC_TYPE , IP_P.ORDER_CODE AS IHN_CODE  , NULL AS DESC_CHI,  COUNT(1) AS QUANTITY, SUM(MR.OWN_EXPENSE) AS EXPENSE FROM MR, IP_P WHERE  MR.ID = IP_P.MR_ID AND IP_P.PAY_BY IN ('Y','Z') AND  MR.OWN_EXPENSE > 0 ");
@@ -4608,7 +4603,7 @@ public class DbReportService {
 							if (inhCode != null && inhCode.length() > 0)
 								where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
-							groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) ");
+							groupBy.append(" GROUP BY IP_P.ORDER_CODE, MR.FUNC_TYPE) f ");
 
 							selectColumn.append(where);
 							selectColumn.append(groupBy);
