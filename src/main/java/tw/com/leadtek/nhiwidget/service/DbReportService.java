@@ -585,7 +585,7 @@ public class DbReportService {
 //							selectColumn.append(" UNION ALL ");
 //						}
 						selectColumn.append(
-								" SELECT '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								" SELECT '不分區' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE, a.DOT FROM  ");
 						selectColumn.append(
 								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -616,7 +616,7 @@ public class DbReportService {
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
 
-						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
 
@@ -658,7 +658,7 @@ public class DbReportService {
 //							selectColumn.append(" UNION ALL ");
 //						}
 						selectColumn.append(
-								" SELECT '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								" SELECT '門急診' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE, a.DOT FROM  ");
 						selectColumn.append(
 								" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -688,7 +688,7 @@ public class DbReportService {
 
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
 
@@ -730,7 +730,7 @@ public class DbReportService {
 //							selectColumn.append(" UNION ALL ");
 //						}
 						selectColumn.append(
-								" SELECT '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								" SELECT '門診' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE, a.DOT FROM  ");
 						selectColumn.append(
 								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -760,7 +760,7 @@ public class DbReportService {
 
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
 
@@ -802,7 +802,7 @@ public class DbReportService {
 //							selectColumn.append(" UNION ALL ");
 //						}
 						selectColumn.append(
-								" SELECT '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								" SELECT '急診' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE, a.DOT FROM  ");
 						selectColumn.append(
 								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND FUNC_TYPE = '22'  ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -832,7 +832,7 @@ public class DbReportService {
 
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
 
@@ -874,7 +874,7 @@ public class DbReportService {
 //							selectColumn.append(" UNION ALL ");
 //						}
 						selectColumn.append(
-								" SELECT '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+								" SELECT '住院' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE, a.DOT FROM  ");
 						selectColumn.append(
 								" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '20' ");
 						where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -904,7 +904,7 @@ public class DbReportService {
 
 						if (inhCode != null && inhCode.length() > 0)
 							where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+						groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 						selectColumn.append(where);
 						selectColumn.append(groupBy);
 
@@ -961,7 +961,7 @@ public class DbReportService {
 //									selectColumn.append(" UNION ALL ");
 //								}
 								selectColumn.append(" SELECT '" + medNameList.get(v)
-										+ "' AS PRSN_ID,  '不分區' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+										+ "' AS PRSN_ID,  '不分區' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE, a.DOT FROM  ");
 								selectColumn.append(
 										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -991,7 +991,7 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
 
@@ -1046,7 +1046,7 @@ public class DbReportService {
 //									selectColumn.append(" UNION ALL ");
 //								}
 								selectColumn.append(" SELECT '" + medNameList.get(v)
-										+ "' AS PRSN_ID, '門急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
+										+ "' AS PRSN_ID, '門急診' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE,a.DOT FROM  ");
 								selectColumn.append(
 										" (SELECT MR.FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE, IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -1076,7 +1076,7 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
 
@@ -1131,7 +1131,7 @@ public class DbReportService {
 //									selectColumn.append(" UNION ALL ");
 //								}
 								selectColumn.append(" SELECT '" + medNameList.get(v)
-										+ "' AS PRSN_ID, '門診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+										+ "' AS PRSN_ID, '門診' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE, a.DOT FROM  ");
 								selectColumn.append(
 										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE <> '22'  ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -1161,7 +1161,7 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
 
@@ -1216,7 +1216,7 @@ public class DbReportService {
 //									selectColumn.append(" UNION ALL ");
 //								}
 								selectColumn.append(" SELECT '" + medNameList.get(v)
-										+ "' AS PRSN_ID, '急診' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE, DOT FROM  ");
+										+ "' AS PRSN_ID, '急診' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE, a.DOT FROM  ");
 								selectColumn.append(
 										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR, CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '10' AND FUNC_TYPE = '22'  ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -1246,7 +1246,7 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
 
@@ -1301,7 +1301,7 @@ public class DbReportService {
 //									selectColumn.append(" UNION ALL ");
 //								}
 								selectColumn.append(" SELECT '" + medNameList.get(v)
-										+ "' AS PRSN_ID, '住院' AS DATA_FORMAT, FUNC_TYPE ,DESC_CHI, QUANTITY, EXPENSE,DOT FROM  ");
+										+ "' AS PRSN_ID, '住院' AS DATA_FORMAT, a.FUNC_TYPE ,a.DESC_CHI, a.QUANTITY, a.EXPENSE,a.DOT FROM  ");
 								selectColumn.append(
 										" (SELECT FUNC_TYPE, CODE_TABLE.DESC_CHI,  COUNT(1) AS QUANTITY, SUM(OWN_EXPENSE) AS EXPENSE,IFNULL(SUM(T_DOT),0) AS DOT FROM MR , CODE_TABLE WHERE MR.FUNC_TYPE = CODE_TABLE.CODE AND CODE_TABLE.CAT ='FUNC_TYPE' AND DATA_FORMAT = '20' ");
 								where.append(" AND MR_END_DATE LIKE CONCAT('" + yearMonthBetweenStr.get(i) + "','%') ");
@@ -1331,7 +1331,7 @@ public class DbReportService {
 
 								if (inhCode != null && inhCode.length() > 0)
 									where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) ");
+								groupBy.append(" GROUP BY MR.FUNC_TYPE, CODE_TABLE.DESC_CHI ) a ");
 								selectColumn.append(where);
 								selectColumn.append(groupBy);
 
