@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -6919,7 +6920,6 @@ public class DbReportService {
 			String dataFormats, String funcTypes, String medNames, String icdAll, String payCode, String inhCode,
 			boolean isLastM, boolean isLastY) {
 
-		Map<String, Object> result = new HashMap<String, Object>();
 		Map<String, Object> ret = new HashMap<String, Object>();
 		List<Map<String, Object>> resList = new ArrayList<Map<String, Object>>();
 		List<Map<String, Object>> sqlMapList = new ArrayList<Map<String, Object>>();
@@ -7045,20 +7045,10 @@ public class DbReportService {
 		StringBuffer where = new StringBuffer("");
 		/// groupBy
 		StringBuffer groupBy = new StringBuffer("");
-		/// orderBy
-		StringBuffer orderBy = new StringBuffer("");
 		/// 查詢欄位
 		StringBuffer selectColumnOp = new StringBuffer("");
-		/// 條件
-		StringBuffer whereOp = new StringBuffer("");
-		/// groupBy
-		StringBuffer groupByOp = new StringBuffer("");
 		/// 查詢欄位
 		StringBuffer selectColumnIp = new StringBuffer("");
-		/// 條件
-		StringBuffer whereIp = new StringBuffer("");
-		/// groupBy
-		StringBuffer groupByIp = new StringBuffer("");
 
 		for (int i = 0; i < yearMonthBetweenStr.size(); i++) {
 			String yearMonthDateWithoutDash = yearMonthBetweenStr.get(i).replace("-", "");
@@ -9684,106 +9674,42 @@ public class DbReportService {
 			List<DeductedNoteQueryConditionCode> finalOpCodes = new ArrayList<DeductedNoteQueryConditionCode>();
 			List<DeductedNoteQueryConditionCode> finalCodes = new ArrayList<DeductedNoteQueryConditionCode>();
 			if (opCodes.size() > 0) {
-				Collections.sort(opCodes, mapComparatorDeductedCD);
-				DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
-				int index = -1;
-				String key = "";
-				Long quantity = 0L;
-				Long amount = 0L;
-				for (int i = 0; i < opCodes.size(); i++) {
-					String ic = opCodes.get(i).getCode();
-					if (ic.equals(key)) {
-						break;
+				Map<String, List<DeductedNoteQueryConditionCode>> opCodesGroupByCode = opCodes.stream()
+						.collect(Collectors.groupingBy(DeductedNoteQueryConditionCode::getCode));
+				opCodesGroupByCode.keySet().forEach(key -> {
+					List<DeductedNoteQueryConditionCode> opCodesList = opCodesGroupByCode.get(key);
+					Long amount = 0L;
+					Long count = 0L;
+					for (DeductedNoteQueryConditionCode opCode : opCodesList) {
+						amount += opCode.getDeductedAmount();
+						count += opCode.getDeductedQuantity();
 					}
-					for (int j = 0; j < opCodes.size(); j++) {
-						String jc = opCodes.get(j).getCode();
-						if (ic.equals(jc)) {
-							key = jc;
-							amount += opCodes.get(j).getDeductedAmount();
-							quantity += opCodes.get(j).getDeductedQuantity();
-							index = 1;
-							/// 最後一筆直接+
-							if (i == opCodes.size() - 1) {
-								codeModel.setCode(ic);
-								codeModel.setDataFormat("10");
-								codeModel.setDeductedAmount(amount);
-								codeModel.setDeductedQuantity(quantity);
-								finalOpCodes.add(codeModel);
-								codeModel = new DeductedNoteQueryConditionCode();
-								amount = 0L;
-								quantity = 0L;
-								index = -1;
-							}
-						} else {
-							if (index > 0) {
-								codeModel.setCode(ic);
-								codeModel.setDataFormat("10");
-								codeModel.setDeductedAmount(amount);
-								codeModel.setDeductedQuantity(quantity);
-								finalOpCodes.add(codeModel);
-								codeModel = new DeductedNoteQueryConditionCode();
-								amount = 0L;
-								quantity = 0L;
-								index = -1;
-								break;
-							} else {
-								index = -1;
-								continue;
-							}
-						}
-					}
-				}
+					DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
+					codeModel.setCode(key);
+					codeModel.setDataFormat("10");
+					codeModel.setDeductedAmount(amount);
+					codeModel.setDeductedQuantity(count);
+					finalOpCodes.add(codeModel);
+				});
 			}
 			if (ipCodes.size() > 0) {
-				Collections.sort(ipCodes, mapComparatorDeductedCD);
-				DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
-				int index = -1;
-				String key = "";
-				Long quantity = 0L;
-				Long amount = 0L;
-				for (int i = 0; i < ipCodes.size(); i++) {
-					String ic = ipCodes.get(i).getCode();
-					if (ic.equals(key)) {
-						break;
+				Map<String, List<DeductedNoteQueryConditionCode>> ipCodesGroupByCode = ipCodes.stream()
+						.collect(Collectors.groupingBy(DeductedNoteQueryConditionCode::getCode));
+				ipCodesGroupByCode.keySet().forEach(key -> {
+					List<DeductedNoteQueryConditionCode> ipCodesList = ipCodesGroupByCode.get(key);
+					Long amount = 0L;
+					Long count = 0L;
+					for (DeductedNoteQueryConditionCode ipCode : ipCodesList) {
+						amount += ipCode.getDeductedAmount();
+						count += ipCode.getDeductedQuantity();
 					}
-					for (int j = 0; j < ipCodes.size(); j++) {
-						String jc = ipCodes.get(j).getCode();
-						if (ic.equals(jc)) {
-							key = jc;
-							amount += ipCodes.get(j).getDeductedAmount();
-							quantity += ipCodes.get(j).getDeductedQuantity();
-							index = 1;
-							/// 最後一筆直接+
-							if (i == ipCodes.size() - 1) {
-								codeModel.setCode(ic);
-								codeModel.setDataFormat("20");
-								codeModel.setDeductedAmount(amount);
-								codeModel.setDeductedQuantity(quantity);
-								finalIpCodes.add(codeModel);
-								codeModel = new DeductedNoteQueryConditionCode();
-								amount = 0L;
-								quantity = 0L;
-								index = -1;
-							}
-						} else {
-							if (index > 0) {
-								codeModel.setCode(ic);
-								codeModel.setDataFormat("20");
-								codeModel.setDeductedAmount(amount);
-								codeModel.setDeductedQuantity(quantity);
-								finalIpCodes.add(codeModel);
-								codeModel = new DeductedNoteQueryConditionCode();
-								amount = 0L;
-								quantity = 0L;
-								index = -1;
-								break;
-							} else {
-								index = -1;
-								continue;
-							}
-						}
-					}
-				}
+					DeductedNoteQueryConditionCode codeModel = new DeductedNoteQueryConditionCode();
+					codeModel.setCode(key);
+					codeModel.setDataFormat("20");
+					codeModel.setDeductedAmount(amount);
+					codeModel.setDeductedQuantity(count);
+					finalIpCodes.add(codeModel);
+				});
 			}
 			finalCodes.addAll(finalOpCodes);
 			finalCodes.addAll(finalIpCodes);
