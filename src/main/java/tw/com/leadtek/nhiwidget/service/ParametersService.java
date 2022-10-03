@@ -2641,6 +2641,7 @@ public class ParametersService {
    * @param isEnable
    */
   public void switchCostDiff(boolean isEnable) {
+    logger.info("switchCostDiff:" + isEnable);
     deleteIntelligent(INTELLIGENT_REASON.COST_DIFF.value(), null, null);
     if (isEnable) {
       //is.recalculateAICostThread();

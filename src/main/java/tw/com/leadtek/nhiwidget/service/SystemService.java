@@ -1111,8 +1111,7 @@ public class SystemService {
           p.setValue(payload.getHighRisk().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.HIGH_RISK.value(), payload.getHighRisk());
         }
-      } else if (p.getName().equals("CLINICAL_DIFF")
-          && !"0".equals(parametersService.getParameter("CLINICAL_DIFF"))) {
+      } else if (p.getName().equals("CLINICAL_DIFF")) {
         if (payload.getClinicalDiff() != null) {
           if ((payload.getClinicalDiff().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getClinicalDiff().booleanValue() && "0".equals(p.getValue()))) {
@@ -1120,9 +1119,13 @@ public class SystemService {
           }
           p.setValue(payload.getClinicalDiff().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.COST_DIFF.value(), payload.getClinicalDiff());
+          logger.info("put COST_DIFF(" + INTELLIGENT_REASON.COST_DIFF.value() + "):" +  payload.getClinicalDiff());
           needProcess.put(INTELLIGENT_REASON.ORDER_DIFF.value(), payload.getClinicalDiff());
+          logger.info("put ORDER_DIFF(" + INTELLIGENT_REASON.ORDER_DIFF.value() + "):" +  payload.getClinicalDiff());
           needProcess.put(INTELLIGENT_REASON.ORDER_DRUG.value(), payload.getClinicalDiff());
+          logger.info("put ORDER_DRUG(" + INTELLIGENT_REASON.ORDER_DRUG.value() + "):" +  payload.getClinicalDiff());
           needProcess.put(INTELLIGENT_REASON.IP_DAYS.value(), payload.getClinicalDiff());
+          logger.info("put IP_DAYS(" + INTELLIGENT_REASON.IP_DAYS.value() + "):" +  payload.getClinicalDiff());
         }
       } else if (p.getName().equals("COST_DIFF_UL")
           && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
