@@ -1,5 +1,6 @@
 package tw.com.leadtek.nhiwidget.controller;
 
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -7,13 +8,17 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -94,6 +99,68 @@ public class LogOperateController extends BaseController{
 	    
 	    
 		return ResponseEntity.ok(this.toBody(result));
+	}
+	
+	@ApiOperation(value = "匯出CSV檔", notes = "匯出CSV檔")
+	@GetMapping("/exportCSV")
+	@LogDefender(value = {LogType.SIGNIN})
+	public ResponseEntity<?> exportCSV(
+			@ApiParam(name = "sdate", value = "起始日期，格式 yyyy/MM/dd",
+			example = "2021/03/15") @RequestParam(required = false) String sdate,
+			@ApiParam(name = "edate", value = "結束日期，格式 yyyy/MM/dd",
+			example = "2021/03/18") @RequestParam(required = false) String edate,
+			@ApiParam(name = "showType", value = "資料顯示方式，如：R(RANGE)，D(DAY)",
+			example = "R") @RequestParam(required = true) String showType,
+			@ApiParam(name = "showInhClinicId", value = "列出就醫紀錄編號清單資訊",
+			example = "Y") @RequestParam(required = true) boolean showInhClinicId,
+			@ApiParam(name = "actor", value = "角色行為項目，如：P(PRINCIPAL)，D(MEDICAL_STAFF)",
+			example = "P") @RequestParam(required = true) String actor,
+			@ApiParam(name = "pCondition", value = "負責人限縮條件，如：A(疾病分類 / 申報全體)，UN(負責人員帳號)，DN(負責人員姓名)",
+			example = "A") @RequestParam(required = false) String pCondition,
+			@ApiParam(name = "pUserNames", value = "負責人員帳號，若為多筆資料，用空格隔開",
+			example = "leadtek FED_C") @RequestParam(required = false) String pUserNames,
+			@ApiParam(name = "pDisplayNames", value = "負責人員姓名，若為多筆資料，用空格隔開",
+			example = "王小明 蔡依依") @RequestParam(required = false) String pDisplayNames,
+			@ApiParam(name = "msCondition", value = "醫護行為限縮條件，如：A(醫護全體)，D(科別)，DN(醫護姓名)",
+			example = "A") @RequestParam(required = false) String msCondition,
+			@ApiParam(name = "msDepts", value = "負責人員姓名，若為多筆資料，用空格隔開",
+			example = "35 400") @RequestParam(required = false) String msDepts,
+			@ApiParam(name = "msDisplayNames", value = "負責人員姓名，若為多筆資料，用空格隔開",
+			example = "王小明 蔡依依") @RequestParam(required = false) String msDisplayNames,
+			@ApiParam(name = "showLogTypes", value = "顯示列表，\nSG=登出入時間/系統登入總時數、"              + 
+			                                                "\nIP=資料匯入時間、       "                +
+			                                                "\nEP=資料匯出筆數/時間、      "              +
+			                                                "\nFG=申請密碼清單/累計次數、"                 +
+			                                                "\nAC=使用者操作紀錄log、"                   +
+			                                                "\nCW=比對警示待確認案件數、"                  +
+			                                                "\nDM=疑問標示案件通知數/時間(現有疑問標示總案件數)、"+
+			                                                "\nEC=評估不調整案件數(評估不調整總案件數)、"      +
+			                                                "\nOF=優化完成案件數(疑問優化完成總案件數)、"      +
+			                                                "\nUR=未讀取次數紀錄、"                      +
+			                                                "\nBN=被通知次數紀錄，若為多筆資料，"            +
+			                                                "\n用空格隔開",
+			example = "SG BN") @RequestParam(required = true) String showLogTypes) throws Exception {
+		
+		
+		ResponseEntity<?> errorResponse = this.validateForQuery(sdate, edate, showType, actor, pCondition, pUserNames, pDisplayNames, msCondition, msDepts, msDisplayNames, showLogTypes);
+		
+		if(null != errorResponse) {
+			
+			return errorResponse;
+		}
+		
+	     Map<String, Object> result = logOperateService.query(sdate, edate, showType, actor, pCondition, pUserNames, pDisplayNames, msCondition, msDepts, msDisplayNames, showLogTypes);
+	     
+	     
+	     try(InputStream in = logOperateService.exportCSV(result, showInhClinicId)){
+	    	 
+	    	 InputStreamResource resource = new InputStreamResource(in);
+
+		     return ResponseEntity.ok()
+		    		 .contentType(MediaType.APPLICATION_OCTET_STREAM)
+		             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=\"" + "aaaa" + "\"")
+		             .body(resource);
+	     }
 	}
 	
 	private ResponseEntity<?> validateForQuery(String sdate         , String edate      , String showType  , 
@@ -286,7 +353,6 @@ public class LogOperateController extends BaseController{
 			 }
 			 
 		 });
-		 
 		 
 		return result;
 	}
