@@ -5142,7 +5142,6 @@ public class DbReportService {
         List<String> payCodeTypeList = new ArrayList<String>();
         /// 就醫類別
         List<String> dataformatList = new ArrayList<String>();
-        String dateformatSql = "";
         /// 科別
         List<String> funcTypeList = new ArrayList<String>();
         String funcTypeSql = "";
@@ -5291,168 +5290,16 @@ public class DbReportService {
 		StringBuffer selectColumn = new StringBuffer("");
 		/// 條件
 		StringBuffer where = new StringBuffer("");
-		/// groupBy
-		StringBuffer groupBy = new StringBuffer("");
-		/// orderBy
-		StringBuffer orderBy = new StringBuffer("");
-		/// clone selectColumn
-//		StringBuffer cloneSelectColumn = new StringBuffer("");
-//		StringBuffer cloneWhereColumn = new StringBuffer("");
 		for (int i = 0; i < yearMonthBetweenStr.size(); i++) {
 			selectColumn.append("SELECT * FROM");
 			for (String str : dataformatList) {
 				switch (str) {
 				case "all":
-					selectColumn.append("(SELECT APPL_OP_ALL + APPL_IP + PART_OP_ALL + PART_IP AS ALL_DOT  FROM ");
-					/// 申報點數-門急診
-					if (nhiStatus.equals("1")) {
-						/// 含勞保
-						selectColumn.append(
-								"(SELECT COALESCE(SUM(OP_D.T_APPL_DOT),0) AS APPL_OP_ALL FROM MR, OP_D WHERE MR.ID = OP_D.MR_ID AND MR_END_DATE LIKE CONCAT('"
-										+ yearMonthBetweenStr.get(i) + "','%') ");
-					} else {
-						/// 不含勞保
-						selectColumn.append(
-								"(SELECT COALESCE(SUM(OP_D.T_APPL_DOT),0) AS APPL_OP_ALL FROM MR, OP_D WHERE MR.ID = OP_D.MR_ID AND OP_D.CASE_TYPE != 'B6' AND MR_END_DATE LIKE CONCAT('"
-										+ yearMonthBetweenStr.get(i) + "','%') ");
-					}
-
-					if (funcTypeList.size() > 0)
-						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-					if (medNameList.size() > 0)
-						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-					if (icdcmList.size() > 0)
-						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-					if (medLogCodeList.size() > 0)
-						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-					if (icdAllList.size() > 0) {
-						for (String icd : icdAllList) {
-							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + icd + "'),'%') ");
-						}
-					}
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					if (applMin >= 0)
-						where.append(" AND OP_D.T_APPL_DOT >= " + applMin + " ");
-					if (applMax > 0)
-						where.append(" AND OP_D.T_APPL_DOT <= " + applMax + " ");
-					selectColumn.append(where);
-					where = new StringBuffer("");
-					selectColumn.append(" )a, ");
-					/// 部分點數-門急診
-					if (nhiStatus.equals("1")) {
-						/// 含勞保
-						selectColumn.append(
-								"(SELECT COALESCE(SUM(OP_D.PART_DOT),0) AS PART_OP_ALL FROM MR, OP_D WHERE MR.ID = OP_D.MR_ID AND MR_END_DATE LIKE CONCAT('"
-										+ yearMonthBetweenStr.get(i) + "','%') ");
-					} else {
-						/// 不含勞保
-						selectColumn.append(
-								"(SELECT COALESCE(SUM(OP_D.PART_DOT),0) AS PART_OP_ALL FROM MR, OP_D WHERE OP_D.MR_ID = MR.ID AND OP_D.CASE_TYPE != 'B6' AND MR_END_DATE LIKE CONCAT('"
-										+ yearMonthBetweenStr.get(i) + "','%') ");
-					}
-
-					if (funcTypeList.size() > 0)
-						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-					if (medNameList.size() > 0)
-						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-					if (icdcmList.size() > 0)
-						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-					if (medLogCodeList.size() > 0)
-						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-					if (icdAllList.size() > 0) {
-						for (String icd : icdAllList) {
-							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + icd + "'),'%') ");
-						}
-					}
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					if (applMin >= 0)
-						where.append(" AND OP_D.T_APPL_DOT >= " + applMin + " ");
-					if (applMax > 0)
-						where.append(" AND OP_D.T_APPL_DOT <= " + applMax + " ");
-					selectColumn.append(where);
-					where = new StringBuffer("");
-					selectColumn.append(" )b, ");
-
-					/// 申報點數-住院
-					if (nhiStatus.equals("1")) {
-						/// 含勞保
-						selectColumn.append(
-								"(SELECT COALESCE(SUM(APPL_DOT),0) AS APPL_IP FROM MR WHERE DATA_FORMAT = '20' AND MR_END_DATE LIKE CONCAT('"
-										+ yearMonthBetweenStr.get(i) + "','%') ");
-					} else {
-						/// 不含勞保
-						selectColumn.append(
-								"(SELECT COALESCE(SUM(MR.APPL_DOT),0) AS APPL_IP FROM MR, IP_D WHERE DATA_FORMAT = '20' AND MR.ID = IP_D.MR_ID AND IP_D.CASE_TYPE NOT IN  ('A1','A2','A3','A4','AZ') AND MR_END_DATE LIKE CONCAT('"
-										+ yearMonthBetweenStr.get(i) + "','%') ");
-					}
-
-					if (funcTypeList.size() > 0)
-						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-					if (medNameList.size() > 0)
-						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-					if (icdcmList.size() > 0)
-						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-					if (medLogCodeList.size() > 0)
-						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-					if (icdAllList.size() > 0) {
-						for (String icd : icdAllList) {
-							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + icd + "'),'%') ");
-						}
-					}
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					if (applMin >= 0)
-						where.append(" AND MR.APPL_DOT >= " + applMin + " ");
-					if (applMax > 0)
-						where.append(" AND MR.APPL_DOT <= " + applMax + " ");
-					selectColumn.append(where);
-					where = new StringBuffer("");
-					selectColumn.append(" )c, ");
-					/// 部分點數-住院
-					if (nhiStatus.equals("1")) {
-						/// 含勞保
-						selectColumn.append(
-								"(SELECT COALESCE(SUM(IP_D.PART_DOT),0) AS PART_IP FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND MR_END_DATE LIKE CONCAT('"
-										+ yearMonthBetweenStr.get(i) + "','%') ");
-					} else {
-						/// 不含勞保
-						selectColumn.append(
-								"(SELECT COALESCE(SUM(IP_D.PART_DOT),0) AS PART_IP FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND IP_D.CASE_TYPE NOT IN  ('A1','A2','A3','A4','AZ') AND MR_END_DATE LIKE CONCAT('"
-										+ yearMonthBetweenStr.get(i) + "','%') ");
-					}
-
-					if (funcTypeList.size() > 0)
-						where.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
-					if (medNameList.size() > 0)
-						where.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
-					if (icdcmList.size() > 0)
-						where.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
-					if (medLogCodeList.size() > 0)
-						where.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
-					if (icdAllList.size() > 0) {
-						for (String icd : icdAllList) {
-							where.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + icd + "'),'%') ");
-						}
-					}
-					if (payCode != null && payCode.length() > 0)
-						where.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
-					if (inhCode != null && inhCode.length() > 0)
-						where.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
-					if (applMin >= 0)
-						where.append(" AND IP_D.PART_DOT >= " + applMin + " ");
-					if (applMax > 0)
-						where.append(" AND IP_D.PART_DOT <= " + applMax + " ");
-					selectColumn.append(where);
-					where = new StringBuffer("");
-					selectColumn.append(" )d ");
+					selectColumn.append("( ");
+					String allDotSql = getAllDotSql(nhiStatus, yearMonthBetweenStr.get(i), funcTypeList, medNameList,
+							icdcmList, medLogCodeList, icdAllList, funcTypeSql, medNameSql, icdcmSql, medLogCodeSql,
+							payCode, inhCode, applMin, applMax);
+					selectColumn.append(allDotSql);
 					selectColumn.append(" )temp1, ");
 					if (payCodeTypeList.size() > 0) {
 						int c = 1;
@@ -7009,9 +6856,16 @@ public class DbReportService {
 				}
 
 			}
+			if (!dataformatList.contains("all")) {
+				selectColumn.append("( ");
+				selectColumn.append(getAllDotSql(nhiStatus, yearMonthBetweenStr.get(i), funcTypeList, medNameList,
+						icdcmList, medLogCodeList, icdAllList, funcTypeSql, medNameSql, icdcmSql, medLogCodeSql,
+						payCode, inhCode, applMin, applMax));
+				selectColumn.append(" )temp1, ");
+			}
 			//// 最後添加輸入日期
 			selectColumn.append(" (SELECT DISTINCT '" + yearMonthBetweenStr.get(i) + "' AS DATE FROM MR) x ");
-
+			
 			/// 傳統sql語法組成資料
 			Query sqlQuery = entityManager.createNativeQuery(selectColumn.toString());
 			sqlQuery.unwrap(SQLQuery.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
@@ -9417,7 +9271,7 @@ public class DbReportService {
 
 			model.setDate(date.toString());
 			model.setDisplayName(displayName == null ? "" : displayName.toString());
-			if (ad != null)
+			if (ad != null) 
 				model.setAllDot(Long.valueOf(ad.toString()));
 			if (oad != null)
 				model.setOpAllDot(Long.valueOf(oad.toString()));
@@ -10153,6 +10007,114 @@ public class DbReportService {
 		/// 條件最後添加別名
 		sql.append(" ) " + alias + ", ");
 		return sql.toString();
+	}
+
+	private String getAllDotSql(String nhiStatus, String yearMonthBetweenStr, List<String> funcTypeList,
+			List<String> medNameList, List<String> icdcmList, List<String> medLogCodeList, List<String> icdAllList,
+			String funcTypeSql, String medNameSql, String icdcmSql, String medLogCodeSql, String payCode,
+			String inhCode, Long applMin, Long applMax) {
+		StringBuffer sqlBuffer = new StringBuffer();
+		sqlBuffer.append("SELECT APPL_OP_ALL + APPL_IP + PART_OP_ALL + PART_IP AS ALL_DOT  FROM ");
+		/// 申報點數-門急診
+		if (nhiStatus.equals("1")) {
+			/// 含勞保
+			sqlBuffer.append(
+					"(SELECT COALESCE(SUM(OP_D.T_APPL_DOT),0) AS APPL_OP_ALL FROM MR, OP_D WHERE MR.ID = OP_D.MR_ID AND MR_END_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr + "','%') ");
+		} else {
+			/// 不含勞保
+			sqlBuffer.append(
+					"(SELECT COALESCE(SUM(OP_D.T_APPL_DOT),0) AS APPL_OP_ALL FROM MR, OP_D WHERE MR.ID = OP_D.MR_ID AND OP_D.CASE_TYPE != 'B6' AND MR_END_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr + "','%') ");
+		}
+		String commonSqlCode = concatAchievePointQueryConditionSql(funcTypeList, medNameList, icdcmList, medLogCodeList, icdAllList,
+				funcTypeSql, medNameSql, icdcmSql, medLogCodeSql, payCode, inhCode);
+		sqlBuffer.append(commonSqlCode);
+		
+		if (applMin >= 0)
+			sqlBuffer.append(" AND OP_D.T_APPL_DOT >= " + applMin + " ");
+		if (applMax > 0)
+			sqlBuffer.append(" AND OP_D.T_APPL_DOT <= " + applMax + " ");
+		sqlBuffer.append(" )a, ");
+		/// 部分點數-門急診
+		if (nhiStatus.equals("1")) {
+			/// 含勞保
+			sqlBuffer.append(
+					"(SELECT COALESCE(SUM(OP_D.PART_DOT),0) AS PART_OP_ALL FROM MR, OP_D WHERE MR.ID = OP_D.MR_ID AND MR_END_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr + "','%') ");
+		} else {
+			/// 不含勞保
+			sqlBuffer.append(
+					"(SELECT COALESCE(SUM(OP_D.PART_DOT),0) AS PART_OP_ALL FROM MR, OP_D WHERE OP_D.MR_ID = MR.ID AND OP_D.CASE_TYPE != 'B6' AND MR_END_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr + "','%') ");
+		}
+		sqlBuffer.append(commonSqlCode);
+		if (applMin >= 0)
+			sqlBuffer.append(" AND OP_D.T_APPL_DOT >= " + applMin + " ");
+		if (applMax > 0)
+			sqlBuffer.append(" AND OP_D.T_APPL_DOT <= " + applMax + " ");
+		sqlBuffer.append(" )b, ");
+		/// 申報點數-住院
+		if (nhiStatus.equals("1")) {
+			/// 含勞保
+			sqlBuffer.append(
+					"(SELECT COALESCE(SUM(APPL_DOT),0) AS APPL_IP FROM MR WHERE DATA_FORMAT = '20' AND MR_END_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr + "','%') ");
+		} else {
+			/// 不含勞保
+			sqlBuffer.append(
+					"(SELECT COALESCE(SUM(MR.APPL_DOT),0) AS APPL_IP FROM MR, IP_D WHERE DATA_FORMAT = '20' AND MR.ID = IP_D.MR_ID AND IP_D.CASE_TYPE NOT IN  ('A1','A2','A3','A4','AZ') AND MR_END_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr + "','%') ");
+		}
+		sqlBuffer.append(commonSqlCode);
+		if (applMin >= 0)
+			sqlBuffer.append(" AND MR.APPL_DOT >= " + applMin + " ");
+		if (applMax > 0)
+			sqlBuffer.append(" AND MR.APPL_DOT <= " + applMax + " ");
+		sqlBuffer.append(" )c, ");
+		/// 部分點數-住院
+		if (nhiStatus.equals("1")) {
+			/// 含勞保
+			sqlBuffer.append(
+					"(SELECT COALESCE(SUM(IP_D.PART_DOT),0) AS PART_IP FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND MR_END_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr + "','%') ");
+		} else {
+			/// 不含勞保
+			sqlBuffer.append(
+					"(SELECT COALESCE(SUM(IP_D.PART_DOT),0) AS PART_IP FROM MR, IP_D WHERE IP_D.MR_ID = MR.ID AND IP_D.CASE_TYPE NOT IN  ('A1','A2','A3','A4','AZ') AND MR_END_DATE LIKE CONCAT('"
+							+ yearMonthBetweenStr + "','%') ");
+		}
+		sqlBuffer.append(commonSqlCode);
+		if (applMin >= 0)
+			sqlBuffer.append(" AND IP_D.PART_DOT >= " + applMin + " ");
+		if (applMax > 0)
+			sqlBuffer.append(" AND IP_D.PART_DOT <= " + applMax + " ");
+		sqlBuffer.append(" )d ");
+		return sqlBuffer.toString();
+	}
+
+	private String concatAchievePointQueryConditionSql(List<String> funcTypeList, List<String> medNameList,
+			List<String> icdcmList, List<String> medLogCodeList, List<String> icdAllList, String funcTypeSql,
+			String medNameSql, String icdcmSql, String medLogCodeSql, String payCode, String inhCode) {
+		StringBuffer sqlBuffer = new StringBuffer();
+		if (funcTypeList.size() > 0)
+			sqlBuffer.append(" AND MR.FUNC_TYPE IN (" + funcTypeSql + ") ");
+		if (medNameList.size() > 0)
+			sqlBuffer.append(" AND MR.PRSN_ID IN (" + medNameSql + ") ");
+		if (icdcmList.size() > 0)
+			sqlBuffer.append(" AND MR.ICDCM1 IN (" + icdcmSql + ") ");
+		if (medLogCodeList.size() > 0)
+			sqlBuffer.append(" AND MR.INH_CLINIC_ID IN (" + medLogCodeSql + ") ");
+		if (icdAllList.size() > 0) {
+			for (String icd : icdAllList) {
+				sqlBuffer.append(" AND MR.ICD_ALL LIKE CONCAT(CONCAT('%','" + icd + "'),'%') ");
+			}
+		}
+		if (payCode != null && payCode.length() > 0)
+			sqlBuffer.append(" AND MR.CODE_ALL LIKE CONCAT(CONCAT('%','" + payCode + "'),'%') ");
+		if (inhCode != null && inhCode.length() > 0)
+			sqlBuffer.append(" AND MR.INH_CODE LIKE CONCAT(CONCAT('%','" + inhCode + "'),'%') ");
+		return sqlBuffer.toString();
 	}
 
 }
