@@ -4,7 +4,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.LinkedList;
 
-abstract class ApiClient {
+public abstract class ApiClient {
 
   private LinkedList<String> parts;
 
