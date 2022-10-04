@@ -48,14 +48,20 @@ public class IntelligentRecord implements Serializable {
 
   @ApiModelProperty(value = "詳細資訊", example = "詳細資訊", required = false)
   protected String detail;
-  
+
   @ApiModelProperty(value = "病歷格式，10:門急診，20:住院，30:特約藥局，40:特約物理(職能)治療所..", example = "10", required = false)
   protected String dataFormat;
+
+  @ApiModelProperty(value = "申報點數", example = "400", required = false)
+  protected long reportDot;
+
+  @ApiModelProperty(value = "病歷點數(不含自費)", example = "500", required = false)
+  protected long partDot;
 
   public IntelligentRecord() {
 
   }
-  
+
   public IntelligentRecord(INTELLIGENT in) {
     mrId = in.getMrId();
     dataFormat = in.getDataFormat();
@@ -66,6 +72,9 @@ public class IntelligentRecord implements Serializable {
     funcType = in.getFuncType();
     funcTypeC = in.getFuncTypec();
     totalDot = in.getApplDot();
+    reportDot =in.getReportDot();
+    partDot = in.getPartDot();
+
     detail = in.getReason();
     if (in.getConditionCode().intValue() == INTELLIGENT_REASON.ORDER_DRUG.value() && in.getReasonCode() != null) {
       reason = (in.getReasonCode().length() == 10) ? "用藥差異" : "衛品差異";
@@ -73,6 +82,8 @@ public class IntelligentRecord implements Serializable {
       reason = INTELLIGENT_REASON.toReasonString(in.getConditionCode());
     }
   }
+
+
 
   public Long getMrId() {
     return mrId;
@@ -161,5 +172,21 @@ public class IntelligentRecord implements Serializable {
   public void setDataFormat(String dataFormat) {
     this.dataFormat = dataFormat;
   }
-  
+
+  public void setReportDot(long reportDot) {
+    this.reportDot = reportDot;
+  }
+
+  public long getReportDot() {
+    return reportDot;
+  }
+
+  public void setPartDot(long partDot) {
+    this.partDot = partDot;
+  }
+
+  public long getPartDot() {
+    return partDot;
+  }
+
 }

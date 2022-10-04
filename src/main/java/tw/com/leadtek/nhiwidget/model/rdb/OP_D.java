@@ -31,6 +31,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
     "d28", "d29", "d30", "d31", "d32", "d33", "d34", "d35", "d36", "d37", "d38", "d39", "d40",
     "d41", "d42", "d43", "d44", "d45", "d48", "d49", "d50", "d51", "d52", "d53",
     "d54", "d55", "d56"})
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Table(name = "OP_D")
 @Entity
 public class OP_D {

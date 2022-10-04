@@ -473,7 +473,7 @@ public class NHIWidgetXMLController extends BaseController {
     MR mr = new MR();
     mr.setRemark(message);
     mrs.add(mr);
-    result.put("totalPage", new Integer(0));
+    result.put("totalPage", Integer.valueOf(0));
     result.put("mr", mrs);
     return result;
   }
@@ -1116,6 +1116,7 @@ public class NHIWidgetXMLController extends BaseController {
 	  result.put("data", dataList);
 	  return ResponseEntity.ok(result);
   }
+  
   @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
   @ApiOperation(value = "匯出csv檔", notes = "匯出csv檔")
   @ApiResponses({ @ApiResponse(responseCode = "200", description = "成功") })

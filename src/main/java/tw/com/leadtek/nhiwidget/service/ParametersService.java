@@ -283,7 +283,7 @@ public class ParametersService {
 
   // public AssignedPoints getAssignedPoints(long id) {
   // AssignedPoints result = new AssignedPoints();
-  // result.setId(new Long(id));
+  // result.setId(Long.valueOf(id));
   // List<PARAMETERS> list = getSameStartDateParameters(id);
   // if (list == null) {
   // return null;
@@ -383,7 +383,7 @@ public class ParametersService {
   }
 
   private List<PARAMETERS> getSameStartDateParameters(long id) {
-    Optional<PARAMETERS> optional = parametersDao.findById(new Long(id));
+    Optional<PARAMETERS> optional = parametersDao.findById(Long.valueOf(id));
     if (!optional.isPresent()) {
       return null;
     }
@@ -1339,7 +1339,7 @@ public class ParametersService {
           CriteriaBuilder cb) {
 
         List<Predicate> predicate = new ArrayList<Predicate>();
-        predicate.add(cb.equal(root.get("codeType"), new Integer(RareICDPayload.CODE_TYPE_ICD)));
+        predicate.add(cb.equal(root.get("codeType"), Integer.valueOf(RareICDPayload.CODE_TYPE_ICD)));
         if (icd != null && icd.length() > 0) {
           predicate.add(cb.like(root.get("code"), icd.toUpperCase() + "%"));
         }
@@ -1398,7 +1398,7 @@ public class ParametersService {
       return "失效日不可等於生效日！";
     }
     List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeAndCodeOrderByStartDateDesc(
-        new Integer(RareICDPayload.CODE_TYPE_ICD), request.getCode().toUpperCase());
+        Integer.valueOf(RareICDPayload.CODE_TYPE_ICD), request.getCode().toUpperCase());
     if (checkTimeOverwrite(list, ct, false)) {
       return "該時段有相同的罕見ICD代碼！";
     }
@@ -1486,7 +1486,7 @@ public class ParametersService {
 
         List<Predicate> predicate = new ArrayList<Predicate>();
         int codeType = isHighRatio ? RareICDPayload.CODE_TYPE_ORDER : RareICDPayload.CODE_TYPE_DRUG;
-        predicate.add(cb.equal(root.get("codeType"), new Integer(codeType)));
+        predicate.add(cb.equal(root.get("codeType"), Integer.valueOf(codeType)));
         if (code != null && code.length() > 0) {
           predicate.add(cb.like(root.get("code"), code.toUpperCase() + "%"));
         }
@@ -1561,10 +1561,10 @@ public class ParametersService {
     }
     List<CODE_THRESHOLD> list = null;
     if (request.getCode() == null) {
-      list = codeThresholdDao.findByCodeTypeAndInhCodeOrderByStartDateDesc(new Integer(codeType), request.getInhCode().toUpperCase());
+      list = codeThresholdDao.findByCodeTypeAndInhCodeOrderByStartDateDesc(Integer.valueOf(codeType), request.getInhCode().toUpperCase());
     } else {
       list = codeThresholdDao.findByCodeTypeAndCodeOrderByStartDateDesc(
-        new Integer(codeType), request.getCode().toUpperCase());
+          Integer.valueOf(codeType), request.getCode().toUpperCase());
     }
     if (checkTimeOverwrite(list, ct, false)) {
       return isOrder ? "該時段有相同的應用比例偏高醫令！" : "該時段有相同的特別用量藥品、衛品！";
@@ -1871,7 +1871,7 @@ public class ParametersService {
       // 都是 enable 狀態，不處理
       return null;
     }
-    pc.setSameAtc(enable ? new Integer(1) : new Integer(0));
+    pc.setSameAtc(enable ? Integer.valueOf(1) : Integer.valueOf(0));
     pc.setUpdateAt(new Date());
     pc = payCodeDao.save(pc);
     recalculateSameATCByThread(pc, enable);
@@ -1937,7 +1937,7 @@ public class ParametersService {
   }
 
   public CodeConflictPayload getCodeConflict(long id) {
-    Optional<CODE_CONFLICT> optional = codeConflictDao.findById(new Long(id));
+    Optional<CODE_CONFLICT> optional = codeConflictDao.findById(Long.valueOf(id));
     if (!optional.isPresent()) {
       return null;
     }
@@ -1947,7 +1947,7 @@ public class ParametersService {
 
   public String upsertCodeConflict(CodeConflictPayload ccp, boolean isUpdate) {
     List<CODE_CONFLICT> list =
-        codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(ccp.getCode(), ccp.getOwnCode(), new Integer(1));
+        codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(ccp.getCode(), ccp.getOwnCode(), Integer.valueOf(1));
     if (list != null && list.size() > 0) {
       if (checkTimeOverwriteCodeConfilct(list, ccp.getSdate().getTime(),
           ccp.getEdate().getTime(), ccp.getId())) {
@@ -1988,7 +1988,7 @@ public class ParametersService {
       return null;
     }
     deleteIntelligent(INTELLIGENT_REASON.INH_OWN_EXIST.value(), cc.getCode(), null);
-    cc.setStatus(enable ? new Integer(1) : new Integer(0));
+    cc.setStatus(enable ? Integer.valueOf(1) : Integer.valueOf(0));
     cc.setUpdateAt(new Date());
     cc = codeConflictDao.save(cc);
     if (enable) {
@@ -1998,13 +1998,13 @@ public class ParametersService {
   }
 
   public String deleteCodeConflict(long id) {
-    Optional<CODE_CONFLICT> optional = codeConflictDao.findById(new Long(id));
+    Optional<CODE_CONFLICT> optional = codeConflictDao.findById(Long.valueOf(id));
     if (!optional.isPresent()) {
       return "id不存在";
     }
     CODE_CONFLICT cc = optional.get();
     deleteIntelligent(INTELLIGENT_REASON.INH_OWN_EXIST.value(), cc.getCode(), null);
-    codeConflictDao.deleteById(new Long(id));
+    codeConflictDao.deleteById(Long.valueOf(id));
     return null;
   }
 
@@ -2044,7 +2044,7 @@ public class ParametersService {
     
     cc.setCode(code);
     // 1: 醫令/健保碼，2: ICD 診斷碼
-    cc.setCodeType(new Integer(2));
+    cc.setCodeType(Integer.valueOf(2));
     cc.setDataFormat(dataFormat);
     List<JsonSuggestion> queryList = redisService.query("ICD10-CM", code.toLowerCase(), false);
     //List<JsonSuggestion> queryList = redisService.query(null, code.toLowerCase(), false);
@@ -2085,7 +2085,7 @@ public class ParametersService {
       return;
     }
     List<CODE_CONFLICT> list =
-        codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(mr.getIcdcm1(), dn.getDeductedOrder(), new Integer(2));
+        codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(mr.getIcdcm1(), dn.getDeductedOrder(), Integer.valueOf(2));
     if (list != null && list.size() > 0) {
       for (CODE_CONFLICT codeConflict : list) {
         if (XMLConstant.FUNC_TYPE_ALL.equals(codeConflict.getDataFormat())) {
@@ -2530,7 +2530,7 @@ public class ParametersService {
    */
   public void switchInhOwnExist(boolean isEnable) {
     List<CODE_CONFLICT> list =
-        codeConflictDao.findByCodeType(new Integer(1));
+        codeConflictDao.findByCodeType(Integer.valueOf(1));
     if (list != null && list.size() > 0) {
       for (CODE_CONFLICT cc : list) {
         if (cc.getStatus().intValue() == 0) {
@@ -2598,7 +2598,7 @@ public class ParametersService {
    * @param isEnable
    */
   public void switchHighRisk(boolean isEnable) {
-    List<CODE_CONFLICT> list = codeConflictDao.findByCodeType(new Integer(2));
+    List<CODE_CONFLICT> list = codeConflictDao.findByCodeType(Integer.valueOf(2));
     if (list != null && list.size() > 0) {
       for (CODE_CONFLICT cc : list) {
         if (cc.getStatus().intValue() == 0) {

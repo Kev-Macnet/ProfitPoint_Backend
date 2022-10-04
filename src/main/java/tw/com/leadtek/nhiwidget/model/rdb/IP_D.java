@@ -15,6 +15,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
@@ -34,6 +35,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
   "d80", "d81", "d82", "d83", "d84", "d85", "d86", "d87", "d88", "d89", "d90", "d91", "d92", 
   "d93", "d94", "d95", "d96", "d97", "d98", "d99", "d100", "d101", "d102", "d103", "d104", "d105",
   "d106", "d107", "d108", "d109", "d110", "d111", "d112"})
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Table(name = "IP_D")
 @Entity
 public class IP_D {

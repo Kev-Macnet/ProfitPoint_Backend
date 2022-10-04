@@ -210,8 +210,8 @@ public class LogDataDao extends BaseSqlDao{
 
   public int addSignin(String uid, Long userId,String jwt) {
     String sql;
-    sql = "Insert into \r\n" + "LOG_SIGNIN(USERNAME, USER_ID, JWT)\r\n" + "Values ('%s', '%d','%s')";
-    sql = String.format(sql, uid, userId, jwt);
+    sql = "Insert into \r\n" + "LOG_SIGNIN(USERNAME, JWT)\r\n" + "Values ('%s', '%s')";
+    sql = String.format(sql, uid, jwt);
     try {
       int ret = jdbcTemplate.update(sql);
       return ret;

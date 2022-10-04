@@ -598,10 +598,25 @@ public class MO implements Serializable {
     this.orderSeqNo = opp.getOrderSeqNo();
     this.inhCode = opp.getInhCode();
     this.funcType = CodeTableService.getDesc(cts, "FUNC_TYPE", opp.getFuncType());
+    if (opp.getFuncType() != null && opp.getFuncType().indexOf('-') < 0) {
+      this.funcType = CodeTableService.getDesc(cts, "FUNC_TYPE", opp.getFuncType());
+    } else {
+      this.funcType = opp.getFuncType();
+    }
+    
     this.funcTypeCode = opp.getFuncType();
-    this.medType = CodeTableService.getDesc(cts, "OP_MED_TYPE", opp.getMedType());
+    if (opp.getMedType() != null && opp.getMedType().indexOf('-') < 0) {
+      this.medType = CodeTableService.getDesc(cts, "OP_MED_TYPE", opp.getMedType());
+    } else {
+      this.medType = opp.getMedType();
+    }
     this.medTypeCode = opp.getMedType();
-    this.orderType = CodeTableService.getDesc(cts, "ORDER_TYPE", opp.getOrderType());
+    
+    if (opp.getOrderType() != null && opp.getOrderType().indexOf('-') < 0) {
+      this.orderType = CodeTableService.getDesc(cts, "ORDER_TYPE", opp.getOrderType());
+    } else {
+      this.orderType = opp.getOrderType();
+    }
     this.orderTypeCode = opp.getOrderType();
     if (opp.getDrugNo() == null || opp.getDrugNo().length() == 0) {
       this.drugNo = CodeTableService.getInhCodeDesc(cts, "ORDER", opp.getInhCode());
@@ -756,7 +771,7 @@ public class MO implements Serializable {
     result.setUpdateAt(new Date());
     return result;
   }
-  
+
   public IP_P toIpp(CodeTableService cts) {
     IP_P result = new IP_P();
     // 醫令序
@@ -767,20 +782,20 @@ public class MO implements Serializable {
     if (funcType != null && funcType.indexOf('-') > 0) {
       result.setFuncType(funcType.substring(0, funcType.indexOf('-')));
     } else {
-    result.setFuncType(cts.getCodeByDesc("FUNC_TYPE", funcType));
+      result.setFuncType(cts.getCodeByDesc("FUNC_TYPE", funcType));
     }
     // 會診科別
     if (conFuncType != null && conFuncType.indexOf('-') > 0) {
-        result.setConFuncType(conFuncType.substring(0, conFuncType.indexOf('-')));
-      } else {
-    result.setConFuncType(cts.getCodeByDesc("FUNC_TYPE", conFuncType));
-      }
+      result.setConFuncType(conFuncType.substring(0, conFuncType.indexOf('-')));
+    } else {
+      result.setConFuncType(cts.getCodeByDesc("FUNC_TYPE", conFuncType));
+    }
     // 醫令類別
     if (orderType != null && orderType.indexOf('-') > 0) {
-        result.setOrderType(orderType.substring(0, orderType.indexOf('-')));
-      } else {
-    result.setOrderType(cts.getCodeByDesc("ORDER_TYPE", orderType));
-      }
+      result.setOrderType(orderType.substring(0, orderType.indexOf('-')));
+    } else {
+      result.setOrderType(cts.getCodeByDesc("ORDER_TYPE", orderType));
+    }
     // 醫令代碼
     if (orderCodeEn != null) {
       result.setOrderCode(orderCodeEn);
@@ -834,18 +849,56 @@ public class MO implements Serializable {
     // 事前審查受理編號
     result.setPreNo(preNo);
     if (startTime != null) {
-		result.setStartTime(DateTool.removeSlashForChineseYear(startTime));
+      result.setStartTime(DateTool.removeSlashForChineseYear(startTime));
     } else if (stime != null) {
       result.setStartTime(stime);
     }
     if (endTime != null) {
-		result.setEndTime(DateTool.removeSlashForChineseYear(endTime));
+      result.setEndTime(DateTool.removeSlashForChineseYear(endTime));
     } else if (etime != null) {
       result.setEndTime(etime);
     }
-	result.setUpdateAt(new Date());
+    result.setUpdateAt(new Date());
     return result;
   }
-
+  
+  public void convertToIPP(CodeTableService cts) {
+    this.funcType = CodeTableService.getDesc(cts, "FUNC_TYPE", funcTypeCode);
+    this.conFuncType = CodeTableService.getDesc(cts, "FUNC_TYPE", conFuncTypeCode);
+    this.medType = CodeTableService.getDesc(cts, "OP_MED_TYPE", medTypeCode);
+    this.orderType = CodeTableService.getDesc(cts, "ORDER_TYPE", orderTypeCode);
+    this.drugNo = CodeTableService.getDesc(cts, "ORDER", orderCodeEn);
+    if (stime != null && stime.length() > 0) {
+      startTime = DateTool.convertChineseTimeToFormatTime(stime);
+    }
+    if (etime != null && etime.length() > 0) {
+      endTime = DateTool.convertChineseTimeToFormatTime(etime);
+    }
+    if (applStatus == null) {
+      applStatus = 1;
+    }
+    if (payBy == null) {
+      payBy = "N";
+    }
+  }
+  
+  public void convertToOPP(CodeTableService cts) {
+    this.funcType = CodeTableService.getDesc(cts, "FUNC_TYPE", funcTypeCode);
+    this.medType = CodeTableService.getDesc(cts, "OP_MED_TYPE", medTypeCode);
+    this.orderType = CodeTableService.getDesc(cts, "ORDER_TYPE", orderTypeCode);
+    this.drugNo = CodeTableService.getDesc(cts, "ORDER", drugNoCode);
+    if (stime != null && stime.length() > 0) {
+      startTime = DateTool.convertChineseTimeToFormatTime(stime);
+    }
+    if (etime != null && etime.length() > 0) {
+      endTime = DateTool.convertChineseTimeToFormatTime(etime);
+    }
+    if (applStatus == null) {
+      applStatus = 1;
+    }
+    if (payBy == null) {
+      payBy = "N";
+    }
+  }
   
 }

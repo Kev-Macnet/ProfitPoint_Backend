@@ -1,9 +1,17 @@
 package tw.com.leadtek.nhiwidget.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -15,6 +23,8 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,12 +37,17 @@ import tw.com.leadtek.nhiwidget.annotation.LogDefender;
 import tw.com.leadtek.nhiwidget.constant.CRUD;
 import tw.com.leadtek.nhiwidget.constant.LogType;
 import tw.com.leadtek.nhiwidget.dto.LogActionDto;
+import tw.com.leadtek.nhiwidget.dto.LogExportDto;
+import tw.com.leadtek.nhiwidget.dto.LogForgotPwdDto;
+import tw.com.leadtek.nhiwidget.dto.LogImportDto;
 import tw.com.leadtek.nhiwidget.dto.LogMrDto;
 import tw.com.leadtek.nhiwidget.dto.LogSigninDto;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.sql.LogOperateDao;
 import tw.com.leadtek.tools.DateTool;
+import tw.com.leadtek.tools.ExcelUtil;
 import tw.com.leadtek.tools.StringUtility;
+import tw.com.leadtek.tools.ZipLib;
 
 @Service
 public class LogOperateService {
@@ -147,9 +162,6 @@ public class LogOperateService {
 				
 				dtoList = logOperateDao.queryExport(sdate, edate, showType, actor, pCondition, pUserNames_, pDisplayNames_, msCondition, msDepts_, msDisplayNames_);
 			}
-			
-//			System.out.println("XXXXXXXXXXXXXX");
-//			dtoList.forEach(System.out::println);
 			
 			result.put(logType, dtoList);
 		}
@@ -489,4 +501,429 @@ public class LogOperateService {
 		return result;
 	}
 
+	@SuppressWarnings("all")
+	public ByteArrayInputStream exportCSV(Map<String, Object> map, String fileName, boolean showInhClinicId) throws IOException {
+		
+		String timeStamp = System.currentTimeMillis()+"";
+		
+		String tempFolder = com.google.common.io.Files.createTempDir().getAbsolutePath() + File.separator + timeStamp;
+		
+		try {
+			
+			final String outputZip = tempFolder + File.separator + "UserReport.zip";
+			
+			System.out.println("tempFolder " + tempFolder);
+			
+			Files.createDirectories(Paths.get(tempFolder));
+			
+			List<String> zipSrcPath = new ArrayList<>();
+			
+			for(String key : map.keySet()) {
+				
+				String filePath = null;
+				
+				List<LinkedHashMap<String, Object>> list = new ArrayList<>();
+				
+				if("SG".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogSigninMap((List<LogSigninDto>) map.get(key));
+					}else {
+						
+						list = this.getEmptyLogSigninMap();
+					}
+				}
+				
+				if("FG".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogForgotPwdMap((List<LogForgotPwdDto>) map.get(key));
+					}else {
+						
+						list = this.getEmptyLogForgotPwdMap();
+					}
+				}
+				
+				if("CW".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogMrMap((List<LogMrDto>) map.get(key), showInhClinicId);
+					}else {
+						
+						list = this.getEmptyLogMrMap(showInhClinicId); 
+					}
+				}
+				
+				if("DM".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogMrMap((List<LogMrDto>) map.get(key), showInhClinicId);
+					}else {
+						
+						list = this.getEmptyLogMrMap(showInhClinicId); 
+					}
+				}
+				
+				if("EC".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogMrMap((List<LogMrDto>) map.get(key), showInhClinicId);
+					}else {
+						
+						list = this.getEmptyLogMrMap(showInhClinicId); 
+					}
+				}
+				
+				if("OF".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogMrMap((List<LogMrDto>) map.get(key), showInhClinicId);
+					}else {
+						
+						list = this.getEmptyLogMrMap(showInhClinicId); 
+					}
+				}
+				
+				if("UR".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogMrMap((List<LogMrDto>) map.get(key), showInhClinicId);
+					}else {
+						
+						list = this.getEmptyLogMrMap(showInhClinicId); 
+					}
+				}
+				
+				if("BN".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogMrMap((List<LogMrDto>) map.get(key), showInhClinicId);
+					}else {
+						
+						list = this.getEmptyLogMrMap(showInhClinicId); 
+					}
+				}
+				
+				if("AC".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogActionMap((List<LogActionDto>) map.get(key));
+					}else {
+						
+						list = this.getEmptyLogActionMap(); 
+					}
+				}
+				
+				if("IP".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogImportMap((List<LogImportDto>) map.get(key));
+					}else {
+						
+						list = this.getEmptyLogImportMap();
+					}
+				}
+				
+				if("EP".equalsIgnoreCase(key)) {
+					
+					filePath = tempFolder + File.separator + key + ".csv";
+					
+					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
+						
+						list = this.toLogExportMap((List<LogExportDto>) map.get(key));
+					}else {
+						
+						list = this.getEmptyLogExportMap();
+					}
+				}
+				
+				if(null != filePath) {
+					
+					ExcelUtil.createCSV(list, filePath);
+					
+					zipSrcPath.add(filePath);
+				}
+			}
+			
+			ZipLib.zipFiles(outputZip, zipSrcPath);
+			
+			return new ByteArrayInputStream(FileUtils.readFileToByteArray(new File(outputZip)));
+			
+		}finally {
+			
+			FileUtils.deleteDirectory(new File(tempFolder));
+		}
+	}
+
+	private List<LinkedHashMap<String, Object>> toLogSigninMap(List<LogSigninDto> list) {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		list.forEach(dto -> {
+			
+			LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+			
+			map.put("DISPLAY_NAME", dto.getDisplayName());
+			map.put("USER_NAME"   , dto.getUsername());
+			map.put("CREATE_DATE" , dto.getCreateDate());
+			map.put("LOGIN_TIME"  , dto.getLoginTime());
+			map.put("LOGOUT_TIME" , dto.getLogoutTime());
+			map.put("ELAPSED_TIME", dto.getElapsedTime());
+			
+			result.add(map);
+		});
+		
+		return result;
+	}
+	
+	private List<LinkedHashMap<String, Object>> getEmptyLogSigninMap() {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		LinkedHashMap<String, Object> map = new LinkedHashMap<>(); 
+		
+		map.put("DISPLAY_NAME", "");
+		map.put("USER_NAME"   , "");
+		map.put("CREATE_DATE" , "");
+		map.put("LOGIN_TIME"  , "");
+		map.put("LOGOUT_TIME" , "");
+		map.put("ELAPSED_TIME", "");
+		
+		result.add(map);
+		
+		return result;
+	}
+	
+	private List<LinkedHashMap<String, Object>> toLogForgotPwdMap(List<LogForgotPwdDto> list) {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		list.forEach(dto -> {
+			
+			LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+			
+			map.put("DISPLAY_NAME"   , dto.getDisplayName());
+			map.put("USER_NAME"      , dto.getUsername());
+			map.put("CREATE_DATE"    , dto.getCreateDate());
+			map.put("CREATE_TIME"    , dto.getCreateTime());
+			map.put("CREATE_USER_AT" , dto.getCreateUserAt());
+			map.put("CNT"            , dto.getCnt());
+			map.put("ROLE"           , dto.getRole());
+			map.put("STATUS"         , dto.getStatus());
+			
+			result.add(map);
+		});
+		
+		return result;
+		
+	}
+	
+	private List<LinkedHashMap<String, Object>> getEmptyLogForgotPwdMap() {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+		
+		map.put("DISPLAY_NAME"   , "");
+		map.put("USER_NAME"      , "");
+		map.put("CREATE_DATE"    , "");
+		map.put("CREATE_TIME"    , "");
+		map.put("CREATE_USER_AT" , "");
+		map.put("CNT"            , "");
+		map.put("ROLE"           , "");
+		map.put("STATUS"         , "");
+		
+		result.add(map);
+		
+		return result;
+		
+	}
+	
+	private List<LinkedHashMap<String, Object>> toLogMrMap(List<LogMrDto> list, boolean showInhClinicId) {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		list.forEach(dto -> {
+			
+			LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+			
+			map.put("DISPLAY_NAME"   , dto.getDisplayName());
+			map.put("USER_NAME"      , dto.getUsername());
+			map.put("CREATE_DATE"    , dto.getCreateDate());
+			
+			if(showInhClinicId) {
+				map.put("INH_CLINIC_IDS" , dto.getInhClinicIds());
+			}
+			
+			map.put("CNT"            , dto.getCnt());
+			
+			result.add(map);
+		});
+		
+		return result;
+	}
+	
+	private List<LinkedHashMap<String, Object>> getEmptyLogMrMap(boolean showInhClinicId) {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+		
+		map.put("DISPLAY_NAME"   , "");
+		map.put("USER_NAME"      , "");
+		map.put("CREATE_DATE"    , "");
+		
+		if(showInhClinicId) {
+			map.put("INH_CLINIC_IDS" , "");
+		}
+		
+		map.put("CNT"            , "");
+		
+		result.add(map);
+		
+		return result;
+	}
+	
+	private List<LinkedHashMap<String, Object>> toLogActionMap(List<LogActionDto> list) {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		list.forEach(dto -> {
+			
+			LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+			
+			map.put("DISPLAY_NAME"   , dto.getDisplayName());
+			map.put("USER_NAME"      , dto.getUsername());
+			map.put("FUNCTION_NAME"  , dto.getFunctionName());
+			map.put("CRUD"           , dto.getCrud());
+			map.put("PK"            , dto.getPks());
+			map.put("CREATE_DATE"    , dto.getCreateDate());
+			
+			result.add(map);
+		});
+		
+		return result;
+	}
+	
+	private List<LinkedHashMap<String, Object>> getEmptyLogActionMap() {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+		
+		map.put("DISPLAY_NAME"   , "");
+		map.put("USER_NAME"      , "");
+		map.put("FUNCTION_NAME"  , "");
+		map.put("CRUD"           , "");
+		map.put("PK"             , "");
+		map.put("CREATE_DATE"    , "");
+		
+		result.add(map);
+		
+		return result;
+	}
+	
+	private List<LinkedHashMap<String, Object>> toLogImportMap(List<LogImportDto> list) {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		list.forEach(dto -> {
+			
+			LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+			
+			map.put("DISPLAY_NAME"   , dto.getDisplayName());
+			map.put("USER_NAME"      , dto.getUsername());
+			map.put("CREATE_DATE"    , dto.getCreateDate());
+			map.put("CREATE_TIME"    , dto.getCreateTime());
+			map.put("CNT"            , dto.getCnt());
+			
+			result.add(map);
+		});
+		
+		return result;
+	}
+	
+	private List<LinkedHashMap<String, Object>> getEmptyLogImportMap() {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+		
+		map.put("DISPLAY_NAME"   , "");
+		map.put("USER_NAME"      , "");
+		map.put("CREATE_DATE"    , "");
+		map.put("CREATE_TIME"    , "");
+		map.put("CNT"            , "");
+		
+		result.add(map);
+		
+		return result;
+	}
+	
+	private List<LinkedHashMap<String, Object>> toLogExportMap(List<LogExportDto> list) {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		list.forEach(dto -> {
+			
+			LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+			
+			map.put("DISPLAY_NAME"   , dto.getDisplayName());
+			map.put("USER_NAME"      , dto.getUsername());
+			map.put("CREATE_DATE"    , dto.getCreateDate());
+			map.put("CREATE_TIME"    , dto.getCreateTime());
+			map.put("CNT"            , dto.getCnt());
+			
+			result.add(map);
+		});
+		
+		return result;
+	}
+	
+	private List<LinkedHashMap<String, Object>> getEmptyLogExportMap() {
+		
+		List<LinkedHashMap<String, Object>> result = new ArrayList<>();
+		
+		LinkedHashMap<String, Object> map = new LinkedHashMap<>();  
+		
+		map.put("DISPLAY_NAME"   , "");
+		map.put("USER_NAME"      , "");
+		map.put("CREATE_DATE"    , "");
+		map.put("CREATE_TIME"    , "");
+		map.put("CNT"            , "");
+		
+		result.add(map);
+		
+		return result;
+	}
 }

@@ -242,7 +242,21 @@ public class MY_MR {
   @Column(name = "UPDATE_AT")
   @JsonIgnore
   private Date updateAt;
-  
+
+  /**
+   * 申報點數
+   */
+  @Column(name = "REPORT_DOT", length = 5)
+  @JsonIgnore
+  private long reportDot;
+
+  /**
+   * 病歷點數（不含自費）
+   */
+  @Column(name = "PART_DOT", length = 5)
+  @JsonIgnore
+  private long partDot;
+
   public MY_MR() {
     
   }
@@ -282,6 +296,10 @@ public class MY_MR {
     }
     dataFormat = mr.getDataFormat();
     updateAt = new Date();
+    reportDot = mr.getReportDot();
+    // partDot : 病歷點數（不含自費） = 病歷點數(含自費)(mr.T_DOT)  - 自費點數(mr.OWN_EXPENSE) 
+    partDot =  mr.getTotalDot() - mr.getOwnExpense();
+
   }
   
   /**
@@ -718,6 +736,34 @@ public class MY_MR {
 
   public void setDataFormat(String dataFormat) {
     this.dataFormat = dataFormat;
+  }
+
+  /**
+   * 申報點數
+   */
+  public long getReportDot() {
+    return reportDot;
+  }
+
+  /**
+   * 申報點數
+   */
+  public void setReportDot(long reportDot) {
+    this.reportDot = reportDot;
+  }
+
+  /**
+   * 病歷點數（不含自費）
+   */
+  public long getPartDot() {
+    return partDot;
+  }
+
+  /**
+   * 病歷點數（不含自費）
+   */
+  public void setPartDot(long partDot) {
+    this.partDot = partDot;
   }
 
 }

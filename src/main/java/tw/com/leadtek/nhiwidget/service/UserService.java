@@ -120,6 +120,7 @@ public class UserService {
     USER user = findUser(ur.getUsername());
     if (user != null) {
       List<USER_DEPARTMENT> udList = userDepartmentDao.findByUserIdOrderByDepartmentId(user.getId());
+      if (departments != null) {
         for (String department : departments) {
           DEPARTMENT dep = findDepartment(department);
           boolean isNewDepartment = true;
@@ -136,33 +137,65 @@ public class UserService {
             userDepartmentDao.save(ud);
           }
         }
-      return user;
-    }
-    if (ur.getDisplayName() == null) {
-      ur.setDisplayName(ur.getUsername());
-    }
-    user = ur.convertToUSER();
-    user.setInhId(user.getUsername());
-    if (user.getPassword() == null && user.getEmail() != null) {
-      logger.info("sendEmail:" + user.getEmail());
-      String newPassword = generateCommonLangPassword();
-      if (emailService.fromEmail == null || emailService.fromEmail.indexOf("@") < 0) {
-        newPassword = "test";
       }
-      emailService.sendMail("新增帳號" + user.getUsername() + "密碼", user.getEmail(),
-          "系統產生密碼:" + newPassword);
-      
-      user.setPassword(encoder.encode(newPassword));
-      user.setStatus(USER.STATUS_ACTIVE);
+      boolean isDirty = false;
+      if (user.getDisplayName() != null && !user.getDisplayName().equals(ur.getDisplayName())) {
+        isDirty = true;
+        user.setDisplayName(ur.getDisplayName());
+      }
+      if (user.getEmail() != null && !user.getEmail().equals(ur.getEmail())) {
+        isDirty = true;
+        user.setEmail(ur.getEmail());
+      } else if (ur.getEmail() != null && !ur.getEmail().equals(user.getEmail())) {
+        isDirty = true;
+        user.setEmail(ur.getEmail());
+      } 
+      isDirty = isDirty | updatePassword(user, ur.getPassword());
+      if (!isDirty) {
+        return user;  
+      }
     } else {
-      user.setPassword(encoder.encode(user.getPassword()));
-      user.setStatus(USER.STATUS_ACTIVE);
+      if (ur.getDisplayName() == null) {
+        ur.setDisplayName(ur.getUsername());
+      }
+      user = ur.convertToUSER();
+      user.setInhId(user.getUsername());
+      updatePassword(user, ur.getPassword());
     }
     user.setCreateAt(new Date());
     user.setUpdateAt(new Date());
     user = userDao.save(user);
     saveUserDepartment(user.getId(), departments);
     return user;
+  }
+  
+  /**
+   * 
+   * @param user
+   * @param newPassword
+   * @return true:密碼有變更，false:密碼無變更
+   */
+  private boolean updatePassword(USER user, String newPassword) {
+    if (user.getEmail() != null) {
+      if (newPassword == null || newPassword.length() == 0) {
+
+        logger.info("sendEmail:" + user.getEmail());
+        String randomPassword = generateCommonLangPassword();
+        if (emailService.fromEmail == null || emailService.fromEmail.indexOf("@") < 0) {
+          randomPassword = "test";
+        }
+        emailService.sendMail(
+            "新增帳號" + user.getUsername() + "密碼", user.getEmail(), "系統產生密碼:" + randomPassword);
+
+        user.setPassword(encoder.encode(randomPassword));
+        user.setStatus(USER.STATUS_ACTIVE);
+      } else {
+        user.setPassword(encoder.encode(newPassword));
+        user.setStatus(USER.STATUS_ACTIVE);
+      }
+      return true;
+    }
+    return false;
   }
 
   public String updateUser(UserRequest ur) {
@@ -869,12 +902,12 @@ public class UserService {
   public void initialLeadtek() {
     UserRequest user = new UserRequest();
     user.setDepartments("ADM");
-    user.setPassword("test");
+    user.setPassword(encoder.encode("test"));
     user.setRocId("leadtek");
     user.setDisplayName("leadtek");
     user.setUsername("leadtek");
     user.setRole("A");
-    user.setStatus(1);
+    user.setStatus(USER.STATUS_ACTIVE);
     newUser(user);
   }
 }

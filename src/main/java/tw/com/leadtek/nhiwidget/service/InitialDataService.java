@@ -1465,7 +1465,7 @@ public class InitialDataService {
    * @param sheetName
    * @param titleRow
    */
-  public void importUserFile(File file, int titleRow) {
+  public void importUserFile(File file, int titleRow, boolean isDr) {
     try {
       logger.info("importUserFile " + file.getAbsolutePath());
       List<DEPARTMENT> departments = departmentDao.findAll();
@@ -1486,7 +1486,7 @@ public class InitialDataService {
         values = ExcelUtil.readCellValue(columnMap, row);
         
         String username = values.get("USERNAME");
-        if (username == null || username.length() == 0) {
+        if (!isDr && (username == null || username.length() == 0)) {
           break;
         }
         DEPARTMENT department =  findDepartment(departments, values);
@@ -1494,7 +1494,10 @@ public class InitialDataService {
         if (dbUser == null) {
           dbUser = new USER();
           dbUser.setUsername(username);
-          dbUser.setPassword(encoder.encode("test"));
+          if (!isDr) {
+            // 醫護名單不設密碼，無法登入ProfitPoint，僅供病歷證號與醫護姓名對照用
+            dbUser.setPassword(encoder.encode("test"));
+          }
           dbUser.setStatus(USER.STATUS_ACTIVE);
           dbUser.setCreateAt(new Date());
           dbUser.setUpdateAt(new Date());

@@ -112,7 +112,7 @@ public class RareICDPayload extends StartEndPayload implements Serializable {
     if (id != null) {
       result.setId(id);
     }
-    result.setCodeType(new Integer(CODE_TYPE_ICD));
+    result.setCodeType(Integer.valueOf(CODE_TYPE_ICD));
     result.setCode(code);
     result.setDescChi(name);
 

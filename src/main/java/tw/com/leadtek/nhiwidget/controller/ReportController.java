@@ -52,6 +52,10 @@ import tw.com.leadtek.nhiwidget.service.ReportService;
 @RequestMapping(value = "/report", produces = "application/json; charset=utf-8")
 public class ReportController extends BaseController {
 
+    public final static int MIN_REPORT_YEAR = 1990;
+    
+    public final static int MAX_REPORT_YEAR = 2050;
+  
 	@Autowired
 	private ReportService reportService;
 
@@ -68,11 +72,8 @@ public class ReportController extends BaseController {
 	public ResponseEntity<PointMRPayload> getMonthlyPoint(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
-		if (year < 2015 || year > 2030) {
-			PointMRPayload result = new PointMRPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
+		if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+			return ResponseEntity.badRequest().body(new PointMRPayload(BaseResponse.ERROR, "年份超過範圍"));
 		}
 		if (month < 1 || month > 12) {
 			PointMRPayload result = new PointMRPayload();
@@ -186,12 +187,9 @@ public class ReportController extends BaseController {
 	public ResponseEntity<DRGMonthlyPayload> getDrgMonthly(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
-		if (year < 2015 || year > 2030) {
-			DRGMonthlyPayload result = new DRGMonthlyPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
-		}
+		if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+          return ResponseEntity.badRequest().body(new DRGMonthlyPayload(BaseResponse.ERROR, "年份超過範圍"));
+        }
 		if (month < 1 || month > 12) {
 			DRGMonthlyPayload result = new DRGMonthlyPayload();
 			result.setResult(BaseResponse.ERROR);
@@ -215,12 +213,9 @@ public class ReportController extends BaseController {
 	public ResponseEntity<DRGMonthlyPayload> getDrgMonthlyAllFuncType(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
-		if (year < 2015 || year > 2030) {
-			DRGMonthlyPayload result = new DRGMonthlyPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
-		}
+	    if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+          return ResponseEntity.badRequest().body(new DRGMonthlyPayload(BaseResponse.ERROR, "年份超過範圍"));
+        }
 		if (month < 1 || month > 12) {
 			DRGMonthlyPayload result = new DRGMonthlyPayload();
 			result.setResult(BaseResponse.ERROR);
@@ -237,12 +232,9 @@ public class ReportController extends BaseController {
 	public ResponseEntity<DRGMonthlySectionPayload> getDrgMonthlySection(
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
-		if (year < 2015 || year > 2030) {
-			DRGMonthlySectionPayload result = new DRGMonthlySectionPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
-		}
+	    if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+          return ResponseEntity.badRequest().body(new DRGMonthlySectionPayload(BaseResponse.ERROR, "年份超過範圍"));
+        }
 		if (month < 1 || month > 12) {
 			DRGMonthlySectionPayload result = new DRGMonthlySectionPayload();
 			result.setResult(BaseResponse.ERROR);
@@ -280,7 +272,7 @@ public class ReportController extends BaseController {
       @ApiParam(value = "季度，若為多筆資料，用空格隔開", example = "Q1 Q2 Q3") @RequestParam(required = true)
           String quarter) {
 
-    if (quarter != null && quarter.length() != 2) {
+    if (quarter != null && quarter.length() % 3 != 2) {
       AchievementQuarter result = new AchievementQuarter();
       result.setMessage("季度不得為空");
       result.setResult(BaseResponse.ERROR);
@@ -353,12 +345,9 @@ public class ReportController extends BaseController {
 	public ResponseEntity<PointMRPayload> getMonthlyPointApplCount(
 			@ApiParam(name = "year", value = "西元年", example = "2019") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month) {
-		if (year < 2015 || year > 2099) {
-			PointMRPayload result = new PointMRPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
-		}
+	    if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+            return ResponseEntity.badRequest().body(new PointMRPayload(BaseResponse.ERROR, "年份超過範圍"));
+        }
 		if (month < 1 || month > 12) {
 			PointMRPayload result = new PointMRPayload();
 			result.setResult(BaseResponse.ERROR);
@@ -377,12 +366,9 @@ public class ReportController extends BaseController {
 			@ApiParam(name = "year", value = "西元年", example = "2019") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
 			HttpServletResponse response) throws IOException {
-		if (year < 2015 || year > 2099) {
-			PointMRPayload result = new PointMRPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
-		}
+	    if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+          return ResponseEntity.badRequest().body(new BaseResponse(BaseResponse.ERROR, "年份超過範圍"));
+        }
 		if (month < 1 || month > 12) {
 			PointMRPayload result = new PointMRPayload();
 			result.setResult(BaseResponse.ERROR);
@@ -433,12 +419,9 @@ public class ReportController extends BaseController {
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
 			@ApiParam(name = "type", value = "慢籤額度顯示", example = "月初一次累加") @RequestParam(required = true) String type,
 			HttpServletResponse response) throws IOException {
-		if (year < 2015 || year > 2030) {
-			PointMRPayload result = new PointMRPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
-		}
+	    if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+            return ResponseEntity.badRequest().body(new PointMRPayload(BaseResponse.ERROR, "年份超過範圍"));
+        }
 		if (month < 1 || month > 12) {
 			PointMRPayload result = new PointMRPayload();
 			result.setResult(BaseResponse.ERROR);
@@ -487,12 +470,10 @@ public class ReportController extends BaseController {
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
 			HttpServletResponse response) throws IOException {
-		if (year < 2015 || year > 2030) {
-			DRGMonthlyPayload result = new DRGMonthlyPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
-		}
+	  
+	    if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+            return ResponseEntity.badRequest().body(new DRGMonthlyPayload(BaseResponse.ERROR, "年份超過範圍"));
+        }
 		if (month < 1 || month > 12) {
 			DRGMonthlyPayload result = new DRGMonthlyPayload();
 			result.setResult(BaseResponse.ERROR);
@@ -513,12 +494,9 @@ public class ReportController extends BaseController {
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
 			HttpServletResponse response) throws IOException {
-		if (year < 2015 || year > 2030) {
-			DRGMonthlyPayload result = new DRGMonthlyPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
-		}
+	    if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+            return ResponseEntity.badRequest().body(new DRGMonthlyPayload(BaseResponse.ERROR, "年份超過範圍"));
+        }
 		if (month < 1 || month > 12) {
 			DRGMonthlyPayload result = new DRGMonthlyPayload();
 			result.setResult(BaseResponse.ERROR);
@@ -538,12 +516,9 @@ public class ReportController extends BaseController {
 			@ApiParam(name = "year", value = "西元年", example = "2021") @RequestParam(required = true) Integer year,
 			@ApiParam(name = "month", value = "月份", example = "3") @RequestParam(required = true) Integer month,
 			HttpServletResponse response) throws IOException {
-		if (year < 2015 || year > 2030) {
-			DRGMonthlySectionPayload result = new DRGMonthlySectionPayload();
-			result.setResult(BaseResponse.ERROR);
-			result.setMessage("年份超過範圍");
-			return ResponseEntity.badRequest().body(result);
-		}
+	    if (year < MIN_REPORT_YEAR || year > MAX_REPORT_YEAR) {
+           return ResponseEntity.badRequest().body(new DRGMonthlySectionPayload(BaseResponse.ERROR, "年份超過範圍"));
+        }
 		if (month < 1 || month > 12) {
 			DRGMonthlySectionPayload result = new DRGMonthlySectionPayload();
 			result.setResult(BaseResponse.ERROR);

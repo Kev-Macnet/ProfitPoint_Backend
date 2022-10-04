@@ -1039,7 +1039,7 @@ public class MR {
       this.totalDot = opd.getTotalDot();
     }
     if (this.applDot == null) {
-      this.applDot = new Integer(0);
+      this.applDot = Integer.valueOf(0);
     }
     if (diffList != null && opd.getTotalApplDot() != null && opd.getTotalApplDot().intValue() != this.applDot.intValue()) {
       FILE_DIFF fd = new FILE_DIFF(id, "applDot", opd.getTotalApplDot().toString());
