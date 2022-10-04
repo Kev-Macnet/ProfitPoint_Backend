@@ -334,11 +334,12 @@ public class LogOperateService {
 		
 		String inhClinicId = (String)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID");
 		Long userId        = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID");
+		Long updateUserId  = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_UPDATE_USER_ID");
 		int status         = (Integer)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS");
 		
 		if(Arrays.asList(new int[]{-1, -2, 2, 3}).contains(status)) {
 			
-			this.createLogMedicalRecordStatus(inhClinicId , userId, status);
+			this.createLogMedicalRecordStatus(inhClinicId , userId, updateUserId, status);
 		}
 		
 	}
@@ -432,9 +433,9 @@ public class LogOperateService {
 		}
 	}
 	
-	public int createLogMedicalRecordStatus(String inhClinicId, Long userId, Integer status) {
+	public int createLogMedicalRecordStatus(String inhClinicId, Long userId, Long updateUserId, Integer status) {
 		
-		return logOperateDao.addMedicalRecordStatus(inhClinicId, userId, status);
+		return logOperateDao.addMedicalRecordStatus(inhClinicId, userId, updateUserId, status);
 	}
 	
 	public int createLogForgotPassword(Long userId) {

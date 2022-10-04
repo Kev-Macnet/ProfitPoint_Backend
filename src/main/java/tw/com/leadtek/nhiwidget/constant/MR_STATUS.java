@@ -4,12 +4,11 @@
 package tw.com.leadtek.nhiwidget.constant;
 
 public enum MR_STATUS {
-
   CLASSIFIED(-3), // 疾病分類完成
   WAIT_CONFIRM(-2), // 待確認
   QUESTION_MARK(-1), // 疑問標示
   WAIT_PROCESS(0), // 待處理
-  NO_CHANGE(1), // 無需變更 
+  NO_CHANGE(1), // 無需變更
   OPTIMIZED(2), // 優化完成
   DONT_CHANGE(3); // 評估不調整
 
