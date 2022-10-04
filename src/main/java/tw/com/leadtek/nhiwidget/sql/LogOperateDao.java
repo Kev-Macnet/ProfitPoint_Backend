@@ -140,7 +140,7 @@ public class LogOperateDao extends BaseSqlDao{
 		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
 	  }
 	  sql+= "FROM LOG_MEDICAL_RECORD_STATUS LOG                                                  "
-			  + joinUserDepartmentOnUserId()
+			  + joinUserDepartmentOnUserIdOrUpdateUserId()
 			  + where
 			  +" AND LOG.STATUS = :status                                                        "
 			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.INH_CLINIC_ID                          ";
@@ -397,6 +397,17 @@ public class LogOperateDao extends BaseSqlDao{
 	  return result.toString();
   }
   
+  private String joinUserDepartmentOnUserIdOrUpdateUserId() {
+	  
+	  StringBuilder result = new StringBuilder();
+	  result
+	  .append("INNER JOIN USER U ON LOG.USER_ID = U.ID OR LOG.UPDATE_USER_ID = U.ID ")
+	  .append("INNER JOIN USER_DEPARTMENT UD ON U.ID  = UD.USER_ID ")
+	  .append("INNER JOIN DEPARTMENT D  ON UD.DEPARTMENT_ID  = D.ID ");
+	  
+	  return result.toString();
+  }
+  
 
   public int addForgotPassword(Long userId) {
 	  String sql;
@@ -411,17 +422,17 @@ public class LogOperateDao extends BaseSqlDao{
 	  }
   }
   
-  public int addMedicalRecordStatus(String inhClinicId, Long userId, Integer status) {
+  public int addMedicalRecordStatus(String inhClinicId, Long userId, Long updateUserId,Integer status) {
 	  String sql;
 	  
 	  if(null == inhClinicId ) {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(USER_ID, STATUS)\r\n" + "Values (%d, %s)";
-		  sql = String.format(sql, userId, status);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(USER_ID, UPDATE_USER_ID, STATUS)\r\n" + "Values (%d, %d, '%s')";
+		  sql = String.format(sql, userId, updateUserId, status);
 	  }else {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, STATUS)\r\n" + "Values ('%s', %d, %s)";
-		  sql = String.format(sql, inhClinicId, userId, status);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, UPDATE_USER_ID, STATUS)\r\n" + "Values ('%s', %d, %d, '%s')";
+		  sql = String.format(sql, inhClinicId, userId, updateUserId, status);
 	  }
 	  try {
 		  int ret = jdbcTemplate.update(sql);
