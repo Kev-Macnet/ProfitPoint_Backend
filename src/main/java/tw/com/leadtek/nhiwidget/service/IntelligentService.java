@@ -274,16 +274,21 @@ public class IntelligentService {
 
   private void addSearchDateParameter(List<Predicate> predicate, CriteriaBuilder cb,
       Root<INTELLIGENT> root, Date sdate, Date edate) {
-    predicate.add(cb.or(
-        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP),
-            cb.or(
-                cb.and(cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
-                    cb.lessThanOrEqualTo(root.get("startDate"), edate)),
-                cb.and(cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
-                    cb.lessThanOrEqualTo(root.get("endDate"), edate)))),
-        cb.and(cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP),
-            cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
-            cb.lessThanOrEqualTo(root.get("endDate"), edate))));
+    predicate.add(
+        cb.or(
+            cb.and(
+                cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_IP),
+                cb.or(
+                    cb.and(
+                        cb.greaterThanOrEqualTo(root.get("startDate"), sdate),
+                        cb.lessThanOrEqualTo(root.get("startDate"), edate)),
+                    cb.and(
+                        cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+                        cb.lessThanOrEqualTo(root.get("endDate"), edate)))),
+            cb.and(
+                cb.equal(root.get("dataFormat"), XMLConstant.DATA_FORMAT_OP),
+                cb.greaterThanOrEqualTo(root.get("endDate"), sdate),
+                cb.lessThanOrEqualTo(root.get("endDate"), edate))));
   }
 
   private void addPredicate(Root<?> root, List<Predicate> predicate, CriteriaBuilder cb,
@@ -747,7 +752,8 @@ public class IntelligentService {
       ig.setApplYm(mr.getApplYm());
       ig.setUpdateAt(new Date());
       ig.setReportDot(mr.getReportDot());
-      ig.setPartDot(mr.getTotalDot() - mr.getOwnExpense());
+      ig.setPartDot(Long.valueOf(mr.getTotalDot() - mr.getOwnExpense()));
+      ig.setFuncEnable(1);
       if (batch != null) {
         batch.add(ig);
         if (batch.size() % XMLConstant.BATCH == 0) {
@@ -832,6 +838,8 @@ public class IntelligentService {
       ig.setStatus(MR_STATUS.WAIT_CONFIRM.value());
       ig.setRocId(mr.getRocId());
       ig.setApplYm(mr.getApplYm());
+      ig.setReportDot(mr.getReportDot());
+      ig.setPartDot(Long.valueOf(mr.getTotalDot() - mr.getOwnExpense()));
       ig.setUpdateAt(new Date());
       if (batch != null) {
         batch.add(ig);

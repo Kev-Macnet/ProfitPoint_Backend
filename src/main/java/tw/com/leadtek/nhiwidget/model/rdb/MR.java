@@ -1033,7 +1033,7 @@ public class MR {
     }
     
     if (diffList != null && opd.getTotalDot() != null && opd.getTotalDot().intValue() != this.totalDot.intValue()) {
-      FILE_DIFF fd = new FILE_DIFF(id, "totalDot", opd.getTotalDot().toString());
+      FILE_DIFF fd = new FILE_DIFF(id, "tDot", opd.getTotalDot().toString());
       diffList.add(fd);
     } else {
       this.totalDot = opd.getTotalDot();

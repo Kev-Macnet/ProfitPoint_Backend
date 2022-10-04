@@ -597,9 +597,9 @@ public class SystemService {
     }
     if (l2.equals("西醫")) {
       codePrefix = codePrefix + "1";
-    } else if (l1.equals("中醫")) {
+    } else if (l2.equals("中醫")) {
       codePrefix = codePrefix + "2";
-    } else if (l1.equals("牙醫")) {
+    } else if (l2.equals("牙醫")) {
       codePrefix = codePrefix + "3";
     } else {
       return null;
@@ -996,7 +996,7 @@ public class SystemService {
     if ("0".equals(parametersService.getParameter(MENU_VIOLATE))) {
       result.setViolate(false);
     }
-    if ("0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+    if ("0".equals(parametersService.getParameter("CLINICAL_DIFF"))) {
       result.setClinicalDiff(false);
     }
     if ("0".equals(parametersService.getParameter(MENU_SUSPECTED))) {
@@ -1111,8 +1111,7 @@ public class SystemService {
           p.setValue(payload.getHighRisk().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.HIGH_RISK.value(), payload.getHighRisk());
         }
-      } else if (p.getName().equals("CLINICAL_DIFF")
-          && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
+      } else if (p.getName().equals("CLINICAL_DIFF")) {
         if (payload.getClinicalDiff() != null) {
           if ((payload.getClinicalDiff().booleanValue() && "1".equals(p.getValue()))
               || (!payload.getClinicalDiff().booleanValue() && "0".equals(p.getValue()))) {
@@ -1120,9 +1119,13 @@ public class SystemService {
           }
           p.setValue(payload.getClinicalDiff().booleanValue() ? "1" : "0");
           needProcess.put(INTELLIGENT_REASON.COST_DIFF.value(), payload.getClinicalDiff());
+          logger.info("put COST_DIFF(" + INTELLIGENT_REASON.COST_DIFF.value() + "):" +  payload.getClinicalDiff());
           needProcess.put(INTELLIGENT_REASON.ORDER_DIFF.value(), payload.getClinicalDiff());
+          logger.info("put ORDER_DIFF(" + INTELLIGENT_REASON.ORDER_DIFF.value() + "):" +  payload.getClinicalDiff());
           needProcess.put(INTELLIGENT_REASON.ORDER_DRUG.value(), payload.getClinicalDiff());
+          logger.info("put ORDER_DRUG(" + INTELLIGENT_REASON.ORDER_DRUG.value() + "):" +  payload.getClinicalDiff());
           needProcess.put(INTELLIGENT_REASON.IP_DAYS.value(), payload.getClinicalDiff());
+          logger.info("put IP_DAYS(" + INTELLIGENT_REASON.IP_DAYS.value() + "):" +  payload.getClinicalDiff());
         }
       } else if (p.getName().equals("COST_DIFF_UL")
           && !"0".equals(parametersService.getParameter(MENU_CLINCAL))) {
@@ -1673,30 +1676,34 @@ public class SystemService {
       @Override
       public void run() {
         for (Integer intelligentType : needProcess.keySet()) {
-          if (intelligentType.intValue() == INTELLIGENT_REASON.VIOLATE.value()) {
-            parametersService.switchViolate(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.RARE_ICD.value()) {
-            parametersService.switchRareICD(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RATIO.value()) {
-            parametersService.switchHighRatio(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RISK.value()) {
-            parametersService.switchHighRisk(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.INFECTIOUS.value()) {
-            parametersService.switchInfections(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.INH_OWN_EXIST.value()) {
-            parametersService.switchInhOwnExist(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.OVER_AMOUNT.value()) {
-            parametersService.switchOverAmount(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.PILOT_PROJECT.value()) {
-            parametersService.switchPilotProject(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.SAME_ATC.value()) {
-            parametersService.switchSameATC(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.COST_DIFF.value()) {
-            parametersService.switchCostDiff(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.ORDER_DRUG.value()) {
-            parametersService.switchOrderDrug(needProcess.get(intelligentType));
-          } else if (intelligentType.intValue() == INTELLIGENT_REASON.IP_DAYS.value()) {
-            parametersService.switchIpDays(needProcess.get(intelligentType));
+          try {
+            if (intelligentType.intValue() == INTELLIGENT_REASON.VIOLATE.value()) {
+              parametersService.switchViolate(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.RARE_ICD.value()) {
+              parametersService.switchRareICD(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RATIO.value()) {
+              parametersService.switchHighRatio(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.HIGH_RISK.value()) {
+              parametersService.switchHighRisk(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.INFECTIOUS.value()) {
+              parametersService.switchInfections(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.INH_OWN_EXIST.value()) {
+              parametersService.switchInhOwnExist(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.OVER_AMOUNT.value()) {
+              parametersService.switchOverAmount(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.PILOT_PROJECT.value()) {
+              parametersService.switchPilotProject(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.SAME_ATC.value()) {
+              parametersService.switchSameATC(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.COST_DIFF.value()) {
+              parametersService.switchCostDiff(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.ORDER_DRUG.value()) {
+              parametersService.switchOrderDrug(needProcess.get(intelligentType));
+            } else if (intelligentType.intValue() == INTELLIGENT_REASON.IP_DAYS.value()) {
+              parametersService.switchIpDays(needProcess.get(intelligentType));
+            }
+          } catch (Exception e) {
+            logger.error("recalculateAll", e);
           }
         }
         logger.info("recalculateAll done");

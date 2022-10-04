@@ -2474,6 +2474,25 @@ public class ParametersService {
   }
   
   /**
+   * 關閉智能提示功能
+   * @param conditionCode
+   * @param reasonCode
+   * @param reason
+   */
+  public void disableIntelligent(int conditionCode, String reasonCode, String reason) {
+    if (reasonCode == null) {
+      mrDao.updateMrStautsForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode);
+      intelligentDao.deleteIntelligent(conditionCode);
+    } else if (reason == null){
+      mrDao.updateMrStatusForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode, reasonCode);
+      intelligentDao.deleteIntelligent(conditionCode, reasonCode);
+    } else {
+      mrDao.updateMrStatusForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode, reasonCode, reason);
+      intelligentDao.deleteIntelligent(conditionCode, reasonCode, reason);
+    }
+  }
+  
+  /**
    * 開啟或關閉法定傳染病計算功能
    * @param isEnable
    */
@@ -2511,16 +2530,16 @@ public class ParametersService {
    * @param isEnable
    */
   public void switchOverAmount(boolean isEnable) {
+    if (!isEnable) {
+      deleteIntelligent(INTELLIGENT_REASON.OVER_AMOUNT.value(), null, null);   
+      return;
+    }
     List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeOrderByStartDateDesc(3);
     for (CODE_THRESHOLD ct : list) {
       if (ct.getStatus().intValue() == 0) {
         continue;
       }
-      if (isEnable) {
-        recalculateHighRatioAndOverAmount(ct, false);
-      } else {
-        deleteIntelligent(INTELLIGENT_REASON.OVER_AMOUNT.value(), null, null);       
-      }
+      recalculateHighRatioAndOverAmount(ct, false);
     }
   }
   
@@ -2564,16 +2583,16 @@ public class ParametersService {
    * @param isEnable
    */
   public void switchRareICD(boolean isEnable) {
+    if (!isEnable) {
+      deleteIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);
+      return;
+    }
     List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeOrderByStartDateDesc(1);
     for (CODE_THRESHOLD ct : list) {
       if (ct.getStatus().intValue() == 0) {
         continue;
       }
-      if (isEnable) {
-        recalculateRareICD(ct);
-      } else {
-        deleteIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);       
-      }
+      recalculateRareICD(ct);
     }
   }
 
@@ -2622,6 +2641,7 @@ public class ParametersService {
    * @param isEnable
    */
   public void switchCostDiff(boolean isEnable) {
+    logger.info("switchCostDiff:" + isEnable);
     deleteIntelligent(INTELLIGENT_REASON.COST_DIFF.value(), null, null);
     if (isEnable) {
       //is.recalculateAICostThread();
