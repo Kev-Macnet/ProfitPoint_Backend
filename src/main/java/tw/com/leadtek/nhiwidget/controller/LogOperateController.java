@@ -1,6 +1,7 @@
 package tw.com.leadtek.nhiwidget.controller;
 
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -151,14 +152,15 @@ public class LogOperateController extends BaseController{
 		
 	     Map<String, Object> result = logOperateService.query(sdate, edate, showType, actor, pCondition, pUserNames, pDisplayNames, msCondition, msDepts, msDisplayNames, showLogTypes);
 	     
+	     final String fileName = "UserReport.zip";
 	     
-	     try(InputStream in = logOperateService.exportCSV(result, showInhClinicId)){
+	     try(InputStream in = logOperateService.exportCSV(result, fileName, showInhClinicId)){
 	    	 
 	    	 InputStreamResource resource = new InputStreamResource(in);
 
 		     return ResponseEntity.ok()
 		    		 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-		             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=\"" + "aaaa" + "\"")
+		             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=\"" + new String(fileName.getBytes("UTF-8"), "ISO-8859-1") +"\"")
 		             .body(resource);
 	     }
 	}

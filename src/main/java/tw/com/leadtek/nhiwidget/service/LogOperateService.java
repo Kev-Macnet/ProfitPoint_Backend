@@ -502,7 +502,7 @@ public class LogOperateService {
 	}
 
 	@SuppressWarnings("all")
-	public ByteArrayInputStream exportCSV(Map<String, Object> map, boolean showInhClinicId) throws IOException {
+	public ByteArrayInputStream exportCSV(Map<String, Object> map, String fileName, boolean showInhClinicId) throws IOException {
 		
 		String timeStamp = System.currentTimeMillis()+"";
 		
