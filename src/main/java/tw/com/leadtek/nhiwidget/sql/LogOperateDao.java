@@ -367,8 +367,8 @@ public class LogOperateDao extends BaseSqlDao{
 		  }
 		  
 		  if("DN".equalsIgnoreCase(msCondition)) {
-			  result.append("AND U.DISPLAY_NAME IN (:pDisplayNames) ");
-			  queryParaMap.put("pDisplayNames", pDisplayNames);
+			  result.append("AND U.DISPLAY_NAME IN (:msDisplayNames) ");
+			  queryParaMap.put("msDisplayNames", msDisplayNames);
 		  }
 	  }
 	  
