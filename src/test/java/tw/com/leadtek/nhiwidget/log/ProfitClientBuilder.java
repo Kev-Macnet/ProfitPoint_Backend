@@ -4,7 +4,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
-class ProfitClientBuilder implements Builder {
+public class ProfitClientBuilder implements Builder {
 
   ProfitClient profitClient;
 

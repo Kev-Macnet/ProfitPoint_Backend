@@ -2387,7 +2387,7 @@ public class ReportService {
 				map.put("disputeAmount", Long.valueOf(m.get("DISPUTE_AMOUNT") == null ? "0" : m.get("DISPUTE_AMOUNT").toString()));
 				map.put("disputePayQuantity", Long.valueOf(m.get("DISPUTE_PAY_QUANTITY") == null ? "0" : m.get("DISPUTE_PAY_QUANTITY").toString()));
 				map.put("disputePayAmount", Long.valueOf(m.get("DISPUTE_PAY_AMOUNT") == null ? "0" : m.get("DISPUTE_PAY_AMOUNT").toString()));
-				map.put("disputeNoPayCode",  m.get("DISPUTE_NO_PAY_CODE").toString());
+				map.put("disputeNoPayCode", null == m.get("DISPUTE_NO_PAY_CODE") ? null:m.get("DISPUTE_NO_PAY_CODE").toString());
 				mapList.add(map);
 				map = new HashMap<String,Object>();
 			}
