@@ -2,6 +2,7 @@ package tw.com.leadtek.nhiwidget.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,14 +17,14 @@ import tw.com.leadtek.nhiwidget.log.ApiClient;
 import tw.com.leadtek.nhiwidget.log.Builder;
 import tw.com.leadtek.nhiwidget.log.ProfitClientBuilder;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
+import tw.com.leadtek.nhiwidget.payload.report.PeriodPointWeeklyPayload;
 import tw.com.leadtek.nhiwidget.security.jwt.JwtResponse;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ReportControllerTest {
@@ -349,5 +350,37 @@ class ReportControllerTest {
 
     // 檢查
     assertAll(() -> assertNotEquals(500, response2.getStatusCodeValue()));
+  }
+
+  @Test
+  @DisplayName("取得費用業務依照科別-每周趨勢資料 - 驗證資料範圍包含「所選擇的迄日的當週」")
+  void getPeriodPointWeekly() {
+
+    // 調用目標 API
+    Builder builder = new ProfitClientBuilder();
+
+    ApiClient profitClient =
+        builder
+            .setApiName("取得費用業務依照科別-每周趨勢資料")
+            .setBaseUrl("http://localhost")
+            .setPort(port)
+            .setMediaType(MediaType.APPLICATION_JSON)
+            .setAccessToken(accessToken)
+            .addApiUrl("/report/periodPointWeeklyByFunctype")
+            .addPathVariable("?edate=2022/01/31&funcType=00")
+            .addUriParam("")
+            .addJsonListBody("")
+            .httpMethod(HttpMethod.GET)
+            .setResponseClass(PeriodPointWeeklyPayload.class)
+            .getProfitApi();
+    profitClient.showProperties();
+    ResponseEntity<PeriodPointWeeklyPayload> response =
+        (ResponseEntity<PeriodPointWeeklyPayload>) profitClient.call();
+    profitClient.showResult();
+
+    // 檢查
+    assertAll(
+        "2022/01/01 ~ 2022/01/31 應涵蓋到第六週",
+        () -> assertEquals("2022 w6", response.getBody().getOp().getNames().get(51)));
   }
 }
