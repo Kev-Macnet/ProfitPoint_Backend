@@ -2959,7 +2959,7 @@ public class NHIWidgetXMLService {
       result.setTwDrgCode(fd.getNewValue());
       result.setDrgCode(fd.getNewValue());
     } else if ("patientSource".equals(fd.getName())) {
-      result.setPatientSource(CodeTableService.getDesc(cts, "IP_PATIENT_SOURCE", fd.getName()));
+      result.setPatientSource(CodeTableService.getDesc(cts, "IP_PATIENT_SOURCE", fd.getNewValue()));
     } else if ("partNo".equals(fd.getName())) {
       result.setPartNo(CodeTableService.getDesc(cts, "PART_NO", fd.getNewValue()));
     } else if ("payType".equals(fd.getName())) {
@@ -2996,6 +2996,8 @@ public class NHIWidgetXMLService {
       result.setPartDot(Integer.parseInt(fd.getNewValue()));
     } else if ("phscDot".equals(fd.getName())) {
       result.setPhscDot(Integer.parseInt(fd.getNewValue()));
+    } else if ("tApplDot".equals(fd.getName())) {
+      result.settApplDot(Integer.parseInt(fd.getNewValue()));
     } else if ("totalDot".equals(fd.getName())) {
       result.setTotalDot(Integer.parseInt(fd.getNewValue()));
     } else if ("tDot".equals(fd.getName())) {
@@ -8011,6 +8013,7 @@ public class NHIWidgetXMLService {
     checkDiffInteger(old.getMetrDot(), newIpd.getMetrDot(), list, newIpd.getMrId(), "metrDot", 0);
     checkDiffInteger(old.getPartDot(), newIpd.getPartDot(), list, newIpd.getMrId(), "partDot", 0);
     checkDiffInteger(old.getPhscDot() , newIpd.getPhscDot(), list, newIpd.getMrId(), "phscDot", 0);
+    checkDiffInteger(old.getApplDot(), newIpd.getApplDot(), list, newIpd.getMrId(), "tApplDot", 0);
   }
   
   private void changeEmptyToNull(DEDUCTED_NOTE note) {

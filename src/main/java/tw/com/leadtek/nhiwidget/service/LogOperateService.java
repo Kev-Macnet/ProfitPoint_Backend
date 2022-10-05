@@ -404,12 +404,12 @@ public class LogOperateService {
 			
 			pks = (List<Object>) httpServletReq.getAttribute(LogType.ACTION_D.name()+"_PKS");
 		}
-		
-		for(Object pk : pks) {
-			
-			this.createLogAction(userId, crud.name(), functionName, String.valueOf(pk));
-		}
-		
+    if (pks != null) {
+      for (Object pk : pks) {
+
+        this.createLogAction(userId, crud.name(), functionName, String.valueOf(pk));
+      }
+    }
 	}
 	
 	private void hendleExport() {

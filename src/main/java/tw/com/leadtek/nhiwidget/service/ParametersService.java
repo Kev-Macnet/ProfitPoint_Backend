@@ -2334,27 +2334,30 @@ public class ParametersService {
    * @param cc
    */
   public void recalculateCodeConflict(CODE_CONFLICT cc, int conditionCode) {
-    System.out.println("recalculateCodeConflict " + cc.getCode());
     waitIfIntelligentRunning(conditionCode);
-    is.setIntelligentRunning(conditionCode, true);
-    String wordingName = conditionCode == INTELLIGENT_REASON.INH_OWN_EXIST.value() ? "CODE_CONFLICT" : "HIGH_RISK_WORDING";
-    String wording = getOneValueByName("INTELLIGENT", wordingName);
-   
-    Calendar calMin = getMinMaxCalendar(cc.getStartDate(), true);
-    if (calMin == null) {
-      return;
-    }
-    Calendar calMax =  getMinMaxCalendar(cc.getEndDate(), false);
-    int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-    do {
-      is.calculateCodeConflict(String.valueOf(chineseYM), cc, wording,
-          cc.getStatus().intValue() == 1, cc.getDataFormat());
-      calMin.add(Calendar.MONTH, 1);
-      if (calMin.after(calMax)) {
-        break;
+    try {
+      is.setIntelligentRunning(conditionCode, true);
+      String wordingName = conditionCode == INTELLIGENT_REASON.INH_OWN_EXIST.value() ? "CODE_CONFLICT" : "HIGH_RISK_WORDING";
+      String wording = getOneValueByName("INTELLIGENT", wordingName);
+  
+      Calendar calMin = getMinMaxCalendar(cc.getStartDate(), true);
+      if (calMin == null) {
+        return;
       }
-      chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-    } while (true);
+      Calendar calMax =  getMinMaxCalendar(cc.getEndDate(), false);
+      int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+      do {
+        is.calculateCodeConflict(String.valueOf(chineseYM), cc, wording,
+            cc.getStatus().intValue() == 1, cc.getDataFormat());
+        calMin.add(Calendar.MONTH, 1);
+        if (calMin.after(calMax)) {
+          break;
+        }
+        chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+      } while (true);
+    } catch (Exception e) {
+      logger.error("recalculateCodeConflict", e);
+    }
     is.setIntelligentRunning(conditionCode, false);
   }
 
@@ -2430,42 +2433,47 @@ public class ParametersService {
 
   /**
    * 計算所有病歷是否有因核刪而記錄的高風險ICD碼與醫令組合
+   *
    * @param cc
    * @param isEnable
    * @param dataFormat
    */
   public void recalculateHighRisk(CODE_CONFLICT cc, boolean isEnable, String dataFormat) {
+    String config = getOneValueByName("INTELLIGENT_CONFIG", "HIGH_RISK");
+    if (!"1".equals(config) && isEnable) {
+      return;
+    }
     String wording = getOneValueByName("INTELLIGENT", "HIGH_RISK_WORDING");
-    
-    Thread thread = new Thread(new Runnable() {
-      
-      @Override
-      public void run() {
-        is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), true);
-        Calendar calMin = getMinMaxCalendar(cc.getStartDate(), true);
-        if (calMin == null) {
-          return;
-        }
-        Calendar calMax =  getMinMaxCalendar(cc.getEndDate(), false);
-        int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-        do {
-          is.calculateCodeConflict(String.valueOf(chineseYM), cc, wording, isEnable, dataFormat);
-          calMin.add(Calendar.MONTH, 1);
-          if (calMin.after(calMax)) {
-            break;
-          }
-          chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-        } while (true);
-        if (cc.getStatus().intValue() == 0 && cc.getCodeType().intValue() == 2) {
-          codeConflictDao.deleteById(cc.getId());
-        }
-        logger.info("recalculateCodeConflict " + cc.getCode() + " done");
-        is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), false);
-      }
-    });
-    thread.start();
+
+    new Thread(
+            () -> {
+              is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), true);
+              Calendar calMin = getMinMaxCalendar(cc.getStartDate(), true);
+              if (calMin == null) {
+                return;
+              }
+              Calendar calMax = getMinMaxCalendar(cc.getEndDate(), false);
+              int chineseYM =
+                  calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+              do {
+                is.calculateCodeConflict(
+                    String.valueOf(chineseYM), cc, wording, isEnable, dataFormat);
+                calMin.add(Calendar.MONTH, 1);
+                if (calMin.after(calMax)) {
+                  break;
+                }
+                chineseYM =
+                    calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+              } while (true);
+              if (cc.getStatus().intValue() == 0 && cc.getCodeType().intValue() == 2) {
+                codeConflictDao.deleteById(cc.getId());
+              }
+              logger.info("recalculateHighRisk " + cc.getCode() + " done");
+              is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), false);
+            })
+        .start();
   }
-  
+
   public void deleteIntelligent(int conditionCode, String reasonCode, String reason) {
     if (reasonCode == null) {
       mrDao.updateMrStautsForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode);
@@ -2624,17 +2632,17 @@ public class ParametersService {
    * @param isEnable
    */
   public void switchHighRisk(boolean isEnable) {
+    if (!isEnable) {
+      disableIntelligent(INTELLIGENT_REASON.HIGH_RISK.value(), null, null);
+      return;
+    }
     List<CODE_CONFLICT> list = codeConflictDao.findByCodeType(Integer.valueOf(2));
     if (list != null && list.size() > 0) {
       for (CODE_CONFLICT cc : list) {
         if (cc.getStatus().intValue() == 0) {
           continue;
         }
-        if (isEnable) {
-          recalculateCodeConflict(cc, INTELLIGENT_REASON.HIGH_RISK.value());
-        } else {
-          deleteIntelligent(INTELLIGENT_REASON.HIGH_RISK.value(), null, null);
-        }
+        recalculateCodeConflict(cc, INTELLIGENT_REASON.HIGH_RISK.value());
       }
     }
   }
