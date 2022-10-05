@@ -596,6 +596,7 @@ public class NHIWidgetXMLService {
             if (ippOld.getOrderSeqNo().intValue() != ippNew.getOrderSeqNo().intValue()) {
               continue;
             }
+            maskIPP(ippNew);
             compareIPP(mr.getId(), ippOld, ippNew, diffList, moList);
             isFound = true;
             // E:自費特材項目-未支付
@@ -7579,7 +7580,7 @@ public class NHIWidgetXMLService {
     List<MR> mrList = mrDao.findByMrEndDateAndDataFormatOrderById(XMLConstant.DATA_FORMAT_IP, orderDateMore[0], orderDateMore[1]);
  // 避免重複insert
     List<IP_D> ipdList = ipdDao.findByIDFromMR(orderDateMore[0], orderDateMore[1]);
-    System.out.println("db mr count=" + mrList.size() + ",ip_D count=" + ipdList.size());
+    //System.out.println("db mr count=" + mrList.size() + ",ip_D count=" + ipdList.size());
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       HSSFRow row = sheet.getRow(i);
