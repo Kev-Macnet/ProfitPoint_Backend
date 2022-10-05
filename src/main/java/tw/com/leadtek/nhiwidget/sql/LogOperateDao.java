@@ -139,9 +139,44 @@ public class LogOperateDao extends BaseSqlDao{
 		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
 	  }
 	  sql+= "FROM LOG_MEDICAL_RECORD_STATUS LOG                                                  "
-			  + joinUserDepartmentOnUserId()
+			  + joinUserDepartmentOnUserIdOrCreateUserId()
 			  + where
 			  +" AND LOG.STATUS = :status                                                        "
+			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.INH_CLINIC_ID                          ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_DATE(LOG.CREATE_AT) ";
+	  }
+	  
+	  return super.getNativeQueryResult(sql, LogMrDto.class, queryParaMap);
+  }
+  
+  public List<LogMrDto> queryDoubt(String sdate          , String edate      , String showType   , 
+		                           String actor          , String pCondition , List<?> pUserNames,
+		                           List<?> pDisplayNames , String msCondition, List<?> msDepts   , 
+		                           List<?> msDisplayNames) {
+	  
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(null       , null      , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  
+	  String sql;
+	  
+	  sql = "SELECT                                                                              "
+			  + "  U.DISPLAY_NAME                           AS \"displayName\"                   "
+			  + ", U.USERNAME                               AS \"username\"                      "
+			  + ", COUNT(*)                                 AS \"cnt\"                           "
+			  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                  ";
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+	  }
+	  sql+= "FROM ( " + this.selectDistinctMrNotifyedSql(showType, sdate, edate, queryParaMap) +" ) LOG                                                                      "
+			  + joinUserDepartmentOnCreateUserId()
+			  + where
 			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.INH_CLINIC_ID                          ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
@@ -366,10 +401,37 @@ public class LogOperateDao extends BaseSqlDao{
 		  }
 		  
 		  if("DN".equalsIgnoreCase(msCondition)) {
-			  result.append("AND U.DISPLAY_NAME IN (:pDisplayNames) ");
-			  queryParaMap.put("pDisplayNames", pDisplayNames);
+			  result.append("AND U.DISPLAY_NAME IN (:msDisplayNames) ");
+			  queryParaMap.put("msDisplayNames", msDisplayNames);
 		  }
 	  }
+	  
+	  return result.toString();
+  }
+  
+  private String selectDistinctMrNotifyedSql(String showType, String sdate, String edate, Map<String, Object> queryParaMap) {
+	  
+	  StringBuilder result = new StringBuilder();
+	  
+	  result
+	  .append(" SELECT DISTINCT CREATE_USER_ID, INH_CLINIC_ID ");
+	  
+	  if("D".equalsIgnoreCase(showType)) {
+		  result.append(" , TO_DATE(CREATE_AT) AS CREATE_AT ");
+	  }
+	  
+	  result.append(" FROM LOG_MEDICAL_RECORD_NOTIFYED ");
+	  result.append(" WHERE 1=1  ");
+		  
+	  if(StringUtils.isNotBlank(sdate)) {
+		  result.append("AND TO_DATE(CREATE_AT) >= :sdate ");
+		  queryParaMap.put("sdate", sdate);
+	  }
+
+	  if(StringUtils.isNotBlank(edate)) {
+		  result.append("AND TO_DATE(CREATE_AT) <= :edate ");
+		  queryParaMap.put("edate", edate);
+	  } 
 	  
 	  return result.toString();
   }
@@ -396,7 +458,28 @@ public class LogOperateDao extends BaseSqlDao{
 	  return result.toString();
   }
   
-
+  private String joinUserDepartmentOnCreateUserId() {
+	  
+	  StringBuilder result = new StringBuilder();
+	  result
+	  .append("INNER JOIN USER U ON LOG.CREATE_USER_ID = U.ID  ")
+	  .append("INNER JOIN USER_DEPARTMENT UD ON U.ID  = UD.USER_ID ")
+	  .append("INNER JOIN DEPARTMENT D  ON UD.DEPARTMENT_ID  = D.ID ");
+	  
+	  return result.toString();
+  }
+  
+  private String joinUserDepartmentOnUserIdOrCreateUserId() {
+	  
+	  StringBuilder result = new StringBuilder();
+	  result
+	  .append("INNER JOIN USER U ON LOG.USER_ID = U.ID OR LOG.CREATE_USER_ID = U.ID ")
+	  .append("INNER JOIN USER_DEPARTMENT UD ON U.ID  = UD.USER_ID ")
+	  .append("INNER JOIN DEPARTMENT D  ON UD.DEPARTMENT_ID  = D.ID ");
+	  
+	  return result.toString();
+  }
+  
   public int addForgotPassword(Long userId) {
 	  String sql;
 	  sql = "Insert into \r\n" + "LOG_FORGOT_PASSWORD(USER_ID)\r\n" + "Values (%d)";
@@ -410,17 +493,17 @@ public class LogOperateDao extends BaseSqlDao{
 	  }
   }
   
-  public int addMedicalRecordStatus(String inhClinicId, Long userId, Integer status) {
+  public int addMedicalRecordStatus(String inhClinicId, Long userId, Long loginUserId,Integer status) {
 	  String sql;
 	  
 	  if(null == inhClinicId ) {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(USER_ID, STATUS)\r\n" + "Values (%d, %s)";
-		  sql = String.format(sql, userId, status);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(USER_ID, CREATE_USER_ID, STATUS)\r\n" + "Values (%d, %d, '%s')";
+		  sql = String.format(sql, userId, loginUserId, status);
 	  }else {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, STATUS)\r\n" + "Values ('%s', %d, %s)";
-		  sql = String.format(sql, inhClinicId, userId, status);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, CREATE_USER_ID, STATUS)\r\n" + "Values ('%s', %d, %d, '%s')";
+		  sql = String.format(sql, inhClinicId, userId, loginUserId, status);
 	  }
 	  try {
 		  int ret = jdbcTemplate.update(sql);
@@ -431,17 +514,17 @@ public class LogOperateDao extends BaseSqlDao{
 	  }
   }
   
-  public int addMedicalRecordNotifyed(String inhClinicId, Long userId) {
+  public int addMedicalRecordNotifyed(String inhClinicId, Long userId, Long loginUserId) {
 	  String sql;
 	  
 	  if(null == inhClinicId ) {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(USER_ID)\r\n" + "Values (%d)";
-		  sql = String.format(sql, userId);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(USER_ID, CREATE_USER_ID)\r\n" + "Values (%d, %d)";
+		  sql = String.format(sql, userId, loginUserId);
 	  }else {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(INH_CLINIC_ID, USER_ID)\r\n" + "Values ('%s', %d)";
-		  sql = String.format(sql, inhClinicId, userId);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_NOTIFYED(INH_CLINIC_ID, USER_ID, CREATE_USER_ID)\r\n" + "Values ('%s', %d, %d)";
+		  sql = String.format(sql, inhClinicId, userId, loginUserId);
 	  }
 	  try {
 		  int ret = jdbcTemplate.update(sql);

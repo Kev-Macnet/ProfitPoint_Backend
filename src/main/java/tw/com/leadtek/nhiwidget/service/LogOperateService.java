@@ -42,6 +42,7 @@ import tw.com.leadtek.nhiwidget.dto.LogForgotPwdDto;
 import tw.com.leadtek.nhiwidget.dto.LogImportDto;
 import tw.com.leadtek.nhiwidget.dto.LogMrDto;
 import tw.com.leadtek.nhiwidget.dto.LogSigninDto;
+import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.security.service.UserDetailsImpl;
 import tw.com.leadtek.nhiwidget.sql.LogOperateDao;
 import tw.com.leadtek.tools.DateTool;
@@ -106,7 +107,7 @@ public class LogOperateService {
 			//疑問標示案件通知數/時間(現有疑問標示總案件數)
 			if("DM".equalsIgnoreCase(logType)) {
 				
-				List<LogMrDto> dmList = logOperateDao.queryStatus(sdate, edate, showType, actor, pCondition, pUserNames_, pDisplayNames_, msCondition, msDepts_, msDisplayNames_, -1);
+				List<LogMrDto> dmList = logOperateDao.queryDoubt(sdate, edate, showType, actor, pCondition, pUserNames_, pDisplayNames_, msCondition, msDepts_, msDisplayNames_);
 				
 				dtoList = extractMrDtoList(dmList, showType);
 			}
@@ -176,7 +177,7 @@ public class LogOperateService {
 				.collect(Collectors.toList());
 		
 		Map<String, Set<String>> inhClinicIdMap = mrDtoList.stream()
-				.filter(f-> Objects.nonNull(f.getInhClinicIds()))
+//				.filter(f-> Objects.nonNull(f.getInhClinicIds()))
 				.collect(Collectors.groupingBy(dto -> mrDtoUniqueKey(dto, showType), 
 						Collectors.mapping(LogMrDto::getInhClinicIds, Collectors.toSet())));
 		
@@ -274,11 +275,11 @@ public class LogOperateService {
 		
 		if(logTypes.contains(LogType.MEDICAL_RECORD_NOTIFYED)) {
 			
-			Map<Long, String> mrMap = (Map<Long, String>)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_MR_MAP");
-			List<Long> doctorIds    = (List<Long>)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS");
-			Collection<String> inhClinicIds = mrMap.values();
+			Map<Long, MR> mrMap  = (Map<Long, MR>)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_MR_MAP");
+			List<Long> doctorIds = (List<Long>)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_DOCTOR_IDS");
+			Long   loginUserId   = takeLoginUserInfo().getId();
 			
-			this.handleMrNotifyed(inhClinicIds, doctorIds);
+			this.handleMrNotifyed(mrMap, doctorIds, loginUserId);
 			this.handleMrUnread  (mrMap, doctorIds);
 		}
 		
@@ -334,35 +335,36 @@ public class LogOperateService {
 		
 		String inhClinicId = (String)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID");
 		Long userId        = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID");
+		Long loginUserId   = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_LOGIN_USER_ID");
 		int status         = (Integer)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS");
 		
-		if(Arrays.asList(new int[]{-1, -2, 2, 3}).contains(status)) {
+		if(Arrays.asList(new int[]{-2, 2, 3}).contains(status)) {
 			
-			this.createLogMedicalRecordStatus(inhClinicId , userId, status);
+			this.createLogMedicalRecordStatus(inhClinicId , userId, loginUserId, status);
 		}
 		
 	}
 	
-	public void handleMrNotifyed(Collection<String> inhClinicIds, List<Long> doctorIds) {
+	public void handleMrNotifyed(Map<Long, MR> mrMap, List<Long> doctorIds, Long loginUserId) {
 		
-		inhClinicIds.stream().forEach(inhClinicId -> {
+		mrMap.forEach((mrId, mr) -> {
 			
 			doctorIds.stream().forEach(dortorId ->{
 				
-				this.createLogMedicalRecordNotifyed(inhClinicId, dortorId);
+				this.createLogMedicalRecordNotifyed(mr.getInhClinicId(), dortorId, loginUserId);
 			});
 			
 		});
 			
 	}
 	
-	public void handleMrUnread(Map<Long, String> mrMap, List<Long> doctorIds) {
+	public void handleMrUnread(Map<Long, MR> mrMap, List<Long> doctorIds) {
 		
-		mrMap.forEach((mrId, inhClinicId) -> {
+		mrMap.forEach((mrId, mr) -> {
 			
 			doctorIds.stream().forEach(dortorId ->{
 				
-				this.createLogMedicalRecordRead(inhClinicId, dortorId, mrId);
+				this.createLogMedicalRecordRead(mr.getInhClinicId(), dortorId, mrId);
 			});
 			
 		});
@@ -432,9 +434,9 @@ public class LogOperateService {
 		}
 	}
 	
-	public int createLogMedicalRecordStatus(String inhClinicId, Long userId, Integer status) {
+	public int createLogMedicalRecordStatus(String inhClinicId, Long userId, Long loginUserId, Integer status) {
 		
-		return logOperateDao.addMedicalRecordStatus(inhClinicId, userId, status);
+		return logOperateDao.addMedicalRecordStatus(inhClinicId, userId, loginUserId, status);
 	}
 	
 	public int createLogForgotPassword(Long userId) {
@@ -442,9 +444,9 @@ public class LogOperateService {
 		return logOperateDao.addForgotPassword(userId);
 	}
 	
-	public int createLogMedicalRecordNotifyed(String inhClinicId, Long userId) {
+	public int createLogMedicalRecordNotifyed(String inhClinicId, Long userId, Long loginUserId) {
 		
-		return logOperateDao.addMedicalRecordNotifyed(inhClinicId, userId);
+		return logOperateDao.addMedicalRecordNotifyed(inhClinicId, userId, loginUserId);
 	}
 	
 	public int createLogMedicalRecordRead(String inhClinicId, Long userId, Long mrId) {
