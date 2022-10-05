@@ -269,6 +269,7 @@ public class IntelligentService {
       result.add(cb.equal(root.get("conditionCode"), Integer.MAX_VALUE));
     }
     result.add(cb.equal(root.get("status"), MR_STATUS.WAIT_CONFIRM.value()));
+    result.add(cb.equal(root.get("funcEnable"), 1));
     return result;
   }
 
@@ -753,34 +754,22 @@ public class IntelligentService {
       ig.setUpdateAt(new Date());
       ig.setReportDot(mr.getReportDot());
       ig.setPartDot(Long.valueOf(mr.getTotalDot() - mr.getOwnExpense()));
-      ig.setFuncEnable(1);
-      if (batch != null) {
-        batch.add(ig);
-        if (batch.size() % XMLConstant.BATCH == 0) {
-          saveIntelligentBatch(batch);
-        }
-      } else {
-        intelligentDao.save(ig);
-      }
+      ig.setFuncEnable(ParametersService.STATUS_ENABLED);
+      saveIntelligent(ig, batch);
       return true;
     } else if (list != null) {
       for (INTELLIGENT intelligent : list) {
         if (enable) {
+          intelligent.setFuncEnable(ParametersService.STATUS_ENABLED);
+          intelligent.setUpdateAt(new Date());
           if (intelligent.getReason() != null && !intelligent.getReason().equals(reason)) {
             mr.setStatus(MR_STATUS.WAIT_CONFIRM.value());
             mrDao.updateMrStauts(MR_STATUS.WAIT_CONFIRM.value(), mr.getId());
             intelligent.setReason(reason);
             intelligent.setReasonCode(reasonCode);
-            intelligent.setUpdateAt(new Date());
-            if (batch != null) {
-              batch.add(intelligent);
-              if (batch.size() % XMLConstant.BATCH == 0) {
-                saveIntelligentBatch(batch);
-              }
-            } else {
-              intelligentDao.save(intelligent);
-            }
+            intelligent.setFuncEnable(ParametersService.STATUS_ENABLED);
           }
+          saveIntelligent(intelligent, batch);
         } else {
           if (intelligent.getReason() == null || (intelligent.getReason().equals(reason)
               || reasonCode.equals(intelligent.getReasonCode()))) {
@@ -788,7 +777,7 @@ public class IntelligentService {
               mr.setStatus(MR_STATUS.NO_CHANGE.value());
               mrDao.updateMrStauts(MR_STATUS.NO_CHANGE.value(), mr.getId());
             }
-            intelligentDao.deleteById(intelligent.getId());
+            intelligentDao.disableIntelligentByMrId(conditionCode, mr.getId());
           }
         }
       }
@@ -840,15 +829,9 @@ public class IntelligentService {
       ig.setApplYm(mr.getApplYm());
       ig.setReportDot(mr.getReportDot());
       ig.setPartDot(Long.valueOf(mr.getTotalDot() - mr.getOwnExpense()));
+      ig.setFuncEnable(ParametersService.STATUS_ENABLED);
       ig.setUpdateAt(new Date());
-      if (batch != null) {
-        batch.add(ig);
-        if (batch.size() % XMLConstant.BATCH == 0) {
-          saveIntelligentBatch(batch);
-        }
-      } else {
-        intelligentDao.save(ig);
-      }
+      saveIntelligent(ig, batch);
       return true;
     } else if (list != null) {
       for (INTELLIGENT intelligent : list) {
@@ -856,15 +839,9 @@ public class IntelligentService {
           if (intelligent.getReason() != null && !intelligent.getReason().equals(reason)) {
             intelligent.setReason(reason);
             intelligent.setReasonCode(reasonCode);
+            intelligent.setFuncEnable(ParametersService.STATUS_ENABLED);
             intelligent.setUpdateAt(new Date());
-            if (batch != null) {
-              batch.add(intelligent);
-              if (batch.size() % XMLConstant.BATCH == 0) {
-                saveIntelligentBatch(batch);
-              }
-            } else {
-              intelligentDao.save(intelligent);
-            }
+            saveIntelligent(intelligent, batch);
           }
         } else {
           if (intelligent.getReason() == null || (intelligent.getReason().equals(reason)
@@ -873,7 +850,7 @@ public class IntelligentService {
               mr.setStatus(MR_STATUS.NO_CHANGE.value());
               mrDao.updateMrStauts(MR_STATUS.NO_CHANGE.value(), mr.getId());
             }
-            intelligentDao.deleteById(intelligent.getId());
+            intelligentDao.disableIntelligentById(intelligent.getId());
           }
         }
       }
@@ -1712,8 +1689,13 @@ public class IntelligentService {
 
   public List<String> getMRHint(Long mrId) {
     List<String> result = new ArrayList<String>();
-    List<INTELLIGENT> list = intelligentDao.findByMrId(mrId);
+    List<INTELLIGENT> list = intelligentDao.findByMrIdAndFuncEnable(mrId, ParametersService.STATUS_ENABLED);
     for (INTELLIGENT intelligent : list) {
+      if (intelligent.getStatus().intValue() == MR_STATUS.NO_CHANGE.value() ||
+          intelligent.getStatus().intValue() == MR_STATUS.DONT_CHANGE.value() ||
+          intelligent.getStatus().intValue() == MR_STATUS.OPTIMIZED.value()) {
+        continue;
+      }
       result.add(intelligent.getReason());
     }
     return result;
@@ -2240,13 +2222,14 @@ public class IntelligentService {
     return result;
   }
 
-  public void removeIntelligentWaitConfirm(long mrId) {
+  public void updateIntelligentStatus(long mrId, int status) {
     List<INTELLIGENT> list = intelligentDao.findByMrId(mrId);
     if (list == null || list.size() == 0) {
       return;
     }
     for (INTELLIGENT intelligent : list) {
-      intelligent.setStatus(MR_STATUS.NO_CHANGE.value());
+      intelligent.setStatus(status);
+      intelligentDao.updateIntelligentStatus(Long.valueOf(mrId), status);
     }
   }
 
@@ -2840,26 +2823,30 @@ public class IntelligentService {
     logger.info("start checkAllIntelligentCondition checkAllViolation finished");
     
     logger.info("start check AI Cost");
-    // 臨床路徑差異
-    for (String ym : applYm) {
-      try {
-        calculateAICost(ym);
-      } catch (Exception e) {
-        logger.error("calculateAICost:", e);
-      }
-      logger.info("check AI Cost finished");
-      
-      try {
-        calculateAIIpDays(ym);
-      } catch (Exception e) {
-        logger.error("calculateAIIpDays:", e);
-      }
-      logger.info("check AI IpDays finished");
-      
-      try {
-        calculateAIOrderDrug(ym);
-      } catch (Exception e) {
-        logger.error("calculateAIOrderDrug:", e);
+
+    String config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "CLINICAL_DIFF");
+    if ("1".equals(config)) {
+      // 臨床路徑差異
+      for (String ym : applYm) {
+        try {
+          calculateAICost(ym);
+        } catch (Exception e) {
+          logger.error("calculateAICost:", e);
+        }
+        logger.info("check AI Cost finished");
+
+        try {
+          calculateAIIpDays(ym);
+        } catch (Exception e) {
+          logger.error("calculateAIIpDays:", e);
+        }
+        logger.info("check AI IpDays finished");
+
+        try {
+          calculateAIOrderDrug(ym);
+        } catch (Exception e) {
+          logger.error("calculateAIOrderDrug:", e);
+        }
       }
     }
     logger.info("start check AI finished.");
@@ -2934,6 +2921,7 @@ public class IntelligentService {
     return result;
   }
   
+  //智能提示助理 - 固定條件判斷
   private void checkIntelligentFixCondition(List<MR> mrList, List<String> applYm, List<INTELLIGENT> batch) {
     String config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "RARE_ICD");
     if (config != null && "1".equals(config)) {
@@ -2987,6 +2975,10 @@ public class IntelligentService {
    * 跑所有病歷的違反支付準則
    */
   public void checkAllViolation() {
+    String config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "VIOLATE");
+    if (config == null || "0".equals(config)) {
+      return;
+    }
     List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
     List<Map<String, Object>> list = mrDao.getAllApplYm();
     for (Map<String, Object> map : list) {
@@ -2997,6 +2989,10 @@ public class IntelligentService {
   }
 
   public void checkAllViolation(List<MR> mrList, List<INTELLIGENT> batch) {
+    String config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "VIOLATE");
+    if (config == null || "0".equals(config)) {
+      return;
+    }
     List<Map<String, Object>> lst =
         paymentTermsDao.searchPaymentTerms("", "", "", null, null, 0, 1000000, "id", "asc");
     for (Map<String, Object> map2 : lst) {
@@ -3042,6 +3038,17 @@ public class IntelligentService {
       intelligentDao.saveAll(batch);
       intelligentDao.flush();
       batch.clear();
+    }
+  }
+  
+  public void saveIntelligent(INTELLIGENT intelligent, List<INTELLIGENT> batch) {
+    if (batch != null) {
+      batch.add(intelligent);
+      if (batch.size() % XMLConstant.BATCH == 0) {
+        saveIntelligentBatch(batch);
+      }
+    } else {
+      intelligentDao.save(intelligent);
     }
   }
 

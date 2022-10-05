@@ -2749,8 +2749,6 @@ public class NHIWidgetXMLService {
           }
           MO mo = new MO();
           mo.setOPPData(opp, cts);
-          System.out.println("drugNO=" + mo.getDrugNo() + "," + mo.getDrugNoCode()  +
-          ",orderCode=" + mo.getOrderCode() + ",en=" + mo.getOrderCodeEn()    ); 
           moList.add(mo);
         }
         result.setMos(moList);
@@ -3205,11 +3203,10 @@ public class NHIWidgetXMLService {
         notice.setStatus(status);
       }
     }
-    if (status == MR_STATUS.NO_CHANGE.value()
-        && mr.getStatus().intValue() == MR_STATUS.WAIT_CONFIRM.value()) {
+//    if (status == MR_STATUS.NO_CHANGE.value()
+//        && mr.getStatus().intValue() == MR_STATUS.WAIT_CONFIRM.value()) {
       // 由待確認改為無需變更，檢查智能提示是否有該病歷，若有則修改狀態
-      is.removeIntelligentWaitConfirm(mrId);
-    }
+      is.updateIntelligentStatus(mrId, status);
   }
 
   public void getMRNote(MRDetail mrDetail) {
@@ -3508,7 +3505,14 @@ public class NHIWidgetXMLService {
         opD.setIcdOpCode3(mrDetail.getIcdOP().get(2).getCode());
       }
     }
-    opD.setApplCauseMark(mrDetail.getApplCauseMark());
+    
+    if (mrDetail.getApplCauseMark() != null && mrDetail.getApplCauseMark().length() > 0) {
+      if (mrDetail.getApplCauseMark().indexOf('-') > -1) {
+        opD.setApplCauseMark(mrDetail.getApplCauseMark().substring(0, mrDetail.getApplCauseMark().indexOf('-')));
+      } else {
+        opD.setApplCauseMark(mrDetail.getApplCauseMark());
+      }
+    }
     if (mrDetail.getFuncType() != null && mrDetail.getFuncType().length() > 0) {
       if (mrDetail.getFuncType().indexOf('-') > -1) {
         opD.setFuncType(mrDetail.getFuncType().substring(0, mrDetail.getFuncType().indexOf('-')));

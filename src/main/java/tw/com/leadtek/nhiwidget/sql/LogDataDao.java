@@ -217,7 +217,10 @@ public class LogDataDao extends BaseSqlDao{
       return ret;
     } catch (DataAccessException ex) {
       return 0;
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+    return 0;
   }
 
   public int updateSignout(String jwt) {

@@ -92,7 +92,6 @@ public class MO implements Serializable {
   
   @ApiModelProperty(value = "醫令代碼", required = false)
   @Column(name = "ORDER_CODE")
-  @JsonIgnore
   private String orderCodeEn;
   
   @ApiModelProperty(value = "醫令代碼", required = false)

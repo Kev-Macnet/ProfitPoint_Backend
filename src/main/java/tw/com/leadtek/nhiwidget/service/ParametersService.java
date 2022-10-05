@@ -2228,36 +2228,42 @@ public class ParametersService {
     waitIfIntelligentRunning(INTELLIGENT_REASON.INFECTIOUS.value());
     is.setIntelligentRunning(INTELLIGENT_REASON.INFECTIOUS.value(), true);
     
-    Calendar cal = Calendar.getInstance();
+    try {
+      Calendar cal = Calendar.getInstance();
 
-    cal.set(Calendar.DAY_OF_MONTH, 1);
+      cal.set(Calendar.DAY_OF_MONTH, 1);
 
-    String minYm = mrDao.getMinYm();
-    if (minYm == null) {
-      return;
-    }
-    int min = Integer.parseInt(minYm) + 191100;
-    String maxYm = mrDao.getMaxYm();
-    if (maxYm == null) {
-      return;
-    }
-    int max = Integer.parseInt(maxYm) + 191100;
-    int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-    if (adYM < min || adYM > min) {
-      adYM = min;
-      cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
-      cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) - 1);
-    }
-    String wording = getOneValueByName("INTELLIGENT", "INFECTIOUS");
-    do {
-      is.calculateInfectious(String.valueOf(adYM - 191100), ct.getCode(), wording, ct.getRemark() == null);
-      cal.add(Calendar.MONTH, 1);
-      adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-      if (adYM > max) {
-        break;
+      String minYm = mrDao.getMinYm();
+      if (minYm == null) {
+        return;
       }
-    } while (true);
-    logger.info("recalculateInfectious " + ct.getCode() + " done");
+      int min = Integer.parseInt(minYm) + 191100;
+      String maxYm = mrDao.getMaxYm();
+      if (maxYm == null) {
+        return;
+      }
+      int max = Integer.parseInt(maxYm) + 191100;
+      int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+      if (adYM < min || adYM > min) {
+        adYM = min;
+        cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
+        cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) - 1);
+      }
+      String wording = getOneValueByName("INTELLIGENT", "INFECTIOUS");
+      do {
+        is.calculateInfectious(String.valueOf(adYM - 191100), ct.getCode(), wording, ct.getRemark() == null);
+        cal.add(Calendar.MONTH, 1);
+        adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+        if (adYM > max) {
+          break;
+        }
+      } while (true);
+      logger.info("recalculateInfectious " + ct.getCode() + " done");
+    } catch (NumberFormatException e) {
+      logger.error("recalculateInfectious", e);
+    } catch (Exception e) {
+      logger.error("recalculateInfectious", e);
+    }
     is.setIntelligentRunning(INTELLIGENT_REASON.INFECTIOUS.value(), false);
   }
   
@@ -2482,13 +2488,13 @@ public class ParametersService {
   public void disableIntelligent(int conditionCode, String reasonCode, String reason) {
     if (reasonCode == null) {
       mrDao.updateMrStautsForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode);
-      intelligentDao.deleteIntelligent(conditionCode);
+      intelligentDao.disableIntelligent(conditionCode);
     } else if (reason == null){
       mrDao.updateMrStatusForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode, reasonCode);
-      intelligentDao.deleteIntelligent(conditionCode, reasonCode);
+      intelligentDao.disableIntelligent(conditionCode, reasonCode);
     } else {
       mrDao.updateMrStatusForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode, reasonCode, reason);
-      intelligentDao.deleteIntelligent(conditionCode, reasonCode, reason);
+      intelligentDao.disableIntelligent(conditionCode, reasonCode, reason);
     }
   }
   
@@ -2584,7 +2590,8 @@ public class ParametersService {
    */
   public void switchRareICD(boolean isEnable) {
     if (!isEnable) {
-      deleteIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);
+      disableIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);
+      //deleteIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);
       return;
     }
     List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeOrderByStartDateDesc(1);
