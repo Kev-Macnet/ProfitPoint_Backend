@@ -140,7 +140,7 @@ public class LogOperateDao extends BaseSqlDao{
 		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
 	  }
 	  sql+= "FROM LOG_MEDICAL_RECORD_STATUS LOG                                                  "
-			  + joinUserDepartmentOnUserIdOrUpdateUserId()
+			  + joinUserDepartmentOnUserIdOrCreateUserId()
 			  + where
 			  +" AND LOG.STATUS = :status                                                        "
 			  + "GROUP BY U.DISPLAY_NAME, U.USERNAME, LOG.INH_CLINIC_ID                          ";
@@ -459,17 +459,6 @@ public class LogOperateDao extends BaseSqlDao{
 	  return result.toString();
   }
   
-  private String joinUserDepartmentOnUserIdOrUpdateUserId() {
-	  
-	  StringBuilder result = new StringBuilder();
-	  result
-	  .append("INNER JOIN USER U ON LOG.USER_ID = U.ID OR LOG.UPDATE_USER_ID = U.ID ")
-	  .append("INNER JOIN USER_DEPARTMENT UD ON U.ID  = UD.USER_ID ")
-	  .append("INNER JOIN DEPARTMENT D  ON UD.DEPARTMENT_ID  = D.ID ");
-	  
-	  return result.toString();
-  }
-  
   private String joinUserDepartmentOnCreateUserId() {
 	  
 	  StringBuilder result = new StringBuilder();
@@ -480,7 +469,18 @@ public class LogOperateDao extends BaseSqlDao{
 	  
 	  return result.toString();
   }
-
+  
+  private String joinUserDepartmentOnUserIdOrCreateUserId() {
+	  
+	  StringBuilder result = new StringBuilder();
+	  result
+	  .append("INNER JOIN USER U ON LOG.USER_ID = U.ID OR LOG.CREATE_USER_ID = U.ID ")
+	  .append("INNER JOIN USER_DEPARTMENT UD ON U.ID  = UD.USER_ID ")
+	  .append("INNER JOIN DEPARTMENT D  ON UD.DEPARTMENT_ID  = D.ID ");
+	  
+	  return result.toString();
+  }
+  
   public int addForgotPassword(Long userId) {
 	  String sql;
 	  sql = "Insert into \r\n" + "LOG_FORGOT_PASSWORD(USER_ID)\r\n" + "Values (%d)";
@@ -494,17 +494,17 @@ public class LogOperateDao extends BaseSqlDao{
 	  }
   }
   
-  public int addMedicalRecordStatus(String inhClinicId, Long userId, Long updateUserId,Integer status) {
+  public int addMedicalRecordStatus(String inhClinicId, Long userId, Long loginUserId,Integer status) {
 	  String sql;
 	  
 	  if(null == inhClinicId ) {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(USER_ID, UPDATE_USER_ID, STATUS)\r\n" + "Values (%d, %d, '%s')";
-		  sql = String.format(sql, userId, updateUserId, status);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(USER_ID, CREATE_USER_ID, STATUS)\r\n" + "Values (%d, %d, '%s')";
+		  sql = String.format(sql, userId, loginUserId, status);
 	  }else {
 		  
-		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, UPDATE_USER_ID, STATUS)\r\n" + "Values ('%s', %d, %d, '%s')";
-		  sql = String.format(sql, inhClinicId, userId, updateUserId, status);
+		  sql = "Insert into \r\n" + "LOG_MEDICAL_RECORD_STATUS(INH_CLINIC_ID, USER_ID, CREATE_USER_ID, STATUS)\r\n" + "Values ('%s', %d, %d, '%s')";
+		  sql = String.format(sql, inhClinicId, userId, loginUserId, status);
 	  }
 	  try {
 		  int ret = jdbcTemplate.update(sql);

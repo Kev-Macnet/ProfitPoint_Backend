@@ -335,12 +335,12 @@ public class LogOperateService {
 		
 		String inhClinicId = (String)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID");
 		Long userId        = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID");
-		Long updateUserId  = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_UPDATE_USER_ID");
+		Long loginUserId   = (Long)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_LOGIN_USER_ID");
 		int status         = (Integer)httpServletReq.getAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS");
 		
 		if(Arrays.asList(new int[]{-2, 2, 3}).contains(status)) {
 			
-			this.createLogMedicalRecordStatus(inhClinicId , userId, updateUserId, status);
+			this.createLogMedicalRecordStatus(inhClinicId , userId, loginUserId, status);
 		}
 		
 	}
@@ -434,9 +434,9 @@ public class LogOperateService {
 		}
 	}
 	
-	public int createLogMedicalRecordStatus(String inhClinicId, Long userId, Long updateUserId, Integer status) {
+	public int createLogMedicalRecordStatus(String inhClinicId, Long userId, Long loginUserId, Integer status) {
 		
-		return logOperateDao.addMedicalRecordStatus(inhClinicId, userId, updateUserId, status);
+		return logOperateDao.addMedicalRecordStatus(inhClinicId, userId, loginUserId, status);
 	}
 	
 	public int createLogForgotPassword(Long userId) {

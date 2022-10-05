@@ -3164,7 +3164,7 @@ public class NHIWidgetXMLService {
 
     httpServletReq.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_INH_CLINIC_ID"  , mr.getInhClinicId());
     httpServletReq.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_USER_ID"        , userService.getUserIdByName(mr.getPrsnId()));
-    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_UPDATE_USER_ID" , user.getId());
+    httpServletReq.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_LOGIN_USER_ID" , user.getId());
     httpServletReq.setAttribute(LogType.MEDICAL_RECORD_STATUS_CHANGE.name()+"_STATUS"         , status);
     
     return null;
