@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -4980,8 +4981,8 @@ public class NHIWidgetXMLService {
           generateNoticeEmailContent(mrList, receiverName[i + 1], sender, noticeTimes));
     }
     
-    Map<Long, String> mrMap = mrList.stream().collect(HashMap::new, (map, item) -> map.put(item.getId(), item.getInhClinicId()), HashMap::putAll);
-    
+    Map<Long, MR> mrMap = mrList.stream().collect(Collectors.toMap(MR::getId, Function.identity()));
+
     List<Long> doctorIds = Arrays.asList(ids).stream().map(m-> Long.parseLong(m+"")).collect(Collectors.toList());
     
     httpServletReq.setAttribute(LogType.MEDICAL_RECORD_NOTIFYED.name()+"_MR_MAP"    , mrMap);
