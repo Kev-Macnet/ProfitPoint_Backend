@@ -765,15 +765,59 @@ public class ParametersService {
     if (note == null) {
       note = ("SPR".equals(name) ? "標準給付額" : "核刪抽件數");
     }
-    // System.out.println("cat=" + cat + ", name=" + name + ",value=" + value + ",start=" +
-    // startDate
-    // + ", end=" + endDate);
-    PARAMETERS p = new PARAMETERS(cat, name, value, dataType, note);
-    saveParameter(p, startDate, endDate);
+    System.out.println("cat=" + cat + ", name=" + name + ",value=" + value + ",start=" + startDate
+        + ", end=" + endDate);
+    PARAMETERS p = null;
+    if ("SAMPLING".equals(name)) {
+      p = saveSampling(cat, name, value, dataType, note, startDate, endDate);
+    } else {
+      p = new PARAMETERS(cat, name, value, dataType, note);
+      p = saveParameter(p, startDate, endDate);
+    }
     
     httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{p.getId()}));
     
     return null;
+  }
+  
+  private PARAMETERS saveSampling(String cat, String name, String value, int dataType, String note, Date startDate, 
+      Date endDate) {
+    PARAMETERS result = null;
+    Calendar calStart = Calendar.getInstance();
+    calStart.setTime(startDate);
+    calStart.set(Calendar.DAY_OF_MONTH, 1);
+    Calendar calEnd = Calendar.getInstance();
+    calEnd.setTime(endDate);
+    calEnd.set(Calendar.DAY_OF_MONTH, 1);
+    calEnd.add(Calendar.MONTH, 1);
+    calEnd.add(Calendar.DAY_OF_MONTH, -1);
+    
+    if(!isSameMonth(calStart, calEnd)) {
+      Calendar monthStart = Calendar.getInstance();
+      monthStart.setTime(calStart.getTime());
+      
+      Calendar monthEnd = Calendar.getInstance();
+      monthEnd.setTime(calStart.getTime());
+      monthEnd.add(Calendar.MONTH, 1);
+      monthEnd.add(Calendar.DAY_OF_MONTH, -1);
+      while (monthEnd.getTimeInMillis() <= calEnd.getTimeInMillis()) {
+        PARAMETERS p = new PARAMETERS(cat, name, value, dataType, note);
+        result = saveParameter(p, monthStart.getTime(), monthEnd.getTime());
+        monthStart.add(Calendar.MONTH, 1);
+        monthEnd.set(Calendar.DAY_OF_MONTH, 1);
+        monthEnd.add(Calendar.MONTH, 2);
+        monthEnd.add(Calendar.DAY_OF_MONTH, -1);
+      }
+    } else {
+      PARAMETERS p = new PARAMETERS(cat, name, value, dataType, note);
+      result = saveParameter(p, calStart.getTime(), calEnd.getTime());
+    }
+    return result;
+  }
+  
+  private boolean isSameMonth(Calendar start, Calendar end) {
+    return start.get(Calendar.YEAR) * 100 + start.get(Calendar.MONTH) == 
+        end.get(Calendar.YEAR) * 100 + end.get(Calendar.MONTH);
   }
 
   public String updateValue(ParameterValue pv) {
