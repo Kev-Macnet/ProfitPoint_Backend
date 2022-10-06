@@ -38,7 +38,7 @@
 		<Logger name="org.mybatis" level="INFO" />
 		<Logger name="org.mongodb.driver" level="INFO" />
 		<Root level="INFO">
-			<!-- <AppenderRef ref="Console" /> -->
+			<AppenderRef ref="Console" />
 			<AppenderRef ref="RollingInfoFile" />
 		</Root>
 	</Loggers>
