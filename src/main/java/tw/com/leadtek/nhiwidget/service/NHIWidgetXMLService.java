@@ -6448,10 +6448,13 @@ public class NHIWidgetXMLService {
       // 病歷狀態為無需變更或待確認，直接覆蓋舊病歷資料
       return false;
     }
-    if (cw.getDaysIgnore() > 0
-        && (mr.getMrEndDate().getTime() + ((long) cw.getDaysIgnore() * 24 * 60L * 60000L))
-            < System.currentTimeMillis()) {
-      return false;
+    if (cw.getMonthIgnore() > 0) {
+      Calendar cal = Calendar.getInstance();
+      cal.set(Calendar.DAY_OF_MONTH, 1);
+      cal.add(Calendar.MONTH, -cw.getMonthIgnore());
+      if (mr.getMrEndDate().getTime() < cal.getTimeInMillis()) {
+        return false;
+      }
     }
     if (cw.getCompareBy() == 1) {
       // 只比對限定時間內的病歷

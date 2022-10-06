@@ -837,8 +837,13 @@ public class IntelligentService {
       for (INTELLIGENT intelligent : list) {
         if (enable) {
           if (intelligent.getReason() != null && !intelligent.getReason().equals(reason)) {
+            // 條件不一樣，要改狀態
             intelligent.setReason(reason);
             intelligent.setReasonCode(reasonCode);
+            intelligent.setFuncEnable(ParametersService.STATUS_ENABLED);
+            intelligent.setUpdateAt(new Date());
+            saveIntelligent(intelligent, batch);
+          } else {
             intelligent.setFuncEnable(ParametersService.STATUS_ENABLED);
             intelligent.setUpdateAt(new Date());
             saveIntelligent(intelligent, batch);
@@ -1927,10 +1932,13 @@ public class IntelligentService {
     // 抓最近三個月
     Calendar cal = Calendar.getInstance();
     cal.set(Calendar.DAY_OF_MONTH, 1);
-
+    Calendar calMin = parametersService.checkMonthIgnore(null);
     for (int i = 1; i < 24; i++) {
       processPilotProject(String.valueOf(DateTool.getChineseYm(cal)), pp, wording, isEnable);
       cal.add(Calendar.MONTH, -i);
+      if (calMin != null && cal.getTimeInMillis() < calMin.getTimeInMillis()) {
+        break;
+      }
     }
     setIntelligentRunning(INTELLIGENT_REASON.PILOT_PROJECT.value(), false);
   }
@@ -2293,34 +2301,25 @@ public class IntelligentService {
     parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
 
-    Calendar cal = Calendar.getInstance();
-
-    cal.set(Calendar.DAY_OF_MONTH, 1);
-
-    String minYm = mrDao.getMinYm();
-    if (minYm == null) {
-      return;
-    }
-    int min = Integer.parseInt(minYm) + 191100;
-    String maxYm = mrDao.getMaxYm();
-    if (maxYm == null) {
-      return;
-    }
-    int max = Integer.parseInt(maxYm) + 191100;
-    int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-    if (adYM < min || adYM > min) {
-      adYM = min;
-      cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
-      cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) - 1);
-    }
-    do {
-      cal.add(Calendar.MONTH, 1);
-      adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-      if (adYM > max) {
-        break;
+    try {
+      Calendar cal = Calendar.getInstance();
+      cal.add(Calendar.YEAR, -4);
+      Calendar calMin = parametersService.getMinMaxCalendar(cal.getTime(), true);
+      if (calMin == null) {
+        return;
       }
-      calculateAICost(String.valueOf(adYM - 191100));
-    } while (true);
+      calMin = parametersService.checkMonthIgnore(calMin);
+      Calendar calMax = parametersService.getMinMaxCalendar(new Date(), false);
+      do {
+        calculateAICost(String.valueOf(DateTool.getChineseYm(calMin)));
+        calMin.add(Calendar.MONTH, 1);
+        if (calMin.after(calMax)) {
+          break;
+        }
+      } while (true);
+    } catch (Exception e) {
+      logger.error("recalculateAICost", e);
+    }
     logger.info("recalculateAICost done");
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), false);
   }
@@ -2410,35 +2409,30 @@ public class IntelligentService {
     parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
 
-    Calendar cal = Calendar.getInstance();
-
-    cal.set(Calendar.DAY_OF_MONTH, 1);
-
-    String minYm = mrDao.getMinYm();
-    if (minYm == null) {
-      return;
-    }
-    int min = Integer.parseInt(minYm) + 191100;
-    String maxYm = mrDao.getMaxYm();
-    if (maxYm == null) {
-      return;
-    }
-    int max = Integer.parseInt(maxYm) + 191100;
-    int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-    if (adYM < min || adYM > min) {
-      adYM = min;
-      // 要抓一年前的資料當比較，所以往後一年開始算
-      cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)) + 1);
-      cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) - 1);
-    }
-    do {
-      cal.add(Calendar.MONTH, 1);
-      adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-      if (adYM > max) {
-        break;
+    try {
+      Calendar cal = Calendar.getInstance();
+      cal.add(Calendar.YEAR, -5);
+      Calendar calMin = parametersService.getMinMaxCalendar(cal.getTime(), true);
+      if (calMin == null) {
+        return;
       }
-      calculateAIIpDays(String.valueOf(adYM - 191100));
-    } while (true);
+      calMin = parametersService.checkMonthIgnore(calMin);
+      String dbMinYm = mrDao.getMinYm();
+      if (Integer.parseInt(dbMinYm) == DateTool.getChineseYm(calMin)) {
+        // 往後抓一年
+        calMin.add(Calendar.YEAR, 1);
+      }
+      Calendar calMax = parametersService.getMinMaxCalendar(new Date(), false);
+      do {
+        calculateAIIpDays(String.valueOf(DateTool.getChineseYm(calMin)));
+        calMin.add(Calendar.MONTH, 1);
+        if (calMin.after(calMax)) {
+          break;
+        }
+      } while (true);
+    } catch (NumberFormatException e) {
+      logger.error("recalculateAIIpDays", e);
+    }
     logger.info("recalculateAIIpDays done");
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), false);
   }
@@ -2526,35 +2520,30 @@ public class IntelligentService {
     parametersService.waitIfIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value());
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), true);
 
-    Calendar cal = Calendar.getInstance();
-
-    cal.set(Calendar.DAY_OF_MONTH, 1);
-
-    String minYm = mrDao.getMinYm();
-    if (minYm == null) {
-      return;
-    }
-    int min = Integer.parseInt(minYm) + 191100;
-    String maxYm = mrDao.getMaxYm();
-    if (maxYm == null) {
-      return;
-    }
-    int max = Integer.parseInt(maxYm) + 191100;
-    int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-    if (adYM < min || adYM > min) {
-      adYM = min;
-      // 要抓一年前的資料當比較，所以往後一年開始算
-      cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)) + 1);
-      cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) - 1);
-    }
-    do {
-      cal.add(Calendar.MONTH, 1);
-      adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-      if (adYM > max) {
-        break;
+    try {
+      Calendar cal = Calendar.getInstance();
+      cal.add(Calendar.YEAR, -5);
+      Calendar calMin = parametersService.getMinMaxCalendar(cal.getTime(), true);
+      if (calMin == null) {
+        return;
       }
-      calculateAIOrderDrug(String.valueOf(adYM - 191100));
-    } while (true);
+      calMin = parametersService.checkMonthIgnore(calMin);
+      String dbMinYm = mrDao.getMinYm();
+      if (Integer.parseInt(dbMinYm) == DateTool.getChineseYm(calMin)) {
+        // 往後抓一年
+        calMin.add(Calendar.YEAR, 1);
+      }
+      Calendar calMax = parametersService.getMinMaxCalendar(new Date(), false);
+      do {
+        calculateAIOrderDrug(String.valueOf(DateTool.getChineseYm(calMin)));
+        calMin.add(Calendar.MONTH, 1);
+        if (calMin.after(calMax)) {
+          break;
+        }
+      } while (true);
+    } catch (NumberFormatException e) {
+      logger.error("recalculateAIOrderDrug", e);
+    }
     logger.info("recalculateAIOrderDrug done");
     setIntelligentRunning(INTELLIGENT_REASON.COST_DIFF.value(), false);
   }
@@ -2794,20 +2783,17 @@ public class IntelligentService {
    * 匯完申報檔、病歷檔後，做智能提示掃描
    */
   public void checkAllIntelligentCondition() {
+    Calendar calMin = parametersService.checkMonthIgnore(null);
+    
     List<MR> mrList = mrDao.getTodayUpdatedMR();
+    List<MR> calculateMrList = filterMrListByCalendarMin(mrList, calMin);
     List<String> applYm = getDistinctApplYm(mrList);
+    List<String> calculateApplYm = filterApplYmByCalendarMin(applYm, calMin);
     List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
     logger.info("start checkAllIntelligentCondition");
     
     runDrgCalculate(mrList);
-    Date firstDate = new Date();
-    for (MR mr : mrList) {
-      if (mr.getMrDate().before(firstDate)) {
-        firstDate = mr.getMrDate();
-      }
-    }
-    Calendar calStart = Calendar.getInstance();
-    calStart.setTime(firstDate);
+ 
     // 月報表資料
     for (String ym : applYm) {
       reportService.calculatePointMR(ym);
@@ -2816,18 +2802,17 @@ public class IntelligentService {
     logger.info("start checkAllIntelligentCondition report finished");
 
     //智能提示助理 - 固定條件判斷
-    checkIntelligentFixCondition(mrList, applYm, batch);
+    checkIntelligentFixCondition(calculateMrList, calculateApplYm, batch);
     //違反支付準則
-    checkAllViolation(mrList, batch);
+    checkAllViolation(calculateMrList, batch);
     saveIntelligentBatch(batch);
     logger.info("start checkAllIntelligentCondition checkAllViolation finished");
     
     logger.info("start check AI Cost");
-
     String config = parametersService.getOneValueByName("INTELLIGENT_CONFIG", "CLINICAL_DIFF");
     if ("1".equals(config)) {
       // 臨床路徑差異
-      for (String ym : applYm) {
+      for (String ym : calculateApplYm) {
         try {
           calculateAICost(ym);
         } catch (Exception e) {
@@ -2852,6 +2837,14 @@ public class IntelligentService {
     logger.info("start check AI finished.");
     // 週報表資料
     try {
+      Date firstDate = new Date();
+      for (MR mr : mrList) {
+        if (mr.getMrDate().before(firstDate)) {
+          firstDate = mr.getMrDate();
+        }
+      }
+      Calendar calStart = Calendar.getInstance();
+      calStart.setTime(firstDate);
       reportService.calculatePointWeekly(calStart, true);
       logger.info("calculatePointWeekly done");
     } catch (Exception e) {
@@ -2981,10 +2974,16 @@ public class IntelligentService {
     }
     List<INTELLIGENT> batch = new ArrayList<INTELLIGENT>();
     List<Map<String, Object>> list = mrDao.getAllApplYm();
+    List<String> applYm = new ArrayList<>();
     for (Map<String, Object> map : list) {
-        List<MR> mrList = mrDao.findByApplYm((String) map.get("APPL_YM"));
-        checkAllViolation(mrList, batch);
-        logger.info("checkAllViolation " + map.get("APPL_YM"));
+      applYm.add((String) map.get("APPL_YM"));
+    }
+    Calendar calMin = parametersService.checkMonthIgnore(null);
+    applYm = filterApplYmByCalendarMin(applYm, calMin);
+    for (String ym : applYm) {
+      List<MR> mrList = mrDao.findByApplYm(ym);
+      checkAllViolation(mrList, batch);
+      logger.info("checkAllViolation " + ym);
     }
   }
 
@@ -3156,4 +3155,30 @@ public class IntelligentService {
     }
     return result;
   }
+  
+  private List<MR> filterMrListByCalendarMin(List<MR> list, Calendar min) {
+    List<MR> result = new ArrayList<MR>();
+    for (MR mr : list) {
+      if (mr.getMrEndDate().getTime() >= min.getTimeInMillis()) {
+        result.add(mr);
+      }
+    }
+    return result;
+  }
+  
+  private List<String> filterApplYmByCalendarMin(List<String> list, Calendar min) {
+    if (min == null) {
+      return list;
+    }
+    List<String> result = new ArrayList<String>();
+    int chineseYm = (min.get(Calendar.YEAR) - 1911) * 100 + min.get(Calendar.MONTH) + 1;
+    for (String ym : list) {
+      if (Integer.valueOf(ym) >= chineseYm) {
+        result.add(ym);
+      }
+    }
+    return result;
+  }
+  
+  
 }
