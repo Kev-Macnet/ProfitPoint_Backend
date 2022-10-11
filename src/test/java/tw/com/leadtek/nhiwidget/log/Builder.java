@@ -4,7 +4,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
-interface Builder {
+public interface Builder {
 
   ApiClient getProfitApi();
 

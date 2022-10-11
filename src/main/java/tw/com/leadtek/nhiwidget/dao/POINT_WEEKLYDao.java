@@ -37,6 +37,15 @@ public interface POINT_WEEKLYDao extends JpaRepository<POINT_WEEKLY, Long> {
    */
   @Query(value = "SELECT * FROM POINT_WEEKLY  WHERE  END_DATE  BETWEEN  ?1 AND  ?2 ORDER BY END_DATE DESC", nativeQuery = true)
   public List<POINT_WEEKLY> getTredAllData(String sDate, String eDate);
+
+  /**
+   * 根據「該年的第幾週」取得趨勢圖資料
+   * 可執行 SQL 範例：
+   * SELECT * FROM point_weekly WHERE p_week<=6 and p_year=2022 and func_type='00' or p_year=2021 and func_type='00' order BY end_date desc
+   *
+   * @return
+   */
+  public List<POINT_WEEKLY> findByPweekLessThanEqualAndPyearAndFuncTypeOrPyearAndFuncTypeOrderByEndDateDesc(int weekOfYear, int curYear,String funcType, int PrevYear,String funcType2);
   
   
 }

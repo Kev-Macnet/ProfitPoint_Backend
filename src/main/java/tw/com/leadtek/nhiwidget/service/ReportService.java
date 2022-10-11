@@ -8,15 +8,10 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.WeekFields;
+import java.util.*;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -1048,8 +1043,10 @@ public class ReportService {
 	public PeriodPointWeeklyPayload getPeroidPointWeekly(Date edate) {
 		PeriodPointWeeklyPayload result = new PeriodPointWeeklyPayload();
 		java.sql.Date e = new java.sql.Date(edate.getTime());
-		List<POINT_WEEKLY> list = pointWeeklyDao.findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e,
-				XMLConstant.FUNC_TYPE_ALL);
+		int weekOfYear = getWeekOfYearSysDefault(edate);
+		int curYear = getCurYearSysDefault(edate);
+		int prevYear = curYear - 1;
+		List<POINT_WEEKLY> list = pointWeeklyDao.findByPweekLessThanEqualAndPyearAndFuncTypeOrPyearAndFuncTypeOrderByEndDateDesc(weekOfYear,curYear,XMLConstant.FUNC_TYPE_ALL,prevYear,XMLConstant.FUNC_TYPE_ALL);
 		int count = 0;
 		for (POINT_WEEKLY pw : list) {
 			String name = pw.getPyear() + " w" + pw.getPweek();
@@ -1072,13 +1069,14 @@ public class ReportService {
 		if(funcType != null && funcType.equals("00")) {
 			funcType = "";
 		}
+		int weekOfYear = getWeekOfYearSysDefault(edate);
+		int curYear = getCurYearSysDefault(edate);
+		int prevYear = curYear - 1;
 		if(funcType.isEmpty()) {
-			list = pointWeeklyDao.findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e,
-					XMLConstant.FUNC_TYPE_ALL);
+			list = pointWeeklyDao.findByPweekLessThanEqualAndPyearAndFuncTypeOrPyearAndFuncTypeOrderByEndDateDesc(weekOfYear,curYear, XMLConstant.FUNC_TYPE_ALL ,prevYear,XMLConstant.FUNC_TYPE_ALL);
 		}
 		else {
-			list = pointWeeklyDao.findByEndDateLessThanEqualAndFuncTypeOrderByEndDateDesc(e,
-					funcType);
+			list = pointWeeklyDao.findByPweekLessThanEqualAndPyearAndFuncTypeOrPyearAndFuncTypeOrderByEndDateDesc(weekOfYear, curYear,funcType,prevYear,funcType);
 		}
 		int count = 0;
 		for (POINT_WEEKLY pw : list) {
@@ -1093,6 +1091,26 @@ public class ReportService {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * 轉換系統日期是該年的第幾週
+	 **/
+	private int getWeekOfYearSysDefault(Date edate) {
+		LocalDate localDate= edate.toInstant()
+				.atZone(ZoneId.systemDefault())
+				.toLocalDate();
+		return localDate.get(WeekFields.of(Locale.getDefault()).weekOfYear());
+	}
+	
+	/**
+	 * 轉換系統日期是西元幾年
+	 * */
+	private int getCurYearSysDefault(Date edate) {
+		LocalDate localDate= edate.toInstant()
+				.atZone(ZoneId.systemDefault())
+				.toLocalDate();
+		return localDate.getYear();
 	}
 
 	public List<String> getAllDRGFuncTypes(java.sql.Date startDate, java.sql.Date endDate) {
@@ -2387,7 +2405,7 @@ public class ReportService {
 				map.put("disputeAmount", Long.valueOf(m.get("DISPUTE_AMOUNT") == null ? "0" : m.get("DISPUTE_AMOUNT").toString()));
 				map.put("disputePayQuantity", Long.valueOf(m.get("DISPUTE_PAY_QUANTITY") == null ? "0" : m.get("DISPUTE_PAY_QUANTITY").toString()));
 				map.put("disputePayAmount", Long.valueOf(m.get("DISPUTE_PAY_AMOUNT") == null ? "0" : m.get("DISPUTE_PAY_AMOUNT").toString()));
-				map.put("disputeNoPayCode",  m.get("DISPUTE_NO_PAY_CODE").toString());
+				map.put("disputeNoPayCode", null == m.get("DISPUTE_NO_PAY_CODE") ? null:m.get("DISPUTE_NO_PAY_CODE").toString());
 				mapList.add(map);
 				map = new HashMap<String,Object>();
 			}

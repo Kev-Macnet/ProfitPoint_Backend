@@ -597,6 +597,7 @@ public class NHIWidgetXMLService {
             if (ippOld.getOrderSeqNo().intValue() != ippNew.getOrderSeqNo().intValue()) {
               continue;
             }
+            maskIPP(ippNew);
             compareIPP(mr.getId(), ippOld, ippNew, diffList, moList);
             isFound = true;
             // E:自費特材項目-未支付
@@ -2750,8 +2751,6 @@ public class NHIWidgetXMLService {
           }
           MO mo = new MO();
           mo.setOPPData(opp, cts);
-          System.out.println("drugNO=" + mo.getDrugNo() + "," + mo.getDrugNoCode()  +
-          ",orderCode=" + mo.getOrderCode() + ",en=" + mo.getOrderCodeEn()    ); 
           moList.add(mo);
         }
         result.setMos(moList);
@@ -2962,7 +2961,7 @@ public class NHIWidgetXMLService {
       result.setTwDrgCode(fd.getNewValue());
       result.setDrgCode(fd.getNewValue());
     } else if ("patientSource".equals(fd.getName())) {
-      result.setPatientSource(CodeTableService.getDesc(cts, "IP_PATIENT_SOURCE", fd.getName()));
+      result.setPatientSource(CodeTableService.getDesc(cts, "IP_PATIENT_SOURCE", fd.getNewValue()));
     } else if ("partNo".equals(fd.getName())) {
       result.setPartNo(CodeTableService.getDesc(cts, "PART_NO", fd.getNewValue()));
     } else if ("payType".equals(fd.getName())) {
@@ -2999,6 +2998,8 @@ public class NHIWidgetXMLService {
       result.setPartDot(Integer.parseInt(fd.getNewValue()));
     } else if ("phscDot".equals(fd.getName())) {
       result.setPhscDot(Integer.parseInt(fd.getNewValue()));
+    } else if ("tApplDot".equals(fd.getName())) {
+      result.settApplDot(Integer.parseInt(fd.getNewValue()));
     } else if ("totalDot".equals(fd.getName())) {
       result.setTotalDot(Integer.parseInt(fd.getNewValue()));
     } else if ("tDot".equals(fd.getName())) {
@@ -3207,11 +3208,10 @@ public class NHIWidgetXMLService {
         notice.setStatus(status);
       }
     }
-    if (status == MR_STATUS.NO_CHANGE.value()
-        && mr.getStatus().intValue() == MR_STATUS.WAIT_CONFIRM.value()) {
+//    if (status == MR_STATUS.NO_CHANGE.value()
+//        && mr.getStatus().intValue() == MR_STATUS.WAIT_CONFIRM.value()) {
       // 由待確認改為無需變更，檢查智能提示是否有該病歷，若有則修改狀態
-      is.removeIntelligentWaitConfirm(mrId);
-    }
+      is.updateIntelligentStatus(mrId, status);
   }
 
   public void getMRNote(MRDetail mrDetail) {
@@ -3510,7 +3510,14 @@ public class NHIWidgetXMLService {
         opD.setIcdOpCode3(mrDetail.getIcdOP().get(2).getCode());
       }
     }
-    opD.setApplCauseMark(mrDetail.getApplCauseMark());
+    
+    if (mrDetail.getApplCauseMark() != null && mrDetail.getApplCauseMark().length() > 0) {
+      if (mrDetail.getApplCauseMark().indexOf('-') > -1) {
+        opD.setApplCauseMark(mrDetail.getApplCauseMark().substring(0, mrDetail.getApplCauseMark().indexOf('-')));
+      } else {
+        opD.setApplCauseMark(mrDetail.getApplCauseMark());
+      }
+    }
     if (mrDetail.getFuncType() != null && mrDetail.getFuncType().length() > 0) {
       if (mrDetail.getFuncType().indexOf('-') > -1) {
         opD.setFuncType(mrDetail.getFuncType().substring(0, mrDetail.getFuncType().indexOf('-')));
@@ -6441,10 +6448,13 @@ public class NHIWidgetXMLService {
       // 病歷狀態為無需變更或待確認，直接覆蓋舊病歷資料
       return false;
     }
-    if (cw.getDaysIgnore() > 0
-        && (mr.getMrEndDate().getTime() + ((long) cw.getDaysIgnore() * 24 * 60L * 60000L))
-            < System.currentTimeMillis()) {
-      return false;
+    if (cw.getMonthIgnore() > 0) {
+      Calendar cal = Calendar.getInstance();
+      cal.set(Calendar.DAY_OF_MONTH, 1);
+      cal.add(Calendar.MONTH, -cw.getMonthIgnore());
+      if (mr.getMrEndDate().getTime() < cal.getTimeInMillis()) {
+        return false;
+      }
     }
     if (cw.getCompareBy() == 1) {
       // 只比對限定時間內的病歷
@@ -7575,7 +7585,7 @@ public class NHIWidgetXMLService {
     List<MR> mrList = mrDao.findByMrEndDateAndDataFormatOrderById(XMLConstant.DATA_FORMAT_IP, orderDateMore[0], orderDateMore[1]);
  // 避免重複insert
     List<IP_D> ipdList = ipdDao.findByIDFromMR(orderDateMore[0], orderDateMore[1]);
-    System.out.println("db mr count=" + mrList.size() + ",ip_D count=" + ipdList.size());
+    //System.out.println("db mr count=" + mrList.size() + ",ip_D count=" + ipdList.size());
     CompareWarning cw = new CompareWarning(parameters.getByCat("COMPARE_WARNING"), cts);
     for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
       HSSFRow row = sheet.getRow(i);
@@ -8009,6 +8019,7 @@ public class NHIWidgetXMLService {
     checkDiffInteger(old.getMetrDot(), newIpd.getMetrDot(), list, newIpd.getMrId(), "metrDot", 0);
     checkDiffInteger(old.getPartDot(), newIpd.getPartDot(), list, newIpd.getMrId(), "partDot", 0);
     checkDiffInteger(old.getPhscDot() , newIpd.getPhscDot(), list, newIpd.getMrId(), "phscDot", 0);
+    checkDiffInteger(old.getApplDot(), newIpd.getApplDot(), list, newIpd.getMrId(), "tApplDot", 0);
   }
   
   private void changeEmptyToNull(DEDUCTED_NOTE note) {

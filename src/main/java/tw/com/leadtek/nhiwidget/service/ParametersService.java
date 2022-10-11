@@ -765,15 +765,59 @@ public class ParametersService {
     if (note == null) {
       note = ("SPR".equals(name) ? "標準給付額" : "核刪抽件數");
     }
-    // System.out.println("cat=" + cat + ", name=" + name + ",value=" + value + ",start=" +
-    // startDate
-    // + ", end=" + endDate);
-    PARAMETERS p = new PARAMETERS(cat, name, value, dataType, note);
-    saveParameter(p, startDate, endDate);
+    System.out.println("cat=" + cat + ", name=" + name + ",value=" + value + ",start=" + startDate
+        + ", end=" + endDate);
+    PARAMETERS p = null;
+    if ("SAMPLING".equals(name)) {
+      p = saveSampling(cat, name, value, dataType, note, startDate, endDate);
+    } else {
+      p = new PARAMETERS(cat, name, value, dataType, note);
+      p = saveParameter(p, startDate, endDate);
+    }
     
     httpServletReq.setAttribute(LogType.ACTION_C.name()+"_PKS", Arrays.asList(new Long[]{p.getId()}));
     
     return null;
+  }
+  
+  private PARAMETERS saveSampling(String cat, String name, String value, int dataType, String note, Date startDate, 
+      Date endDate) {
+    PARAMETERS result = null;
+    Calendar calStart = Calendar.getInstance();
+    calStart.setTime(startDate);
+    calStart.set(Calendar.DAY_OF_MONTH, 1);
+    Calendar calEnd = Calendar.getInstance();
+    calEnd.setTime(endDate);
+    calEnd.set(Calendar.DAY_OF_MONTH, 1);
+    calEnd.add(Calendar.MONTH, 1);
+    calEnd.add(Calendar.DAY_OF_MONTH, -1);
+    
+    if(!isSameMonth(calStart, calEnd)) {
+      Calendar monthStart = Calendar.getInstance();
+      monthStart.setTime(calStart.getTime());
+      
+      Calendar monthEnd = Calendar.getInstance();
+      monthEnd.setTime(calStart.getTime());
+      monthEnd.add(Calendar.MONTH, 1);
+      monthEnd.add(Calendar.DAY_OF_MONTH, -1);
+      while (monthEnd.getTimeInMillis() <= calEnd.getTimeInMillis()) {
+        PARAMETERS p = new PARAMETERS(cat, name, value, dataType, note);
+        result = saveParameter(p, monthStart.getTime(), monthEnd.getTime());
+        monthStart.add(Calendar.MONTH, 1);
+        monthEnd.set(Calendar.DAY_OF_MONTH, 1);
+        monthEnd.add(Calendar.MONTH, 2);
+        monthEnd.add(Calendar.DAY_OF_MONTH, -1);
+      }
+    } else {
+      PARAMETERS p = new PARAMETERS(cat, name, value, dataType, note);
+      result = saveParameter(p, calStart.getTime(), calEnd.getTime());
+    }
+    return result;
+  }
+  
+  private boolean isSameMonth(Calendar start, Calendar end) {
+    return start.get(Calendar.YEAR) * 100 + start.get(Calendar.MONTH) == 
+        end.get(Calendar.YEAR) * 100 + end.get(Calendar.MONTH);
   }
 
   public String updateValue(ParameterValue pv) {
@@ -2078,7 +2122,6 @@ public class ParametersService {
       return;
     }
     MR mr = optional.get();
-    
     List<MR> sameDeductedOrderMR = mrDao.getSameDeductedOrderMR(dn.getDeductedOrder(), mr.getIcdcm1(), mr.getDataFormat(), mr.getId());
     if (sameDeductedOrderMR != null && sameDeductedOrderMR.size() > 0) {
       // 仍有相同核刪條件的病歷，故不處理
@@ -2086,23 +2129,24 @@ public class ParametersService {
     }
     List<CODE_CONFLICT> list =
         codeConflictDao.findByCodeAndOwnExpCodeAndCodeType(mr.getIcdcm1(), dn.getDeductedOrder(), Integer.valueOf(2));
-    if (list != null && list.size() > 0) {
-      for (CODE_CONFLICT codeConflict : list) {
-        if (XMLConstant.FUNC_TYPE_ALL.equals(codeConflict.getDataFormat())) {
-          if (mr.getDataFormat().equals(XMLConstant.DATA_FORMAT_IP)) {
-            codeConflict.setDataFormat(XMLConstant.DATA_FORMAT_OP);
-          } else if (mr.getDataFormat().equals(XMLConstant.DATA_FORMAT_OP)) {
-            codeConflict.setDataFormat(XMLConstant.DATA_FORMAT_IP);
-          }
-          recalculateHighRisk(codeConflict, false, mr.getDataFormat());
-          return;
+    if (list == null || list.size() == 0) {
+      return;
+    }
+    for (CODE_CONFLICT codeConflict : list) {
+      if (XMLConstant.FUNC_TYPE_ALL.equals(codeConflict.getDataFormat())) {
+        if (mr.getDataFormat().equals(XMLConstant.DATA_FORMAT_IP)) {
+          codeConflict.setDataFormat(XMLConstant.DATA_FORMAT_OP);
+        } else if (mr.getDataFormat().equals(XMLConstant.DATA_FORMAT_OP)) {
+          codeConflict.setDataFormat(XMLConstant.DATA_FORMAT_IP);
         }
-        if (codeConflict.getDataFormat().equals(mr.getDataFormat())) {
-          // 已無相同核刪條件病歷，故將該高風險診斷碼與健保碼組合刪除
-          recalculateHighRisk(codeConflict, false, mr.getDataFormat());
-          codeConflictDao.deleteById(codeConflict.getId());
-          return;
-        }
+        recalculateHighRisk(codeConflict, false, mr.getDataFormat());
+        return;
+      }
+      if (codeConflict.getDataFormat().equals(mr.getDataFormat())) {
+        // 已無相同核刪條件病歷，故將該高風險診斷碼與健保碼組合刪除
+        recalculateHighRisk(codeConflict, false, mr.getDataFormat());
+        codeConflictDao.deleteById(codeConflict.getId());
+        return;
       }
     }
   }
@@ -2162,7 +2206,7 @@ public class ParametersService {
     String mrDate = (isStart) ? mrDao.getMinYm() : mrDao.getMaxYm();
     if (mrDate == null) {
       return null;
-    } 
+    }
     int mrDateInt = Integer.parseInt(mrDate) + 191100;
     if (isStart) {
       if (mrDateInt > adYM) {
@@ -2180,26 +2224,46 @@ public class ParametersService {
     return cal;
   }
   
+  /**
+   * 取得AI運算或檔案比對要處理的最小日期，小於此最小日期就不處理
+   * @param min
+   * @return
+   */
+  public Calendar checkMonthIgnore(Calendar min) {
+    String ignoreMonth = getOneValueByName("COMPARE_WARNING", "MONTH_IGNORE");
+    if (ignoreMonth == null || "0".equals(ignoreMonth)) {
+      return min;
+    }
+    Calendar result = Calendar.getInstance();
+    result.add(Calendar.MONTH, -Integer.parseInt(ignoreMonth));
+    result.set(Calendar.DAY_OF_MONTH, 1);
+    return result;
+  }
+  
   public void recalculateRareICD(CODE_THRESHOLD ct) {
     waitIfIntelligentRunning(INTELLIGENT_REASON.RARE_ICD.value());
-    is.setIntelligentRunning(INTELLIGENT_REASON.RARE_ICD.value(), true);
-    
     Calendar calMin = getMinMaxCalendar(ct.getStartDate(), true);
-    if (calMin == null) {
+     if (calMin == null) {
       return;
     }
-    Calendar calMax =  getMinMaxCalendar(ct.getEndDate(), false);
-    String wording1M = getOneValueByName("INTELLIGENT", "RARE_ICD_1M");
-    String wording6M = getOneValueByName("INTELLIGENT", "RARE_ICD_6M");
-    int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-    do {
-      is.calculateRareICD(String.valueOf(chineseYM), ct, wording1M, wording6M);
-      calMin.add(Calendar.MONTH, 1);
-      if (calMin.after(calMax)) {
-        break;
-      }
-      chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-    } while (true);
+    is.setIntelligentRunning(INTELLIGENT_REASON.RARE_ICD.value(), true);
+    try {
+      calMin = checkMonthIgnore(calMin);
+      Calendar calMax =  getMinMaxCalendar(ct.getEndDate(), false);
+      String wording1M = getOneValueByName("INTELLIGENT", "RARE_ICD_1M");
+      String wording6M = getOneValueByName("INTELLIGENT", "RARE_ICD_6M");
+      int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+      do {
+        is.calculateRareICD(String.valueOf(chineseYM), ct, wording1M, wording6M);
+        calMin.add(Calendar.MONTH, 1);
+        if (calMin.after(calMax)) {
+          break;
+        }
+        chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+      } while (true);
+    } catch (Exception e) {
+      logger.error("recalculateRareICD", e);
+    }
     is.setIntelligentRunning(INTELLIGENT_REASON.RARE_ICD.value(), false);
   }
   
@@ -2228,36 +2292,43 @@ public class ParametersService {
     waitIfIntelligentRunning(INTELLIGENT_REASON.INFECTIOUS.value());
     is.setIntelligentRunning(INTELLIGENT_REASON.INFECTIOUS.value(), true);
     
-    Calendar cal = Calendar.getInstance();
+    try {
+      Calendar cal = Calendar.getInstance();
 
-    cal.set(Calendar.DAY_OF_MONTH, 1);
+      cal.set(Calendar.DAY_OF_MONTH, 1);
 
-    String minYm = mrDao.getMinYm();
-    if (minYm == null) {
-      return;
-    }
-    int min = Integer.parseInt(minYm) + 191100;
-    String maxYm = mrDao.getMaxYm();
-    if (maxYm == null) {
-      return;
-    }
-    int max = Integer.parseInt(maxYm) + 191100;
-    int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-    if (adYM < min || adYM > min) {
-      adYM = min;
-      cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
-      cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) - 1);
-    }
-    String wording = getOneValueByName("INTELLIGENT", "INFECTIOUS");
-    do {
-      is.calculateInfectious(String.valueOf(adYM - 191100), ct.getCode(), wording, ct.getRemark() == null);
-      cal.add(Calendar.MONTH, 1);
-      adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
-      if (adYM > max) {
-        break;
+      String minYm = mrDao.getMinYm();
+      if (minYm == null) {
+        return;
       }
-    } while (true);
-    logger.info("recalculateInfectious " + ct.getCode() + " done");
+      int min = Integer.parseInt(minYm) + 191100;
+      String maxYm = mrDao.getMaxYm();
+      if (maxYm == null) {
+        return;
+      }
+      int max = Integer.parseInt(maxYm) + 191100;
+      int adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+      if (adYM < min || adYM > min) {
+        adYM = min;
+        cal.set(Calendar.YEAR, Integer.parseInt(String.valueOf(adYM).substring(0, 4)));
+        cal.set(Calendar.MONTH, Integer.parseInt(String.valueOf(adYM).substring(4, 6)) - 1);
+      }
+      cal = checkMonthIgnore(cal);
+      String wording = getOneValueByName("INTELLIGENT", "INFECTIOUS");
+      do {
+        is.calculateInfectious(String.valueOf(adYM - 191100), ct.getCode(), wording, ct.getRemark() == null);
+        cal.add(Calendar.MONTH, 1);
+        adYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+        if (adYM > max) {
+          break;
+        }
+      } while (true);
+      logger.info("recalculateInfectious " + ct.getCode() + " done");
+    } catch (NumberFormatException e) {
+      logger.error("recalculateInfectious", e);
+    } catch (Exception e) {
+      logger.error("recalculateInfectious", e);
+    }
     is.setIntelligentRunning(INTELLIGENT_REASON.INFECTIOUS.value(), false);
   }
   
@@ -2295,6 +2366,7 @@ public class ParametersService {
     if (calMin == null) {
       return;
     }
+    calMin = checkMonthIgnore(calMin);
     Calendar calMax =  getMinMaxCalendar(ct.getEndDate(), false);
     int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
     do {
@@ -2328,27 +2400,31 @@ public class ParametersService {
    * @param cc
    */
   public void recalculateCodeConflict(CODE_CONFLICT cc, int conditionCode) {
-    System.out.println("recalculateCodeConflict " + cc.getCode());
     waitIfIntelligentRunning(conditionCode);
-    is.setIntelligentRunning(conditionCode, true);
-    String wordingName = conditionCode == INTELLIGENT_REASON.INH_OWN_EXIST.value() ? "CODE_CONFLICT" : "HIGH_RISK_WORDING";
-    String wording = getOneValueByName("INTELLIGENT", wordingName);
-   
-    Calendar calMin = getMinMaxCalendar(cc.getStartDate(), true);
-    if (calMin == null) {
-      return;
-    }
-    Calendar calMax =  getMinMaxCalendar(cc.getEndDate(), false);
-    int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-    do {
-      is.calculateCodeConflict(String.valueOf(chineseYM), cc, wording,
-          cc.getStatus().intValue() == 1, cc.getDataFormat());
-      calMin.add(Calendar.MONTH, 1);
-      if (calMin.after(calMax)) {
-        break;
+    try {
+      is.setIntelligentRunning(conditionCode, true);
+      String wordingName = conditionCode == INTELLIGENT_REASON.INH_OWN_EXIST.value() ? "CODE_CONFLICT" : "HIGH_RISK_WORDING";
+      String wording = getOneValueByName("INTELLIGENT", wordingName);
+  
+      Calendar calMin = getMinMaxCalendar(cc.getStartDate(), true);
+      if (calMin == null) {
+        return;
       }
-      chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-    } while (true);
+      calMin = checkMonthIgnore(calMin);
+      Calendar calMax =  getMinMaxCalendar(cc.getEndDate(), false);
+      int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+      do {
+        is.calculateCodeConflict(String.valueOf(chineseYM), cc, wording,
+            cc.getStatus().intValue() == 1, cc.getDataFormat());
+        calMin.add(Calendar.MONTH, 1);
+        if (calMin.after(calMax)) {
+          break;
+        }
+        chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+      } while (true);
+    } catch (Exception e) {
+      logger.error("recalculateCodeConflict", e);
+    }
     is.setIntelligentRunning(conditionCode, false);
   }
 
@@ -2409,6 +2485,7 @@ public class ParametersService {
     if (calMin == null) {
       return;
     }
+    calMin = checkMonthIgnore(calMin);
     Calendar calMax =  getMinMaxCalendar(payCode.getEndDate(), false);
     int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
     do {
@@ -2424,42 +2501,58 @@ public class ParametersService {
 
   /**
    * 計算所有病歷是否有因核刪而記錄的高風險ICD碼與醫令組合
+   *
    * @param cc
    * @param isEnable
    * @param dataFormat
    */
   public void recalculateHighRisk(CODE_CONFLICT cc, boolean isEnable, String dataFormat) {
     String wording = getOneValueByName("INTELLIGENT", "HIGH_RISK_WORDING");
-    
-    Thread thread = new Thread(new Runnable() {
-      
-      @Override
-      public void run() {
-        is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), true);
-        Calendar calMin = getMinMaxCalendar(cc.getStartDate(), true);
-        if (calMin == null) {
-          return;
-        }
-        Calendar calMax =  getMinMaxCalendar(cc.getEndDate(), false);
-        int chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-        do {
-          is.calculateCodeConflict(String.valueOf(chineseYM), cc, wording, isEnable, dataFormat);
-          calMin.add(Calendar.MONTH, 1);
-          if (calMin.after(calMax)) {
-            break;
-          }
-          chineseYM = calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
-        } while (true);
-        if (cc.getStatus().intValue() == 0 && cc.getCodeType().intValue() == 2) {
-          codeConflictDao.deleteById(cc.getId());
-        }
-        logger.info("recalculateCodeConflict " + cc.getCode() + " done");
-        is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), false);
-      }
-    });
-    thread.start();
+    if (!isEnable) {
+      // 刪除智能提示
+      String reason =
+          (wording != null) ? String.format(wording, cc.getCode(), cc.getOwnExpCode()) : null;
+      deleteIntelligent(INTELLIGENT_REASON.HIGH_RISK.value(), cc.getCode(), reason, dataFormat);
+      return;
+    }
+    String config = getOneValueByName("INTELLIGENT_CONFIG", "HIGH_RISK");
+    if (!"1".equals(config) && isEnable) {
+      return;
+    }
+
+    new Thread(
+            () -> {
+              is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), true);
+              try {
+                Calendar calMin = getMinMaxCalendar(cc.getStartDate(), true);
+                if (calMin == null) {
+                  return;
+                }
+                Calendar calMax = getMinMaxCalendar(cc.getEndDate(), false);
+                int chineseYM =
+                    calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+                do {
+                  is.calculateCodeConflict(
+                      String.valueOf(chineseYM), cc, wording, isEnable, dataFormat);
+                  calMin.add(Calendar.MONTH, 1);
+                  if (calMin.after(calMax)) {
+                    break;
+                  }
+                  chineseYM =
+                      calMin.get(Calendar.YEAR) * 100 + calMin.get(Calendar.MONTH) + 1 - 191100;
+                } while (true);
+                if (cc.getStatus().intValue() == 0 && cc.getCodeType().intValue() == 2) {
+                  codeConflictDao.deleteById(cc.getId());
+                }
+              } catch (Exception e) {
+                logger.error("recalculateHighRisk", e);
+              }
+              logger.info("recalculateHighRisk " + cc.getCode() + " done");
+              is.setIntelligentRunning(INTELLIGENT_REASON.HIGH_RISK.value(), false);
+            })
+        .start();
   }
-  
+
   public void deleteIntelligent(int conditionCode, String reasonCode, String reason) {
     if (reasonCode == null) {
       mrDao.updateMrStautsForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode);
@@ -2473,6 +2566,11 @@ public class ParametersService {
     }
   }
   
+  public void deleteIntelligent(int conditionCode, String reasonCode, String reason, String dataFormat) {
+      mrDao.updateMrStatusForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode, reasonCode, reason, dataFormat);
+      intelligentDao.deleteIntelligent(conditionCode, reasonCode, reason, dataFormat);
+  }
+  
   /**
    * 關閉智能提示功能
    * @param conditionCode
@@ -2482,13 +2580,13 @@ public class ParametersService {
   public void disableIntelligent(int conditionCode, String reasonCode, String reason) {
     if (reasonCode == null) {
       mrDao.updateMrStautsForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode);
-      intelligentDao.deleteIntelligent(conditionCode);
+      intelligentDao.disableIntelligent(conditionCode);
     } else if (reason == null){
       mrDao.updateMrStatusForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode, reasonCode);
-      intelligentDao.deleteIntelligent(conditionCode, reasonCode);
+      intelligentDao.disableIntelligent(conditionCode, reasonCode);
     } else {
       mrDao.updateMrStatusForIntelligent(MR_STATUS.NO_CHANGE.value(), conditionCode, reasonCode, reason);
-      intelligentDao.deleteIntelligent(conditionCode, reasonCode, reason);
+      intelligentDao.disableIntelligent(conditionCode, reasonCode, reason);
     }
   }
   
@@ -2584,7 +2682,8 @@ public class ParametersService {
    */
   public void switchRareICD(boolean isEnable) {
     if (!isEnable) {
-      deleteIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);
+      disableIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);
+      //deleteIntelligent(INTELLIGENT_REASON.RARE_ICD.value(), null, null);
       return;
     }
     List<CODE_THRESHOLD> list = codeThresholdDao.findByCodeTypeOrderByStartDateDesc(1);
@@ -2617,17 +2716,17 @@ public class ParametersService {
    * @param isEnable
    */
   public void switchHighRisk(boolean isEnable) {
+    if (!isEnable) {
+      disableIntelligent(INTELLIGENT_REASON.HIGH_RISK.value(), null, null);
+      return;
+    }
     List<CODE_CONFLICT> list = codeConflictDao.findByCodeType(Integer.valueOf(2));
     if (list != null && list.size() > 0) {
       for (CODE_CONFLICT cc : list) {
         if (cc.getStatus().intValue() == 0) {
           continue;
         }
-        if (isEnable) {
-          recalculateCodeConflict(cc, INTELLIGENT_REASON.HIGH_RISK.value());
-        } else {
-          deleteIntelligent(INTELLIGENT_REASON.HIGH_RISK.value(), null, null);
-        }
+        recalculateCodeConflict(cc, INTELLIGENT_REASON.HIGH_RISK.value());
       }
     }
   }
@@ -2680,7 +2779,7 @@ public class ParametersService {
   }
   
   /**
-   * 開啟或關閉罕見ICD應用
+   * 開啟或關閉違反支付準則
    * @param isEnable
    */
   public void switchViolate(boolean isEnable) {

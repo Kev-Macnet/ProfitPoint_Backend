@@ -27,7 +27,7 @@ public class CompareWarning {
   /**
    * 離當天超過幾天就不做比對警示及AI計算. 0:表示都要處理
    */
-  private int daysIgnore = 0;
+  private int monthIgnore = 0;
   
   public CompareWarning(List<PARAMETERS> parametersList, CodeTableService codeTableService) {
     for (PARAMETERS p : parametersList) {
@@ -39,8 +39,8 @@ public class CompareWarning {
         funcType = codeTableService.convertFuncTypecToFuncTypeArray(p.getValue());
       } else if ("ROLLBACK_HOUR".equals(p.getName())) {
         rollbackHour = Integer.parseInt(p.getValue());
-      } else if ("DAYS_IGNORE".equals(p.getName())) {
-        daysIgnore = Integer.parseInt(p.getValue());
+      } else if ("MONTH_IGNORE".equals(p.getName())) {
+        monthIgnore = Integer.parseInt(p.getValue());
       }
     }
   }
@@ -77,11 +77,11 @@ public class CompareWarning {
     this.rollbackHour = rollbackHour;
   }
 
-  public int getDaysIgnore() {
-    return daysIgnore;
+  public int getMonthIgnore() {
+    return monthIgnore;
   }
 
-  public void setDaysIgnore(int daysIgnore) {
-    this.daysIgnore = daysIgnore;
+  public void setMonthIgnore(int monthIgnore) {
+    this.monthIgnore = monthIgnore;
   }
 }

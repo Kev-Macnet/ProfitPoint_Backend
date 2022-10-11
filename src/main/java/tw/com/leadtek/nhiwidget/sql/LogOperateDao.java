@@ -59,7 +59,6 @@ public class LogOperateDao extends BaseSqlDao{
 	  if("R".equalsIgnoreCase(showType)) {
 		  sql+= "GROUP BY U.DISPLAY_NAME, U.USERNAME";
 	  }
-	  
 	  return super.getNativeQueryResult(sql, LogSigninDto.class, queryParaMap);
   }
   

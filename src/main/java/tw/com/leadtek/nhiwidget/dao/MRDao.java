@@ -264,6 +264,13 @@ public interface MRDao extends JpaRepository<MR, Long>, JpaSpecificationExecutor
       + "(SELECT MR_ID FROM INTELLIGENT WHERE CONDITION_CODE=?2 AND REASON_CODE=?3 AND REASON=?4)", nativeQuery = true)
   public void updateMrStatusForIntelligent(int newStatus, int conditionCode, String reasonCode, String reason);
   
+  @Transactional
+  @Modifying
+  @Query(value = "UPDATE MR SET STATUS=?1 WHERE STATUS=-2 AND ID IN "
+      + "(SELECT MR_ID FROM INTELLIGENT WHERE CONDITION_CODE=?2 AND REASON_CODE=?3 AND REASON=?4 AND DATA_FORMAT=?5)", nativeQuery = true)
+  public void updateMrStatusForIntelligent(int newStatus, int conditionCode, 
+      String reasonCode, String reason, String dataFormat);
+  
   /**
    * 取得列在智能提示中的病歷
    */
