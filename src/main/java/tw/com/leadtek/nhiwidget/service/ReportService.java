@@ -2401,11 +2401,11 @@ public class ReportService {
 			for(Map<String,Object> m : disputeList) {
 				map.put("dataFormat", m.get("DATA_FORMAT").toString());
 				map.put("name", m.get("NAME").toString());
-				map.put("disputeQuantity", Long.valueOf(m.get("DISPUTE_QUANTITY") == null ? "0" : m.get("DISPUTE_QUANTITY").toString()));
-				map.put("disputeAmount", Long.valueOf(m.get("DISPUTE_AMOUNT") == null ? "0" : m.get("DISPUTE_AMOUNT").toString()));
-				map.put("disputePayQuantity", Long.valueOf(m.get("DISPUTE_PAY_QUANTITY") == null ? "0" : m.get("DISPUTE_PAY_QUANTITY").toString()));
-				map.put("disputePayAmount", Long.valueOf(m.get("DISPUTE_PAY_AMOUNT") == null ? "0" : m.get("DISPUTE_PAY_AMOUNT").toString()));
-				map.put("disputeNoPayCode", null == m.get("DISPUTE_NO_PAY_CODE") ? null:m.get("DISPUTE_NO_PAY_CODE").toString());
+				map.put("disputeQuantity", Long.valueOf(m.get("DISPUTE_QUANTITY") == null ? "0" : String.valueOf(m.get("DISPUTE_QUANTITY"))));
+				map.put("disputeAmount", Long.valueOf(m.get("DISPUTE_AMOUNT") == null ? "0" : String.valueOf(m.get("DISPUTE_AMOUNT"))));
+				map.put("disputePayQuantity", Long.valueOf(m.get("DISPUTE_PAY_QUANTITY") == null ? "0" : String.valueOf(m.get("DISPUTE_PAY_QUANTITY"))));
+				map.put("disputePayAmount", Long.valueOf(m.get("DISPUTE_PAY_AMOUNT") == null ? "0" : String.valueOf(m.get("DISPUTE_PAY_AMOUNT"))));
+				map.put("disputeNoPayCode",  String.valueOf(m.get("DISPUTE_NO_PAY_CODE")));
 				mapList.add(map);
 				map = new HashMap<String,Object>();
 			}
