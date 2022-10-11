@@ -9604,22 +9604,22 @@ public class DbReportService {
 					for (int k = 0; k < list.size(); k++) {
 						if (list.get(k).get("DATA_FORMAT") != null) {
 
-							deductedList.setDataFormat(list.get(k).get("DATA_FORMAT").toString());
-							deductedList.setFuncType(list.get(k).get("FUNC_TYPE").toString());
-							deductedList.setFuncTypeName(list.get(k).get("DESC_CHI").toString());
-							deductedList.setAfrNoPayCode(list.get(k).get("AFR_NO_PAY_CODE") == null ? ""
-									: list.get(k).get("AFR_NO_PAY_CODE").toString());
-							deductedList.setCode(list.get(k).get("CODE").toString());
-							deductedList.setDeductedOrder(list.get(k).get("DEDUCTED_ORDER").toString());
-							deductedList.setPrsnId(list.get(k).get("PRSN_ID").toString());
-							deductedList.setInhClinicId(list.get(k).get("INH_CLINIC_ID") == null ? ""
-									: list.get(k).get("INH_CLINIC_ID").toString());
+							deductedList.setDataFormat(String.valueOf(list.get(k).get("DATA_FORMAT")));
+							deductedList.setFuncType(String.valueOf(list.get(k).get("FUNC_TYPE")));
+							deductedList.setFuncTypeName(String.valueOf(list.get(k).get("DESC_CHI")));
+							deductedList.setAfrNoPayCode(String.valueOf(list.get(k).get("AFR_NO_PAY_CODE") == null ? ""
+									: list.get(k).get("AFR_NO_PAY_CODE")));
+							deductedList.setCode(String.valueOf(list.get(k).get("CODE")));
+							deductedList.setDeductedOrder(String.valueOf(list.get(k).get("DEDUCTED_ORDER")));
+							deductedList.setPrsnId(String.valueOf(list.get(k).get("PRSN_ID")));
+							deductedList.setInhClinicId(String.valueOf(list.get(k).get("INH_CLINIC_ID") == null ? ""
+									: list.get(k).get("INH_CLINIC_ID")));
 							deductedList
-									.setDeductedQuantity(Long.valueOf(list.get(k).get("DEDUCTED_QUANTITY").toString()));
-							deductedList.setDeductedAmount(Long.valueOf(list.get(k).get("DEDUCTED_AMOUNT").toString()));
-							deductedList.setRollbackM(Long.valueOf(list.get(k).get("ROLLBACK_M").toString()));
-							deductedList.setAfrPayAmount(Long.valueOf(list.get(k).get("ROLLBACK_M").toString()));
-							deductedList.setAfrPayQuantity(Long.valueOf(list.get(k).get("AFR_PAY_AMOUNT").toString()));
+									.setDeductedQuantity(Long.valueOf(String.valueOf(list.get(k).get("DEDUCTED_QUANTITY"))));
+							deductedList.setDeductedAmount(Long.valueOf(String.valueOf(list.get(k).get("DEDUCTED_AMOUNT"))));
+							deductedList.setRollbackM(Long.valueOf(String.valueOf(list.get(k).get("ROLLBACK_M"))));
+							deductedList.setAfrPayAmount(Long.valueOf(String.valueOf(list.get(k).get("ROLLBACK_M"))));
+							deductedList.setAfrPayQuantity(Long.valueOf(String.valueOf(list.get(k).get("AFR_PAY_AMOUNT"))));
 							listList.add(deductedList);
 							deductedList = new DeductedNoteQueryConditionList();
 						}
@@ -9708,6 +9708,8 @@ public class DbReportService {
 			}
 			finalCodes.addAll(finalOpCodes);
 			finalCodes.addAll(finalIpCodes);
+			//加總重複code的amount、quantity
+			finalCodes = getFinalDeductedCode(finalCodes);
 			for (DeductedNoteQueryCondition dic : deductedModeList) {
 				dic.setFinalDeductedCode(finalCodes);
 			}
@@ -10038,4 +10040,24 @@ public class DbReportService {
 		return sqlBuffer.toString();
 	}
 
+	private List<DeductedNoteQueryConditionCode> getFinalDeductedCode(List<DeductedNoteQueryConditionCode> finalCodes) {
+		Map<String, List<DeductedNoteQueryConditionCode>> finalCodesGroupByCode = finalCodes.stream()
+				.collect(Collectors.groupingBy(DeductedNoteQueryConditionCode::getCode));
+		List<DeductedNoteQueryConditionCode> resultList = finalCodesGroupByCode.keySet().stream().map(key -> {
+			Long amount = 0L;
+			Long count = 0L;
+			List<DeductedNoteQueryConditionCode> finalCodesList = finalCodesGroupByCode.get(key);
+			DeductedNoteQueryConditionCode result = new DeductedNoteQueryConditionCode();
+			for (DeductedNoteQueryConditionCode finalCode : finalCodesList) {
+				amount += finalCode.getDeductedAmount();
+				count += finalCode.getDeductedQuantity();
+			}
+			result.setCode(key);
+			result.setDeductedAmount(amount);
+			result.setDeductedQuantity(count);
+			return result;
+		}).collect(Collectors.toList());
+		return resultList;
+	}
+	
 }
