@@ -7157,6 +7157,13 @@ public class DbReportService {
 			selectColumn.append(
 					" SELECT DATA_FORMAT,CODE,SUM(DEDUCTED_AMOUNT) AS DEDUCTED_AMOUNT ,SUM(DEDUCTED_QUANTITY) AS DEDUCTED_QUANTITY FROM DEDUCTED_NOTE,MR WHERE MR.ID = DEDUCTED_NOTE.MR_ID AND DEDUCTED_DATE LIKE CONCAT('"
 							+ yearMonthBetweenStr.get(i) + "','%') AND DEDUCTED_NOTE.STATUS=1");
+			if ((!dataformatList.contains("all")) && (!dataformatList.contains("ip")
+					&& !dataformatList.contains("em") && !dataformatList.contains("op"))) {
+				where.append(" AND DATA_FORMAT = '10' ");
+			} else if ((!dataformatList.contains("all")) && (!dataformatList.contains("totalop")
+					&& !dataformatList.contains("em") && !dataformatList.contains("op"))) {
+				where.append(" AND DATA_FORMAT = '20' ");
+			}
 			selectColumn.append(where);
 			groupBy.append(" GROUP BY CODE,DATA_FORMAT ");
 			selectColumn.append(groupBy);

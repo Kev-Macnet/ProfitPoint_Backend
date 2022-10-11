@@ -43,9 +43,9 @@ public class LogOperateDao extends BaseSqlDao{
 	  if("R".equalsIgnoreCase(showType)) {
 		  sql+= String.format(", SUM(%s)", secondsBtw);
 	  }else {
-		  sql+= ", TO_VARCHAR(LOG.CREATE_AT , 'YYYY-MM-DD') AS \"createDate\"   "
-			  + ", TO_VARCHAR(TO_TIME(LOG.LOGIN_TM))        AS \"loginTime\"    "
-			  + ", TO_VARCHAR(TO_TIME(LOG.LOGOUT_TM))       AS \"logoutTime\"   "
+		  sql+= ", TO_CHAR(LOG.CREATE_AT , 'YYYY-MM-DD') AS \"createDate\"   "
+			  + ", TO_CHAR(TO_TIME(LOG.LOGIN_TM))        AS \"loginTime\"    "
+			  + ", TO_CHAR(TO_TIME(LOG.LOGOUT_TM))       AS \"logoutTime\"   "
 		      + ", "+secondsBtw;
 	  }
 	  
@@ -81,11 +81,11 @@ public class LogOperateDao extends BaseSqlDao{
 		  + ", U.USERNAME                           AS \"username\"       ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
-		  sql +=", TO_VARCHAR(LOG.CREATE_AT,'YYYY-MM-DD' ) AS \"createDate\"";
-		  sql +=", TO_VARCHAR(TO_TIME(LOG.CREATE_AT))      AS \"createTime\"";
+		  sql +=", TO_CHAR(LOG.CREATE_AT,'YYYY-MM-DD' ) AS \"createDate\"";
+		  sql +=", TO_CHAR(TO_TIME(LOG.CREATE_AT))      AS \"createTime\"";
 	  }
 		    
-	  sql +=", TO_VARCHAR(to_Date(U.CREATE_AT))     AS \"createUserAt\"   "
+	  sql +=", TO_CHAR(to_Date(U.CREATE_AT))     AS \"createUserAt\"   "
 		  + ", COUNT(*)                             AS \"cnt\"            "
 		  + ", CASE U.ROLE                                                "
 		  + "     WHEN 'A' THEN 'MIS主管'                                  "
@@ -136,7 +136,7 @@ public class LogOperateDao extends BaseSqlDao{
 		  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                      ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
-		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+		  sql +=", TO_CHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
 	  }
 	  sql+= "FROM LOG_MEDICAL_RECORD_STATUS LOG                                                  "
 			  + joinUserDepartmentOnUserIdOrCreateUserId()
@@ -172,7 +172,7 @@ public class LogOperateDao extends BaseSqlDao{
 			  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                  ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
-		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+		  sql +=", TO_CHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
 	  }
 	  sql+= "FROM ( " + this.selectDistinctMrNotifyedSql(showType, sdate, edate, queryParaMap) +" ) LOG                                                                      "
 			  + joinUserDepartmentOnCreateUserId()
@@ -207,7 +207,7 @@ public class LogOperateDao extends BaseSqlDao{
 			  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                  ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
-		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+		  sql +=", TO_CHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
 	  }
 	  sql+= "FROM LOG_MEDICAL_RECORD_READ LOG                                                    "
 			  + joinUserDepartmentOnUserId()
@@ -243,7 +243,7 @@ public class LogOperateDao extends BaseSqlDao{
 			  + ", LOG.INH_CLINIC_ID                        AS \"inhClinicIds\"                  ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
-		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+		  sql +=", TO_CHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
 	  }
 	  sql+= "FROM LOG_MEDICAL_RECORD_NOTIFYED LOG                                                "
 			  + joinUserDepartmentOnUserId()
@@ -279,7 +279,7 @@ public class LogOperateDao extends BaseSqlDao{
 			  + ", LOG.PK                                   AS \"pks\"                           ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
-		  sql +=", TO_VARCHAR(LOG.CREATE_AT,'YYYY-MM-DD' ) AS \"createDate\"                     ";
+		  sql +=", TO_CHAR(LOG.CREATE_AT,'YYYY-MM-DD' ) AS \"createDate\"                     ";
 	  }
 	  
 	  sql+= "FROM LOG_ACTION LOG                                                                 "
@@ -310,8 +310,8 @@ public class LogOperateDao extends BaseSqlDao{
 			  + ", COUNT(*)                                 AS \"cnt\"                           ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
-		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
-		  sql +=", TO_VARCHAR(TO_TIME(LOG.CREATE_AT)) AS \"createTime\"                          ";
+		  sql +=", TO_CHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+		  sql +=", TO_CHAR(TO_TIME(LOG.CREATE_AT)) AS \"createTime\"                          ";
 	  }
 	  sql+= "FROM LOG_IMPORT LOG                                                                 "
 			  + joinUserDepartmentOnUserId()
@@ -345,8 +345,8 @@ public class LogOperateDao extends BaseSqlDao{
 			  + ", COUNT(*)                                 AS \"cnt\"                           ";
 	  
 	  if("D".equalsIgnoreCase(showType)) {
-		  sql +=", TO_VARCHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
-		  sql +=", TO_VARCHAR(TO_TIME(LOG.CREATE_AT)) AS \"createTime\"                          ";
+		  sql +=", TO_CHAR(TO_DATE(LOG.CREATE_AT)) AS \"createDate\"                          ";
+		  sql +=", TO_CHAR(TO_TIME(LOG.CREATE_AT)) AS \"createTime\"                          ";
 	  }
 	  sql+= "FROM LOG_EXPORT LOG                                                                 "
 			  + joinUserDepartmentOnUserId()
