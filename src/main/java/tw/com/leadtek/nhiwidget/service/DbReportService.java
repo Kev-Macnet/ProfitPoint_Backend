@@ -7157,13 +7157,8 @@ public class DbReportService {
 			selectColumn.append(
 					" SELECT DATA_FORMAT,CODE,SUM(DEDUCTED_AMOUNT) AS DEDUCTED_AMOUNT ,SUM(DEDUCTED_QUANTITY) AS DEDUCTED_QUANTITY FROM DEDUCTED_NOTE,MR WHERE MR.ID = DEDUCTED_NOTE.MR_ID AND DEDUCTED_DATE LIKE CONCAT('"
 							+ yearMonthBetweenStr.get(i) + "','%') AND DEDUCTED_NOTE.STATUS=1");
-			if ((!dataformatList.contains("all")) && (!dataformatList.contains("ip")
-					&& !dataformatList.contains("em") && !dataformatList.contains("op"))) {
-				where.append(" AND DATA_FORMAT = '10' ");
-			} else if ((!dataformatList.contains("all")) && (!dataformatList.contains("totalop")
-					&& !dataformatList.contains("em") && !dataformatList.contains("op"))) {
-				where.append(" AND DATA_FORMAT = '20' ");
-			}
+			String dataformatSql = getDataFormatSql(dataformatList);
+			selectColumn.append(dataformatSql);
 			selectColumn.append(where);
 			groupBy.append(" GROUP BY CODE,DATA_FORMAT ");
 			selectColumn.append(groupBy);
@@ -10065,6 +10060,31 @@ public class DbReportService {
 			return result;
 		}).collect(Collectors.toList());
 		return resultList;
+	}
+	
+	private String getDataFormatSql(List<String> dataformatList) {
+		String dataformatSql = "";
+		if (dataformatList.contains("all")) {
+			return "";
+		}
+		for (String dataformat : dataformatList) {
+			if (dataformatSql.length() > 0) {
+				dataformatSql += " OR ";
+			}
+			if ("totalop".equals(dataformat)) {
+				dataformatSql += " DATA_FORMAT='10' ";
+			}else if("em".equals(dataformat)) {
+				dataformatSql += " (DATA_FORMAT='10' AND FUNC_TYPE='22') ";
+			}else if("ip".equals(dataformat)) {
+				dataformatSql += " DATA_FORMAT='20' ";
+			}else if("op".equals(dataformat)) {
+				dataformatSql += " (DATA_FORMAT='10' AND FUNC_TYPE<>'22') ";
+			}
+		}
+		if (dataformatSql.length() > 0) {
+			dataformatSql = " AND (" + dataformatSql + ") ";
+		}
+		return dataformatSql;
 	}
 	
 }
