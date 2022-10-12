@@ -38,6 +38,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -1095,10 +1097,13 @@ public class NHIWidgetXMLController extends BaseController {
   
   @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
   @ApiOperation(value = "上傳excel核刪檔案", notes = "上傳excel核刪檔案")
+  @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "excel file",
+  dataType = "file", required = true, example = "核刪匯入測試資料20220927-1.xlsx")})
   @PostMapping(value = "/nhixml/uploadExcel",consumes = {"multipart/form-data"})
   @LogDefender(value = {LogType.SIGNIN})
-  public ResponseEntity<Map<String,Object>> importDeductedNoteExcel(@ApiParam(name = "id", value = "病歷id", example = "31986") @RequestParam String id,
-		  @ApiParam(name = "inputFile") @RequestParam("file") MultipartFile file
+  public ResponseEntity<Map<String,Object>> importDeductedNoteExcel(
+		  @ApiParam(name = "id", value = "病歷id", example = "31986") @RequestParam(required = false)  String id,
+		  @ApiParam(name = "file", value = "excel file",example = "核刪匯入測試資料20220927-1.xlsx") @RequestParam("file") MultipartFile file
 		  ) throws FileNotFoundException, IOException, ParseException {
 	  Map<String,Object> result = new HashMap<String,Object>();
 	  List<DEDUCTED_NOTE> dataList =  new ArrayList<DEDUCTED_NOTE>();
