@@ -544,7 +544,7 @@ public class LogOperateService {
 				
 				if("SG".equalsIgnoreCase(key)) {
 					
-					filePath = tempFolder + File.separator + key + ".csv";
+					filePath = tempFolder + File.separator + "登出入時間-系統登入總時數.csv";
 					
 					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
 						
@@ -557,7 +557,7 @@ public class LogOperateService {
 				
 				if("FG".equalsIgnoreCase(key)) {
 					
-					filePath = tempFolder + File.separator + key + ".csv";
+					filePath = tempFolder + File.separator + "申請密碼清單-累計次數.csv";
 					
 					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
 						
@@ -570,7 +570,7 @@ public class LogOperateService {
 				
 				if("CW".equalsIgnoreCase(key)) {
 					
-					filePath = tempFolder + File.separator + key + ".csv";
+					filePath = tempFolder + File.separator + "比對警示待確認案件數.csv";
 					
 					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
 						
@@ -583,7 +583,7 @@ public class LogOperateService {
 				
 				if("DM".equalsIgnoreCase(key)) {
 					
-					filePath = tempFolder + File.separator + key + ".csv";
+					filePath = tempFolder + File.separator + "疑問標示案件通知數-時間.csv";
 					
 					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
 						
@@ -596,7 +596,7 @@ public class LogOperateService {
 				
 				if("EC".equalsIgnoreCase(key)) {
 					
-					filePath = tempFolder + File.separator + key + ".csv";
+					filePath = tempFolder + File.separator + "評估不調整案件數.csv";
 					
 					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
 						
@@ -609,7 +609,7 @@ public class LogOperateService {
 				
 				if("OF".equalsIgnoreCase(key)) {
 					
-					filePath = tempFolder + File.separator + key + ".csv";
+					filePath = tempFolder + File.separator + "優化完成案件數" + ".csv";
 					
 					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
 						
@@ -648,7 +648,7 @@ public class LogOperateService {
 				
 				if("AC".equalsIgnoreCase(key)) {
 					
-					filePath = tempFolder + File.separator + key + ".csv";
+					filePath = tempFolder + File.separator + "使用者操作紀錄log.csv";
 					
 					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
 						
@@ -661,7 +661,7 @@ public class LogOperateService {
 				
 				if("IP".equalsIgnoreCase(key)) {
 					
-					filePath = tempFolder + File.separator + key + ".csv";
+					filePath = tempFolder + File.separator + "資料匯入時間.csv";
 					
 					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
 						
@@ -674,7 +674,7 @@ public class LogOperateService {
 				
 				if("EP".equalsIgnoreCase(key)) {
 					
-					filePath = tempFolder + File.separator + key + ".csv";
+					filePath = tempFolder + File.separator + "匯出筆數時間.csv";
 					
 					if(CollectionUtils.isNotEmpty((Collection) map.get(key))) {
 						
