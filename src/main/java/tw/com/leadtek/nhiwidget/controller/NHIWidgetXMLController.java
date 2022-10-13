@@ -51,6 +51,7 @@ import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
+import tw.com.leadtek.nhiwidget.model.rdb.FILE_DOWNLOAD;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.xml.OutPatient;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -69,6 +70,7 @@ import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
+import tw.com.leadtek.nhiwidget.service.SystemService;
 import tw.com.leadtek.nhiwidget.service.UserService;
 import tw.com.leadtek.tools.StringUtility;
 
@@ -93,6 +95,9 @@ public class NHIWidgetXMLController extends BaseController {
   
   @Autowired
   private CodeTableService codeTableService;
+  
+  @Autowired
+  private SystemService systemService;
 
 
 //  @ApiOperation(value = "上傳申報檔XML檔案", notes = "上傳申報檔XML檔案")
@@ -1178,7 +1183,15 @@ public class NHIWidgetXMLController extends BaseController {
 			  return ResponseEntity.badRequest().body(result);
 		  }
 	  }
-	  xmlService.exportCSV(exportType, dataFormat, dateType, year, month, fnSdate, fnEdate, outSdate, outEdate, inhCode, response);
+	  UserDetailsImpl user = getUserDetails();
+	  if (user == null) {
+	   
+	      result.setMessage("無法取得登入狀態");
+	      result.setResult("error");
+	      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+	  }
+	  
+	  xmlService.exportCSV(exportType, dataFormat, dateType, year, month, fnSdate, fnEdate, outSdate, outEdate, inhCode, user.getId(), response);
 	  return null;
   }
 }
