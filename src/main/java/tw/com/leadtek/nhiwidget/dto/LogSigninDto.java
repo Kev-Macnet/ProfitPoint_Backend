@@ -1,6 +1,7 @@
 package tw.com.leadtek.nhiwidget.dto;
 
 import java.math.BigInteger;
+import java.sql.Timestamp;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -17,10 +18,10 @@ public class LogSigninDto{
     private String createDate;
     
 	@ApiModelProperty(value = "登入時間", example = "10:17:29", required = false)
-    private String loginTime;
+    private Timestamp loginTime;
     
 	@ApiModelProperty(value = "登出時間", example = "10:17:29", required = false)
-    private String logoutTime;
+    private Timestamp logoutTime;
     
 	@ApiModelProperty(value = "登入秒數", example = "111", required = false)
     private BigInteger secondsBetween;
@@ -68,19 +69,19 @@ public class LogSigninDto{
 		this.createDate = createDate;
 	}
 
-	public String getLoginTime() {
+	public Timestamp getLoginTime() {
 		return loginTime;
 	}
 
-	public void setLoginTime(String loginTime) {
+	public void setLoginTime(Timestamp loginTime) {
 		this.loginTime = loginTime;
 	}
 
-	public String getLogoutTime() {
+	public Timestamp getLogoutTime() {
 		return logoutTime;
 	}
 
-	public void setLogoutTime(String logoutTime) {
+	public void setLogoutTime(Timestamp logoutTime) {
 		this.logoutTime = logoutTime;
 	}
 

@@ -33,24 +33,16 @@ public class LogOperateDao extends BaseSqlDao{
 			                 pCondition , pUserNames, pDisplayNames , 
 			                 msCondition, msDepts   , msDisplayNames, 
 			                 queryParaMap);
-	  String secondsBtw = "SECONDS_BETWEEN(TO_SECONDDATE(LOG.LOGIN_TM) , TO_SECONDDATE(LOG.LOGOUT_TM)) ";
 	  String sql;
 	 
 	  sql = "SELECT DISTINCT                                              "
 		  + "  U.DISPLAY_NAME                           AS \"displayName\""
 		  + ", U.USERNAME                               AS \"username\"   ";
-		  
-	  if("R".equalsIgnoreCase(showType)) {
-		  sql+= String.format(", SUM(%s)", secondsBtw);
-	  }else {
+	  if(!"R".equalsIgnoreCase(showType)) {
 		  sql+= ", TO_CHAR(LOG.CREATE_AT , 'YYYY-MM-DD') AS \"createDate\"   "
 			  + ", TO_CHAR(TO_TIME(LOG.LOGIN_TM))        AS \"loginTime\"    "
-			  + ", TO_CHAR(TO_TIME(LOG.LOGOUT_TM))       AS \"logoutTime\"   "
-		      + ", "+secondsBtw;
+			  + ", TO_CHAR(TO_TIME(LOG.LOGOUT_TM))       AS \"logoutTime\"   ";
 	  }
-	  
-	  sql+= " AS \"secondsBetween\"                                       ";
-	  
 	  sql+= "FROM LOG_SIGNIN LOG                                          "
 		  + joinUserDepartmentOnUserName()
 		  + where
@@ -59,6 +51,29 @@ public class LogOperateDao extends BaseSqlDao{
 	  if("R".equalsIgnoreCase(showType)) {
 		  sql+= "GROUP BY U.DISPLAY_NAME, U.USERNAME";
 	  }
+	  return super.getNativeQueryResult(sql, LogSigninDto.class, queryParaMap);
+  }
+  
+	public List<LogSigninDto> querySignInLogTime(String sdate, String edate, String showType, String actor,
+			String pCondition, List<?> pUserNames, List<?> pDisplayNames, String msCondition, List<?> msDepts,
+			List<?> msDisplayNames) {
+	  Map<String, Object> queryParaMap = new HashMap<>();
+	  
+	  String where = whereBy(sdate      , edate     , actor         , 
+			                 pCondition , pUserNames, pDisplayNames , 
+			                 msCondition, msDepts   , msDisplayNames, 
+			                 queryParaMap);
+	  String sql;
+	 
+	  sql = "SELECT DISTINCT                                              "
+		  + "  U.DISPLAY_NAME                           AS \"displayName\" "
+		  + ", U.USERNAME                               AS \"username\"   ";
+	  sql+= ", TO_CHAR(LOG.CREATE_AT , 'YYYY-MM-DD') AS \"createDate\"   ";
+	  sql += ", LOG.LOGIN_TM AS \"loginTime\" , LOG.LOGOUT_TM AS \"logoutTime\" ";
+	  sql+= "FROM LOG_SIGNIN LOG                                          "
+	  + joinUserDepartmentOnUserName()
+	  + where
+      + "AND LOG.LOGOUT_TM IS NOT NULL ";
 	  return super.getNativeQueryResult(sql, LogSigninDto.class, queryParaMap);
   }
   

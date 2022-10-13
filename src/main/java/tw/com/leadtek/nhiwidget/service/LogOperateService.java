@@ -6,15 +6,13 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
+import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -84,6 +82,24 @@ public class LogOperateService {
 			if("SG".equalsIgnoreCase(logType)) {
 
 				List<LogSigninDto> list = logOperateDao.querySignin(sdate, edate, showType, actor, pCondition, pUserNames_, pDisplayNames_, msCondition, msDepts_, msDisplayNames_);
+				List<LogSigninDto> logTimeList = logOperateDao.querySignInLogTime(sdate, edate, showType, actor, pCondition, pUserNames_, pDisplayNames_, msCondition, msDepts_, msDisplayNames_);
+				if ("R".equals(showType)) {
+					Map<String, List<LogSigninDto>> groupByLogTime = logTimeList.stream()
+							.collect(Collectors.groupingBy(log -> log.getDisplayName() + "-" + log.getUsername()));
+					for (String key : groupByLogTime.keySet()) {
+						List<LogSigninDto> logTimeGroupList = groupByLogTime.get(key);
+						Integer loginTimeSum = getLoginSecSum(logTimeGroupList);
+						list.stream().filter(log -> key.equals(log.getDisplayName() + "-" + log.getUsername()))
+								.findAny().get().setSecondsBetween(BigInteger.valueOf(loginTimeSum));;
+					}
+				} else {
+					for (LogSigninDto loginDto : list) {
+						Long loginTime = convertStringToTimeStamp(loginDto.getLoginTime());
+						Long logoutTime = convertStringToTimeStamp(loginDto.getLogoutTime());
+						Float timeBetween = Float.valueOf((logoutTime - loginTime) / 1000); 
+						loginDto.setSecondsBetween(BigInteger.valueOf(timeBetween.intValue()));
+					}
+				}
 				
 				calculateElapsedTime(list);
 				
@@ -927,5 +943,19 @@ public class LogOperateService {
 		result.add(map);
 		
 		return result;
+	}
+	
+	private Integer getLoginSecSum(List<LogSigninDto> logTimeGroupList) {
+		Integer loginTimeSum = 0 ;
+		for(LogSigninDto logTime : logTimeGroupList) {
+			Long login = convertStringToTimeStamp(logTime.getLoginTime());
+			Long logout = convertStringToTimeStamp(logTime.getLogoutTime());
+			Float timeBetween = Float.valueOf((logout - login) / 1000); 
+			loginTimeSum += timeBetween.intValue();
+		}
+		return loginTimeSum;
+	}
+	private Long convertStringToTimeStamp(Timestamp timest) {
+		return timest.getTime();
 	}
 }
