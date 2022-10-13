@@ -659,8 +659,8 @@ public class ExcelUtil {
   
   public static String createCSV(List<LinkedHashMap<String, Object>> list, String filePath) throws IOException{
 	    List<String> headers = list.stream().flatMap(map -> map.keySet().stream()).distinct().collect(Collectors.toList());
-	    System.out.println(headers);
 	    try(FileWriter writer= new FileWriter(filePath, true);){
+	    	  writer.write('\uFEFF');
 	           for (String string : headers) {
 	                 writer.write(string);
 	                 writer.write(",");
