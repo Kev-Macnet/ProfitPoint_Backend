@@ -38,6 +38,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -49,6 +51,7 @@ import tw.com.leadtek.nhiwidget.constant.MR_STATUS;
 import tw.com.leadtek.nhiwidget.model.rdb.CODE_TABLE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEDUCTED_NOTE;
 import tw.com.leadtek.nhiwidget.model.rdb.DEPARTMENT;
+import tw.com.leadtek.nhiwidget.model.rdb.FILE_DOWNLOAD;
 import tw.com.leadtek.nhiwidget.model.rdb.MR;
 import tw.com.leadtek.nhiwidget.model.xml.OutPatient;
 import tw.com.leadtek.nhiwidget.payload.BaseResponse;
@@ -67,6 +70,7 @@ import tw.com.leadtek.nhiwidget.service.CodeTableService;
 import tw.com.leadtek.nhiwidget.service.LogDataService;
 import tw.com.leadtek.nhiwidget.service.NHIWidgetXMLService;
 import tw.com.leadtek.nhiwidget.service.ParametersService;
+import tw.com.leadtek.nhiwidget.service.SystemService;
 import tw.com.leadtek.nhiwidget.service.UserService;
 import tw.com.leadtek.tools.StringUtility;
 
@@ -91,6 +95,9 @@ public class NHIWidgetXMLController extends BaseController {
   
   @Autowired
   private CodeTableService codeTableService;
+  
+  @Autowired
+  private SystemService systemService;
 
 
 //  @ApiOperation(value = "上傳申報檔XML檔案", notes = "上傳申報檔XML檔案")
@@ -1095,10 +1102,13 @@ public class NHIWidgetXMLController extends BaseController {
   
   @CrossOrigin(allowedHeaders = "*", allowCredentials = "true")
   @ApiOperation(value = "上傳excel核刪檔案", notes = "上傳excel核刪檔案")
+  @ApiImplicitParams({@ApiImplicitParam(name = "file", paramType = "form", value = "excel file",
+  dataType = "file", required = true, example = "核刪匯入測試資料20220927-1.xlsx")})
   @PostMapping(value = "/nhixml/uploadExcel",consumes = {"multipart/form-data"})
   @LogDefender(value = {LogType.SIGNIN})
-  public ResponseEntity<Map<String,Object>> importDeductedNoteExcel(@ApiParam(name = "id", value = "病歷id", example = "31986") @RequestParam String id,
-		  @ApiParam(name = "inputFile") @RequestParam("file") MultipartFile file
+  public ResponseEntity<Map<String,Object>> importDeductedNoteExcel(
+		  @ApiParam(name = "id", value = "病歷id", example = "31986") @RequestParam(required = false)  String id,
+		  @ApiParam(name = "file", value = "excel file",example = "核刪匯入測試資料20220927-1.xlsx") @RequestParam("file") MultipartFile file
 		  ) throws FileNotFoundException, IOException, ParseException {
 	  Map<String,Object> result = new HashMap<String,Object>();
 	  List<DEDUCTED_NOTE> dataList =  new ArrayList<DEDUCTED_NOTE>();
@@ -1173,7 +1183,15 @@ public class NHIWidgetXMLController extends BaseController {
 			  return ResponseEntity.badRequest().body(result);
 		  }
 	  }
-	  xmlService.exportCSV(exportType, dataFormat, dateType, year, month, fnSdate, fnEdate, outSdate, outEdate, inhCode, response);
+	  UserDetailsImpl user = getUserDetails();
+	  if (user == null) {
+	   
+	      result.setMessage("無法取得登入狀態");
+	      result.setResult("error");
+	      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+	  }
+	  
+	  xmlService.exportCSV(exportType, dataFormat, dateType, year, month, fnSdate, fnEdate, outSdate, outEdate, inhCode, user.getId(), response);
 	  return null;
   }
 }

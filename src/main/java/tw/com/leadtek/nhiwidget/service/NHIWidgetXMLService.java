@@ -321,6 +321,9 @@ public class NHIWidgetXMLService {
   @Autowired
   private FILE_DOWNLOADDao fdDao;
   
+  @Autowired
+  private SystemService sysService;
+  
   /**
    * 儲存xml申報檔-門診
    * @param op
@@ -10071,7 +10074,9 @@ public class NHIWidgetXMLService {
     return result;
   }
   
-  public void exportCSV(String exportType,String dataFormat,String dateType,String year,String month,String fnSdate,String fnEdate, String outSdate,String outEdate,String inhCode,HttpServletResponse response) throws IOException {
+  public void exportCSV(String exportType,String dataFormat,String dateType,String year,String month,String fnSdate,String fnEdate, String outSdate,String outEdate,String inhCode,Long userId,HttpServletResponse response) throws IOException {
+	  sysService.checkDownloadDir(FILE_PATH);
+	  FILE_DOWNLOAD download = null;
 	  ///申報日
 	  String applYM = "";
 	  ///治療結束日起
@@ -10249,7 +10254,7 @@ public class NHIWidgetXMLService {
 		  else {
 			 
 			  String dataformat = dateFormats[0];
-			  if(dataformat.equals("op")) {
+			  if(dataformat.toLowerCase().equals("op")) {
 				  opdCount = exportCSVDao.opdCount(applYM, fsdate, fedate, inhCodes);
 				  oppCount = exportCSVDao.oppCount(applYM, fsdate, fedate, inhCodes);
 				  opsoCount = exportCSVDao.opsoCount(applYM, fsdate, fedate, inhCodes);
@@ -10494,33 +10499,47 @@ public class NHIWidgetXMLService {
       }
 	  List<String> csvFilesPath = new ArrayList<String>();
 	  if(ipdList.size() > 0) {
-		  String filePath = tempPath + "/ipd_"+timeStamp+".csv";
-		  csvFilesPath.add(ExcelUtil.createCSV(ipdList, filePath));
+		  String fname = "ipd_"+timeStamp+".csv";
+		  String filePath = tempPath + "/" + fname;
+		  download = sysService.newFileDownload(userId, fname, false, true);
+		  csvFilesPath.add(ExcelUtil.createCSV(ipdList, filePath,download,fdDao));
 	  }
 	  
 	  if(ippList.size() > 0) {
-		  String filePath = tempPath + "/ipp_"+timeStamp+".csv";
-		  csvFilesPath.add(ExcelUtil.createCSV(ippList, filePath));
+		  String fname = "ipp_"+timeStamp+".csv";
+		  String filePath = tempPath + "/" + fname;
+		  download = sysService.newFileDownload(userId, fname, false, true);
+		  csvFilesPath.add(ExcelUtil.createCSV(ippList, filePath,download,fdDao));
 	  }
 	  if(ipsoList.size() > 0) {
-		  String filePath = tempPath + "/ipd_sop_"+timeStamp+".csv";
-		  csvFilesPath.add(ExcelUtil.createCSV(ipsoList, filePath));
+		  String fname = "ipd_sop_"+timeStamp+".csv";
+		  String filePath = tempPath + "/" + fname;
+		  download = sysService.newFileDownload(userId, fname, false, true);
+		  csvFilesPath.add(ExcelUtil.createCSV(ipsoList, filePath,download,fdDao));
 	  }
 	  if(opdList.size() > 0) {
-		  String filePath = tempPath + "/opd_"+timeStamp+".csv";
-		  csvFilesPath.add(ExcelUtil.createCSV(opdList, filePath));
+		  String fname = "opd_"+timeStamp+".csv";
+		  String filePath = tempPath + "/" + fname;
+		  download = sysService.newFileDownload(userId, fname, false, true);
+		  csvFilesPath.add(ExcelUtil.createCSV(opdList, filePath,download,fdDao));
 	  }
 	  if(oppList.size() > 0) {
-		  String filePath = tempPath + "/opp_"+timeStamp+".csv";
-		  csvFilesPath.add(ExcelUtil.createCSV(oppList, filePath));
+		  String fname = "opp_"+timeStamp+".csv";
+		  String filePath = tempPath + "/" + fname;
+		  download = sysService.newFileDownload(userId, fname, false, true);
+		  csvFilesPath.add(ExcelUtil.createCSV(oppList, filePath,download,fdDao));
 	  }
 	  if(opsoList.size() > 0) {
-		  String filePath = tempPath + "/opd_sop_"+timeStamp+".csv";
-		  csvFilesPath.add(ExcelUtil.createCSV(opsoList, filePath));
+		  String fname = "opd_sop_"+timeStamp+".csv";
+		  String filePath = tempPath + "/" + fname;
+		  download = sysService.newFileDownload(userId, fname, false, true);
+		  csvFilesPath.add(ExcelUtil.createCSV(opsoList, filePath,download,fdDao));
 	  }
 	  if(deductedNoteList.size() > 0) {
-		  String filePath = tempPath + "/deducted_"+timeStamp+".csv";
-		  csvFilesPath.add(ExcelUtil.createCSV(deductedNoteList, filePath));
+		  String fname = "deducted_"+timeStamp+".csv";
+		  String filePath = tempPath + "/" + fname;
+		  download = sysService.newFileDownload(userId, fname, false, true);
+		  csvFilesPath.add(ExcelUtil.createCSV(deductedNoteList, filePath,download,fdDao ));
 	  }
 	  
 	    String fileNameStr = "病例資料";

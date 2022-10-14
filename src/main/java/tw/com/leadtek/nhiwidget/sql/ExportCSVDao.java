@@ -41,6 +41,7 @@ public class ExportCSVDao {
 		List<String> inhCodeList = new ArrayList<String>();
 		 String sql;
 		 sql = "SELECT  "
+				+ "MR.ID AS INH_MR, "
 		 		+ "IFNULL(MR.INH_CLINIC_ID,'') AS INH_NO, "
 		 		+ "MR_SO.SUBJECT_TEXT  AS SUBJECTIVE, "
 		 		+ "MR_SO.OBJECT_TEXT  AS OBJECTIVE, "
@@ -100,9 +101,7 @@ public class ExportCSVDao {
 		 		+ "IFNULL(OP_D.HOSP_ID,'') AS HOSP_ID, "
 		 		+ "IFNULL(OP_D.TRAN_IN_HOSP_ID,'') AS TRAN_IN_HOSP_ID, "
 		 		+ "IFNULL(OP_D.ORI_CARD_SEQ_NO,'') AS ORI_CARD_SEQ_NO, "
-		 		+ "IFNULL(OP_D.PRSN_NAME,'') AS PRSN_NAME, "
-		 		+ "IFNULL(OP_D.PHAR_NAME,'') AS PHAR_NAME, "
-		 		+ "MR.ID AS INH_MR "
+		 		+ "MR.ID AS MRID "
 		 		+ "FROM MR, OP_D, MR_SO WHERE MR.ID = OP_D.MR_ID  AND MR.ID = MR_SO.MR_ID "
 		 		;
 		 if(!applYM.isEmpty()) {
@@ -154,17 +153,18 @@ public class ExportCSVDao {
 		 		+ "OP_P.ORDER_TYPE, "
 		 		+ "OP_P.DRUG_NO , "
 		 		+ "IFNULL(OP_P.DRUG_USE,0) AS DRUG_USE, "
-		 		+ "IFNULL(OP_P.DRUG_PATH,'') AS DRUG_PATH, "
+		 		+ "IFNULL(OP_P.DRUG_PATH ,'') AS CURE_PATH, "
 		 		+ "IFNULL(OP_P.DRUG_FRE,'') AS DRUG_FRE, "
 		 		+ "IFNULL(OP_P.PAY_RATE ,'') AS PAY_RATE, "
-		 		+ "IFNULL(OP_P.DRUG_PATH ,'') AS CURE_PATH, "
-		 		+ "IFNULL(OP_P.TOTAL_Q ,0) AS TW_DRGS_CALCU, "
-		 		+ "IFNULL(OP_P.UNIT_P ,0) AS PART_ACCO_DATA, "
-		 		+ "IFNULL(OP_P.TOTAL_DOT ,0) AS DONATER, "
+		 		+ "IFNULL(OP_P.DRUG_PATH,'') AS DRUG_PATH, "
+		 		+ "IFNULL(OP_P.TOTAL_Q ,0) AS TOTAL_Q, "
+		 		+ "IFNULL(OP_P.UNIT_P ,0) AS UNIT_P, "
+		 		+ "IFNULL(OP_P.TOTAL_DOT ,0) AS TOTAL_DOT, "
 		 		+ "OP_P.ORDER_SEQ_NO, "
 		 		+ "IFNULL(OP_P.START_TIME,'') AS START_TIME, "
 		 		+ "IFNULL(OP_P.END_TIME,'') AS END_TIME, "
 		 		+ "IFNULL(OP_P.PRSN_ID,'') AS PRSN_ID, "
+		 		+ "IFNULL(OP_P.CHR_MARK,'') AS CHR_MARK, "
 		 		+ "IFNULL(OP_P.IMG_SOURCE,'') AS IMG_SOURCE, "
 		 		+ "IFNULL(OP_P.PRE_NO,'') AS PRE_NO, "
 		 		+ "IFNULL(OP_P.FUNC_TYPE,'') AS FUNC_TYPE, "
@@ -173,7 +173,7 @@ public class ExportCSVDao {
 		 		+ "IFNULL(OP_P.NON_LIST_NAME,'') AS NON_LIST_NAME, "
 		 		+ "IFNULL(OP_P.COMM_HOSP_ID,'') AS COMM_HOSP_ID, "
 		 		+ "IFNULL(OP_P.DRUG_SERIAL_NO,'') AS DRUG_SERIAL_NO, "
-		 		+ "MR.ID AS MR_ID "
+		 		+ "MR.ID AS MRID "
 		 		;
 		 if(!applYM.isEmpty()) {
 			 sql += " FROM MR, OP_P WHERE MR.ID = OP_P.MR_ID "
@@ -221,7 +221,8 @@ public class ExportCSVDao {
 		 		+ "IFNULL(MR.INH_CLINIC_ID,'') AS INH_NO, "
 		 		+ "MR_SO.SUBJECT_TEXT, "
 		 		+ "MR_SO.OBJECT_TEXT, "
-		 		+ "MR.ID AS MR_ID "
+		 		+ "MR.ID AS MR_ID, "
+		 		+ "MR.ID AS MRID "
 		 		;
 		 if(!applYM.isEmpty()) {
 			 sql += " FROM MR, MR_SO WHERE MR.ID = MR_SO.MR_ID AND MR.DATA_FORMAT = '10' "
@@ -267,6 +268,7 @@ public class ExportCSVDao {
 		List<String> inhCodeList = new ArrayList<String>();
 		String sql;
 		sql = "SELECT    "
+				+ "MR.ID AS INH_MR, "
 				+ "IFNULL(MR.INH_CLINIC_ID,'') AS INH_NO, "
 				+ "MR_SO.SUBJECT_TEXT  AS SUBJECTIVE, "
 				+ "MR_SO.OBJECT_TEXT  AS OBJECTIVE, "
@@ -379,8 +381,7 @@ public class ExportCSVDao {
 				+ "IFNULL(IP_D.SVC_PLAN,'') AS SVC_PLAN, "
 				+ "IFNULL(IP_D.PILOT_PROJECT,'') AS PILOT_PROJECT, "
 				+ "IP_D.NON_APPL_DOT, "
-				+ "IFNULL(MR.PRSN_NAME,'') AS PRSN_NAME, "
-				+ "MR.ID AS INH_MR "
+				+ "MR.ID AS MRID "
 				+ "FROM MR, IP_D, MR_SO WHERE MR.ID = IP_D.MR_ID AND MR.ID = MR_SO.MR_ID "
 		 		;
 		 if(!applYM.isEmpty()) {
@@ -461,7 +462,7 @@ public class ExportCSVDao {
 				+ "IFNULL(IP_P.NON_LIST_NAME,'') AS NON_LIST_NAME, "
 				+ "IFNULL(IP_P.COMM_HOSP_ID,'') AS COMM_HOSP_ID, "
 				+ "IFNULL(IP_P.DRUG_SERIAL_NO,'') AS DRUG_SERIAL_NO, "
-				+ "MR.ID AS MR_ID "
+				+ "MR.ID AS MRID "
 		 		;
 		 if(!applYM.isEmpty()) {
 			 sql += " FROM MR, IP_P WHERE MR.ID = IP_P.MR_ID "
@@ -520,7 +521,8 @@ public class ExportCSVDao {
 		 		+ "MR_SO.SUBJECT_TEXT, "
 		 		+ "MR_SO.OBJECT_TEXT, "
 		 		+ "MR_SO.DISCHARGE_TEXT, "
-		 		+ "MR.ID AS MR_ID "
+		 		+ "MR.ID AS MR_ID, "
+		 		+ "MR.ID AS MRID "
 		 		;
 		 if(!applYM.isEmpty()) {
 			 sql += " FROM MR, MR_SO WHERE MR.ID = MR_SO.MR_ID AND MR.DATA_FORMAT = '20' "
@@ -590,10 +592,7 @@ public class ExportCSVDao {
 				+ "IFNULL(DEDUCTED_NOTE.DISPUTE_NO_PAY_CODE,'') AS DISPUTE_NO_PAY_CODE, "
 				+ "IFNULL(DEDUCTED_NOTE.DISPUTE_NO_PAY_DESC,'') AS DISPUTE_NO_PAY_DESC, "
 				+ "IFNULL(DEDUCTED_NOTE.DISPUTE_NOTE,'') AS DISPUTE_NOTE, "
-				+ "IFNULL(DEDUCTED_NOTE.DEDUCTED_DATE,'') AS DEDUCTED_DATE, "
-				+ "IFNULL(DEDUCTED_NOTE.ROLLBACK_DATE,'') AS ROLLBACK_DATE, "
-				+ "IFNULL(DEDUCTED_NOTE.DISPUTE_DATE,'') AS DISPUTE_DATE, "
-				+ "MR.ID AS MR_ID "
+				+ "MR.ID AS MRID "
 				;
 		
 		if(dataFormats.length > 0) {
@@ -1360,7 +1359,8 @@ public class ExportCSVDao {
 		LinkedHashMap<String, Object> m  = new LinkedHashMap<String, Object>();
 		if(sqlRes.size() > 0) {
 			for(int i=0; i < sqlRes.size(); i++) {
-				                            
+				
+				m.put("INH_MR", sqlRes.get(i).get("INH_MR"));          
 				m.put("INH_NO", sqlRes.get(i).get("INH_NO"));                            
 				m.put("SUBJECTIVE", sqlRes.get(i).get("SUBJECTIVE"));                            
 				m.put("OBJECTIVE", sqlRes.get(i).get("OBJECTIVE"));                            
@@ -1420,16 +1420,14 @@ public class ExportCSVDao {
 				m.put("HOSP_ID", sqlRes.get(i).get("HOSP_ID"));                            
 				m.put("TRAN_IN_HOSP_ID", sqlRes.get(i).get("TRAN_IN_HOSP_ID"));                            
 				m.put("ORI_CARD_SEQ_NO", sqlRes.get(i).get("ORI_CARD_SEQ_NO"));                            
-				m.put("PRSN_NAME", sqlRes.get(i).get("PRSN_NAME"));                            
-				m.put("PHAR_NAME", sqlRes.get(i).get("PHAR_NAME")); 
-				m.put("INH_MR", sqlRes.get(i).get("INH_MR"));
+				m.put("MR.ID", sqlRes.get(i).get("MRID"));
 				
 				result.add(m);
 				m = new LinkedHashMap<String, Object>();
 			}
 		}
 		else {
-			
+			m.put("INH_MR", "");
 			m.put("INH_NO", "");
 			m.put("SUBJECTIVE","");
 			m.put("OBJECTIVE", "");
@@ -1489,9 +1487,8 @@ public class ExportCSVDao {
 			m.put("HOSP_ID", "");
 			m.put("TRAN_IN_HOSP_ID", "");
 			m.put("ORI_CARD_SEQ_NO", "");
-			m.put("PRSN_NAME", "");
-			m.put("PHAR_NAME", "");
-			m.put("INH_MR", "");
+			m.put("MR.ID", "");
+			
 			
 			result.add(m);
 			m = new LinkedHashMap<String, Object>();
@@ -1505,7 +1502,7 @@ public class ExportCSVDao {
 		LinkedHashMap<String, Object> m  = new LinkedHashMap<String, Object>();
 		if(sqlRes.size() > 0) {
 			for(int i=0; i < sqlRes.size(); i++) {
-				m.put("INH_MR", sqlRes.get(i).get("INH_MR"));                            
+				m.put("INH_NO", sqlRes.get(i).get("INH_NO"));                            
 				m.put("INH_CODE", sqlRes.get(i).get("INH_CODE"));                            
 				m.put("APPL_STATUS", sqlRes.get(i).get("APPL_STATUS"));                            
 				m.put("PAY_STATUS", sqlRes.get(i).get("PAY_STATUS"));                            
@@ -1534,7 +1531,7 @@ public class ExportCSVDao {
 				m.put("NON_LIST_NAME", sqlRes.get(i).get("NON_LIST_NAME"));                            
 				m.put("COMM_HOSP_ID", sqlRes.get(i).get("COMM_HOSP_ID"));                            
 				m.put("DRUG_SERIAL_NO", sqlRes.get(i).get("DRUG_SERIAL_NO"));                            
-				m.put("MR_ID", sqlRes.get(i).get("MR_ID"));
+				m.put("MR.ID", sqlRes.get(i).get("MRID"));
 				
 				
 				result.add(m);
@@ -1571,7 +1568,7 @@ public class ExportCSVDao {
 			m.put("NON_LIST_NAME", "");
 			m.put("COMM_HOSP_ID", "");
 			m.put("DRUG_SERIAL_NO", "");
-			m.put("MR_ID", "");
+			m.put("MR.ID", "");
 			result.add(m);
 			m = new LinkedHashMap<String, Object>();
 		}
@@ -1587,7 +1584,7 @@ public class ExportCSVDao {
 				m.put("INH_NO", sqlRes.get(i).get("INH_NO"));                            
 				m.put("SUBJECT_TEXT", sqlRes.get(i).get("SUBJECT_TEXT"));                            
 				m.put("OBJECT_TEXT", sqlRes.get(i).get("OBJECT_TEXT"));
-				m.put("MR_ID", sqlRes.get(i).get("MR_ID"));
+				m.put("MR.ID", sqlRes.get(i).get("MRID"));
 						
 				
 				result.add(m);
@@ -1599,7 +1596,7 @@ public class ExportCSVDao {
 			m.put("INH_NO", "");                            
 			m.put("SUBJECT_TEXT", "");                            
 			m.put("OBJECT_TEXT", "");               
-			m.put("MR_ID", "");
+			m.put("MR.ID", "");
 			
 			result.add(m);
 			m = new LinkedHashMap<String, Object>();
@@ -1613,6 +1610,9 @@ public class ExportCSVDao {
 		LinkedHashMap<String, Object> m  = new LinkedHashMap<String, Object>();
 		if(sqlRes.size() > 0) {
 			for(int i=0; i < sqlRes.size(); i++) {
+				
+
+				m.put("INH_MR", sqlRes.get(i).get("INH_MR"));  
 				m.put("INH_NO", sqlRes.get(i).get("INH_NO"));                            
 				m.put("SUBJECTIVE", sqlRes.get(i).get("SUBJECTIVE"));                            
 				m.put("OBJECTIVE", sqlRes.get(i).get("OBJECTIVE"));                            
@@ -1726,15 +1726,15 @@ public class ExportCSVDao {
 				m.put("SVC_PLAN", sqlRes.get(i).get("SVC_PLAN"));
 				m.put("PILOT_PROJECT", sqlRes.get(i).get("PILOT_PROJECT"));
 				m.put("NON_APPL_DOT", sqlRes.get(i).get("NON_APPL_DOT"));
-				m.put("PRSN_NAME", sqlRes.get(i).get("PRSN_NAME"));
-				m.put("INH_MR", sqlRes.get(i).get("INH_MR"));                            
+				m.put("MR.ID", sqlRes.get(i).get("MRID"));                          
 				
 				result.add(m);
 				m = new LinkedHashMap<String, Object>();
 			}
 		}
 		else {
-			                          
+			        
+			m.put("INH_MR", "");  
 			m.put("INH_NO", "");                            
 			m.put("SUBJECTIVE", "");                            
 			m.put("OBJECTIVE", "");                            
@@ -1848,8 +1848,8 @@ public class ExportCSVDao {
 			m.put("SVC_PLAN", "");
 			m.put("PILOT_PROJECT", "");
 			m.put("NON_APPL_DOT", "");
-			m.put("PRSN_NAME", "");
-			m.put("INH_MR", "");  
+			m.put("MR.ID", "");
+			
 			
 			result.add(m);
 			m = new LinkedHashMap<String, Object>();
@@ -1894,7 +1894,7 @@ public class ExportCSVDao {
 				m.put("NON_LIST_NAME", sqlRes.get(i).get("NON_LIST_NAME"));                            
 				m.put("COMM_HOSP_ID", sqlRes.get(i).get("COMM_HOSP_ID"));                            
 				m.put("DRUG_SERIAL_NO", sqlRes.get(i).get("DRUG_SERIAL_NO"));
-				m.put("MR_ID", sqlRes.get(i).get("MR_ID"));     
+				m.put("MR.ID", sqlRes.get(i).get("MRID"));     
 				
 				result.add(m);
 				m = new LinkedHashMap<String, Object>();
@@ -1932,7 +1932,7 @@ public class ExportCSVDao {
 			m.put("NON_LIST_NAME", "");                            
 			m.put("COMM_HOSP_ID", "");                            
 			m.put("DRUG_SERIAL_NO", "");
-			m.put("MR_ID", "");
+			m.put("MR.ID", "");
 			
 			result.add(m);
 			m = new LinkedHashMap<String, Object>();
@@ -1950,7 +1950,7 @@ public class ExportCSVDao {
 				m.put("SUBJECT_TEXT", sqlRes.get(i).get("SUBJECT_TEXT"));                            
 				m.put("OBJECT_TEXT", sqlRes.get(i).get("OBJECT_TEXT"));                            
 		        m.put("DISCHARGE_TEXT", sqlRes.get(i).get("DISCHARGE_TEXT"));
-		        m.put("MR_ID", sqlRes.get(i).get("MR_ID"));
+		        m.put("MR.ID", sqlRes.get(i).get("MRID"));
 		        
 				result.add(m);
 				m = new LinkedHashMap<String, Object>();
@@ -1961,7 +1961,7 @@ public class ExportCSVDao {
 			m.put("SUBJECT_TEXT", "");                            
 			m.put("OBJECT_TEXT", "");                            
 	        m.put("DISCHARGE_TEXT", "");
-	        m.put("MR_ID", "");
+	        m.put("MR.ID", "");
 	        
 	        result.add(m);
 			m = new LinkedHashMap<String, Object>();
@@ -2001,10 +2001,7 @@ public class ExportCSVDao {
 				m.put("DISPUTE_NO_PAY_CODE", sqlRes.get(i).get("DISPUTE_NO_PAY_CODE"));   
 				m.put("DISPUTE_NO_PAY_DESC", sqlRes.get(i).get("DISPUTE_NO_PAY_DESC"));   
 				m.put("DISPUTE_NOTE", sqlRes.get(i).get("DISPUTE_NOTE"));   
-				m.put("DEDUCTED_DATE", sqlRes.get(i).get("DEDUCTED_DATE"));   
-				m.put("ROLLBACK_DATE", sqlRes.get(i).get("ROLLBACK_DATE"));   
-				m.put("DISPUTE_DATE", sqlRes.get(i).get("DISPUTE_DATE"));
-				m.put("MR_ID", sqlRes.get(i).get("MR_ID"));
+				m.put("MR.ID", sqlRes.get(i).get("MRID"));
 				
 				result.add(m);
 				m = new LinkedHashMap<String, Object>();
@@ -2036,10 +2033,7 @@ public class ExportCSVDao {
 			m.put("DISPUTE_NO_PAY_CODE", "");   
 			m.put("DISPUTE_NO_PAY_DESC", "");   
 			m.put("DISPUTE_NOTE", "");   
-			m.put("DEDUCTED_DATE", "");   
-			m.put("ROLLBACK_DATE", "");   
-			m.put("DISPUTE_DATE", "");
-			m.put("MR_ID", "");
+			m.put("MR.ID", "");
 			
 			result.add(m);
 			m = new LinkedHashMap<String, Object>();

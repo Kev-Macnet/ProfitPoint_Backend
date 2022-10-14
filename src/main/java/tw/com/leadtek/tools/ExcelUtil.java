@@ -3,8 +3,16 @@
  */
 package tw.com.leadtek.tools;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.Writer;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -34,7 +42,10 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 
+import tw.com.leadtek.nhiwidget.dao.FILE_DOWNLOADDao;
+import tw.com.leadtek.nhiwidget.model.rdb.FILE_DOWNLOAD;
 import tw.com.leadtek.nhiwidget.model.rdb.PARAMETERS;
+import tw.com.leadtek.nhiwidget.service.SystemService;
 
 public class ExcelUtil {
 
@@ -679,5 +690,64 @@ public class ExcelUtil {
 	    }
 	    return filePath;
 	}
+   /// 處理產生csv並且將進度寫入file_download表
+   public static String createCSV(List<LinkedHashMap<String, Object>> list, String filePath, FILE_DOWNLOAD download, FILE_DOWNLOADDao fdDao) throws IOException{
+	    List<String> headers = list.stream().flatMap(map -> map.keySet().stream()).distinct().collect(Collectors.toList());
+	    System.out.println(headers);
+	    int i = 0;
+	    double next = 0.1;
+	    try{
+	    	File file = new File(filePath);
+	    	Writer write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),"UTF-8"));
+	           for (String string : headers) {
+	        	   write.write(string);
+	        	   write.write(",");
+	           }
+	           write.write("\r\n");
+
+	           for (LinkedHashMap<String, Object> lmap : list) {
+	                 for (Entry<String, Object> string2 : lmap.entrySet()) {
+	                	 String keyName = string2.getKey();
+	                	 String value = string2.getValue() == null ? "" : string2.getValue().toString();
+	                	 /// 因為此二欄位值都會有換行導致csv欄位顯示錯亂，這邊獨立處理
+	                	 if(keyName.contains("SUBJECT") || keyName.contains("OBJECT") ) {
+	                		 if(!value.isEmpty()) {
+	                			 String thisLine = null;
+	                			 String append = "";
+	                			 Reader targetReader = new StringReader(value);
+	                			 BufferedReader br = new BufferedReader(targetReader);
+	                			 while ((thisLine = br.readLine()) != null) {
+	                				 append += thisLine;
+	                		     } 
+	                			 /// 將逗點改為中文輸入逗點，確保csv不會換到下一欄位
+	                			 String finalVal = append.replace(",", "，");
+	                			 write.write(finalVal);
+	                		 }
+	                	 }
+	                	 else {
+	                		 
+	                		 write.write(value);
+	                	 }
+	                	 write.write(",");
+	                 }
+	                 write.write("\r\n");
+	                 if (((double) i / (double) list.size()) > next) {
+	                     download.setProgress((int) (next * 100));
+	                     download.setUpdateAt(new Date());
+	                     fdDao.save(download);
+	                     next += 5;
+	                   }
+	                 i++;
+	           }
+	           SystemService.updateFileDownloadFinished(download, fdDao);
+	           write.flush();
+	           write.close();
+	    }catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	    return filePath;
+	}
 
 }
+
+
